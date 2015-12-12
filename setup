@@ -1,0 +1,20 @@
+echo ''
+echo 'This sets up the Bible SuperSearch API'
+echo ''
+echo 'Please copy .env.example to .env and configure your database before you run this set up.'
+echo ''
+echo 'Warning: Running this will erase the Bible SuperSearch tables if already installed'
+echo ''
+
+read -p "Are you sure? (Y/n) " -n 1 -r
+echo    # (optional) move to a new line
+if [[ $REPLY =~ ^[Yy]$ ]]
+then
+    # do dangerous stuff
+    echo ''
+    #echo 'just spitting out artisan help for now'
+    # php artisan help
+    # Laravel/Lumen artisan command needed to set this up
+    php artisan migrate:refresh --seed 
+fi
+

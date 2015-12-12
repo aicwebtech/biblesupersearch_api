@@ -1,5 +1,7 @@
 /vendor
 /node_modules
+/nbproject
+*~
 Homestead.yaml
 Homestead.json
 .env

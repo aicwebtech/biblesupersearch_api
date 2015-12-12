@@ -22,7 +22,9 @@ class AuthController extends Controller
     */
 
     use AuthenticatesAndRegistersUsers, ThrottlesLogins;
-
+    
+    protected $username = 'username'; // This should force it to authenticate on username instead of email
+    
     /**
      * Create a new authentication controller instance.
      *

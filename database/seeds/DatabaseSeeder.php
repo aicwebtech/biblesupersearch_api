@@ -3,6 +3,9 @@
 use Illuminate\Database\Seeder;
 use Illuminate\Database\Eloquent\Model;
 
+// This isn't autoloading??
+require_once(dirname(__FILE__) . '/UserTableSeeder.php');
+
 class DatabaseSeeder extends Seeder
 {
     /**
@@ -14,7 +17,7 @@ class DatabaseSeeder extends Seeder
     {
         Model::unguard();
 
-        // $this->call(UserTableSeeder::class);
+        $this->call('UserTableSeeder');
 
         Model::reguard();
     }
