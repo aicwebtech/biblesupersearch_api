@@ -25,6 +25,9 @@ class AuthController extends Controller
     
     protected $username = 'username'; // This should force it to authenticate on username instead of email
     
+    protected $redirectTo = '/admin/main';
+    protected $loginPath = '/admin';
+    
     /**
      * Create a new authentication controller instance.
      *

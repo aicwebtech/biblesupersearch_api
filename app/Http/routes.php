@@ -11,6 +11,35 @@
 |
 */
 
-Route::get('/', function () {
-    return view('welcome');
+Route::get('/', function() {
+    return view('welcome2');
 });
+
+Route::get('/admin', function() {
+    if(Auth::check()) {
+        return redirect('/admin/main');
+    }
+    
+    return view('admin.login');
+});
+Route::get('/admin/login', function() {
+    return redirect('/admin');
+});
+
+
+
+
+// Authentication Routes...
+//Route::get('/admin/login', 'Auth\AuthController@getLogin');
+Route::get('/auth/login', function () {
+    return redirect('/admin');
+});
+Route::post('/auth/login', 'Auth\AuthController@postLogin');
+
+Route::get('/auth/logout', 'Auth\AuthController@getLogout');
+Route::get('/admin/main', 'AdminController@getMain');
+
+
+
+
+//Route::controller('admin', 'AdminController');
