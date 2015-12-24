@@ -9,7 +9,7 @@ use App\Models\Bible;
 // Abstraction allows for the potential for Bibles other than the 'standard' format
 // However, actual support for non-standard formats won't be implemented any time soon.
 
-abstract class Abstract extends Model
+abstract class Abs extends Model
 {
-    protected App\Models\Bible $Bible; //
+    //protected App\Models\Bible $Bible; //
 }

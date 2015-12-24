@@ -32,6 +32,6 @@ class CreateBibleVersionsTable extends Migration
      */
     public function down()
     {
-        Schema::drop('bible_versions');
+        Schema::drop('bibles');
     }
 }
