@@ -12,9 +12,9 @@ if [[ $REPLY =~ ^[Yy]$ ]]
 then
     # do dangerous stuff
     echo ''
-    #echo 'just spitting out artisan help for now'
-    # php artisan help
     # Laravel/Lumen artisan command needed to set this up
     php artisan migrate:refresh --seed 
+    echo ''
+    echo 'Setup is complete'
 fi
 

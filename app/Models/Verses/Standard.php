@@ -2,20 +2,42 @@
 
 namespace App\Models\Verses;
 
-use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
+use App\Models\Bible;
 
 class Standard extends Abs
-{
-    protected $hasClass = TRUE; // Indicates if this instantiation has it's own coded extension of this class.
-    //
-    public function __construct(array $attributes = array()) {
-        parent::__construct($attributes);
+{   
+	public function setBible(Bible $Bible) {
+		parent::setBible($Bible);
+		
+		if($this->hasClass) {
+			$this->table = 'verses_' . $Bible->module;
+		}
+		else {
+			$this->table = 'verses_' . $Bible->module;
+		}
+	}
+	
+	public function install() {
+        Schema::create($this->table, function (Blueprint $table) {
+            $table->increments('id');
+            $table->tinyInteger('book')->unsigned();
+            $table->tinyInteger('chapter')->unsigned();
+            $table->tinyInteger('verse')->unsigned();
+            $table->text('text');
+            $table->text('italics')->nullable();
+            $table->text('strongs')->nullable();
+            $table->index('book','ixb');
+            $table->index('chapter','ixc');
+            $table->index('verse','ixv');
+            //$table->index('text'); // Needs length - not supported in Laravel?
+        });
         
-        var_dump(get_called_class());
-        var_dump($this->hasClass);
-    }
-    
-    public function classFileExists() {
-        return $this->hasClass;
-    }
+        // todo - import records from text file
+	}
+	
+	public function uninstall() {
+		Schema::drop($this->table);
+	}
 }

@@ -14,6 +14,8 @@ class CreateStrongsDefinitionsTable extends Migration
     {
         Schema::create('strongs_definitions', function (Blueprint $table) {
             $table->increments('id');
+            $table->string('number');
+            $table->text('entry');
             $table->timestamps();
         });
     }

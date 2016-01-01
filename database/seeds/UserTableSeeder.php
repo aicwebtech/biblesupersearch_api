@@ -15,11 +15,16 @@ class UserTableSeeder extends Seeder {
      */
     public function run()
     {
-        // Create an admin user
-        User::create([
-            'name'     => env('ADMIN_NAME', 'Admin User'),
-            'username' => env('ADMIN_USERNAME', 'admin'),
-            'password' => bcrypt( env('ADMIN_PASSWORD', 'admin') ),
-        ]);
+        try {
+            // Create an admin user
+            User::create([
+                'name'     => env('ADMIN_NAME', 'Admin User'),
+                'username' => env('ADMIN_USERNAME', 'admin'),
+                'password' => bcrypt( env('ADMIN_PASSWORD', 'admin') ),
+            ]);
+        }
+        catch(Exception $e) {
+
+        }
     }
 }

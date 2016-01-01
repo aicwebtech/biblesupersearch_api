@@ -17,12 +17,22 @@ class CreateBibleVersionsTable extends Migration
             $table->string('name');
             $table->string('shortname');
             $table->string('module')->unique();
-            $table->text('description');
-            $table->string('language');
-            $table->string('language_short');
+            $table->string('year');
+            $table->text('description')->nullable();
+            $table->string('lang');
+            $table->string('lang_short');
+            $table->tinyInteger('copyright')->default(0)->unsigned();
             $table->tinyInteger('italics')->default(0)->unsigned();
             $table->tinyInteger('strongs')->default(0)->unsigned();
+            $table->tinyInteger('installed')->default(0)->unsigned();
+            $table->tinyInteger('enabled')->default(0)->unsigned();
+            $table->mediumInteger('rank')->default(0)->unsigned();
+            $table->timestamps();
         });
+
+        if(env('IMPORT_FROM_V2', FALSE)) {
+            //echo('importing from v2' . PHP_EOL);
+        }
     }
 
     /**
@@ -33,5 +43,7 @@ class CreateBibleVersionsTable extends Migration
     public function down()
     {
         Schema::drop('bibles');
+
+        // to do - uninsstall all installed Bibles
     }
 }

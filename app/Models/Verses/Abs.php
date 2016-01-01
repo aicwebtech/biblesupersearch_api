@@ -11,5 +11,18 @@ use App\Models\Bible;
 
 abstract class Abs extends Model
 {
-    //protected App\Models\Bible $Bible; //
+    protected $Bible;
+	protected $hasClass = TRUE; // Indicates if this instantiation has it's own coded extension of this class.
+	public $timestamps = FALSE;
+	
+	public function setBible(Bible $Bible) {
+		$this->Bible = $Bible;
+	}
+	
+	public function classFileExists() {
+        return $this->hasClass;
+    }
+	
+	abstract public function install();
+	abstract public function uninstall();
 }
