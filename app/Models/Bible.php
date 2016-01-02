@@ -43,7 +43,6 @@ class Bible extends Model
 						protected $hasClass = FALSE;
 					}
 				';
-				
                 eval($code);
 			}
 
@@ -54,16 +53,20 @@ class Bible extends Model
     }
 	
 	public function install() {
-		$this->verses()->install();
-		$this->installed = 1;
-		$this->save();
+		if(!$this->installed) {    
+            $this->verses()->install();
+    		$this->installed = 1;
+    		$this->save();
+        }
 	}
 	
 	public function uninstall() {
-		$this->verses()->uninstall();
-		$this->installed = 0;
-		$this->enabled = 0;
-		$this->save();
+		if($this->installed) { 
+            $this->verses()->uninstall();
+    		$this->installed = 0;
+    		$this->enabled = 0;
+    		$this->save();
+        }
 	}
 	
 	public static function findByModule($module, $fail = FALSE) {
@@ -74,6 +77,10 @@ class Bible extends Model
 			return Bible::where('module', $module)->first();
 		}
 	}
+
+    public static function getClassNameByModule($module) {
+
+    }
     
     public function setEnabledAttribute($value) {
         //var_dump($this->installed);

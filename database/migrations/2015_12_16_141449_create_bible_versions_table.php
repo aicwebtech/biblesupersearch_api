@@ -2,6 +2,7 @@
 
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Database\Migrations\Migration;
+use App\Models\Bible;
 
 class CreateBibleVersionsTable extends Migration
 {
@@ -42,8 +43,13 @@ class CreateBibleVersionsTable extends Migration
      */
     public function down()
     {
-        Schema::drop('bibles');
+        // uninsstall all installed Bibles
+        $Bibles = Bible::all();
 
-        // to do - uninsstall all installed Bibles
+        foreach($Bibles as $Bible) {
+            $Bible->uninstall();
+        }
+
+        Schema::drop('bibles');
     }
 }

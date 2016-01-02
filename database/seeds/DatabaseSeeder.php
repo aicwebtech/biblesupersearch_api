@@ -19,6 +19,10 @@ class DatabaseSeeder extends Seeder
 
         $this->call('UserTableSeeder');
         $this->call('Bibles');
+        $this->call('IndexTableSeeder');
+        $this->call('BookListSeeder');
+        $this->call('ShortcutsSeeder');
+        $this->call('StrongsDefinitionsSeeder');
 
         Model::reguard();
     }

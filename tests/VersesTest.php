@@ -4,6 +4,8 @@ use Illuminate\Foundation\Testing\WithoutMiddleware;
 use Illuminate\Foundation\Testing\DatabaseMigrations;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 
+use App\Models\Bible;
+
 class VersesTest extends TestCase
 {
     /**
@@ -16,7 +18,12 @@ class VersesTest extends TestCase
         //$this->assertTrue(true);
     }
 	
-	public function testBob() {
-	
+	public function testInstall() {
+	   $Bible = Bible::findByModule('kjv');
+       $Bible->uninstall();
+       $this->assertEquals(0, $Bible->installed);
+       $Bible->install();
+       $this->assertEquals(1, $Bible->installed);
+       $this->assertTrue( Schema::hasTable('verses_kjv') );
 	}
 }

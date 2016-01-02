@@ -12,7 +12,21 @@ class CreateShortcutsTables extends Migration
      */
     public function up()
     {
-        //
+        $languages = Config::get('bss_table_languages.shortcuts');
+        foreach($languages as $lang) {
+            $tn = 'shortcuts_' . $lang;
+
+            Schema::create($tn, function (Blueprint $table) {
+                $table->increments('id');
+                $table->string('name');
+                $table->string('short1')->nullable();
+                $table->string('short2')->nullable();
+                $table->string('short3')->nullable();
+                $table->mediumText('reference');
+                $table->tinyInteger('display')->default(0)->unsigned();
+                $table->timestamps();
+            });
+        }
     }
 
     /**
@@ -22,6 +36,14 @@ class CreateShortcutsTables extends Migration
      */
     public function down()
     {
-        //
+        $languages = Config::get('bss_table_languages.shortcuts');
+
+        foreach($languages as $lang) {
+            $tn = 'shortcuts_' . $lang;
+            
+            if(Schema::hasTable($tn)) {
+                Schema::drop($tn);
+            }
+        }
     }
 }

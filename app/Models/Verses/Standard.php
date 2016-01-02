@@ -5,21 +5,49 @@ namespace App\Models\Verses;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 use App\Models\Bible;
+use DB;
 
 class Standard extends Abs
 {   
-	public function setBible(Bible $Bible) {
+    /**
+     * Create a new Eloquent model instance.
+     *
+     * @param  array  $attributes
+     * @return void
+     */
+    public function __construct(array $attributes = []) {
+        if(empty($this->module)) {            
+            $class = explode('\\', get_called_class());
+            $this->module = strtolower(array_pop($class));
+        }
+
+        if(empty($this->table)) {
+            $this->table = 'verses_' . $this->module;
+        }
+
+        parent::__construct($attributes);
+    }
+
+    public function _setBible(Bible &$Bible) {
 		parent::setBible($Bible);
 		
 		if($this->hasClass) {
-			$this->table = 'verses_' . $Bible->module;
+			// Todo: grab table name directly from class name
+            $this->table = 'verses_' . $Bible->module;
 		}
 		else {
 			$this->table = 'verses_' . $Bible->module;
 		}
 	}
 	
+    // Todo - prevent installation if already installed!
 	public function install() {
+        if(Schema::hasTable($this->table)) {
+            return TRUE;
+        }
+
+        $in_console = (strpos(php_sapi_name(), 'cli') !== FALSE) ? TRUE : FALSE;
+
         Schema::create($this->table, function (Blueprint $table) {
             $table->increments('id');
             $table->tinyInteger('book')->unsigned();
@@ -31,13 +59,52 @@ class Standard extends Abs
             $table->index('book','ixb');
             $table->index('chapter','ixc');
             $table->index('verse','ixv');
+            $table->index(['book', 'chapter','verse'], 'ixbcv'); // Composite index on b, c, v
             //$table->index('text'); // Needs length - not supported in Laravel?
         });
+
+        // If importing from V2, make sure v2 table exists
+        if(env('IMPORT_FROM_V2', FALSE)) {
+            $v2_table = 'bible_' . $this->Bible->module;
+            $res = DB::select("SHOW TABLES LIKE '" . $v2_table . "'");
+            $v2_table_exists = (count($res)) ? TRUE : FALSE;
+        }
         
-        // todo - import records from text file
+        if(env('IMPORT_FROM_V2', FALSE) && $v2_table_exists) {
+            if($in_console) {
+                echo(PHP_EOL . 'Importing Bible from V2: ' . $this->Bible->name . ' (' . $this->module . ')' . PHP_EOL);
+            }
+            
+            // we use this to determine what the strongs / italics fileds are
+            $v_test = DB::select("SELECT * FROM {$v2_table} ORDER BY `index` LIMIT 1");
+            $strongs = $italics = 'NULL';
+
+            $strongs = isset($v_test[0]->strongs) ? 'strongs' : $strongs;
+            $italics = isset($v_test[0]->italics) ? 'italics' : $italics;
+            $italics = isset($v_test[0]->map)     ? 'map' : $italics;
+
+            $prefix = DB::getTablePrefix();
+
+            $sql = "
+                INSERT INTO {$prefix}verses_{$this->module} (id, book, chapter, verse, text, italics, strongs)
+                SELECT `index`, book, chapter, verse, text, {$italics}, {$strongs}
+                FROM bible_{$this->module}
+            ";
+
+            DB::insert($sql);
+        }
+        else {
+            // todo - import records from text file
+        }
+
+        return TRUE;
 	}
 	
 	public function uninstall() {
-		Schema::drop($this->table);
+		if(Schema::hasTable($this->table)) {
+            Schema::drop($this->table);
+        }
+
+        return TRUE;
 	}
 }

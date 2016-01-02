@@ -5,8 +5,6 @@ use Illuminate\Database\Migrations\Migration;
 
 class CreateBooksTables extends Migration
 {
-    protected $languages = array('en','es','de','ru','ro','fr','hu','ar','it','nl');
-
     /**
      * Run the migrations.
      *
@@ -14,7 +12,8 @@ class CreateBooksTables extends Migration
      */
     public function up()
     {
-        foreach($this->languages as $lang) {
+        $languages = Config::get('bss_table_languages.books');
+        foreach($languages as $lang) {
             $tn = 'books_' . $lang;
 
             Schema::create($tn, function (Blueprint $table) {
@@ -23,9 +22,9 @@ class CreateBooksTables extends Migration
                 $table->string('shortname');
                 $table->string('matching1')->nullable();
                 $table->string('matching2')->nullable();
+                $table->timestamps();
             });
         }
-
     }
 
     /**
@@ -35,7 +34,9 @@ class CreateBooksTables extends Migration
      */
     public function down()
     {
-        foreach($this->languages as $lang) {
+        $languages = Config::get('bss_table_languages.books');
+
+        foreach($languages as $lang) {
             $tn = 'books_' . $lang;
             Schema::drop($tn);
         }

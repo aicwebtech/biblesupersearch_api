@@ -66,7 +66,7 @@ return array(
             'lang_short'=> 'el',
         ),
         array(
-            'module'    => '1858rv', 
+            'module'    => 'rv_1858', 
             'name'      => 'Reina Valera 1858 NT',
             'shortname' => 'RV 1858',
             'year'      => '1858',
@@ -74,7 +74,7 @@ return array(
             'lang_short'=> 'es',
         ),
         array(
-            'module'    => '1909rv', 
+            'module'    => 'rv_1909', 
             'name'      => 'Reina Valera 1909',
             'shortname' => 'RV 1909',
             'year'      => '1909',
