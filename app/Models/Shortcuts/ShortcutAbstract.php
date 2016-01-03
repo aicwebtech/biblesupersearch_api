@@ -1,10 +1,10 @@
 <?php
 
-namespace App\Models\Books;
+namespace App\Models\Shortcuts;
 
 use Illuminate\Database\Eloquent\Model;
 
-class Abs extends Model
+class ShortcutAbstract extends Model
 {
     protected $language;
 
@@ -21,14 +21,14 @@ class Abs extends Model
         }
 
         if(empty($this->table)) {
-            $this->table = 'books_' . $this->language;
+            $this->table = 'shortcuts_' . $this->language;
         }
 
         parent::__construct($attributes);
     }
 
     public static function getClassNameByLanguage($language) {
-        $class_name = 'App\Models\Books\\' . ucfirst($language);
+        $class_name = __NAMESPACE__ . '\\' . ucfirst($language);
         return $class_name; 
     }
 }

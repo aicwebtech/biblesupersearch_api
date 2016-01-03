@@ -1,7 +1,7 @@
 <?php
 
 use Illuminate\Database\Seeder;
-use App\Models\Shortcuts\Abs as Shortcut;
+use App\Models\Shortcuts\ShortcutAbstract as Shortcut;
 
 class ShortcutsSeeder extends Seeder
 {

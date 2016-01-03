@@ -1,7 +1,7 @@
 <?php
 
 use Illuminate\Database\Seeder;
-use App\Models\Books\Abs as Book;
+use App\Models\Books\BookAbstract as Book;
 
 class BookListSeeder extends Seeder
 {

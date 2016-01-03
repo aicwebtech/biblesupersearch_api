@@ -49,12 +49,12 @@ class Bibles extends Seeder
                 $Bible = Bible::firstOrNew([ 'module' => $module ]);
 
                 $Bible->description = $v2->description;
+                $Bible->module_v2   = $v2->shortname;
 
                 if(!$Bible->exists) {
                     $rank += 10;
                     $Bible->name        = $v2->fullname;
                     $Bible->module      = $module;
-                    $Bible->shortname   = ucfirst($v2->shortname);
                     $Bible->shortname   = ucfirst($v2->shortname);
                     $Bible->lang        = $v2->language;
                     $Bible->lang_short  = $v2->language_short;

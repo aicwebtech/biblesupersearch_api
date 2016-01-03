@@ -28,6 +28,7 @@ class CreateBibleVersionsTable extends Migration
             $table->tinyInteger('installed')->default(0)->unsigned();
             $table->tinyInteger('enabled')->default(0)->unsigned();
             $table->mediumInteger('rank')->default(0)->unsigned();
+            $table->string('module_v2')->unique()->nullable();
             $table->timestamps();
         });
 

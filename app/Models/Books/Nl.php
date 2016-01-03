@@ -4,7 +4,7 @@ namespace App\Models\Books;
 
 use Illuminate\Database\Eloquent\Model;
 
-class Nl extends Abs
+class Nl extends BookAbstract
 {
     //
 }

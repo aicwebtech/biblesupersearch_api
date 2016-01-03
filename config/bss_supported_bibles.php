@@ -34,6 +34,7 @@ return array(
             'module'    => 'bishops', 
             'name'      => 'Bishops Bible',
             'year'      => '1568',
+            'italics'   => 1,
         ),
         array(
             'module'    => 'geneva', 
@@ -48,7 +49,6 @@ return array(
             'lang'      => 'Greek',
             'lang_short'=> 'el',
         ),
-        /*
         array(
             'module'    => 'tr_translit', 
             'name'      => 'Textus Receptus Transliterated*',
@@ -56,7 +56,6 @@ return array(
             'lang'      => 'Greek',
             'lang_short'=> 'el',
         ),
-        */
         array(
             'module'    => 'trparsed', 
             'shortname' => 'TR Parsed',
@@ -67,6 +66,7 @@ return array(
         ),
         array(
             'module'    => 'rv_1858', 
+            'module_v2' => '1858rv',
             'name'      => 'Reina Valera 1858 NT',
             'shortname' => 'RV 1858',
             'year'      => '1858',
@@ -75,6 +75,7 @@ return array(
         ),
         array(
             'module'    => 'rv_1909', 
+            'module_v2' => '1909rv',
             'name'      => 'Reina Valera 1909',
             'shortname' => 'RV 1909',
             'year'      => '1909',
@@ -129,25 +130,30 @@ return array(
         array(
             'module'    => 'svd',
             'shortname' => 'SVD',
-            'name'      => 'Smith Van Dyke (Arabic)',
+            'name'      => 'Smith Van Dyke',
             'lang'      => 'Arabic',
             'lang_short'=> 'ar',
         ),
-        /*
         array(
             'module'    => 'bkr',
             'shortname' => 'BKR',
-            'name'      => 'Bible Kralicka (Czech)*'
+            'name'      => 'Bible Kralicka',
+            'lang'      => 'Czech',
+            'lang_short'=> 'cs',
         ),
         array(
             'module'    => 'stve',
-            'name'      => 'Staten Vertaling (Dutch)'
+            'name'      => 'Staten Vertaling',
+            'lang'      => 'Dutch',
+            'lang_short'=> 'nl',
         ),
         array(
             'module'    => 'finn',
-            'name'      => 'Finnish 1776 (Finnish)'
+            'name'      => 'Finnish 1776 (Finnish)',
+            'year'      => '1776',
+            'lang'      => 'Finish',
+            'lang_short'=> 'fi',
         ),
-        */
         array(
             'module'    => 'luther', 
             'name'      => 'Luther Bible',
@@ -158,7 +164,7 @@ return array(
         /*
         array(
             'module'    => 'karoli',
-            'name'      => 'Karoli (Hungarian)*'
+            'name'      => 'Karoli (Hungarian)*',
         ),
         */
         array(
@@ -176,11 +182,11 @@ return array(
         ),
         array(
             'module'    => 'maori',
-            'name'      => 'Maori Bible (Maori)*'
+            'name'      => 'Maori Bible (Maori)*',
         ),
         array(
             'module'    => 'cornilescu',
-            'name'      => 'Cornilescu (Romanian)'
+            'name'      => 'Cornilescu (Romanian)',
         ),
         */
         array(
@@ -193,7 +199,7 @@ return array(
         /*
         array(
             'module'    => 'thaikjv',
-            'name'      => 'Thai KJV (Thai)*'
+            'name'      => 'Thai KJV (Thai)*',
         )
         */
 );
