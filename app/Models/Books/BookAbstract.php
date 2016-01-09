@@ -48,6 +48,10 @@ class BookAbstract extends Model
             $class_name = self::getClassNameByLanguage(env('DEFAULT_LANGUAGE_SHORT', 'en'));
         }
         
+        if(!is_string($name)) {
+            return $class_name::find(intval($name));
+        }
+        
         $name = trim(trim($name), '.');
         
         // Attempt 1: Direct matching
@@ -86,9 +90,6 @@ class BookAbstract extends Model
             return $Book;
         }
 
-        // Attempt 4: Get by ID
-        $Book = $class_name::find(intval($name));
-        
         return $Book;
     }
 }

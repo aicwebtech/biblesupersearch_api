@@ -45,6 +45,10 @@ class PassageTest extends TestCase
         $this->assertEquals('1:5,2:3', $Passages[0]->chapter_verse);
         $this->assertEquals('4:13', $Passages[1]->chapter_verse);
         $this->assertEquals('1:5', $Passages[2]->chapter_verse);
+        // Test Raw Chapter / Verse
+        $this->assertEquals('1:5;2:3', $Passages[0]->raw_chapter_verse);
+        $this->assertEquals('4:13', $Passages[1]->raw_chapter_verse);
+        $this->assertEquals('1:5', $Passages[2]->raw_chapter_verse);
     }
     
     public function testMultipleVerses() {
@@ -65,9 +69,56 @@ class PassageTest extends TestCase
         $this->assertEquals('1:4', $Passages[2]->chapter_verse);
         $this->assertEquals('3:1-3,4:', $Passages[3]->chapter_verse);
         $this->assertEquals('3:23,6:23,5:8,10:8-14', $Passages[4]->chapter_verse);
+        // Test Raw Chapter / Verse
+        $this->assertEquals('1:16', $Passages[0]->raw_chapter_verse);
+        $this->assertEquals('4:5- 6:3, 8:2-3', $Passages[1]->raw_chapter_verse);
+        $this->assertEquals('1:4', $Passages[2]->raw_chapter_verse);
+        $this->assertEquals('3:1-3; 4:', $Passages[3]->raw_chapter_verse);
+        $this->assertEquals('3:23, 6:23; 5:8, 10:8 - 14', $Passages[4]->raw_chapter_verse);
     }
     
     public function testInvalidReferences() {
+        $reference = '  Habrews 4:8; 1 Tom 3:1-5, 9 ';
+        $Passages  = Passage::parseReferences($reference, ['en']);
+        $this->assertCount(2, $Passages);
+        $this->assertContainsOnlyInstancesOf('App\Passage', $Passages);
+        $this->assertFalse($Passages[0]->is_valid);
+        $this->assertFalse($Passages[1]->is_valid);
+    }
+    
+    public function testBookRange() {
+        $reference = 'Matthew - Revelation';
+        $Passages = Passage::parseReferences($reference, ['en'], TRUE);
+        $this->assertCount(1, $Passages);
+        $this->assertContainsOnlyInstancesOf('App\Passage', $Passages);
+        $this->assertTrue($Passages[0]->is_valid);
+        $this->assertTrue($Passages[0]->is_book_range);
+        $this->assertTrue($Passages[0]->is_search);
+        $this->assertEquals(40, $Passages[0]->Book->id);
+        $this->assertEquals(66, $Passages[0]->Book_En->id);
+        $this->assertFalse($Passages[0]->hasErrors());
+    }
+    
+    public function testBookRangeWithoutSearch() {
+        $reference = 'Matthew - Revelation';
+        $Passages = Passage::parseReferences($reference, ['en'], FALSE);
+        $this->assertCount(1, $Passages);
+        $this->assertContainsOnlyInstancesOf('App\Passage', $Passages);
+        $this->assertFalse($Passages[0]->is_search);
+        $this->assertFalse($Passages[0]->is_valid);    
+        $this->assertNull($Passages[0]->Book);
+        $this->assertNull($Passages[0]->Book_En);
+        $this->assertTrue($Passages[0]->hasErrors());
+        $errors = $Passages[0]->getErrors();
+        $this->assertCount(1, $errors);
+        $this->assertContains('multiple', $errors[0]);
+    }
+    
+    public function testShortcutReference() {
+        
+    }
+    
+    public function testShortcutReferenceWithoutSearch() {
         
     }
 }

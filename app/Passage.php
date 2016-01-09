@@ -4,21 +4,21 @@ namespace App;
 
 use App\Models\Books\BookAbstract as Book;
 
-class Passage //extends Model
-{
+class Passage {
+    
     use Traits\Error;
     
-    protected $Book; // Book instance
-    protected $Book_St; // Book instance - Range start
+    protected $Book;    // Book instance - Single or Start of range
     protected $Book_En; // Book instance - Range end
     protected $is_book_range = FALSE;
-    protected $is_search = FALSE;
+    public $is_search = FALSE;
     protected $raw_reference; // Reference as entered by user
     protected $raw_book;          // Book as entered by user
     protected $raw_chapter_verse; // Chapter and verse as entered by user
     protected $chapter_verse; // Chapter and verse part of reference
     protected $Verses; // Array of Verses instances
     protected $languages; // Array of language short names
+    protected $is_valid = FALSE; // Is the provided reference valid?
     
     public function __construct() {
         // Do something?
@@ -29,42 +29,80 @@ class Passage //extends Model
      * @param string|int $book
      */
     public function setBook($book) {
-        //echo(PHP_EOL . $book . PHP_EOL);
         $this->raw_book = $book;
         
-        if(FALSE) {
-            $found_st = $found_en = FALSE;
+        if(strpos($book, '-') !== FALSE) {
             // handle book ranges
-        }
-        else {
-            $found = FALSE;
+            if(!$this->is_search) {
+                return $this->_addBookError('Cannot retrieve multiple books at once.');
+            }
             
-            if(is_array($this->languages)) {
-                foreach($this->languages as $lang) {
-                    $Book = Book::findByEnteredName($book, $lang);
-
-                    if($Book) {
-                        $found = TRUE;
-                        break;
-                    }
-                }
+            $books = explode('-', $book);
+            $Book_St = $this->findBook( trim($books[0]) );
+            $Book_En = $this->findBook( trim($books[1]) );
+            
+            if($Book_St && $Book_En) {
+                $this->is_book_range = TRUE;
+                $this->is_valid      = TRUE;
+                $this->Book    = $Book_St;
+                $this->Book_En = $Book_En;
             }
             else {
-                $Book = Book::findByEnteredName($book);
+                return $this->_addBookError('Invalid book in book range.');
             }
+        }
+        else {
+            $this->is_book_range = FALSE;
+            $Book = $this->findBook($book);
 
             if($Book) {
                 $this->Book = $Book;
+                $this->is_valid = TRUE;
             }
             else {
-                $this->addError("Book '$book' not found");
+                return $this->_addBookError("Book '$book' not found");
             }
         }
     }
     
+    /**
+     * Logs error with regards to book processing
+     * @param string $message
+     */
+    protected function _addBookError($message) {
+        $this->is_valid = FALSE;
+        $this->Book = NULL;
+        $this->Book_En = NULL;
+        $this->is_book_range = FALSE;
+        $this->addError($message);
+    }
+    
+    /**
+     * Finds the given book, using the tables for the specified languages
+     * @param string $book
+     * @return Book $Book
+     */
+    public function findBook($book) {
+        if(is_array($this->languages)) {
+            foreach($this->languages as $lang) {
+                $Book = Book::findByEnteredName($book, $lang);
+
+                if($Book) {
+                    $found = TRUE;
+                    break;
+                }
+            }
+        }
+        else {
+            $Book = Book::findByEnteredName($book);
+        }
+        
+        return $Book;
+    }
+    
     public function setChapterVerse($chapter_verse) {
         //echo(PHP_EOL . $chapter_verse . PHP_EOL);
-        $this->raw_chapter_verse = $chapter_verse;
+        $this->raw_chapter_verse = preg_replace('/\s+/', ' ', $chapter_verse);
         $cv_parsed = array();
         $chapter_verse = str_replace([';',' '], [',',''], $chapter_verse);
         $len = strlen($chapter_verse);
@@ -94,7 +132,7 @@ class Passage //extends Model
     }
     
     public function __get($name) {
-        $gettable = ['languages', 'is_search', 'is_book_range', 'Book', 'raw_book', 'raw_reference', 'raw_chapter_verse', 'chapter_verse'];
+        $gettable = ['languages', 'is_search', 'is_book_range', 'is_valid', 'Book', 'Book_En', 'raw_book', 'raw_reference', 'raw_chapter_verse', 'chapter_verse'];
         
         if(in_array($name, $gettable)) {
             return $this->$name;
@@ -105,9 +143,10 @@ class Passage //extends Model
      * Parses the reference string from the user into references that can be used by the query
      * @param string $reference
      * @param array $languages - languages to check (short names)
+     * @param bool $is_search - whether the parser should interpret this as a search
      * @return array $Passages - array of passage instances
      */
-    public static function parseReferences($reference, $languages = array()) {
+    public static function parseReferences($reference, $languages = array(), $is_search = FALSE) {
         $def_language = env('DEFAULT_LANGUAGE_SHORT', 'en');
         
         if(!in_array($def_language, $languages)) {
@@ -129,7 +168,7 @@ class Passage //extends Model
                 $book    = trim(substr($reference, $bpos, $book_end - $pos + 1), ' .,;');
                 $chapter = trim(substr($reference, $book_end +1, $ref_end - $book_end), ' .,;');                
                 
-                $Passages[] = self::parseSingleReference($book, $chapter, $languages);
+                $Passages[] = self::parseSingleReference($book, $chapter, $languages, $is_search);
 
                 $ref_end = $pos;
                 $book_end = FALSE;
@@ -146,18 +185,12 @@ class Passage //extends Model
      * @param string $chapter_verse - string representing the chapter and verse references
      * @return \App\Passage
      */
-    public static function parseSingleReference($book, $chapter_verse, $languages = array()) {
-        //echo(PHP_EOL . "book |$book|" .PHP_EOL);
-        //echo(PHP_EOL . "chapter |$chapter_verse|" . PHP_EOL);
-        
+    public static function parseSingleReference($book, $chapter_verse, $languages = array(), $is_search = FALSE) {
         $Passage = new static;
         $Passage->languages = $languages;
-        $Passage->book = $book;
-        
-        $Passage->setChapterVerse($chapter_verse);
-        //$Passage->chapter_verse = $chapter_verse; // Not working
-        
-        
+        $Passage->is_search = $is_search;
+        $Passage->setBook($book);
+        $Passage->setChapterVerse($chapter_verse);        
         return $Passage;
     }
     
