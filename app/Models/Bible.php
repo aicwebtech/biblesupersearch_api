@@ -111,6 +111,7 @@ class Bible extends Model {
     public function _setModuleAttribute($value) {
         $matched = preg_match('/^[a-zA-Z_\x7f-\xff][a-zA-Z0-9_\x7f-\xff]*$/', $value, $matches);
         $this->attributes['module'] = $value;
+        self::where('1','1')->get();
     }
     
 }

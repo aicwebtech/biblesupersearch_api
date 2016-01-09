@@ -34,7 +34,7 @@ class BookAbstract extends Model
     
     /**
      * 
-     * @param string $name
+     * @param string|int $name
      */
     public static function findByEnteredName($name, $language = NULL) {
         // This logic may be needed elsewhere
@@ -47,6 +47,8 @@ class BookAbstract extends Model
         else {
             $class_name = self::getClassNameByLanguage(env('DEFAULT_LANGUAGE_SHORT', 'en'));
         }
+        
+        $name = trim(trim($name), '.');
         
         // Attempt 1: Direct matching
         $Book = $class_name::where('name', $name)
@@ -79,6 +81,13 @@ class BookAbstract extends Model
             -> orwhere('matching1', 'LIKE', $matching_end)
             -> orwhere('matching2', 'LIKE', $matching_end)
             -> first();
+        
+        if($Book) {
+            return $Book;
+        }
+
+        // Attempt 4: Get by ID
+        $Book = $class_name::find(intval($name));
         
         return $Book;
     }

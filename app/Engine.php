@@ -4,6 +4,7 @@ namespace App;
 
 use App\User;
 use App\Models\Bible;
+use App\Passage;
 
 class Engine {
     use Traits\Error;

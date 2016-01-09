@@ -16,7 +16,7 @@ class BookTest extends TestCase
         }
     }
     
-    public function testMethodFindByEnteredName() {
+    public function testBookFindClassName() {
         $Book = Book::findByEnteredName('Rom', 'en'); // Specified language
         $this->assertInstanceOf('App\Models\Books\En', $Book);
         $Book = Book::findByEnteredName('Rom');       // Default language
@@ -25,7 +25,9 @@ class BookTest extends TestCase
         $es_class = Book::getClassNameByLanguage('es');
         $Book = $es_class::findByEnteredName('Rom'); // Language based on class // Romanos (Romans in Spanish)
         $this->assertInstanceOf('App\Models\Books\Es', $Book);
-        
+    } 
+    
+    public function testMethodFindByEnteredName() {
         // Exact name
         $Book = Book::findByEnteredName('Matthew');
         $this->assertEquals(40, $Book->id);
@@ -49,6 +51,23 @@ class BookTest extends TestCase
         // No match
         $Book = Book::findByEnteredName('Jdgs'); // Looking for 'Judges' but won't match 
         $this->assertNull($Book);
+    }
+    
+    public function testModelQuery() {
+        $class = 'App\Models\Books\En';
+        // Get multiple models
+        $multiple = [1,2,3,4,5]; // Genesis, Exodus, Leviticus, Numbers, Deuteronomy
+        $alpha = [5,2,1,3,4];    // Aphabetical: Deuteronomy, Exodus, Genesis, Leviticus, Numbers
+        $Books = $class::find($multiple);
+        $this->assertContainsOnlyInstancesOf($class, $Books->all());
+        
+        $Books = $class::whereIn('id', $multiple)->orderBy('name')->get();
+        $this->assertContainsOnlyInstancesOf($class, $Books->all());
+        
+        foreach($Books as $key => $Book) {
+            $this->assertEquals($alpha[$key], $Book->id);
+        }
+        
     }
     
     
