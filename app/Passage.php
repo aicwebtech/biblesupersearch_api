@@ -16,6 +16,7 @@ class Passage {
     protected $raw_book;          // Book as entered by user
     protected $raw_chapter_verse; // Chapter and verse as entered by user
     protected $chapter_verse; // Chapter and verse part of reference
+    protected $chapter_verse_parsed; // Chapter and verse, parsed into an array of arrays
     protected $Verses; // Array of Verses instances
     protected $languages; // Array of language short names
     protected $is_valid = FALSE; // Is the provided reference valid?
@@ -105,16 +106,49 @@ class Passage {
         $this->raw_chapter_verse = preg_replace('/\s+/', ' ', $chapter_verse);
         $cv_parsed = array();
         $chapter_verse = str_replace([';',' '], [',',''], $chapter_verse);
-        $len = strlen($chapter_verse);
+        $this->chapter_verse = $chapter_verse;
         
-        for($pos = 0; $pos < $len; $pos ++) {
-            $char = $chapter_verse{$pos};
+        $len = strlen($chapter_verse);
+        $preparsed = $matches = $counts = array();
+        
+        $counts['number'] = preg_match_all('/[0-9]+/', $chapter_verse, $matches['number'], PREG_OFFSET_CAPTURE | PREG_SET_ORDER);
+        
+        if(!$counts['number']) {
+            $this->chapter_verse_parsed = ($this->is_search) ? array() : array('c' => 1, 'v' => NULL);
+            return;
+        }
+        
+        $counts['comma']  = preg_match_all('/,/', $chapter_verse, $matches['comma'],  PREG_OFFSET_CAPTURE | PREG_SET_ORDER);
+        $counts['hyphen'] = preg_match_all('/-/', $chapter_verse, $matches['hyphen'], PREG_OFFSET_CAPTURE | PREG_SET_ORDER);
+        $counts['colon']  = preg_match_all('/:/', $chapter_verse, $matches['colon'],  PREG_OFFSET_CAPTURE | PREG_SET_ORDER);
+        
+        
+        //echo(PHP_EOL. 'Chapter verse  ' . $chapter_verse . PHP_EOL);
+        //var_dump($matches['number']);
+        
+        foreach($matches as $k => $ar) {
+            //$counts[$k] = count($ar);
             
+            foreach($ar as $match) {
+                $preparsed[$match[0][1]] = $match[0][0];
+            }
+        }
+        
+        //var_dump($counts);
+        
+        ksort($preparsed);
+        $preparsed_values = array_values($preparsed);
+        
+        
+        foreach($preparsed_values as $in => $value) {
+            // do something!
         }
         
         //echo(PHP_EOL . $chapter_verse . PHP_EOL);
-        $this->chapter_verse = $chapter_verse;
+        
     }
+    
+    
     
     public function __set($name, $value) {
         $settable = ['languages', 'is_search'];
