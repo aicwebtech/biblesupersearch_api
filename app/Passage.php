@@ -102,19 +102,18 @@ class Passage {
     }
     
     public function setChapterVerse($chapter_verse) {
-        //echo(PHP_EOL . $chapter_verse . PHP_EOL);
         $this->raw_chapter_verse = preg_replace('/\s+/', ' ', $chapter_verse);
-        $cv_parsed = array();
         $chapter_verse = str_replace([';',' '], [',',''], $chapter_verse);
+        $chapter_verse = preg_replace('/,+/', ',', $chapter_verse);
+        $chapter_verse = preg_replace('/-+/', '-', $chapter_verse);
+        $chapter_verse = preg_replace('/:+/', ':', $chapter_verse);
         $this->chapter_verse = $chapter_verse;
         
-        $len = strlen($chapter_verse);
-        $preparsed = $matches = $counts = array();
-        
+        $preparsed = $matches = $counts = $parsed = array();
         $counts['number'] = preg_match_all('/[0-9]+/', $chapter_verse, $matches['number'], PREG_OFFSET_CAPTURE | PREG_SET_ORDER);
         
         if(!$counts['number']) {
-            $this->chapter_verse_parsed = ($this->is_search) ? array() : array('c' => 1, 'v' => NULL);
+            $this->chapter_verse_parsed = ($this->is_search) ? array() : array('c' => 1, 'v' => NULL, 'type' => 'single');
             return;
         }
         
@@ -122,28 +121,82 @@ class Passage {
         $counts['hyphen'] = preg_match_all('/-/', $chapter_verse, $matches['hyphen'], PREG_OFFSET_CAPTURE | PREG_SET_ORDER);
         $counts['colon']  = preg_match_all('/:/', $chapter_verse, $matches['colon'],  PREG_OFFSET_CAPTURE | PREG_SET_ORDER);
         
-        
-        //echo(PHP_EOL. 'Chapter verse  ' . $chapter_verse . PHP_EOL);
-        //var_dump($matches['number']);
-        
         foreach($matches as $k => $ar) {
-            //$counts[$k] = count($ar);
-            
             foreach($ar as $match) {
-                $preparsed[$match[0][1]] = $match[0][0];
+                $item = $match[0][0];
+                $item = ($k == 'number') ? intval($item) : $item;
+                $preparsed[$match[0][1]] = $item;
             }
         }
         
-        //var_dump($counts);
-        
         ksort($preparsed);
         $preparsed_values = array_values($preparsed);
+        $count = count($preparsed_values);
+        $current_chapter = NULL;
         
-        
-        foreach($preparsed_values as $in => $value) {
-            // do something!
+        if($counts['colon'] == 0) { // chapters only
+            foreach($preparsed_values as $in => $value) {
+                if(is_int($value)) {
+                    $next = (isset($preparsed_values[$in + 1])) ? $preparsed_values[$in + 1] : NULL;
+                    
+                    if(!$current_chapter && $next == '-') {
+                        $current_chapter = $value;
+                    }
+                    elseif($current_chapter && $next != '-') {
+                        $parsed[] = array('cst' => $current_chapter, 'vst' => NULL, 'cen' => $value, 'ven' => NULL, 'type' => 'range');
+                        $current_chapter = NULL;
+                    }
+                    elseif($next == NULL || $next == ',') {
+                        $parsed[] = array('c' => $value, 'v' => NULL, 'type' => 'single');
+                        $current_chapter = NULL;
+                    }
+                }
+            }
         }
-        
+        else {
+            $is_range = FALSE;
+            $cst = $vst = NULL;
+            
+            foreach($preparsed_values as $in => $value) {
+                $next = (isset($preparsed_values[$in + 1])) ? $preparsed_values[$in + 1] : NULL;
+                $last = (isset($preparsed_values[$in - 1])) ? $preparsed_values[$in - 1] : NULL;
+
+                if(is_int($value)) {
+                    // Detect a change in chapter as we scan left to right
+                    if(is_int($value) && $next == '-' || $next == ':') {
+                        $current_chapter = $value;
+                    }
+                    // Detect and parse out a single verse reference
+                    elseif($current_chapter && $last == ':' && ($next == ',' || $next == NULL)) {
+                        $parsed[] = array('c' => $current_chapter, 'v' => $value, 'type' => 'single');
+                    }
+                    elseif($current_chapter && $last == ':' && $next == '-') {
+                        $is_range = TRUE;
+                    }
+                    elseif($current_chapter && $next != '-') {
+                        $parsed[] = array('cst' => $current_chapter, 'vst' => NULL, 'cen' => $value, 'ven' => NULL, 'type' => 'range');
+                        $current_chapter = NULL;
+                    }
+                    elseif($next == NULL || $next == ',') {
+                        $parsed[] = array('c' => $value, 'v' => NULL, 'type' => 'single');
+                        $current_chapter = NULL;
+                    }
+                }
+                elseif($value == ':') {
+                    if(($next == NULL || !is_int($next)) && !$is_range) {
+                        $parsed[] = array('c' => $current_chapter, 'v' => NULL, 'type' => 'single');
+                    }
+                }
+                elseif($value == ',') {
+                    
+                }
+                elseif($value == '-') {
+                    
+                }
+            }
+        }
+
+        $this->chapter_verse_parsed = $parsed;
         //echo(PHP_EOL . $chapter_verse . PHP_EOL);
         
     }
@@ -166,11 +219,16 @@ class Passage {
     }
     
     public function __get($name) {
-        $gettable = ['languages', 'is_search', 'is_book_range', 'is_valid', 'Book', 'Book_En', 'raw_book', 'raw_reference', 'raw_chapter_verse', 'chapter_verse'];
+        $gettable = ['languages', 'is_search', 'is_book_range', 'is_valid', 'Book', 'Book_En', 'raw_book', 'raw_reference', 'raw_chapter_verse', 
+            'chapter_verse', 'chapter_verse_parsed'];
         
         if(in_array($name, $gettable)) {
             return $this->$name;
         }
+    }
+    
+    public function getParsed() {
+        return $this->chapter_verse_parsed;
     }
     
     /**
