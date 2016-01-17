@@ -4,6 +4,8 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use App\Models\Verses\Standard As StandardVerses;
+use App\Passage;
+use App\Search;
 
 class Bible extends Model {
 
@@ -37,6 +39,20 @@ class Bible extends Model {
             $this->Verses->setBible($this); // This circular reference may be a bad thing
         }
         return $this->Verses;
+    }
+    
+    /**
+     * Processes and executes the Bible search query
+     * 
+     * @param array $Passages Array of App/Passage instances, represents the passages requested, if any
+     * @param App/Search $Search App/Search instance, reporesenting the search keywords, if any
+     * @param array $parameters Search parameters - user input
+     * @return array $Verses array of Verses instances (found verses)
+     */
+    public function getSearch($Passages = NULL, $Search = NULL, $parameters = array()) {
+        $verses_class = self::getVerseClassNameByModule($this->module);
+        $Verses = $verses_class::getSearch($Passages, $Search, $parameters);
+        return $Verses;
     }
 
     public function install() {

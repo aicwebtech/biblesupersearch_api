@@ -28,7 +28,7 @@ abstract class VerseAbstract extends Model {
             $this->module = strtolower(array_pop($class));
         }
         
-        $this->table = self::getTableByModule($this->module);
+        $this->table = ($this->table) ? $this->table : self::getTableByModule($this->module);
         parent::__construct($attributes);
     }
     
@@ -42,6 +42,17 @@ abstract class VerseAbstract extends Model {
 
     abstract public function install();
     abstract public function uninstall();
+    
+    /**
+     * 
+     * @param array $Passages Array of App/Passage instances, represents the passages requested, if any
+     * @param App/Search $Search App/Search instance, reporesenting the search keywords, if any
+     * @param array $parameters Search parameters - user input
+     * @return array $Verses array of Verses instances (found verses)
+     */
+    public static function getSearch($Passages = NULL, $Search = NULL, $parameters = array()) {
+        throw new StandardException('Must implement getSearch in child class!');
+    }
     
     /**
      * Gets the table name by the module

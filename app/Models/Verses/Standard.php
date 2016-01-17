@@ -5,9 +5,106 @@ namespace App\Models\Verses;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 use App\Models\Bible;
+use App\Passage;
+use App\Search;
 use DB;
 
 class Standard extends VerseAbstract {
+    /**  
+     * Processes and executes the Bible search query
+     * 
+     * @param array $Passages Array of App/Passage instances, represents the passages requested, if any
+     * @param App/Search $Search App/Search instance, reporesenting the search keywords, if any
+     * @param array $parameters Search parameters - user input
+     * @return array $Verses array of Verses instances (found verses)
+     */
+    public static function getSearch($Passages = NULL, $Search = NULL, $parameters = array()) {
+        $where = $Verses = array();
+        $Verse = new static;
+        $table = $Verse->getTable();
+        $Query = static::select('id','book','chapter','verse','text');
+        $Query->orderBy('book', 'ASC')->orderBy('chapter', 'ASC')->orderBy('verse', 'ASC');
+        
+        if($Passages) {
+            $pquery = static::_buildPassageQuery($Passages);
+            $Query->whereRaw($pquery);
+        }
+        
+        if($Search) {
+            $where[] = static::_buildSearchQuery($Search, $parameters);
+        }
+        
+        
+        $Verses = $Query->get();
+        //$Verses = $Verse->select('book','chapter','verse','text')->take(10);
+        
+        //$Verses = DB::table($table)->select('book','chapter','verse','text')->take(10)->get();
+        //$Verses = static::hydrate($Verses);
+        
+        //var_dump($Verses);
+        
+        return $Verses;
+    }
+    
+    protected static function _buildPassageQuery($Passages) {
+        $query = array();
+        
+        foreach($Passages as $Passage) {
+            foreach($Passage->chapter_verse_parsed as $parsed) {
+                $q = '`book` = ' . $Passage->Book->id;
+                
+                // Single verses
+                if($parsed['type'] == 'single') {
+                    $q .= ' AND `chapter` = ' . $parsed['c'];
+                    $q .= ($parsed['v']) ? ' AND `verse` = ' . $parsed['v'] : '';
+                }
+                elseif($parsed['type'] == 'range') {
+                    if(!$parsed['cst'] && !$parsed['cen']) {
+                        continue;
+                    }
+                    
+                    $q .= ' AND (';
+                    
+                    // Intra-chapter ranges
+                    if($parsed['cst'] == $parsed['cen']) {
+                        $q .= '`chapter` =' . $parsed['cst'];
+                        
+                        if($parsed['vst'] && $parsed['ven']) {
+                            $q .= ' AND `verse` BETWEEN ' . $parsed['vst'] . ' AND ' . $parsed['ven'];
+                        }
+                        else {
+                            $q .= ($parsed['vst']) ? ' AND `verse` >= ' . $parsed['vst'] : '';
+                            $q .= ($parsed['ven']) ? ' AND `verse` <= ' . $parsed['ven'] : '';
+                        }
+                    }
+                    // Cross-chapter ranges
+                    else {
+                        $cvst = $parsed['cst'] * 1000 + intval($parsed['vst']);
+                        $cven = $parsed['cen'] * 1000 + intval($parsed['ven']);
+                        
+                        if($parsed['vst'] && $parsed['ven']) {
+                            $q .= '`chapter` * 1000 + `verse` BETWEEN ' . $cvst . ' AND ' . $cven;
+                        }
+                        else {
+                            $q .= ($parsed['vst']) ? '     `chapter` * 1000 + `verse` >= ' . $parsed['vst'] : '     `chapter` >= ' . $parsed['cst'];
+                            $q .= ($parsed['ven']) ? ' AND `chapter` * 1000 + `verse` <= ' . $parsed['ven'] : ' AND `chapter` <= ' . $parsed['cen'];
+                        }
+                    }
+                    
+                    $q .= ')';
+                }
+                
+                $query[] = $q;
+            }
+        }
+        
+        return '(' . implode(') OR (', $query) . ')';
+    }
+    
+    protected static function _buildSearchQuery($Search, $parameters) {
+        return '1=1';
+    }
+
     // Todo - prevent installation if already installed!
     public function install() {
         if (Schema::hasTable($this->table)) {

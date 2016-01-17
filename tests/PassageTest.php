@@ -64,7 +64,7 @@ class PassageTest extends TestCase
     }
     
     public function testWholeChapterComplexParse() {
-        $reference = 'Jas 1, 4-5, 1 Cor 2, 5-7, 9, 12';
+        $reference = 'Jas. 1, 4-5, 1 Cor 2, 5-7, 9, 12';
         $Passages = Passage::parseReferences($reference, ['en']);
         $this->assertCount(2, $Passages);
         $this->assertContainsOnlyInstancesOf('App\Passage', $Passages);
@@ -202,10 +202,101 @@ class PassageTest extends TestCase
         );
         
         $this->assertEquals($parsed[0], $Passages[0]->chapter_verse_parsed);
-        //$this->assertEquals($parsed[1], $Passages[1]->chapter_verse_parsed);
+        $this->assertEquals($parsed[1], $Passages[1]->chapter_verse_parsed);
         $this->assertEquals($parsed[2], $Passages[2]->chapter_verse_parsed);
-        //$this->assertEquals($parsed[3], $Passages[3]->chapter_verse_parsed);
-        //$this->assertEquals($parsed[4], $Passages[4]->chapter_verse_parsed);
+        $this->assertEquals($parsed[3], $Passages[3]->chapter_verse_parsed);
+        $this->assertEquals($parsed[4], $Passages[4]->chapter_verse_parsed);
+    }
+    
+    public function testChapterVerseParsing() {
+        $tests = array(
+            array( 
+                'ref' => 'Genesis 2',
+                'exp' => array( array('c' => 2, 'v' => NULL, 'type' => 'single') ),
+            ),
+            array( 
+                'ref' => 'Genesis 2:',
+                'exp' => array( array('c' => 2, 'v' => NULL, 'type' => 'single') ),
+            ),
+            array( 
+                'ref' => 'Genesis 2:1',
+                'exp' => array( array('c' => 2, 'v' => 1, 'type' => 'single') ),
+            ),
+            array( 
+                'ref' => 'Genesis 2:1-5',
+                'exp' => array( array('cst' => 2, 'vst' => 1, 'cen' => 2, 'ven' => 5, 'type' => 'range') ),
+            ),
+            array( 
+                'ref' => 'Genesis 2:1,4',
+                'exp' => array( 
+                        array('c' => 2, 'v' => 1, 'type' => 'single'),
+                        array('c' => 2, 'v' => 4, 'type' => 'single'),
+                    ),
+            ),
+            array( 
+                'ref' => 'Genesis 2:1-3:4',
+                'exp' => array( array('cst' => 2, 'vst' => 1, 'cen' => 3, 'ven' => 4, 'type' => 'range') ),
+            ),
+            array( 
+                'ref' => 'Genesis 2:-3:4',
+                'exp' => array( array('cst' => 2, 'vst' => NULL, 'cen' => 3, 'ven' => 4, 'type' => 'range') ),
+            ),
+            array( 
+                'ref' => 'Genesis 2-3:4',
+                'exp' => array( array('cst' => 2, 'vst' => NULL, 'cen' => 3, 'ven' => 4, 'type' => 'range') ),
+            ),
+            array( 
+                'ref' => 'Genesis 2:18-4:',
+                'exp' => array( array('cst' => 2, 'vst' => 18, 'cen' => 4, 'ven' => NULL, 'type' => 'range') ),
+            ),
+            array( 
+                'ref' => 'Genesis 14,3:4',
+                'exp' => array( 
+                        array('c' => 14, 'v' => NULL, 'type' => 'single'),
+                        array('c' => 3, 'v' => 4, 'type' => 'single'),
+                    ),
+            ),
+            array( 
+                'ref' => 'Genesis 14:,3:4',
+                'exp' => array( 
+                        array('c' => 14, 'v' => NULL, 'type' => 'single'),
+                        array('c' => 3, 'v' => 4, 'type' => 'single'),
+                    ),
+            ),
+            array( 
+                'ref' => 'Genesis 14-,3:4',
+                'exp' => array( 
+                        array('c' => 14, 'v' => NULL, 'type' => 'single'),
+                        array('c' => 3, 'v' => 4, 'type' => 'single'),
+                    ),
+            ),
+            array( 
+                'ref' => 'Genesis 3:4,14:',
+                'exp' => array( 
+                        array('c' => 3, 'v' => 4, 'type' => 'single'),
+                        array('c' => 14, 'v' => NULL, 'type' => 'single'),
+                    ),
+            ),
+            array( 
+                'ref' => 'Genesis 3:4,14:-',
+                'exp' => array( 
+                        array('c' => 3, 'v' => 4, 'type' => 'single'),
+                        array('c' => 14, 'v' => NULL, 'type' => 'single'),
+                    ),
+            ),
+            array( 
+                'ref' => 'Genesis 2:5 - 4:3, 7- 11',
+                'exp' => array( 
+                        array('cst' => 2, 'vst' => 5, 'cen' => 4, 'ven' => 3, 'type' => 'range'),
+                        array('cst' => 4, 'vst' => 7, 'cen' => 4, 'ven' => 11, 'type' => 'range'),
+                    ),
+            ),
+        );
+        
+        foreach($tests as $test) {
+            $Passages = Passage::parseReferences($test['ref']);
+            $this->assertEquals($test['exp'], $Passages[0]->chapter_verse_parsed, $test['ref']);
+        }
     }
     
     public function testInvalidReferences() {

@@ -4,6 +4,10 @@ namespace App;
 
 use App\Models\Books\BookAbstract as Book;
 
+/**
+ * Class for parsing passage references
+ */
+
 class Passage {
     
     use Traits\Error;
@@ -132,9 +136,11 @@ class Passage {
         ksort($preparsed);
         $preparsed_values = array_values($preparsed);
         $count = count($preparsed_values);
-        $current_chapter = NULL;
+        $current_chapter = $current_verse = $cst = $vst = $last_int = NULL;
+        $is_range = FALSE;
         
-        if($counts['colon'] == 0) { // chapters only
+        // Chapters only - if reference contains no verses
+        if($counts['colon'] == 0) { 
             foreach($preparsed_values as $in => $value) {
                 if(is_int($value)) {
                     $next = (isset($preparsed_values[$in + 1])) ? $preparsed_values[$in + 1] : NULL;
@@ -153,55 +159,71 @@ class Passage {
                 }
             }
         }
+        // Parse out chapter / verse references
         else {
-            $is_range = FALSE;
-            $cst = $vst = NULL;
-            
             foreach($preparsed_values as $in => $value) {
                 $next = (isset($preparsed_values[$in + 1])) ? $preparsed_values[$in + 1] : NULL;
                 $last = (isset($preparsed_values[$in - 1])) ? $preparsed_values[$in - 1] : NULL;
+                $end_of_ref = ($next == ',' || $next == NULL) ? TRUE : FALSE;
 
                 if(is_int($value)) {
-                    // Detect a change in chapter as we scan left to right
-                    if(is_int($value) && $next == '-' || $next == ':') {
+                    if($next == ':' || !$current_chapter) { 
                         $current_chapter = $value;
+                        $current_verse = NULL;
                     }
-                    // Detect and parse out a single verse reference
-                    elseif($current_chapter && $last == ':' && ($next == ',' || $next == NULL)) {
-                        $parsed[] = array('c' => $current_chapter, 'v' => $value, 'type' => 'single');
+                    else {
+                        $current_verse = $value;
                     }
-                    elseif($current_chapter && $last == ':' && $next == '-') {
-                        $is_range = TRUE;
+                    
+                    if($end_of_ref) {
+                        // Detect and parse out a range
+                        if($is_range && $end_of_ref) {
+                            $parsed[] = array('cst' => $cst, 'vst' => $vst, 'cen' => $current_chapter, 'ven' => $current_verse, 'type' => 'range');
+                            $is_range = FALSE;
+                            $cst = $vst = NULL;
+                        }
+                   
+                        // Detect and parse out a single verse reference
+                        elseif($current_chapter) {
+                            $parsed[] = array('c' => $current_chapter, 'v' => $current_verse, 'type' => 'single');
+                        }
                     }
-                    elseif($current_chapter && $next != '-') {
-                        $parsed[] = array('cst' => $current_chapter, 'vst' => NULL, 'cen' => $value, 'ven' => NULL, 'type' => 'range');
-                        $current_chapter = NULL;
-                    }
-                    elseif($next == NULL || $next == ',') {
-                        $parsed[] = array('c' => $value, 'v' => NULL, 'type' => 'single');
-                        $current_chapter = NULL;
-                    }
+                    
+                    $last_int = $value;
                 }
                 elseif($value == ':') {
-                    if(($next == NULL || !is_int($next)) && !$is_range) {
+                    if(($next == NULL || !is_int($next)) && !$is_range && $next != '-') {
                         $parsed[] = array('c' => $current_chapter, 'v' => NULL, 'type' => 'single');
+                    }
+                    
+                    if($is_range && $end_of_ref) {
+                        $parsed[] = array('cst' => $cst, 'vst' => $vst, 'cen' => $current_chapter, 'ven' => $current_verse, 'type' => 'range');
+                        $is_range = FALSE;
+                        $cst = $vst = NULL;
                     }
                 }
                 elseif($value == ',') {
-                    
+                    // do nothing??
                 }
                 elseif($value == '-') {
+                    if(!$is_range && !$end_of_ref) {
+                        $is_range = TRUE;
+                        $current_chapter = ($current_chapter) ? $current_chapter : $last_int;
+                        $cst = $current_chapter;
+                        $vst = $current_verse;
+                    }
                     
+                    if($end_of_ref) {
+                        $parsed[] = array('c' => $current_chapter, 'v' => $current_verse, 'type' => 'single');
+                    }
                 }
+                
+                $current_verse = ($end_of_ref) ? NULL : $current_verse;
             }
         }
 
         $this->chapter_verse_parsed = $parsed;
-        //echo(PHP_EOL . $chapter_verse . PHP_EOL);
-        
     }
-    
-    
     
     public function __set($name, $value) {
         $settable = ['languages', 'is_search'];
