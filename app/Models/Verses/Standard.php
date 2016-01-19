@@ -34,6 +34,7 @@ class Standard extends VerseAbstract {
             $where[] = static::_buildSearchQuery($Search, $parameters);
         }
         
+        echo(PHP_EOL . $Query->toSql() . PHP_EOL);
         
         $Verses = $Query->get();
         //$Verses = $Verse->select('book','chapter','verse','text')->take(10);
@@ -86,8 +87,8 @@ class Standard extends VerseAbstract {
                             $q .= '`chapter` * 1000 + `verse` BETWEEN ' . $cvst . ' AND ' . $cven;
                         }
                         else {
-                            $q .= ($parsed['vst']) ? '     `chapter` * 1000 + `verse` >= ' . $parsed['vst'] : '     `chapter` >= ' . $parsed['cst'];
-                            $q .= ($parsed['ven']) ? ' AND `chapter` * 1000 + `verse` <= ' . $parsed['ven'] : ' AND `chapter` <= ' . $parsed['cen'];
+                            $q .= ($parsed['vst']) ? '     `chapter` * 1000 + `verse` >= ' . $cvst : '     `chapter` >= ' . $parsed['cst'];
+                            $q .= ($parsed['ven']) ? ' AND `chapter` * 1000 + `verse` <= ' . $cven : ' AND `chapter` <= ' . $parsed['cen'];
                         }
                     }
                     

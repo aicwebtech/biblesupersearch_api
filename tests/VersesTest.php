@@ -63,11 +63,23 @@ class VersesTest extends TestCase
         $expected_parse = array( array('cst' => 110, 'vst' => NULL, 'cen' => 112, 'ven' => 3, 'type' => 'range') );
         $this->assertEquals($expected_parse, $Passages[0]->chapter_verse_parsed);
         $VC = $Bible->getSearch($Passages);
-        ///$this->assertCount(20, $VC);
+        $this->assertCount(20, $VC);
 
+        $Passages = Passage::parseReferences('Ps 110:6-112:');
+        $expected_parse = array( array('cst' => 110, 'vst' => 6, 'cen' => 112, 'ven' => NULL, 'type' => 'range') );
+        $this->assertEquals($expected_parse, $Passages[0]->chapter_verse_parsed);
+        $VC = $Bible->getSearch($Passages);
+        $this->assertCount(22, $VC);
+        
+        // This query tells it to get vs 6 - 112 of Ch 110, not 110:6 through chapter 112
+        // Only returns 2 verses
         $Passages = Passage::parseReferences('Ps 110:6-112');
         $VC = $Bible->getSearch($Passages);
-        //$this->assertCount(22, $VC);
+        $this->assertCount(2, $VC);
+        
+        $Passages = Passage::parseReferences('Ps 12:6-7,Rom 3:5-9');
+        $VC = $Bible->getSearch($Passages);
+        $this->assertCount(7, $VC);
     }
     
     /**
