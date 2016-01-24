@@ -13,6 +13,15 @@ class PassageTest extends TestCase
         $this->assertInstanceOf('App\Passage', $Passage);
     }
     
+    public function testEmptyReference() {
+        $empty = array('', NULL, FALSE, array());
+        
+        foreach($empty as $val) {            
+            $Passages = Passage::parseReferences($val);
+            $this->assertFalse($Passages);
+        }
+    }
+    
     public function testSingleVerseParse() {
         // Single verse, exact full name book reference
         $reference = 'Romans 1:1; Acts 2:38; 1 John 2:5; Song of Solomon 2:3';

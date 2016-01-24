@@ -117,7 +117,7 @@ class Passage {
         $counts['number'] = preg_match_all('/[0-9]+/', $chapter_verse, $matches['number'], PREG_OFFSET_CAPTURE | PREG_SET_ORDER);
         
         if(!$counts['number']) {
-            $this->chapter_verse_parsed = ($this->is_search) ? array() : array('c' => 1, 'v' => NULL, 'type' => 'single');
+            $this->chapter_verse_parsed = ($this->is_search) ? array() : array( array('c' => 1, 'v' => NULL, 'type' => 'single') );
             return;
         }
         
@@ -225,6 +225,19 @@ class Passage {
         $this->chapter_verse_parsed = $parsed;
     }
     
+    public function getNormalizedReferences() {
+        $parsed = $this->chapter_verse_parsed;
+        
+        foreach($parsed as &$part) {            
+            if(isset($part['type']) && $part['type'] == 'range') {
+                $part['vst'] = ($part['vst']) ? $part['vst'] : 0;
+                $part['ven'] = ($part['ven']) ? $part['ven'] : 999;
+            }
+        }
+        
+        return $parsed;
+    }
+    
     public function __set($name, $value) {
         $settable = ['languages', 'is_search'];
         
@@ -232,7 +245,6 @@ class Passage {
             $this->setBook($value);
         }
         if($name == 'chapter_verse') {
-            echo(PHP_EOL . $chapter_verse . PHP_EOL);
             $this->setChapterVerse($value);
         }
         if(in_array($name, $settable)) {
@@ -241,6 +253,10 @@ class Passage {
     }
     
     public function __get($name) {
+        if($name == 'chapter_verse_normal') {
+            return $this->getNormalizedReferences();
+        }
+        
         $gettable = ['languages', 'is_search', 'is_book_range', 'is_valid', 'Book', 'Book_En', 'raw_book', 'raw_reference', 'raw_chapter_verse', 
             'chapter_verse', 'chapter_verse_parsed'];
         
@@ -258,9 +274,13 @@ class Passage {
      * @param string $reference
      * @param array $languages - languages to check (short names)
      * @param bool $is_search - whether the parser should interpret this as a search
-     * @return array $Passages - array of passage instances
+     * @return array|bool $Passages - array of passage instances, or FALSE if nothing parsed
      */
     public static function parseReferences($reference, $languages = array(), $is_search = FALSE) {
+        if(!is_string($reference)) {
+            return FALSE;
+        }
+        
         $def_language = env('DEFAULT_LANGUAGE_SHORT', 'en');
         
         if(!in_array($def_language, $languages)) {
@@ -290,7 +310,7 @@ class Passage {
         }
         
         $Passages = array_reverse($Passages); // To keep the references in the same order that they were submitted        
-        return $Passages;
+        return (empty($Passages)) ? FALSE : $Passages;
     }
     
     /**

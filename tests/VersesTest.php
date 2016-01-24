@@ -80,6 +80,19 @@ class VersesTest extends TestCase
         $Passages = Passage::parseReferences('Ps 12:6-7,Rom 3:5-9');
         $VC = $Bible->getSearch($Passages);
         $this->assertCount(7, $VC);
+        
+        // Implicit and explicit chapters
+        $expected_parse = array( array('c' => 1, 'v' => NULL, 'type' => 'single') );
+        $Passages = Passage::parseReferences('Jn 1');
+        $this->assertEquals($expected_parse, $Passages[0]->chapter_verse_parsed);
+        $VC = $Bible->getSearch($Passages);
+        $this->assertCount(51, $VC);
+        $Passages = Passage::parseReferences('Jn'); // Implied chapter 1
+        $this->assertEquals($expected_parse, $Passages[0]->chapter_verse_parsed);
+        $VC = $Bible->getSearch($Passages);
+        $this->assertCount(51, $VC);
+        
+        
     }
     
     /**

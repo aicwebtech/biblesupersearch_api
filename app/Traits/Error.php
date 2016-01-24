@@ -43,5 +43,14 @@ trait Error {
         $this->has_errors = TRUE;
     }
     
+    /**
+     * Adds multiple errors at once
+     * @param array $errors
+     */
+    protected function addErrors($errors) {
+        foreach($errors as $error) {
+            $this->addError($message);
+        }
+    }
     
 }

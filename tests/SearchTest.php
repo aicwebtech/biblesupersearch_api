@@ -7,7 +7,16 @@ use Illuminate\Foundation\Testing\DatabaseTransactions;
 use App\Search;
 
 class SearchTest extends TestCase {
-
+    
+    public function testEmptySearch() {
+        $empty = array('', NULL, FALSE, array());
+        
+        foreach($empty as $val) {            
+            $Search = Search::parseSearch($val);
+            $this->assertFalse($Search);
+        }
+    }
+    
     public function testMethodIsSpecial() {
         $this->assertFalse( Search::isSpecial('faith hope charity','and') );
         $this->assertFalse( Search::isSpecial('faith hope charity','or') );

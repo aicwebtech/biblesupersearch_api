@@ -33,6 +33,6 @@ class EngineTest extends TestCase
         $engine->addBible('niv');
         $this->assertTrue($engine->hasErrors());
         $errors = $engine->getErrors();
-        $this->assertEquals("Bible module 'niv' not found", $errors[0]);
+        $this->assertEquals("Bible text 'niv' not found", $errors[0]);
     }
 }

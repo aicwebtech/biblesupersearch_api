@@ -3,7 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
-use App\Models\Verses\Standard As StandardVerses;
+use App\Models\Verses\VerseStandard As StandardVerses;
 use App\Passage;
 use App\Search;
 
@@ -94,7 +94,7 @@ class Bible extends Model {
         if (!class_exists($class_name)) {
             $code = '
                 namespace ' . $namespace . ';
-                class ' . $model_class . ' extends Standard {
+                class ' . $model_class . ' extends VerseStandard {
                         protected $hasClass = FALSE;
                 }
             ';

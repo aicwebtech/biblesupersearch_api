@@ -1,27 +1,25 @@
 <?php
 
 namespace App;
+use App\SqlSearch;
 
-class Search {
+/**
+ * Class for Bible database searches using a given set of keywords
+ * Implements special searches that cannot be done with a single query: 
+ *      proximity, within chapter, within book
+ */
+
+class Search extends SqlSearch {
     use Traits\Error;
     
-    public $search_type;
-    public $search;
-    public $whole_words = FALSE;
-    protected $search_parsed;
     protected $is_special = FALSE;
-    
-    public function __construct($search = NULL, $search_type = NULL, $whole_words = FALSE) {
-        $this->search = $search;
-        $this->search_type = $search_type;
-        $this->whole_words = $whole_words;
-    }
     
     /**
      * Parses the search and prepares it for the query
+     * Overrides parent
      * @return string
      */
-    public function parseSearch() {
+    public function parseSearchForQuery() {
         $search_type = ($this->search_type) ? $this->search_type : 'and';
         $search = $this->search;
         $search = trim( preg_replace('/\s+/', ' ', $search) );
@@ -74,15 +72,4 @@ class Search {
         return $is_special;
     }
     
-    public function __get($name) {
-        $gettable = ['search', 'is_special'];
-        
-        if($name = 'search_parsed') {
-            return $this->parseSearch();
-        }
-        
-        if(in_array($name, $gettable)) {
-            return $this->$name;
-        }
-    }
 }
