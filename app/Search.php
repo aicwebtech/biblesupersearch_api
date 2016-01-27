@@ -72,4 +72,69 @@ class Search extends SqlSearch {
         return $is_special;
     }
     
+    public static function booleanizeQuery($query, $search_type, $arg3 = NULL) {
+        $query = trim( preg_replace('/\s+/', ' ', $query) );
+        
+        if($search_type == 'boolean') {
+            return $query;
+        }
+        
+        $parsed = static::parseSimpleQueryTerms($query);
+        
+        switch($search_type) {
+            case 'strongs':
+                // Do nothing
+                break;
+            case 'proximity':
+                $query = implode(' PROX(' . $arg3 . ') ', $parsed);
+                break;
+            case 'chapter':
+                $query = implode(' CHAP ', $parsed);
+                break;
+            case 'book':
+                $query = implode(' BOOK ', $parsed);
+                break;
+            default:
+                return parent::booleanizeQuery($query, $search_type);
+        }
+        
+        return $query;
+    }
+    
+    /**
+     * Parses out the terms of a boolean query
+     * @param string $query standardized, booleanized query
+     * @return array $parsed 
+     */
+    public static function parseQueryTerms($query) {
+        // Remove operators that otherwise would be interpreted as terms
+        $find   = array('CHAP', 'BOOK');
+        $parsing = str_replace($find, ' ', $query);
+        $parsing = preg_replace('/PROX\([0-9]+\)/', ' ', $parsing);
+        return parent::parseQueryTerms($parsing);
+    }
+    
+    /**
+     * Standardizes the boolean query, adds AND where implied
+     * @param string $query
+     * @return string
+     */
+    public static function standardizeBoolean($query) {
+        $prox = array('~', 'PROX');
+        $chap = array('CHAPTER', 'CHAP');
+        $book = array('BOOK');
+        
+        $query = str_replace($prox, ' ~p~ ', $query);
+        $query = str_replace($chap, ' ~c~ ', $query);
+        $query = str_replace($book, ' ~b~ ', $query);
+        
+        $query = parent::standardizeBoolean($query);
+        
+        $find = array('~p~', '~c~', '~b~');
+        $repl = array('PROX', 'CHAP', 'BOOK');
+        $query = str_replace($find, $repl, $query);
+        $query = trim(preg_replace('/\s+/', ' ', $query));
+        
+        return $query;
+    }
 }
