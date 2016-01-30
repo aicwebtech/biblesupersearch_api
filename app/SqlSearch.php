@@ -157,11 +157,11 @@ class SqlSearch {
         $query = str_replace($or,  ' | ', $query);
         $query = str_replace($not, ' - ', $query);
         $query = str_replace(array('(', ')'), array(' (', ') '), $query);
-        //$query = trim(preg_replace('/\s+/', ' ', $query));
-        
+        $query = trim(preg_replace('/\s+/', ' ', $query));
+
         $patterns = array('/\) [a-zA-Z0-9]/', '/[a-zA-Z0-9] \(/', '/[a-zA-Z0-9] [a-zA-Z0-9]/');
         $query = preg_replace_callback($patterns, function($matches) {
-            return str_replace(' ', ' AND ', $matches[0]);
+            return str_replace(' ', ' & ', $matches[0]);
         }, $query);
         
         // Convert operator place holders into SQL operators

@@ -42,11 +42,17 @@ class SqlSearchTest extends TestCase
         $this->assertEquals('faith AND hope AND love', $std);
         $std = SqlSearch::standardizeBoolean('faith hope AND love');
         $this->assertEquals('faith AND hope AND love', $std);
-//        $std = SqlSearch::standardizeBoolean('faith (hope OR love)');
-//        $this->assertEquals('faith AND (hope OR love)', $std);
-//        $std = SqlSearch::standardizeBoolean('faith (hope AND love)');
-//        $this->assertEquals('faith AND (hope AND love)', $std);
-//        $std = SqlSearch::standardizeBoolean('faith (hope love)');
-//        $this->assertEquals('faith AND (hope AND love)', $std);
+        $std = SqlSearch::standardizeBoolean('faith AND (hope OR love)');
+        $this->assertEquals('faith AND (hope OR love)', $std);
+        $std = SqlSearch::standardizeBoolean('faith & (hope ||  love)  ');
+        $this->assertEquals('faith AND (hope OR love)', $std);
+        $std = SqlSearch::standardizeBoolean('faith (hope OR love)');
+        $this->assertEquals('faith AND (hope OR love)', $std);
+        $std = SqlSearch::standardizeBoolean('faith (hope AND love)');
+        $this->assertEquals('faith AND (hope AND love)', $std);
+        $std = SqlSearch::standardizeBoolean('faith (hope love)');
+        $this->assertEquals('faith AND (hope AND love)', $std);
+        $std = SqlSearch::standardizeBoolean('faith (hope love)  joy');
+        $this->assertEquals('faith AND (hope AND love) AND joy', $std);
     }
 }

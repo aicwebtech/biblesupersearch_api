@@ -71,6 +71,12 @@ class SearchTest extends TestCase {
         $this->assertEquals(array('faith', 'hope', 'charity'), $parsed);
         $parsed = Search::parseQueryTerms('faith CHAP hope BOOK charity');
         $this->assertEquals(array('faith', 'hope', 'charity'), $parsed);
+        // When in all caps, chapter and book are interpreted as operators
+        $parsed = Search::parseQueryTerms('faith CHAPTER hope BOOK charity');
+        $this->assertEquals(array('faith', 'hope', 'charity'), $parsed);
+        // When in all lower case, chapter and book are interpreted as keywords
+        $parsed = Search::parseQueryTerms('faith chapter hope book charity');
+        $this->assertEquals(array('faith', 'chapter', 'hope', 'book', 'charity'), $parsed);
         $parsed = Search::parseQueryTerms('(faith OR hope) charity PROX(12) (Joy or love)');
         $this->assertEquals(array('faith', 'hope', 'charity', 'Joy', 'or', 'love'), $parsed); // lowercase or is considered a keyword
         $parsed = Search::parseQueryTerms('(faith OR hope) charity PROX(12) (Joy OR love)');
@@ -78,12 +84,34 @@ class SearchTest extends TestCase {
     }
     
     public function testBooleanStandardization() {
+        // Make sure we haven't broke inherited functionality
         $std = Search::standardizeBoolean('faith hope love');
         $this->assertEquals('faith AND hope AND love', $std);
         $std = Search::standardizeBoolean('faith hope AND love');
         $this->assertEquals('faith AND hope AND love', $std);
+        $std = Search::standardizeBoolean('faith AND (hope OR love)');
+        $this->assertEquals('faith AND (hope OR love)', $std);
+        $std = Search::standardizeBoolean('faith & (hope ||  love)  ');
+        $this->assertEquals('faith AND (hope OR love)', $std);
+        $std = Search::standardizeBoolean('faith (hope OR love)');
+        $this->assertEquals('faith AND (hope OR love)', $std);
+        $std = Search::standardizeBoolean('faith (hope AND love)');
+        $this->assertEquals('faith AND (hope AND love)', $std);
+        $std = Search::standardizeBoolean('faith (hope love)');
+        $this->assertEquals('faith AND (hope AND love)', $std);
+        $std = Search::standardizeBoolean('faith (hope love)  joy');
+        $this->assertEquals('faith AND (hope AND love) AND joy', $std);
         
-//        $std = Search::standardizeBoolean('(faith OR hope) charity PROX(12) (Joy OR love)');
-//        $this->assertEquals('(faith OR hope) AND charity PROX(12) (Joy OR love)', $std);
+        // Testing added functionality
+        $std = Search::standardizeBoolean('(faith OR hope) charity PROX(12) (Joy or love)');
+        $this->assertEquals('(faith OR hope) AND charity PROX(12) (Joy AND or AND love)', $std);
+        $std = Search::standardizeBoolean('faith CHAP hope BOOK charity');
+        $this->assertEquals('faith CHAP hope BOOK charity', $std);
+        // When in all caps, chapter and book are interpreted as operators
+        $std = Search::standardizeBoolean('faith CHAPTER hope BOOK charity');
+        $this->assertEquals('faith CHAP hope BOOK charity', $std);
+        // When in all lower case, chapter and book are interpreted as keywords
+        $std = Search::standardizeBoolean('faith chapter hope book charity');
+        $this->assertEquals('faith AND chapter AND hope AND book AND charity', $std);
     }
 }

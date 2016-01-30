@@ -108,7 +108,7 @@ class Search extends SqlSearch {
      */
     public static function parseQueryTerms($query) {
         // Remove operators that otherwise would be interpreted as terms
-        $find   = array('CHAP', 'BOOK');
+        $find   = array('CHAPTER', 'CHAP', 'BOOK');
         $parsing = str_replace($find, ' ', $query);
         $parsing = preg_replace('/PROX\([0-9]+\)/', ' ', $parsing);
         return parent::parseQueryTerms($parsing);
@@ -121,6 +121,7 @@ class Search extends SqlSearch {
      */
     public static function standardizeBoolean($query) {
         $prox = array('~', 'PROX');
+        // Todo - these can be search terms - how to resolve?
         $chap = array('CHAPTER', 'CHAP');
         $book = array('BOOK');
         
@@ -133,6 +134,7 @@ class Search extends SqlSearch {
         $find = array('~p~', '~c~', '~b~');
         $repl = array('PROX', 'CHAP', 'BOOK');
         $query = str_replace($find, $repl, $query);
+        $query = str_replace('PROX (', 'PROX(', $query);
         $query = trim(preg_replace('/\s+/', ' ', $query));
         
         return $query;
