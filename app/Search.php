@@ -10,7 +10,6 @@ use App\SqlSearch;
  */
 
 class Search extends SqlSearch {
-    use Traits\Error;
     
     protected $is_special = FALSE;
     
@@ -19,23 +18,17 @@ class Search extends SqlSearch {
      * Overrides parent
      * @return string
      */
-    public function parseSearchForQuery() {
+    public function generateQuery() {
         $search_type = ($this->search_type) ? $this->search_type : 'and';
         $search = $this->search;
-        $search = trim( preg_replace('/\s+/', ' ', $search) );
-        
-        if(empty($search)) {
-            $this->search_parsed = '';
-            return '';
-        }
         
         $this->is_special = $this->isSpecial($search, $search_type);
         
         if($this->is_special) {
-            return $this->_parseSpecial($search, $search_type, $prox_limit);
+            return $this->_generateProximityQuery($search, $search_type);
         }
         else {
-            return $this->_parseHelper($search, $search_type);
+            return $this->_generateQueryHelper($search, $search_type, TRUE);
         }
     }
     
@@ -43,7 +36,7 @@ class Search extends SqlSearch {
         
     }
     
-    protected function _parseSpecial($search, $search_type, $prox_limit = 5) {
+    protected function _generateProximityQuery($search, $search_type, $prox_limit = 5) {
         
     }
     

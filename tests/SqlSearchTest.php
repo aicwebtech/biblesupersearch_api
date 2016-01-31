@@ -55,4 +55,21 @@ class SqlSearchTest extends TestCase
         $std = SqlSearch::standardizeBoolean('faith (hope love)  joy');
         $this->assertEquals('faith AND (hope AND love) AND joy', $std);
     }
+    
+    public function testBindDataPush() {
+        $binddata = array();
+        $this->assertEmpty($binddata);
+        SqlSearch::pushToBindData('hey', $binddata);
+        $this->assertEquals(array(':bd1' => 'hey'), $binddata);
+        SqlSearch::pushToBindData('faith', $binddata);
+        $this->assertEquals(array(':bd1' => 'hey',':bd2' => 'faith'), $binddata);
+        SqlSearch::pushToBindData('hope', $binddata);
+        $this->assertEquals(array(':bd1' => 'hey',':bd2' => 'faith', ':bd3' => 'hope'), $binddata);
+        SqlSearch::pushToBindData('love', $binddata, 'love');
+        $this->assertEquals(array(':bd1' => 'hey',':bd2' => 'faith', ':bd3' => 'hope',':love4' => 'love'), $binddata);
+        
+        // Attempt to push faith on again - it won't be added because it's already present
+        SqlSearch::pushToBindData('faith', $binddata);
+        $this->assertEquals(array(':bd1' => 'hey',':bd2' => 'faith', ':bd3' => 'hope',':love4' => 'love'), $binddata);
+    }
 }
