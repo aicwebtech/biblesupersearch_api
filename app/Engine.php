@@ -59,12 +59,12 @@ class Engine {
         $this->setBibles($input['bible']);
         
         // Todo - Routing and merging of multiple elements here
-        $references = $input['reference'];
-        $keywords   = $input['search'];
+        $references = empty($input['reference']) ? NULL : $input['reference'];
+        $keywords   = empty($input['search']) ? NULL : $input['search'];
         
         $is_search = (empty($keywords)) ? FALSE : TRUE;
         $Passages = Passage::parseReferences($references, $this->languages, $is_search);
-        $Search   = Search::parseSearch($keywords);
+        $Search   = Search::parseSearch($keywords, $input);
         
         foreach($this->Bibles as $Bible) {
             $results[$Bible->module] = $Bible->getSearch($Passages, $Search, $input);

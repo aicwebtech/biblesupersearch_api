@@ -72,4 +72,19 @@ class SqlSearchTest extends TestCase
         SqlSearch::pushToBindData('faith', $binddata);
         $this->assertEquals(array(':bd1' => 'hey',':bd2' => 'faith', ':bd3' => 'hope',':love4' => 'love'), $binddata);
     }
+    
+    public function testSqlGeneration() {
+        $Search = SqlSearch::parseSearch('faith hope love');
+        $search_type = $Search->search_type;
+        $this->assertEquals('and', $Search->search_type);
+        list($sql, $binddata) = $Search->generateQuery();
+        $this->assertEquals('(`text` LIKE :bd1) AND (`text` LIKE :bd2) AND (`text` LIKE :bd3)', $sql);
+        $this->assertEquals(array(':bd1' => '%faith%', ':bd2' => '%hope%', ':bd3' => '%love%'), $binddata);
+        
+        $Search = SqlSearch::parseSearch('faith hope love', array('search_type' => 'or'));
+        $this->assertEquals('or', $Search->search_type);
+        list($sql, $binddata) = $Search->generateQuery();
+        $this->assertEquals('(`text` LIKE :bd1) OR (`text` LIKE :bd2) OR (`text` LIKE :bd3)', $sql);
+        $this->assertEquals(array(':bd1' => '%faith%', ':bd2' => '%hope%', ':bd3' => '%love%'), $binddata);
+    }
 }

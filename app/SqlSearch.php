@@ -11,12 +11,45 @@ class SqlSearch {
     protected $search; // String containing the search keywords
     protected $search_parsed;
     protected $options = array();
+    protected $search_type = 'and';
     protected $options_default = array(
-        'search_type' => 'AND',
+        'search_type' => 'and',
         'whole_words' => FALSE,
     );
     
     public $search_fields = 'text'; // Comma separated
+    
+    static protected $search_inputs = array(
+        'search' => array(
+            'label' => 'Search',
+            'type'  => NULL, // primary
+        ), 
+        'search_all' => array(
+            'label' => 'All Words',
+            'type'  => 'and',
+        ),
+        'search_any' => array(
+            'label' => 'Any Words',
+            'type'  => 'or',
+        ), 
+        'search_one' => array(
+            'label' => 'One of the Words',
+            'type'  => 'xor',
+        ), 
+        'search_none' => array(
+            'label' => 'None of the Words',
+            'type'  => 'or',
+        ), 
+        'search_phrase' => array(
+            'label' => 'Exact Phrase',
+            'type'  => 'phrase',
+        ),
+        'search_regexp' => array(
+            'label' => 'Regular Expression',
+            'type'  => 'regexp',
+        ),
+    );
+    
     public $punctuation = array('.',',',':',';','\'','"','!','-','?','(',')','[',']');
 
     public function __construct($search = NULL, $options = array()) {
@@ -55,6 +88,7 @@ class SqlSearch {
     public function setOptions($options, $overwrite = FALSE) {
         $current = ($overwrite) ? $this->options_default : $this->options;
         $this->options = array_replace_recursive($current, $options);
+        $this->search_type = (isset($this->options['search_type'])) ? $this->options['search_type'] : 'and';
     }
 
     /**
@@ -62,7 +96,7 @@ class SqlSearch {
      * @return array|bool
      */
     public function generateQuery() {
-        $search_type = ($this->search_type) ? $this->search_type : 'and';
+        $search_type = (!empty($this->search_type)) ? $this->search_type : 'and';
         $search = $this->search;
         return $this->_generateQueryHelper($search, $search_type, TRUE);
     }
@@ -72,12 +106,11 @@ class SqlSearch {
         $searches[] = static::booleanizeQuery($search, $search_type);
         
         if($include_extra_fields) {            
-            $searches[] = static::booleanizeQuery($this->options['search_all'],    'and');
-            $searches[] = static::booleanizeQuery($this->options['search_any'],    'or');
-            $searches[] = static::booleanizeQuery($this->options['search_one'],    'xor');
-            $searches[] = static::booleanizeQuery($this->options['search_none'],   'not');
-            $searches[] = static::booleanizeQuery($this->options['search_phrase'], 'phrase');
-            $searches[] = static::booleanizeQuery($this->options['search_regexp'], 'regexp');
+            foreach(static::$search_inputs as $input => $settings) {
+                if(!empty($settings['type']) && isset($this->options[$input])) {
+                    $searches[] = static::booleanizeQuery($this->options[$input], $settings['type']);
+                }
+            }
         }
         
         $searches = array_filter($searches); // remove empty values
@@ -92,55 +125,75 @@ class SqlSearch {
         $std_bool = static::standardizeBoolean($raw_bool);
         $this->search_parsed = $std_bool;
         $terms = static::parseQueryTerms($std_bool);
+        $sql = $std_bool;
         
         foreach($terms as $term) {
-            $term_sql = $this->_termSql($term, $binddata, $fields);
+            list($term_sql, $bind_index) = $this->_termSql($term, $binddata, $fields);
+            $sql = str_replace($term, $term_sql, $sql);
         }
+        
+        return array($sql, $binddata);
     }
     
     protected function _termSql($term, &$binddata = array(), $fields = '') {
-        $exact_case  = ($this->options['exact_case'])  ? TRUE : FALSE;
-        $whole_words = ($this->options['whole_words']) ? TRUE : FALSE;
+        $exact_case  = (empty($this->options['exact_case']))  ? FALSE : TRUE;
+        $whole_words = (empty($this->options['whole_words'])) ? FALSE : TRUE;
         $fields = $this->_termFields($term, $fields);
         $op = $this->_termOperator($term, $exact_case);
-        $bind_index = static::pushToBindData($item, $binddata);
+        $bind_index = static::pushToBindData('%' . $term . '%', $binddata); // need better way to add %
+        $sql = array();
         
+        foreach($fields as $field) {
+            $sql[] = ($whole_words) ? $this->_assembleTermSqlWholeWords($field, $bind_index, $op) : $this->_assembleTermSql($field, $bind_index, $op);
+        }
+        
+        $sql = (count($sql) == 1) ? '(' . $sql[0] . ')' : '(' . implode(' OR ', $sql) . ')';
+        return array($sql, $bind_index);
     }
     
-    protected function _termField($term, $fields = '') {
+    protected function _termFields($term, $fields = '') {
         $fields = ($fields) ? $fields : $this->search_fields;
         $fields = explode(',', $fields);
+        
+        foreach($fields as &$field) {
+            $field = '`' . str_replace('.','`.`', $field) . '`'; // Use proper notation
+        }
+        
         return $fields;
     }
     
     protected function _termOperator($term, $exact_case = FALSE) {
-        
+        return 'LIKE';
     }
     
-    protected function _wholeWords($term, $operator, $fields) {
+    protected function _assembleTermSql($field, $bind_index, $operator) {
+        return $field . ' ' . $operator . ' ' . $bind_index;
+    }
+    
+    protected function _assembleTermSqlWholeWords($field, $bind_index, $operator) {
         // Can we use REGEXP instead?
         
         
         // Long, gross query
         // This code makes whole word queries 10 TIMES SLOWER!
         $s = array(
-            "$termp",
-            "$termp.",
-            "$termp,",
-            "$termp;" ,
-            "$termp!",
-            "$termp:",
-            "$termp?",
-            "$termp\\'",
-            "$termp\"",
-            "\"$termp ",
-            "\\'$termp ",
-            "\\'$termp\\'",
-            "“$termp ",
-            "$termp”"
+            "$term",
+            "$term.",
+            "$term,",
+            "$term;" ,
+            "$term!",
+            "$term:",
+            "$term?",
+            "$term\\'",
+            "$term\"",
+            "\"$term ",
+            "\\'$term ",
+            "\\'$term\\'",
+            "“$term ",
+            "$term”"
         );
 
-        $qu="((`text` $operator '% $termp %')";
+        $qu="((`text` $operator '% $term %')";
         
         
         foreach($s as $i => $e) {
@@ -275,10 +328,10 @@ class SqlSearch {
     }
 
     public function __get($name) {
-        $gettable = ['search', 'is_special'];
-
-        if ($name = 'search_parsed') {
-            return $this->parseSearchForQuery();
+        $gettable = ['search', 'is_special', 'search_parsed', 'search_type'];
+        
+        if ($name == 'search_parsed') {
+            //return $this->parseSearchForQuery();
         }
 
         if (in_array($name, $gettable)) {

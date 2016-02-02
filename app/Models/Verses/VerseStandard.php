@@ -27,11 +27,14 @@ class VerseStandard extends VerseAbstract {
         
         if($Passages) {
             $pquery = static::_buildPassageQuery($Passages);
-            $Query->whereRaw($pquery);
+            if($pquery) {
+                $Query->whereRaw($pquery);
+            }
         }
         
         if($Search) {
-            $where[] = static::_buildSearchQuery($Search, $parameters);
+            list($squery, $binddata) = static::_buildSearchQuery($Search, $parameters);
+            $Query->whereRaw($squery, $binddata);
         }
         
         //echo(PHP_EOL . $Query->toSql() . PHP_EOL);
@@ -50,31 +53,36 @@ class VerseStandard extends VerseAbstract {
     
     protected static function _buildPassageQuery($Passages) {
         if(empty($Passages)) {
-            return '';
+            return FALSE;
         }
         
         $query = array();
         
         foreach($Passages as $Passage) {
-            foreach($Passage->chapter_verse_normal as $parsed) {
-                $q = '`book` = ' . $Passage->Book->id;
-                
-                // Single verses
-                if($parsed['type'] == 'single') {
-                    $q .= ' AND `chapter` = ' . $parsed['c'];
-                    $q .= ($parsed['v']) ? ' AND `verse` = ' . $parsed['v'] : '';
-                }
-                elseif($parsed['type'] == 'range') {
-                    if(!$parsed['cst'] && !$parsed['cen']) {
-                        continue;
+            if(count($Passage->chapter_verse_normal)) {                
+                foreach($Passage->chapter_verse_normal as $parsed) {
+                    $q = '`book` = ' . $Passage->Book->id;
+
+                    // Single verses
+                    if($parsed['type'] == 'single') {
+                        $q .= ' AND `chapter` = ' . $parsed['c'];
+                        $q .= ($parsed['v']) ? ' AND `verse` = ' . $parsed['v'] : '';
                     }
-                    
-                    $cvst = $parsed['cst'] * 1000 + intval($parsed['vst']);
-                    $cven = $parsed['cen'] * 1000 + intval($parsed['ven']);
-                    $q .= ' AND `chapter_verse` BETWEEN ' . $cvst . ' AND ' . $cven;
+                    elseif($parsed['type'] == 'range') {
+                        if(!$parsed['cst'] && !$parsed['cen']) {
+                            continue;
+                        }
+
+                        $cvst = $parsed['cst'] * 1000 + intval($parsed['vst']);
+                        $cven = $parsed['cen'] * 1000 + intval($parsed['ven']);
+                        $q .= ' AND `chapter_verse` BETWEEN ' . $cvst . ' AND ' . $cven;
+                    }
+
+                    $query[] = $q;
                 }
-                
-                $query[] = $q;
+            }
+            else {
+                $query[] = '`book` = ' . $Passage->Book->id;
             }
         }
         
@@ -82,6 +90,8 @@ class VerseStandard extends VerseAbstract {
     }
     
     protected static function _buildSearchQuery($Search, $parameters) {
+        return $Search->generateQuery();
+        
         if(empty($Search)) {
             return '';
         }
