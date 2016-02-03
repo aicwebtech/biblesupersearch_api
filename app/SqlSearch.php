@@ -139,12 +139,14 @@ class SqlSearch {
         $exact_case  = (empty($this->options['exact_case']))  ? FALSE : TRUE;
         $whole_words = (empty($this->options['whole_words'])) ? FALSE : TRUE;
         $fields = $this->_termFields($term, $fields);
-        $op = $this->_termOperator($term, $exact_case);
-        $bind_index = static::pushToBindData('%' . $term . '%', $binddata); // need better way to add %
+        $op = $this->_termOperator($term, $exact_case, $whole_words);
+        $term_fmt = $this->_termFormat($term, $exact_case, $whole_words);
+        $bind_index = static::pushToBindData($term_fmt, $binddata); // need better way to add %
         $sql = array();
         
         foreach($fields as $field) {
-            $sql[] = ($whole_words) ? $this->_assembleTermSqlWholeWords($field, $bind_index, $op) : $this->_assembleTermSql($field, $bind_index, $op);
+            //$sql[] = ($whole_words) ? $this->_assembleTermSqlWholeWords($field, $bind_index, $op) : $this->_assembleTermSql($field, $bind_index, $op);
+            $sql[] = $this->_assembleTermSql($field, $bind_index, $op);
         }
         
         $sql = (count($sql) == 1) ? '(' . $sql[0] . ')' : '(' . implode(' OR ', $sql) . ')';
@@ -162,8 +164,21 @@ class SqlSearch {
         return $fields;
     }
     
-    protected function _termOperator($term, $exact_case = FALSE) {
-        return 'LIKE';
+    protected function _termOperator($term, $exact_case = FALSE, $whole_words = FALSE) {
+        if($whole_words) {
+            return 'REGEXP';
+        }
+        else {
+            return (strpos($term, ' ') !== FALSE) ? 'REGEXP' : 'LIKE';
+        }
+    }
+    
+    protected function _termFormat($term, $exact_case = FALSE, $whole_words = FALSE) {
+        if(strpos($term, ' ') !== FALSE) {
+            return trim($term, '"');
+        }
+        
+        return ($whole_words) ? '[[:<:]]' . $term . '[[:>:]]' : '%' . $term . '%';
     }
     
     protected function _assembleTermSql($field, $bind_index, $operator) {
@@ -263,7 +278,8 @@ class SqlSearch {
         $find = array('AND', 'OR', 'XOR', 'NOT');
         $parsing = str_replace($find, ' ', $query);
 
-        preg_match_all('/"[a-zA-z0-9 ]+"/', $parsing, $phrases, PREG_SET_ORDER);
+        //preg_match_all('/"[a-zA-z0-9 ]+"/', $parsing, $phrases, PREG_SET_ORDER);
+        $phrases = static::parseQueryPhrases($query);
         $parsing = preg_replace('/"[a-zA-z0-9 ]+"/', '', $parsing); // Remove phrases once parsed
         preg_match_all('/[a-zA-z0-9]+/', $parsing, $matches, PREG_SET_ORDER);
 
@@ -272,11 +288,32 @@ class SqlSearch {
         }
 
         foreach ($phrases as $item) {
-            $parsed[] = $item[0];
+            //$parsed[] = $item[0];
+            $parsed[] = $item;
         }
 
         $parsed = array_unique($parsed);
         return $parsed;
+    }
+    
+    public static function parseQueryPhrases($query, $underscore_map = FALSE) {
+        $matches = $phrases = $underscores = array();
+        preg_match_all('/"[a-zA-z0-9 ]+"/', $query, $matches, PREG_SET_ORDER);
+        
+        foreach ($matches as $item) {
+            $phrases[] = $item[0];
+            
+            if($underscore_map) {
+                $underscores[] = str_replace(' ', '_', $item[0]);
+            }
+        }
+        
+        if($underscore_map) {
+            return array($phrases, $underscores);
+        }
+        else {
+            return $phrases;
+        }
     }
 
     /**
@@ -302,7 +339,9 @@ class SqlSearch {
         $or  = array('OR', '+', '||', '|');
         $not = array('NOT', '-', '!=', '-');
         $xor = array('XOR', '^^', '^');
-
+        
+        list($phrases, $underscored) = static::parseQueryPhrases($query, TRUE);
+        $query = str_replace($phrases, $underscored, $query);
         $query = str_replace($xor, ' ^ ', $query);
         $query = str_replace($and, ' & ', $query);
         $query = str_replace($or,  ' | ', $query);
@@ -310,7 +349,7 @@ class SqlSearch {
         $query = str_replace(array('(', ')'), array(' (', ') '), $query);
         $query = trim(preg_replace('/\s+/', ' ', $query));
 
-        $patterns = array('/\) [a-zA-Z0-9]/', '/[a-zA-Z0-9] \(/', '/[a-zA-Z0-9] [a-zA-Z0-9]/');
+        $patterns = array('/\) [a-zA-Z0-9"]/', '/[a-zA-Z0-9"] \(/', '/[a-zA-Z0-9"] [a-zA-Z0-9"]/');
         $query = preg_replace_callback($patterns, function($matches) {
             return str_replace(' ', ' & ', $matches[0]);
         }, $query);
@@ -319,6 +358,7 @@ class SqlSearch {
         $find  = array('&', '|', '-', '^');
         $repl  = array('AND', 'OR', ' NOT ', 'XOR');
         $query = str_replace($find, $repl, $query);
+        $query = str_replace($underscored, $phrases, $query);
         $query = trim(preg_replace('/\s+/', ' ', $query));
         return $query;
     }

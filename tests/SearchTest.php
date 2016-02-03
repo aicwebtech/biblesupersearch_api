@@ -114,4 +114,19 @@ class SearchTest extends TestCase {
         $std = Search::standardizeBoolean('faith chapter hope book charity');
         $this->assertEquals('faith AND chapter AND hope AND book AND charity', $std);
     }
+    
+    public function testSqlGeneration() {
+        $Search = Search::parseSearch('faith hope love');
+        $search_type = $Search->search_type;
+        $this->assertEquals('and', $Search->search_type);
+        list($sql, $binddata) = $Search->generateQuery();
+        $this->assertEquals('(`text` LIKE :bd1) AND (`text` LIKE :bd2) AND (`text` LIKE :bd3)', $sql);
+        $this->assertEquals(array(':bd1' => '%faith%', ':bd2' => '%hope%', ':bd3' => '%love%'), $binddata);
+        
+        $Search = Search::parseSearch('faith hope love', array('search_type' => 'or'));
+        $this->assertEquals('or', $Search->search_type);
+        list($sql, $binddata) = $Search->generateQuery();
+        $this->assertEquals('(`text` LIKE :bd1) OR (`text` LIKE :bd2) OR (`text` LIKE :bd3)', $sql);
+        $this->assertEquals(array(':bd1' => '%faith%', ':bd2' => '%hope%', ':bd3' => '%love%'), $binddata);
+    }
 }

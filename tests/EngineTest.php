@@ -72,4 +72,24 @@ class EngineTest extends TestCase
         $this->assertEquals(1,  $results['kjv'][30]->verse);
         $this->assertEquals('Him that is weak in the faith receive ye, but not to doubtful disputations.',  $results['kjv'][30]->text);
     }
+    
+    public function testWholeWordSearch() {
+        $Engine = new Engine();
+        $results = $Engine->actionQuery(['bible' => 'kjv', 'search' => 'faith', 'whole_words' => TRUE]);
+        $this->assertCount(231, $results['kjv']);
+        $this->assertEquals(5,  $results['kjv'][0]->book);
+        $this->assertEquals(32, $results['kjv'][0]->chapter);
+        $this->assertEquals(20, $results['kjv'][0]->verse);
+
+        $results = $Engine->actionQuery(['bible' => 'kjv', 'search' => 'faith joy', 'whole_words' => 'yes']);
+        $this->assertCount(5, $results['kjv']);
+        $results = $Engine->actionQuery(['bible' => 'kjv', 'search' => 'faith joy', 'whole_words' => 'yes', 'search_type' => 'or']);
+        $this->assertCount(381, $results['kjv']);
+        $results = $Engine->actionQuery(['bible' => 'kjv', 'search' => 'faith && joy || "free spirit"', 'whole_words' => 'yes', 'search_type' => 'boolean']);
+        $this->assertCount(6, $results['kjv']);
+        $this->assertEquals(19,  $results['kjv'][0]->book);
+        $this->assertEquals(51, $results['kjv'][0]->chapter);
+        $this->assertEquals(12, $results['kjv'][0]->verse);
+        $this->assertEquals('Restore unto me the joy of thy salvation; and uphold me with thy free spirit.', $results['kjv'][0]->text);
+    }
 }

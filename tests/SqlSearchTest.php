@@ -35,6 +35,8 @@ class SqlSearchTest extends TestCase
         $this->assertEquals(array('faith', 'hope', 'charity', 'Joy', 'or', 'love'), $parsed); // lowercase or is considered a keyword
         $parsed = SqlSearch::parseQueryTerms('(faith OR hope) charity AND (Joy OR love)');
         $this->assertEquals(array('faith', 'hope', 'charity', 'Joy', 'love'), $parsed); 
+        $parsed = SqlSearch::parseQueryTerms('(faith OR hope) charity AND "free spirit"');
+        $this->assertEquals(array('faith', 'hope', 'charity', '"free spirit"'), $parsed); 
     }
     
     public function testBooleanStandardization() {
@@ -54,6 +56,8 @@ class SqlSearchTest extends TestCase
         $this->assertEquals('faith AND (hope AND love)', $std);
         $std = SqlSearch::standardizeBoolean('faith (hope love)  joy');
         $this->assertEquals('faith AND (hope AND love) AND joy', $std);
+        $std = SqlSearch::standardizeBoolean('faith (hope love) "free spirit"');
+        $this->assertEquals('faith AND (hope AND love) AND "free spirit"', $std);
     }
     
     public function testBindDataPush() {
@@ -86,5 +90,11 @@ class SqlSearchTest extends TestCase
         list($sql, $binddata) = $Search->generateQuery();
         $this->assertEquals('(`text` LIKE :bd1) OR (`text` LIKE :bd2) OR (`text` LIKE :bd3)', $sql);
         $this->assertEquals(array(':bd1' => '%faith%', ':bd2' => '%hope%', ':bd3' => '%love%'), $binddata);
+        
+        $Search = SqlSearch::parseSearch('faith | "free spirit"', array('search_type' => 'boolean'));
+        $this->assertEquals('boolean', $Search->search_type);
+        list($sql, $binddata) = $Search->generateQuery();
+        $this->assertEquals('(`text` LIKE :bd1) OR (`text` REGEXP :bd2)', $sql);
+        $this->assertEquals(array(':bd1' => '%faith%', ':bd2' => 'free spirit'), $binddata);
     }
 }

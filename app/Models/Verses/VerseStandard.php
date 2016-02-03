@@ -22,7 +22,8 @@ class VerseStandard extends VerseAbstract {
         $where = $Verses = array();
         $Verse = new static;
         $table = $Verse->getTable();
-        $Query = static::select('id','book','chapter','verse','text');
+        //$Query = static::select('id','book','chapter','verse','text');
+        $Query = DB::table($table . ' AS tb')->select('id','book','chapter','verse','text');
         $Query->orderBy('book', 'ASC')->orderBy('chapter', 'ASC')->orderBy('verse', 'ASC');
         
         if($Passages) {
@@ -40,13 +41,6 @@ class VerseStandard extends VerseAbstract {
         //echo(PHP_EOL . $Query->toSql() . PHP_EOL);
         
         $Verses = $Query->get();
-        //$Verses = $Verse->select('book','chapter','verse','text')->take(10);
-        
-        //$Verses = DB::table($table)->select('book','chapter','verse','text')->take(10)->get();
-        //$Verses = static::hydrate($Verses);
-        
-        //var_dump($Verses);
-        
         return $Verses;
     }
 
