@@ -43,8 +43,11 @@ class Passage {
             }
             
             $books = explode('-', $book);
-            $Book_St = $this->findBook( trim($books[0]) );
-            $Book_En = $this->findBook( trim($books[1]) );
+            $book_st = array_shift($books);
+            $book_en = array_pop($books);
+            $book_en = ($book_en) ? $book_en : $book_st;
+            $Book_St = $this->findBook( $book_st );
+            $Book_En = $this->findBook( $book_en );
             
             if($Book_St && $Book_En) {
                 $this->is_book_range = TRUE;
@@ -53,7 +56,7 @@ class Passage {
                 $this->Book_En = $Book_En;
             }
             else {
-                return $this->_addBookError('Invalid book in book range.');
+                return $this->_addBookError("Invalid book in book range: '$book'");
             }
         }
         else {
@@ -68,6 +71,16 @@ class Passage {
                 return $this->_addBookError("Book '$book' not found");
             }
         }
+    }
+    
+    public function setBookRange($book_range) {
+        $this->raw_book = $book_range;
+        $book_range = trim( preg_replace('/\s+/', ' ', $book_range) );
+        $books = explode('-', $book_range);
+        $book_st = array_shift($books);
+        $book_en = array_pop($books);
+        $book_en = ($book_en) ? $book_en : $book_st;
+        
     }
     
     /**
@@ -323,8 +336,15 @@ class Passage {
         $Passage = new static;
         $Passage->languages = $languages;
         $Passage->is_search = $is_search;
-        $Passage->setBook($book);
-        $Passage->setChapterVerse($chapter_verse);        
+        
+//        if(strpos($book, '-') !== FALSE) {
+//            $Passage->setBookRange($book);
+//        }
+//        else {            
+            $Passage->setBook($book);
+            $Passage->setChapterVerse($chapter_verse);        
+ //       }
+        
         return $Passage;
     }
     

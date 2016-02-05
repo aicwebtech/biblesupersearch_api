@@ -76,7 +76,12 @@ class VerseStandard extends VerseAbstract {
                 }
             }
             else {
-                $query[] = '`book` = ' . $Passage->Book->id;
+                if($Passage->is_book_range) {
+                    $query[] = '`book` BETWEEN ' . $Passage->Book->id . ' AND ' . $Passage->Book_En->id;
+                }
+                else {
+                    $query[] = '`book` = ' . $Passage->Book->id;
+                }
             }
         }
         

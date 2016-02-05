@@ -141,7 +141,7 @@ class SqlSearch {
         $fields = $this->_termFields($term, $fields);
         $op = $this->_termOperator($term, $exact_case, $whole_words);
         $term_fmt = $this->_termFormat($term, $exact_case, $whole_words);
-        $bind_index = static::pushToBindData($term_fmt, $binddata); // need better way to add %
+        $bind_index = static::pushToBindData($term_fmt, $binddata);
         $sql = array();
         
         foreach($fields as $field) {
@@ -183,40 +183,6 @@ class SqlSearch {
     
     protected function _assembleTermSql($field, $bind_index, $operator) {
         return $field . ' ' . $operator . ' ' . $bind_index;
-    }
-    
-    protected function _assembleTermSqlWholeWords($field, $bind_index, $operator) {
-        // Can we use REGEXP instead?
-        
-        
-        // Long, gross query
-        // This code makes whole word queries 10 TIMES SLOWER!
-        $s = array(
-            "$term",
-            "$term.",
-            "$term,",
-            "$term;" ,
-            "$term!",
-            "$term:",
-            "$term?",
-            "$term\\'",
-            "$term\"",
-            "\"$term ",
-            "\\'$term ",
-            "\\'$term\\'",
-            "“$term ",
-            "$term”"
-        );
-
-        $qu="((`text` $operator '% $term %')";
-        
-        
-        foreach($s as $i => $e) {
-            $qu .= " OR (`text` $operator '% " . $e . "%')";
-            $qu .= " OR (`text` $operator '" . $e . "%')";
-        }
-
-        $qu .= " OR (`text` $operator '".""."$termp %'))";
     }
     
     public static function pushToBindData($item, &$binddata, $index_prefix = 'bd') {

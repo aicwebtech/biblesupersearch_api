@@ -92,4 +92,13 @@ class EngineTest extends TestCase
         $this->assertEquals(12, $results['kjv'][0]->verse);
         $this->assertEquals('Restore unto me the joy of thy salvation; and uphold me with thy free spirit.', $results['kjv'][0]->text);
     }
+    
+    public function testBookRangeSearch() {
+        $Engine = new Engine();
+        $results = $Engine->actionQuery(['bible' => 'kjv', 'search' => 'faith', 'reference' => 'Matt - John', 'whole_words' => TRUE]);
+        $this->assertCount(29, $results['kjv']);
+        $this->assertEquals(40, $results['kjv'][0]->book);
+        $this->assertEquals(6,  $results['kjv'][0]->chapter);
+        $this->assertEquals(30, $results['kjv'][0]->verse);
+    }
 }
