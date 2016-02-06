@@ -37,6 +37,10 @@ class BookAbstract extends Model
      * @param string|int $name
      */
     public static function findByEnteredName($name, $language = NULL) {
+        if(empty($name)) {
+            return FALSE;
+        }        
+
         // This logic may be needed elsewhere
         if($language) {
             $class_name = self::getClassNameByLanguage($language);

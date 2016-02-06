@@ -346,10 +346,107 @@ class PassageTest extends TestCase
     }
     
     public function testShortcutReference() {
+        $is_search = TRUE;
+        $nt_references = ['New Testament','NT','New'];
         
+        foreach($nt_references as $reference) {            
+            $Passages = Passage::parseReferences($reference, ['en'], $is_search);
+            $this->assertCount(1, $Passages);
+            $this->assertContainsOnlyInstancesOf('App\Passage', $Passages);
+            $this->assertTrue($Passages[0]->is_valid);
+            $this->assertTrue($Passages[0]->is_book_range);
+            $this->assertTrue($Passages[0]->is_search);
+            $this->assertEquals(40, $Passages[0]->Book->id);
+            $this->assertEquals(66, $Passages[0]->Book_En->id);
+        }
+        
+        $end_times_references = ['End Times','Last Days','End Times Prophecy'];
+        
+        foreach($end_times_references as $reference) {
+            $Passages = Passage::parseReferences($reference, ['en'], $is_search);
+            $this->assertCount(3, $Passages);
+            // Revelation
+            $this->assertTrue($Passages[0]->is_valid);
+            $this->assertFalse($Passages[0]->is_book_range);
+            $this->assertTrue($Passages[0]->is_search);
+            $this->assertEquals(66, $Passages[0]->Book->id);
+            // Daniel
+            $this->assertTrue($Passages[1]->is_valid);
+            $this->assertFalse($Passages[1]->is_book_range);
+            $this->assertTrue($Passages[1]->is_search);
+            $this->assertEquals(27, $Passages[1]->Book->id);
+            // Matthew 24
+            $this->assertTrue($Passages[2]->is_valid);
+            $this->assertFalse($Passages[2]->is_book_range);
+            $this->assertTrue($Passages[2]->is_search);
+            $this->assertEquals(40, $Passages[2]->Book->id);
+            $this->assertEquals('24', $Passages[2]->raw_chapter_verse);
+        }
+        
+        $Passages = Passage::parseReferences('NT;Psalms', ['en'], $is_search);
+        $this->assertCount(2, $Passages);
+        $this->assertContainsOnlyInstancesOf('App\Passage', $Passages);
+        $this->assertTrue($Passages[0]->is_valid);
+        $this->assertTrue($Passages[0]->is_book_range);
+        $this->assertTrue($Passages[0]->is_search);
+        $this->assertEquals(40, $Passages[0]->Book->id);
+        $this->assertEquals(66, $Passages[0]->Book_En->id);
+        $this->assertTrue($Passages[1]->is_valid);
+        $this->assertFalse($Passages[1]->is_book_range);
+        $this->assertTrue($Passages[1]->is_search);
+        $this->assertEquals(19, $Passages[1]->Book->id);
     }
     
     public function testShortcutReferenceWithoutSearch() {
+        $is_search = FALSE;
+        $nt_references = ['New Testament','NT','New'];
         
+        foreach($nt_references as $reference) {            
+            $Passages = Passage::parseReferences($reference, ['en'], $is_search);
+            $this->assertCount(1, $Passages);
+            $this->assertFalse($Passages[0]->is_search);
+            $this->assertFalse($Passages[0]->is_valid);    
+            $this->assertNull($Passages[0]->Book);
+            $this->assertNull($Passages[0]->Book_En);
+            $this->assertTrue($Passages[0]->hasErrors());
+            $errors = $Passages[0]->getErrors();
+            $this->assertCount(1, $errors);
+            $this->assertContains('multiple', $errors[0]);
+        }
+        
+        $end_times_references = ['End Times','Last Days','End Times Prophecy'];
+        
+        // As none of the 'End Times' references are ranges, they are all valid for reference lookup (only returns first chapter)
+        foreach($end_times_references as $reference) {
+            $Passages = Passage::parseReferences($reference, ['en'], $is_search);
+            $this->assertCount(3, $Passages);
+            $this->assertContainsOnlyInstancesOf('App\Passage', $Passages);
+            // Revelation
+            $this->assertFalse($Passages[0]->is_search);
+            $this->assertTrue($Passages[0]->is_valid);    
+            // Daniel
+            $this->assertFalse($Passages[1]->is_search);
+            $this->assertTrue($Passages[1]->is_valid);    
+            // Matthew 24
+            $this->assertFalse($Passages[2]->is_search);
+            $this->assertTrue($Passages[2]->is_valid);    
+        }
+        
+        $Passages = Passage::parseReferences('NT;Psalms', ['en'], $is_search);
+        $this->assertCount(2, $Passages);
+        $this->assertContainsOnlyInstancesOf('App\Passage', $Passages);
+        $this->assertFalse($Passages[0]->is_search);
+        $this->assertFalse($Passages[0]->is_valid);    
+        $this->assertNull($Passages[0]->Book);
+        $this->assertNull($Passages[0]->Book_En);
+        $this->assertTrue($Passages[0]->hasErrors());
+        $errors = $Passages[0]->getErrors();
+        $this->assertCount(1, $errors);
+        $this->assertContains('multiple', $errors[0]);
+        // The Psalms reference is still valid because it will just pull the first chapter
+        $this->assertTrue($Passages[1]->is_valid);
+        $this->assertFalse($Passages[1]->is_book_range);
+        $this->assertFalse($Passages[1]->is_search);
+        $this->assertEquals(19, $Passages[1]->Book->id);
     }
 }

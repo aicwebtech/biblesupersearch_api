@@ -3,6 +3,7 @@
 namespace App;
 
 use App\Models\Books\BookAbstract as Book;
+use App\Models\Shortcuts\ShortcutAbstract as Shortcut;
 
 /**
  * Class for parsing passage references
@@ -103,6 +104,43 @@ class Passage {
         }
         
         return $Book;
+    }
+    
+    /**
+     * Finds a shortcut using given reference
+     * Returns the reference if no shortcut is found.
+     * @param string $reference
+     * @param array $languages
+     * @return object|strins
+     */
+    static public function findShortcut($reference, $languages, $return_as_string = FALSE) {
+        $SC = Shortcut::findByEnteredName($reference);
+        
+        if(!$SC) {
+            return ($return_as_string) ? $reference : FALSE;
+        }
+        else {
+            return ($return_as_string) ? $SC->reference : $SC;
+        }
+        
+        /*
+        if(is_array($languages)) {
+            foreach($languages as $lang) {
+                $SC = Shortcut::findByEnteredName($reference, $lang);
+
+                if($SC) {
+                    $found = TRUE;
+                    break;
+                }
+            }
+        }
+        else {
+            $SC = Shortcut::findByEnteredName($reference);
+        }
+        
+        return $SC;
+         * 
+         */
     }
     
     public function setChapterVerse($chapter_verse) {
@@ -281,13 +319,31 @@ class Passage {
             return FALSE;
         }
         
+        $Passages   = array();
+        $pre_parsed = static::explodeReferences($reference);
         $def_language = env('DEFAULT_LANGUAGE_SHORT', 'en');
         
         if(!in_array($def_language, $languages)) {
             $languages[] = $def_language;
         }
         
-        $references = $Passages = array();
+        foreach($pre_parsed as $key => &$ref) {
+            $ref = static::findShortcut($ref, $languages, TRUE);
+        }
+        
+        unset($ref);
+        $mid_parsed = implode(';', $pre_parsed);
+        $parsed = static::explodeReferences($mid_parsed, TRUE);
+        
+        foreach($parsed as $ref) {
+            $Passages[] = self::parseSingleReference($ref['book'], $ref['chapter_verse'], $languages, $is_search);
+        }
+      
+        return (empty($Passages)) ? FALSE : $Passages;
+    }
+    
+    public static function explodeReferences($reference, $separate_book = FALSE) {
+        $exploded = array();
         $ref_end  = strlen($reference) - 1;
         $book_end = FALSE;
         
@@ -299,18 +355,25 @@ class Passage {
             }
             elseif($book_end && ($char == ',' || $char == ';' || $pos == 0)) {
                 $bpos = ($pos == 0) ? 0 : $pos + 1;
-                $book    = trim(substr($reference, $bpos, $book_end - $pos + 1), ' .,;');
-                $chapter = trim(substr($reference, $book_end +1, $ref_end - $book_end), ' .,;');                
                 
-                $Passages[] = self::parseSingleReference($book, $chapter, $languages, $is_search);
+                if($separate_book) {                    
+                    $book    = trim(substr($reference, $bpos, $book_end - $pos + 1), ' .,;');
+                    $chapter = trim(substr($reference, $book_end + 1, $ref_end - $book_end), ' .,;');
+                    $exploded[] = array('book' => $book, 'chapter_verse' => $chapter);
+                }
+                else {
+                    $ref = trim(substr($reference, $bpos, $ref_end - $bpos + 1), ' .,;');
+                    $exploded[] = $ref;
+                }
 
                 $ref_end = $pos;
                 $book_end = FALSE;
             }
         }
         
-        $Passages = array_reverse($Passages); // To keep the references in the same order that they were submitted        
-        return (empty($Passages)) ? FALSE : $Passages;
+        // To keep the references in the same order that they were submitted  
+        $exploded = array_reverse($exploded);
+        return $exploded;
     }
     
     /**
