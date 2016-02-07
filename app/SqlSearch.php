@@ -95,13 +95,13 @@ class SqlSearch {
      * Generates the WHERE clause portion from the search query
      * @return array|bool
      */
-    public function generateQuery() {
+    public function generateQuery($table_alias = '') {
         $search_type = (!empty($this->search_type)) ? $this->search_type : 'and';
         $search = $this->search;
-        return $this->_generateQueryHelper($search, $search_type, TRUE);
+        return $this->_generateQueryHelper($search, $search_type, $table_alias, TRUE);
     }
     
-    protected function _generateQueryHelper($search, $search_type, $include_extra_fields = FALSE, $binddata = array(), $fields = '') {
+    protected function _generateQueryHelper($search, $search_type, $table_alias = '', $include_extra_fields = FALSE, $binddata = array(), $fields = '') {
         $searches   = array();
         $searches[] = static::booleanizeQuery($search, $search_type);
         
@@ -334,7 +334,7 @@ class SqlSearch {
     }
 
     public function __get($name) {
-        $gettable = ['search', 'is_special', 'search_parsed', 'search_type'];
+        $gettable = ['search', 'search_parsed', 'search_type'];
         
         if ($name == 'search_parsed') {
             //return $this->parseSearchForQuery();

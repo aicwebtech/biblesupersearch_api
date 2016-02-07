@@ -10,6 +10,8 @@ use App\Search;
 use DB;
 
 class VerseStandard extends VerseAbstract {
+    protected static $special_table = 'bible';
+    
     /**  
      * Processes and executes the Bible search query
      * 
@@ -19,48 +21,54 @@ class VerseStandard extends VerseAbstract {
      * @return array $Verses array of Verses instances (found verses)
      */
     public static function getSearch($Passages = NULL, $Search = NULL, $parameters = array()) {
-        $where = $Verses = array();
         $Verse = new static;
         $table = $Verse->getTable();
-        //$Query = static::select('id','book','chapter','verse','text');
+        $passage_query = $search_query = NULL;
+        $is_special_search = ($Search && $Search->is_special) ? TRUE : FALSE;
         $Query = DB::table($table . ' AS tb')->select('id','book','chapter','verse','text');
         $Query->orderBy('book', 'ASC')->orderBy('chapter', 'ASC')->orderBy('verse', 'ASC');
         
         if($Passages) {
-            $pquery = static::_buildPassageQuery($Passages);
-            if($pquery) {
-                $Query->whereRaw($pquery);
+            $table = ($is_special_search) ? static::$special_table . '_1' : '';
+            $passage_query = static::_buildPassageQuery($Passages, $table);
+            
+            if($passage_query && !$is_special_search) {
+                $Query->whereRaw($passage_query);
             }
         }
         
         if($Search) {
-            list($squery, $binddata) = static::_buildSearchQuery($Search, $parameters);
-            $Query->whereRaw($squery, $binddata);
+            if($is_special_search) {
+                $search_query = static::_buildSpecialSearchQuery($Search, $parameters, $passage_query);
+            }
+            else {                
+                list($search_query, $binddata) = static::_buildSearchQuery($Search, $parameters);
+                $Query->whereRaw($search_query, $binddata);
+            }
         }
         
         //echo(PHP_EOL . $Query->toSql() . PHP_EOL);
-        
-        $Verses = $Query->get();
-        return $Verses;
+        $verses = $Query->get();
+        return $verses;
     }
-
     
-    protected static function _buildPassageQuery($Passages) {
+    protected static function _buildPassageQuery($Passages, $table = '') {
         if(empty($Passages)) {
             return FALSE;
         }
         
         $query = array();
+        $table_fmt = ($table) ? '`' . $table . '`.' : '';
         
         foreach($Passages as $Passage) {
             if(count($Passage->chapter_verse_normal)) {                
                 foreach($Passage->chapter_verse_normal as $parsed) {
-                    $q = '`book` = ' . $Passage->Book->id;
+                    $q = $table_fmt . '`book` = ' . $Passage->Book->id;
 
                     // Single verses
                     if($parsed['type'] == 'single') {
-                        $q .= ' AND `chapter` = ' . $parsed['c'];
-                        $q .= ($parsed['v']) ? ' AND `verse` = ' . $parsed['v'] : '';
+                        $q .= ' AND ' . $table_fmt . '`chapter` = ' . $parsed['c'];
+                        $q .= ($parsed['v']) ? ' AND ' . $table_fmt . '`verse` = ' . $parsed['v'] : '';
                     }
                     elseif($parsed['type'] == 'range') {
                         if(!$parsed['cst'] && !$parsed['cen']) {
@@ -69,7 +77,7 @@ class VerseStandard extends VerseAbstract {
 
                         $cvst = $parsed['cst'] * 1000 + intval($parsed['vst']);
                         $cven = $parsed['cen'] * 1000 + intval($parsed['ven']);
-                        $q .= ' AND `chapter_verse` BETWEEN ' . $cvst . ' AND ' . $cven;
+                        $q .= ' AND ' . $table_fmt . '`chapter_verse` BETWEEN ' . $cvst . ' AND ' . $cven;
                     }
 
                     $query[] = $q;
@@ -89,15 +97,32 @@ class VerseStandard extends VerseAbstract {
     }
     
     protected static function _buildSearchQuery($Search, $parameters) {
-        return $Search->generateQuery();
-        
         if(empty($Search)) {
             return '';
         }
+
+        return $Search->generateQuery();
+    }
+    
+    protected static function _buildSpecialSearchQuery($Search, $parameters, $lookup_query = NULL) {
+        $Verse = new static;
+        $table = $Verse->getTable();
+        $alias = static::$special_table;
+        $Query = DB::table($table . ' AS ' . $alias . '_1')->select($alias . '_1.id AS id_1');
         
-        if($Search->is_special) {
-            // 
+        list($Searches, $operators) = $Search->parseProximitySearch();
+        $SubSearch1 = array_shift($Searches);
+        $where = $SubSearch1->generateQuery($alias . '_1');
+        
+        foreach($Searches as $key => $SubSearch) {
+            $key ++;
+            $Query->addSelect($alias . '_' . $key . '.id AS id_' . $key);
+            $full_alias = $alias . '_' . $key;
+            $on_clause  = $SubSearch->generateQuery($full_alias);
+            
         }
+
+        
     }
 
     // Todo - prevent installation if already installed!

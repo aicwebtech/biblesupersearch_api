@@ -14,18 +14,33 @@ class Search extends SqlSearch {
     protected $is_special = FALSE;
     
     /**
+     * Sets the search query with minimal processing
+     * @param string $search
+     */
+    public function setSearch($search) {
+        parent::setSearch($search);
+        $this->is_special = static::isSpecial($search, $this->search_type);
+    }
+    
+    public function setOptions($options, $overwrite = FALSE) {
+        parent::setOptions($options, $overwrite);
+        $this->is_special = static::isSpecial($this->search, $this->search_type);
+    }
+    
+    /**
      * Parses the search and prepares it for the query
      * Overrides parent
      * @return string
+     * Is this needed? Remove?
      */
-    public function generateQuery() {
+    public function _generateQuery() {
         $search_type = ($this->search_type) ? $this->search_type : 'and';
         $search = $this->search;
         
-        $this->is_special = $this->isSpecial($search, $search_type);
+        //$this->is_special = $this->isSpecial($search, $search_type);
         
         if($this->is_special) {
-            return $this->_generateProximityQuery($search, $search_type);
+            //return $this->_generateProximityQuery($search, $search_type);
         }
         else {
             return $this->_generateQueryHelper($search, $search_type, TRUE);
@@ -33,10 +48,6 @@ class Search extends SqlSearch {
     }
     
     protected function _parseHelper($search, $search_type) {
-        
-    }
-    
-    protected function _generateProximityQuery($search, $search_type, $prox_limit = 5) {
         
     }
     
@@ -49,11 +60,13 @@ class Search extends SqlSearch {
      */
     static public function isSpecial($search, $search_type) {
         // Check for special search identifiers
-        $special_ops = [' PROX(', ' CHAP ', ' BOOK '];
+        $special_ops   = ['~p', '~c', '~b'];
         $special_types = ['proximity', 'chapter', 'book']; // strongs??
-        $is_special = (in_array($search_type, $special_types)) ? TRUE : FALSE;
+        $is_special    = (in_array($search_type, $special_types)) ? TRUE : FALSE;
         
         if(!$is_special && $search_type == 'boolean') {            
+            $search = static::standardizeProximityOperators($search);
+            
             foreach($special_ops AS $op) {
                 if(strpos($search, $op) !== FALSE) {
                     $is_special = TRUE;
@@ -131,5 +144,59 @@ class Search extends SqlSearch {
         $query = trim(preg_replace('/\s+/', ' ', $query));
         
         return $query;
+    }
+    
+    public static function standardizeProximityOperators($query) {
+        $prox = array('~', 'PROX');
+        // Todo - these can be search terms - how to resolve?
+        $chap = array('CHAPTER', 'CHAP');
+        $book = array('BOOK');
+        
+        $query = str_replace($prox, ' ~p', $query);
+        $query = str_replace($chap, ' ~c', $query);
+        $query = str_replace($book, ' ~b', $query);
+        return $query;
+    }
+    
+    public function parseProximitySearch() {
+        if(!$this->is_special) {
+            return FALSE;
+        }
+        
+        $unexploded = static::standardizeProximityOperators($this->search);
+        $Searches = $operators = $matches = array();
+        
+        preg_match_all('/~p(\([0-9]+\))?/', $unexploded, $matches['prox'], PREG_OFFSET_CAPTURE | PREG_SET_ORDER);
+        preg_match_all('/~c/',              $unexploded, $matches['chap'], PREG_OFFSET_CAPTURE | PREG_SET_ORDER);
+        preg_match_all('/~b/',              $unexploded, $matches['book'], PREG_OFFSET_CAPTURE | PREG_SET_ORDER);
+        
+        foreach($matches as $k => $ar) {
+            foreach($ar as $match) {
+                $item = $match[0][0];
+                $operators[$match[0][1]] = $item;
+            }
+        }
+        
+        ksort($operators);
+        $operators = array_values($operators);
+        $parsed    = str_replace($operators, '~~', $unexploded);
+        $split     = explode('~~', $parsed);
+        
+        foreach($split as $separate) {
+            $Search = static::parseSearch($separate, $this->options);
+            $Searches[] = $Search;
+        }
+        
+        return array($Searches, $operators);
+    }
+    
+    public function __get($name) {
+        $gettable = ['is_special'];
+
+        if (in_array($name, $gettable)) {
+            return $this->$name;
+        }
+        
+        return parent::__get($name);
     }
 }

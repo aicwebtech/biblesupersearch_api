@@ -81,7 +81,6 @@ class Passage {
         $book_st = array_shift($books);
         $book_en = array_pop($books);
         $book_en = ($book_en) ? $book_en : $book_st;
-        
     }
     
     /**
@@ -398,17 +397,9 @@ class Passage {
     public static function parseSingleReference($book, $chapter_verse, $languages = array(), $is_search = FALSE) {
         $Passage = new static;
         $Passage->languages = $languages;
-        $Passage->is_search = $is_search;
-        
-//        if(strpos($book, '-') !== FALSE) {
-//            $Passage->setBookRange($book);
-//        }
-//        else {            
-            $Passage->setBook($book);
-            $Passage->setChapterVerse($chapter_verse);        
- //       }
-        
+        $Passage->is_search = $is_search;                   
+        $Passage->setBook($book);
+        $Passage->setChapterVerse($chapter_verse);        
         return $Passage;
     }
-    
 }
