@@ -108,21 +108,32 @@ class VerseStandard extends VerseAbstract {
         $Verse = new static;
         $table = $Verse->getTable();
         $alias = static::$special_table;
-        $Query = DB::table($table . ' AS ' . $alias . '_1')->select($alias . '_1.id AS id_1');
+        $binddata = $selects = $joins = array();
+        $from = ' FROM ' . $table . ' AS ' . $alias . '_1';
+        $selects[] = $alias . '_1.id AS id_1';
         
         list($Searches, $operators) = $Search->parseProximitySearch();
         $SubSearch1 = array_shift($Searches);
-        $where = $SubSearch1->generateQuery($alias . '_1');
+        list($where, $binddata) = $SubSearch1->generateQuery($binddata, $alias . '_1');
         
         foreach($Searches as $key => $SubSearch) {
             $key ++;
-            $Query->addSelect($alias . '_' . $key . '.id AS id_' . $key);
             $full_alias = $alias . '_' . $key;
-            $on_clause  = $SubSearch->generateQuery($full_alias);
-            
+            $selects[] = $full_alias . '.id AS id_' . $key;
+            list($on_clause, $binddata)  = $SubSearch->generateQuery($binddata, $full_alias);
+            $joins[] = static::_buildSpecialSearchJoin($table, $full_alias, $parameters, $on_clause);
         }
-
         
+        // Need to use raw queries because of complex JOIN statements
+        $sql = 'SELECT ' . implode(',', $selects) . $from . ' ' . implode(' ', $joins) . ' WHERE ' . $where;
+
+        $results_raw = DB::select($sql, $binddata);
+    }
+    
+    protected static function _buildSpecialSearchJoin($table, $alias, $parameters, $on_clause, $operator) {
+        $join = 'INNER JOIN ' . $table . ' AS ' . $alias . ' ON ' . $on_clause;
+        
+        // 
     }
 
     // Todo - prevent installation if already installed!

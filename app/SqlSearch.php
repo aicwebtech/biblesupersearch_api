@@ -95,10 +95,10 @@ class SqlSearch {
      * Generates the WHERE clause portion from the search query
      * @return array|bool
      */
-    public function generateQuery($table_alias = '') {
+    public function generateQuery($binddata = array(), $table_alias = '') {
         $search_type = (!empty($this->search_type)) ? $this->search_type : 'and';
         $search = $this->search;
-        return $this->_generateQueryHelper($search, $search_type, $table_alias, TRUE);
+        return $this->_generateQueryHelper($search, $search_type, $table_alias, TRUE, $binddata);
     }
     
     protected function _generateQueryHelper($search, $search_type, $table_alias = '', $include_extra_fields = FALSE, $binddata = array(), $fields = '') {
@@ -128,17 +128,17 @@ class SqlSearch {
         $sql = $std_bool;
         
         foreach($terms as $term) {
-            list($term_sql, $bind_index) = $this->_termSql($term, $binddata, $fields);
+            list($term_sql, $bind_index) = $this->_termSql($term, $binddata, $fields, $table_alias);
             $sql = str_replace($term, $term_sql, $sql);
         }
         
         return array($sql, $binddata);
     }
     
-    protected function _termSql($term, &$binddata = array(), $fields = '') {
+    protected function _termSql($term, &$binddata = array(), $fields = '', $table_alias) {
         $exact_case  = (empty($this->options['exact_case']))  ? FALSE : TRUE;
         $whole_words = (empty($this->options['whole_words'])) ? FALSE : TRUE;
-        $fields = $this->_termFields($term, $fields);
+        $fields = $this->_termFields($term, $fields, $table_alias);
         $op = $this->_termOperator($term, $exact_case, $whole_words);
         $term_fmt = $this->_termFormat($term, $exact_case, $whole_words);
         $bind_index = static::pushToBindData($term_fmt, $binddata);
@@ -153,11 +153,15 @@ class SqlSearch {
         return array($sql, $bind_index);
     }
     
-    protected function _termFields($term, $fields = '') {
+    protected function _termFields($term, $fields = '', $table_alias = '') {
         $fields = ($fields) ? $fields : $this->search_fields;
         $fields = explode(',', $fields);
         
         foreach($fields as &$field) {
+            if($table_alias) {
+                $field = (strpos($field, '.') !== FALSE) ? $field : $table_alias . '.' . $field;
+            }
+            
             $field = '`' . str_replace('.','`.`', $field) . '`'; // Use proper notation
         }
         
