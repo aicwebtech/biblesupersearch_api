@@ -40,6 +40,7 @@ class VerseStandard extends VerseAbstract {
         if($Search) {
             if($is_special_search) {
                 $search_query = static::_buildSpecialSearchQuery($Search, $parameters, $passage_query);
+                $Query->whereRaw($search_query);
             }
             else {                
                 list($search_query, $binddata) = static::_buildSearchQuery($Search, $parameters);
@@ -85,10 +86,10 @@ class VerseStandard extends VerseAbstract {
             }
             else {
                 if($Passage->is_book_range) {
-                    $query[] = '`book` BETWEEN ' . $Passage->Book->id . ' AND ' . $Passage->Book_En->id;
+                    $query[] = $table_fmt . '`book` BETWEEN ' . $Passage->Book->id . ' AND ' . $Passage->Book_En->id;
                 }
                 else {
-                    $query[] = '`book` = ' . $Passage->Book->id;
+                    $query[] = $table_fmt . '`book` = ' . $Passage->Book->id;
                 }
             }
         }
@@ -106,34 +107,71 @@ class VerseStandard extends VerseAbstract {
     
     protected static function _buildSpecialSearchQuery($Search, $parameters, $lookup_query = NULL) {
         $Verse = new static;
-        $table = $Verse->getTable();
+        $table = DB::getTablePrefix() . $Verse->getTable();
         $alias = static::$special_table;
-        $binddata = $selects = $joins = array();
-        $from = ' FROM ' . $table . ' AS ' . $alias . '_1';
-        $selects[] = $alias . '_1.id AS id_1';
+        $binddata = $selects = $joins = $results = array();
+        $prev_full_alias = $alias . '_1';
+        $from = ' FROM ' . $table . ' AS ' . $prev_full_alias;
+        $selects[] = $prev_full_alias . '.id AS id_1';
         
         list($Searches, $operators) = $Search->parseProximitySearch();
+        
+        //print_r($Searches);
+        
         $SubSearch1 = array_shift($Searches);
         list($where, $binddata) = $SubSearch1->generateQuery($binddata, $alias . '_1');
+        $where = ($lookup_query) ? '(' . $lookup_query . ') AND (' . $where . ')' : $where;
         
         foreach($Searches as $key => $SubSearch) {
-            $key ++;
-            $full_alias = $alias . '_' . $key;
-            $selects[] = $full_alias . '.id AS id_' . $key;
+            $in = $key + 2;
+            $full_alias = $alias . '_' . $in;
+            $selects[] = $full_alias . '.id AS id_' . $in;
             list($on_clause, $binddata)  = $SubSearch->generateQuery($binddata, $full_alias);
-            $joins[] = static::_buildSpecialSearchJoin($table, $full_alias, $parameters, $on_clause);
+            $joins[] = static::_buildSpecialSearchJoin($table, $full_alias, $operators[$key], $prev_full_alias, $parameters, $on_clause);
+            $prev_full_alias = $full_alias;
         }
         
         // Need to use raw queries because of complex JOIN statements
-        $sql = 'SELECT ' . implode(',', $selects) . $from . ' ' . implode(' ', $joins) . ' WHERE ' . $where;
+        $sql = 'SELECT ' . implode(', ', $selects) . PHP_EOL . $from . PHP_EOL . implode(PHP_EOL, $joins) . PHP_EOL . 'WHERE ' . $where;
+        
+        //var_dump($sql);
+        //die();
 
         $results_raw = DB::select($sql, $binddata);
+        //var_dump($results_raw);
+
+        foreach($results_raw as $a1) {
+            foreach($a1 as $val) {
+                $results[] = intval($val);
+            }
+        }
+        
+        
+        $results = array_unique($results);
+        //var_dump($results);
+        $return_sql = '`id` IN (' . implode(',', $results) . ')';
+        return $return_sql;
     }
     
-    protected static function _buildSpecialSearchJoin($table, $alias, $parameters, $on_clause, $operator) {
-        $join = 'INNER JOIN ' . $table . ' AS ' . $alias . ' ON ' . $on_clause;
+    protected static function _buildSpecialSearchJoin($table, $alias, $operator, $alias2, $parameters, $on_clause) {
+        $join  = 'INNER JOIN ' . $table . ' AS ' . $alias . ' ON ';
+        $join .= $alias . '.book = ' . $alias2 . '.book';
+        $operator = trim($operator);
         
-        // 
+        if($operator == '~b' ) {
+            // Do nothing more - book join is always included
+        }
+        elseif($operator == '~c') {
+            $join .= ' AND ' . $alias . '.chapter = ' . $alias2 . '.chapter';
+        }
+        else {
+            $limit = 5;
+            //$join .= ' AND ' . $alias . '.chapter = ' . $alias2 . '.chapter'; // Todo - option - limit within chapter
+            $join .= ' AND ' . $alias . '.id BETWEEN ' . $alias2 . '.id - ' . $limit . ' AND ' . $alias2 . '.id + ' . $limit;
+        }
+        
+        $join .= ' AND ' . $on_clause;
+        return $join;
     }
 
     // Todo - prevent installation if already installed!

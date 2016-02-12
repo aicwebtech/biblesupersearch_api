@@ -101,4 +101,13 @@ class EngineTest extends TestCase
         $this->assertEquals(6,  $results['kjv'][0]->chapter);
         $this->assertEquals(30, $results['kjv'][0]->verse);
     }
+    
+    public function testProximitySearch() {
+        $Engine = new Engine();
+        //$results = $Engine->actionQuery(['bible' => 'kjv', 'search' => 'faith hope', 'reference' => 'Rom', 'search_type' => 'proximity']);
+
+        $results = $Engine->actionQuery(['bible' => 'kjv', 'search' => 'faith PROX(5) hope', 'reference' => 'Rom', 'search_type' => 'boolean']);
+        
+        //var_dump($results);
+    }
 }
