@@ -62,9 +62,9 @@ class Engine {
         $references = empty($input['reference']) ? NULL : $input['reference'];
         $keywords   = empty($input['search']) ? NULL : $input['search'];
         
-        $is_search = (empty($keywords)) ? FALSE : TRUE;
-        $Passages = Passage::parseReferences($references, $this->languages, $is_search);
-        $Search   = Search::parseSearch($keywords, $input);
+        $Search    = Search::parseSearch($keywords, $input);
+        $is_search = ($Search) ? TRUE : FALSE;
+        $Passages  = Passage::parseReferences($references, $this->languages, $is_search);
         
         foreach($this->Bibles as $Bible) {
             $results[$Bible->module] = $Bible->getSearch($Passages, $Search, $input);

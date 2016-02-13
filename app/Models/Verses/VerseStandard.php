@@ -29,26 +29,29 @@ class VerseStandard extends VerseAbstract {
         $Query->orderBy('book', 'ASC')->orderBy('chapter', 'ASC')->orderBy('verse', 'ASC');
         
         if($Passages) {
-            $table = ($is_special_search) ? static::$special_table . '_1' : '';
-            $passage_query = static::_buildPassageQuery($Passages, $table);
+            $passage_query = static::_buildPassageQuery($Passages);
             
-            if($passage_query && !$is_special_search) {
-                $Query->whereRaw($passage_query);
+            if($passage_query) {
+                $Query->whereRaw('(' . $passage_query . ')');
             }
         }
         
         if($Search) {
             if($is_special_search) {
-                $search_query = static::_buildSpecialSearchQuery($Search, $parameters, $passage_query);
-                $Query->whereRaw($search_query);
+                $table = static::$special_table . '_1';
+                $passage_query_special = static::_buildPassageQuery($Passages, $table);
+                
+                $search_query = static::_buildSpecialSearchQuery($Search, $parameters, $passage_query_special);
+                $Query->whereRaw('(' . $search_query . ')');
             }
             else {                
                 list($search_query, $binddata) = static::_buildSearchQuery($Search, $parameters);
-                $Query->whereRaw($search_query, $binddata);
+                $Query->whereRaw('(' . $search_query . ')', $binddata);
+                //$Query->whereRaw('' . $search_query . '', $binddata);
             }
         }
         
-        //echo(PHP_EOL . $Query->toSql() . PHP_EOL);
+        echo(PHP_EOL . $Query->toSql() . PHP_EOL);
         $verses = $Query->get();
         return $verses;
     }

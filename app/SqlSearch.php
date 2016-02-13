@@ -38,7 +38,7 @@ class SqlSearch {
         ), 
         'search_none' => array(
             'label' => 'None of the Words',
-            'type'  => 'or',
+            'type'  => 'not',
         ), 
         'search_phrase' => array(
             'label' => 'Exact Phrase',
@@ -64,12 +64,22 @@ class SqlSearch {
      * @return App\Search|boolean
      */
     static public function parseSearch($search = NULL, $options = array()) {
-        if (empty($search)) {
-            return FALSE;
+        if (empty($search)) { 
+            $has_search = FALSE;
+  
+            foreach(self::$search_inputs as $input => $settings) {
+                if(!empty($options[$input])) {
+                    $has_search = TRUE;
+                    break;
+                }
+            }
+
+            if(!$has_search) {
+                return FALSE;
+            }
         } 
-        else {
-            return new static($search, $options);
-        }
+
+        return new static($search, $options);
     }
 
     /**
@@ -103,7 +113,10 @@ class SqlSearch {
     
     protected function _generateQueryHelper($search, $search_type, $table_alias = '', $include_extra_fields = FALSE, $binddata = array(), $fields = '') {
         $searches   = array();
-        $searches[] = static::booleanizeQuery($search, $search_type);
+        
+        if($search) {
+            $searches[] = static::booleanizeQuery($search, $search_type);
+        }
         
         if($include_extra_fields) {            
             foreach(static::$search_inputs as $input => $settings) {
@@ -231,6 +244,7 @@ class SqlSearch {
                 break;
             case 'not':
                 $query = 'NOT (' . $query . ')';
+                //$query = 'NOT ' . implode(' NOT ', $parsed);
                 break;
         }
 
@@ -245,7 +259,7 @@ class SqlSearch {
     public static function parseQueryTerms($query) {
         $parsed = $phrases = $matches = array();
         // Remove operators that otherwise would be interpreted as terms
-        $find = array('AND', 'OR', 'XOR', 'NOT');
+        $find = array('AND', 'XOR', 'OR', 'NOT');
         $parsing = str_replace($find, ' ', $query);
 
         //preg_match_all('/"[a-zA-z0-9 ]+"/', $parsing, $phrases, PREG_SET_ORDER);
