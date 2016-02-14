@@ -40,18 +40,21 @@ class VerseStandard extends VerseAbstract {
             if($is_special_search) {
                 $table = static::$special_table . '_1';
                 $passage_query_special = static::_buildPassageQuery($Passages, $table);
-                
                 $search_query = static::_buildSpecialSearchQuery($Search, $parameters, $passage_query_special);
+                
+                if(!$search_query) {
+                    return array(); // No results
+                }
+                
                 $Query->whereRaw('(' . $search_query . ')');
             }
             else {                
                 list($search_query, $binddata) = static::_buildSearchQuery($Search, $parameters);
                 $Query->whereRaw('(' . $search_query . ')', $binddata);
-                //$Query->whereRaw('' . $search_query . '', $binddata);
             }
         }
         
-        echo(PHP_EOL . $Query->toSql() . PHP_EOL);
+        //echo(PHP_EOL . $Query->toSql() . PHP_EOL);
         $verses = $Query->get();
         return $verses;
     }
@@ -109,17 +112,15 @@ class VerseStandard extends VerseAbstract {
     }
     
     protected static function _buildSpecialSearchQuery($Search, $parameters, $lookup_query = NULL) {
+        $joins = $binddata = $selects = $results = array();
         $Verse = new static;
         $table = DB::getTablePrefix() . $Verse->getTable();
         $alias = static::$special_table;
-        $binddata = $selects = $joins = $results = array();
-        $prev_full_alias = $alias . '_1';
+        $prev_full_alias = $alias . '_1'; // Cache for the last table alias referenced
         $from = ' FROM ' . $table . ' AS ' . $prev_full_alias;
         $selects[] = $prev_full_alias . '.id AS id_1';
         
         list($Searches, $operators) = $Search->parseProximitySearch();
-        
-        //print_r($Searches);
         
         $SubSearch1 = array_shift($Searches);
         list($where, $binddata) = $SubSearch1->generateQuery($binddata, $alias . '_1');
@@ -137,23 +138,21 @@ class VerseStandard extends VerseAbstract {
         // Need to use raw queries because of complex JOIN statements
         $sql = 'SELECT ' . implode(', ', $selects) . PHP_EOL . $from . PHP_EOL . implode(PHP_EOL, $joins) . PHP_EOL . 'WHERE ' . $where;
         
+        //echo PHP_EOL;
         //var_dump($sql);
+        //var_dump($binddata);
         //die();
 
         $results_raw = DB::select($sql, $binddata);
-        //var_dump($results_raw);
 
         foreach($results_raw as $a1) {
             foreach($a1 as $val) {
-                $results[] = intval($val);
+                $results[] = intval($val); // Flatten results into one-dimensional array
             }
         }
         
-        
         $results = array_unique($results);
-        //var_dump($results);
-        $return_sql = '`id` IN (' . implode(',', $results) . ')';
-        return $return_sql;
+        return (empty($results)) ? FALSE : '`id` IN (' . implode(',', $results) . ')';
     }
     
     protected static function _buildSpecialSearchJoin($table, $alias, $operator, $alias2, $parameters, $on_clause) {
@@ -169,7 +168,8 @@ class VerseStandard extends VerseAbstract {
         }
         else {
             $limit = 5;
-            //$join .= ' AND ' . $alias . '.chapter = ' . $alias2 . '.chapter'; // Todo - option - limit within chapter
+            
+            $join .= (strpos($operator, '~l') === 0) ? ' AND ' . $alias . '.chapter = ' . $alias2 . '.chapter' : ''; // Limit within chapter
             $join .= ' AND ' . $alias . '.id BETWEEN ' . $alias2 . '.id - ' . $limit . ' AND ' . $alias2 . '.id + ' . $limit;
         }
         

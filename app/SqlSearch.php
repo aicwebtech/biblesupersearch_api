@@ -134,7 +134,7 @@ class SqlSearch {
             return FALSE;
         }
         
-        $raw_bool = (count($searches) == 1) ? $searches[0] : '(' . implode(') & (', $searches) . ')';
+        $raw_bool = ($count == 1) ? $searches[0] : '(' . implode(') & (', $searches) . ')';
         $std_bool = static::standardizeBoolean($raw_bool);
         $this->search_parsed = $std_bool;
         $terms = static::parseQueryTerms($std_bool);

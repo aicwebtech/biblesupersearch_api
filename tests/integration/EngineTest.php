@@ -104,9 +104,17 @@ class EngineTest extends TestCase
     
     public function testProximitySearch() {
         $Engine = new Engine();
-        //$results = $Engine->actionQuery(['bible' => 'kjv', 'search' => 'faith hope', 'reference' => 'Rom', 'search_type' => 'proximity']);
+        $results = $Engine->actionQuery(['bible' => 'kjv', 'search' => 'faith hope', 'reference' => 'Rom', 'search_type' => 'proximity']);
+        $this->assertCount(13, $results['kjv']);
+        
+        $results = $Engine->actionQuery(['bible' => 'kjv', 'search' => 'faith hope', 'search_type' => 'chapter']);
+        $this->assertCount(151, $results['kjv']);
+        
+        $results = $Engine->actionQuery(['bible' => 'kjv', 'search' => 'faith hope', 'reference' => 'Rom', 'search_type' => 'book']);
+        $this->assertCount(43, $results['kjv']);
 
-        $results = $Engine->actionQuery(['bible' => 'kjv', 'search' => 'faith PROX(5) hope', 'reference' => 'Rom', 'search_type' => 'boolean']);
+        $results = $Engine->actionQuery(['bible' => 'kjv', 'search' => 'faith PROC(5) hope', 'reference' => 'Rom', 'search_type' => 'boolean']);
+        $this->assertCount(10, $results['kjv']);
         
         //var_dump($results);
     }

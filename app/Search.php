@@ -60,7 +60,7 @@ class Search extends SqlSearch {
      */
     static public function isSpecial($search, $search_type) {
         // Check for special search identifiers
-        $special_ops   = ['~p', '~c', '~b'];
+        $special_ops   = ['~p', '~c', '~b', '~l'];
         $special_types = ['proximity', 'chapter', 'book']; // strongs??
         $is_special    = (in_array($search_type, $special_types)) ? TRUE : FALSE;
         
@@ -79,12 +79,11 @@ class Search extends SqlSearch {
     }
     
     public static function booleanizeQuery($query, $search_type, $arg3 = NULL) {
-        $query = trim( preg_replace('/\s+/', ' ', $query) );
-        
         if($search_type == 'boolean') {
             return $query;
         }
         
+        $query = trim( preg_replace('/\s+/', ' ', $query) );
         $parsed = static::parseSimpleQueryTerms($query);
         
         switch($search_type) {
@@ -116,7 +115,9 @@ class Search extends SqlSearch {
         // Remove operators that otherwise would be interpreted as terms
         $find   = array('CHAPTER', 'CHAP', 'BOOK');
         $parsing = str_replace($find, ' ', $query);
-        $parsing = preg_replace('/PROX\([0-9]+\)/', ' ', $parsing);
+        $parsing = preg_replace('/PROXC\([0-9]+\)/', ' ', $parsing);
+        $parsing = preg_replace('/PROX\([0-9]+\)/',  ' ', $parsing);
+        $parsing = preg_replace('/PROC\([0-9]+\)/',  ' ', $parsing);
         return parent::parseQueryTerms($parsing);
     }
     
@@ -125,36 +126,32 @@ class Search extends SqlSearch {
      * @param string $query
      * @return string
      */
-    public static function standardizeBoolean($query) {
-        $prox = array('~', 'PROX');
-        // Todo - these can be search terms - how to resolve?
-        $chap = array('CHAPTER', 'CHAP');
-        $book = array('BOOK');
-        
-        $query = str_replace($prox, ' ~p~ ', $query);
-        $query = str_replace($chap, ' ~c~ ', $query);
-        $query = str_replace($book, ' ~b~ ', $query);
-        
+    public static function standardizeBoolean($query) {        
+        $query = static::standardizeProximityOperators($query, '~ ');
         $query = parent::standardizeBoolean($query);
         
-        $find = array('~p~', '~c~', '~b~');
-        $repl = array('PROX', 'CHAP', 'BOOK');
+        $find = array('~p~', '~c~', '~b~', '~l~');
+        $repl = array('PROX', 'CHAP', 'BOOK', 'PROC');
         $query = str_replace($find, $repl, $query);
         $query = str_replace('PROX (', 'PROX(', $query);
+        $query = str_replace('PROC (', 'PROC(', $query);
         $query = trim(preg_replace('/\s+/', ' ', $query));
         
         return $query;
     }
     
-    public static function standardizeProximityOperators($query) {
-        $prox = array('~', 'PROX');
+    public static function standardizeProximityOperators($query, $suffix = '') {
+        $proc = array('PROC','PROXC'); // Proximity - force within same chapter (Legacy 2.x functionality)
+        $prox = array('PROX'); // Proximity - within same book
         // Todo - these can be search terms - how to resolve?
         $chap = array('CHAPTER', 'CHAP');
         $book = array('BOOK');
         
-        $query = str_replace($prox, ' ~p', $query);
-        $query = str_replace($chap, ' ~c', $query);
-        $query = str_replace($book, ' ~b', $query);
+        $query = str_replace('~',   ' ~p' . $suffix, $query);
+        $query = str_replace($proc, ' ~l' . $suffix, $query);
+        $query = str_replace($prox, ' ~p' . $suffix, $query);
+        $query = str_replace($chap, ' ~c' . $suffix, $query);
+        $query = str_replace($book, ' ~b' . $suffix, $query);
         return $query;
     }
     
@@ -163,10 +160,13 @@ class Search extends SqlSearch {
             return FALSE;
         }
         
-        $unexploded = static::standardizeProximityOperators($this->search);
+        $limit  = (isset($this->options['proximity_limit'])) ? intval($this->options['proximity_limit']) : 5;
+        $search = static::booleanizeQuery($this->search, $this->search_type, $limit);
+        $unexploded = static::standardizeProximityOperators($search);
         $Searches = $operators = $matches = array();
         
         preg_match_all('/~p(\([0-9]+\))?/', $unexploded, $matches['prox'], PREG_OFFSET_CAPTURE | PREG_SET_ORDER);
+        preg_match_all('/~l(\([0-9]+\))?/', $unexploded, $matches['proc'], PREG_OFFSET_CAPTURE | PREG_SET_ORDER);
         preg_match_all('/~c/',              $unexploded, $matches['chap'], PREG_OFFSET_CAPTURE | PREG_SET_ORDER);
         preg_match_all('/~b/',              $unexploded, $matches['book'], PREG_OFFSET_CAPTURE | PREG_SET_ORDER);
         
