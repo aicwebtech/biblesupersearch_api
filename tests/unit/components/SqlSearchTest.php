@@ -32,7 +32,7 @@ class SqlSearchTest extends TestCase
         $parsed = SqlSearch::parseQueryTerms('faith AND (hope OR love) OR "shall be saved"');
         $this->assertEquals(array('faith', 'hope', 'love', '"shall be saved"'), $parsed);
         $parsed = SqlSearch::parseQueryTerms('(faith OR hope) charity AND (Joy or love)');
-        $this->assertEquals(array('faith', 'hope', 'charity', 'Joy', 'or', 'love'), $parsed); // lowercase or is considered a keyword
+        $this->assertEquals(array('faith', 'hope', 'charity', 'Joy', 'or', 'love'), $parsed); // lowercase or is considered a keyword, not an operator
         $parsed = SqlSearch::parseQueryTerms('(faith OR hope) charity AND (Joy OR love)');
         $this->assertEquals(array('faith', 'hope', 'charity', 'Joy', 'love'), $parsed); 
         $parsed = SqlSearch::parseQueryTerms('(faith OR hope) charity AND "free spirit"');

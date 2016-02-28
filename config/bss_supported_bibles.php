@@ -198,6 +198,16 @@ return array(
         ),
         /*
         array(
+            'module'    => 'test',
+            'name'      => 'Test',
+            'year'      => '2016',
+            'lang'      => 'Swahili',
+            'lang_short'=> 'sw',
+        ),
+         * 
+         */
+        /*
+        array(
             'module'    => 'thaikjv',
             'name'      => 'Thai KJV (Thai)*',
         )

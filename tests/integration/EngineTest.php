@@ -12,6 +12,16 @@ class EngineTest extends TestCase
         $this->assertInstanceOf('App\Engine', $engine);
     }
     
+    /**
+     * Tests adding the default Bible on instantiation
+     */
+    public function testConfig() {
+        $engine = new Engine();
+        $Bibles = $engine->getBibles();
+        $this->assertCount(1, $Bibles);
+        $this->assertContainsOnlyInstancesOf('App\Models\Bible', $Bibles);
+    }
+    
     public function testMethodAddBible() {
         $engine = new Engine();
         $engine->addBible('kjv');
@@ -26,14 +36,6 @@ class EngineTest extends TestCase
         $this->assertFalse($engine->hasErrors());
         $Bibles = $engine->getBibles();
         $this->assertCount(4, $Bibles);
-    }
-    
-    public function testFalseBible() {
-        $engine = new Engine();
-        $engine->addBible('niv');
-        $this->assertTrue($engine->hasErrors());
-        $errors = $engine->getErrors();
-        $this->assertEquals("Bible text 'niv' not found", $errors[0]);
     }
     
     public function testBasicSearch() {

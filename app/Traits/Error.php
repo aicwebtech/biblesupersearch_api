@@ -9,6 +9,15 @@ namespace App\Traits;
 trait Error {
     protected $errors = array(); // Array of errors, if any
     protected $has_errors = FALSE;
+    protected $error_level = 0;
+    /**
+     * Error levels
+     * 0 - (HTTP 200) - No error
+     * 1 - Notice - message to the user, not nessessarily even an error
+     * 2 - Warning
+     * 3 - Non-fatal error
+     * 4 - Fatal error 
+     */
     
     /**
      * Indicates if we have any errors
@@ -27,29 +36,39 @@ trait Error {
     }
     
     /**
+     * Returns the error level
+     * @return int error_level
+     */
+    public function getErrorLevel() {
+        return $this->error_level;
+    }
+    
+    /**
      * Clears out all errors
      */
     public function resetErrors() {
         $this->errors = array();
         $this->has_errors = FALSE;
+        $this->error_level = 0;
     }
     
     /**
      * Adds an error 
      * @param string $message
      */
-    protected function addError($message) {
+    protected function addError($message, $level = 1) {
         $this->errors[] = $message;
         $this->has_errors = TRUE;
+        $this->error_level = max($this->error_level, $level);
     }
     
     /**
      * Adds multiple errors at once
      * @param array $errors
      */
-    protected function addErrors($errors) {
+    protected function addErrors($errors, $level = 1) {
         foreach($errors as $error) {
-            $this->addError($message);
+            $this->addError($error, $level);
         }
     }
     

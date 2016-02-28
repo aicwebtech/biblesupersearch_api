@@ -56,7 +56,7 @@ class VerseStandard extends VerseAbstract {
         
         //echo(PHP_EOL . $Query->toSql() . PHP_EOL);
         $verses = $Query->get();
-        return $verses;
+        return (empty($verses)) ? FALSE : $verses;
     }
     
     protected static function _buildPassageQuery($Passages, $table = '') {

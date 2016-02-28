@@ -135,6 +135,7 @@ class Passage {
             return ($return_as_string) ? $SC->reference : $SC;
         }
         
+        // Retain - for future use
         /*
         if(is_array($languages)) {
             foreach($languages as $lang) {
