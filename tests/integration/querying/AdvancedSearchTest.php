@@ -74,4 +74,24 @@ class AdvancedSearchTest extends TestCase {
         $results = $Engine->actionQuery($input);
         $this->assertCount(432, $results['kjv']);
     }
+    
+    public function testLongPassageQuery() {
+        $reference = 'Gen 3:36; Exodus 3:36; Leviticus 3:36; Numbers 3:36; Deuteronomy 3:36; Joshua 3:36; Judges 3:36; Ruth 3:36; 1 Samuel 3:36; '
+                . '2 Samuel 3:36; '
+                . '1 Kings 3:36; 2 Kings 3:36; 1 Chronicles 3:36; 2 Chronicles 3:36; Ezra 3:36; Nehemiah 3:36; Esther 3:36; Job 3:36; Psalms 3:36; '
+                . 'Proverbs 3:36; Ecclesiastes 3:36; Song of Solomon 3:36; Isaiah 3:36; Jeremiah 3:36; Lamentations 3:36; Ezekiel 3:36; Daniel 3:36; '
+                . 'Hosea 3:36; Joel 3:36; Amos 3:36; Obadiah 3:36; Jonah 3:36; Micah 3:36; Nahum 3:36; Habakkuk 3:36; Zephaniah 3:36; Haggai 3:36; '
+                . 'Zechariah 3:36; Malachi 3:36; Matthew 3:36; Mark 3:36; Luke 3:36; John 3:36; Acts 3:36; Romans 3:36; 1 Corinthians 3:36; '
+                . '2 Corinthians 3:36; '
+                . 'Galatians 3:36; Ephesians 3:36; Philippians 3:36; Colossians 3:36; 1 Thessalonians 3:36; 2 Thessalonians 3:36; 1 Timothy 3:36; '
+                . '2 Timothy 3:36;'
+                . ' Titus 3:36; Philemon 3:36; Hebrews 3:36; James 3:36; 1 Peter 3:36; 2 Peter 3:36; 1 John 3:36; 2 John 3:36; 3 John 3:36; Jude 3:36; '
+                . 'Revelation 3:36';
+        
+        $Engine = new Engine();
+        $input = ['bible' => 'kjv', 'reference' => $reference, 'format_structure' => 'raw'];
+        
+        $results = $Engine->actionQuery($input);
+        $this->assertCount(5, $results['kjv']);
+    }
 }

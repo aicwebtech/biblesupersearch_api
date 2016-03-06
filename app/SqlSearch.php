@@ -67,7 +67,7 @@ class SqlSearch {
         if (empty($search)) { 
             $has_search = FALSE;
   
-            foreach(self::$search_inputs as $input => $settings) {
+            foreach(static::$search_inputs as $input => $settings) {
                 if(!empty($options[$input])) {
                     $has_search = TRUE;
                     break;
@@ -89,6 +89,44 @@ class SqlSearch {
     public function setSearch($search) {
         $this->search = trim(preg_replace('/\s+/', ' ', $search));
     }
+    
+    /**
+     * Validates the search term(s)
+     */
+    public function validate() {
+        $valid = TRUE;
+        
+        foreach(static::$search_inputs as $input => $settings) {
+            if(!empty($this->options[$input])) {
+                $search_type = ($settings['search_type']) ? $settings['search_type'] : $this->search_type;
+                
+                if(!$this->_validateHelper($this->options[$input], $search_type)) {
+                    $valid = FALSE;
+                }
+            }
+        }
+        
+        return $valid;
+    }
+    
+    protected function _validateHelper($search, $search_type) {
+        switch ($search_type) {
+            case 'boolean' :
+                return $this->_validateBoolean($search);
+                break;
+            default:
+                return TRUE;
+        }
+    }
+    
+    /**
+     * Validates a Boolean search
+     * @param type $search
+     */
+    protected function _validateBoolean($search) {
+        
+    }
+
 
     /**
      * Sets the options with option to overwrite existing

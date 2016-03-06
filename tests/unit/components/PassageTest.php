@@ -315,6 +315,22 @@ class PassageTest extends TestCase
         $this->assertContainsOnlyInstancesOf('App\Passage', $Passages);
         $this->assertFalse($Passages[0]->is_valid);
         $this->assertFalse($Passages[1]->is_valid);
+        $this->assertTrue($Passages[0]->hasErrors());
+        $this->assertTrue($Passages[1]->hasErrors());
+        $errors = $Passages[0]->getErrors();
+        $this->assertEquals(trans('errors.book.not_found', ['book' => 'Habrews']), $errors[0]);
+        $errors = $Passages[1]->getErrors();
+        $this->assertEquals(trans('errors.book.not_found', ['book' => '1 Tom']), $errors[0]);
+    }
+    
+    public function testInvalidRangeReference() {
+        $reference = 'Ramans - Revelation';
+        $Passages  = Passage::parseReferences($reference, ['en'], TRUE);
+        $this->assertCount(1, $Passages);
+        $this->assertFalse($Passages[0]->is_valid);
+        $this->assertTrue($Passages[0]->hasErrors());
+        $errors = $Passages[0]->getErrors();
+        $this->assertEquals(trans('errors.book.invalid_in_range', ['range' => $reference]), $errors[0]);
     }
     
     public function testBookRange() {
@@ -342,7 +358,7 @@ class PassageTest extends TestCase
         $this->assertTrue($Passages[0]->hasErrors());
         $errors = $Passages[0]->getErrors();
         $this->assertCount(1, $errors);
-        $this->assertContains('multiple', $errors[0]);
+        $this->assertEquals(trans('errors.book.multiple_without_search'), $errors[0]);
     }
     
     public function testShortcutReference() {

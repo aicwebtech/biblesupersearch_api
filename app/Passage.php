@@ -40,7 +40,7 @@ class Passage {
         if(strpos($book, '-') !== FALSE) {
             // handle book ranges
             if(!$this->is_search) {
-                return $this->_addBookError('Cannot retrieve multiple books at once.');
+                return $this->_addBookError(trans('errors.book.multiple_without_search'));
             }
             
             $books = explode('-', $book);
@@ -57,7 +57,7 @@ class Passage {
                 $this->Book_En = $Book_En;
             }
             else {
-                return $this->_addBookError("Invalid book in book range: '$book'");
+                return $this->_addBookError(trans('errors.book.invalid_in_range', ['range' => $book]));
             }
         }
         else {
@@ -69,7 +69,7 @@ class Passage {
                 $this->is_valid = TRUE;
             }
             else {
-                return $this->_addBookError("Book '$book' not found");
+                return $this->_addBookError(trans('errors.book.not_found', ['book' => $book]));
             }
         }
     }

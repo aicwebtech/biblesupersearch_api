@@ -85,11 +85,32 @@ class Engine {
                 
         // Todo - Routing and merging of multiple elements here
         $references = empty($input['reference']) ? NULL : $input['reference'];
-        $keywords   = empty($input['search']) ? NULL : $input['search'];
+        $keywords   = empty($input['search'])    ? NULL : $input['search'];
         
         $Search    = Search::parseSearch($keywords, $input);
         $is_search = ($Search) ? TRUE : FALSE;
         $Passages  = Passage::parseReferences($references, $this->languages, $is_search);
+        
+        // Passage validation
+        if(is_array($Passages)) {            
+            $passage_error_count = 0;
+            
+            foreach($Passages as $Passage) {
+                if($Passage->hasErrors()) {
+                    $this->addErrors($Passage->getErrors(), $Passage->getErrorLevel());
+                    $passage_error_count ++;
+                }
+            }
+            
+            if(count($Passages) == $passage_error_count) {
+                return FALSE; // If all of the passages are invalid, return
+            }
+        }
+        
+        // Search validation
+        if($Search) {
+            
+        }
         
         foreach($this->Bibles as $Bible) {
             $bible_results = $Bible->getSearch($Passages, $Search, $input);
