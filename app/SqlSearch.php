@@ -165,7 +165,7 @@ class SqlSearch {
         }
         
         $searches = array_filter($searches); // remove empty values
-        $count = count($searches);
+        $count    = count($searches);
         
         if (!$count) {
             $this->search_parsed = '';
@@ -182,6 +182,8 @@ class SqlSearch {
             list($term_sql, $bind_index) = $this->_termSql($term, $binddata, $fields, $table_alias);
             $sql = str_replace($term, $term_sql, $sql);
         }
+        
+        //var_dump($binddata);
         
         return array($sql, $binddata);
     }
@@ -237,21 +239,26 @@ class SqlSearch {
     }
     
     protected function _assembleTermSql($field, $bind_index, $operator) {
+        //return $field . ' ' . $operator . ' :' . $bind_index;
         return $field . ' ' . $operator . ' ' . $bind_index;
     }
     
     public static function pushToBindData($item, &$binddata, $index_prefix = 'bd') {
+        //echo(PHP_EOL . 'here' . PHP_EOL);
         if(!is_array($binddata)) {
             return FALSE;
         }
         
+        $idx = FALSE;
         $idx = array_search($item, $binddata);
         
         if($idx === FALSE) {
             $idx = ':' . $index_prefix .  (count($binddata) + 1);
+            //$idx = $index_prefix .  (count($binddata) + 1);
             $binddata[$idx] = $item;
         }
         
+        //var_dump($binddata);
         return $idx;
     }
     
@@ -314,7 +321,7 @@ class SqlSearch {
             $parsed[] = $item;
         }
 
-        $parsed = array_unique($parsed);
+        //$parsed = array_unique($parsed); // Causing breakage
         return $parsed;
     }
     

@@ -73,8 +73,9 @@ class SqlSearchTest extends TestCase
         $this->assertEquals(array(':bd1' => 'hey',':bd2' => 'faith', ':bd3' => 'hope',':love4' => 'love'), $binddata);
         
         // Attempt to push faith on again - it won't be added because it's already present
-        SqlSearch::pushToBindData('faith', $binddata);
+        $index = SqlSearch::pushToBindData('faith', $binddata);
         $this->assertEquals(array(':bd1' => 'hey',':bd2' => 'faith', ':bd3' => 'hope',':love4' => 'love'), $binddata);
+        $this->assertEquals(':bd2', $index);
     }
     
     public function testSqlGeneration() {
