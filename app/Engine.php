@@ -81,17 +81,22 @@ class Engine {
      */
     public function actionQuery($input) {
         $results = $bible_no_results = array();
-        $input['bible'] && $this->setBibles($input['bible']);
+        !empty($input['bible']) && $this->setBibles($input['bible']);
                 
         // Todo - Routing and merging of multiple elements here
         $references = empty($input['reference']) ? NULL : $input['reference'];
         $keywords   = empty($input['search'])    ? NULL : $input['search'];
+        $Search     = Search::parseSearch($keywords, $input);
+        $is_search  = ($Search) ? TRUE : FALSE;
         
-        $Search    = Search::parseSearch($keywords, $input);
-        $is_search = ($Search) ? TRUE : FALSE;
-        $Passages  = Passage::parseReferences($references, $this->languages, $is_search);
+        if(!$is_search && empty($references)) {
+            $this->addError(trans('errors.no_query'));
+            return FALSE;
+        }
         
         // Passage validation
+        $Passages  = Passage::parseReferences($references, $this->languages, $is_search);
+        
         if(is_array($Passages)) {            
             $passage_error_count = 0;
             
@@ -123,7 +128,6 @@ class Engine {
             }
         }
         
-        // Todo: Error handling
         if(empty($results)) {
             $this->addError( trans('errors.no_results') );
         }
@@ -135,6 +139,27 @@ class Engine {
         
         
         return $results;
+    }
+    
+    /**
+     * API action query for getting a list of Bibles available to the user
+     */
+    public function actionBibles() {
+        $include_desc = FALSE;
+        $Bibles = Bible::select('name','shortname','module','year','lang','lang_short','copyright','italics','strongs');
+        
+        if($include_desc) {
+            $Bibles -> addSelect('description');
+        }
+        
+        $Bibles = $Bibles -> where('enabled', 1) -> orderBy('rank', 'ASC') -> get() -> all();
+        
+        if(empty($Bibles)) {
+            $this->addError(trans('errors.no_bible_enabled'));
+            return FALSE;
+        }
+        
+        return $Bibles;
     }
 
 }

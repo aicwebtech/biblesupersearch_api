@@ -57,7 +57,6 @@ class SearchTest extends TestCase {
         $this->assertEquals('faith PROX(50) hope PROX(50) joy', $bp);
         $bp = Search::booleanizeQuery($search, 'book');
         $this->assertEquals('faith BOOK hope BOOK joy', $bp);
-        
         $bp = Search::booleanizeQuery('faith AND (hope OR love)', 'boolean');
         $this->assertEquals('faith AND (hope OR love)', $bp);
     }

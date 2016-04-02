@@ -27,8 +27,6 @@ Route::get('/admin/login', function() {
 });
 
 
-
-
 // Authentication Routes...
 //Route::get('/admin/login', 'Auth\AuthController@getLogin');
 Route::get('/auth/login', function () {
@@ -39,7 +37,8 @@ Route::post('/auth/login', 'Auth\AuthController@postLogin');
 Route::get('/auth/logout', 'Auth\AuthController@getLogout');
 Route::get('/admin/main', 'AdminController@getMain');
 
-
+Route::get('/api', 'ApiController@query');
+Route::get('/api/bibles', 'ApiController@bibles');
 
 
 //Route::controller('admin', 'AdminController');
