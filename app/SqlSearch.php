@@ -195,6 +195,8 @@ class SqlSearch {
         $op = $this->_termOperator($term, $exact_case, $whole_words);
         $term_fmt = $this->_termFormat($term, $exact_case, $whole_words);
         $bind_index = static::pushToBindData($term_fmt, $binddata);
+        //var_dump($term);
+        //var_dump($bind_index);
         $sql = array();
         
         foreach($fields as $field) {
@@ -239,7 +241,7 @@ class SqlSearch {
     }
     
     protected function _assembleTermSql($field, $bind_index, $operator) {
-        //return $field . ' ' . $operator . ' :' . $bind_index;
+        return $field . ' ' . $operator . ' ? ';
         return $field . ' ' . $operator . ' ' . $bind_index;
     }
     
@@ -250,15 +252,15 @@ class SqlSearch {
         }
         
         $idx = FALSE;
-        $idx = array_search($item, $binddata);
+        //$idx = array_search($item, $binddata);
         
         if($idx === FALSE) {
-            $idx = ':' . $index_prefix .  (count($binddata) + 1);
-            //$idx = $index_prefix .  (count($binddata) + 1);
+            //$idx = ':' . $index_prefix .  (count($binddata) + 1);
+            $idx = count($binddata);
             $binddata[$idx] = $item;
         }
         
-        //var_dump($binddata);
+        var_dump($binddata);
         return $idx;
     }
     
