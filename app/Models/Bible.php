@@ -38,6 +38,7 @@ class Bible extends Model {
             $this->Verses = new $class_name();
             $this->Verses->setBible($this); // This circular reference may be a bad thing
         }
+        
         return $this->Verses;
     }
     

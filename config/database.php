@@ -62,6 +62,9 @@ return [
             'collation' => 'utf8_unicode_ci',
             'prefix'    => env('DB_PREFIX', ''),
             'strict'    => false,
+            'options'   => array(
+                //PDO::ATTR_EMULATE_PREPARES => TRUE,
+            )
         ],
 
         'pgsql' => [

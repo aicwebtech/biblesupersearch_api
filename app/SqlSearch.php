@@ -17,6 +17,7 @@ class SqlSearch {
         'whole_words' => FALSE,
     );
     
+    protected $use_unnamed_bindings = FALSE;
     public $search_fields = 'text'; // Comma separated
     
     static protected $search_inputs = array(
@@ -241,8 +242,8 @@ class SqlSearch {
     }
     
     protected function _assembleTermSql($field, $bind_index, $operator) {
-        return $field . ' ' . $operator . ' ? ';
-        return $field . ' ' . $operator . ' ' . $bind_index;
+        $binding = ($this->use_unnamed_bindings) ? '?' : $bind_index;
+        return $field . ' ' . $operator . ' ' . $binding;
     }
     
     public static function pushToBindData($item, &$binddata, $index_prefix = 'bd') {
@@ -252,15 +253,15 @@ class SqlSearch {
         }
         
         $idx = FALSE;
-        //$idx = array_search($item, $binddata);
+        $idx = array_search($item, $binddata);
         
         if($idx === FALSE) {
-            //$idx = ':' . $index_prefix .  (count($binddata) + 1);
-            $idx = count($binddata);
+            $idx = ':' . $index_prefix .  (count($binddata) + 1);
+            //$idx = count($binddata);
             $binddata[$idx] = $item;
         }
         
-        var_dump($binddata);
+        //var_dump($binddata);
         return $idx;
     }
     
