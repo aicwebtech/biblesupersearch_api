@@ -7,7 +7,7 @@ use Illuminate\Foundation\Testing\DatabaseTransactions;
 use App\Search;
 
 class SearchTest extends TestCase {
-    
+
     public function testEmptySearch() {
         $empty = array('', NULL, FALSE, array());
         

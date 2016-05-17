@@ -17,7 +17,8 @@ class SqlSearch {
         'whole_words' => FALSE,
     );
     
-    protected $use_unnamed_bindings = FALSE;
+    //protected $use_unnamed_bindings = FALSE;
+    protected $use_named_bindings = FALSE;
     public $search_fields = 'text'; // Comma separated
     
     static protected $search_inputs = array(
@@ -99,7 +100,7 @@ class SqlSearch {
         
         foreach(static::$search_inputs as $input => $settings) {
             if(!empty($this->options[$input])) {
-                $search_type = ($settings['search_type']) ? $settings['search_type'] : $this->search_type;
+                $search_type = (array_key_exists('search_type', $settings)) ? $settings['search_type'] : $this->search_type;
                 
                 if(!$this->_validateHelper($this->options[$input], $search_type)) {
                     $valid = FALSE;
@@ -125,7 +126,16 @@ class SqlSearch {
      * @param type $search
      */
     protected function _validateBoolean($search) {
+        $valid = TRUE;
+        $lpar = substr_count($search, '(');
+        $rpar = substr_count($search, ')');
         
+        if($lpar != $rpar) {
+            $this->addError( trans('errors.paren_mismatch') );
+            $valid = FALSE;
+        }
+        
+        return $valid;
     }
 
 
@@ -242,18 +252,17 @@ class SqlSearch {
     }
     
     protected function _assembleTermSql($field, $bind_index, $operator) {
-        $binding = ($this->use_unnamed_bindings) ? '?' : $bind_index;
+        //$binding = ($this->use_named_bindings) ? $bind_index : '?';
+        $binding = $bind_index;
         return $field . ' ' . $operator . ' ' . $binding;
     }
     
-    public static function pushToBindData($item, &$binddata, $index_prefix = 'bd') {
-        //echo(PHP_EOL . 'here' . PHP_EOL);
+    public static function pushToBindData($item, &$binddata, $index_prefix = 'bd', $avoid_duplicates = FALSE) {
         if(!is_array($binddata)) {
             return FALSE;
         }
         
-        $idx = FALSE;
-        $idx = array_search($item, $binddata);
+        $idx = ($avoid_duplicates) ? array_search($item, $binddata) : FALSE;
         
         if($idx === FALSE) {
             $idx = ':' . $index_prefix .  (count($binddata) + 1);
@@ -261,7 +270,6 @@ class SqlSearch {
             $binddata[$idx] = $item;
         }
         
-        //var_dump($binddata);
         return $idx;
     }
     
@@ -400,7 +408,7 @@ class SqlSearch {
     }
 
     public function __get($name) {
-        $gettable = ['search', 'search_parsed', 'search_type'];
+        $gettable = ['search', 'search_parsed', 'search_type', 'use_named_bindings'];
         
         if ($name == 'search_parsed') {
             //return $this->parseSearchForQuery();
@@ -410,5 +418,8 @@ class SqlSearch {
             return $this->$name;
         }
     }
-
+    
+    public function setUseNamedBindings($value) {
+        $this->use_named_bindings = ($value) ? TRUE : FALSE;
+    }
 }

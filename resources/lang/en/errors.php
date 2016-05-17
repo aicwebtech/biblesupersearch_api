@@ -12,5 +12,7 @@ return array(
         'invalid_in_range' => 'Invalid book in book range: \':range\'.',
         'not_found' => 'Book \':book\' not found.',
         'multiple_without_search' => 'Cannot retrieve multiple books at once.',
-    )
+    ),
+    'paren_mismatch' => 'Your parenthenses are mismatched.',
+    'prox_paren_mismatch' => 'Your parenthenses are mismatched, or you have a proximity operator inside of parentheses.',
 );

@@ -114,26 +114,33 @@ class Engine {
         
         // Search validation
         if($Search) {
+            $search_valid = $Search->validate();
             
-        }
-        
-        foreach($this->Bibles as $Bible) {
-            $bible_results = $Bible->getSearch($Passages, $Search, $input);
-            
-            if($bible_results) {
-                $results[$Bible->module] = $bible_results;
-            }
-            else {
-                $bible_no_results[] = trans('errors.bible_no_results', ['module' => $Bible->module]);
+            if(!$search_valid) {
+                $this->addErrors($Search->getErrors(), $Search->getErrorLevel());
             }
         }
         
-        if(empty($results)) {
-            $this->addError( trans('errors.no_results') );
+        if(!$Search || $Search && $search_valid) {
+            foreach($this->Bibles as $Bible) {
+                $bible_results = $Bible->getSearch($Passages, $Search, $input);
+
+                if($bible_results) {
+                    $results[$Bible->module] = $bible_results;
+                }
+                else {
+                    $bible_no_results[] = trans('errors.bible_no_results', ['module' => $Bible->module]);
+                }
+            }
+            
+            if(empty($results)) {
+                $this->addError( trans('errors.no_results') );
+            }
+            elseif(!empty($bible_no_results)) {
+                $this->addErrors($bible_no_results);
+            }
         }
-        elseif(!empty($bible_no_results)) {
-            $this->addErrors($bible_no_results);
-        }
+        
 
         // Todo: Format data structure
         

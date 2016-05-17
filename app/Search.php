@@ -106,6 +106,16 @@ class Search extends SqlSearch {
         return $query;
     }
     
+    protected function _validateBoolean($search) {
+        if(!$this->is_special) {
+            return parent::_validateBoolean($search);
+        }
+        
+        $prox_parsed = $this->parseProximitySearch();
+        
+        
+    }
+    
     /**
      * Parses out the terms of a boolean query
      * @param string $query standardized, booleanized query

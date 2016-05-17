@@ -88,6 +88,7 @@ class EngineTest extends TestCase
         $results = $Engine->actionQuery(['bible' => 'kjv', 'search' => 'faith joy', 'whole_words' => 'yes', 'search_type' => 'or']);
         $this->assertCount(381, $results['kjv']);
         $results = $Engine->actionQuery(['bible' => 'kjv', 'search' => 'faith && joy || "free spirit"', 'whole_words' => 'yes', 'search_type' => 'boolean']);
+        $this->assertFalse($Engine->hasErrors());
         $this->assertCount(6, $results['kjv']);
         $this->assertEquals(19,  $results['kjv'][0]->book);
         $this->assertEquals(51, $results['kjv'][0]->chapter);

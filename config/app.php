@@ -206,5 +206,10 @@ return [
         'View'      => Illuminate\Support\Facades\View::class,
 
     ],
+    
+    /* Whether to use named placeholders for the primary query. *
+     * Do not change, or things may / will break!
+     */
+    'query_use_named_placeholders' => FALSE,
 
 ];

@@ -75,4 +75,13 @@ class ErrorTest extends TestCase {
         $this->assertEquals(trans('errors.book.multiple_without_search'), $errors[0]);
     }
     
+    public function testParenthensesMismatch() {
+        $Engine = new Engine();
+        $results = $Engine->actionQuery(['bible' => 'kjv', 'search' => '(faith (joy love) hope', 'search_type' => 'boolean']);
+        $this->assertTrue($Engine->hasErrors());
+        $errors = $Engine->getErrors();
+        $this->assertCount(1, $errors);
+        $this->assertEquals( trans('errors.paren_mismatch'), $errors[0]);
+    }
+    
 }

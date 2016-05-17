@@ -107,7 +107,8 @@ class VerseStandard extends VerseAbstract {
         if(empty($Search)) {
             return '';
         }
-
+        
+        $Search->setUseNamedBindings(config('app.query_use_named_placeholders'));
         return $Search->generateQuery();
     }
     
