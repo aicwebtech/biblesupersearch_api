@@ -110,10 +110,26 @@ class Search extends SqlSearch {
         if(!$this->is_special) {
             return parent::_validateBoolean($search);
         }
-        
+
+        $valid = TRUE;
         $prox_parsed = $this->parseProximitySearch();
         
+        foreach($prox_parsed[0] as $Search) {
+            if(!$Search->validate()) {
+                $valid = FALSE;
+                $errors = $Search->getErrors();
+                
+                foreach($errors as $key => $error) {
+                    if($error == trans('errors.paren_mismatch')) {
+                        $errors[$key] = trans('errors.prox_paren_mismatch');
+                    }
+                }
+                
+                $this->addErrors($errors, $Search->getErrorLevel());
+            }
+        }
         
+        return $valid;
     }
     
     /**

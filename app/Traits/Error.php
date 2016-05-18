@@ -56,8 +56,11 @@ trait Error {
      * Adds an error 
      * @param string $message
      */
-    protected function addError($message, $level = 1) {
-        $this->errors[] = $message;
+    protected function addError($message, $level = 1, $unique = TRUE) {
+        if(!in_array($message, $this->errors)) {  
+            $this->errors[] = $message;
+        }
+        
         $this->has_errors = TRUE;
         $this->error_level = max($this->error_level, $level);
     }

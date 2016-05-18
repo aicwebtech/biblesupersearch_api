@@ -8,9 +8,7 @@ use App\Engine;
 
 class ProximitySearchTest extends TestCase {
     public function testParenthensesMismatch() {
-        return;
         $Engine = new Engine();
-        //return;
         $results = $Engine->actionQuery(['bible' => 'kjv', 'search' => '(faith PROX(2) joy joy love joy', 'search_type' => 'boolean']);
         $this->assertTrue($Engine->hasErrors());
         $errors = $Engine->getErrors();
