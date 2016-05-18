@@ -210,6 +210,6 @@ return [
     /* Whether to use named placeholders for the primary query. *
      * Do not change, or things may / will break!
      */
-    'query_use_named_placeholders' => FALSE,
+    'query_use_named_placeholders' => TRUE,
 
 ];

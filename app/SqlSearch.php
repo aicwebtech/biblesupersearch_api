@@ -206,8 +206,6 @@ class SqlSearch {
         $op = $this->_termOperator($term, $exact_case, $whole_words);
         $term_fmt = $this->_termFormat($term, $exact_case, $whole_words);
         $bind_index = static::pushToBindData($term_fmt, $binddata);
-        //var_dump($term);
-        //var_dump($bind_index);
         $sql = array();
         
         foreach($fields as $field) {

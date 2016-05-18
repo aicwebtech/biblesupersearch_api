@@ -10,16 +10,15 @@ use App\Engine;
 
 class ApiController extends Controller {
     public function query(Request $Request) {
-        $input = $Request->input();
-        return $this->sendResponse('query', $input);
+        return $this->sendResponse($Request, 'query');
     }
     
-    public function bibles() {
-        return $this->sendResponse('bibles');
+    public function bibles(Request $Request) {
+        return $this->sendResponse($Request, 'bibles');
     }
 
-    private function sendResponse($action, $input = array()) {
-        //var_dump($input);
+    private function sendResponse(Request $Request, $action) {
+        $input = $Request->input();
         $Engine = new Engine();
         $action_method = 'action' . ucfirst($action);
         $results = $Engine->$action_method($input);
@@ -37,6 +36,5 @@ class ApiController extends Controller {
             return (new Response($results, 200))
                 -> header('Content-Type', 'application/json');
         }
-        
     }
 }

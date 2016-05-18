@@ -15,6 +15,7 @@ Route::get('/', function() {
     return view('welcome2');
 });
 
+/* Routes for administrative backend */
 Route::get('/admin', function() {
     if(Auth::check()) {
         return redirect('/admin/main');
@@ -26,8 +27,6 @@ Route::get('/admin/login', function() {
     return redirect('/admin');
 });
 
-
-// Authentication Routes...
 //Route::get('/admin/login', 'Auth\AuthController@getLogin');
 Route::get('/auth/login', function () {
     return redirect('/admin');
@@ -36,9 +35,8 @@ Route::post('/auth/login', 'Auth\AuthController@postLogin');
 
 Route::get('/auth/logout', 'Auth\AuthController@getLogout');
 Route::get('/admin/main', 'AdminController@getMain');
+//Route::controller('admin', 'AdminController');
 
+/* Routes for the API */
 Route::get('/api', 'ApiController@query');
 Route::get('/api/bibles', 'ApiController@bibles');
-
-
-//Route::controller('admin', 'AdminController');

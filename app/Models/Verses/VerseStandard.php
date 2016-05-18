@@ -50,6 +50,11 @@ class VerseStandard extends VerseAbstract {
             }
             else {                
                 list($search_query, $binddata) = static::_buildSearchQuery($Search, $parameters);
+                
+                if(!config('app.query_use_named_placeholders')) {
+                    $binddata = array_values($binddata);
+                }
+                
                 $Query->whereRaw('(' . $search_query . ')', $binddata);
             }
         }
