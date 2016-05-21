@@ -15,6 +15,14 @@ class ProximitySearchTest extends TestCase {
         $this->assertCount(1, $errors);
         $this->assertEquals( trans('errors.prox_paren_mismatch'), $errors[0]);
     }
+    public function testNotBoolean() {
+        $Engine = new Engine();
+        $results = $Engine->actionQuery(['bible' => 'kjv', 'search' => 'faith PROX(2) joy', 'search_type' => 'any']);
+        $this->assertTRUE($Engine->hasErrors());
+        $errors = $Engine->getErrors();
+        $this->assertCount(1, $errors);
+        $this->assertEquals( trans('errors.prox_operator_not_allowed'), $errors[0]);
+    }
     
     public function testQueryBinding() {
         // Cannot reuse named bindings with PDO extension?

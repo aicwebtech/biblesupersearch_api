@@ -27,8 +27,8 @@ class SearchTest extends TestCase {
         $this->assertTrue(  Search::isSpecial('faith hope charity','proximity') );
         $this->assertTrue(  Search::isSpecial('faith hope charity','chapter') );
         $this->assertTrue(  Search::isSpecial('faith hope charity','book') );
-        $this->assertFalse( Search::isSpecial('faith CHAP hope charity','and') );
-        $this->assertFalse( Search::isSpecial('faith CHAP hope PROX(4) charity','or') );
+//        $this->assertFalse( Search::isSpecial('faith CHAP hope charity','and') );
+//        $this->assertFalse( Search::isSpecial('faith CHAP hope PROX(4) charity','or') );
         $this->assertFalse( Search::isSpecial('faith chap hope charity','boolean') ); // Case sensitive, so false
         $this->assertTrue(  Search::isSpecial('faith CHAP hope charity','boolean') );
         $this->assertTrue(  Search::isSpecial('faith PROX(4) hope PROX(12) charity','boolean') );

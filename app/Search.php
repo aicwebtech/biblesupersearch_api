@@ -64,18 +64,26 @@ class Search extends SqlSearch {
         $special_types = ['proximity', 'chapter', 'book']; // strongs??
         $is_special    = (in_array($search_type, $special_types)) ? TRUE : FALSE;
         
-        if(!$is_special && $search_type == 'boolean') {            
-            $search = static::standardizeProximityOperators($search);
-            
-            foreach($special_ops AS $op) {
-                if(strpos($search, $op) !== FALSE) {
-                    $is_special = TRUE;
-                    break;
-                }
-            }
+        if(!$is_special && $search_type == 'boolean') {                     
+            $is_special = static::containsProximityOperators($search);
         }
         
         return $is_special;
+    }
+    
+    static public function containsProximityOperators($search) {
+        $special_ops   = ['~p', '~c', '~b', '~l'];
+        $search = static::standardizeProximityOperators($search);
+        $prox_found = FALSE;
+            
+        foreach($special_ops AS $op) {
+            if(strpos($search, $op) !== FALSE) {
+                $prox_found = TRUE;
+                break;
+            }
+        }
+        
+        return $prox_found;
     }
     
     public static function booleanizeQuery($query, $search_type, $arg3 = NULL) {
@@ -104,6 +112,21 @@ class Search extends SqlSearch {
         }
         
         return $query;
+    }
+    
+    protected function _validateHelper($search, $search_type) {
+        switch ($search_type) {
+            case 'boolean' :
+                return $this->_validateBoolean($search);
+                break;
+            default:
+                if(static::containsProximityOperators($search)) {
+                    $this->addError( trans('errors.prox_operator_not_allowed') );
+                    return FALSE;
+                }
+                
+                return TRUE;
+        }
     }
     
     protected function _validateBoolean($search) {
