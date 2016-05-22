@@ -91,7 +91,7 @@ class Search extends SqlSearch {
             return $query;
         }
         
-        $query = trim( preg_replace('/\s+/', ' ', $query) );
+        $query  = trim( preg_replace('/\s+/', ' ', $query) );
         $parsed = static::parseSimpleQueryTerms($query);
         
         switch($search_type) {
