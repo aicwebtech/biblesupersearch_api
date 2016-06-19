@@ -25,16 +25,16 @@ class ApiController extends Controller {
         
         if($Engine->hasErrors()) {
             $errors = $Engine->getErrors();
-            $errors = json_encode($errors);
-            
-            return (new Response($errors, 400))
-                -> header('Content-Type', 'application/json');
+            $response = json_encode($errors);
+            $code = 400;
         }
         else {
-            $results = json_encode($results);
-            
-            return (new Response($results, 200))
-                -> header('Content-Type', 'application/json');
+            $response = json_encode($results);
+            $code = 200;
         }
+        
+        return (new Response($response, $code))
+            -> header('Content-Type', 'application/json')
+            -> header('Access-Control-Allow-Origin', '*');
     }
 }
