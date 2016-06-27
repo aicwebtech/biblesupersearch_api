@@ -23,6 +23,12 @@ class Engine {
     
     public function setBibles($modules) {
         $this->Bibles = array();
+        
+        if(is_string($modules)) {
+            $decoded = json_decode($modules);
+            $modules = (json_last_error() == JSON_ERROR_NONE) ? $decoded : $modules;
+        }
+        
         $modules = (is_array($modules)) ? $modules : array($modules);
         $Bibles = Bible::whereIn('module', $modules)->get();
         $primary = NULL;
@@ -153,7 +159,8 @@ class Engine {
      */
     public function actionBibles() {
         $include_desc = FALSE;
-        $Bibles = Bible::select('name','shortname','module','year','lang','lang_short','copyright','italics','strongs');
+        $Bibles = Bible::select('name','shortname','module','year','lang','lang_short','copyright','italics','strongs','rank');
+        $bibles = array(); // Array of associative arrays
         
         if($include_desc) {
             $Bibles -> addSelect('description');
@@ -166,7 +173,27 @@ class Engine {
             return FALSE;
         }
         
-        return $Bibles;
+        foreach($Bibles as $Bible) {
+            $bibles[$Bible->module] = $Bible->getAttributes();
+        }
+        
+        return $bibles;
+    }
+    
+    /**
+     * API Action query for getting the list of books for the specified language.
+     * @param type $input
+     */
+    public function actionBooks($input) {
+        $language = (!empty($input['language'])) ? $input['language'] : env('DEFAULT_LANGUAGE_SHORT', 'en');
+        $namespaced_class = 'App\Models\Books\\' . ucfirst($language);
+        
+        if(!class_exists($namespaced_class)) {
+            $namespaced_class = 'App\Models\Books\\' . env('DEFAULT_LANGUAGE_SHORT', 'en');
+        }
+        
+        $Books = $namespaced_class::orderBy('id', 'ASC') -> get() -> all();
+        return $Books;
     }
 
 }

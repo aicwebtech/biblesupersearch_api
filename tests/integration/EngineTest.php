@@ -119,4 +119,10 @@ class EngineTest extends TestCase
         $results = $Engine->actionQuery(['bible' => 'kjv', 'search' => 'faith PROC(5) hope', 'reference' => 'Rom', 'search_type' => 'boolean']);
         $this->assertCount(10, $results['kjv']);
     }
+    
+    public function testAPIBooks() {
+        $Engine = new Engine();
+        $Books = $Engine->actionBooks(array('language' => 'en'));
+        $this->assertCount(66, $Books);
+    }
 }

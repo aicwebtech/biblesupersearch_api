@@ -40,3 +40,4 @@ Route::get('/admin/main', 'AdminController@getMain');
 /* Routes for the API */
 Route::get('/api', 'ApiController@query');
 Route::get('/api/bibles', 'ApiController@bibles');
+Route::get('/api/books', 'ApiController@books');

@@ -161,6 +161,19 @@ class VerseStandard extends VerseAbstract {
         return (empty($results)) ? FALSE : '`id` IN (' . implode(',', $results) . ')';
     }
     
+    static function proximityQueryTest($query) {
+        $results_raw = DB::select($query);
+
+        foreach($results_raw as $a1) {
+            foreach($a1 as $val) {
+                $results[] = intval($val); // Flatten results into one-dimensional array
+            }
+        }
+        
+        $results = array_unique($results);
+        return count($results);
+    }
+    
     protected static function _buildSpecialSearchJoin($table, $alias, $operator, $alias2, $parameters, $on_clause) {
         $join  = 'INNER JOIN ' . $table . ' AS ' . $alias . ' ON ';
         $join .= $alias . '.book = ' . $alias2 . '.book';
@@ -173,7 +186,14 @@ class VerseStandard extends VerseAbstract {
             $join .= ' AND ' . $alias . '.chapter = ' . $alias2 . '.chapter';
         }
         else {
-            $limit = 5;
+            $lppos = strpos($operator, '(');
+            
+            if($lppos !== FALSE) {
+                $limit = intval(substr($operator, $lppos + 1));
+            }
+            else {
+                $limit = (empty($parameters['proximity_limit'])) ? 5 : $parameters['proximity_limit'];
+            }
             
             $join .= (strpos($operator, '~l') === 0) ? ' AND ' . $alias . '.chapter = ' . $alias2 . '.chapter' : ''; // Limit within chapter
             $join .= ' AND ' . $alias . '.id BETWEEN ' . $alias2 . '.id - ' . $limit . ' AND ' . $alias2 . '.id + ' . $limit;
