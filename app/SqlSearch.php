@@ -50,6 +50,10 @@ class SqlSearch {
             'label' => 'Regular Expression',
             'type'  => 'regexp',
         ),
+        'search_boolean' => array(
+            'label' => 'Boolean Expression',
+            'type'  => 'boolean',
+        ),
     );
     
     public $punctuation = array('.',',',':',';','\'','"','!','-','?','(',')','[',']');

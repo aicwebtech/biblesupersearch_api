@@ -38,7 +38,7 @@ class ApiController extends Controller {
         }
         
         return (new Response($response, $code))
-            -> header('Content-Type', 'application/json')
+            -> header('Content-Type', 'application/json; charset=utf-8')
             -> header('Access-Control-Allow-Origin', '*');
     }
 }
