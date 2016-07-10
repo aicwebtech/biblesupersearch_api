@@ -203,9 +203,9 @@ class SqlSearch {
         return array($sql, $binddata);
     }
     
-    protected function _termSql($term, &$binddata = array(), $fields = '', $table_alias) {
-        $exact_case  = (empty($this->options['exact_case']))  ? FALSE : TRUE;
-        $whole_words = (empty($this->options['whole_words'])) ? FALSE : TRUE;
+    protected function _termSql($term, &$binddata = array(), $fields = '', $table_alias) {        
+        $exact_case  = (empty($this->options['exact_case'])  || $this->options['exact_case'] == 'false')  ? FALSE : TRUE;
+        $whole_words = (empty($this->options['whole_words']) || $this->options['whole_words'] == 'false') ? FALSE : TRUE;
         $fields = $this->_termFields($term, $fields, $table_alias);
         $op = $this->_termOperator($term, $exact_case, $whole_words);
         $term_fmt = $this->_termFormat($term, $exact_case, $whole_words);
@@ -214,7 +214,7 @@ class SqlSearch {
         
         foreach($fields as $field) {
             //$sql[] = ($whole_words) ? $this->_assembleTermSqlWholeWords($field, $bind_index, $op) : $this->_assembleTermSql($field, $bind_index, $op);
-            $sql[] = $this->_assembleTermSql($field, $bind_index, $op);
+            $sql[] = $this->_assembleTermSql($field, $bind_index, $op, $exact_case);
         }
         
         $sql = (count($sql) == 1) ? '(' . $sql[0] . ')' : '(' . implode(' OR ', $sql) . ')';
@@ -253,10 +253,11 @@ class SqlSearch {
         return ($whole_words) ? '[[:<:]]' . $term . '[[:>:]]' : '%' . $term . '%';
     }
     
-    protected function _assembleTermSql($field, $bind_index, $operator) {
+    protected function _assembleTermSql($field, $bind_index, $operator, $exact_case) {
         //$binding = ($this->use_named_bindings) ? $bind_index : '?';
         $binding = $bind_index;
-        return $field . ' ' . $operator . ' ' . $binding;
+        $binary = ($exact_case) ? 'BINARY ' : '';
+        return $binary . $field . ' ' . $operator . ' ' . $binding;
     }
     
     public static function pushToBindData($item, &$binddata, $index_prefix = 'bd', $avoid_duplicates = FALSE) {
@@ -317,7 +318,7 @@ class SqlSearch {
     public static function parseQueryTerms($query) {
         $parsed = $phrases = $matches = array();
         // Remove operators that otherwise would be interpreted as terms
-        $find = array('AND', 'XOR', 'OR', 'NOT');
+        $find = array(' AND ', ' XOR ', ' OR ', ' NOT ');
         $parsing = str_replace($find, ' ', $query);
 
         //preg_match_all('/"[a-zA-z0-9 ]+"/', $parsing, $phrases, PREG_SET_ORDER);
@@ -377,10 +378,10 @@ class SqlSearch {
     public static function standardizeBoolean($query) {
         // Standardise operators and replace them with a placeholder
         // Handles operator aliases
-        $and = array('AND', '*', '&&', '&');
-        $or  = array('OR', '+', '||', '|');
-        $not = array('NOT', '-', '!=', '-');
-        $xor = array('XOR', '^^', '^');
+        $and = array(' AND ', '*', '&&', '&');
+        $or  = array(' OR ', '+', '||', '|');
+        $not = array(' NOT ', '-', '!=', '-');
+        $xor = array(' XOR ', '^^', '^');
         
         list($phrases, $underscored) = static::parseQueryPhrases($query, TRUE);
         $query = str_replace($phrases, $underscored, $query);

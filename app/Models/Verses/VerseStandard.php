@@ -60,6 +60,7 @@ class VerseStandard extends VerseAbstract {
         }
         
         //echo(PHP_EOL . $Query->toSql() . PHP_EOL);
+        //var_dump($binddata);
         $verses = $Query->get();
         return (empty($verses)) ? FALSE : $verses;
     }
