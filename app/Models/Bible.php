@@ -99,7 +99,7 @@ class Bible extends Model {
                         protected $hasClass = FALSE;
                 }
             ';
-            eval($code);
+            //eval($code);
         }
         
         return $class_name;

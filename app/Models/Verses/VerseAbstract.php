@@ -25,7 +25,8 @@ abstract class VerseAbstract extends Model {
     public function __construct(array $attributes = []) {
         if (empty($this->module)) {
             $class = explode('\\', get_called_class());
-            $this->module = strtolower(array_pop($class));
+            //$this->module = strtolower(array_pop($class));
+            $this->module = snake_case(array_pop($class));
         }
         
         $this->table = ($this->table) ? $this->table : self::getTableByModule($this->module);

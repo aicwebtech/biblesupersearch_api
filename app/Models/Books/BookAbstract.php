@@ -42,6 +42,8 @@ class BookAbstract extends Model
         }        
 
         // This logic may be needed elsewhere
+        $default_class_name = self::getClassNameByLanguage(env('DEFAULT_LANGUAGE_SHORT', 'en'));
+        
         if($language) {
             $class_name = self::getClassNameByLanguage($language);
         }
@@ -49,7 +51,11 @@ class BookAbstract extends Model
             $class_name = get_called_class();
         }
         else {
-            $class_name = self::getClassNameByLanguage(env('DEFAULT_LANGUAGE_SHORT', 'en'));
+            $class_name = $default_class_name;
+        }
+        
+        if(!class_exists($class_name)) {
+            $class_name = $default_class_name;
         }
         
         if(!is_string($name)) {

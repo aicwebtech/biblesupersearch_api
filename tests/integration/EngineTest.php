@@ -38,6 +38,11 @@ class EngineTest extends TestCase
         $this->assertCount(4, $Bibles);
     }
     
+    public function testOtherBibles() {
+        $Engine = new Engine();
+        $results = $Engine->actionQuery(['bible' => 'kjv_strongs', 'search' => 'faith']);
+    }
+    
     public function testBasicSearch() {
         // NOT whole word searches!
         $Engine = new Engine();
