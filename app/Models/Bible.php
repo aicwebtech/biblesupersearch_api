@@ -88,7 +88,7 @@ class Bible extends Model {
      * @return string $class_name;
      */
     public static function getVerseClassNameByModule($module) {
-        $model_class = ucfirst($module);
+        $model_class = camel_case($module);
         $namespace = __NAMESPACE__ . '\Verses';
         $class_name = $namespace . '\\' . $model_class;
 
