@@ -197,15 +197,16 @@ class SqlSearch {
             list($term_sql, $bind_index) = $this->_termSql($term, $binddata, $fields, $table_alias);
             $sql = str_replace($term, $term_sql, $sql);
         }
-        
-        //var_dump($binddata);
-        
+
         return array($sql, $binddata);
     }
     
-    protected function _termSql($term, &$binddata = array(), $fields = '', $table_alias) {        
-        $exact_case  = (empty($this->options['exact_case'])  || $this->options['exact_case'] == 'false')  ? FALSE : TRUE;
-        $whole_words = (empty($this->options['whole_words']) || $this->options['whole_words'] == 'false') ? FALSE : TRUE;
+    protected function _termSql($term, &$binddata = array(), $fields = '', $table_alias = '') {        
+        $exact_case  = (array_key_exists('exact_case',  $this->options))  ? $this->options['exact_case'] : FALSE;
+        $exact_case  = ($exact_case  && $exact_case  !== 'false') ? TRUE : FALSE;
+        $whole_words = (array_key_exists('whole_words',  $this->options)) ? $this->options['whole_words'] : FALSE;
+        $whole_words = ($whole_words && $whole_words !== 'false') ? TRUE : FALSE;
+        
         $fields = $this->_termFields($term, $fields, $table_alias);
         $op = $this->_termOperator($term, $exact_case, $whole_words);
         $term_fmt = $this->_termFormat($term, $exact_case, $whole_words);
@@ -250,7 +251,25 @@ class SqlSearch {
             return trim($term, '"');
         }
         
-        return ($whole_words) ? '[[:<:]]' . $term . '[[:>:]]' : '%' . $term . '%';
+        if(!$whole_words) {
+            return '%' . $term . '%';
+        }
+        
+        $has_st_pct = (strpos($term, '%') === 0) ? TRUE : FALSE;
+        $has_en_pct = (strrpos($term, '%') === strlen($term) - 1) ? TRUE : FALSE;
+        
+        if($has_st_pct && $has_en_pct) {
+            return $term;
+        }
+        
+        //var_dump($term);
+        
+        $pre  = ($has_st_pct) ? '/' : '[[:<:]]';
+        $post = ($has_en_pct) ? '.' : '[[:>:]]';
+        
+        return $pre . str_replace('%', '.', trim($term, '%')) . $post;
+        
+        //return ($whole_words) ? '[[:<:]]' . str_replace('%', '/', $term) . '[[:>:]]' : '%' . $term . '%';
     }
     
     protected function _assembleTermSql($field, $bind_index, $operator, $exact_case) {
@@ -306,7 +325,7 @@ class SqlSearch {
                 //$query = 'NOT ' . implode(' NOT ', $parsed);
                 break;
         }
-
+        
         return $query;
     }
 
@@ -318,13 +337,13 @@ class SqlSearch {
     public static function parseQueryTerms($query) {
         $parsed = $phrases = $matches = array();
         // Remove operators that otherwise would be interpreted as terms
-        $find = array(' AND ', ' XOR ', ' OR ', ' NOT ');
+        $find = array(' AND ', ' XOR ', ' OR ', 'NOT ');
         $parsing = str_replace($find, ' ', $query);
 
         //preg_match_all('/"[a-zA-z0-9 ]+"/', $parsing, $phrases, PREG_SET_ORDER);
         $phrases = static::parseQueryPhrases($query);
         $parsing = preg_replace('/"[a-zA-z0-9 ]+"/', '', $parsing); // Remove phrases once parsed
-        preg_match_all('/[a-zA-z0-9]+/', $parsing, $matches, PREG_SET_ORDER);
+        preg_match_all('/%?[a-zA-z0-9]+%?/', $parsing, $matches, PREG_SET_ORDER);
 
         foreach ($matches as $item) {
             $parsed[] = $item[0];
@@ -380,7 +399,7 @@ class SqlSearch {
         // Handles operator aliases
         $and = array(' AND ', '*', '&&', '&');
         $or  = array(' OR ', '+', '||', '|');
-        $not = array(' NOT ', '-', '!=', '-');
+        $not = array('NOT ', '-', '!=');
         $xor = array(' XOR ', '^^', '^');
         
         list($phrases, $underscored) = static::parseQueryPhrases($query, TRUE);

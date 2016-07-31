@@ -82,7 +82,7 @@ class EngineTest extends TestCase
     
     public function testWholeWordSearch() {
         $Engine = new Engine();
-        $results = $Engine->actionQuery(['bible' => 'kjv', 'search' => 'faith', 'whole_words' => TRUE]);
+        $results = $Engine->actionQuery(['bible' => 'kjv', 'search' => 'faith', 'whole_words' => TRUE, 'exact_case' => FALSE]);
         $this->assertCount(231, $results['kjv']);
         $this->assertEquals(5,  $results['kjv'][0]->book);
         $this->assertEquals(32, $results['kjv'][0]->chapter);

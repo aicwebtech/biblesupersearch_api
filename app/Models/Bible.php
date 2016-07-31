@@ -35,8 +35,16 @@ class Bible extends Model {
         if (!$this->Verses || $force) {
             $attributes = $this->getAttributes();
             $class_name = self::getVerseClassNameByModule($this->module);
-            $this->Verses = new $class_name();
-            $this->Verses->setBible($this); // This circular reference may be a bad thing
+            
+            if(class_exists($class_name)) {                
+                $this->Verses = new $class_name();
+                $this->Verses->setBible($this); // This circular reference may be a bad thing
+            }
+            else {
+                $this->Verses = new Verses\VerseStandard();
+                $this->Verses->setModule($this->module, TRUE);
+                $this->Verses->setBible($this); // This circular reference may be a bad thing
+            }
         }
         
         return $this->Verses;

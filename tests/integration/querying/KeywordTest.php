@@ -16,4 +16,10 @@ class KeywordTest extends TestCase
         $this->assertCount(1, $errors);
         $this->assertEquals( trans('errors.no_results'), $errors[0]);;
     }
+    
+    public function testWildcard() {
+        $Engine = new Engine();
+        $results = $Engine->actionQuery(['bible' => 'kjv', 'search' => 'faith%', 'whole_words' => TRUE]);
+        $this->assertCount(336, $results['kjv']);
+    }
 }

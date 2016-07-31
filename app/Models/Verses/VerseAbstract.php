@@ -36,6 +36,14 @@ abstract class VerseAbstract extends Model {
     public function setBible(Bible &$Bible) {
         $this->Bible = $Bible;
     }
+    
+    public function setModule($module, $set_table = FALSE) {
+        $this->module = $module;
+        
+        if($set_table) {
+            $this->table = self::getTableByModule($this->module);
+        }
+    }
 
     public function classFileExists() {
         return $this->hasClass;
