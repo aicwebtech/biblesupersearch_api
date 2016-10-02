@@ -213,12 +213,15 @@ class VerseStandard extends VerseAbstract {
         $in_console = (strpos(php_sapi_name(), 'cli') !== FALSE) ? TRUE : FALSE;
 
         Schema::create($this->table, function (Blueprint $table) {
+            //$table->charset('utf8mb4');
+            //$table->collate('utf8mb4_unicode_ci'); 
+            
             $table->increments('id');
             $table->tinyInteger('book')->unsigned();
             $table->tinyInteger('chapter')->unsigned();
             $table->tinyInteger('verse')->unsigned();
             $table->mediumInteger('chapter_verse')->unsigned();
-            $table->text('text');
+            $table->text('text')->charset('utf8');
             $table->text('italics')->nullable();
             $table->text('strongs')->nullable();
             $table->index('book', 'ixb');
@@ -240,7 +243,10 @@ class VerseStandard extends VerseAbstract {
             if ($in_console) {
                 echo(PHP_EOL . 'Importing Bible from V2: ' . $this->Bible->name . ' (' . $this->module . ')' . PHP_EOL);
             }
-
+            
+            DB::statement('SET NAMES utf8;');
+            DB::statement('SET CHARACTER SET utf8');
+            
             // we use this to determine what the strongs / italics fileds are
             $v_test = DB::select("SELECT * FROM {$v2_table} ORDER BY `index` LIMIT 1");
             $strongs = $italics = 'NULL';
@@ -250,9 +256,10 @@ class VerseStandard extends VerseAbstract {
             $italics = isset($v_test[0]->map) ? 'map' : $italics;
 
             $prefix = DB::getTablePrefix();
+            $table = $this->getTable();
 
             $sql = "
-                INSERT INTO {$prefix}verses_{$this->module} (id, book, chapter, verse, chapter_verse, text, italics, strongs)
+                INSERT INTO {$prefix}{$table} (id, book, chapter, verse, chapter_verse, text, italics, strongs)
                 SELECT `index`, book, chapter, verse, chapter * 1000 + verse, text, {$italics}, {$strongs}
                 FROM {$v2_table}
             ";

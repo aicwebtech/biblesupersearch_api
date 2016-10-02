@@ -1,9 +1,11 @@
 <html>
     <head>
-
+        <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+        <meta contentType="text/html; charset=UTF-8"/>
     </head>
 
     <body>
+         Y se corrompiÃ³ la tierra delante de Dios, y estaba la tierra llena de violencia
         <form action='/auth/login' method='POST'>
             <table> 
                 <tr>
