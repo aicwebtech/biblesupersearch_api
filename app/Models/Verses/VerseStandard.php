@@ -255,16 +255,48 @@ class VerseStandard extends VerseAbstract {
             $italics = isset($v_test[0]->italics) ? 'italics' : $italics;
             $italics = isset($v_test[0]->map) ? 'map' : $italics;
 
+            
             $prefix = DB::getTablePrefix();
             $table = $this->getTable();
-
+            
             $sql = "
                 INSERT INTO {$prefix}{$table} (id, book, chapter, verse, chapter_verse, text, italics, strongs)
                 SELECT `index`, book, chapter, verse, chapter * 1000 + verse, text, {$italics}, {$strongs}
                 FROM {$v2_table}
             ";
-
+            
             DB::insert($sql);
+            
+            /*
+            $inc = 1000;
+            $sql_ins = "INSERT INTO {$prefix}{$table} VALUES (:index, :book, :chapter, :verse, :chapter_verse, :text, :italics, :strongs)";
+            
+            for($lim = 0; $lim <= 40000; $lim += $inc) {
+                $sql_sel = " 
+                    SELECT `index`, book, chapter, verse, text, {$italics} AS italics, {$strongs} AS strongs
+                    FROM {$v2_table}
+                    LIMIT {$lim}, {$inc}
+                ";
+                    
+                $verses = DB::select($sql_sel);
+                
+                foreach($verses as $verse) {
+                    $binddata = array(
+                        ':index'            => $verse->index,
+                        ':book'             => $verse->book,
+                        ':chapter'          => $verse->chapter,
+                        ':chapter_verse'    => $verse->chapter * 1000 + $verse->verse,
+                        ':verse'            => $verse->verse,
+                        ':text'             => trim($verse->text),
+                        ':italics'          => $verse->italics,
+                        ':strongs'          => $verse->strongs,
+                    );
+                    
+                    DB::insert($sql_ins, $binddata);
+                }
+            }
+             * 
+             */
         } 
         else {
             // todo - import records from text file
