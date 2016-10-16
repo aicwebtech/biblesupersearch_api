@@ -58,8 +58,10 @@ return [
             'database'  => env('DB_DATABASE', 'forge'),
             'username'  => env('DB_USERNAME', 'forge'),
             'password'  => env('DB_PASSWORD', ''),
-            'charset'   => 'utf8',
-            'collation' => 'utf8_unicode_ci',
+            //'charset'   => 'utf8',
+            //'collation' => 'utf8_unicode_ci',
+            'charset'   => 'latin1',
+            'collation' => 'latin1_swedish_ci',
             'prefix'    => env('DB_PREFIX', ''),
             'strict'    => false,
             'options'   => array(

@@ -343,7 +343,8 @@ class SqlSearch {
         //preg_match_all('/"[a-zA-z0-9 ]+"/', $parsing, $phrases, PREG_SET_ORDER);
         $phrases = static::parseQueryPhrases($query);
         $parsing = preg_replace('/"[a-zA-z0-9 ]+"/', '', $parsing); // Remove phrases once parsed
-        preg_match_all('/%?[a-zA-z0-9]+%?/', $parsing, $matches, PREG_SET_ORDER);
+        //preg_match_all('/%?[a-zA-Z0-9]+%?/', $parsing, $matches, PREG_SET_ORDER);
+        preg_match_all('/%?[\p{L}]+%?/u', $parsing, $matches, PREG_SET_ORDER);
 
         foreach ($matches as $item) {
             $parsed[] = $item[0];

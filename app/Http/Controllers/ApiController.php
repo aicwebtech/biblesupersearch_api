@@ -25,7 +25,19 @@ class ApiController extends Controller {
         $input = $Request->input();
         $Engine = new Engine();
         $action_method = 'action' . ucfirst($action);
-        $results = $Engine->$action_method($input);
+        //header("Access-Control-Allow-Origin: *"); // Enable for debugging
+        
+        try {
+            $results = $Engine->$action_method($input);
+        } 
+        catch (Exception $ex) {
+            $response = $ex->getMessage();
+            
+            return (new Response($response, 500))
+                -> header('Content-Type', 'application/json; charset=utf-8')
+                -> header('Access-Control-Allow-Origin', '*');
+        }
+        
         
         if($Engine->hasErrors()) {
             $errors = $Engine->getErrors();
