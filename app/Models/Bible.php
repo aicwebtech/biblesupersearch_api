@@ -59,9 +59,10 @@ class Bible extends Model {
      * @return array $Verses array of Verses instances (found verses)
      */
     public function getSearch($Passages = NULL, $Search = NULL, $parameters = array()) {
-        $verses_class = self::getVerseClassNameByModule($this->module);
-        $Verses = $verses_class::getSearch($Passages, $Search, $parameters);
-        return $Verses;
+        return $this->verses()->getSearch($Passages, $Search, $parameters);
+        //$verses_class = self::getVerseClassNameByModule($this->module);
+        //$Verses = $verses_class::getSearch($Passages, $Search, $parameters);
+        //return $Verses;
     }
 
     public function install() {

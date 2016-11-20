@@ -122,13 +122,14 @@ class VersesTest extends TestCase
         
         foreach($Bibles as $Bible) {
             $this->assertTrue( Schema::hasTable('verses_' . $Bible->module) );
+            $Verses = $Bible->verses();
             $verses_class_static = Bible::getVerseClassNameByModule($Bible->module);
             $verses_class = $Bible->getVerseClassName();
             $this->assertInstanceOf('App\Models\Bible', $Bible);
             $this->assertEquals($verses_class_static, $verses_class, 'Static and dynamic verses classes do not match.');
             
             // Grab a few verses from the database
-            $verses = $verses_class::orderBy('id', 'asc')->take(10)->get();
+            $verses = $Verses->orderBy('id', 'asc')->take(10)->get();
             $this->assertCount(10, $verses, $Bible->module . ' has empty table');
             $this->assertTrue(in_array($verses[0]->book, [1, 40]), 'Test verese did not come from Genesis or Matthew');
             $this->assertEquals(1, $verses[0]->id);
