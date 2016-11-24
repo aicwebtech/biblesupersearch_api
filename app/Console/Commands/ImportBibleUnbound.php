@@ -3,6 +3,7 @@
 namespace App\Console\Commands;
 
 use Illuminate\Console\Command;
+use App\Importers\Unbound;
 
 class ImportBibleUnbound extends ImportBible {
     /**
@@ -33,5 +34,8 @@ class ImportBibleUnbound extends ImportBible {
     public function handle() {
         //
         var_dump('here');
+        
+        $Importer = new Unbound();
+        $Importer->import();
     }
 }
