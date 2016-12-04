@@ -11,6 +11,7 @@ class ImportBibleUnbound extends ImportBible {
      * @var string
      */
     protected $signature = 'bible:import:unbound';
+    //protected $signature = 'bible:import:unbound';
 
     /**
      * The console command description.
@@ -32,10 +33,7 @@ class ImportBibleUnbound extends ImportBible {
      * @return mixed
      */
     public function handle() {
-        //
-        var_dump('here');
-        
         $Importer = new Unbound();
-        $Importer->import();
+        $this->_handleHelper($Importer);
     }
 }

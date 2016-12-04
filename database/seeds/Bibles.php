@@ -36,7 +36,7 @@ class Bibles extends Seeder
         if(env('IMPORT_FROM_V2', FALSE)) {
             echo('Importing Bibles From V2' . PHP_EOL);
 
-            $bibles_v2 = DB::select('SELECT * FROM bible_versions'); // bible_versions - list of all INSTALLED Bibles
+            $bibles_v2 = DB::select('SELECT * FROM bible_versions'); // bible_versions - list of all INSTALLED V2 Bibles
 
             foreach($bibles_v2 as $v2) {
                 $module = $v2->shortname;

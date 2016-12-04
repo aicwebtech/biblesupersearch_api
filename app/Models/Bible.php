@@ -108,7 +108,7 @@ class Bible extends Model {
                         protected $hasClass = FALSE;
                 }
             ';
-            //eval($code);
+            eval($code); // Need this working on live server.
         }
         
         return $class_name;

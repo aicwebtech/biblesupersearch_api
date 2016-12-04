@@ -205,7 +205,7 @@ class VerseStandard extends VerseAbstract {
     }
 
     // Todo - prevent installation if already installed!
-    public function install() {
+    public function install($structure_only = FALSE) {
         if (Schema::hasTable($this->table)) {
             return TRUE;
         }
@@ -231,6 +231,10 @@ class VerseStandard extends VerseAbstract {
             $table->index(['book', 'chapter', 'verse'], 'ixbcv'); // Composite index on b, c, v
             //$table->index('text'); // Needs length - not supported in Laravel?
         });
+        
+        if($structure_only) {
+            return TRUE;
+        }
 
         // If importing from V2, make sure v2 table exists
         if (env('IMPORT_FROM_V2', FALSE)) {
