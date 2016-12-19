@@ -40,12 +40,15 @@ class EngineTest extends TestCase
     
     public function testOtherBibles() {
         $Engine = new Engine();
+        $Engine->setDefaultDataType('raw');
         $results = $Engine->actionQuery(['bible' => 'kjv_strongs', 'search' => 'faith']);
     }
     
     public function testBasicSearch() {
         // NOT whole word searches!
         $Engine = new Engine();
+        $Engine->setDefaultDataType('raw');
+        
         $results = $Engine->actionQuery(['bible' => 'kjv', 'search' => 'faith']);
         $this->assertCount(338, $results['kjv']);
         $this->assertEquals(4,  $results['kjv'][0]->book);
@@ -82,6 +85,8 @@ class EngineTest extends TestCase
     
     public function testWholeWordSearch() {
         $Engine = new Engine();
+        $Engine->setDefaultDataType('raw');
+        
         $results = $Engine->actionQuery(['bible' => 'kjv', 'search' => 'faith', 'whole_words' => TRUE, 'exact_case' => FALSE]);
         $this->assertCount(231, $results['kjv']);
         $this->assertEquals(5,  $results['kjv'][0]->book);
@@ -103,6 +108,8 @@ class EngineTest extends TestCase
     
     public function testBookRangeSearch() {
         $Engine = new Engine();
+        $Engine->setDefaultDataType('raw');
+        
         $results = $Engine->actionQuery(['bible' => 'kjv', 'search' => 'faith', 'reference' => 'Matt - John', 'whole_words' => TRUE]);
         $this->assertCount(29, $results['kjv']);
         $this->assertEquals(40, $results['kjv'][0]->book);
@@ -112,6 +119,8 @@ class EngineTest extends TestCase
     
     public function testProximitySearch() {
         $Engine = new Engine();
+        $Engine->setDefaultDataType('raw');
+        
         $results = $Engine->actionQuery(['bible' => 'kjv', 'search' => 'faith hope', 'reference' => 'Rom', 'search_type' => 'proximity']);
         $this->assertCount(13, $results['kjv']);
         

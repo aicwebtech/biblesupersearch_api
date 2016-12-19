@@ -27,6 +27,8 @@ class ErrorTest extends TestCase {
     
     public function testBibleNoResults() {
         $Engine = new Engine();
+        $Engine->setDefaultDataType('raw');
+        
         // Neither Textus Receptus nor the Tyndale Bible have Isaiah
         $results = $Engine->actionQuery(['bible' => array('kjv', 'tr', 'tyndale'), 'reference' => 'Isaiah 1:1']);
         $this->assertTrue($Engine->hasErrors());
@@ -39,10 +41,10 @@ class ErrorTest extends TestCase {
     
     public function testFalseBible() {
         $Engine = new Engine();
-        $Engine->addBible('aaa'); // Fictitious Bible module AAA
+        $Engine->addBible('aaaa_9876'); // Fictitious Bible module
         $this->assertTrue($Engine->hasErrors());
         $errors = $Engine->getErrors();
-        $this->assertEquals("Bible text 'aaa' not found.", $errors[0]);
+        $this->assertEquals("Bible text 'aaaa_9876' not found.", $errors[0]);
     }
     
     public function testPassageInvalidReference() {

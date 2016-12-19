@@ -13,6 +13,7 @@ class Engine {
     protected $Bibles = array(); // Array of Bible objects
     protected $Bible_Primary = NULL; // Primary Bible version
     protected $languages = array();
+    protected $default_data_format = 'passage';
     
     public function __construct() {
         // Set the default Bible
@@ -147,10 +148,7 @@ class Engine {
             }
         }
         
-
-        // Todo: Format data structure
-        
-        
+        $results = $this->_formatDataStructure($results, $input, $Passages, $Search);
         return $results;
     }
     
@@ -195,5 +193,26 @@ class Engine {
         $Books = $namespaced_class::orderBy('id', 'ASC') -> get() -> all();
         return $Books;
     }
+    
+    protected function _formatDataStructure($results, $input, $Passages, $Search) {
+        $format_type = (!empty($input['data_format'])) ? $input['data_format'] : $this->default_data_format;
 
+        // Defines avaliable data formats and their aliases
+        $format_map = array(
+            'raw'       => 'minimal',
+            'minimal'   => 'minimal',
+            'passage'   => 'passage',  
+        );
+        
+        $format_type  = (array_key_exists($format_type, $format_map)) ? $format_map[$format_type] : 'passage';
+        $format_class = '\App\Formatters\\' . ucfirst($format_type);
+        
+        $Formatter = new $format_class($results, $Passages);
+        return $Formatter->format();
+    }
+    
+    public function setDefaultDataType($type) {
+        $this->default_data_format = $type;
+    }
 }
+

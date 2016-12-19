@@ -10,6 +10,8 @@ class KeywordTest extends TestCase
 {
     public function testRepeatedKeyword() {
         $Engine = new Engine();
+        $Engine->setDefaultDataType('raw');
+        
         $results = $Engine->actionQuery(['bible' => 'kjv', 'search' => 'faith joy joy love joy', 'searchtype' => 'boolean']);
         $this->assertTrue($Engine->hasErrors());
         $errors = $Engine->getErrors();
@@ -19,6 +21,8 @@ class KeywordTest extends TestCase
     
     public function testWildcard() {
         $Engine = new Engine();
+        $Engine->setDefaultDataType('raw');
+        
         $results = $Engine->actionQuery(['bible' => 'kjv', 'search' => 'faith%', 'whole_words' => TRUE]);
         $this->assertCount(336, $results['kjv']);
     }

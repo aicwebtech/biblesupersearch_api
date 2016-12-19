@@ -100,7 +100,7 @@ class Bible extends Model {
         $model_class = studly_case($module);
         $namespace = __NAMESPACE__ . '\Verses';
         $class_name = $namespace . '\\' . $model_class;
-
+        
         if (!class_exists($class_name)) {
             $code = '
                 namespace ' . $namespace . ';
@@ -108,6 +108,7 @@ class Bible extends Model {
                         protected $hasClass = FALSE;
                 }
             ';
+            
             eval($code); // Need this working on live server.
         }
         

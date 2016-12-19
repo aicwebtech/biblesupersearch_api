@@ -91,6 +91,8 @@ class VerseStandard extends VerseAbstract {
                         $cvst = $parsed['cst'] * 1000 + intval($parsed['vst']);
                         $cven = $parsed['cen'] * 1000 + intval($parsed['ven']);
                         $q .= ' AND ' . $table_fmt . '`chapter_verse` BETWEEN ' . $cvst . ' AND ' . $cven;
+                        // Proposed modification that would eliminate the need for the `chapter_verse` db column
+                        //$q .= ' AND ' . $table_fmt . '`chapter` * 1000 + `verse` BETWEEN ' . $cvst . ' AND ' . $cven;
                     }
 
                     $query[] = $q;

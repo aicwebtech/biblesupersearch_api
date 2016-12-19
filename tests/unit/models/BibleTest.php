@@ -38,7 +38,7 @@ class BibleTest extends TestCase {
     }
 
     public function testAddBible() {
-        $module = 'bob_' . time();
+        $module = 'bobs_bible';
 
         Bible::create([
             'module' => $module,
@@ -65,6 +65,9 @@ class BibleTest extends TestCase {
         $Bible->enabled = 1;
 
         $this->assertEquals(1, $Bible->enabled);
+        
+        $class_name = $Bible->getVerseClassName();
+        $this->assertEquals('App\Models\Verses\BobsBible', $class_name);
 
         $this->assertTrue(Schema::hasTable('verses_' . $module));
 
@@ -73,7 +76,7 @@ class BibleTest extends TestCase {
         $this->assertEquals(0, $Bible->installed);
         $this->assertEquals(0, $Bible->enabled);
         $this->assertFalse(Schema::hasTable('verses_' . $module));
-        $Bible->delete();
+        $Bible->forceDelete();
     }
     
     /* PUBLIC METHOD TESTS */
@@ -88,7 +91,7 @@ class BibleTest extends TestCase {
         $class_name = $kjv->getVerseClassName();
         $this->assertEquals('App\Models\Verses\Kjv', $class_name);
         
-        $Bible = Bible::where('module', '<>', 'kjv')->first();
+        $Bible = Bible::where('module', '<>', 'kjv')->where('installed', '=', 1)->first();
         $class_name = $Bible->getVerseClassName();
         $module = $Bible->module;
         $this->assertEquals('App\Models\Verses\\' . studly_case($module), $class_name);

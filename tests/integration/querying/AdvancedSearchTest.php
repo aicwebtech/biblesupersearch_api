@@ -9,6 +9,8 @@ use App\Engine;
 class AdvancedSearchTest extends TestCase {
     public function testAllWords() {
         $Engine = new Engine();
+        $Engine->setDefaultDataType('raw');
+        
         $input = ['bible' => 'kjv', 'search_all' => 'faith hope', 'format_structure' => 'raw'];
         
         $results = $Engine->actionQuery($input);
@@ -21,6 +23,8 @@ class AdvancedSearchTest extends TestCase {
     
     public function testAnyWords() {
         $Engine = new Engine();
+        $Engine->setDefaultDataType('raw');
+        
         $input = ['bible' => 'kjv', 'search_any' => 'faith hope', 'format_structure' => 'raw'];
         
         $results = $Engine->actionQuery($input);
@@ -37,6 +41,8 @@ class AdvancedSearchTest extends TestCase {
     
     public function testOneWord() {
         $Engine = new Engine();
+        $Engine->setDefaultDataType('raw');
+        
         $input = ['bible' => 'kjv', 'search_one' => 'faith hope', 'format_structure' => 'raw'];
         
         $results = $Engine->actionQuery($input);
@@ -54,6 +60,8 @@ class AdvancedSearchTest extends TestCase {
     
     public function testExactPhrase() {
         $Engine = new Engine();
+        $Engine->setDefaultDataType('raw');
+        
         $input = ['bible' => 'kjv', 'search_phrase' => 'free spirit', 'format_structure' => 'raw'];
         $results = $Engine->actionQuery($input);
         $this->assertCount(1, $results['kjv']);
@@ -69,6 +77,8 @@ class AdvancedSearchTest extends TestCase {
     
     public function testNoneWords() {
         $Engine = new Engine();
+        $Engine->setDefaultDataType('raw');
+        
         $input = ['bible' => 'kjv', 'search_none' => 'faith hope', 'reference' => 'Rom', 'format_structure' => 'raw'];
         
         $results = $Engine->actionQuery($input);
@@ -89,6 +99,8 @@ class AdvancedSearchTest extends TestCase {
                 . 'Revelation 3:36';
         
         $Engine = new Engine();
+        $Engine->setDefaultDataType('raw');
+        
         $input = ['bible' => 'kjv', 'reference' => $reference, 'format_structure' => 'raw'];
         
         $results = $Engine->actionQuery($input);

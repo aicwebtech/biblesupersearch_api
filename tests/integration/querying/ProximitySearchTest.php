@@ -10,6 +10,8 @@ use App\Models\Verses\VerseStandard;
 class ProximitySearchTest extends TestCase {
     public function testParenthensesMismatch() {
         $Engine = new Engine();
+        $Engine->setDefaultDataType('raw');
+        
         $results = $Engine->actionQuery(['bible' => 'kjv', 'search' => '(faith PROX(2) joy joy love joy', 'search_type' => 'boolean']);
         $this->assertTrue($Engine->hasErrors());
         $errors = $Engine->getErrors();
@@ -18,6 +20,8 @@ class ProximitySearchTest extends TestCase {
     }
     public function testNotBoolean() {
         $Engine = new Engine();
+        $Engine->setDefaultDataType('raw');
+        
         $results = $Engine->actionQuery(['bible' => 'kjv', 'search' => 'faith PROX(2) joy', 'search_type' => 'any']);
         $this->assertTrue($Engine->hasErrors());
         $errors = $Engine->getErrors();
@@ -31,6 +35,8 @@ class ProximitySearchTest extends TestCase {
     
     public function testProximitySearchType() {
         $Engine = new Engine();
+        $Engine->setDefaultDataType('raw');
+        
         $results = $Engine->actionQuery(['bible' => 'kjv', 'search' => 'faith joy love', 'search_type' => 'proximity', 'proximity_limit' => 10, 'whold_words' => FALSE]);
         $this->assertFalse($Engine->hasErrors());
         
@@ -62,6 +68,8 @@ class ProximitySearchTest extends TestCase {
         
     public function testMixedProxLimits() {
         $Engine = new Engine();
+        $Engine->setDefaultDataType('raw');
+        
         $results = $Engine->actionQuery(['bible' => 'kjv', 'search' => 'faith PROX(2) joy PROX(5) love', 'search_type' => 'boolean']);
         $this->assertFalse($Engine->hasErrors());
         

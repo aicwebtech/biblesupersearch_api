@@ -342,9 +342,10 @@ class SqlSearch {
 
         //preg_match_all('/"[a-zA-z0-9 ]+"/', $parsing, $phrases, PREG_SET_ORDER);
         $phrases = static::parseQueryPhrases($query);
-        $parsing = preg_replace('/"[a-zA-z0-9 ]+"/', '', $parsing); // Remove phrases once parsed
+        //$parsing = preg_replace('/"[a-zA-z0-9 ]+"/', '', $parsing); // Remove phrases once parsed
+        $parsing = preg_replace('/"[\p{L}0-9 ]+"/', '', $parsing); // Remove phrases once parsed
         //preg_match_all('/%?[a-zA-Z0-9]+%?/', $parsing, $matches, PREG_SET_ORDER);
-        preg_match_all('/%?[\p{L}]+%?/u', $parsing, $matches, PREG_SET_ORDER);
+        preg_match_all('/%?[\p{L}0-9]+%?/u', $parsing, $matches, PREG_SET_ORDER);
 
         foreach ($matches as $item) {
             $parsed[] = $item[0];
@@ -361,7 +362,8 @@ class SqlSearch {
     
     public static function parseQueryPhrases($query, $underscore_map = FALSE) {
         $matches = $phrases = $underscores = array();
-        preg_match_all('/"[a-zA-z0-9 ]+"/', $query, $matches, PREG_SET_ORDER);
+        //preg_match_all('/"[a-zA-z0-9 ]+"/', $query, $matches, PREG_SET_ORDER);
+        preg_match_all('/"[\p{L}0-9 ]+"/', $query, $matches, PREG_SET_ORDER);
         
         foreach ($matches as $item) {
             $phrases[] = $item[0];
@@ -412,7 +414,8 @@ class SqlSearch {
         $query = str_replace(array('(', ')'), array(' (', ') '), $query);
         $query = trim(preg_replace('/\s+/', ' ', $query));
 
-        $patterns = array('/\) [a-zA-Z0-9"]/', '/[a-zA-Z0-9"] \(/', '/[a-zA-Z0-9"] [a-zA-Z0-9"]/');
+        //$patterns = array('/\) [a-zA-Z0-9"]/', '/[a-zA-Z0-9"] \(/', '/[a-zA-Z0-9"] [a-zA-Z0-9"]/');
+        $patterns = array('/\) [\p{L}0-9"]/', '/[\p{L}0-9"] \(/', '/[\p{L}0-9"] [\p{L}0-9"]/');
         $query = preg_replace_callback($patterns, function($matches) {
             return str_replace(' ', ' & ', $matches[0]);
         }, $query);
