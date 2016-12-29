@@ -207,7 +207,7 @@ class Engine {
         $format_type  = (array_key_exists($format_type, $format_map)) ? $format_map[$format_type] : 'passage';
         $format_class = '\App\Formatters\\' . ucfirst($format_type);
         
-        $Formatter = new $format_class($results, $Passages);
+        $Formatter = new $format_class($results, $Passages, $Search);
         return $Formatter->format();
     }
     

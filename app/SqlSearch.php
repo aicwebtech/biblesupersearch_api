@@ -142,7 +142,6 @@ class SqlSearch {
         return $valid;
     }
 
-
     /**
      * Sets the options with option to overwrite existing
      * @param array $options

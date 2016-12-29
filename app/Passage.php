@@ -31,7 +31,7 @@ class Passage {
     }
 
     public function setBookById($book_id) {
-        $language = (is_array($this->languages)) ? $this->languages[0] : env('DEFAULT_LANGUAGE_SHORT', 'en');
+        $language = (is_array($this->languages) && count($this->languages)) ? $this->languages[0] : env('DEFAULT_LANGUAGE_SHORT', 'en');
         $book_class = Book::getClassNameByLanguage($language);
         $Book = $book_class::find($book_id);
 
@@ -292,7 +292,11 @@ class Passage {
 
     public function getNormalizedReferences() {
         $parsed = $this->chapter_verse_parsed;
-
+        
+        if(!is_array($parsed)) {
+            return array();
+        }
+        
         foreach($parsed as &$part) {
             if(isset($part['type']) && $part['type'] == 'range') {
                 $part['vst'] = ($part['vst']) ? $part['vst'] : 0;
@@ -343,6 +347,7 @@ class Passage {
             'chapter_verse_raw' => $this->raw_chapter_verse,
             //'chapter_verse_parsed' => $this->chapter_verse_parsed,
             'verses'            => $this->verses,
+            'single_verse'      => $this->isSingleVerse(),
         );
 
         if($this->is_book_range) {
@@ -357,7 +362,7 @@ class Passage {
         foreach($results as $bible => $verses) {
             foreach($verses as $key => $verse) {
                 if($this->verseInPassage($verse)) {
-                    $this->verses[$bible][ $verse->chapter ][ $verse->verse ] = $verse;
+                    $this->verses[ $bible ][ $verse->chapter ][ $verse->verse ] = $verse;
 
                     if(!$retain) {
                         unset($results[$bible][$key]);
@@ -404,6 +409,20 @@ class Passage {
             }
         }
 
+        return FALSE;
+    }
+    
+    /**
+     * Indicates if this is a reference to exactly ONE verse.  (IE: 1 John 1:1)
+     */
+    
+    public function isSingleVerse() {
+        $parsing = $this->getNormalizedReferences();
+        
+        if(count($parsing) == 1) {
+            return ($parsing[0]['type'] == 'single') ? TRUE : FALSE;
+        }
+        
         return FALSE;
     }
 
@@ -488,6 +507,21 @@ class Passage {
         $Passage->is_search = $is_search;
         $Passage->setBook($book);
         $Passage->setChapterVerse($chapter_verse);
+        return $Passage;
+    }
+    
+    /**
+     * Creates a single-verse passage from a verse
+     * 
+     * @param type $verse
+     * @return \App\Passage
+     */
+    public static function createFromVerse($verse, $languages = array(), $is_search = FALSE) {
+        $Passage = new static;
+        $Passage->languages = $languages;
+        $Passage->is_search = $is_search;
+        $Passage->setBookById($verse->book);
+        $Passage->setChapterVerse($verse->chapter . ':' . $verse->verse);
         return $Passage;
     }
 }
