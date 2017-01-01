@@ -54,6 +54,8 @@ abstract class FormatterAbstract {
             ksort($Passages, SORT_NUMERIC);
             $this->Passages = array_values($Passages);
         }
+        
+        $this->Passages = Passage::explodePassages($this->Passages);
 
         foreach($this->Passages as $Passage) {
             $Passage->claimVerses($results);

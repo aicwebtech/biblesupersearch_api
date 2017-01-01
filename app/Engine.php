@@ -97,7 +97,7 @@ class Engine {
         $is_search  = ($Search) ? TRUE : FALSE;
         
         if(!$is_search && empty($references)) {
-            $this->addError(trans('errors.no_query'));
+            $this->addError(trans('errors.no_query'), 4);
             return FALSE;
         }
         
@@ -141,10 +141,18 @@ class Engine {
             }
             
             if(empty($results)) {
-                $this->addError( trans('errors.no_results') );
+                $this->addError( trans('errors.no_results'), 4);
             }
             elseif(!empty($bible_no_results)) {
-                $this->addErrors($bible_no_results);
+                $this->addErrors($bible_no_results, 3);
+            }
+        }
+        
+        if(is_array($Passages)) {  
+            foreach($Passages as $Passage) {
+                if(!$Passage->claimVerses($results, TRUE)) {
+                    $this->addError( trans('errors.passage_not_found', ['passage' => $Passage->raw_book . ' ' . $Passage->raw_chapter_verse]), 3);
+                }
             }
         }
         

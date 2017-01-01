@@ -22,7 +22,8 @@ class Passage {
     protected $raw_chapter_verse; // Chapter and verse as entered by user
     protected $chapter_verse; // Chapter and verse part of reference
     protected $chapter_verse_parsed; // Chapter and verse, parsed into an array of arrays
-    protected $verses; // Array of verses, grouped by bible, chapter, as found by the query
+    protected $verses; // Array of verses, grouped by bible, chapter, verse as found by the query
+    protected $verses_count = 0; // Count of the verses matched to this passage (as found by the query).
     protected $languages; // Array of language short names
     protected $is_valid = FALSE; // Is the provided reference valid?
 
@@ -38,6 +39,7 @@ class Passage {
         if($Book) {
             $this->Book = $Book;
             $this->is_valid = TRUE;
+            $this->is_book_range = FALSE;
         }
         else {
             return $this->_addBookError(trans('errors.book.not_found', ['book' => $book]));
@@ -69,6 +71,7 @@ class Passage {
                 $this->is_valid      = TRUE;
                 $this->Book    = $Book_St;
                 $this->Book_En = $Book_En;
+                $this->clearChapterVerse();
             }
             else {
                 return $this->_addBookError(trans('errors.book.invalid_in_range', ['range' => $book]));
@@ -81,6 +84,7 @@ class Passage {
             if($Book) {
                 $this->Book = $Book;
                 $this->is_valid = TRUE;
+                $this->clearChapterVerse();
             }
             else {
                 return $this->_addBookError(trans('errors.book.not_found', ['book' => $book]));
@@ -289,6 +293,12 @@ class Passage {
 
         $this->chapter_verse_parsed = $parsed;
     }
+    
+    public function clearChapterVerse() {
+        $this->chapter_verse_parsed = array();
+        $this->raw_chapter_verse = NULL;
+        $this->chapter_verse = NULL;
+    }
 
     public function getNormalizedReferences() {
         $parsed = $this->chapter_verse_parsed;
@@ -340,6 +350,7 @@ class Passage {
 
     public function toArray() {
         $passage = array(
+            'book_id'           => $this->Book->id,
             'book_name'         => $this->Book->name,
             'book_short'        => $this->Book->shortname,
             'book_raw'          => $this->raw_book,
@@ -347,6 +358,7 @@ class Passage {
             'chapter_verse_raw' => $this->raw_chapter_verse,
             //'chapter_verse_parsed' => $this->chapter_verse_parsed,
             'verses'            => $this->verses,
+            'verses_count'      => $this->verses_count,
             'single_verse'      => $this->isSingleVerse(),
         );
 
@@ -359,10 +371,15 @@ class Passage {
     }
 
     public function claimVerses(&$results, $retain = FALSE) {
+        $this->verses_count = 0;
+        $verse_claimed = FALSE;
+        
         foreach($results as $bible => $verses) {
             foreach($verses as $key => $verse) {
                 if($this->verseInPassage($verse)) {
                     $this->verses[ $bible ][ $verse->chapter ][ $verse->verse ] = $verse;
+                    $this->verses_count ++;
+                    $verse_claimed = TRUE;
 
                     if(!$retain) {
                         unset($results[$bible][$key]);
@@ -370,6 +387,8 @@ class Passage {
                 }
             }
         }
+        
+        return $verse_claimed;
     }
 
     public function verseInPassage($verse) {
@@ -391,6 +410,10 @@ class Passage {
         }
 
         $parsing = $this->getNormalizedReferences();
+        
+        if(empty($parsing)) {
+            return TRUE; // Reference is just the book.  If book matches that of verse, then it is in the reference.
+        }
 
         foreach($parsing as $parse) {
             if($parse['type'] == 'single') {
@@ -424,6 +447,22 @@ class Passage {
         }
         
         return FALSE;
+    }
+    
+    public function explodePassage($separate_book_ranges) {
+        if($separate_book_ranges && $this->is_book_range) {
+            $Passages = array();
+            
+            for($book = $this->Book->id; $book <= $this->Book_En->id; $book ++) {
+                $Passage = clone $this;
+                $Passage->setBookById($book);
+                $Passages[] = $Passage;
+            }
+            
+            return $Passages;
+        }
+        
+        return array($this);
     }
 
     /**
@@ -523,5 +562,15 @@ class Passage {
         $Passage->setBookById($verse->book);
         $Passage->setChapterVerse($verse->chapter . ':' . $verse->verse);
         return $Passage;
+    }
+    
+    public static function explodePassages($Passages = array(), $separate_book_ranges = TRUE) {
+        $Exploded = array();
+        
+        foreach($Passages as $Passage) {
+            $Exploded = array_merge($Exploded, $Passage->explodePassage($separate_book_ranges));
+        }
+        
+        return $Exploded;
     }
 }

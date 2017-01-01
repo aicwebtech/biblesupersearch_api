@@ -163,7 +163,9 @@ class PassageStructureTest extends TestCase {
         $this->assertTrue($results[0]['single_verse']);
         $this->assertTrue($results[1]['single_verse']);
         $this->assertFalse($results[2]['single_verse']);
+        $this->assertEquals(5, $results[2]['verses_count']);
         $this->assertFalse($results[3]['single_verse']);
+        $this->assertEquals(4, $results[3]['verses_count']);
     }
     
     public function testSingleVerseLookup() {
@@ -200,9 +202,13 @@ class PassageStructureTest extends TestCase {
         $Engine  = new Engine();
         $results = $Engine->actionQuery(['bible' => 'kjv', 'reference' => 'Jn 3:96', 'data_format' => 'passage']);
         $this->assertTrue($Engine->hasErrors());
-        //$this->assertCount(0, $results);
         
-        //print_r($results);
+        // It should find the valid verse
+        $results = $Engine->actionQuery(['bible' => 'kjv', 'reference' => 'Rom 5:15; Jn 3:96', 'data_format' => 'passage']);
+        $this->assertTrue($Engine->hasErrors()); // Yes, it has errors.
+        $this->assertCount(2, $results);
+        $this->assertEquals(1, $results[0]['verses_count']);
+        $this->assertEquals(0, $results[1]['verses_count']);
     }
     
     /**
@@ -280,7 +286,12 @@ class PassageStructureTest extends TestCase {
         $Engine  = new Engine();
         $results = $Engine->actionQuery(['bible' => ['kjv'], 'reference' => 'Rom', 'search' => 'faith', 'data_format' => 'passage', 'whole_words' => TRUE]);
         $this->assertFalse($Engine->hasErrors());
-        $this->assertCount(34, $results);
+        $this->assertCount(1, $results); // One passage
+        $this->assertFalse($results[0]['single_verse']);
+        $this->assertEquals(34, $results[0]['verses_count']);
+        
+        $this->assertArrayHasKey(1, $results[0]['verses']['kjv']);
+        $this->assertArrayHasKey(17, $results[0]['verses']['kjv'][1]);
     }
     
     /**
@@ -290,6 +301,40 @@ class PassageStructureTest extends TestCase {
         $Engine  = new Engine();
         $results = $Engine->actionQuery(['bible' => ['kjv'], 'reference' => 'Rom-Heb', 'search' => 'faith', 'data_format' => 'passage', 'whole_words' => TRUE]);
         $this->assertFalse($Engine->hasErrors());
-        $this->assertCount(160, $results);
+        $this->assertCount(14, $results); // The single book range reference is broken up into separate references by book.
+        
+        // Test the result count for each book
+        $this->assertEquals(34, $results[0]['verses_count']);
+        $this->assertEquals(7,  $results[1]['verses_count']);
+        $this->assertEquals(6,  $results[2]['verses_count']);
+        $this->assertEquals(20, $results[3]['verses_count']);
+        $this->assertEquals(8,  $results[4]['verses_count']);
+        $this->assertEquals(4,  $results[5]['verses_count']);
+        $this->assertEquals(5,  $results[6]['verses_count']);
+        $this->assertEquals(8,  $results[7]['verses_count']);
+        $this->assertEquals(4,  $results[8]['verses_count']);
+        $this->assertEquals(18, $results[9]['verses_count']);
+        $this->assertEquals(8,  $results[10]['verses_count']);
+        $this->assertEquals(5,  $results[11]['verses_count']);
+        $this->assertEquals(2,  $results[12]['verses_count']);
+        $this->assertEquals(31, $results[13]['verses_count']);
+        
+        // This will not pull results from every book in the range
+        $results = $Engine->actionQuery(['bible' => 'kjv', 'reference' => 'Gal-Heb', 'search' => 'church', 'data_format' => 'passage', 'whole_words' => TRUE]);
+        $this->assertFalse($Engine->hasErrors());
+        
+        // Passages with no results are retained, so we can inform the user, if nessessary.
+        $this->assertCount(11, $results); // Total number of books in range. 9 have results
+        $this->assertEquals(1, $results[0]['verses_count']);
+        $this->assertEquals(9, $results[1]['verses_count']);
+        $this->assertEquals(2, $results[2]['verses_count']);
+        $this->assertEquals(4, $results[3]['verses_count']);
+        $this->assertEquals(1, $results[4]['verses_count']);
+        $this->assertEquals(1, $results[5]['verses_count']);
+        $this->assertEquals(3, $results[6]['verses_count']);
+        $this->assertEquals(0, $results[7]['verses_count']);
+        $this->assertEquals(0, $results[8]['verses_count']);
+        $this->assertEquals(1, $results[9]['verses_count']);
+        $this->assertEquals(2, $results[10]['verses_count']);
     }
 }

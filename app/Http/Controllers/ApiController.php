@@ -26,30 +26,33 @@ class ApiController extends Controller {
         $Engine = new Engine();
         $action_method = 'action' . ucfirst($action);
         //header("Access-Control-Allow-Origin: *"); // Enable for debugging
+        $response = new \stdClass();
+        $response->errors = array();
+        $code = 200;
         
         try {
             $results = $Engine->$action_method($input);
+            $response->results = $results;
         } 
         catch (Exception $ex) {
-            $response = $ex->getMessage();
+            $resp = $ex->getMessage();
             
-            return (new Response($response, 500))
+            return (new Response($resp, 500))
                 -> header('Content-Type', 'application/json; charset=utf-8')
                 -> header('Access-Control-Allow-Origin', '*');
         }
-        
-        
+
         if($Engine->hasErrors()) {
             $errors = $Engine->getErrors();
-            $response = json_encode($errors);
+            $response->errors = $errors;
+            $response->error_level = $Engine->getErrorLevel();
             $code = 400;
         }
         else {
-            $response = json_encode($results);
-            $code = 200;
+            $response = $results; // ?? maintain original data structure if no error??
         }
         
-        return (new Response($response, $code))
+        return (new Response(json_encode($response), $code))
             -> header('Content-Type', 'application/json; charset=utf-8')
             -> header('Access-Control-Allow-Origin', '*');
     }
