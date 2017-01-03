@@ -87,6 +87,7 @@ class Engine {
      * @return array $results search / look up results.  
      */
     public function actionQuery($input) {
+        $this->resetErrors();
         $results = $bible_no_results = array();
         !empty($input['bible']) && $this->setBibles($input['bible']);
                 

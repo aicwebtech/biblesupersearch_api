@@ -86,4 +86,19 @@ class ErrorTest extends TestCase {
         $this->assertEquals( trans('errors.paren_mismatch'), $errors[0]);
     }
     
+    public function testSwappedParameter() {
+        $Engine = new Engine();
+        // User accidentially places search in reference input
+        $results = $Engine->actionQuery(['bible' => 'kjv', 'reference' => 'faith', 'search_type' => 'boolean']);
+        $this->assertTrue($Engine->hasErrors());
+        $errors = $Engine->getErrors();
+        //$this->assertEquals( trans('errors.no_results'), $errors[0]);
+        
+        // User accidentially places reference in search input
+        $results = $Engine->actionQuery(['bible' => 'kjv', 'search' => '1 Jn 5:7, 9, 45', 'search_type' => 'boolean']);
+        $this->assertTrue($Engine->hasErrors());
+        $errors = $Engine->getErrors();
+        $this->assertEquals( trans('errors.invalid_search.reference', ['search' => '1 Jn 5:7, 9, 45']), $errors[0]);
+    }
+    
 }

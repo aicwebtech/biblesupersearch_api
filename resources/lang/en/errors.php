@@ -8,7 +8,11 @@ return array(
     'bible_no_results' => 'Your search produced no results in \':module\'.',
     'passage_not_found' => 'Your request for :passage produced no results.',
     'bible_no_exist' => 'Bible text \':module\' not found.',
-    'no_bible_enabled' => 'No Bibles are enabled. Please contact site adminstrator',
+    'no_bible_enabled' => 'No Bibles are enabled. Please contact site adminstrator.',
+    'invalid_search' => array(
+        'reference' => 'Your search for \':search\' is invalid, and appears to be a passage reference.',
+        'general' => 'Your search for \':search\' is invalid.',
+    ),
     'book' => array(
         'invalid_in_range' => 'Invalid book in book range: \':range\'.',
         'not_found' => 'Book \':book\' not found.',

@@ -115,17 +115,38 @@ class Search extends SqlSearch {
     }
     
     protected function _validateHelper($search, $search_type) {
+        // Check for misplaced reference by parsing the search as a passage reference
+        $Passages = Passage::parseReferences($search, $this->languages, FALSE);
+        
+        if(is_array($Passages)) {            
+            foreach($Passages as $Passage) {
+                if(!$Passage->isSingleVerse()) {
+                    $this->addError( trans('errors.invalid_search.reference', ['search' => $search]), 3);
+                    return FALSE;
+                }
+            }
+        }
+        
+        // Check for invalid characters
+        $invalid_chars = preg_replace('/[\p{L}\(\)|& "\'0-9%]+/u', '', $search);
+        
+        if(!empty($invalid_chars)) {
+            var_dump($search);
+            var_dump($invalid_chars);
+            $this->addError( trans('errors.invalid_search.general'), 4);
+        }
+        
         switch ($search_type) {
             case 'boolean' :
                 return $this->_validateBoolean($search);
                 break;
             default:
                 if(static::containsProximityOperators($search)) {
-                    $this->addError( trans('errors.prox_operator_not_allowed') );
+                    $this->addError( trans('errors.prox_operator_not_allowed'), 4);
                     return FALSE;
                 }
                 
-                return TRUE;
+                return parent::_validateHelper($search, $search_type);
         }
     }
     

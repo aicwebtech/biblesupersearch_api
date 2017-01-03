@@ -11,6 +11,7 @@ class SqlSearch {
     protected $search; // String containing the search keywords
     protected $search_parsed;
     protected $options = array();
+    protected $languages = array();
     protected $search_type = 'and';
     protected $options_default = array(
         'search_type' => 'and',
@@ -115,7 +116,7 @@ class SqlSearch {
         return $valid;
     }
     
-    protected function _validateHelper($search, $search_type) {
+    protected function _validateHelper($search, $search_type) {        
         switch ($search_type) {
             case 'boolean' :
                 return $this->_validateBoolean($search);
@@ -342,7 +343,7 @@ class SqlSearch {
         //preg_match_all('/"[a-zA-z0-9 ]+"/', $parsing, $phrases, PREG_SET_ORDER);
         $phrases = static::parseQueryPhrases($query);
         //$parsing = preg_replace('/"[a-zA-z0-9 ]+"/', '', $parsing); // Remove phrases once parsed
-        $parsing = preg_replace('/"[\p{L}0-9 ]+"/', '', $parsing); // Remove phrases once parsed
+        $parsing = preg_replace('/["\'][\p{L}0-9 ]+["\']/u', '', $parsing); // Remove phrases once parsed
         //preg_match_all('/%?[a-zA-Z0-9]+%?/', $parsing, $matches, PREG_SET_ORDER);
         preg_match_all('/%?[\p{L}0-9]+%?/u', $parsing, $matches, PREG_SET_ORDER);
 
@@ -351,7 +352,6 @@ class SqlSearch {
         }
 
         foreach ($phrases as $item) {
-            //$parsed[] = $item[0];
             $parsed[] = $item;
         }
 
@@ -362,10 +362,14 @@ class SqlSearch {
     public static function parseQueryPhrases($query, $underscore_map = FALSE) {
         $matches = $phrases = $underscores = array();
         //preg_match_all('/"[a-zA-z0-9 ]+"/', $query, $matches, PREG_SET_ORDER);
-        preg_match_all('/"[\p{L}0-9 ]+"/', $query, $matches, PREG_SET_ORDER);
+        preg_match_all('/["\'][\p{L}0-9 ]+["\']/u', $query, $matches, PREG_SET_ORDER);
         
         foreach ($matches as $item) {
-            $phrases[] = $item[0];
+            $phrase = $item[0];
+            var_dump('b4', $phrase);
+            $phrase = str_replace("'", '"', $phrase);
+            var_dump($phrase);
+            $phrases[] = $phrase;
             
             if($underscore_map) {
                 $underscores[] = str_replace(' ', '_', $item[0]);
@@ -414,7 +418,8 @@ class SqlSearch {
         $query = trim(preg_replace('/\s+/', ' ', $query));
 
         //$patterns = array('/\) [a-zA-Z0-9"]/', '/[a-zA-Z0-9"] \(/', '/[a-zA-Z0-9"] [a-zA-Z0-9"]/');
-        $patterns = array('/\) [\p{L}0-9"]/', '/[\p{L}0-9"] \(/', '/[\p{L}0-9"] [\p{L}0-9"]/');
+        $patterns = array('/\) [\p{L}0-9"\']/u', '/[\p{L}0-9"\'] \(/u', '/[\p{L}0-9"\'] [\p{L}0-9"\']/u');
+        //$patterns = array('/\) [\p{L}0-9"\']/u', '/[\p{L}0-9"\'] \(/u', '/[\p{L}0-9] [\p{L}0-9]/u', '/["\'] [\p{L}0-9"\']/u');
         $query = preg_replace_callback($patterns, function($matches) {
             return str_replace(' ', ' & ', $matches[0]);
         }, $query);

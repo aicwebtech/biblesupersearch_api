@@ -26,4 +26,16 @@ class KeywordTest extends TestCase
         $results = $Engine->actionQuery(['bible' => 'kjv', 'search' => 'faith%', 'whole_words' => TRUE]);
         $this->assertCount(336, $results['kjv']);
     }
-}
+    
+    public function testWithPhrase() {
+        $Engine = new Engine();
+        $Engine->setDefaultDataType('raw');
+        
+        $results = $Engine->actionQuery(['bible' => 'kjv', 'search' => 'faith && joy || "free spirit"']);
+        //$this->assertCount(9, $results['kjv']);
+
+        $results = $Engine->actionQuery(['bible' => 'kjv', 'search' => "faith && joy || 'free spirit'"]);
+        //$this->assertCount(9, $results['kjv']);
+       
+    }
+ }
