@@ -18,6 +18,10 @@ return array(
         'not_found' => 'Book \':book\' not found.',
         'multiple_without_search' => 'Cannot retrieve multiple books at once.',
     ),
+    'operator' => array(
+        'op_at_beginning' => 'Operators such as \':op\' cannot be at the beginning of your search. Please remove it, or use it\'s lower case equivalent.',
+        'op_at_end' => 'Operators such as \':op\' cannot be at the end of your search. Please remove it, or use it\'s lower case equivalent.',
+    ),
     'paren_mismatch' => 'Your parenthenses are mismatched.',
     'prox_paren_mismatch' => 'Your parenthenses are mismatched, or you have a proximity operator inside of parentheses.',
     'prox_operator_not_allowed' => 'Proximity operators such as PROX and CHAP can only be used with boolean searches',

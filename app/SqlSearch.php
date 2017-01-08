@@ -119,6 +119,8 @@ class SqlSearch {
     protected function _validateHelper($search, $search_type) {        
         switch ($search_type) {
             case 'boolean' :
+            case 'all_words' :
+            case 'and' :
                 return $this->_validateBoolean($search);
                 break;
             default:
@@ -136,8 +138,27 @@ class SqlSearch {
         $rpar = substr_count($search, ')');
         
         if($lpar != $rpar) {
-            $this->addError( trans('errors.paren_mismatch') );
+            $this->addError( trans('errors.paren_mismatch'), 4 );
             $valid = FALSE;
+        }
+        
+        $standardized = static::standardizeBoolean($search);
+        $not_at_beg = ['AND', 'XOR', 'OR'];
+        $not_at_end = ['AND', 'XOR', 'OR', 'NOT'];
+        $len = strlen($standardized);
+        
+        foreach($not_at_beg as $op) {
+            if(strpos($standardized, $op) === 0) {
+                $this->addError( trans('errors.operator.op_at_beginning', ['op' => $op]), 4);
+                return FALSE;
+            }
+        }
+
+        foreach($not_at_end as $op) {
+            if(strrpos($standardized, $op) === $len - strlen($op)) {
+                $this->addError( trans('errors.operator.op_at_end', ['op' => $op]), 4);
+                return FALSE;
+            }
         }
         
         return $valid;
@@ -400,7 +421,7 @@ class SqlSearch {
         // Handles operator aliases
         $and = array(' AND ', '*', '&&', '&');
         $or  = array(' OR ', '+', '||', '|');
-        $not = array('NOT ', '-', '!=');
+        $not = array('NOT ', '!');
         $xor = array(' XOR ', '^^', '^');
         
         list($phrases, $underscored) = static::parseQueryPhrases($query, TRUE);

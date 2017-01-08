@@ -128,16 +128,7 @@ class ErrorTest extends TestCase {
         $this->assertTrue($Engine->hasErrors());
         $this->assertEquals(4, $Engine->getErrorLevel());
         $errors = $Engine->getErrors();
-        $this->assertEquals( trans('errors.invalid_search.general'), $errors[0]);
-        
-        // Two errorenous books
-        $results = $Engine->actionQuery(['bible' => 'kjv', 'reference' => 'Acts; Romans', 'search' => 'faith']);
-        $this->assertTrue($Engine->hasErrors());
-        $this->assertEquals(4, $Engine->getErrorLevel());
-        
-        // One good, one bad
-        $results = $Engine->actionQuery(['bible' => 'kjv', 'reference' => 'Acts; Romans', 'search' => 'faith']);
-        $this->assertTrue($Engine->hasErrors());
+        $this->assertEquals( trans('errors.invalid_search.general', ['search' => '@']), $errors[0]);
     }
     
     /**
@@ -154,5 +145,43 @@ class ErrorTest extends TestCase {
         $this->assertCount(2, $results);
         $this->assertEquals(1, $results[0]['verses_count']);
         $this->assertEquals(0, $results[1]['verses_count']);
+    }
+    
+    public function testBooleanMisplacedOperators() {
+        $Engine  = new Engine();
+        
+        $results = $Engine->actionQuery(['bible' => 'kjv', 'search' => '&& faith']);
+        $this->assertTrue($Engine->hasErrors());
+        $errors = $Engine->getErrors();
+        $this->assertEquals( trans('errors.operator.op_at_beginning', ['op' => 'AND']), $errors[0]);
+        $results = $Engine->actionQuery(['bible' => 'kjv', 'search' => 'faith &']);
+        $this->assertTrue($Engine->hasErrors());
+        $errors = $Engine->getErrors();
+        $this->assertEquals( trans('errors.operator.op_at_end', ['op' => 'AND']), $errors[0]);
+        
+        $results = $Engine->actionQuery(['bible' => 'kjv', 'search' => 'OR faith']);
+        $this->assertTrue($Engine->hasErrors());
+        $errors = $Engine->getErrors();
+        $this->assertEquals( trans('errors.operator.op_at_beginning', ['op' => 'OR']), $errors[0]);
+        $results = $Engine->actionQuery(['bible' => 'kjv', 'search' => 'faith |']);
+        $this->assertTrue($Engine->hasErrors());
+        $errors = $Engine->getErrors();
+        $this->assertEquals( trans('errors.operator.op_at_end', ['op' => 'OR']), $errors[0]);
+        
+        $results = $Engine->actionQuery(['bible' => 'kjv', 'search' => 'XOR faith']);
+        $this->assertTrue($Engine->hasErrors());
+        $errors = $Engine->getErrors();
+        $this->assertEquals( trans('errors.operator.op_at_beginning', ['op' => 'XOR']), $errors[0]);
+        $results = $Engine->actionQuery(['bible' => 'kjv', 'search' => 'faith ^']);
+        $this->assertTrue($Engine->hasErrors());
+        $errors = $Engine->getErrors();
+        $this->assertEquals( trans('errors.operator.op_at_end', ['op' => 'XOR']), $errors[0]);
+        
+        $results = $Engine->actionQuery(['bible' => 'kjv', 'reference' => 'Rom 1', 'search' => 'NOT faith']);
+        $this->assertFalse($Engine->hasErrors()); // This is NOT an error
+        $results = $Engine->actionQuery(['bible' => 'kjv', 'search' => 'faith !']);
+        $this->assertTrue($Engine->hasErrors());
+        $errors = $Engine->getErrors();
+        $this->assertEquals( trans('errors.operator.op_at_end', ['op' => 'NOT']), $errors[0]);
     }
 }
