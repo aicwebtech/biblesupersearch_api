@@ -58,6 +58,10 @@ class SqlSearchTest extends TestCase
         $this->assertEquals('faith AND (hope AND love) AND joy', $std);
         $std = SqlSearch::standardizeBoolean('faith (hope love) "free spirit"');
         $this->assertEquals('faith AND (hope AND love) AND "free spirit"', $std);
+        
+        // Single quotes do NOT identify a phrase, instead they are treated as part of the keyword
+        $std = SqlSearch::standardizeBoolean('faith (hope love) \'free spirit\'');
+        $this->assertEquals('faith AND (hope AND love) AND \'free AND spirit\'', $std);
     }
     
     public function testBindDataPush() {

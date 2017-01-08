@@ -102,20 +102,19 @@ class Engine {
             return FALSE;
         }
         
-        // Passage validation
-        $Passages  = Passage::parseReferences($references, $this->languages, $is_search);
+        // Passage parsing and validation
+        $Passages = Passage::parseReferences($references, $this->languages, $is_search);
         
         if(is_array($Passages)) {            
-            $passage_error_count = 0;
-            
-            foreach($Passages as $Passage) {
+            foreach($Passages as $key => $Passage) {
                 if($Passage->hasErrors()) {
                     $this->addErrors($Passage->getErrors(), $Passage->getErrorLevel());
-                    $passage_error_count ++;
+                    unset($Passages[$key]);
                 }
             }
             
-            if(count($Passages) == $passage_error_count) {
+            if(empty($Passages)) {
+                $this->setErrorLevel(4);
                 return FALSE; // If all of the passages are invalid, return
             }
         }
@@ -149,7 +148,7 @@ class Engine {
             }
         }
         
-        if(is_array($Passages)) {  
+        if(is_array($Passages) && !$Search) {  
             foreach($Passages as $Passage) {
                 if(!$Passage->claimVerses($results, TRUE)) {
                     $this->addError( trans('errors.passage_not_found', ['passage' => $Passage->raw_book . ' ' . $Passage->raw_chapter_verse]), 3);

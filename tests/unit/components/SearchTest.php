@@ -67,7 +67,9 @@ class SearchTest extends TestCase {
         $parsed = Search::parseQueryTerms('faith AND (hope OR love) OR "shall be saved"');
         $this->assertEquals(array('faith', 'hope', 'love', '"shall be saved"'), $parsed);
         $parsed = Search::parseQueryTerms("faith AND (hope OR love) OR 'shall be saved'");
-        $this->assertEquals(array('faith', 'hope', 'love', '"shall be saved"'), $parsed);
+        $this->assertEquals(array('faith', 'hope', 'love', '\'shall', 'be', 'saved\''), $parsed);
+        $parsed = Search::parseQueryTerms("won't be lost"); // Conjunction
+        $this->assertEquals(array('won\'t', 'be', 'lost'), $parsed);
         $parsed = Search::parseQueryTerms('faith AND hope PROX(14) charity');
         $this->assertEquals(array('faith', 'hope', 'charity'), $parsed);
         $parsed = Search::parseQueryTerms('faith CHAP hope BOOK charity');

@@ -262,8 +262,6 @@ class SqlSearch {
             return $term;
         }
         
-        //var_dump($term);
-        
         $pre  = ($has_st_pct) ? '/' : '[[:<:]]';
         $post = ($has_en_pct) ? '.' : '[[:>:]]';
         
@@ -343,9 +341,9 @@ class SqlSearch {
         //preg_match_all('/"[a-zA-z0-9 ]+"/', $parsing, $phrases, PREG_SET_ORDER);
         $phrases = static::parseQueryPhrases($query);
         //$parsing = preg_replace('/"[a-zA-z0-9 ]+"/', '', $parsing); // Remove phrases once parsed
-        $parsing = preg_replace('/["\'][\p{L}0-9 ]+["\']/u', '', $parsing); // Remove phrases once parsed
+        $parsing = preg_replace('/["][\p{L}0-9 ]+["]/u', '', $parsing); // Remove phrases once parsed
         //preg_match_all('/%?[a-zA-Z0-9]+%?/', $parsing, $matches, PREG_SET_ORDER);
-        preg_match_all('/%?[\p{L}0-9]+%?/u', $parsing, $matches, PREG_SET_ORDER);
+        preg_match_all('/%?[\p{L}0-9\']+%?/u', $parsing, $matches, PREG_SET_ORDER);
 
         foreach ($matches as $item) {
             $parsed[] = $item[0];
@@ -362,13 +360,10 @@ class SqlSearch {
     public static function parseQueryPhrases($query, $underscore_map = FALSE) {
         $matches = $phrases = $underscores = array();
         //preg_match_all('/"[a-zA-z0-9 ]+"/', $query, $matches, PREG_SET_ORDER);
-        preg_match_all('/["\'][\p{L}0-9 ]+["\']/u', $query, $matches, PREG_SET_ORDER);
+        preg_match_all('/["][\p{L}0-9 ]+["]/u', $query, $matches, PREG_SET_ORDER);
         
         foreach ($matches as $item) {
             $phrase = $item[0];
-            var_dump('b4', $phrase);
-            $phrase = str_replace("'", '"', $phrase);
-            var_dump($phrase);
             $phrases[] = $phrase;
             
             if($underscore_map) {
@@ -418,7 +413,7 @@ class SqlSearch {
         $query = trim(preg_replace('/\s+/', ' ', $query));
 
         //$patterns = array('/\) [a-zA-Z0-9"]/', '/[a-zA-Z0-9"] \(/', '/[a-zA-Z0-9"] [a-zA-Z0-9"]/');
-        $patterns = array('/\) [\p{L}0-9"\']/u', '/[\p{L}0-9"\'] \(/u', '/[\p{L}0-9"\'] [\p{L}0-9"\']/u');
+        $patterns = array('/\) [\p{L}0-9\'"]/u', '/[\p{L}0-9\'"] \(/u', '/[\p{L}0-9\'"] [\p{L}0-9\'"]/u');
         //$patterns = array('/\) [\p{L}0-9"\']/u', '/[\p{L}0-9"\'] \(/u', '/[\p{L}0-9] [\p{L}0-9]/u', '/["\'] [\p{L}0-9"\']/u');
         $query = preg_replace_callback($patterns, function($matches) {
             return str_replace(' ', ' & ', $matches[0]);

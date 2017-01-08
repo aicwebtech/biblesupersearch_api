@@ -101,4 +101,35 @@ class ErrorTest extends TestCase {
         $this->assertEquals( trans('errors.invalid_search.reference', ['search' => '1 Jn 5:7, 9, 45']), $errors[0]);
     }
     
+    public function testInvalidBook() {
+        $Engine = new Engine();
+        $results = $Engine->actionQuery(['bible' => 'kjv', 'reference' => 'Actz', 'search' => 'faith']);
+        $this->assertTrue($Engine->hasErrors());
+        $this->assertEquals(4, $Engine->getErrorLevel());
+        
+        // Two errorenous books
+        $results = $Engine->actionQuery(['bible' => 'kjv', 'reference' => 'Actz; Romaans', 'search' => 'faith']);
+        $this->assertTrue($Engine->hasErrors());
+        $this->assertEquals(4, $Engine->getErrorLevel());
+        
+        // One good, one bad
+        $results = $Engine->actionQuery(['bible' => 'kjv', 'reference' => 'Actz; Romans', 'search' => 'faith']);
+        $this->assertTrue($Engine->hasErrors());
+    }
+    
+    /**
+     * Test attempting to look up a verse that does not exist
+     */
+    public function testAbsentVerseLookup() {
+        $Engine  = new Engine();
+        $results = $Engine->actionQuery(['bible' => 'kjv', 'reference' => 'Jn 3:96', 'data_format' => 'passage']);
+        $this->assertTrue($Engine->hasErrors());
+        
+        // It should find the valid verse
+        $results = $Engine->actionQuery(['bible' => 'kjv', 'reference' => 'Rom 5:15; Jn 3:96', 'data_format' => 'passage']);
+        $this->assertTrue($Engine->hasErrors()); // Yes, it has errors.
+        $this->assertCount(2, $results);
+        $this->assertEquals(1, $results[0]['verses_count']);
+        $this->assertEquals(0, $results[1]['verses_count']);
+    }
 }

@@ -44,6 +44,14 @@ trait Error {
     }
     
     /**
+     * Force set the error level
+     * @param int $level
+     */
+    public function setErrorLevel($level) {
+        $this->error_level = intval($level);
+    }
+    
+    /**
      * Clears out all errors
      */
     public function resetErrors() {

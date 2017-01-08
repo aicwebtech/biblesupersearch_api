@@ -121,7 +121,7 @@ class Search extends SqlSearch {
         if(is_array($Passages)) {            
             foreach($Passages as $Passage) {
                 if(!$Passage->isSingleVerse()) {
-                    $this->addError( trans('errors.invalid_search.reference', ['search' => $search]), 3);
+                    $this->addError( trans('errors.invalid_search.reference', ['search' => $search]), 4);
                     return FALSE;
                 }
             }
