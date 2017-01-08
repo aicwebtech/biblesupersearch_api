@@ -126,6 +126,10 @@ class Engine {
             if(!$search_valid) {
                 $this->addErrors($Search->getErrors(), $Search->getErrorLevel());
             }
+            
+            if($this->error_level == 4) {
+                return FALSE;
+            }
         }
         
         if(!$Search || $Search && $search_valid) {

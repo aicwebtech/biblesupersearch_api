@@ -116,11 +116,11 @@ class Search extends SqlSearch {
     
     protected function _validateHelper($search, $search_type) {
         // Check for misplaced reference by parsing the search as a passage reference
-        $Passages = Passage::parseReferences($search, $this->languages, FALSE);
+        $Passages = Passage::parseReferences($search, $this->languages, TRUE);
         
         if(is_array($Passages)) {            
             foreach($Passages as $Passage) {
-                if(!$Passage->isSingleVerse()) {
+                if(!$Passage->isSingleBook() && !$Passage->hasErrors()) {
                     $this->addError( trans('errors.invalid_search.reference', ['search' => $search]), 4);
                     return FALSE;
                 }
@@ -128,12 +128,11 @@ class Search extends SqlSearch {
         }
         
         // Check for invalid characters
-        $invalid_chars = preg_replace('/[\p{L}\(\)|& "\'0-9%]+/u', '', $search);
+        $invalid_chars = preg_replace('/[\p{L}\(\)|&^ "\'0-9%]+/u', '', $search);
         
         if(!empty($invalid_chars)) {
-            var_dump($search);
-            var_dump($invalid_chars);
-            $this->addError( trans('errors.invalid_search.general'), 4);
+            $this->addError( trans('errors.invalid_search.general', ['search' => $search]), 4);
+            return FALSE;
         }
         
         switch ($search_type) {

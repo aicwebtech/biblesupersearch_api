@@ -55,6 +55,9 @@ class PassageTest extends TestCase
         $this->assertEquals('Romans', $Passages[0]->Book->name);
         $this->assertEquals('Acts', $Passages[1]->Book->name);
         $this->assertEquals('John', $Passages[2]->Book->name);
+        $this->assertFalse($Passages[0]->isSingleBook());
+        $this->assertFalse($Passages[1]->isSingleBook());
+        $this->assertFalse($Passages[2]->isSingleBook());
         // Test Chapter / Verse
         $this->assertEquals('1', $Passages[0]->chapter_verse);
         $this->assertEquals('3-4', $Passages[1]->chapter_verse);
@@ -70,6 +73,31 @@ class PassageTest extends TestCase
         $this->assertEquals($expected[0], $Passages[0]->chapter_verse_parsed);
         $this->assertEquals($expected[1], $Passages[1]->chapter_verse_parsed);
         $this->assertEquals($expected[2], $Passages[2]->chapter_verse_parsed);
+    }
+    
+    public function testWholeBookParse() {
+        $reference = 'Romans; Acts, John';
+        $Passages = Passage::parseReferences($reference, ['en'], TRUE);
+        $this->assertCount(3, $Passages);
+        $this->assertContainsOnlyInstancesOf('App\Passage', $Passages);
+        // Test Books
+        $this->assertEquals('Romans', $Passages[0]->Book->name);
+        $this->assertEquals('Acts', $Passages[1]->Book->name);
+        $this->assertEquals('John', $Passages[2]->Book->name);
+        
+        // Test Chapter / Verse
+        $this->assertEquals('', $Passages[0]->chapter_verse);
+        $this->assertEquals('', $Passages[1]->chapter_verse);
+        $this->assertEquals('', $Passages[2]->chapter_verse);
+        
+        // Test parsed chapter / verse
+        $this->assertEquals(array(), $Passages[0]->chapter_verse_parsed);
+        $this->assertEquals(array(), $Passages[1]->chapter_verse_parsed);
+        $this->assertEquals(array(), $Passages[2]->chapter_verse_parsed);
+        
+        $this->assertTrue($Passages[0]->isSingleBook());
+        $this->assertTrue($Passages[1]->isSingleBook());
+        $this->assertTrue($Passages[2]->isSingleBook());
     }
     
     public function testWholeChapterComplexParse() {

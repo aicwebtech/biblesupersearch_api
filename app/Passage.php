@@ -417,7 +417,13 @@ class Passage {
 
         foreach($parsing as $parse) {
             if($parse['type'] == 'single') {
+                // Single verses
                 if($verse->chapter == $parse['c'] && $verse->verse == $parse['v']) {
+                    return TRUE;
+                }
+                
+                // Chapters
+                if($verse->chapter == $parse['c'] && $parse['v'] === NULL) {
                     return TRUE;
                 }
             }
@@ -443,10 +449,19 @@ class Passage {
         $parsing = $this->getNormalizedReferences();
         
         if(count($parsing) == 1) {
-            return ($parsing[0]['type'] == 'single') ? TRUE : FALSE;
+            //return ($parsing[0]['type'] == 'single') ? TRUE : FALSE;
+            return ($parsing[0]['type'] == 'single' && $parsing[0]['v'] !== NULL) ? TRUE : FALSE;
         }
         
         return FALSE;
+    }
+    
+    public function isSingleBook() {
+        if($this->is_book_range) {
+            return FALSE;
+        }
+        
+        return (empty($this->getNormalizedReferences())) ? TRUE : FALSE;
     }
     
     public function explodePassage($separate_book_ranges) {

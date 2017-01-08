@@ -99,6 +99,10 @@ class ErrorTest extends TestCase {
         $this->assertTrue($Engine->hasErrors());
         $errors = $Engine->getErrors();
         $this->assertEquals( trans('errors.invalid_search.reference', ['search' => '1 Jn 5:7, 9, 45']), $errors[0]);
+        
+        // This is NOT an error - Romans is a valid keyword
+        $results = $Engine->actionQuery(['bible' => 'kjv', 'search' => 'Romans', 'search_type' => 'boolean']);
+        $this->assertFalse($Engine->hasErrors());
     }
     
     public function testInvalidBook() {
@@ -114,6 +118,25 @@ class ErrorTest extends TestCase {
         
         // One good, one bad
         $results = $Engine->actionQuery(['bible' => 'kjv', 'reference' => 'Actz; Romans', 'search' => 'faith']);
+        $this->assertTrue($Engine->hasErrors());
+    }
+    
+    
+    public function testInvalidCharacters() {
+        $Engine = new Engine();
+        $results = $Engine->actionQuery(['bible' => 'kjv', 'reference' => 'Acts', 'search' => '@']);
+        $this->assertTrue($Engine->hasErrors());
+        $this->assertEquals(4, $Engine->getErrorLevel());
+        $errors = $Engine->getErrors();
+        $this->assertEquals( trans('errors.invalid_search.general'), $errors[0]);
+        
+        // Two errorenous books
+        $results = $Engine->actionQuery(['bible' => 'kjv', 'reference' => 'Acts; Romans', 'search' => 'faith']);
+        $this->assertTrue($Engine->hasErrors());
+        $this->assertEquals(4, $Engine->getErrorLevel());
+        
+        // One good, one bad
+        $results = $Engine->actionQuery(['bible' => 'kjv', 'reference' => 'Acts; Romans', 'search' => 'faith']);
         $this->assertTrue($Engine->hasErrors());
     }
     
