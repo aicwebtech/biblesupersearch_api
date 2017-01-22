@@ -10,8 +10,7 @@ class ImportBibleUnbound extends ImportBible {
      * The name and signature of the console command.
      * @var string
      */
-    protected $signature = 'bible:import:unbound';
-    //protected $signature = 'bible:import:unbound';
+    protected $signature = 'bible:import-unbound';
 
     /**
      * The console command description.

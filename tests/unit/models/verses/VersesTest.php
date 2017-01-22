@@ -121,7 +121,7 @@ class VersesTest extends TestCase
         $Bibles = Bible::where('installed', 1)->get();
         
         foreach($Bibles as $Bible) {
-            $this->assertTrue( Schema::hasTable('verses_' . $Bible->module) );
+            $this->assertTrue( Schema::hasTable('verses_' . $Bible->module), 'No table for module: verses_' . $Bible->module );
             $Verses = $Bible->verses();
             $verses_class_static = Bible::getVerseClassNameByModule($Bible->module);
             $verses_class = $Bible->getVerseClassName();
@@ -146,7 +146,7 @@ class VersesTest extends TestCase
         foreach($Bibles as $Bible) {
             // Make sure it's installed and the verses table exists
             $this->assertEquals(1, $Bible->installed);
-            $this->assertTrue( Schema::hasTable('verses_' . $Bible->module) );
+            $this->assertTrue( Schema::hasTable('verses_' . $Bible->module), 'No table for module: verses_' . $Bible->module);
         }
     }
 }

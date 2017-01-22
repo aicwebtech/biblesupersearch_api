@@ -11,7 +11,20 @@ class Bible extends Model {
 
     protected $Verses; // Verses model instance
     protected $verses_class_name; // Name of verses class
-    protected $guarded = ['id'];
+    //protected $guarded = array('id'); // BAD idea!
+    protected $fillable = array(
+        'name', 
+        'shortname', 
+        'lang', 
+        'lang_short',
+        'module',
+        'year',
+        'description',
+        'copyright',
+        'italics',
+        'strongs',
+        'rank',
+    );
 
     /**
      * Create a new Bible Instance

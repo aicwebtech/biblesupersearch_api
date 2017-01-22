@@ -63,6 +63,7 @@ trait Error {
     /**
      * Adds an error 
      * @param string $message
+     * @return bool FALSE
      */
     protected function addError($message, $level = 1, $unique = TRUE) {
         if(!in_array($message, $this->errors)) {  
@@ -71,6 +72,7 @@ trait Error {
         
         $this->has_errors = TRUE;
         $this->error_level = max($this->error_level, $level);
+        return FALSE;
     }
     
     /**

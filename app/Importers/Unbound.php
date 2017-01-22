@@ -32,70 +32,96 @@ use \DB; //Todo - something is wrong with namespaces here, shouldn't this be aut
  *      http://unbound.biola.edu/
  *      To use one of these Bibles, download it's zip file and place in <document root>/bibles/unbound
  */
+
 class Unbound extends ImporterAbstract {
-    //put your code here
+    protected $required = ['module', 'lang', 'lang_short']; // Array of required fields
     
     public function import() {
-        ini_set("memory_limit", "30M");
+        ini_set("memory_limit", "50M");
 
-        // Script options
+        // Script settings
         $dir  = dirname(__FILE__) . '/../../bibles/unbound/'; // directory of Bible files
-        $file = $this->file; //"kjv_apocrypha"; // File name, minus extension
+        $file   = $this->file;   // File name, minus extension
         $module = $this->module; // Module and db name
-        $language = "en"; // 2-3 character language code
-        $language_long = "English";  // full English name of the language 
-        //
+        //$language = "en"; // 2-3 character language code
+        //$language_long = "English";  // full English name of the language 
         
-        //Which testaments does this Bible contain: ot,nt,both
+        //Which testaments does this Bible contain: ot, nt,both
         $testaments = "both"; 
         // Where did you get this Bible?   
         $source = "This Bible imported from The Unbound Bible <a href='http://unbound.biola.edu/'>http://unbound.biola.edu/</a>";
 
-        // Advanced options
-        $install_bible = true;
-        $insert_into_bible_table = true;
-        $overwrite_existing = TRUE;
+        // Advanced options (Hardcoded for now)
+        $install_bible              = TRUE; // If this false, this script does nothing
+        $insert_into_bible_table    = TRUE; // Inserts (or updates) the record in the Bible versions table
+        $overwrite_existing         = $this->overwrite;
         // end options
         
         if($install_bible) {
-            $Bible = Bible::where('module', $module)->first();
-
-            if(!$overwrite_existing && $Bible) {
-                die('Cannot overwrite ' . $module);
-            }
-            
+            //$Bible    = Bible::where('module', $module)->first();
+            $Bible    = Bible::findByModule($module);
             $existing = ($Bible) ? TRUE   : FALSE;
             $Bible    = ($Bible) ? $Bible : new Bible;
+            $zipfile  = $dir . $file . '.zip';
+            $Zip      = new ZipArchive();
+
+            if(!$overwrite_existing && $existing) {
+                return $this->addError('Module already exists: \'' . $module . '\' Use --overwrite to overwrite it.', 4);
+            }
             
             if($existing) {
                 $Bible->uninstall();
             }
             
-            $zipfile = $dir . $file . '.zip';
-            $Zip = new ZipArchive();
-            
             if($Zip->open($zipfile) === TRUE) {
                 $txt_file = $file . "_utf8.txt";
                 $desc_file = $file . ".html";
-                $bib = $Zip->getFromName($txt_file);
-                //$desc = $Zip->getFromName($desc_file);
+                $bib  = $Zip->getFromName($txt_file);
+                $desc = $Zip->getFromName($desc_file);
+                
+                if(preg_match('/<body>(.*?)<\/body>/', $desc, $matches) == 1) {
+                    $desc = $matches[1];
+                }
+                
                 $Zip->close();
             }
             else {
-                die('Unable to open ' . $zipfile);
+                return $this->addError('Unable to open ' . $zipfile, 4);
             }
             
-            //var_dump($this->bible_attributes);
-            
-            //$Bible->setAttributes($this->bible_attributes);
-            
-            //var_dump($Bible);
-            
-            if($existing) {  
-                $Bible->save( $this->bible_attributes );
-            }
-            else {
-                $Bible = Bible::forceCreate($this->bible_attributes);
+            if($insert_into_bible_table) {                
+                $attr = $this->bible_attributes;
+
+                // Attempt to parse info from Unbound description
+                if(preg_match('/<b>(.*?)<\/b>/', $desc, $matches) == 1) {
+                    $lang_name = explode(': ', $matches[1]);
+                    
+                    if(count($lang_name) == 1) {
+                        $name = $lang_name[0];
+                        $lang = $attr['module'];
+                    }
+                    else {
+                        $lang = $lang_name[0];
+                        $name = $lang_name[1];
+                    }
+                    
+                    $attr['name'] = (empty($attr['name'])) ? $name : $attr['name']; 
+                    $attr['lang'] = (empty($attr['lang'])) ? $name : $attr['lang']; 
+                }
+                
+                $attr['description'] = $desc . '<br /><br />' . $source;
+                
+                // These retentions should be removed once V2 tables fully imported
+                $retain = ['lang', 'lang_short', 'shortname'];
+                
+                foreach($retain as $item) {
+                    if(!empty($Bible->$item)) {
+                        unset($attr[$item]);
+                    }
+                }
+
+                $Bible->fill($attr);
+                $Bible->save();
             }
             
             $Bible->install(TRUE);
@@ -103,7 +129,9 @@ class Unbound extends ImporterAbstract {
             $table  = $Verses->getTable();
             $st = ($testaments == 'nt') ? 40 : 0;
             
-            echo('installing ' . $module);
+            if(\App::runningInConsole()) {
+                echo('Installing: ' . $module . PHP_EOL);
+            }
 
             //mysql_query('SET NAMES utf8;');
             //mysql_query('SET CHARACTER SET utf8;');
@@ -114,7 +142,7 @@ class Unbound extends ImporterAbstract {
             
             $bib = preg_split("/\\r\\n|\\r|\\n/", $bib);
 
-            //$bib=explode("\n",$bib);
+            //$bib = explode("\n",$bib);
 
             $sub = substr($bib[0], 0, 1);            
             $i = (($sub == "0") | ($sub == "4")) ? 0 : 7;
@@ -153,17 +181,11 @@ class Unbound extends ImporterAbstract {
                 
                 //$Verses->forceCreate($binddata);
                 DB::table($table)->insert($binddata);
-
                 $i++;
 
                 if($i > 100) {
                   //break;
                 }
-
-                //while(substr($bib[$i], 0, 1) == "#"){ $i++; }
-
-                //if($i==21){break;}
-
             }
 
         }

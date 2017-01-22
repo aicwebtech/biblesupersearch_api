@@ -16,6 +16,7 @@ abstract class ImportBible extends Command {
      * @var string
      */
     protected $description = 'Import a Bible from a UTF-8 text file';
+    protected $options = ['name', 'shortname', 'lang', 'lang_short'];
 
     /**
      * Create a new command instance.
@@ -23,7 +24,7 @@ abstract class ImportBible extends Command {
      */
     public function __construct() {
         // Auto-add the arguments and options
-        $this->signature .= ' {file} {module} {name?} {shortname?}'; 
+        $this->signature .= ' {file} {module} {--name=} {--shortname=} {--lang=} {--lang_short=} {--overwrite}'; 
         //$this->description .= '';
         
         parent::__construct();
@@ -40,11 +41,31 @@ abstract class ImportBible extends Command {
     protected function _handleHelper($Importer) {
         $file       = $this->argument('file');
         $module     = $this->argument('module');
+        $overwrite  = $this->option('overwrite');
         $attributes = array();
-        $attributes['name']      = $this->argument('name');
-        $attributes['shortname'] = $this->argument('shortname');
         
-        $Importer->setProperties($file, $module, $attributes);
-        $Importer->import();
+        foreach($this->options as $option) {
+            $attributes[$option] = $this->option($option);
+        }
+        
+        $Importer->setProperties($file, $module, $overwrite, $attributes);
+        
+        // Settings errors check
+        if(!$this->_handleErrors($Importer)) {
+            $Importer->import();
+            $this->_handleErrors($Importer); // Import errors check
+        }
+    }
+    
+    private function _handleErrors($Importer) {
+        if($Importer->hasErrors()) {
+            foreach($Importer->getErrors() as $error) {
+                echo($error . PHP_EOL);
+            }
+            
+            return TRUE;
+        }
+        
+        return FALSE;
     }
 }
