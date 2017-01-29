@@ -15,6 +15,11 @@ class Kernel extends ConsoleKernel
     protected $commands = [
         Commands\Inspire::class,
         Commands\ImportBibleUnbound::class,
+        Commands\EnableBible::class,
+        Commands\DisableBible::class,
+        Commands\InstallBible::class,
+        Commands\UninstallBible::class,
+        Commands\GenerateModule::class,
     ];
 
     /**

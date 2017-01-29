@@ -43,8 +43,6 @@ class Unbound extends ImporterAbstract {
         $dir  = dirname(__FILE__) . '/../../bibles/unbound/'; // directory of Bible files
         $file   = $this->file;   // File name, minus extension
         $module = $this->module; // Module and db name
-        //$language = "en"; // 2-3 character language code
-        //$language_long = "English";  // full English name of the language 
         
         //Which testaments does this Bible contain: ot, nt,both
         $testaments = "both"; 
@@ -57,12 +55,13 @@ class Unbound extends ImporterAbstract {
         $overwrite_existing         = $this->overwrite;
         // end options
         
+        // To do - move this logic!
         if($install_bible) {
             //$Bible    = Bible::where('module', $module)->first();
             $Bible    = Bible::findByModule($module);
             $existing = ($Bible) ? TRUE   : FALSE;
             $Bible    = ($Bible) ? $Bible : new Bible;
-            $zipfile  = $dir . $file . '.zip';
+            $zipfile  = $dir . $file;
             $Zip      = new ZipArchive();
 
             if(!$overwrite_existing && $existing) {
@@ -74,8 +73,9 @@ class Unbound extends ImporterAbstract {
             }
             
             if($Zip->open($zipfile) === TRUE) {
-                $txt_file = $file . "_utf8.txt";
-                $desc_file = $file . ".html";
+                $file_raw  = substr($file, 0, strlen($file) - 4);
+                $txt_file  = $file_raw . "_utf8.txt";
+                $desc_file = $file_raw . ".html";
                 $bib  = $Zip->getFromName($txt_file);
                 $desc = $Zip->getFromName($desc_file);
                 
@@ -112,7 +112,7 @@ class Unbound extends ImporterAbstract {
                 $attr['description'] = $desc . '<br /><br />' . $source;
                 
                 // These retentions should be removed once V2 tables fully imported
-                $retain = ['lang', 'lang_short', 'shortname'];
+                $retain = ['lang', 'lang_short', 'shortname', 'name'];
                 
                 foreach($retain as $item) {
                     if(!empty($Bible->$item)) {
@@ -132,20 +132,13 @@ class Unbound extends ImporterAbstract {
             if(\App::runningInConsole()) {
                 echo('Installing: ' . $module . PHP_EOL);
             }
-
-            //mysql_query('SET NAMES utf8;');
-            //mysql_query('SET CHARACTER SET utf8;');
-
-            //$loc = $file . "_utf8.txt";
-            //$loc = ($dir) ? $loc = "$dir/$loc" : $loc;
-            //$bib = file($loc);
             
             $bib = preg_split("/\\r\\n|\\r|\\n/", $bib);
-
-            //$bib = explode("\n",$bib);
-
             $sub = substr($bib[0], 0, 1);            
             $i = (($sub == "0") | ($sub == "4")) ? 0 : 7;
+            
+            //print_r($bib);
+            //var_dump(count($bib));
 
             $ver = explode("	", $bib[10]);
             $t = (!$ver[3]) ? 5 : 3;

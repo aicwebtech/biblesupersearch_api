@@ -11,6 +11,8 @@ class ImportBibleUnbound extends ImportBible {
      * @var string
      */
     protected $signature = 'bible:import-unbound';
+    protected $import_dir = 'unbound';
+    protected $file_extension = 'zip';
 
     /**
      * The console command description.

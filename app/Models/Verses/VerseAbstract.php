@@ -52,6 +52,19 @@ abstract class VerseAbstract extends Model {
     abstract public function install();
     abstract public function uninstall();
     
+    public function exportData() {
+        $data = array();
+        
+        $closure = function($rows) use (&$data) {
+           foreach($rows as $row) {
+               $data[] = $row;
+           } 
+        };
+        
+        self::orderBy('id')->chunk(100, $closure);
+        return $data;
+    }
+    
     /**
      * 
      * @param array $Passages Array of App/Passage instances, represents the passages requested, if any

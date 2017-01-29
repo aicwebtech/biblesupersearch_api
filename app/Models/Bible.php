@@ -6,6 +6,8 @@ use Illuminate\Database\Eloquent\Model;
 use App\Models\Verses\VerseStandard As StandardVerses;
 use App\Passage;
 use App\Search;
+use Illuminate\Support\Arr;
+use ZipArchive;
 
 class Bible extends Model {
 
@@ -25,6 +27,9 @@ class Bible extends Model {
         'strongs',
         'rank',
     );
+    
+    // List of fields to NOT export when creating modules
+    protected $do_not_export = array('id', 'created_at', 'updated_at', 'enabled', 'installed');
 
     /**
      * Create a new Bible Instance
@@ -78,9 +83,9 @@ class Bible extends Model {
         //return $Verses;
     }
 
-    public function install() {
+    public function install($structure_only = FALSE) {
         if (!$this->installed) {
-            $this->verses()->install();
+            $this->verses()->install($structure_only);
             $this->installed = 1;
             $this->save();
         }
@@ -94,6 +99,70 @@ class Bible extends Model {
             $this->save();
         }
     }
+    
+    public function export($overwrite = FALSE) {
+        $export_fields = static::getExportFields();
+        $mode = ($overwrite) ? ZipArchive::OVERWRITE : ZipArchive::CREATE;
+        $info = Arr::except($this->attributes, $this->do_not_export);
+        $del  = static::getExportDelimiter();
+        $info['delimiter'] = $del; // Store this in case we change it in the future
+        $info['fields'] = $export_fields;
+        $info = json_encode($info);
+        $data = $this->verses()->exportData();
+        $path = $this->getModuleFilePath();
+        $eol  = PHP_EOL; //'\n';
+        
+        if(!$data) {
+            return FALSE;
+        }
+        
+        // Add headers - # makes it a comment
+        $data_str = '';
+        $data_str .= "# Bible SuperSearch Module for '{$this->name}'  (Module:{$this->module})" . $eol;
+        $data_str .= '#' . $eol;
+        $data_str .= '# For use with Bible SuperSearch >= 4.0' . $eol;
+        $data_str .= '#' . $eol;
+        $data_str .= '# http://www.BibleSuperSearch.com' . $eol;
+        $data_str .= '#' . $eol;
+        $data_str .= '# Separator: ' . $del . $eol;
+        $data_str .= '# Columns: ' . implode($del, $export_fields) . $eol;
+        $data_str .= '#' . $eol;
+        
+        foreach($data as $key => $row) {
+            $rd = array();
+            
+            foreach($export_fields as $field) {
+                $rd[] = empty($row[$field]) ? NULL : $row[$field];
+            }
+            
+            $data_str .= implode($del, $rd) . $eol;
+        }
+        
+        $Zip = new ZipArchive();
+        $res = $Zip->open($path, $mode);
+        
+        if($res === TRUE) {
+            $Zip->addFromString('verses.txt', $data_str);
+            $Zip->addFromString('info.json', $info);
+            $Zip->close();
+            return TRUE;
+        }
+        
+        return FALSE;
+    }
+    
+    public function getModuleFilePath() {
+        return dirname(__FILE__) . '/../../bibles/modules/' . $this->module . '.zip';
+    }
+    
+    public static function getExportFields() {
+        // Warning: Add new items to the end, do not change the order or existing modules will breakgit s
+        return array('book', 'chapter', 'verse', 'text', 'italics', 'strongs');
+    }
+    
+    public static function getExportDelimiter() {
+        return '|';
+    }
 
     public static function findByModule($module, $fail = FALSE) {
         if ($fail) {
@@ -102,6 +171,10 @@ class Bible extends Model {
         else {
             return Bible::where('module', $module)->first();
         }
+    }
+    
+    public static function createFromModuleFile($module) {
+        
     }
     
     /**
