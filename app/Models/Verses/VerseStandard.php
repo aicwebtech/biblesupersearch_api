@@ -238,6 +238,61 @@ class VerseStandard extends VerseAbstract {
             return TRUE;
         }
 
+        if($this->_importFromV2()) {
+            return TRUE;
+        }
+
+        $Zip = $this->Bible->openModuleFile();
+        
+        if(!$Zip) {
+            return FALSE;
+        }
+        
+        $info   = $Zip->getFromName('info.json');
+        $verses = $Zip->getFromName('verses.txt');
+        $Zip->close();
+        
+        $info   = json_decode($info, TRUE);
+        $del    = ($info['delimiter']) ? $info['delimiter'] : '|';
+        $fields = ($info['fields']) ? $info['fields'] : ["book","chapter","verse","text","italics","strongs"];
+        $verses = preg_split("/\\r\\n|\\r|\\n/", $verses);
+        //return TRUE;
+        $table = $this->getTable();
+        
+        $insertable = array();
+        
+        foreach($verses as $verse) {
+            if(empty($verse) || $verse{0} == '#') {
+                continue;
+            }
+            
+            $verse = explode($del, $verse);
+            $map = array();
+            
+            foreach($fields as $index => $field) {
+                $map[$field] = $verse[$index];
+            }
+            
+            $map['chapter_verse'] = $map['chapter'] * 1000 + $map['verse'];
+
+            //$insertable[] = $map;
+            
+            
+            DB::table($table)->insert($map);
+            //static::insert($map);
+        }
+        
+        //DB::table($table)->insert($insertable);
+        //static::insert($insertable);
+
+        return TRUE;
+    }
+    
+    protected function _importFromV2() {
+        return FALSE; // Import from V2 really shouldn't be used at this point
+        
+        $in_console = (strpos(php_sapi_name(), 'cli') !== FALSE) ? TRUE : FALSE;
+
         // If importing from V2, make sure v2 table exists
         if (env('IMPORT_FROM_V2', FALSE)) {
             $v2_table = 'bible_' . $this->Bible->module_v2;
@@ -261,7 +316,6 @@ class VerseStandard extends VerseAbstract {
             $italics = isset($v_test[0]->italics) ? 'italics' : $italics;
             $italics = isset($v_test[0]->map) ? 'map' : $italics;
 
-            
             $prefix = DB::getTablePrefix();
             $table = $this->getTable();
             
@@ -272,43 +326,10 @@ class VerseStandard extends VerseAbstract {
             ";
             
             DB::insert($sql);
-            
-            /*
-            $inc = 1000;
-            $sql_ins = "INSERT INTO {$prefix}{$table} VALUES (:index, :book, :chapter, :verse, :chapter_verse, :text, :italics, :strongs)";
-            
-            for($lim = 0; $lim <= 40000; $lim += $inc) {
-                $sql_sel = " 
-                    SELECT `index`, book, chapter, verse, text, {$italics} AS italics, {$strongs} AS strongs
-                    FROM {$v2_table}
-                    LIMIT {$lim}, {$inc}
-                ";
-                    
-                $verses = DB::select($sql_sel);
-                
-                foreach($verses as $verse) {
-                    $binddata = array(
-                        ':index'            => $verse->index,
-                        ':book'             => $verse->book,
-                        ':chapter'          => $verse->chapter,
-                        ':chapter_verse'    => $verse->chapter * 1000 + $verse->verse,
-                        ':verse'            => $verse->verse,
-                        ':text'             => trim($verse->text),
-                        ':italics'          => $verse->italics,
-                        ':strongs'          => $verse->strongs,
-                    );
-                    
-                    DB::insert($sql_ins, $binddata);
-                }
-            }
-             * 
-             */
+            return TRUE;
         } 
-        else {
-            // todo - import records from text file
-        }
-
-        return TRUE;
+        
+        return FALSE;
     }
 
     public function uninstall() {
@@ -317,6 +338,19 @@ class VerseStandard extends VerseAbstract {
         }
 
         return TRUE;
+    }
+    
+    public function exportData() {
+        $data = array();
+        
+        $closure = function($rows) use (&$data) {
+           foreach($rows as $row) {
+               $data[] = $row;
+           } 
+        };
+        
+        self::orderBy('id')->chunk(100, $closure);
+        return $data;
     }
     
     /*

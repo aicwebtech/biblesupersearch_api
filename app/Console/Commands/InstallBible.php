@@ -12,7 +12,7 @@ class InstallBible extends BibleAbstract
      *
      * @var string
      */
-    protected $signature = 'bible:install {module} --enable';
+    protected $signature = 'bible:install {module} {--enable}';
 
     /**
      * The console command description.
@@ -35,10 +35,19 @@ class InstallBible extends BibleAbstract
      *
      * @return mixed
      */
-    public function handle()
-    {
+    public function handle() {
         $module = $this->argument('module');
+        $Bible  = Bible::createFromModuleFile($module);
         
-        $Bible = $this->_getBible();
+        if(!$Bible) {
+            $Bible = $this->_getBible();
+        }
+        
+        $Bible->install();
+        
+        if($this->option('enable')) {
+            $Bible->enabled = 1;
+            $Bible->save();
+        }
     }
 }

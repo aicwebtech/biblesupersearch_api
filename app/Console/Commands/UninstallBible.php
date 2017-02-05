@@ -11,7 +11,7 @@ class UninstallBible extends BibleAbstract
      *
      * @var string
      */
-    protected $signature = 'bible:uninstall {module} --hard';
+    protected $signature = 'bible:uninstall {module} {--hard}';
 
     /**
      * The console command description.
@@ -40,7 +40,7 @@ class UninstallBible extends BibleAbstract
         $Bible = $this->_getBible();
         $Bible->uninstall();
         
-        if($this->options('hard')) {
+        if($this->option('hard')) {
             $Bible->delete();
         }
     }

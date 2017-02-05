@@ -17,14 +17,26 @@ abstract class BibleAbstract extends Command {
         //
     }
     
+    public function _handleHelper() {
+        
+    }
+    
     protected function _getBible() {
         $module = $this->argument('module');
         $Bible  = Bible::findByModule($module);
         
         if(!$Bible) {
-            throw new Exception('Bible module \'' . $module . '\' not found');
+            throw new \Exception('Bible module \'' . $module . '\' not found');
         }
         
         return $Bible;
+    }
+    
+    protected function _getAllBibles() {
+        
+    }
+    
+    protected function _handleSingleBible(Bible $bible) {
+        
     }
 }

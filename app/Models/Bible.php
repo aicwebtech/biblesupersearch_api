@@ -152,7 +152,7 @@ class Bible extends Model {
     }
     
     public function getModuleFilePath() {
-        return dirname(__FILE__) . '/../../bibles/modules/' . $this->module . '.zip';
+        return static::getModulePath() . $this->module . '.zip';
     }
     
     public static function getExportFields() {
@@ -173,8 +173,78 @@ class Bible extends Model {
         }
     }
     
+    public static function getModulePath() {
+        return dirname(__FILE__) . '/../../bibles/modules/';
+    }
+    
     public static function createFromModuleFile($module) {
+        $file  = static::getModulePath() . $module . '.zip';
+        $Bible = static::findByModule($module);
+        $Zip   = static::openModuleFileByModule($module);
+
+        if($Bible) {
+            return FALSE;
+        }
+
+        if($Zip) {
+            $json  = $Zip->getFromName('info.json');
+            $attr  = json_decode($json, TRUE);
+            $Bible = static::create($attr);
+            $Zip->close();
+            return $Bible;
+        }
         
+        return FALSE;
+    }
+    
+    public static function getListOfModuleFiles() {
+        $dir = static::getModulePath();
+        $list = array();
+        
+        if(is_dir($dir)) {
+            $list_raw = scandir($dir);
+            
+            foreach($list_raw as $item) {
+                if($item == '.' || $item == '..' || $item == 'readme.txt') {
+                    continue;
+                }
+                
+                if(!preg_match('/\.(zip)$/i', $item)) {
+                    continue;
+                }
+                
+                $list[] = $item;
+            }
+        }
+        
+        return $list;
+    }
+    
+    /* Scans the module directory
+     * Adds Bible records for Bibles not existing
+     */
+    public static function populateBibleTable() {
+        $list = static::getListOfModuleFiles();
+        
+        foreach($list as $file) {
+            $module = substr($file, 0, strlen($file) - 4);
+            $Bible  = static::createFromModuleFile($module);
+        }
+    }
+    
+    public static function openModuleFileByModule($module) {
+        $file  = static::getModulePath() . $module . '.zip';
+        $Zip   = new ZipArchive();
+
+        if($Zip->open($file) === TRUE) {
+            return $Zip;
+        }
+        
+        return FALSE;
+    }
+    
+    public function openModuleFile() {
+        return static::openModuleFileByModule($this->module);
     }
     
     /**

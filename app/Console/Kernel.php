@@ -20,6 +20,7 @@ class Kernel extends ConsoleKernel
         Commands\InstallBible::class,
         Commands\UninstallBible::class,
         Commands\GenerateModule::class,
+        Commands\BibleRefresh::class,
     ];
 
     /**
