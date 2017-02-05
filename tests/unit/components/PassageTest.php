@@ -493,4 +493,12 @@ class PassageTest extends TestCase
         $this->assertFalse($Passages[1]->is_search);
         $this->assertEquals(19, $Passages[1]->Book->id);
     }
+    
+    function testParseRandomSearch() {
+        $ref = '1 John 1:1; Random Chapter, Random Verse, 2 Kings 1:1';
+        
+        $exploded = Passage::explodeReferences($ref, TRUE);
+        
+        //$Passges::parseReferences($ref);
+    }
 }

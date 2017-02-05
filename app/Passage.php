@@ -25,7 +25,9 @@ class Passage {
     protected $verses; // Array of verses, grouped by bible, chapter, verse as found by the query
     protected $verses_count = 0; // Count of the verses matched to this passage (as found by the query).
     protected $languages; // Array of language short names
+    protected $Bibles = array(); //Array of Bibles
     protected $is_valid = FALSE; // Is the provided reference valid?
+    protected $is_random = FALSE; // Is the user requesting a random chapter or verse?
 
     public function __construct() {
         // Do something?
@@ -52,6 +54,12 @@ class Passage {
      */
     public function setBook($book) {
         $this->raw_book = $book;
+        $this->is_random = FALSE;
+        
+        if(static::isRandom($book)) {
+            $this->_generateRandomReference($book);
+            return;
+        }
 
         if(strpos($book, '-') !== FALSE) {
             // handle book ranges
@@ -111,6 +119,30 @@ class Passage {
         $this->Book_En = NULL;
         $this->is_book_range = FALSE;
         $this->addError($message);
+    }
+    
+    protected function _generateRandomReference($reference) {
+        $random = static::normalizeRandom($reference);
+        $random = substr($random, 7);
+        
+        $Bible = (is_array($this->Bibles) && !empty($this->Bibles)) ? array_values($this->Bibles)[0] : NULL;
+        
+        if(!$Bible) {
+            return $this->addError('Programming Error: No Bibles Present on Reference', 5);
+        }
+        
+        $rand = $Bible->getRandomReference($random);
+        
+        If(!$rand) {
+            
+        }
+        
+        $cb_raw = $this->raw_chapter_verse;
+        $this->setBookById($rand['book_id']);
+        $this->setChapterVerse($rand['chapter_verse']);
+        $this->raw_chapter_verse = $cb_raw;
+
+        $this->is_random = TRUE;
     }
 
     /**
@@ -175,6 +207,10 @@ class Passage {
     }
 
     public function setChapterVerse($chapter_verse) {
+        if($this->is_random) {
+            return;
+        }
+        
         $this->raw_chapter_verse = preg_replace('/\s+/', ' ', $chapter_verse);
         $chapter_verse = str_replace([';',' '], [',',''], $chapter_verse);
         $chapter_verse = preg_replace('/,+/', ',', $chapter_verse);
@@ -318,7 +354,7 @@ class Passage {
     }
 
     public function __set($name, $value) {
-        $settable = ['languages', 'is_search'];
+        $settable = ['languages', 'is_search', 'Bibles'];
 
         if($name == 'book') {
             $this->setBook($value);
@@ -487,7 +523,7 @@ class Passage {
      * @param bool $is_search - whether the parser should interpret this as a search
      * @return array|bool $Passages - array of passage instances, or FALSE if nothing parsed
      */
-    public static function parseReferences($reference, $languages = array(), $is_search = FALSE) {
+    public static function parseReferences($reference, $languages = array(), $is_search = FALSE, $Bibles = array()) {
         if(!is_string($reference)) {
             return FALSE;
         }
@@ -503,13 +539,13 @@ class Passage {
         foreach($pre_parsed as $key => &$ref) {
             $ref = static::findShortcut($ref, $languages, TRUE);
         }
-
         unset($ref);
+        
         $mid_parsed = implode(';', $pre_parsed);
         $parsed = static::explodeReferences($mid_parsed, TRUE);
 
         foreach($parsed as $ref) {
-            $Passages[] = self::parseSingleReference($ref['book'], $ref['chapter_verse'], $languages, $is_search);
+            $Passages[] = self::parseSingleReference($ref['book'], $ref['chapter_verse'], $languages, $is_search, $Bibles);
         }
 
         return (empty($Passages)) ? FALSE : $Passages;
@@ -548,6 +584,36 @@ class Passage {
         $exploded = array_reverse($exploded);
         return $exploded;
     }
+    
+    public static function isRandom($reference) {
+        $reference = strtolower($reference);
+        $reference = str_replace(' ', '_', $reference);
+        
+        $randoms = ['random_chapter', 'random_verse'];
+        
+        foreach($randoms as $rand) {
+            if(strpos($reference, $rand) === 0) {
+                return TRUE;
+            }
+        }
+        
+        return FALSE;
+    }
+    
+    public static function normalizeRandom($reference) {
+        $ref = strtolower($reference);
+        $ref = str_replace(' ', '_', $ref);
+        
+        $randoms = ['random_chapter', 'random_verse'];
+        
+        foreach($randoms as $rand) {
+            if(strpos($ref, $rand) === 0) {
+                return $rand;
+            }
+        }
+        
+        return $ref;
+    }
 
     /**
      * Parses out the string for a single passage reference
@@ -555,10 +621,11 @@ class Passage {
      * @param string $chapter_verse - string representing the chapter and verse references
      * @return \App\Passage
      */
-    public static function parseSingleReference($book, $chapter_verse, $languages = array(), $is_search = FALSE) {
+    public static function parseSingleReference($book, $chapter_verse, $languages = array(), $is_search = FALSE, $Bibles = array()) {
         $Passage = new static;
         $Passage->languages = $languages;
         $Passage->is_search = $is_search;
+        $Passage->Bibles = $Bibles;
         $Passage->setBook($book);
         $Passage->setChapterVerse($chapter_verse);
         return $Passage;

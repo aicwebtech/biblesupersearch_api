@@ -24,6 +24,7 @@ class Engine {
     
     public function setBibles($modules) {
         $this->Bibles = array();
+        $this->languages = array();
         
         if(is_string($modules)) {
             $decoded = json_decode($modules);
@@ -57,7 +58,6 @@ class Engine {
     
     public function addBible($module) {
         $Bible = Bible::findByModule($module);
-        $this->languages = array();
         
         if($Bible) {
             $this->Bibles[$module] = $Bible;
@@ -103,7 +103,7 @@ class Engine {
         }
         
         // Passage parsing and validation
-        $Passages = Passage::parseReferences($references, $this->languages, $is_search);
+        $Passages = Passage::parseReferences($references, $this->languages, $is_search, $this->Bibles);
         
         if(is_array($Passages)) {            
             foreach($Passages as $key => $Passage) {

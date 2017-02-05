@@ -72,4 +72,8 @@ abstract class VerseAbstract extends Model {
     public static function getTableByModule($module) {
         return 'verses_' . $module;
     }
+    
+    public function getRandomReferences($random_mode) {
+        return FALSE;
+    }
 }

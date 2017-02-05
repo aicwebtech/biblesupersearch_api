@@ -229,7 +229,7 @@ class VerseStandard extends VerseAbstract {
             $table->index('book', 'ixb');
             $table->index('chapter', 'ixc');
             $table->index('verse', 'ixv');
-            $table->index('chapter_verse', 'ixcv');
+            $table->index(['book', 'chapter_verse'], 'ixcv');
             $table->index(['book', 'chapter', 'verse'], 'ixbcv'); // Composite index on b, c, v
             //$table->index('text'); // Needs length - not supported in Laravel?
         });
@@ -281,9 +281,6 @@ class VerseStandard extends VerseAbstract {
             DB::table($table)->insert($map);
             //static::insert($map);
         }
-        
-        //DB::table($table)->insert($insertable);
-        //static::insert($insertable);
 
         return TRUE;
     }
@@ -351,6 +348,23 @@ class VerseStandard extends VerseAbstract {
         
         self::orderBy('id')->chunk(100, $closure);
         return $data;
+    }
+    
+    public function getRandomReference($random_mode) {
+        switch($random_mode) {
+            case 'chapter':
+                $verse = static::select('book','chapter')->where('verse', '=', 1)->orderBy(DB::raw('RAND()'))->first();
+                return array('book_id' => $verse->book, 'chapter_verse' => $verse->chapter);
+                break;
+            
+            case 'verse':
+                $verse = static::select('book','chapter','verse')->orderBy(DB::raw('RAND()'))->first();
+                return array('book_id' => $verse->book, 'chapter_verse' => $verse->chapter . ':' . $verse->verse);
+                break;
+            
+            default:
+                return FALSE;
+        }
     }
     
     /*

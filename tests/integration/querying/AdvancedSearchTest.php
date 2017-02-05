@@ -5,6 +5,7 @@ use Illuminate\Foundation\Testing\DatabaseMigrations;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 
 use App\Engine;
+use App\Models\Verses\VerseStandard;
 
 class AdvancedSearchTest extends TestCase {
     public function testAllWords() {
@@ -105,5 +106,36 @@ class AdvancedSearchTest extends TestCase {
         
         $results = $Engine->actionQuery($input);
         $this->assertCount(5, $results['kjv']);
+    }
+    
+    public function testProxRange() {
+        $Engine = new Engine();
+        $Engine->setDefaultDataType('raw');
+        
+        $input = ['bible' => 'kjv', 'search' => 'joy peace', 'search_type' => 'proximity', 'proximity_limit' => 10, 'whole_words' => TRUE];
+        
+        $results = $Engine->actionQuery($input);
+        
+        $query = "
+            SELECT bible_1.id AS id_1, bible_2.id AS id_2
+            
+            FROM bss_verses_kjv AS bible_1
+            INNER JOIN bss_verses_kjv AS bible_2 ON bible_2.book = bible_1.book
+            AND bible_2.id BETWEEN bible_1.id - 10
+            AND bible_1.id + 10
+            AND (
+                    `bible_2`.`text` REGEXP '[[:<:]]joy[[:>:]]'
+            )
+            WHERE
+                    (
+                            `bible_1`.`text` REGEXP '[[:<:]]peace[[:>:]]'
+                    )
+        ";
+        
+        //var_dump(VerseStandard::proximityQueryTest($query));
+        
+        $this->assertFalse($Engine->hasErrors());
+        
+        $this->assertCount(92, $results['kjv']);
     }
 }

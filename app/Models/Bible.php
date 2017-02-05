@@ -297,4 +297,7 @@ class Bible extends Model {
         self::where('1','1')->get();
     }
     
+    public function getRandomReference($random_mode) {
+        return $this->verses()->getRandomReference($random_mode);
+    }
 }
