@@ -10,7 +10,8 @@ class UninstallBible extends BibleAbstract
     /**
      * The name and signature of the console command.
      */
-    protected $signature = 'bible:uninstall {module} {--hard}';
+    protected $signature = 'bible:uninstall {--module=} {--all} {--hard}';
+    protected $append_signature = FALSE;
 
     /**
      * The console command description.
@@ -23,7 +24,6 @@ class UninstallBible extends BibleAbstract
      * @return mixed
      */
     protected function _handleSingleBible(Bible $Bible) {
-        $Bible = $this->_getBible();
         $Bible->uninstall();
         
         if($this->option('hard')) {

@@ -51,6 +51,10 @@ class ApiController extends Controller {
         else {
             $response = $results; // ?? maintain original data structure if no error??
         }
+
+        if(array_key_exists('callback', $input)) {
+            return response()->jsonp($input['callback'], $response);
+        }
         
         return (new Response(json_encode($response), $code))
             -> header('Content-Type', 'application/json; charset=utf-8')

@@ -38,7 +38,7 @@ class InstallBible extends BibleAbstract
             return;
         }
         
-        $module = $this->argument('module');
+        $module = $this->option('module');
         $Bible  = Bible::createFromModuleFile($module);
         
         if(!$Bible) {
