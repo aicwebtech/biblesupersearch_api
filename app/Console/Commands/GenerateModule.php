@@ -3,20 +3,17 @@
 namespace App\Console\Commands;
 
 use Illuminate\Console\Command;
+use App\Models\Bible;
 
-class GenerateModule extends BibleAbstract
-{
+class GenerateModule extends BibleAbstract {
     /**
      * The name and signature of the console command.
-     *
-     * @var string
      */
-    protected $signature = 'bible:export {module} --overwrite';
+    protected $signature = 'bible:export {--module=} {--all} --overwrite';
+    protected $append_signature = FALSE;
 
     /**
      * The console command description.
-     *
-     * @var string
      */
     protected $description = 'Export a Bible Module into a Standard Module File';
 
@@ -30,14 +27,7 @@ class GenerateModule extends BibleAbstract
         parent::__construct();
     }
 
-    /**
-     * Execute the console command.
-     *
-     * @return mixed
-     */
-    public function handle()
-    {
-        $Bible = $this->_getBible();
+    protected function _handleSingleBible(Bible $Bible) {
         $Bible->export();
     }
 }

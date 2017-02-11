@@ -130,9 +130,10 @@ class Bible extends Model {
         
         foreach($data as $key => $row) {
             $rd = array();
+            //$row['text'] = trim($row['text']);
             
             foreach($export_fields as $field) {
-                $rd[] = empty($row[$field]) ? NULL : $row[$field];
+                $rd[] = empty($row[$field]) ? NULL : trim($row[$field]);
             }
             
             $data_str .= implode($del, $rd) . $eol;
@@ -156,7 +157,7 @@ class Bible extends Model {
     }
     
     public static function getExportFields() {
-        // Warning: Add new items to the end, do not change the order or existing modules will breakgit s
+        // Warning: Add new items to the end, do not change the order or existing modules will break
         return array('book', 'chapter', 'verse', 'text', 'italics', 'strongs');
     }
     

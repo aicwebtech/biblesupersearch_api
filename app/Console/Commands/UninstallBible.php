@@ -3,40 +3,26 @@
 namespace App\Console\Commands;
 
 use Illuminate\Console\Command;
+use App\Models\Bible;
 
 class UninstallBible extends BibleAbstract
 {
     /**
      * The name and signature of the console command.
-     *
-     * @var string
      */
     protected $signature = 'bible:uninstall {module} {--hard}';
 
     /**
      * The console command description.
-     *
-     * @var string
      */
     protected $description = 'Uninstalls a Bible Module';
-
-    /**
-     * Create a new command instance.
-     *
-     * @return void
-     */
-    public function __construct()
-    {
-        parent::__construct();
-    }
 
     /**
      * Execute the console command.
      *
      * @return mixed
      */
-    public function handle()
-    {
+    protected function _handleSingleBible(Bible $Bible) {
         $Bible = $this->_getBible();
         $Bible->uninstall();
         

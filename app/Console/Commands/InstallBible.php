@@ -12,7 +12,8 @@ class InstallBible extends BibleAbstract
      *
      * @var string
      */
-    protected $signature = 'bible:install {module} {--enable}';
+    protected $signature = 'bible:install {--module=} {--all} {--enable}';
+    protected $append_signature = FALSE;
 
     /**
      * The console command description.
@@ -22,20 +23,21 @@ class InstallBible extends BibleAbstract
     protected $description = 'Install a Bible Module';
 
     /**
-     * Create a new command instance.
-     *
-     * @return void
-     */
-    public function __construct() {
-        parent::__construct();
-    }
-
-    /**
      * Execute the console command.
      *
      * @return mixed
      */
     public function handle() {
+        if($this->option('all')) {
+            Bible::populateBibleTable();
+            
+            foreach(Bible::all() as $Bible) {
+                $this->_handleSingleBible($Bible);
+            } 
+            
+            return;
+        }
+        
         $module = $this->argument('module');
         $Bible  = Bible::createFromModuleFile($module);
         
@@ -43,6 +45,10 @@ class InstallBible extends BibleAbstract
             $Bible = $this->_getBible();
         }
         
+        $this->_handleSingleBible($Bible);
+    }
+    
+    protected function _handleSingleBible(Bible $Bible) {
         $Bible->install();
         
         if($this->option('enable')) {
