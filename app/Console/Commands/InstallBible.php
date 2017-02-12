@@ -12,7 +12,7 @@ class InstallBible extends BibleAbstract
      *
      * @var string
      */
-    protected $signature = 'bible:install {--module=} {--all} {--enable}';
+    protected $signature = 'bible:install {--module=} {--all} {--enable} {--list}';
     protected $append_signature = FALSE;
 
     /**
@@ -28,13 +28,21 @@ class InstallBible extends BibleAbstract
      * @return mixed
      */
     public function handle() {
+        if($this->option('list')) {
+            return $this->_listBibles();
+        }
+        
         if($this->option('all')) {
             Bible::populateBibleTable();
+            $Bibles = Bible::all();
+            $Bar = $this->output->createProgressBar(count($Bibles));
             
             foreach(Bible::all() as $Bible) {
                 $this->_handleSingleBible($Bible);
+                $Bar->advance();
             } 
             
+            $Bar->finish();
             return;
         }
         

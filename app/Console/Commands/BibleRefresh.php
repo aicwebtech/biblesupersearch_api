@@ -7,7 +7,7 @@ use App\Models\Bible;
 
 class BibleRefresh extends Command {
     protected $signature = 'bible:refresh';
-    protected $description = 'Scans the module directory and adds Bibles not already present in Bibles list ';
+    protected $description = 'Scans the module directory and adds Bibles not already present in Bibles list';
 
     public function __construct() {
         parent::__construct();
