@@ -10,7 +10,7 @@ class UninstallBible extends BibleAbstract
     /**
      * The name and signature of the console command.
      */
-    protected $signature = 'bible:uninstall {--module=} {--all} {--hard}';
+    protected $signature = 'bible:uninstall {--module=} {--list} {--all} {--hard}';
     protected $append_signature = FALSE;
 
     /**
