@@ -38,6 +38,6 @@ Route::get('/admin/main', 'AdminController@getMain');
 //Route::controller('admin', 'AdminController');
 
 /* Routes for the API */
-Route::get('/api', 'ApiController@query');
-Route::get('/api/bibles', 'ApiController@bibles');
-Route::get('/api/books', 'ApiController@books');
+Route::get('/api', 'ApiController@query')->middleware('api.access');
+Route::get('/api/bibles', 'ApiController@bibles')->middleware('api.access');
+Route::get('/api/books', 'ApiController@books')->middleware('api.access');
