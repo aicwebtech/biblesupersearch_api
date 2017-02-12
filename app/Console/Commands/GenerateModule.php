@@ -9,7 +9,7 @@ class GenerateModule extends BibleAbstract {
     /**
      * The name and signature of the console command.
      */
-    protected $signature = 'bible:export {--module=} {--all} --overwrite';
+    protected $signature = 'bible:export {--module=} {--all} {--list} --overwrite';
     protected $append_signature = FALSE;
 
     /**

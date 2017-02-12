@@ -9,16 +9,12 @@ class InstallBible extends BibleAbstract
 {
     /**
      * The name and signature of the console command.
-     *
-     * @var string
      */
     protected $signature = 'bible:install {--module=} {--all} {--enable} {--list}';
     protected $append_signature = FALSE;
 
     /**
      * The console command description.
-     *
-     * @var string
      */
     protected $description = 'Install a Bible Module';
 
@@ -35,14 +31,7 @@ class InstallBible extends BibleAbstract
         if($this->option('all')) {
             Bible::populateBibleTable();
             $Bibles = Bible::all();
-            $Bar = $this->output->createProgressBar(count($Bibles));
-            
-            foreach(Bible::all() as $Bible) {
-                $this->_handleSingleBible($Bible);
-                $Bar->advance();
-            } 
-            
-            $Bar->finish();
+            $this->_handleMultipleBibles($Bibles);
             return;
         }
         

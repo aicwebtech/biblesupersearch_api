@@ -25,14 +25,7 @@ abstract class BibleAbstract extends Command {
         
         if($this->option('all')) {
             $Bibles = $this->_getAllBibles();
-            $Bar = $this->output->createProgressBar(count($Bibles));
-            
-            foreach(Bible::all() as $Bible) {
-                $this->_handleSingleBible($Bible);
-                $Bar->advance();
-            } 
-            
-            $Bar->finish();
+            $this->_handleMultipleBibles($Bibles);
         }
         else {
             $Bible = $this->_getBible();
@@ -85,6 +78,20 @@ abstract class BibleAbstract extends Command {
     
     protected function _getAllBibles() {
         return Bible::all();
+    }
+    
+    protected function _handleMultipleBibles($Bibles) {
+        $Bar = $this->output->createProgressBar(count($Bibles));
+        $Bar->setFormatDefinition('custom', ' %current%/%max% [%bar%] %percent:3s%% %elapsed:6s%/%estimated:-6s% -- %message%                     ' . PHP_EOL);
+        $Bar->setFormat('custom');
+
+        foreach(Bible::all() as $Bible) {
+            $this->_handleSingleBible($Bible);
+            $Bar->setMessage($Bible->name);
+            $Bar->advance();
+        } 
+
+        $Bar->finish();
     }
     
     protected function _handleSingleBible(Bible $Bible) {
