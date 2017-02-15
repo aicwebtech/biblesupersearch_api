@@ -238,9 +238,9 @@ class VerseStandard extends VerseAbstract {
             return TRUE;
         }
 
-        if($this->_importFromV2()) {
-            return TRUE;
-        }
+        //if($this->_importFromV2()) {
+        //    return TRUE;
+        //}
 
         $Zip = $this->Bible->openModuleFile();
         
