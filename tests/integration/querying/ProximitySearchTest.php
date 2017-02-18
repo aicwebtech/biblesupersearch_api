@@ -98,6 +98,32 @@ class ProximitySearchTest extends TestCase {
         $this->assertCount(37, $results['kjv']);
     }
     
+    public function testProximitySearchTypeDefaultLimit() {
+        $Engine = new Engine();
+        $Engine->setDefaultDataType('raw');
+        // Default proximity limit is 5 (hardcoded)
+        $results = $Engine->actionQuery(['bible' => 'kjv', 'search' => 'faith hope', 'search_type' => 'proximity', 'reference' => 'Rom 4']);
+        $this->assertFalse($Engine->hasErrors());
+        $this->assertCount(6, $results['kjv']);
+    }
+    
+    public function testChapterSearchType() {
+        $Engine = new Engine();
+        $Engine->setDefaultDataType('raw');
+        $results = $Engine->actionQuery(['bible' => 'kjv', 'search' => 'faith hope', 'search_type' => 'chapter', 'reference' => 'Rom 4']);
+        $this->assertFalse($Engine->hasErrors());
+        $this->assertCount(10, $results['kjv']);
+    }
+    
+    public function testBookSearchType() {
+        $Engine = new Engine();
+        $Engine->setDefaultDataType('raw');
+        // This essentially asks, which book(s) contain both 'hall' and 'hallowed'?
+        $results = $Engine->actionQuery(['bible' => 'kjv', 'search' => 'hall hallowed', 'search_type' => 'book', 'whole_words' => TRUE]);
+        $this->assertFalse($Engine->hasErrors());
+        $this->assertCount(4, $results['kjv']);
+    }
+    
     public function _testQueryBinding() {
         // Non-essential test
         return;

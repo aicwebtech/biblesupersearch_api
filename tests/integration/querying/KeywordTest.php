@@ -12,11 +12,11 @@ class KeywordTest extends TestCase
         $Engine = new Engine();
         $Engine->setDefaultDataType('raw');
         
-        $results = $Engine->actionQuery(['bible' => 'kjv', 'search' => 'faith joy joy love joy', 'searchtype' => 'boolean']);
-        $this->assertTrue($Engine->hasErrors());
-        $errors = $Engine->getErrors();
-        $this->assertCount(1, $errors);
-        $this->assertEquals( trans('errors.no_results'), $errors[0]);;
+        $results = $Engine->actionQuery(['bible' => 'kjv', 'search' => 'faith joy joy love joy', 'search_type' => 'boolean']);
+        $this->assertFalse($Engine->hasErrors());
+        //$errors = $Engine->getErrors();
+        //$this->assertCount(1, $errors);
+        //$this->assertEquals( trans('errors.no_results'), $errors[0]);;
     }
     
     public function testWildcard() {

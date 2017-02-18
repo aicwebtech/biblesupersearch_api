@@ -212,13 +212,20 @@ class SqlSearch {
         $std_bool = static::standardizeBoolean($raw_bool);
         $this->search_parsed = $std_bool;
         $terms = static::parseQueryTerms($std_bool);
+        //$operators = static::parseQueryOperators($std_bool, $terms);
         $sql = $std_bool;
         
         foreach($terms as $term) {
             list($term_sql, $bind_index) = $this->_termSql($term, $binddata, $fields, $table_alias);
-            $sql = str_replace($term, $term_sql, $sql);
+            //$sql = str_replace($term, $term_sql, $sql);
+            // We only want to replace it ONCE, in case it is used multiple times
+            $term_pos = strpos($sql, $term);
+            
+            if($term_pos !== FALSE) {
+                $sql = substr_replace($sql, $term_sql, $term_pos, strlen($term));
+            }
         }
-
+        
         return array($sql, $binddata);
     }
     
@@ -376,6 +383,18 @@ class SqlSearch {
 
         //$parsed = array_unique($parsed); // Causing breakage
         return $parsed;
+    }
+    
+    /**
+     * Parses out the operators (and parenthensis) of a boolean query
+     * @param string $query standardized, booleanized query
+     * @return array $parsed 
+     */
+    public static function parseQueryOperators($query, $terms = NULL) {
+        $terms = ($terms) ? $terms : static::parseQueryTerms($query);
+        $pre_parsed = str_replace($terms, '', $query);
+        $pre_parsed = trim(preg_replace('/\s+/', ' ', $pre_parsed));
+        return explode(' ', $pre_parsed);
     }
     
     public static function parseQueryPhrases($query, $underscore_map = FALSE) {
