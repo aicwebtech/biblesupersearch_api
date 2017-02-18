@@ -3,6 +3,7 @@
 namespace App\Http\Middleware;
 
 use Closure;
+use App\Models\IpAccess;
 
 /*
  * Ensures users / websites are not using the API excessively
@@ -19,6 +20,8 @@ class ApiAccess
      */
     public function handle($request, Closure $next)
     {
+        $IP = IpAccess::findOrCreateByIpOrDomain($_SERVER['REMOTE_ADDR'], $_SERVER['REMOTE_HOST']);
+        $IP->incrementDailyHits();
         
         return $next($request);
     }

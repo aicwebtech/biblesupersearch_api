@@ -5,7 +5,7 @@ use Illuminate\Database\Migrations\Migration;
 
 class AccessControll extends Migration
 {
-    private $db_table = 'ip_access_limit';
+    private $db_table = 'ip_access';
     
     /**
      * Run the migrations.
@@ -18,6 +18,7 @@ class AccessControll extends Migration
             $table->string('domain', 255)->nullable();
             $table->integer('limit')->nullable()->comment('Daily access limit. NULL means use default, 0 means unlmited access');
             $table->index(['ip_address', 'domain'], 'ipd');
+            $table->timestamps();
         });
     }
 

@@ -5,7 +5,7 @@ use Illuminate\Database\Migrations\Migration;
 
 class AccessLog extends Migration
 {
-private $db_table = 'ip_access_log';
+    private $db_table = 'ip_access_log';
     
     /**
      * Run the migrations.
