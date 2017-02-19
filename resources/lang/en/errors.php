@@ -25,4 +25,5 @@ return array(
     'paren_mismatch' => 'Your parenthenses are mismatched.',
     'prox_paren_mismatch' => 'Your parenthenses are mismatched, or you have a proximity operator inside of parentheses.',
     'prox_operator_not_allowed' => 'Proximity operators such as PROX and CHAP can only be used with boolean searches',
+    'hit_limit_reached' => 'Maximum hits has been reached for today for this domain / IP address',
 );

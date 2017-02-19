@@ -3,9 +3,11 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
 
 class IpAccess extends Model {
     protected $table = 'ip_access';
+    protected $fillable = ['ip_address','domain', 'limit'];
     
     static public function findOrCreateByIpOrDomain($ip_address = NULL, $domain = NULL) {
         if($domain) {
@@ -38,6 +40,36 @@ class IpAccess extends Model {
         return TRUE;
     }
     
+    public function getDailyHits($date = NULL) {
+        $date = (strtotime($date)) ? date('Y-m-d', strtotime($date)) : date('Y-m-d');
+        
+        try {
+            $Log = IpAccessLog::where([['ip_id', '=', $this->id], ['date', '=', $date]])->firstOrFail();
+        } 
+        catch (ModelNotFoundException $ex) {
+            return 0;
+        }
+        
+        return intval($Log->count);
+    }
+    
+    public function isLimitReached($date = NULL) {
+        if($this->getAccessLimit() === 0) {
+            return FALSE;
+        }
+        
+        $date = (strtotime($date)) ? date('Y-m-d', strtotime($date)) : date('Y-m-d');
+        
+        try {
+            $Log = IpAccessLog::where([['ip_id', '=', $this->id], ['date', '=', $date]])->firstOrFail();
+        } 
+        catch (ModelNotFoundException $ex) {
+            return FALSE;
+        }
+        
+        return ($Log->limit_reached) ? TRUE : FALSE;
+    }
+    
     public function getAccessLimit() {
         $limit_raw = $this->limit;
         
@@ -46,5 +78,10 @@ class IpAccess extends Model {
         }
         
         return $limit_raw;
+    }
+    
+    public function delete() {
+        IpAccessLog::where('ip_id', $this->id)->delete();
+        parent::delete();
     }
 }
