@@ -10,6 +10,12 @@ class IpAccess extends Model {
     protected $fillable = ['ip_address','domain', 'limit'];
     
     static public function findOrCreateByIpOrDomain($ip_address = NULL, $domain = NULL) {
+        if($domain) {            
+            $domain = str_replace(array('http:','https:'), '', $domain);
+            $domain = trim($domain);
+            $domain = trim($domain, '/');
+        }
+        
         if($domain) {
             $IP = static::firstOrNew(['domain' => $domain]);
             $IP->ip_address = $ip_address;
