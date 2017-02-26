@@ -231,6 +231,7 @@ class Search extends SqlSearch {
         
         $limit  = (isset($this->options['proximity_limit'])) ? intval($this->options['proximity_limit']) : 5;
         $search = static::booleanizeQuery($this->search, $this->search_type, $limit);
+        $terms  = static::parseQueryTerms($search);
         $unexploded = static::standardizeProximityOperators($search);
         $Searches = $operators = $matches = array();
         
@@ -250,11 +251,15 @@ class Search extends SqlSearch {
         $operators = array_values($operators);
         $parsed    = str_replace($operators, '~~', $unexploded);
         $split     = explode('~~', $parsed);
+        //$terms = array();
         
         foreach($split as $separate) {
             $Search = static::parseSearch($separate, $this->options);
             $Searches[] = $Search;
+            //$terms = array_merge($terms, $Search->terms);
         }
+        
+        $this->terms = $terms;
         
         return array($Searches, $operators);
     }

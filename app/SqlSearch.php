@@ -7,15 +7,18 @@ namespace App;
  */
 class SqlSearch {
     use Traits\Error;
+    use Traits\Input;
     
     protected $search; // String containing the search keywords
     protected $search_parsed;
+    protected $terms; // Search keys for current search
     protected $options = array();
     protected $languages = array();
     protected $search_type = 'and';
     protected $options_default = array(
         'search_type' => 'and',
         'whole_words' => FALSE,
+        'exact_case'  => FALSE,
     );
     
     //protected $use_unnamed_bindings = FALSE;
@@ -60,6 +63,7 @@ class SqlSearch {
     public $punctuation = array('.',',',':',';','\'','"','!','-','?','(',')','[',']');
 
     public function __construct($search = NULL, $options = array()) {
+        $this->options_default['highlight_tag'] = env('DEFAULT_HIGHLIGHT_TAG', 'b');
         $this->setSearch($search);
         $this->setOptions($options, TRUE);
     }
@@ -211,7 +215,7 @@ class SqlSearch {
         $raw_bool = ($count == 1) ? $searches[0] : '(' . implode(') & (', $searches) . ')';
         $std_bool = static::standardizeBoolean($raw_bool);
         $this->search_parsed = $std_bool;
-        $terms = static::parseQueryTerms($std_bool);
+        $this->terms = $terms = static::parseQueryTerms($std_bool);
         //$operators = static::parseQueryOperators($std_bool, $terms);
         $sql = $std_bool;
         
@@ -296,6 +300,14 @@ class SqlSearch {
         return $pre . str_replace('%', '.', trim($term, '%')) . $post;
         
         //return ($whole_words) ? '[[:<:]]' . str_replace('%', '/', $term) . '[[:>:]]' : '%' . $term . '%';
+    }
+    
+    protected function _termFormatForHighlight($term, $exact_case = FALSE, $whole_words = FALSE) {
+        $preformat = $this->_termFormat($term, $exact_case, $whole_words);
+        $preformat = ($whole_words) ? $preformat : trim($preformat, '%');
+        $case_insensitive = ($exact_case) ? '' : 'i';
+        $term_format = '/' . $preformat . '/' . $case_insensitive;
+        return $term_format;
     }
     
     protected function _assembleTermSql($field, $bind_index, $operator, $exact_case) {
@@ -473,7 +485,7 @@ class SqlSearch {
     }
 
     public function __get($name) {
-        $gettable = ['search', 'search_parsed', 'search_type', 'use_named_bindings'];
+        $gettable = ['search', 'search_parsed', 'search_type', 'use_named_bindings', 'terms'];
         
         if ($name == 'search_parsed') {
             //return $this->parseSearchForQuery();
@@ -486,5 +498,33 @@ class SqlSearch {
     
     public function setUseNamedBindings($value) {
         $this->use_named_bindings = ($value) ? TRUE : FALSE;
+    }
+    
+    public function highlightResults($results) {
+        $whole_word = $this->isTruthy('whole_words', $this->options);
+        $exact_case = $this->isTruthy('exact_case',  $this->options);
+        //var_dump($this->options);
+        
+        $terms = $this->terms;
+        $terms_fmt = array();
+        $pre  = '<' . $this->options['highlight_tag'] . '>';
+        $post = '</' . $this->options['highlight_tag'] . '>';
+        
+        foreach($terms as $key => $term) {
+            $terms_fmt[$key] = $this->_termFormatForHighlight($term, $exact_case, $whole_word);
+        }
+
+        foreach($results as $bible => &$verses) {
+            foreach($verses as &$verse) {
+                foreach($terms_fmt as $key => $term_fmt) {                    
+                    $term = $terms[$key];
+                    $verse->text = preg_replace_callback($term_fmt, function($matches) use ($pre, $post) {
+                        return $pre . $matches[0] . $post;
+                    }, $verse->text);
+                }
+            }
+        }
+        
+        return $results;
     }
 }

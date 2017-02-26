@@ -9,6 +9,7 @@ use App\Search;
 
 class Engine {
     use Traits\Error;
+    use Traits\Input;
     
     protected $Bibles = array(); // Array of Bible objects
     protected $Bible_Primary = NULL; // Primary Bible version
@@ -218,9 +219,21 @@ class Engine {
         
         $format_type  = (array_key_exists($format_type, $format_map)) ? $format_map[$format_type] : 'passage';
         $format_class = '\App\Formatters\\' . ucfirst($format_type);
+
+        if($this->isTruthy('highlight', $input)) {
+            $results = $this->_highlightResults($results, $Search);
+        }
         
         $Formatter = new $format_class($results, $Passages, $Search);
         return $Formatter->format();
+    }
+    
+    protected function _highlightResults($results, $Search) {
+        if(!$Search) {
+            return $results;
+        }
+        
+        return $Search->highlightResults($results);
     }
     
     public function setDefaultDataType($type) {
