@@ -356,6 +356,7 @@ class SqlSearch {
                 $query = '"' . $query . '"';
                 break;
             case 'xor':
+            case 'one_word':
                 $query = implode(' XOR ', $parsed);
                 break;
             case 'not':

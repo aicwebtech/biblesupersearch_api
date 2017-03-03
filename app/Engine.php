@@ -92,7 +92,7 @@ class Engine {
         $results = $bible_no_results = array();
         !empty($input['bible']) && $this->setBibles($input['bible']);
                 
-        // Todo - Routing and merging of multiple elements here
+        // Secondary search elements are detected automatically by Search class
         $references = empty($input['reference']) ? NULL : $input['reference'];
         $keywords   = empty($input['search'])    ? NULL : $input['search'];
         $Search     = Search::parseSearch($keywords, $input);
@@ -167,8 +167,9 @@ class Engine {
     
     /**
      * API action query for getting a list of Bibles available to the user
+     * @param array $input
      */
-    public function actionBibles() {
+    public function actionBibles($input) {
         $include_desc = FALSE;
         $Bibles = Bible::select('name','shortname','module','year','lang','lang_short','copyright','italics','strongs','rank');
         $bibles = array(); // Array of associative arrays
@@ -193,7 +194,7 @@ class Engine {
     
     /**
      * API Action query for getting the list of books for the specified language.
-     * @param type $input
+     * @param array $input
      */
     public function actionBooks($input) {
         $language = (!empty($input['language'])) ? $input['language'] : env('DEFAULT_LANGUAGE_SHORT', 'en');
