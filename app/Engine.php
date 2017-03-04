@@ -136,8 +136,9 @@ class Engine {
         if(!$Search || $Search && $search_valid) {
             foreach($this->Bibles as $Bible) {
                 $bible_results = $Bible->getSearch($Passages, $Search, $input);
+                //var_dump(get_class($bible_results));
 
-                if($bible_results) {
+                if(!$bible_results->isEmpty()) { // Laravel Collection
                     $results[$Bible->module] = $bible_results;
                 }
                 else {

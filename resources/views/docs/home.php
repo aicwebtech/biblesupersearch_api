@@ -82,18 +82,12 @@
                     <?php include(dirname(__FILE__) . '/query.php'); ?>
                 </div>
                 <div id='tab_statics'>
-                    <!--<?php echo trans('api.action') ?>: <?php echo trans('api.statics.name') ?><br />
-                    URL: <?php echo $http . $_SERVER['SERVER_NAME'] ?>/api/statics-->
                     <?php include(dirname(__FILE__) . '/statics.php'); ?>
                 </div>
                 <div id='tab_bibles'>
-                    <!--<?php echo trans('api.action') ?>: <?php echo trans('api.bibles.name') ?><br />
-                    URL: <?php echo $http . $_SERVER['SERVER_NAME'] ?>/api/bibles-->
                     <?php include(dirname(__FILE__) . '/bibles.php'); ?>
                 </div>
                 <div id='tab_books'>
-                    <!--<?php echo trans('api.action') ?>: <?php echo trans('api.books.name') ?><br />
-                    URL: <?php echo $http . $_SERVER['SERVER_NAME'] ?>/api/books-->
                     <?php include(dirname(__FILE__) . '/books.php'); ?>
                 </div>
             </div>
