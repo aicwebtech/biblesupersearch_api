@@ -12,7 +12,8 @@
 */
 
 Route::get('/', function() {
-    return view('welcome2');
+    return view('docs');
+    //return view('welcome2');
 });
 
 /* Routes for administrative backend */
