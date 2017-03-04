@@ -208,6 +208,16 @@ class Engine {
         return $Books;
     }
     
+    public function actionStatics($input) {
+        $response = new \stdClass;
+        $response->bibles = $this->actionBibles($input);
+        $response->books = $this->actionBooks($input);
+        $response->version = config('app.version');
+        $response->environment = config('app.env');
+        
+        return $response;
+    }
+    
     protected function _formatDataStructure($results, $input, $Passages, $Search) {
         $format_type = (!empty($input['data_format'])) ? $input['data_format'] : $this->default_data_format;
 

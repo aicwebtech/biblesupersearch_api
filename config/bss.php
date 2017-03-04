@@ -8,4 +8,5 @@ return array(
         'bible'          => env('DEFAULT_BIBLE', 'kjv'),
     ),
     'import_from_v2' => env('IMPORT_FROM_V2', FALSE),
+    'daily_access_limit' => env('DAILY_ACCESS_LIMIT', 2000),
 );

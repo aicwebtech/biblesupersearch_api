@@ -12,7 +12,7 @@
 */
 
 Route::get('/', function() {
-    return view('docs');
+    return view('docs.home');
     //return view('welcome2');
 });
 
@@ -42,3 +42,4 @@ Route::get('/admin/main', 'AdminController@getMain');
 Route::get('/api', 'ApiController@query')->middleware('api.access');
 Route::get('/api/bibles', 'ApiController@bibles')->middleware('api.access');
 Route::get('/api/books', 'ApiController@books')->middleware('api.access');
+Route::get('/api/statics', 'ApiController@statics')->middleware('api.access');

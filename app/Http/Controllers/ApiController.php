@@ -20,6 +20,10 @@ class ApiController extends Controller {
     public function books(Request $Request) {
         return $this->sendResponse($Request, 'books');
     }
+    
+    public function statics(Request $Request) {
+        return $this->sendResponse($Request, 'statics');
+    }
 
     private function sendResponse(Request $Request, $action) {
         $input = $Request->input();
