@@ -13,7 +13,11 @@ class ExampleTest extends TestCase
      */
     public function testBasicExample()
     {
-        $this->visit('/')
-             ->see('Documentation');
+        $response = $this->get('/');
+        $response->assertStatus(200);
+        
+        //$this->assertContains('Documentation', $response);
+        //$response->assertContains('Documentation');
+             //->see('Documentation');
     }
 }
