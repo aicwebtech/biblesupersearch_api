@@ -2,7 +2,9 @@
 
 return array(
     'name' => 'Query',
-    'description' => 'Used for all queries against the Bibles in our database, including keyword searchs and passage retrieval.',
+    'description' => 'Used for all queries against the Bibles in our database, including keyword searchs and passage retrieval. <br />'
+    . 'When running a query, the only requirement is that either \'reference\' or \'search\' are required.',
+    'advanced' => 'These advanced search fields can be used in addition to the standard ones above to build a powerful search interface',
     'params' => array(
         'reference' => array(
             'type' => 'String',
@@ -70,8 +72,19 @@ return array(
             'name' => 'Data Format',
             'default' => 'passage',
             'description' => 'Format of the outputed data structure. <br />'
-            . 'Raw format simply groups all verses by the Bible.'
-            . 'Passage format groups verses by Bible and groups them into passages.',
+            . '\'minimal\' or \'raw\' format simply groups all verses by the Bible.<br />'
+            . '\'passage\' format groups verses by Bible and groups them into passages. <br />'
+            . 'See examples below.',
+            'raw' => array(
+                'description' => 'Verses are grouped simply by Bible and ordered in the way they appear in the Bible.  No book information is included.',
+            ),
+            'passage' => array(
+                'description' => 'Verses are grouped into passages, and passages are ordered in the order they were requested by the user.',
+                'id_bible' => 'Indexed by Bible',
+                'id_chapter' => 'Indexed by chapter',
+                'id_verse' => 'Indexed by verse',
+                'single' => 'Indicates if the passage contains exactly one verse.  Note: Searches will result in all single verse passages.',
+            ),
         ),
         'proximity_limit' => array(
             'type' => 'Int',
@@ -83,43 +96,43 @@ return array(
             'type' => 'String',
             'name' => 'Search All',
             'default' => '(none)',
-            'description' => 'For an advanced search form, this serves as desginated input for searching for all words.',
+            'description' => 'For an advanced search form, this is the input for searching for all words.',
         ),
         'search_any' => array(
             'type' => 'String',
             'name' => 'Search Any',
             'default' => '(none)',
-            'description' => 'For an advanced search form, this serves as desginated input for searching for any words.',
+            'description' => 'For an advanced search form, this is the input for searching for any words.',
         ),
         'search_one' => array(
             'type' => 'String',
             'name' => 'Search One',
             'default' => '(none)',
-            'description' => 'For an advanced search form, this serves as desginated input for searching for one of the words.',
+            'description' => 'For an advanced search form, this is the input for searching for one of the words.',
         ),
         'search_none' => array(
             'type' => 'String',
             'name' => 'Search None',
             'default' => '(none)',
-            'description' => 'For an advanced search form, this serves as desginated input for searching for none of the words.',
+            'description' => 'For an advanced search form, this is the input for searching for none of the words.',
         ),
         'search_phrase' => array(
             'type' => 'String',
             'name' => 'Search Phrase',
             'default' => '(none)',
-            'description' => 'For an advanced search form, this serves as desginated input for searching for an exact phrase.',
+            'description' => 'For an advanced search form, this is the input for searching for an exact phrase.',
         ),
         'search_regexp' => array(
             'type' => 'String',
             'name' => 'Search REGEXP',
             'default' => '(none)',
-            'description' => 'For an advanced search form, this serves as desginated input for searching for a given regular expression.',
+            'description' => 'For an advanced search form, this is the input for searching for a given regular expression.',
         ),
         'search_boolean' => array(
             'type' => 'String',
             'name' => 'Search Boolean',
             'default' => '(none)',
-            'description' => 'For an advanced search form, this serves as desginated input for searching for a given boolean expression.',
+            'description' => 'For an advanced search form, this is the input for searching for a given boolean expression.',
         ),
     )
 );

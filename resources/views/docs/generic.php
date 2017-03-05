@@ -3,7 +3,6 @@
     $context = ($context) ? $context : 'query';
     $http = (array_key_exists('HTTPS', $_SERVER) && !empty($_SERVER['HTTPS'])) ? 'https://' : 'http://';
     $server = (array_key_exists('SERVER_NAME', $_SERVER) && !empty($_SERVER['SERVER_NAME'])) ? $_SERVER['SERVER_NAME'] : 'biblesupersearch.com';
-    
 ?>
 
 <!--<?php echo $context ?>-->
@@ -15,7 +14,7 @@
         <td>URL: </td><td><?php echo $http . $server ?>/api<?php echo $url; ?></td>
     </tr>
     <tr>
-        <td>Description:</td><td><?php echo trans($context . '.description') ?></td>
+        <td valign='top'>Description:</td><td><?php echo trans($context . '.description') ?></td>
     </tr>
 </table>
 

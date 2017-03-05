@@ -16,7 +16,7 @@ function renderParameters($parameters, $context) {
 
 function renderParameterHeader($label = 'parameters') {
     ?>
-        <br /><br />
+        <br />
         <table class='parameters' cellspacing="0">
             <tr><th colspan='5'><?php echo trans('api.' . $label); ?></td></tr>
             <tr>
@@ -31,14 +31,10 @@ function renderParameterHeader($label = 'parameters') {
 
 function renderParameterFooter() {
     ?>
-        </table> 
+        </table><br />
     <?php
 }
 
-function renderCommonParameters() {
-    $params = array(
-        'callback'
-    );
-    
-    renderParameters($params, 'common');
+function renderCommonParameters($params) {
+    renderParameters($params, 'api.common');
 }

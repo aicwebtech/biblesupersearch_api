@@ -55,7 +55,7 @@ class Passage {
     public function setBook($book) {
         $this->raw_book = $book;
         $this->is_random = FALSE;
-        
+
         if(static::isRandom($book)) {
             $this->_generateRandomReference($book);
             return;
@@ -120,23 +120,23 @@ class Passage {
         $this->is_book_range = FALSE;
         $this->addError($message);
     }
-    
+
     protected function _generateRandomReference($reference) {
         $random = static::normalizeRandom($reference);
         $random = substr($random, 7);
-        
+
         $Bible = (is_array($this->Bibles) && !empty($this->Bibles)) ? array_values($this->Bibles)[0] : NULL;
-        
+
         if(!$Bible) {
             return $this->addError('Programming Error: No Bibles Present on Reference', 5);
         }
-        
+
         $rand = $Bible->getRandomReference($random);
-        
+
         If(!$rand) {
-            
+
         }
-        
+
         $cb_raw = $this->raw_chapter_verse;
         $this->setBookById($rand['book_id']);
         $this->setChapterVerse($rand['chapter_verse']);
@@ -210,7 +210,7 @@ class Passage {
         if($this->is_random) {
             return;
         }
-        
+
         $this->raw_chapter_verse = preg_replace('/\s+/', ' ', $chapter_verse);
         $chapter_verse = str_replace([';',' '], [',',''], $chapter_verse);
         $chapter_verse = preg_replace('/,+/', ',', $chapter_verse);
@@ -329,7 +329,7 @@ class Passage {
 
         $this->chapter_verse_parsed = $parsed;
     }
-    
+
     public function clearChapterVerse() {
         $this->chapter_verse_parsed = array();
         $this->raw_chapter_verse = NULL;
@@ -338,11 +338,11 @@ class Passage {
 
     public function getNormalizedReferences() {
         $parsed = $this->chapter_verse_parsed;
-        
+
         if(!is_array($parsed)) {
             return array();
         }
-        
+
         foreach($parsed as &$part) {
             if(isset($part['type']) && $part['type'] == 'range') {
                 $part['vst'] = ($part['vst']) ? $part['vst'] : 0;
@@ -392,10 +392,10 @@ class Passage {
             'book_raw'          => $this->raw_book,
             'chapter_verse'     => $this->chapter_verse,
             'chapter_verse_raw' => $this->raw_chapter_verse,
-            //'chapter_verse_parsed' => $this->chapter_verse_parsed,
             'verses'            => $this->verses,
             'verses_count'      => $this->verses_count,
             'single_verse'      => $this->isSingleVerse(),
+            //'chapter_verse_parsed' => $this->chapter_verse_parsed, // Debugging only
         );
 
         if($this->is_book_range) {
@@ -409,7 +409,7 @@ class Passage {
     public function claimVerses(&$results, $retain = FALSE) {
         $this->verses_count = 0;
         $verse_claimed = FALSE;
-        
+
         foreach($results as $bible => $verses) {
             foreach($verses as $key => $verse) {
                 if($this->verseInPassage($verse)) {
@@ -423,7 +423,7 @@ class Passage {
                 }
             }
         }
-        
+
         return $verse_claimed;
     }
 
@@ -446,7 +446,7 @@ class Passage {
         }
 
         $parsing = $this->getNormalizedReferences();
-        
+
         if(empty($parsing)) {
             return TRUE; // Reference is just the book.  If book matches that of verse, then it is in the reference.
         }
@@ -457,7 +457,7 @@ class Passage {
                 if($verse->chapter == $parse['c'] && $verse->verse == $parse['v']) {
                     return TRUE;
                 }
-                
+
                 // Chapters
                 if($verse->chapter == $parse['c'] && $parse['v'] === NULL) {
                     return TRUE;
@@ -476,43 +476,43 @@ class Passage {
 
         return FALSE;
     }
-    
+
     /**
      * Indicates if this is a reference to exactly ONE verse.  (IE: 1 John 1:1)
      */
-    
+
     public function isSingleVerse() {
         $parsing = $this->getNormalizedReferences();
-        
+
         if(count($parsing) == 1) {
             //return ($parsing[0]['type'] == 'single') ? TRUE : FALSE;
             return ($parsing[0]['type'] == 'single' && $parsing[0]['v'] !== NULL) ? TRUE : FALSE;
         }
-        
+
         return FALSE;
     }
-    
+
     public function isSingleBook() {
         if($this->is_book_range) {
             return FALSE;
         }
-        
+
         return (empty($this->getNormalizedReferences())) ? TRUE : FALSE;
     }
-    
+
     public function explodePassage($separate_book_ranges) {
         if($separate_book_ranges && $this->is_book_range) {
             $Passages = array();
-            
+
             for($book = $this->Book->id; $book <= $this->Book_En->id; $book ++) {
                 $Passage = clone $this;
                 $Passage->setBookById($book);
                 $Passages[] = $Passage;
             }
-            
+
             return $Passages;
         }
-        
+
         return array($this);
     }
 
@@ -540,7 +540,7 @@ class Passage {
             $ref = static::findShortcut($ref, $languages, TRUE);
         }
         unset($ref);
-        
+
         $mid_parsed = implode(';', $pre_parsed);
         $parsed = static::explodeReferences($mid_parsed, TRUE);
 
@@ -584,34 +584,34 @@ class Passage {
         $exploded = array_reverse($exploded);
         return $exploded;
     }
-    
+
     public static function isRandom($reference) {
         $reference = strtolower($reference);
         $reference = str_replace(' ', '_', $reference);
-        
+
         $randoms = ['random_chapter', 'random_verse'];
-        
+
         foreach($randoms as $rand) {
             if(strpos($reference, $rand) === 0) {
                 return TRUE;
             }
         }
-        
+
         return FALSE;
     }
-    
+
     public static function normalizeRandom($reference) {
         $ref = strtolower($reference);
         $ref = str_replace(' ', '_', $ref);
-        
+
         $randoms = ['random_chapter', 'random_verse'];
-        
+
         foreach($randoms as $rand) {
             if(strpos($ref, $rand) === 0) {
                 return $rand;
             }
         }
-        
+
         return $ref;
     }
 
@@ -630,10 +630,10 @@ class Passage {
         $Passage->setChapterVerse($chapter_verse);
         return $Passage;
     }
-    
+
     /**
      * Creates a single-verse passage from a verse
-     * 
+     *
      * @param type $verse
      * @return \App\Passage
      */
@@ -645,14 +645,14 @@ class Passage {
         $Passage->setChapterVerse($verse->chapter . ':' . $verse->verse);
         return $Passage;
     }
-    
+
     public static function explodePassages($Passages = array(), $separate_book_ranges = TRUE) {
         $Exploded = array();
-        
+
         foreach($Passages as $Passage) {
             $Exploded = array_merge($Exploded, $Passage->explodePassage($separate_book_ranges));
         }
-        
+
         return $Exploded;
     }
 }

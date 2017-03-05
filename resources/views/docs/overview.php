@@ -1,7 +1,31 @@
 <?php
     ?>
-This API allows the Bible SuperSearch Bible search engine to be used seemlesly on any website.
-There is no cost to use the API, however, a website will be limited to <?php echo config('bss.daily_access_limit') ?> hits per day.
 
-All of our API actions return a JSON encoded string, and are cross-origin compliant, with the header: Access-Control-Allow-Origin: *.
-We also support JSONP with the 'callback' parameter avaliable for every API action.
+<div>
+    <?php echo trans('api.overview.description') ?>
+</div>
+
+<?php
+    $client_url = env('CLIENT_URL', NULL);
+    if($client_url): ?>
+
+    <div>
+        <?php echo trans('api.overview.see_in_action') ?>: <a href='<?php echo $client_url ?>' target='_NEW'><?php echo $client_url ?></a>
+    </div>
+<?php endif; ?>
+
+<h3><?php echo trans('api.overview.all_actions') ?>:</h3>
+<ul>
+    <li><?php echo trans('api.overview.bullets.format') ?></li>
+    <li><?php echo trans('api.overview.bullets.cors') ?></li>
+    <li><?php echo trans('api.overview.bullets.jsonp') ?></li>
+    <li><?php echo trans('api.overview.bullets.structure') ?>:</li>
+</ul>
+
+
+<pre><code>{
+    "errors": [],     // <?php echo trans('api.overview.structure.errors') . PHP_EOL ?>
+    "error_level": 0, // <?php echo trans('api.overview.structure.error_level') . PHP_EOL ?>
+    "results": {}     // <?php echo trans('api.overview.structure.results') . PHP_EOL?>
+}
+</code></pre>
