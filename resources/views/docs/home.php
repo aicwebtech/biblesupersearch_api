@@ -53,6 +53,7 @@
                 border-top: 1px solid black;
                 border-right: 0;
                 border-bottom: 0;
+                padding: 3px;
             }
 
             .parameters th {
@@ -85,6 +86,7 @@
             <div id='tabs'>
                 <ul>
                     <li><a href='#tab_overview'><?php echo trans('api.overview.name') ?></a></li>
+                    <li><a href='#tab_list'><?php echo trans('api.bible_list') ?></a></li>
                     <li><a href='#tab_query'><?php echo trans('api.action') . ': ' . trans('query.name') ?></a></li>
                     <li><a href='#tab_statics'><?php echo trans('api.action') . ': ' . trans('api.statics.name') ?></a></li>
                     <li><a href='#tab_bibles'><?php echo trans('api.action') . ': ' . trans('api.bibles.name') ?></a></li>
@@ -92,6 +94,9 @@
                 </ul>
                 <div id='tab_overview'>
                     <?php include(dirname(__FILE__) . '/overview.php'); ?>
+                </div>
+                <div id='tab_list'>
+                    <?php include(dirname(__FILE__) . '/bible_list.php'); ?>
                 </div>
                 <div id='tab_query'>
                     <?php include(dirname(__FILE__) . '/query.php'); ?>

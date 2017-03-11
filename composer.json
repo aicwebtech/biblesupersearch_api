@@ -1,6 +1,6 @@
 {
-    "name": "laravel/laravel",
-    "description": "The Laravel Framework.",
+    "name": "aicwebtech/biblesupersearch-api",
+    "description": "Bible SuperSearch API",
     "keywords": ["framework", "laravel"],
     "license": "MIT",
     "type": "project",

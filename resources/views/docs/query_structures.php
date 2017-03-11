@@ -1,3 +1,5 @@
+<a name='query_structures' />
+
 <h3>
     <?php echo trans('query.params.data_format.name') . ' ' . trans('api.examples') ?>:
 </h3>
@@ -45,9 +47,9 @@
             "book_id":45,
             "book_name":"Romans",
             "book_short":"Rm",
-            "book_raw":"Rom",
-            "chapter_verse":"1:1-2",
-            "chapter_verse_raw":"1:1-2",
+            "book_raw":"Rom",            // <?php echo trans('query.params.data_format.passage.book_raw') , PHP_EOL ?>
+            "chapter_verse":"1:1-2",     // <?php echo trans('query.params.data_format.passage.chapter_verse') , PHP_EOL ?>
+            "chapter_verse_raw":"1:1-2", // <?php echo trans('query.params.data_format.passage.chapter_verse_raw') , PHP_EOL ?>
             "verses":{
                 // <?php echo trans('query.params.data_format.passage.id_bible') , PHP_EOL ?>
                 "kjv":{

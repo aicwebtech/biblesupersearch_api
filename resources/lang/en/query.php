@@ -19,7 +19,7 @@ return array(
             'description' => 'Keyword search',
         ),
         'search_type' => array(
-            'type' => 'String Select',
+            'type' => 'String<br />(Drop Down menu)',
             'name' => 'Search Type',
             'default' => 'and',
             'description' => 'Type of search when using keyword search. <br />'
@@ -37,57 +37,61 @@ return array(
             . '</ul>',
         ),
         'bible' => array(
-            'type' => 'String, Array or JSON encoded array',
+            'type' => 'String<br />(Drop Down Menu - Multiple)',
             'name' => 'Bibles',
             'default' => env('DEFAULT_BIBLE', 'kjv'),
-            'description' => 'Bible(s) to query against.  Use the Bibles action to get a list of available Bibles.',
+            'description' => '<a href="/#tab_list">Module</a> of the Bible(s) to query against. Can be a string, array or JSON-encoded array.<br />'
+            . 'Use the Bibles action to get a list of available Bibles for your app or website.',
         ),
         'whole_words' => array(
             'type' => 'Boolean',
             'name' => 'Whole Words',
             'default' => 'false',
-            'description' => 'Whether to look for exact words.  Otherwise, keywords will be found within words.',
+            'description' => 'Whether to search for exact words.  Otherwise, keywords will be found within words.',
         ),
         'exact_case' => array(
             'type' => 'Boolean',
             'name' => 'Exact Case',
             'default' => 'false',
-            'description' => 'Whether to look for the exact case.  Searches are case-insensitive by default.',
+            'description' => 'Whether to search for the exact case.  Searches are case-insensitive by default.',
         ),
         'highlight' => array(
             'type' => 'Boolean',
             'name' => 'Highlight',
             'default' => 'false',
-            'description' => 'Whether to highlight keywords in retrieved verses.  Setting this to true will cause highlight_tag to be wrapped around'
+            'description' => 'Whether to highlight keywords in retrieved verses.  Setting this to \'true\' <br />will cause highlight_tag to be wrapped around '
             . 'each matched keyword.',
         ),
         'highlight_tag' => array(
-            'type' => 'Boolean',
+            'type' => 'String',
             'name' => 'Highlight Tag',
             'default' => 'b',
-            'description' => 'HTML tag to use for wrapping highlighted keywords. Just set to the name of the tag.'
+            'description' => 'HTML tag to use for wrapping highlighted keywords. Just set to the name of the tag, omitting &lt;&gt;'
         ),
         'data_format' => array(
-            'type' => 'passage or raw',
+            'type' => 'String',
             'name' => 'Data Format',
             'default' => 'passage',
-            'description' => 'Format of the outputed data structure. <br />'
-            . '\'minimal\' or \'raw\' format simply groups all verses by the Bible.<br />'
-            . '\'passage\' format groups verses by Bible and groups them into passages. <br />'
-            . 'See examples below.',
+            'description' => 'Format of the outputed data structure. <br /><ul>'
+            . '<li>\'minimal\' or \'raw\' format simply groups all verses by the Bible, and doesn\'t include book names.</li>'
+            . '<li>\'passage\' format groups verses into passages.</li>'
+            . '</ul>See <a href="#query_structures">examples below</a>.',
             'raw' => array(
                 'description' => 'Verses are grouped simply by Bible and ordered in the way they appear in the Bible.  No book information is included.',
             ),
             'passage' => array(
                 'description' => 'Verses are grouped into passages, and passages are ordered in the order they were requested by the user.',
-                'id_bible' => 'Indexed by Bible',
+                'id_bible' => 'Indexed by Bible (module)',
                 'id_chapter' => 'Indexed by chapter',
                 'id_verse' => 'Indexed by verse',
                 'single' => 'Indicates if the passage contains exactly one verse.  Note: Searches will result in all single verse passages.',
+                'book_raw' => 'Book name as entered by user',
+                'chapter_verse' => 'Standardized chapter and verse',
+                'chapter_verse_raw' => 'Chapter and verse as entered by user',
             ),
         ),
         'proximity_limit' => array(
-            'type' => 'Int',
+            'type' => 'Integer',
             'name' => 'Proximity Limit',
             'default' => '5',
             'description' => 'Proximity limit.  For Proximity search types, sets the range of allowable verses between keywords.',

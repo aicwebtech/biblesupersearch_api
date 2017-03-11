@@ -11,17 +11,19 @@
 |
 */
 
-Route::get('/', function() {
-    return view('docs.home');
-    //return view('welcome2');
-});
+//Route::get('/', function() {
+//    return view('docs.home');
+//    //return view('welcome2');
+//});
+
+Route::get('/', 'DocumentationController');
 
 /* Routes for administrative backend */
 Route::get('/admin', function() {
     if(Auth::check()) {
         return redirect('/admin/main');
     }
-    
+
     return view('admin.login');
 });
 Route::get('/admin/login', function() {
