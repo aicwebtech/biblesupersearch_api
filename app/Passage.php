@@ -22,7 +22,8 @@ class Passage {
     protected $raw_chapter_verse; // Chapter and verse as entered by user
     protected $chapter_verse; // Chapter and verse part of reference
     protected $chapter_verse_parsed; // Chapter and verse, parsed into an array of arrays
-    protected $verses; // Array of verses, grouped by bible, chapter, verse as found by the query
+    protected $verses; // Array of verses, grouped by bible, book, chapter, verse as found by the query
+    protected $verses_index; // Array of book / chapter / verse
     protected $verses_count = 0; // Count of the verses matched to this passage (as found by the query).
     protected $languages; // Array of language short names
     protected $Bibles = array(); //Array of Bibles
@@ -392,6 +393,7 @@ class Passage {
             'book_raw'          => $this->raw_book,
             'chapter_verse'     => $this->chapter_verse,
             'chapter_verse_raw' => $this->raw_chapter_verse,
+            'verse_index'       => $this->generateVerseIndex(),
             'verses'            => $this->verses,
             'verses_count'      => $this->verses_count,
             'single_verse'      => $this->isSingleVerse(),
@@ -404,6 +406,36 @@ class Passage {
         }
 
         return $passage;
+    }
+
+    public function generateVerseIndex() {
+        if(empty($this->verses)) {
+            return array();
+        }
+
+        $index = array();
+
+        foreach($this->verses as $bible => $chapters) {
+            foreach($chapters as $chapter => $verses) {
+                if(!array_key_exists($chapter, $index)) {
+                    $index[$chapter] = array();
+                }
+
+                foreach($verses as $verse => $object) {
+                    $index[$chapter][] = $verse;
+                }
+            }
+        }
+
+        ksort($index, SORT_NUMERIC);
+
+        foreach($index as &$chapter_verses) {
+            $chapter_verses = array_unique($chapter_verses, SORT_NUMERIC);
+            sort($chapter_verses, SORT_NUMERIC);
+        }
+        unset($chapter_verses);
+
+        return $index;
     }
 
     public function claimVerses(&$results, $retain = FALSE) {

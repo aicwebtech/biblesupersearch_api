@@ -212,7 +212,7 @@ class Engine {
             $namespaced_class = 'App\Models\Books\\' . env('DEFAULT_LANGUAGE_SHORT', 'en');
         }
 
-        $Books = $namespaced_class::orderBy('id', 'ASC') -> get() -> all();
+        $Books = $namespaced_class::select('id', 'name', 'shortname')->orderBy('id', 'ASC') -> get() -> all();
         return $Books;
     }
 

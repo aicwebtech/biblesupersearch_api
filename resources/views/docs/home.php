@@ -19,6 +19,11 @@
                 border-radius: 10px;
             }
 
+            .hcenter {
+                text-align: center;
+                font-family: Verdana, Arial, sans-serif;
+            }
+
             #container {
                 margin:40px 80px;
                 border-radius: 30px;
@@ -28,7 +33,7 @@
 
             body {
                 margin: 0;
-                background-color: darkcyan;
+                background-color: #10236b;
             }
 
             #tabs {
@@ -79,9 +84,9 @@
     ?>
     <body>
         <div id='container'>
-            <h1><?php echo trans('app.name') ?> <?php echo trans('app.documentation') ?></h1>
-            <h2><?php echo trans('app.version') ?> <?php echo config('app.version'); ?></h2>
-            <h2 class='warning'><?php echo trans('app.env_warnings.' . config('app.env')) ?></h2>
+            <h1 class='hcenter'><?php echo trans('app.name') ?> <?php echo trans('app.documentation') ?></h1>
+            <h2 class='hcenter'><?php echo trans('app.version') ?> <?php echo config('app.version'); ?></h2>
+            <h2 class='hcenter warning'><?php echo trans('app.env_warnings.' . config('app.env')) ?></h2>
 
             <div id='tabs'>
                 <ul>

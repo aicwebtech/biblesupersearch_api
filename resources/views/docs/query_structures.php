@@ -50,6 +50,9 @@
             "book_raw":"Rom",            // <?php echo trans('query.params.data_format.passage.book_raw') , PHP_EOL ?>
             "chapter_verse":"1:1-2",     // <?php echo trans('query.params.data_format.passage.chapter_verse') , PHP_EOL ?>
             "chapter_verse_raw":"1:1-2", // <?php echo trans('query.params.data_format.passage.chapter_verse_raw') , PHP_EOL ?>
+            "verse_index": {             // <?php echo trans('query.params.data_format.passage.verse_index') , PHP_EOL ?>
+                1: [1, 2]
+            },
             "verses":{
                 // <?php echo trans('query.params.data_format.passage.id_bible') , PHP_EOL ?>
                 "kjv":{
@@ -71,6 +74,9 @@
             "book_raw":"Matt",
             "chapter_verse":"5:6-8",
             "chapter_verse_raw":"5:6-8",
+            "verse_index": {
+                5: [6, 7, 8]
+            },
             "verses":{
                 "kjv":{
                     "5":{

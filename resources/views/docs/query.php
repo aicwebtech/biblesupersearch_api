@@ -22,8 +22,8 @@
         'search_one',
         'search_none',
         'search_phrase',
-        'search_regexp',
-        'search_boolean',
+        //'search_regexp',  // Future feature
+        //'search_boolean', // Future feature
     );
 
     renderParameterHeader();
@@ -38,4 +38,3 @@
     renderParameterFooter();
 
     include( dirname(__FILE__) . '/query_structures.php');
-    

@@ -4,6 +4,8 @@
 
 return array(
     'action' => 'Action',
+    'see' => 'See',
+    'results' => 'Results',
     'description' => 'Description',
     'parameters' => 'Action Parameters',
     'advanced_parameters' => 'Advanced Parameters',
@@ -12,8 +14,10 @@ return array(
     'default' => 'Default',
     'parameter' => 'Parameter',
     'examples' => 'Examples',
+    'example' => 'Example',
     'data_structure' => 'Data Structure',
     'bible_list' => 'Bible List',
+    'bibles_avail' => 'Bibles Available via API',
 
     'bible_fields' => array(
         'module' => 'Module',
@@ -22,10 +26,16 @@ return array(
         'name' => 'Name',
         'shortname' => 'Short Name',
         'year' => 'Year',
+        'year_desc' => 'Publication year',
         'copyright' => 'Copyrighted',
+        'copyright_desc' => 'Copyrighted (not public domain)',
+        'rank_desc' => 'Default sorting order.',
+        'italics_desc' => '(Future use) Supports Italicised words ',
+        'strongs_desc' => '(Future use) Embedded strongs numbers',
         'research' => 'Research',
         'research_desc' => 'Indicates a Bible text that does not nessessarily adhere to the traditional Textus Receptus Greek and Masoretic Hebrew.'
         . ' These texts are intended for research purposes only.',
+        'research_desc_short' => 'Indicates a Bible text intended for research purposes only.',
     ),
 
     'overview' => array(
@@ -50,7 +60,7 @@ return array(
     'bibles' => array(
         'name' => 'Bibles',
         'description' => 'Retrieves the list of Bibles avaliable via the API',
-
+        'indexed_by_module' => 'Indexed by \'module\'',
     ),
     'books' => array(
         'name' => 'Books',

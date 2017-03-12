@@ -40,7 +40,7 @@ return array(
             'type' => 'String<br />(Drop Down Menu - Multiple)',
             'name' => 'Bibles',
             'default' => env('DEFAULT_BIBLE', 'kjv'),
-            'description' => '<a href="/#tab_list">Module</a> of the Bible(s) to query against. Can be a string, array or JSON-encoded array.<br />'
+            'description' => 'MODULE of the Bible(s) to query against. Can be a string, array or JSON-encoded array.<br />'
             . 'Use the Bibles action to get a list of available Bibles for your app or website.',
         ),
         'whole_words' => array(
@@ -88,6 +88,7 @@ return array(
                 'book_raw' => 'Book name as entered by user',
                 'chapter_verse' => 'Standardized chapter and verse',
                 'chapter_verse_raw' => 'Chapter and verse as entered by user',
+                'verse_index' => 'A list of all chapters and verses retrieved.'
             ),
         ),
         'proximity_limit' => array(

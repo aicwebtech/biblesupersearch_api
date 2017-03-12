@@ -1,5 +1,5 @@
 <table class='parameters' cellspacing="0">
-    <tr><th colspan='7'><?php echo trans('api.bible_list'); ?></th></tr>
+    <tr><th colspan='7'><?php echo trans('api.bibles_avail'); ?></th></tr>
     <tr>
         <th><?php echo trans('api.bible_fields.module') ?>*</th>
         <th><?php echo trans('api.bible_fields.lang') ?></th>
