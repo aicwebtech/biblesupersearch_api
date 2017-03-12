@@ -217,6 +217,7 @@ class Passage {
         $chapter_verse = preg_replace('/,+/', ',', $chapter_verse);
         $chapter_verse = preg_replace('/-+/', '-', $chapter_verse);
         $chapter_verse = preg_replace('/:+/', ':', $chapter_verse);
+        $chapter_verse = (!$this->is_search && empty($chapter_verse)) ? '1' : $chapter_verse;
         $this->chapter_verse = $chapter_verse;
 
         $preparsed = $matches = $counts = $parsed = array();
