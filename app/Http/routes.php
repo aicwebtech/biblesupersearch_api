@@ -16,7 +16,7 @@
 //    //return view('welcome2');
 //});
 
-Route::get('/', 'DocumentationController');
+Route::get('/', 'DocumentationController')->middleware('https');
 
 /* Routes for administrative backend */
 Route::get('/admin', function() {
@@ -41,7 +41,7 @@ Route::get('/admin/main', 'AdminController@getMain');
 //Route::controller('admin', 'AdminController');
 
 /* Routes for the API */
-Route::get('/api', 'ApiController@query')->middleware('api.access');
-Route::get('/api/bibles', 'ApiController@bibles')->middleware('api.access');
-Route::get('/api/books', 'ApiController@books')->middleware('api.access');
-Route::get('/api/statics', 'ApiController@statics')->middleware('api.access');
+Route::get('/api', 'ApiController@query')->middleware('api');
+Route::get('/api/bibles', 'ApiController@bibles')->middleware('api');
+Route::get('/api/books', 'ApiController@books')->middleware('api');
+Route::get('/api/statics', 'ApiController@statics')->middleware('api');

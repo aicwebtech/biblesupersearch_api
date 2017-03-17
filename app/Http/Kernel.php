@@ -31,9 +31,11 @@ class Kernel extends HttpKernel
         'guest' => \App\Http\Middleware\RedirectIfAuthenticated::class,
         'can' => \Illuminate\Auth\Middleware\Authorize::class,
         'api.access' => \App\Http\Middleware\ApiAccess::class,
+        'https' => \App\Http\Middleware\HttpsRedirect::class,
         'bindings' => \Illuminate\Routing\Middleware\SubstituteBindings::class,
+        'throttle' => \Illuminate\Routing\Middleware\ThrottleRequests::class,
     ];
-    
+
     /**
     * The application's route middleware groups.
     *
@@ -51,7 +53,8 @@ class Kernel extends HttpKernel
 
        'api' => [
            'throttle:60,1',
-           'auth:api',
+           //'auth:api',
+           'api.access',
        ],
    ];
 }
