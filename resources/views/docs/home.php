@@ -66,8 +66,9 @@
                 background: -webkit-linear-gradient(#dddddd, #aaaaaa); /* For Safari 5.1 to 6.0 */
                 background: -o-linear-gradient(#dddddd, #aaaaaa); /* For Opera 11.1 to 12.0 */
                 background: -moz-linear-gradient(#dddddd, #aaaaaa); /* For Firefox 3.6 to 15 */
-                background: linear-gradient(#dddddd,#aaaaaa); /* Standard syntax */
+                background: linear-gradient(#5aa7e2,#3c729b); /* Standard syntax */
                 padding: 3px;
+                color: #eee;
             }
 
             @media print {
