@@ -16,51 +16,54 @@ use App\Search;
  * @author Computer
  */
 abstract class FormatterAbstract {
-    
+
     protected $results;
     protected $Passages;
     protected $Search;
     protected $is_search;
-    
+
     public function __construct($results, $Passages, $Search) {
         $this->results      = $results;
         $this->Passages     = $Passages;
         $this->Search       = $Search;
         $this->is_search    = ($Search) ? TRUE : FALSE;
     }
-    
+
     abstract public function format();
-    
+
     protected function _mapResultsToPassages($results) {
-        if(!is_array($this->Passages) || !count($this->Passages)) {
+        if(!is_array($this->Passages) || !count($this->Passages) || $this->is_search) {
             if(!$this->is_search) {
                 return FALSE;
             }
-            
+
             $Passages = array();
-            
+
             // We loop through every verse returned for every Bible requested,
             // so none are omitted
             foreach($results as $bible => $verses) {
                 foreach($verses as $verse) {
                     $bcv = $verse->book * 1000000 + $verse->chapter * 1000 + $verse->verse;
-                    
+
                     if(empty($Passages[$bcv])) {
                         $Passages[$bcv] = Passage::createFromVerse($verse);
                     }
                 }
             }
-            
+
             ksort($Passages, SORT_NUMERIC);
             $this->Passages = array_values($Passages);
         }
-        
-        $this->Passages = Passage::explodePassages($this->Passages);
 
-        foreach($this->Passages as $Passage) {
-            $Passage->claimVerses($results);
+        // We explode chapters only if not a search
+        $this->Passages = Passage::explodePassages($this->Passages, TRUE, !$this->is_search);
+
+        foreach($this->Passages as $key => $Passage) {
+            if(!$Passage->claimVerses($results)) {
+                unset($this->Passages[$key]);
+            }
         }
-        
+
         foreach($results as $bible => $unclaimed) {
             if(count($unclaimed) > 0) {
                 echo('some verses not claimed');
@@ -69,24 +72,24 @@ abstract class FormatterAbstract {
                 return FALSE;
             }
         }
-        
+
         return TRUE;
     }
-    
+
     protected function _createPassageFromSingleVerse($verse) {
-        
+
     }
-    
+
     protected function _preFormatVerses($results) {
         foreach($results as $key => &$verse) {
-            
+
         }
         unset($value);
-        
+
         return $results;
     }
-    
+
     protected function _preFormatVersesHelper(&$verse) {
-        
+
     }
 }

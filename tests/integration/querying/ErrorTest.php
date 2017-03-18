@@ -24,11 +24,11 @@ class ErrorTest extends TestCase {
         $this->assertCount(1, $errors);
         $this->assertEquals( trans('errors.no_results'), $errors[0]);
     }
-    
+
     public function testBibleNoResults() {
         $Engine = new Engine();
         $Engine->setDefaultDataType('raw');
-        
+
         // Neither Textus Receptus nor the Tyndale Bible have Isaiah
         $results = $Engine->actionQuery(['bible' => array('kjv', 'tr', 'tyndale'), 'reference' => 'Isaiah 1:1']);
         $this->assertTrue($Engine->hasErrors());
@@ -38,7 +38,7 @@ class ErrorTest extends TestCase {
         $this->assertEquals( trans('errors.bible_no_results', ['module' => 'tyndale']), $errors[1]);
         $this->assertCount(1, $results['kjv']);
     }
-    
+
     public function testFalseBible() {
         $Engine = new Engine();
         $Engine->addBible('aaaa_9876'); // Fictitious Bible module
@@ -46,7 +46,7 @@ class ErrorTest extends TestCase {
         $errors = $Engine->getErrors();
         $this->assertEquals("Bible text 'aaaa_9876' not found.", $errors[0]);
     }
-    
+
     public function testPassageInvalidReference() {
         $Engine = new Engine();
         $results = $Engine->actionQuery(['bible' => 'kjv', 'reference' => '  Habrews 4:8; 1 Tom 3:1-5, 9 ']);
@@ -56,7 +56,7 @@ class ErrorTest extends TestCase {
         $this->assertEquals(trans('errors.book.not_found', ['book' => 'Habrews']), $errors[0]);
         $this->assertEquals(trans('errors.book.not_found', ['book' => '1 Tom']), $errors[1]);
     }
-    
+
     public function testPassageInvalidRangeReference() {
         $Engine = new Engine();
         $reference = 'Ramans - Revelation';
@@ -66,7 +66,7 @@ class ErrorTest extends TestCase {
         $this->assertCount(1, $errors);
         $this->assertEquals(trans('errors.book.invalid_in_range', ['range' => $reference]), $errors[0]);
     }
-    
+
     public function testPassageRangeReferenceNoSearch() {
         $Engine = new Engine();
         $reference = 'Romans - Revelation';
@@ -76,7 +76,7 @@ class ErrorTest extends TestCase {
         $this->assertCount(1, $errors);
         $this->assertEquals(trans('errors.book.multiple_without_search'), $errors[0]);
     }
-    
+
     public function testParenthensesMismatch() {
         $Engine = new Engine();
         $results = $Engine->actionQuery(['bible' => 'kjv', 'search' => '(faith (joy love) hope', 'search_type' => 'boolean']);
@@ -85,7 +85,7 @@ class ErrorTest extends TestCase {
         $this->assertCount(1, $errors);
         $this->assertEquals( trans('errors.paren_mismatch'), $errors[0]);
     }
-    
+
     public function testSwappedParameter() {
         $Engine = new Engine();
         // User accidentially places search in reference input
@@ -93,35 +93,35 @@ class ErrorTest extends TestCase {
         $this->assertTrue($Engine->hasErrors());
         $errors = $Engine->getErrors();
         //$this->assertEquals( trans('errors.no_results'), $errors[0]);
-        
+
         // User accidentially places reference in search input
         $results = $Engine->actionQuery(['bible' => 'kjv', 'search' => '1 Jn 5:7, 9, 45', 'search_type' => 'boolean']);
         $this->assertTrue($Engine->hasErrors());
         $errors = $Engine->getErrors();
         $this->assertEquals( trans('errors.invalid_search.reference', ['search' => '1 Jn 5:7, 9, 45']), $errors[0]);
-        
+
         // This is NOT an error - Romans is a valid keyword
         $results = $Engine->actionQuery(['bible' => 'kjv', 'search' => 'Romans', 'search_type' => 'boolean']);
         $this->assertFalse($Engine->hasErrors());
     }
-    
+
     public function testInvalidBook() {
         $Engine = new Engine();
         $results = $Engine->actionQuery(['bible' => 'kjv', 'reference' => 'Actz', 'search' => 'faith']);
         $this->assertTrue($Engine->hasErrors());
         $this->assertEquals(4, $Engine->getErrorLevel());
-        
+
         // Two errorenous books
         $results = $Engine->actionQuery(['bible' => 'kjv', 'reference' => 'Actz; Romaans', 'search' => 'faith']);
         $this->assertTrue($Engine->hasErrors());
         $this->assertEquals(4, $Engine->getErrorLevel());
-        
+
         // One good, one bad
         $results = $Engine->actionQuery(['bible' => 'kjv', 'reference' => 'Actz; Romans', 'search' => 'faith']);
         $this->assertTrue($Engine->hasErrors());
     }
-    
-    
+
+
     public function testInvalidCharacters() {
         $Engine = new Engine();
         $results = $Engine->actionQuery(['bible' => 'kjv', 'reference' => 'Acts', 'search' => '@']);
@@ -130,7 +130,7 @@ class ErrorTest extends TestCase {
         $errors = $Engine->getErrors();
         $this->assertEquals( trans('errors.invalid_search.general', ['search' => '@']), $errors[0]);
     }
-    
+
     /**
      * Test attempting to look up a verse that does not exist
      */
@@ -138,18 +138,22 @@ class ErrorTest extends TestCase {
         $Engine  = new Engine();
         $results = $Engine->actionQuery(['bible' => 'kjv', 'reference' => 'Jn 3:96', 'data_format' => 'passage']);
         $this->assertTrue($Engine->hasErrors());
-        
+
         // It should find the valid verse
         $results = $Engine->actionQuery(['bible' => 'kjv', 'reference' => 'Rom 5:15; Jn 3:96', 'data_format' => 'passage']);
         $this->assertTrue($Engine->hasErrors()); // Yes, it has errors.
-        $this->assertCount(2, $results);
+        //$this->assertCount(2, $results);
+        //$this->assertEquals(1, $results[0]['verses_count']);
+        //$this->assertEquals(0, $results[1]['verses_count']);
+        // Empty passages are now removed from results
+        $this->assertCount(1, $results);
         $this->assertEquals(1, $results[0]['verses_count']);
-        $this->assertEquals(0, $results[1]['verses_count']);
+        $this->assertArrayNotHasKey(1, $results);
     }
-    
+
     public function testBooleanMisplacedOperators() {
         $Engine  = new Engine();
-        
+
         $results = $Engine->actionQuery(['bible' => 'kjv', 'search' => '&& faith']);
         $this->assertTrue($Engine->hasErrors());
         $errors = $Engine->getErrors();
@@ -158,7 +162,7 @@ class ErrorTest extends TestCase {
         $this->assertTrue($Engine->hasErrors());
         $errors = $Engine->getErrors();
         $this->assertEquals( trans('errors.operator.op_at_end', ['op' => 'AND']), $errors[0]);
-        
+
         $results = $Engine->actionQuery(['bible' => 'kjv', 'search' => 'OR faith']);
         $this->assertTrue($Engine->hasErrors());
         $errors = $Engine->getErrors();
@@ -167,7 +171,7 @@ class ErrorTest extends TestCase {
         $this->assertTrue($Engine->hasErrors());
         $errors = $Engine->getErrors();
         $this->assertEquals( trans('errors.operator.op_at_end', ['op' => 'OR']), $errors[0]);
-        
+
         $results = $Engine->actionQuery(['bible' => 'kjv', 'search' => 'XOR faith']);
         $this->assertTrue($Engine->hasErrors());
         $errors = $Engine->getErrors();
@@ -176,7 +180,7 @@ class ErrorTest extends TestCase {
         $this->assertTrue($Engine->hasErrors());
         $errors = $Engine->getErrors();
         $this->assertEquals( trans('errors.operator.op_at_end', ['op' => 'XOR']), $errors[0]);
-        
+
         $results = $Engine->actionQuery(['bible' => 'kjv', 'reference' => 'Rom 1', 'search' => 'NOT faith']);
         $this->assertFalse($Engine->hasErrors()); // This is NOT an error
         $results = $Engine->actionQuery(['bible' => 'kjv', 'search' => 'faith !']);

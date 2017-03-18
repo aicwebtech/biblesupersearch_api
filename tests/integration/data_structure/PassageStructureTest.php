@@ -23,8 +23,9 @@ class PassageStructureTest extends TestCase {
 
         $this->assertFalse($Engine->hasErrors());
 
-        // Top level array should have 2 elements because we have 2 passages
-        $this->assertCount(2, $results);
+        // Top level array should have 3 elements because we have 3 passages
+        // 1 Tim 3:1-5, 9 is split into 1 Tim 3:1-5 and 1 Tim 3:9
+        $this->assertCount(3, $results);
 
         // First passage should be the Hebrews one, because it was requested first, even though 1 Tim comes first
         $this->assertEquals('Hebrews', $results[0]['book_name']);
@@ -34,20 +35,24 @@ class PassageStructureTest extends TestCase {
         $this->assertEquals(8, $results[0]['verses']['kjv'][4][8]->verse);
         $this->assertEquals(array(4 => [8]), $results[0]['verse_index']);
 
-        // Test the 1 Tim passage results
+        // Test the 1 Tim 3:1-5 passage results
         $this->assertEquals('1 Timothy', $results[1]['book_name']);
         $this->assertFalse($results[1]['single_verse']);
-        $this->assertCount(6, $results[1]['verses']['kjv'][3]);
+        $this->assertCount(5, $results[1]['verses']['kjv'][3]);
         $this->assertArrayHasKey(1, $results[1]['verses']['kjv'][3]);
         $this->assertArrayHasKey(2, $results[1]['verses']['kjv'][3]);
         $this->assertArrayHasKey(3, $results[1]['verses']['kjv'][3]);
         $this->assertArrayHasKey(4, $results[1]['verses']['kjv'][3]);
         $this->assertArrayHasKey(5, $results[1]['verses']['kjv'][3]);
-        $this->assertArrayHasKey(9, $results[1]['verses']['kjv'][3]);
+        $this->assertArrayNotHasKey(9, $results[1]['verses']['kjv'][3]); // Separated
         $this->assertArrayNotHasKey(6, $results[1]['verses']['kjv'][3]);
         $this->assertArrayNotHasKey(7, $results[1]['verses']['kjv'][3]);
         $this->assertArrayNotHasKey(8, $results[1]['verses']['kjv'][3]);
-        $this->assertEquals(array(3 => [1,2,3,4,5,9]), $results[1]['verse_index']);
+        $this->assertEquals(array(3 => [1,2,3,4,5]), $results[1]['verse_index']);
+
+        $this->assertEquals('1 Timothy', $results[2]['book_name']);
+        $this->assertTrue($results[2]['single_verse']);
+        $this->assertEquals(array(3 => [9]), $results[2]['verse_index']);
     }
 
     public function testVerseIndex() {
@@ -82,8 +87,8 @@ class PassageStructureTest extends TestCase {
 
         $this->assertFalse($Engine->hasErrors());
 
-        // We have 4 passages
-        $this->assertCount(4, $results);
+        // We have 5 passages
+        $this->assertCount(5, $results);
 
         // All the passages are from Romans
         foreach($results as $passage) {
@@ -107,21 +112,26 @@ class PassageStructureTest extends TestCase {
             $this->assertArrayHasKey(5, $results[2]['verses'][$bible]);
             $this->assertArrayHasKey(8, $results[2]['verses'][$bible][5]);
 
-            // Rom 10:9, 13
-            $this->assertFalse($results[3]['single_verse']);
+            // Rom 10:9
+            $this->assertTrue($results[3]['single_verse']);
             $this->assertArrayHasKey(10, $results[3]['verses'][$bible]);
             $this->assertArrayHasKey(9, $results[3]['verses'][$bible][10]);
-            $this->assertArrayHasKey(13, $results[3]['verses'][$bible][10]);
+
+            // Rom 10:13
+            $this->assertTrue($results[4]['single_verse']);
+            $this->assertArrayHasKey(10, $results[4]['verses'][$bible]);
+            $this->assertArrayHasKey(13, $results[4]['verses'][$bible][10]);
         }
 
-        // These only pull ONE passage each
+        // These pull 2 passages each
         $refs = ['Rom 3:23; 6:23', 'Rom 3:23;6:23', 'Rom 3:23,6:23'];
 
         foreach($refs as $ref) {
             $results = $Engine->actionQuery(['bible' => $bibles, 'reference' => $ref, 'data_format' => 'passage']);
             $this->assertFalse($Engine->hasErrors());
-            $this->assertCount(1, $results);
-            $this->assertFalse($results[0]['single_verse']);
+            $this->assertCount(2, $results);
+            $this->assertTrue($results[0]['single_verse']);
+            $this->assertTrue($results[1]['single_verse']);
 
             foreach($bibles as $bible) {
                 // Rom 3:23
@@ -129,8 +139,8 @@ class PassageStructureTest extends TestCase {
                 $this->assertArrayHasKey(23, $results[0]['verses'][$bible][3]);
 
                 // Rom 6:23
-                $this->assertArrayHasKey(6, $results[0]['verses'][$bible]);
-                $this->assertArrayHasKey(23, $results[0]['verses'][$bible][6]);
+                $this->assertArrayHasKey(6, $results[1]['verses'][$bible]);
+                $this->assertArrayHasKey(23, $results[1]['verses'][$bible][6]);
             }
         }
     }
@@ -146,44 +156,47 @@ class PassageStructureTest extends TestCase {
         $this->assertFalse($Engine->hasErrors());
 
         // We have only ONE passage here
-        $this->assertCount(1, $results);
-        $this->assertFalse($results[0]['single_verse']);
+        $this->assertCount(5, $results);
+        $this->assertTrue($results[0]['single_verse']);
         $expected_indices = [2,3,14,15];  // Keys should be in this order
         $wrong_indices = [3,2,14,15];  // Keys should be in this order
 
         foreach($bibles as $bible) {
-            $this->assertEquals($expected_indices, array_keys($results[0]['verses'][$bible]));
-            $this->assertNotEquals($wrong_indices, array_keys($results[0]['verses'][$bible]));
+            //$this->assertEquals($expected_indices, array_keys($results[0]['verses'][$bible]));
+            //$this->assertNotEquals($wrong_indices, array_keys($results[0]['verses'][$bible]));
 
             // John 3:16
             $this->assertArrayHasKey(3, $results[0]['verses'][$bible]);
             $this->assertArrayHasKey(16, $results[0]['verses'][$bible][3]);
 
             // John 3:23
-            $this->assertArrayHasKey(3, $results[0]['verses'][$bible]);
-            $this->assertArrayHasKey(23, $results[0]['verses'][$bible][3]);
+            $this->assertArrayHasKey(3, $results[1]['verses'][$bible]);
+            $this->assertArrayHasKey(23, $results[1]['verses'][$bible][3]);
 
             // John 2:1-5
-            $this->assertArrayHasKey(2, $results[0]['verses'][$bible]);
-            $this->assertArrayHasKey(1, $results[0]['verses'][$bible][2]);
-            $this->assertArrayHasKey(2, $results[0]['verses'][$bible][2]);
-            $this->assertArrayHasKey(3, $results[0]['verses'][$bible][2]);
-            $this->assertArrayHasKey(4, $results[0]['verses'][$bible][2]);
-            $this->assertArrayHasKey(5, $results[0]['verses'][$bible][2]);
+            $this->assertArrayHasKey(2, $results[2]['verses'][$bible]);
+            $this->assertArrayHasKey(1, $results[2]['verses'][$bible][2]);
+            $this->assertArrayHasKey(2, $results[2]['verses'][$bible][2]);
+            $this->assertArrayHasKey(3, $results[2]['verses'][$bible][2]);
+            $this->assertArrayHasKey(4, $results[2]['verses'][$bible][2]);
+            $this->assertArrayHasKey(5, $results[2]['verses'][$bible][2]);
 
-            // John 14:30 - 15:2
-            $this->assertArrayHasKey(14, $results[0]['verses'][$bible]);
-            $this->assertArrayHasKey(15, $results[0]['verses'][$bible]);
-            $this->assertArrayHasKey(30, $results[0]['verses'][$bible][14]);
-            $this->assertArrayHasKey(31, $results[0]['verses'][$bible][14]);
-            $this->assertArrayHasKey(1, $results[0]['verses'][$bible][15]);
-            $this->assertArrayHasKey(2, $results[0]['verses'][$bible][15]);
+            // John 14:30 - end
+            $this->assertArrayHasKey(14, $results[3]['verses'][$bible]);
+            $this->assertArrayHasKey(30, $results[3]['verses'][$bible][14]);
+            $this->assertArrayHasKey(31, $results[3]['verses'][$bible][14]);
+
+            // John 15:1-2
+            $this->assertArrayHasKey(15, $results[4]['verses'][$bible]);
+            $this->assertArrayHasKey(1, $results[4]['verses'][$bible][15]);
+            $this->assertArrayHasKey(2, $results[4]['verses'][$bible][15]);
         }
 
-        // Restructuring the query, we now have four passages here
+        // Restructuring the query, we still have 5 passages here as that is how it's parsed
         $results = $Engine->actionQuery(['bible' => 'kjv', 'reference' => 'John 3:16, John 3:23, John 2:1-5; John 14:30-15:2', 'data_format' => 'passage']);
         $this->assertFalse($Engine->hasErrors());
-        $this->assertCount(4, $results);
+        //var_dump($results[3]['chapter_verse_parsed']);
+        $this->assertCount(5, $results);
         $this->assertTrue($results[0]['single_verse']);
         $this->assertTrue($results[1]['single_verse']);
         $this->assertFalse($results[2]['single_verse']);
@@ -294,18 +307,19 @@ class PassageStructureTest extends TestCase {
         $Engine  = new Engine();
         $results = $Engine->actionQuery(['bible' => ['kjv'], 'reference' => 'Rom', 'search' => 'faith', 'data_format' => 'passage', 'whole_words' => TRUE]);
         $this->assertFalse($Engine->hasErrors());
-        $this->assertCount(1, $results); // One passage
-        $this->assertFalse($results[0]['single_verse']);
-        $this->assertEquals(34, $results[0]['verses_count']);
+        $this->assertCount(34, $results); // -One passage- Now one passage for every verse
+        $this->assertTrue($results[0]['single_verse']);
+        $this->assertEquals(1, $results[0]['verses_count']);
 
         $this->assertArrayHasKey(1, $results[0]['verses']['kjv']);
-        $this->assertArrayHasKey(17, $results[0]['verses']['kjv'][1]);
+        $this->assertArrayHasKey(5, $results[0]['verses']['kjv'][1]);
     }
 
     /**
      * Test searching with a book range limitation
+     * Obsolete?? - Searches now return a passage for every verse returned, and do not group them
      */
-    public function testSearchWithBookRange() {
+    public function _testSearchWithBookRange() {
         $Engine  = new Engine();
         $results = $Engine->actionQuery(['bible' => ['kjv'], 'reference' => 'Rom-Heb', 'search' => 'faith', 'data_format' => 'passage', 'whole_words' => TRUE]);
         $this->assertFalse($Engine->hasErrors());
@@ -331,7 +345,7 @@ class PassageStructureTest extends TestCase {
         $results = $Engine->actionQuery(['bible' => 'kjv', 'reference' => 'Gal-Heb', 'search' => 'church', 'data_format' => 'passage', 'whole_words' => TRUE]);
         $this->assertFalse($Engine->hasErrors());
 
-        // Passages with no results are retained, so we can inform the user, if nessessary.
+        // -Passages with no results are retained, so we can inform the user, if nessessary.- We exclude them now.  We have a separate validation for this
         $this->assertCount(11, $results); // Total number of books in range. 9 have results
         $this->assertEquals(1, $results[0]['verses_count']);
         $this->assertEquals(9, $results[1]['verses_count']);

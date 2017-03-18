@@ -22,6 +22,8 @@ class Passage {
     protected $raw_chapter_verse; // Chapter and verse as entered by user
     protected $chapter_verse; // Chapter and verse part of reference
     protected $chapter_verse_parsed; // Chapter and verse, parsed into an array of arrays
+    protected $chapter_max; // Maximum chapter number requested
+    protected $chapter_min; // Minimum chapter number requested
     protected $verses; // Array of verses, grouped by bible, book, chapter, verse as found by the query
     protected $verses_index; // Array of book / chapter / verse
     protected $verses_count = 0; // Count of the verses matched to this passage (as found by the query).
@@ -212,6 +214,7 @@ class Passage {
             return;
         }
 
+        $this->clearChapterVerse();
         $this->raw_chapter_verse = preg_replace('/\s+/', ' ', $chapter_verse);
         $chapter_verse = str_replace([';',' '], [',',''], $chapter_verse);
         $chapter_verse = preg_replace('/,+/', ',', $chapter_verse);
@@ -219,6 +222,8 @@ class Passage {
         $chapter_verse = preg_replace('/:+/', ':', $chapter_verse);
         $chapter_verse = (!$this->is_search && empty($chapter_verse)) ? '1' : $chapter_verse;
         $this->chapter_verse = $chapter_verse;
+
+        $chapters = array();
 
         $preparsed = $matches = $counts = $parsed = array();
         $counts['number'] = preg_match_all('/[0-9]+/', $chapter_verse, $matches['number'], PREG_OFFSET_CAPTURE | PREG_SET_ORDER);
@@ -257,10 +262,13 @@ class Passage {
                     }
                     elseif($current_chapter && $next != '-') {
                         $parsed[] = array('cst' => $current_chapter, 'vst' => NULL, 'cen' => $value, 'ven' => NULL, 'type' => 'range');
+                        $chapters[] = $current_chapter;
+                        $chapters[] = $value;
                         $current_chapter = NULL;
                     }
                     elseif($next == NULL || $next == ',') {
                         $parsed[] = array('c' => $value, 'v' => NULL, 'type' => 'single');
+                        $chapters[] = $value;
                         $current_chapter = NULL;
                     }
                 }
@@ -286,6 +294,8 @@ class Passage {
                         // Detect and parse out a range
                         if($is_range && $end_of_ref) {
                             $parsed[] = array('cst' => $cst, 'vst' => $vst, 'cen' => $current_chapter, 'ven' => $current_verse, 'type' => 'range');
+                            $chapters[] = $cst;
+                            $chapters[] = $current_chapter;
                             $is_range = FALSE;
                             $cst = $vst = NULL;
                         }
@@ -293,6 +303,7 @@ class Passage {
                         // Detect and parse out a single verse reference
                         elseif($current_chapter) {
                             $parsed[] = array('c' => $current_chapter, 'v' => $current_verse, 'type' => 'single');
+                            $chapters[] = $current_chapter;
                         }
                     }
 
@@ -301,10 +312,13 @@ class Passage {
                 elseif($value == ':') {
                     if(($next == NULL || !is_int($next)) && !$is_range && $next != '-') {
                         $parsed[] = array('c' => $current_chapter, 'v' => NULL, 'type' => 'single');
+                        $chapters[] = $current_chapter;
                     }
 
                     if($is_range && $end_of_ref) {
                         $parsed[] = array('cst' => $cst, 'vst' => $vst, 'cen' => $current_chapter, 'ven' => $current_verse, 'type' => 'range');
+                        $chapters[] = $cst;
+                        $chapters[] = $current_chapter;
                         $is_range = FALSE;
                         $cst = $vst = NULL;
                     }
@@ -322,6 +336,7 @@ class Passage {
 
                     if($end_of_ref) {
                         $parsed[] = array('c' => $current_chapter, 'v' => $current_verse, 'type' => 'single');
+                        $chapters[] = $current_chapter;
                     }
                 }
 
@@ -329,13 +344,50 @@ class Passage {
             }
         }
 
+        $this->chapter_max = max($chapters);
+        $this->chapter_min = min($chapters);
         $this->chapter_verse_parsed = $parsed;
+    }
+
+    public function setChapterVerseFromParsed($parsed_item) {
+        $this->clearChapterVerse();
+        $chapter_verse = '';
+
+        if($parsed_item['type'] == 'range') {
+            $chapter_verse .= ($parsed_item['cst']) ? $parsed_item['cst'] : '';
+            $chapter_verse .= ($parsed_item['vst']) ? ':' . $parsed_item['vst'] : '';
+
+            if($parsed_item['cen'] && $parsed_item['cst'] != $parsed_item['cen']) {
+                $chapter_verse .= '-';
+                $chapter_verse .= ($parsed_item['cen']) ? $parsed_item['cen'] : '';
+                $chapter_verse .= ($parsed_item['ven']) ? ':' : '';
+            }
+            else if($parsed_item['ven'] && !$parsed_item['vst']) {
+                $chapter_verse .= ':-';
+            }
+            elseif($parsed_item['cst'] == $parsed_item['cen'] && $parsed_item['vst']) {
+                $chapter_verse .= '-';
+            }
+
+            $chapter_verse .= ($parsed_item['ven']) ? $parsed_item['ven'] : '';
+        }
+        elseif($parsed_item['type'] == 'single') {
+            $chapter_verse .= ($parsed_item['c']) ? $parsed_item['c'] : '';
+            $chapter_verse .= ($parsed_item['v']) ? ':' . $parsed_item['v'] : '';
+        }
+
+        $this->chapter_verse = $chapter_verse;
+        $this->chapter_verse_parsed = array($parsed_item);
     }
 
     public function clearChapterVerse() {
         $this->chapter_verse_parsed = array();
         $this->raw_chapter_verse = NULL;
         $this->chapter_verse = NULL;
+        $this->chapter_max = NULL;
+        $this->chapter_min = NULL;
+        $this->verses = array();
+        $this->verses_count = 0;
     }
 
     public function getNormalizedReferences() {
@@ -375,7 +427,7 @@ class Passage {
         }
 
         $gettable = ['languages', 'is_search', 'is_book_range', 'is_valid', 'Book', 'Book_En', 'raw_book', 'raw_reference', 'raw_chapter_verse',
-            'chapter_verse', 'chapter_verse_parsed'];
+            'chapter_verse', 'chapter_verse_parsed', 'chapter_max', 'chapter_min'];
 
         if(in_array($name, $gettable)) {
             return $this->$name;
@@ -397,7 +449,8 @@ class Passage {
             'verse_index'       => $this->generateVerseIndex(),
             'verses'            => $this->verses,
             'verses_count'      => $this->verses_count,
-            'single_verse'      => $this->isSingleVerse(),
+            //'single_verse'      => $this->isSingleVerse(),
+            'single_verse'      => $this->containsSingleVerse(),
             //'chapter_verse_parsed' => $this->chapter_verse_parsed, // Debugging only
         );
 
@@ -442,12 +495,16 @@ class Passage {
     public function claimVerses(&$results, $retain = FALSE) {
         $this->verses_count = 0;
         $verse_claimed = FALSE;
+        $count = array();
 
         foreach($results as $bible => $verses) {
+            $count[$bible] = 0;
+
             foreach($verses as $key => $verse) {
                 if($this->verseInPassage($verse)) {
                     $this->verses[ $bible ][ $verse->chapter ][ $verse->verse ] = $verse;
-                    $this->verses_count ++;
+                    //$this->verses_count ++;
+                    $count[$bible] ++;
                     $verse_claimed = TRUE;
 
                     if(!$retain) {
@@ -457,6 +514,7 @@ class Passage {
             }
         }
 
+        $this->verses_count = max($count);
         return $verse_claimed;
     }
 
@@ -525,6 +583,15 @@ class Passage {
         return FALSE;
     }
 
+    /**
+     * Indicates if, after claiming verses, passage only has ONE verse
+     *
+     * @return bool
+     */
+    public function containsSingleVerse() {
+        return ($this->verses_count == 1) ? TRUE : FALSE;
+    }
+
     public function isSingleBook() {
         if($this->is_book_range) {
             return FALSE;
@@ -533,7 +600,7 @@ class Passage {
         return (empty($this->getNormalizedReferences())) ? TRUE : FALSE;
     }
 
-    public function explodePassage($separate_book_ranges) {
+    public function explodePassage($separate_book_ranges, $separate_chapters) {
         if($separate_book_ranges && $this->is_book_range) {
             $Passages = array();
 
@@ -542,6 +609,61 @@ class Passage {
                 $Passage->setBookById($book);
                 $Passages[] = $Passage;
             }
+
+            return $Passages;
+        }
+
+        if($separate_chapters && count($this->chapter_verse_parsed) > 1) {
+            $Passages = array();
+
+            foreach($this->chapter_verse_parsed as $parsed) {
+                if($parsed['type'] == 'single' || $parsed['type'] == 'range' && $parsed['cst'] == $parsed['cen']) {
+                    $Passage = clone $this;
+                    $Passage->setChapterVerseFromParsed($parsed);
+                    $Passages[] = $Passage;
+                }
+                else {
+                    $cst = ($parsed['cst']) ? $parsed['cst'] : 1;
+                    $cen = ($parsed['cen']) ? $parsed['cen'] : 150;
+                    $parsed_st = $parsed_en = $parsed;
+
+                    $parsed_st['cen'] = $parsed['cst'];
+                    $parsed_st['ven'] = NULL;
+                    $parsed_en['cst'] = $parsed['cen'];
+                    $parsed_en['vst'] = NULL;
+                    $cvst = $cven = '';
+
+                    if($parsed['cst']) {
+                        $cvst  = $parsed['cst'];
+                        $cvst .= ($parsed['vst']) ? ':' . $parsed['vst'] : '';
+                        $cvst .= '-';
+                    }
+
+                    if($parsed['cen']) {
+                        $cven  = '-' . $parsed['cen'];
+                        $cven .= ($parsed['ven']) ? ':' . $parsed['ven'] : '';
+                    }
+
+                    $Passage = clone $this;
+                    //$Passage->setChapterVerse($cvst);
+                    $Passage->setChapterVerseFromParsed($parsed_st);
+                    $Passages[] = $Passage;
+
+                    for($chapter = $cst + 1; $chapter < $cen; $chapter ++) {
+                        //var_dump('dddd');
+                        $Passage = clone $this;
+                        $Passage->setChapterVerse($chapter);
+                        $Passages[] = $Passage;
+                    }
+
+                    $Passage = clone $this;
+                    //$Passage->setChapterVerse($cven);
+                    $Passage->setChapterVerseFromParsed($parsed_en);
+                    $Passages[] = $Passage;
+
+                }
+            }
+
 
             return $Passages;
         }
@@ -679,11 +801,11 @@ class Passage {
         return $Passage;
     }
 
-    public static function explodePassages($Passages = array(), $separate_book_ranges = TRUE) {
+    public static function explodePassages($Passages = array(), $separate_book_ranges = TRUE, $separate_chapters = FALSE) {
         $Exploded = array();
 
         foreach($Passages as $Passage) {
-            $Exploded = array_merge($Exploded, $Passage->explodePassage($separate_book_ranges));
+            $Exploded = array_merge($Exploded, $Passage->explodePassage($separate_book_ranges, $separate_chapters));
         }
 
         return $Exploded;
