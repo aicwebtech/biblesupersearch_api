@@ -15,6 +15,7 @@ class Engine {
     protected $Bible_Primary = NULL; // Primary Bible version
     protected $languages = array();
     protected $default_data_format = 'passage';
+    public $debug = FALSE;
 
     public function __construct() {
         // Set the default Bible
@@ -156,6 +157,10 @@ class Engine {
 
         if(is_array($Passages) && !$Search) {
             foreach($Passages as $Passage) {
+                if($this->debug) {
+                    print_r($Passage->chapter_verse_parsed);
+                }
+
                 if(!$Passage->claimVerses($results, TRUE)) {
                     $this->addError( trans('errors.passage_not_found', ['passage' => $Passage->raw_book . ' ' . $Passage->raw_chapter_verse]), 3);
                 }

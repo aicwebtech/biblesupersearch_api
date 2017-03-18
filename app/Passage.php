@@ -354,8 +354,10 @@ class Passage {
         $chapter_verse = '';
 
         if($parsed_item['type'] == 'range') {
-            $chapter_verse .= ($parsed_item['cst']) ? $parsed_item['cst'] : '';
-            $chapter_verse .= ($parsed_item['vst']) ? ':' . $parsed_item['vst'] : '';
+            if($parsed_item['cst']) {
+                $chapter_verse .= ($parsed_item['cst']);
+                $chapter_verse .= ($parsed_item['vst']) ? ':' . $parsed_item['vst'] : '';
+            }
 
             if($parsed_item['cen'] && $parsed_item['cst'] != $parsed_item['cen']) {
                 $chapter_verse .= '-';
@@ -514,7 +516,7 @@ class Passage {
             }
         }
 
-        $this->verses_count = max($count);
+        $this->verses_count = ($count) ? max($count) : 0;
         return $verse_claimed;
     }
 
@@ -613,7 +615,7 @@ class Passage {
             return $Passages;
         }
 
-        if($separate_chapters && count($this->chapter_verse_parsed) > 1) {
+        if($separate_chapters && count($this->chapter_verse_parsed)) {
             $Passages = array();
 
             foreach($this->chapter_verse_parsed as $parsed) {
