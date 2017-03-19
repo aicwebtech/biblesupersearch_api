@@ -17,9 +17,12 @@ class BookListSeeder extends Seeder
             return $this->_importFromV2($languages);
         }
 
-        // todo - import book lists from files
+        // import book lists from files
         foreach($languages as $lang) {
-
+            $file  = 'bible_books_' . $lang . '.sql';
+            $table = 'books_' . $lang;
+            DatabaseSeeder::importSqlFile($file);
+            DatabaseSeeder::setCreatedUpdated($table);
         }
     }
 

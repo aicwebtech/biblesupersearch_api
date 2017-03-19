@@ -1,0 +1,72 @@
+/*
+ * Bible Book List Seed - Hungarian
+ */
+
+INSERT INTO `%sbooks_hu` (`id`,`name`,`shortname`,`matching1`,`matching2`) VALUES ('1','1 Mózes','','','');
+INSERT INTO `%sbooks_hu` (`id`,`name`,`shortname`,`matching1`,`matching2`) VALUES ('2','2 Mózes','','','');
+INSERT INTO `%sbooks_hu` (`id`,`name`,`shortname`,`matching1`,`matching2`) VALUES ('3','3 Mózes','','','');
+INSERT INTO `%sbooks_hu` (`id`,`name`,`shortname`,`matching1`,`matching2`) VALUES ('4','4 Mózes','','','');
+INSERT INTO `%sbooks_hu` (`id`,`name`,`shortname`,`matching1`,`matching2`) VALUES ('5','5 Mózes','','','');
+INSERT INTO `%sbooks_hu` (`id`,`name`,`shortname`,`matching1`,`matching2`) VALUES ('6','Józsué','','','');
+INSERT INTO `%sbooks_hu` (`id`,`name`,`shortname`,`matching1`,`matching2`) VALUES ('7','Birák','','','');
+INSERT INTO `%sbooks_hu` (`id`,`name`,`shortname`,`matching1`,`matching2`) VALUES ('8','Ruth','','','');
+INSERT INTO `%sbooks_hu` (`id`,`name`,`shortname`,`matching1`,`matching2`) VALUES ('9','1 Sámuel','','','');
+INSERT INTO `%sbooks_hu` (`id`,`name`,`shortname`,`matching1`,`matching2`) VALUES ('10','2 Sámuel','','','');
+INSERT INTO `%sbooks_hu` (`id`,`name`,`shortname`,`matching1`,`matching2`) VALUES ('11','1 Királyok','','','');
+INSERT INTO `%sbooks_hu` (`id`,`name`,`shortname`,`matching1`,`matching2`) VALUES ('12','2 Királyok','','','');
+INSERT INTO `%sbooks_hu` (`id`,`name`,`shortname`,`matching1`,`matching2`) VALUES ('13','1 Krónika','','','');
+INSERT INTO `%sbooks_hu` (`id`,`name`,`shortname`,`matching1`,`matching2`) VALUES ('14','2 Krónika','','','');
+INSERT INTO `%sbooks_hu` (`id`,`name`,`shortname`,`matching1`,`matching2`) VALUES ('15','Ezsdrás','','','');
+INSERT INTO `%sbooks_hu` (`id`,`name`,`shortname`,`matching1`,`matching2`) VALUES ('16','Nehemiás','','','');
+INSERT INTO `%sbooks_hu` (`id`,`name`,`shortname`,`matching1`,`matching2`) VALUES ('17','Eszter','','','');
+INSERT INTO `%sbooks_hu` (`id`,`name`,`shortname`,`matching1`,`matching2`) VALUES ('18','Jób','','','');
+INSERT INTO `%sbooks_hu` (`id`,`name`,`shortname`,`matching1`,`matching2`) VALUES ('19','Zsoltárok','','','');
+INSERT INTO `%sbooks_hu` (`id`,`name`,`shortname`,`matching1`,`matching2`) VALUES ('20','Példabeszédek','','','');
+INSERT INTO `%sbooks_hu` (`id`,`name`,`shortname`,`matching1`,`matching2`) VALUES ('21','Prédikátor','','','');
+INSERT INTO `%sbooks_hu` (`id`,`name`,`shortname`,`matching1`,`matching2`) VALUES ('22','Énekek Éneke','','','');
+INSERT INTO `%sbooks_hu` (`id`,`name`,`shortname`,`matching1`,`matching2`) VALUES ('23','Ézsaiás','','','');
+INSERT INTO `%sbooks_hu` (`id`,`name`,`shortname`,`matching1`,`matching2`) VALUES ('24','Jeremiás','','','');
+INSERT INTO `%sbooks_hu` (`id`,`name`,`shortname`,`matching1`,`matching2`) VALUES ('25','Jeremiás Sir','','','');
+INSERT INTO `%sbooks_hu` (`id`,`name`,`shortname`,`matching1`,`matching2`) VALUES ('26','Ezékiel','','','');
+INSERT INTO `%sbooks_hu` (`id`,`name`,`shortname`,`matching1`,`matching2`) VALUES ('27','Dániel','','','');
+INSERT INTO `%sbooks_hu` (`id`,`name`,`shortname`,`matching1`,`matching2`) VALUES ('28','Hóseás','','','');
+INSERT INTO `%sbooks_hu` (`id`,`name`,`shortname`,`matching1`,`matching2`) VALUES ('29','Jóel','','','');
+INSERT INTO `%sbooks_hu` (`id`,`name`,`shortname`,`matching1`,`matching2`) VALUES ('30','Ámos','','','');
+INSERT INTO `%sbooks_hu` (`id`,`name`,`shortname`,`matching1`,`matching2`) VALUES ('31','Abdiás','','','');
+INSERT INTO `%sbooks_hu` (`id`,`name`,`shortname`,`matching1`,`matching2`) VALUES ('32','Jónás','','','');
+INSERT INTO `%sbooks_hu` (`id`,`name`,`shortname`,`matching1`,`matching2`) VALUES ('33','Mikeás','','','');
+INSERT INTO `%sbooks_hu` (`id`,`name`,`shortname`,`matching1`,`matching2`) VALUES ('34','Náhum','','','');
+INSERT INTO `%sbooks_hu` (`id`,`name`,`shortname`,`matching1`,`matching2`) VALUES ('35','Habakuk','','','');
+INSERT INTO `%sbooks_hu` (`id`,`name`,`shortname`,`matching1`,`matching2`) VALUES ('36','Sofoniás','','','');
+INSERT INTO `%sbooks_hu` (`id`,`name`,`shortname`,`matching1`,`matching2`) VALUES ('37','Aggeus','','','');
+INSERT INTO `%sbooks_hu` (`id`,`name`,`shortname`,`matching1`,`matching2`) VALUES ('38','Zakariás','','','');
+INSERT INTO `%sbooks_hu` (`id`,`name`,`shortname`,`matching1`,`matching2`) VALUES ('39','Malakiás','','','');
+INSERT INTO `%sbooks_hu` (`id`,`name`,`shortname`,`matching1`,`matching2`) VALUES ('40','Máté','','','');
+INSERT INTO `%sbooks_hu` (`id`,`name`,`shortname`,`matching1`,`matching2`) VALUES ('41','Márk','','','');
+INSERT INTO `%sbooks_hu` (`id`,`name`,`shortname`,`matching1`,`matching2`) VALUES ('42','Lukács','','','');
+INSERT INTO `%sbooks_hu` (`id`,`name`,`shortname`,`matching1`,`matching2`) VALUES ('43','János','','','');
+INSERT INTO `%sbooks_hu` (`id`,`name`,`shortname`,`matching1`,`matching2`) VALUES ('44','Apostolok','','','');
+INSERT INTO `%sbooks_hu` (`id`,`name`,`shortname`,`matching1`,`matching2`) VALUES ('45','Rómaiakhoz','','','');
+INSERT INTO `%sbooks_hu` (`id`,`name`,`shortname`,`matching1`,`matching2`) VALUES ('46','1 Korintusi','','','');
+INSERT INTO `%sbooks_hu` (`id`,`name`,`shortname`,`matching1`,`matching2`) VALUES ('47','2 Korintusi','','','');
+INSERT INTO `%sbooks_hu` (`id`,`name`,`shortname`,`matching1`,`matching2`) VALUES ('48','Galatákhoz','','','');
+INSERT INTO `%sbooks_hu` (`id`,`name`,`shortname`,`matching1`,`matching2`) VALUES ('49','Efézusiakhoz','','','');
+INSERT INTO `%sbooks_hu` (`id`,`name`,`shortname`,`matching1`,`matching2`) VALUES ('50','Filippiekhez','','','');
+INSERT INTO `%sbooks_hu` (`id`,`name`,`shortname`,`matching1`,`matching2`) VALUES ('51','Kolosséiakhoz','','','');
+INSERT INTO `%sbooks_hu` (`id`,`name`,`shortname`,`matching1`,`matching2`) VALUES ('52','1 Tesszalonika','','','');
+INSERT INTO `%sbooks_hu` (`id`,`name`,`shortname`,`matching1`,`matching2`) VALUES ('53','2 Tesszalonika','','','');
+INSERT INTO `%sbooks_hu` (`id`,`name`,`shortname`,`matching1`,`matching2`) VALUES ('54','1 Timóteushoz','','','');
+INSERT INTO `%sbooks_hu` (`id`,`name`,`shortname`,`matching1`,`matching2`) VALUES ('55','2 Timóteushoz','','','');
+INSERT INTO `%sbooks_hu` (`id`,`name`,`shortname`,`matching1`,`matching2`) VALUES ('56','Titushoz','','','');
+INSERT INTO `%sbooks_hu` (`id`,`name`,`shortname`,`matching1`,`matching2`) VALUES ('57','Filemonhoz','','','');
+INSERT INTO `%sbooks_hu` (`id`,`name`,`shortname`,`matching1`,`matching2`) VALUES ('58','Zsidókhoz','','','');
+INSERT INTO `%sbooks_hu` (`id`,`name`,`shortname`,`matching1`,`matching2`) VALUES ('59','Jakab','','','');
+INSERT INTO `%sbooks_hu` (`id`,`name`,`shortname`,`matching1`,`matching2`) VALUES ('60','1 Péter','','','');
+INSERT INTO `%sbooks_hu` (`id`,`name`,`shortname`,`matching1`,`matching2`) VALUES ('61','2 Péter','','','');
+INSERT INTO `%sbooks_hu` (`id`,`name`,`shortname`,`matching1`,`matching2`) VALUES ('62','1 János','','','');
+INSERT INTO `%sbooks_hu` (`id`,`name`,`shortname`,`matching1`,`matching2`) VALUES ('63','2 János','','','');
+INSERT INTO `%sbooks_hu` (`id`,`name`,`shortname`,`matching1`,`matching2`) VALUES ('64','3 János','','','');
+INSERT INTO `%sbooks_hu` (`id`,`name`,`shortname`,`matching1`,`matching2`) VALUES ('65','Júdás','','','');
+INSERT INTO `%sbooks_hu` (`id`,`name`,`shortname`,`matching1`,`matching2`) VALUES ('66','Jelenések','','','');
+
+

@@ -23,49 +23,53 @@ class Bibles extends Seeder
             $bible['lang_short']    = (isset($bible['lang_short'])) ? $bible['lang_short'] : $lang_st;
             $rank += 10;
             $bible['rank'] = $rank;
-            
+
             // Ignore duplicate keys
             try {
-                Bible::forceCreate($bible); 
+                Bible::forceCreate($bible);
             }
             catch(Exception $e) {
                 //var_dump($e);
-            } 
+            }
         }
 
         if(env('IMPORT_FROM_V2', FALSE)) {
-            echo('Importing Bibles From V2' . PHP_EOL);
+            $this->_importFromV2();
+        }
+    }
 
-            $bibles_v2 = DB::select('SELECT * FROM bible_versions'); // bible_versions - list of all INSTALLED V2 Bibles
+    public function _importFromV2() {
+        echo('Importing Bibles From V2' . PHP_EOL);
 
-            foreach($bibles_v2 as $v2) {
-                $module = $v2->shortname;
-                
-                // workaround for the Reina Valera Bibles
-                if( strpos($module, 'rv') ) {
-                    $module = 'rv_' . intval($module);
-                }
+        $bibles_v2 = DB::select('SELECT * FROM bible_versions'); // bible_versions - list of all INSTALLED V2 Bibles
 
-                $Bible = Bible::firstOrNew([ 'module' => $module ]);
+        foreach($bibles_v2 as $v2) {
+            $module = $v2->shortname;
 
-                $Bible->description = $v2->description;
-                $Bible->module_v2   = $v2->shortname;
-
-                if(!$Bible->exists) {
-                    $rank += 10;
-                    $Bible->name        = $v2->fullname;
-                    $Bible->module      = $module;
-                    $Bible->shortname   = ucfirst($v2->shortname);
-                    $Bible->lang        = $v2->language;
-                    $Bible->lang_short  = $v2->language_short;
-                    $Bible->italics     = ($v2->italics == 'yes') ? 1 : 0;
-                    $Bible->strongs     = ($v2->strongs == 'yes') ? 1 : 0;
-                    $Bible->rank        = $rank;
-                }
-
-                $Bible->save();
-                $Bible->install();
+            // workaround for the Reina Valera Bibles
+            if( strpos($module, 'rv') ) {
+                $module = 'rv_' . intval($module);
             }
+
+            $Bible = Bible::firstOrNew([ 'module' => $module ]);
+
+            $Bible->description = $v2->description;
+            $Bible->module_v2   = $v2->shortname;
+
+            if(!$Bible->exists) {
+                $rank += 10;
+                $Bible->name        = $v2->fullname;
+                $Bible->module      = $module;
+                $Bible->shortname   = ucfirst($v2->shortname);
+                $Bible->lang        = $v2->language;
+                $Bible->lang_short  = $v2->language_short;
+                $Bible->italics     = ($v2->italics == 'yes') ? 1 : 0;
+                $Bible->strongs     = ($v2->strongs == 'yes') ? 1 : 0;
+                $Bible->rank        = $rank;
+            }
+
+            $Bible->save();
+            $Bible->install();
         }
     }
 }

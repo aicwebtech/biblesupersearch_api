@@ -15,25 +15,34 @@ class ShortcutsSeeder extends Seeder
         $languages = Config::get('bss_table_languages.shortcuts');
 
         if(env('IMPORT_FROM_V2', FALSE)) {
-            echo('Importing Shortcuts From V2' . PHP_EOL);
+            return $this->_importFromV2();
+        }
 
-            foreach($languages as $lang) {
-                $v2_table = 'bible_shortcuts_' . $lang;
-                $shortcuts = DB::select("SELECT * FROM {$v2_table}");
-                $class_name = Shortcut::getClassNameByLanguage($lang);
-                echo($lang . ' ');
+        foreach($languages as $lang) {
+            $file  = 'shortcuts_' . $lang . '.sql';
+            $table = 'shortcuts_' . $lang;
+            DatabaseSeeder::importSqlFile($file);
+            DatabaseSeeder::setCreatedUpdated($table);
+        }
+    }
 
-                foreach($shortcuts as $sc) {
-                    unset($sc->index);
-                    $sc->display = ($sc->display == 'yes') ? 1 : 0;
-                    $class_name::create( get_object_vars($sc) );
-                }
+    private function _importFromV2() {
+        echo('Importing Shortcuts From V2' . PHP_EOL);
+        $languages = ['en'];
+
+        foreach($languages as $lang) {
+            $v2_table = 'bible_shortcuts_' . $lang;
+            $shortcuts = DB::select("SELECT * FROM {$v2_table}");
+            $class_name = Shortcut::getClassNameByLanguage($lang);
+            echo($lang . ' ');
+
+            foreach($shortcuts as $sc) {
+                unset($sc->index);
+                $sc->display = ($sc->display == 'yes') ? 1 : 0;
+                $class_name::create( get_object_vars($sc) );
             }
+        }
 
-            echo(PHP_EOL);
-        }
-        else {
-            // todo - import book lists from files
-        }
+        echo(PHP_EOL);
     }
 }

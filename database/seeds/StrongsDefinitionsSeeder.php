@@ -12,18 +12,25 @@ class StrongsDefinitionsSeeder extends Seeder
     public function run()
     {
         if(env('IMPORT_FROM_V2', FALSE)) {
-            echo('Importing Strongs Definitions From V2' . PHP_EOL);
-            $prefix = DB::getTablePrefix();
-
-            $sql = "
-                INSERT INTO {$prefix}strongs_definitions (id, number, entry, created_at, updated_at)
-                SELECT id, number, entry, NOW(), NOW() FROM bible_strongs
-            ";
-
-            DB::insert($sql);
+            return $this->_importFromV2();
         }
-        else {
-            // todo import from file
-        }
+
+        // Import from file
+        $file  = 'strongs_definitions_en.sql';
+        $table = 'strongs_definitions';
+        DatabaseSeeder::importSqlFile($file);
+        DatabaseSeeder::setCreatedUpdated($table);
+    }
+
+    protected function _importFromV2() {
+        echo('Importing Strongs Definitions From V2' . PHP_EOL);
+        $prefix = DB::getTablePrefix();
+
+        $sql = "
+            INSERT INTO {$prefix}strongs_definitions (id, number, entry, created_at, updated_at)
+            SELECT id, number, entry, NOW(), NOW() FROM bible_strongs
+        ";
+
+        DB::insert($sql);
     }
 }
