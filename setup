@@ -12,8 +12,13 @@ if [[ $REPLY =~ ^[Yy]$ ]]
 then
     # do dangerous stuff
     echo ''
+    echo 'Pulling in composer dependencies'
+    echo ''
+    php composer.phar update
     # Laravel/Lumen artisan command needed to set this up
-    php artisan migrate:refresh --seed 
+    echo 'Setting up database'
+    echo ''
+    php artisan migrate:refresh --seed
     echo ''
     echo 'Setup is complete'
 fi
