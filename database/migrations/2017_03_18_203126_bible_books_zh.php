@@ -15,19 +15,21 @@ class BibleBooksZh extends Migration
     {
         $tn = 'books_zh';
 
-        Schema::create($tn, function (Blueprint $table) {
-            $table->increments('id');
-            $table->string('name');
-            $table->string('shortname');
-            $table->string('matching1')->nullable();
-            $table->string('matching2')->nullable();
-            $table->timestamps();
-        });
+        if(!Schema::hasTable($tn)) {
+            Schema::create($tn, function (Blueprint $table) {
+                $table->increments('id');
+                $table->string('name');
+                $table->string('shortname');
+                $table->string('matching1')->nullable();
+                $table->string('matching2')->nullable();
+                $table->timestamps();
+            });
 
-        // Now, we call the seed as part of the migration
-        Artisan::call('db:seed', [
-            '--class' => BookListSeeder::class,
-        ]);
+            // Now, we call the seed as part of the migration
+            Artisan::call('db:seed', [
+                '--class' => BookListSeeder::class,
+            ]);
+        }
     }
 
     /**
