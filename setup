@@ -11,10 +11,15 @@ echo    # (optional) move to a new line
 if [[ $REPLY =~ ^[Yy]$ ]]
 then
     # do dangerous stuff
+    
     echo ''
     echo 'Pulling in composer dependencies'
     echo ''
-    php composer.phar update
+    php composer.phar install
+    echo ''
+    echo 'Generating application key'
+    php artisan key:generate
+    echo ''
     # Laravel/Lumen artisan command needed to set this up
     echo 'Setting up database'
     echo ''
