@@ -11,9 +11,9 @@ echo    # (optional) move to a new line
 if [[ $REPLY =~ ^[Yy]$ ]]
 then
     # do dangerous stuff
-    
+
     echo ''
-    echo 'Pulling in composer dependencies'
+    echo 'Pulling in Composer dependencies'
     echo ''
     php composer.phar install
     echo ''
@@ -25,6 +25,8 @@ then
     echo ''
     php artisan migrate:refresh --seed
     echo ''
-    echo 'Setup is complete'
+    echo 'Basic installation is complete'
+    echo ''
+    echo 'Run php artisan:bible-install to install Bible Modules'
 fi
 

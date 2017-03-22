@@ -8,7 +8,7 @@ Installation (CLI):
 Clone the GIT repository
 From the Bible SuperSearch directory:
 
-./setup
+./install
 
 This will set up most of the application.
 However, it will not install any Bible modules.

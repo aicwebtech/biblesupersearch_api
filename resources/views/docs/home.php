@@ -33,7 +33,7 @@
 
             body {
                 margin: 0;
-                background-color: #10236b;
+                background-color: #3c729b;
             }
 
             #tabs {
