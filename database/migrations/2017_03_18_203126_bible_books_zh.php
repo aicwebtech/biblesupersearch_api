@@ -39,7 +39,9 @@ class BibleBooksZh extends Migration
      */
     public function down()
     {
-        $tn = 'books_zh';
-        Schema::drop($tn);
+        // Nothing to do
+        // Allow main book list migration handle reversal
+        //$tn = 'books_zh';
+        //Schema::drop($tn);
     }
 }
