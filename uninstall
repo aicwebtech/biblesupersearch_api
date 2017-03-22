@@ -12,7 +12,7 @@ then
     echo ''
     echo 'Uninstall All Bible Modules'
     echo ''
-    php artisan:bible-uninstall --allphp
+    php artisan bible:uninstall --all
     echo ''
     echo 'Clean up the database'
     echo ''

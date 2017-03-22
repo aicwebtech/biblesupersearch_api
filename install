@@ -27,6 +27,6 @@ then
     echo ''
     echo 'Basic installation is complete'
     echo ''
-    echo 'Run php artisan:bible-install to install Bible Modules'
+    echo 'Run php artisan bible:install to install Bible Modules'
 fi
 
