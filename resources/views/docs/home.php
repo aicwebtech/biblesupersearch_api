@@ -49,7 +49,7 @@
 
             pre code {
                 display: inline-block;
-                background-color: navajowhite;
+                background-color: #EBC19B;
                 padding: 10px;
             }
 
@@ -63,9 +63,9 @@
 
             .parameters th {
                 background: #dddddd; /* For browsers that do not support gradients */
-                background: -webkit-linear-gradient(#dddddd, #aaaaaa); /* For Safari 5.1 to 6.0 */
-                background: -o-linear-gradient(#dddddd, #aaaaaa); /* For Opera 11.1 to 12.0 */
-                background: -moz-linear-gradient(#dddddd, #aaaaaa); /* For Firefox 3.6 to 15 */
+                background: -webkit-linear-gradient(#5aa7e2, #3c729b); /* For Safari 5.1 to 6.0 */
+                background: -o-linear-gradient(#5aa7e2, #3c729b); /* For Opera 11.1 to 12.0 */
+                background: -moz-linear-gradient(#5aa7e2, #3c729b); /* For Firefox 3.6 to 15 */
                 background: linear-gradient(#5aa7e2,#3c729b); /* Standard syntax */
                 padding: 3px;
                 color: #eee;
@@ -97,6 +97,7 @@
                     <li><a href='#tab_statics'><?php echo trans('api.action') . ': ' . trans('api.statics.name') ?></a></li>
                     <li><a href='#tab_bibles'><?php echo trans('api.action') . ': ' . trans('api.bibles.name') ?></a></li>
                     <li><a href='#tab_books'><?php echo trans('api.action') . ': ' . trans('api.books.name') ?></a></li>
+                    <li><a href='#tab_version'><?php echo trans('api.action') . ': ' . trans('api.version.name') ?></a></li>
                 </ul>
                 <div id='tab_overview'>
                     <?php include(dirname(__FILE__) . '/overview.php'); ?>
@@ -115,6 +116,9 @@
                 </div>
                 <div id='tab_books'>
                     <?php include(dirname(__FILE__) . '/books.php'); ?>
+                </div>
+                <div id='tab_version'>
+                    <?php include(dirname(__FILE__) . '/version.php'); ?>
                 </div>
             </div>
         </div>

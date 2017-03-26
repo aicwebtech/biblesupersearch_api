@@ -40,8 +40,6 @@ Route::get('/auth/logout', 'Auth\AuthController@getLogout');
 Route::get('/admin/main', 'AdminController@getMain');
 //Route::controller('admin', 'AdminController');
 
-/* Routes for the API */
-Route::get('/api', 'ApiController@query')->middleware('api');
-Route::get('/api/bibles', 'ApiController@bibles')->middleware('api');
-Route::get('/api/books', 'ApiController@books')->middleware('api');
-Route::get('/api/statics', 'ApiController@statics')->middleware('api');
+/* Route for the API  */
+Route::get('/api/{action?}','ApiController@genericAction')->middleware('api'); // 'Action' defaults to 'query'
+

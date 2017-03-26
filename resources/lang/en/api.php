@@ -49,6 +49,7 @@ return array(
             'cors' => 'Can be used cross-domain (By sending the CORS header: \'Access-Control-Allow-Origin: *\')',
             'jsonp' => 'Support JSONP via the \'callback\' parameter',
             'structure' => 'Return this basic structure',
+            'method' => 'Should be called using GET',
         ),
         'structure' => array(
             'errors' => 'Array of error messages, if any.  If an error has occured, the API will return HTTP status code 400.',
@@ -73,10 +74,19 @@ return array(
         . 'This includes: <ul>'
         . '<li>A list of all avaliable Bibles</li>'
         . '<li>A list of Bible books in the specified language</li>'
+        . '<li>The API name</li>'
         . '<li>The API version</li>'
         . '<li>The API environment (production/beta/development)</li>'
         . '</ul>',
-
+    ),
+    'version' => array(
+        'name' => 'Version',
+        'description' => 'Retrieves basic version information about the API. <br/><br />'
+        . 'This includes: <ul>'
+        . '<li>The API name</li>'
+        . '<li>The API version</li>'
+        . '<li>The API environment (production/beta/development)</li>'
+        . '</ul>',
     ),
     'common' => array(
         'params' => array(

@@ -223,11 +223,19 @@ class Engine {
 
     public function actionStatics($input) {
         $response = new \stdClass;
-        $response->bibles = $this->actionBibles($input);
-        $response->books = $this->actionBooks($input);
-        $response->version = config('app.version');
-        $response->environment = config('app.env');
+        $response->bibles       = $this->actionBibles($input);
+        $response->books        = $this->actionBooks($input);
+        $response->name         = config('app.name');
+        $response->version      = config('app.version');
+        $response->environment  = config('app.env');
+        return $response;
+    }
 
+    public function actionVersion($input) {
+        $response = new \stdClass;
+        $response->name         = config('app.name');
+        $response->version      = config('app.version');
+        $response->environment  = config('app.env');
         return $response;
     }
 
