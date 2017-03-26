@@ -9,23 +9,14 @@ use App\Http\Controllers\Controller;
 use App\Engine;
 
 class ApiController extends Controller {
-    public function query(Request $Request) {
-        return $this->sendResponse($Request, 'query');
-    }
 
-    public function bibles(Request $Request) {
-        return $this->sendResponse($Request, 'bibles');
-    }
+    public function genericAction($action = 'query', Request $Request) {
+        $allowed_actions = ['query', 'bibles', 'books', 'statics', 'version'];
 
-    public function books(Request $Request) {
-        return $this->sendResponse($Request, 'books');
-    }
+        if(!in_array($action, $allowed_actions)) {
+            return new Response('Action not found', 404);
+        }
 
-    public function statics(Request $Request) {
-        return $this->sendResponse($Request, 'statics');
-    }
-
-    private function sendResponse(Request $Request, $action) {
         $input = $Request->input();
         $Engine = new Engine();
         $actionMethod = 'action' . ucfirst($action);

@@ -11,31 +11,31 @@ use App\Search;
 class VersesTest extends TestCase
 {
     // installation test can slow things down - should be TRUE in production
-    public $runInstallTest = FALSE; 
-    
+    public $runInstallTest = FALSE;
+
     public function testLookupQuery() {
         $Bible = Bible::findByModule('kjv');
         $Passages = Passage::parseReferences('Rom 1:1-10');
         $Verses = $Bible->getSearch($Passages);
         //$Verses = $Verses_Collection->all();
-        
+
         $this->assertCount(10, $Verses);
         //$this->assertContainsOnlyInstancesOf('App\Models\Verses\Kjv', $Verses);
-        
+
         $this->assertEquals(45, $Verses[0]->book);
         $this->assertEquals(1, $Verses[0]->chapter);
-        
+
         for($i = 1; $i <= 10; $i++) {
             $this->assertEquals($i, $Verses[$i - 1]->verse);
         }
-        
+
         $Passages = Passage::parseReferences('Matt. 1:1');
         $VC = $Bible->getSearch($Passages);
         $this->assertCount(1, $VC);
         $this->assertEquals(40, $VC[0]->book);
         $this->assertEquals(1, $VC[0]->chapter);
         $this->assertEquals(1, $VC[0]->verse);
-        
+
         $Passages = Passage::parseReferences('Mark 6:4,4:2');
         $VC = $Bible->getSearch($Passages);
         $this->assertCount(2, $VC);
@@ -43,21 +43,21 @@ class VersesTest extends TestCase
         // The output should be in the Scriptural order, even though the references aren't
         $this->assertEquals(6,  $VC[1]->chapter);
         $this->assertEquals(4,  $VC[1]->verse);
-        
+
         $Passages = Passage::parseReferences('Ps 111:8-113:2');
         $VC = $Bible->getSearch($Passages);
         $this->assertCount(15, $VC);
         $this->assertEquals(112, $VC[3]->chapter);
         $this->assertEquals(1, $VC[3]->verse);
-        
+
         $Passages = Passage::parseReferences('Ps 111');
         $VC = $Bible->getSearch($Passages);
         $this->assertCount(10, $VC);
-        
+
         $Passages = Passage::parseReferences('Ps 110-112');
         $VC = $Bible->getSearch($Passages);
         $this->assertCount(27, $VC);
-        
+
         // Todo - indefinite ranges aren't working!!!
         $Passages = Passage::parseReferences('Ps 110-112:3');
         $expected_parse = array( array('cst' => 110, 'vst' => NULL, 'cen' => 112, 'ven' => 3, 'type' => 'range') );
@@ -70,17 +70,17 @@ class VersesTest extends TestCase
         $this->assertEquals($expected_parse, $Passages[0]->chapter_verse_parsed);
         $VC = $Bible->getSearch($Passages);
         $this->assertCount(22, $VC);
-        
+
         // This query tells it to get vs 6 - 112 of Ch 110, not 110:6 through chapter 112
         // Only returns 2 verses
         $Passages = Passage::parseReferences('Ps 110:6-112');
         $VC = $Bible->getSearch($Passages);
         $this->assertCount(2, $VC);
-        
+
         $Passages = Passage::parseReferences('Ps 12:6-7,Rom 3:5-9');
         $VC = $Bible->getSearch($Passages);
         $this->assertCount(7, $VC);
-        
+
         // Implicit and explicit chapters
         $expected_parse = array( array('c' => 1, 'v' => NULL, 'type' => 'single') );
         $Passages = Passage::parseReferences('Jn 1');
@@ -91,19 +91,19 @@ class VersesTest extends TestCase
         $this->assertEquals($expected_parse, $Passages[0]->chapter_verse_parsed);
         $VC = $Bible->getSearch($Passages);
         $this->assertCount(51, $VC);
-        
-        
+
+
     }
-    
+
     /**
      * Test installation of a Bible
      */
     public function testInstall() {
         if(!$this->runInstallTest) {
-            echo(PHP_EOL . 'Installation test disabled' . PHP_EOL);
+            //echo(PHP_EOL . 'Installation test disabled' . PHP_EOL);
             return;
         }
-        
+
         $Bible = Bible::findByModule('kjv');
         $Bible->uninstall();
         $this->assertEquals(0, $Bible->installed);
@@ -113,13 +113,13 @@ class VersesTest extends TestCase
         $Bible->enabled = 1;
         $Bible->save();
     }
-    
+
     /**
      * Tests all installed Bibles to make sure they're properly installed
      */
     public function testInstalledBibles() {
         $Bibles = Bible::where('installed', 1)->get();
-        
+
         foreach($Bibles as $Bible) {
             $this->assertTrue( Schema::hasTable('verses_' . $Bible->module), 'No table for module: verses_' . $Bible->module );
             $Verses = $Bible->verses();
@@ -127,7 +127,7 @@ class VersesTest extends TestCase
             $verses_class = $Bible->getVerseClassName();
             $this->assertInstanceOf('App\Models\Bible', $Bible);
             $this->assertEquals($verses_class_static, $verses_class, 'Static and dynamic verses classes do not match.');
-            
+
             // Grab a few verses from the database
             $verses = $Verses->orderBy('id', 'asc')->take(10)->get();
             $this->assertCount(10, $verses, $Bible->module . ' has empty table');
@@ -136,13 +136,13 @@ class VersesTest extends TestCase
             $this->assertNotEmpty($verses[0]->text);
         }
     }
-    
+
     /**
      * Tests all enabled Bibles to make sure they're properly installed
      */
     public function testEnabledBibles() {
         $Bibles = Bible::where('enabled', 1)->get();
-        
+
         foreach($Bibles as $Bible) {
             // Make sure it's installed and the verses table exists
             $this->assertEquals(1, $Bible->installed);

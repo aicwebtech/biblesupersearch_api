@@ -15,6 +15,7 @@
 <h3><?php echo trans('api.overview.all_actions') ?>:</h3>
 <ul>
     <li><?php echo trans('api.overview.bullets.format') ?></li>
+    <li><?php echo trans('api.overview.bullets.method') ?></li>
     <li><?php echo trans('api.overview.bullets.cors') ?></li>
     <li><?php echo trans('api.overview.bullets.jsonp') ?></li>
     <li><?php echo trans('api.overview.bullets.structure') ?>:</li>
