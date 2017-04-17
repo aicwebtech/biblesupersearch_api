@@ -140,7 +140,7 @@ class Engine {
                 //var_dump(get_class($bible_results));
 
                 if(!$bible_results->isEmpty()) { // Laravel Collection
-                    $results[$Bible->module] = $bible_results;
+                    $results[$Bible->module] = $bible_results->all();
                 }
                 else {
                     $bible_no_results[] = trans('errors.bible_no_results', ['module' => $Bible->module]);

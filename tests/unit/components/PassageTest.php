@@ -414,7 +414,8 @@ class PassageTest extends TestCase
             array(
                 'ref' => 'Genesis 14-,3:4',
                 'exp' => array(
-                        array('c' => 14, 'v' => NULL, 'type' => 'single'),
+                        array('cst' => 14, 'vst' => NULL, 'cen' => NULL, 'ven' => NULL, 'type' => 'range'),
+                        //array('c' => 14, 'v' => NULL, 'type' => 'single'),
                         array('c' => 3, 'v' => 4, 'type' => 'single'),
                     ),
                 'c_min' => 3,
@@ -446,6 +447,38 @@ class PassageTest extends TestCase
                     ),
                 'c_min' => 2,
                 'c_max' => 4,
+            ),
+            array(
+                'ref' => 'Matt 25 - ',
+                'exp' => array(
+                        array('cst' => 25, 'vst' => NULL, 'cen' => NULL, 'ven' => NULL, 'type' => 'range'),
+                    ),
+                'c_min' => 25,
+                'c_max' => 25,
+            ),
+            array(
+                'ref' => 'Matt - 3',
+                'exp' => array(
+                        array('cst' => NULL, 'vst' => NULL, 'cen' => 3, 'ven' => NULL, 'type' => 'range'),
+                    ),
+                'c_min' => 3,
+                'c_max' => 3,
+            ),
+            array(
+                'ref' => 'Rev - 3:8',
+                'exp' => array(
+                        array('cst' => NULL, 'vst' => NULL, 'cen' => 3, 'ven' => 8, 'type' => 'range'),
+                    ),
+                'c_min' => NULL,
+                'c_max' => 3,
+            ),
+            array(
+                'ref' => 'Rev 12:2 - ',
+                'exp' => array(
+                        array('cst' => 12, 'vst' => 5, 'cen' => 12, 'ven' => NULL, 'type' => 'range'),
+                    ),
+                'c_min' => 12,
+                'c_max' => 12,
             ),
         );
 
