@@ -217,9 +217,9 @@ class Passage {
         $this->clearChapterVerse();
         $this->raw_chapter_verse = preg_replace('/\s+/', ' ', $chapter_verse);
         $chapter_verse = str_replace([';',' '], [',',''], $chapter_verse);
-        $chapter_verse = preg_replace('/,+/', ',', $chapter_verse);
-        $chapter_verse = preg_replace('/-+/', '-', $chapter_verse);
-        $chapter_verse = preg_replace('/:+/', ':', $chapter_verse);
+        $chapter_verse = preg_replace('/,+/', ',', $chapter_verse); // Replace repeated , with one ,
+        $chapter_verse = preg_replace('/-+/', '-', $chapter_verse); // Replace repeated - with one -
+        $chapter_verse = preg_replace('/:+/', ':', $chapter_verse); // Replace repeated : with one :
         $chapter_verse = (!$this->is_search && empty($chapter_verse)) ? '1' : $chapter_verse;
         $this->chapter_verse = $chapter_verse;
 
@@ -249,14 +249,19 @@ class Passage {
         $preparsed_values = array_values($preparsed);
         $count = count($preparsed_values);
         $current_chapter = $current_verse = $cst = $vst = $last_int = NULL;
-        $is_range = FALSE;
+        $is_range = $has_verse = FALSE;
+
+        if($this->raw_chapter_verse == '25 -') {
+            //print_r($preparsed_values);
+        }
 
         // Chapters only - if reference contains no verses
         if($counts['colon'] == 0) {
             foreach($preparsed_values as $in => $value) {
-                if(is_int($value)) {
-                    $next = (isset($preparsed_values[$in + 1])) ? $preparsed_values[$in + 1] : NULL;
+                $next = (isset($preparsed_values[$in + 1])) ? $preparsed_values[$in + 1] : NULL;
+                $last = (isset($preparsed_values[$in - 1])) ? $preparsed_values[$in - 1] : NULL;
 
+                if(is_int($value)) {
                     if(!$current_chapter && $next == '-') {
                         $current_chapter = $value;
                     }
@@ -266,11 +271,21 @@ class Passage {
                         $chapters[] = $value;
                         $current_chapter = NULL;
                     }
-                    elseif($next == NULL || $next == ',') {
+                    elseif(($next == NULL || $next == ',') && $last == '-') {
+                        $parsed[] = array('cst' => NULL, 'vst' => NULL, 'cen' => $value, 'ven' => NULL, 'type' => 'range');
+                        $chapters[] = $value;
+                        $current_chapter = NULL;
+                    }
+                    elseif(($next == NULL || $next == ',') && $last != '-') {
                         $parsed[] = array('c' => $value, 'v' => NULL, 'type' => 'single');
                         $chapters[] = $value;
                         $current_chapter = NULL;
                     }
+                }
+                else if($value == '-' && $next === NULL) {
+                    $parsed[] = array('cst' => $current_chapter, 'vst' => NULL, 'cen' => NULL, 'ven' => NULL, 'type' => 'range');
+                    $chapters[] = $current_chapter;
+                    $current_chapter = NULL;
                 }
             }
         }
@@ -335,7 +350,10 @@ class Passage {
                     }
 
                     if($end_of_ref) {
-                        $parsed[] = array('c' => $current_chapter, 'v' => $current_verse, 'type' => 'single');
+                        $cen = $current_chapter;
+
+                        $parsed[] = array('cst' => $current_chapter, 'vst' => $current_verse, 'cen' => $cen, 'ven' => NULL, 'type' => 'range');
+                        //$parsed[] = array('c' => $current_chapter, 'v' => $current_verse, 'type' => 'single');
                         $chapters[] = $current_chapter;
                     }
                 }
@@ -344,8 +362,8 @@ class Passage {
             }
         }
 
-        $this->chapter_max = max($chapters);
-        $this->chapter_min = min($chapters);
+        $this->chapter_max = (is_array($chapters) && count($chapters)) ? max($chapters) : NULL;
+        $this->chapter_min = (is_array($chapters) && count($chapters)) ? min($chapters) : 1;
         $this->chapter_verse_parsed = $parsed;
     }
 
@@ -403,6 +421,8 @@ class Passage {
             if(isset($part['type']) && $part['type'] == 'range') {
                 $part['vst'] = ($part['vst']) ? $part['vst'] : 0;
                 $part['ven'] = ($part['ven']) ? $part['ven'] : 999;
+                $part['cst'] = ($part['cst']) ? $part['cst'] : 1;
+                $part['cen'] = ($part['cen']) ? $part['cen'] : 999;
             }
         }
 
