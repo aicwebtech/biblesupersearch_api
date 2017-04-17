@@ -18,7 +18,7 @@ class ProximitySearchTest extends TestCase {
         $this->assertCount(1, $errors);
         $this->assertEquals( trans('errors.prox_paren_mismatch'), $errors[0]);
     }
-    
+
     public function testNotBoolean() {
         $Engine = new Engine();
         $Engine->setDefaultDataType('raw');
@@ -123,6 +123,14 @@ class ProximitySearchTest extends TestCase {
         $results = $Engine->actionQuery(['bible' => 'kjv', 'search' => 'hall hallowed', 'search_type' => 'book', 'whole_words' => TRUE]);
         $this->assertFalse($Engine->hasErrors());
         $this->assertCount(4, $results['kjv']);
+    }
+
+    public function testAPI118() {
+        $Engine = new Engine();
+        $Engine->setDefaultDataType('raw');
+        // This essentially asks, which book(s) contain both 'hall' and 'hallowed'?
+        $results = $Engine->actionQuery(['bible' => 'kjv', 'search' => '(refuge) PROX(5) (try | tempt)', 'search_type' => 'boolean', 'reference' => 'Prophets; NT;', 'whole_words' => TRUE]);
+        $this->assertTrue($Engine->hasErrors());
     }
 
     public function _testQueryBinding() {
