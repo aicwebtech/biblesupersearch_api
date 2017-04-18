@@ -149,7 +149,12 @@ class Engine {
             }
 
             if(empty($results)) {
-                $this->addError( trans('errors.no_results'), 4);
+                if($Search) {
+                    $this->addError( trans('errors.no_results'), 4);
+                }
+                else {
+                    $this->setErrorLevel(4);
+                }
             }
             elseif(!empty($bible_no_results)) {
                 $this->addErrors($bible_no_results, 3);
