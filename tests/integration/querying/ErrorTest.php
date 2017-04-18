@@ -57,6 +57,16 @@ class ErrorTest extends TestCase {
         $this->assertEquals(trans('errors.book.not_found', ['book' => '1 Tom']), $errors[1]);
     }
 
+    public function testUnfoundVerses() {
+        $Engine = new Engine();
+        $results = $Engine->actionQuery(['bible' => 'kjv', 'reference' => 'Rom 4:29-39 ']);
+        $this->assertTrue($Engine->hasErrors());
+        $errors = $Engine->getErrors();
+        // This does NOT return a search no results error, as that is only for searches and not passage requests
+        $this->assertCount(1, $errors);
+        $this->assertEquals(trans('errors.passage_not_found', ['passage' => 'Rom 4:29-39']), $errors[0]);
+    }
+
     public function testPassageInvalidRangeReference() {
         $Engine = new Engine();
         $reference = 'Ramans - Revelation';
