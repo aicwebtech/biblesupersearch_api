@@ -8,7 +8,7 @@ namespace App;
 class SqlSearch {
     use Traits\Error;
     use Traits\Input;
-    
+
     protected $search; // String containing the search keywords
     protected $search_parsed;
     protected $terms; // Search keys for current search
@@ -20,16 +20,16 @@ class SqlSearch {
         'whole_words' => FALSE,
         'exact_case'  => FALSE,
     );
-    
+
     //protected $use_unnamed_bindings = FALSE;
     protected $use_named_bindings = FALSE;
     public $search_fields = 'text'; // Comma separated
-    
+
     static protected $search_inputs = array(
         'search' => array(
             'label' => 'Search',
             'type'  => NULL, // primary
-        ), 
+        ),
         'search_all' => array(
             'label' => 'All Words',
             'type'  => 'and',
@@ -37,15 +37,15 @@ class SqlSearch {
         'search_any' => array(
             'label' => 'Any Words',
             'type'  => 'or',
-        ), 
+        ),
         'search_one' => array(
             'label' => 'One of the Words',
             'type'  => 'xor',
-        ), 
+        ),
         'search_none' => array(
             'label' => 'None of the Words',
             'type'  => 'not',
-        ), 
+        ),
         'search_phrase' => array(
             'label' => 'Exact Phrase',
             'type'  => 'phrase',
@@ -59,7 +59,7 @@ class SqlSearch {
             'type'  => 'boolean',
         ),
     );
-    
+
     public $punctuation = array('.',',',':',';','\'','"','!','-','?','(',')','[',']');
 
     public function __construct($search = NULL, $options = array()) {
@@ -75,9 +75,9 @@ class SqlSearch {
      * @return App\Search|boolean
      */
     static public function parseSearch($search = NULL, $options = array()) {
-        if (empty($search)) { 
+        if (empty($search)) {
             $has_search = FALSE;
-  
+
             foreach(static::$search_inputs as $input => $settings) {
                 if(!empty($options[$input])) {
                     $has_search = TRUE;
@@ -88,7 +88,7 @@ class SqlSearch {
             if(!$has_search) {
                 return FALSE;
             }
-        } 
+        }
 
         return new static($search, $options);
     }
@@ -100,27 +100,27 @@ class SqlSearch {
     public function setSearch($search) {
         $this->search = trim(preg_replace('/\s+/', ' ', $search));
     }
-    
+
     /**
      * Validates the search term(s)
      */
     public function validate() {
         $valid = TRUE;
-        
+
         foreach(static::$search_inputs as $input => $settings) {
             if(!empty($this->options[$input])) {
                 $search_type = (array_key_exists('search_type', $settings)) ? $settings['search_type'] : $this->search_type;
-                
+
                 if(!$this->_validateHelper($this->options[$input], $search_type)) {
                     $valid = FALSE;
                 }
             }
         }
-        
+
         return $valid;
     }
-    
-    protected function _validateHelper($search, $search_type) {        
+
+    protected function _validateHelper($search, $search_type) {
         switch ($search_type) {
             case 'boolean' :
             case 'all_words' :
@@ -131,7 +131,7 @@ class SqlSearch {
                 return TRUE;
         }
     }
-    
+
     /**
      * Validates a Boolean search
      * @param type $search
@@ -140,17 +140,17 @@ class SqlSearch {
         $valid = TRUE;
         $lpar = substr_count($search, '(');
         $rpar = substr_count($search, ')');
-        
+
         if($lpar != $rpar) {
             $this->addError( trans('errors.paren_mismatch'), 4 );
             $valid = FALSE;
         }
-        
+
         $standardized = static::standardizeBoolean($search);
         $not_at_beg = ['AND', 'XOR', 'OR'];
         $not_at_end = ['AND', 'XOR', 'OR', 'NOT'];
         $len = strlen($standardized);
-        
+
         foreach($not_at_beg as $op) {
             if(strpos($standardized, $op) === 0) {
                 $this->addError( trans('errors.operator.op_at_beginning', ['op' => $op]), 4);
@@ -164,7 +164,7 @@ class SqlSearch {
                 return FALSE;
             }
         }
-        
+
         return $valid;
     }
 
@@ -188,87 +188,87 @@ class SqlSearch {
         $search = $this->search;
         return $this->_generateQueryHelper($search, $search_type, $table_alias, TRUE, $binddata);
     }
-    
+
     protected function _generateQueryHelper($search, $search_type, $table_alias = '', $include_extra_fields = FALSE, $binddata = array(), $fields = '') {
         $searches   = array();
-        
+
         if($search) {
             $searches[] = static::booleanizeQuery($search, $search_type);
         }
-        
-        if($include_extra_fields) {            
+
+        if($include_extra_fields) {
             foreach(static::$search_inputs as $input => $settings) {
                 if(!empty($settings['type']) && isset($this->options[$input])) {
                     $searches[] = static::booleanizeQuery($this->options[$input], $settings['type']);
                 }
             }
         }
-        
+
         $searches = array_filter($searches); // remove empty values
         $count    = count($searches);
-        
+
         if (!$count) {
             $this->search_parsed = '';
             return FALSE;
         }
-        
+
         $raw_bool = ($count == 1) ? $searches[0] : '(' . implode(') & (', $searches) . ')';
         $std_bool = static::standardizeBoolean($raw_bool);
         $this->search_parsed = $std_bool;
         $this->terms = $terms = static::parseQueryTerms($std_bool);
         //$operators = static::parseQueryOperators($std_bool, $terms);
         $sql = $std_bool;
-        
+
         foreach($terms as $term) {
             list($term_sql, $bind_index) = $this->_termSql($term, $binddata, $fields, $table_alias);
             //$sql = str_replace($term, $term_sql, $sql);
             // We only want to replace it ONCE, in case it is used multiple times
             $term_pos = strpos($sql, $term);
-            
+
             if($term_pos !== FALSE) {
                 $sql = substr_replace($sql, $term_sql, $term_pos, strlen($term));
             }
         }
-        
+
         return array($sql, $binddata);
     }
-    
-    protected function _termSql($term, &$binddata = array(), $fields = '', $table_alias = '') {        
+
+    protected function _termSql($term, &$binddata = array(), $fields = '', $table_alias = '') {
         $exact_case  = (array_key_exists('exact_case',  $this->options))  ? $this->options['exact_case'] : FALSE;
         $exact_case  = ($exact_case  && $exact_case  !== 'false') ? TRUE : FALSE;
         $whole_words = (array_key_exists('whole_words',  $this->options)) ? $this->options['whole_words'] : FALSE;
         $whole_words = ($whole_words && $whole_words !== 'false') ? TRUE : FALSE;
-        
+
         $fields = $this->_termFields($term, $fields, $table_alias);
         $op = $this->_termOperator($term, $exact_case, $whole_words);
         $term_fmt = $this->_termFormat($term, $exact_case, $whole_words);
         $bind_index = static::pushToBindData($term_fmt, $binddata);
         $sql = array();
-        
+
         foreach($fields as $field) {
             //$sql[] = ($whole_words) ? $this->_assembleTermSqlWholeWords($field, $bind_index, $op) : $this->_assembleTermSql($field, $bind_index, $op);
             $sql[] = $this->_assembleTermSql($field, $bind_index, $op, $exact_case);
         }
-        
+
         $sql = (count($sql) == 1) ? '(' . $sql[0] . ')' : '(' . implode(' OR ', $sql) . ')';
         return array($sql, $bind_index);
     }
-    
+
     protected function _termFields($term, $fields = '', $table_alias = '') {
         $fields = ($fields) ? $fields : $this->search_fields;
         $fields = explode(',', $fields);
-        
+
         foreach($fields as &$field) {
             if($table_alias) {
                 $field = (strpos($field, '.') !== FALSE) ? $field : $table_alias . '.' . $field;
             }
-            
+
             $field = '`' . str_replace('.','`.`', $field) . '`'; // Use proper notation
         }
-        
+
         return $fields;
     }
-    
+
     protected function _termOperator($term, $exact_case = FALSE, $whole_words = FALSE) {
         if($whole_words) {
             return 'REGEXP';
@@ -277,31 +277,31 @@ class SqlSearch {
             return (strpos($term, ' ') !== FALSE) ? 'REGEXP' : 'LIKE';
         }
     }
-    
+
     protected function _termFormat($term, $exact_case = FALSE, $whole_words = FALSE) {
         if(strpos($term, ' ') !== FALSE) {
             return trim($term, '"');
         }
-        
+
         if(!$whole_words) {
             return '%' . $term . '%';
         }
-        
+
         $has_st_pct = (strpos($term, '%') === 0) ? TRUE : FALSE;
         $has_en_pct = (strrpos($term, '%') === strlen($term) - 1) ? TRUE : FALSE;
-        
+
         if($has_st_pct && $has_en_pct) {
             return $term;
         }
-        
+
         $pre  = ($has_st_pct) ? '/' : '[[:<:]]';
         $post = ($has_en_pct) ? '.' : '[[:>:]]';
-        
+
         return $pre . str_replace('%', '.', trim($term, '%')) . $post;
-        
+
         //return ($whole_words) ? '[[:<:]]' . str_replace('%', '/', $term) . '[[:>:]]' : '%' . $term . '%';
     }
-    
+
     protected function _termFormatForHighlight($term, $exact_case = FALSE, $whole_words = FALSE) {
         $preformat = $this->_termFormat($term, $exact_case, $whole_words);
         $preformat = ($whole_words) ? $preformat : trim($preformat, '%');
@@ -309,30 +309,30 @@ class SqlSearch {
         $term_format = '/' . $preformat . '/' . $case_insensitive;
         return $term_format;
     }
-    
+
     protected function _assembleTermSql($field, $bind_index, $operator, $exact_case) {
         //$binding = ($this->use_named_bindings) ? $bind_index : '?';
         $binding = $bind_index;
         $binary = ($exact_case) ? 'BINARY ' : '';
         return $binary . $field . ' ' . $operator . ' ' . $binding;
     }
-    
+
     public static function pushToBindData($item, &$binddata, $index_prefix = 'bd', $avoid_duplicates = FALSE) {
         if(!is_array($binddata)) {
             return FALSE;
         }
-        
+
         $idx = ($avoid_duplicates) ? array_search($item, $binddata) : FALSE;
-        
+
         if($idx === FALSE) {
             $idx = ':' . $index_prefix .  (count($binddata) + 1);
             //$idx = count($binddata);
             $binddata[$idx] = $item;
         }
-        
+
         return $idx;
     }
-    
+
     public static function booleanizeQuery($query, $search_type, $arg3 = NULL) {
         $query = trim(preg_replace('/\s+/', ' ', $query));
 
@@ -364,14 +364,14 @@ class SqlSearch {
                 //$query = 'NOT ' . implode(' NOT ', $parsed);
                 break;
         }
-        
+
         return $query;
     }
 
     /**
      * Parses out the terms of a boolean query
      * @param string $query standardized, booleanized query
-     * @return array $parsed 
+     * @return array $parsed
      */
     public static function parseQueryTerms($query) {
         $parsed = $phrases = $matches = array();
@@ -397,11 +397,11 @@ class SqlSearch {
         //$parsed = array_unique($parsed); // Causing breakage
         return $parsed;
     }
-    
+
     /**
      * Parses out the operators (and parenthensis) of a boolean query
      * @param string $query standardized, booleanized query
-     * @return array $parsed 
+     * @return array $parsed
      */
     public static function parseQueryOperators($query, $terms = NULL) {
         $terms = ($terms) ? $terms : static::parseQueryTerms($query);
@@ -409,21 +409,21 @@ class SqlSearch {
         $pre_parsed = trim(preg_replace('/\s+/', ' ', $pre_parsed));
         return explode(' ', $pre_parsed);
     }
-    
+
     public static function parseQueryPhrases($query, $underscore_map = FALSE) {
         $matches = $phrases = $underscores = array();
         //preg_match_all('/"[a-zA-z0-9 ]+"/', $query, $matches, PREG_SET_ORDER);
         preg_match_all('/["][\p{L}0-9 ]+["]/u', $query, $matches, PREG_SET_ORDER);
-        
+
         foreach ($matches as $item) {
             $phrase = $item[0];
             $phrases[] = $phrase;
-            
+
             if($underscore_map) {
                 $underscores[] = str_replace(' ', '_', $item[0]);
             }
         }
-        
+
         if($underscore_map) {
             return array($phrases, $underscores);
         }
@@ -435,7 +435,7 @@ class SqlSearch {
     /**
      * Parses out the terms of a simple (non-boolean) query
      * @param type $query
-     * @return array $parsed 
+     * @return array $parsed
      */
     public static function parseSimpleQueryTerms($query) {
         $parsed = explode(' ', $query);
@@ -455,7 +455,7 @@ class SqlSearch {
         $or  = array(' OR ', '+', '||', '|');
         $not = array('NOT ', '!');
         $xor = array(' XOR ', '^^', '^');
-        
+
         list($phrases, $underscored) = static::parseQueryPhrases($query, TRUE);
         $query = str_replace($phrases, $underscored, $query);
         $query = str_replace($xor, ' ^ ', $query);
@@ -471,7 +471,7 @@ class SqlSearch {
         $query = preg_replace_callback($patterns, function($matches) {
             return str_replace(' ', ' & ', $matches[0]);
         }, $query);
-        
+
         // Convert operator place holders into SQL operators
         $find  = array('&', '|', '-', '^');
         $repl  = array('AND', 'OR', ' NOT ', 'XOR');
@@ -482,12 +482,12 @@ class SqlSearch {
     }
 
     public function __set($name, $value) {
-        
+
     }
 
     public function __get($name) {
         $gettable = ['search', 'search_parsed', 'search_type', 'use_named_bindings', 'terms'];
-        
+
         if ($name == 'search_parsed') {
             //return $this->parseSearchForQuery();
         }
@@ -496,28 +496,28 @@ class SqlSearch {
             return $this->$name;
         }
     }
-    
+
     public function setUseNamedBindings($value) {
         $this->use_named_bindings = ($value) ? TRUE : FALSE;
     }
-    
+
     public function highlightResults($results) {
         $whole_word = $this->isTruthy('whole_words', $this->options);
         $exact_case = $this->isTruthy('exact_case',  $this->options);
         //var_dump($this->options);
-        
+
         $terms = $this->terms;
         $terms_fmt = array();
         $pre  = '<' . $this->options['highlight_tag'] . '>';
         $post = '</' . $this->options['highlight_tag'] . '>';
-        
+
         foreach($terms as $key => $term) {
             $terms_fmt[$key] = $this->_termFormatForHighlight($term, $exact_case, $whole_word);
         }
 
         foreach($results as $bible => &$verses) {
             foreach($verses as &$verse) {
-                foreach($terms_fmt as $key => $term_fmt) {                    
+                foreach($terms_fmt as $key => $term_fmt) {
                     $term = $terms[$key];
                     $verse->text = preg_replace_callback($term_fmt, function($matches) use ($pre, $post) {
                         return $pre . $matches[0] . $post;
@@ -525,7 +525,7 @@ class SqlSearch {
                 }
             }
         }
-        
+
         return $results;
     }
 }
