@@ -147,10 +147,10 @@ class VerseStandard extends VerseAbstract {
         // Need to use raw queries because of complex JOIN statements
         $sql = 'SELECT ' . implode(', ', $selects) . PHP_EOL . $from . PHP_EOL . implode(PHP_EOL, $joins) . PHP_EOL . 'WHERE ' . $where;
 
-        //echo PHP_EOL;
-        //var_dump($sql);
-        //var_dump($binddata);
-        //die();
+//        echo PHP_EOL;
+//        var_dump($sql);
+//        var_dump($binddata);
+//        die();
 
         $results_raw = DB::select($sql, $binddata);
 
@@ -218,7 +218,8 @@ class VerseStandard extends VerseAbstract {
             //$table->charset('utf8mb4');
             //$table->collate('utf8mb4_unicode_ci');
 
-            $table->increments('id');
+            //$table->increments('id');
+            $table->integer('id', TRUE);
             $table->tinyInteger('book')->unsigned();
             $table->tinyInteger('chapter')->unsigned();
             $table->tinyInteger('verse')->unsigned();
