@@ -304,7 +304,8 @@ class SqlSearch {
 
     protected function _termFormatForHighlight($term, $exact_case = FALSE, $whole_words = FALSE) {
         $preformat = $this->_termFormat($term, $exact_case, $whole_words);
-        $preformat = ($whole_words) ? $preformat : trim($preformat, '%');
+        //$preformat = ($whole_words) ? $preformat : trim($preformat, '%');
+        $preformat = trim($preformat, '%./');
         $case_insensitive = ($exact_case) ? '' : 'i';
         $term_format = '/' . $preformat . '/' . $case_insensitive;
         return $term_format;
