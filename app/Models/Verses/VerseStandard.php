@@ -67,6 +67,7 @@ class VerseStandard extends VerseAbstract {
         }
         else {
             ini_set('max_execution_time', 120);
+            $Query->limit( config('bss.global_maximum_results') );
             $verses = $Query->get();
         }
 

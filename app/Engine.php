@@ -207,6 +207,10 @@ class Engine {
 
                 if(!empty($BibleResults) && !$BibleResults->isEmpty()) {
                     $results[$Bible->module] = $BibleResults->all();
+
+                    if($BibleResults->count() == config('bss.global_maximum_results')) {
+                        $this->addError( trans('errors.result_limit_reached', ['maximum' => config('bss.global_maximum_results')]), 3);
+                    }
                 }
                 else {
                     $bible_no_results[] = trans('errors.bible_no_results', ['module' => $Bible->module]);
