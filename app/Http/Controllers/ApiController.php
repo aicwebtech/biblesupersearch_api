@@ -20,7 +20,10 @@ class ApiController extends Controller {
         $input = $Request->input();
         $Engine = new Engine();
         $actionMethod = 'action' . ucfirst($action);
-        //header("Access-Control-Allow-Origin: *"); // Enable for debugging
+//        header("Access-Control-Allow-Origin: *"); // Enable for debugging
+//        print_r($input);
+//        die();
+
         $response = new \stdClass();
         $response->errors = array();
         $response->error_level = 0;

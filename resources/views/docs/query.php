@@ -37,6 +37,8 @@
         'data_format',
         'highlight',
         'highlight_tag',
+        'page',
+        'page_all',
         'search_type',
         'proximity_limit',
     );

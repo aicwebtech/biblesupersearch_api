@@ -74,6 +74,18 @@ return array(
             'default' => 'b',
             'description' => 'HTML tag to use for wrapping highlighted keywords. Just set to the name of the tag, omitting &lt;&gt;'
         ),
+        'page_all' => array(
+            'type' => 'Boolean',
+            'name' => 'Show All Results',
+            'default' => 'false',
+            'description' => 'Whether to disable all pagination.',
+        ),
+        'page' => array(
+            'type' => 'Integer',
+            'name' => 'Page',
+            'default' => '1',
+            'description' => 'For search results, the page to show.  Currently, only searches support pagination.',
+        ),
         'data_format' => array(
             'type' => 'String',
             'name' => 'Data Format',

@@ -40,6 +40,7 @@ Route::get('/auth/logout', 'Auth\AuthController@getLogout');
 Route::get('/admin/main', 'AdminController@getMain');
 //Route::controller('admin', 'AdminController');
 
-/* Route for the API  */
+/* Routes for the API  */
 Route::get('/api/{action?}','ApiController@genericAction')->middleware('api'); // 'Action' defaults to 'query'
+Route::post('/api/{action?}','ApiController@genericAction')->middleware('api'); // 'Action' defaults to 'query'
 
