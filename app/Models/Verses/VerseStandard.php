@@ -43,7 +43,7 @@ class VerseStandard extends VerseAbstract {
                 $search_query = static::_buildSpecialSearchQuery($Search, $parameters, $passage_query_special);
 
                 if(!$search_query) {
-                    return array(); // No results
+                    return FALSE; // No results
                 }
 
                 $Query->whereRaw('(' . $search_query . ')');
@@ -61,7 +61,16 @@ class VerseStandard extends VerseAbstract {
 
         //echo(PHP_EOL . $Query->toSql() . PHP_EOL);
         //var_dump($binddata);
-        $verses = $Query->get()->all();
+
+        if($Search && !$parameters['multi_bibles'] && !$parameters['page_all']) {
+            $verses = $Query->paginate( config('bss.pagination.limit') );
+        }
+        else {
+            ini_set('max_execution_time', 120);
+            $verses = $Query->get();
+        }
+
+        //$verses = $Query->paginate(100);
         return (empty($verses)) ? FALSE : $verses;
     }
 

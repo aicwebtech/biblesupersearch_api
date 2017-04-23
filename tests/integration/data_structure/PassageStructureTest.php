@@ -243,6 +243,7 @@ class PassageStructureTest extends TestCase {
      */
     public function testBasicSearch() {
         $Engine  = new Engine();
+        $Engine->setDefaultPageAll(TRUE);
         $results = $Engine->actionQuery(['bible' => 'kjv', 'search' => 'supplication', 'data_format' => 'passage', 'whole_words' => TRUE]);
         $this->assertFalse($Engine->hasErrors());
         $this->assertCount(37, $results);
@@ -311,6 +312,7 @@ class PassageStructureTest extends TestCase {
      */
     public function testSearchWithPassage() {
         $Engine  = new Engine();
+        $Engine->setDefaultPageAll(TRUE);
         $results = $Engine->actionQuery(['bible' => ['kjv'], 'reference' => 'Rom', 'search' => 'faith', 'data_format' => 'passage', 'whole_words' => TRUE]);
         $this->assertFalse($Engine->hasErrors());
         $this->assertCount(34, $results); // -One passage- Now one passage for every verse

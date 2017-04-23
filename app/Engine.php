@@ -15,6 +15,7 @@ class Engine {
     protected $Bible_Primary = NULL; // Primary Bible version
     protected $languages = array();
     protected $default_data_format = 'passage';
+    protected $default_page_all = FALSE;
     public $debug = FALSE;
 
     public function __construct() {
@@ -89,9 +90,75 @@ class Engine {
      * @return array $results search / look up results.
      */
     public function actionQuery($input) {
+        // To do - add labels
+        $parsing = array(
+            'reference' => array(
+                'type'  => 'string',
+            ),
+            'search' => array(
+                'type'  => 'string',
+            ),
+            'bible' => array(
+                'type'  => 'array_string',
+            ),
+            'whole_words' => array(
+                'type'  => 'bool',
+                'default' => FALSE,
+            ),
+            'exact_case' => array(
+                'type'  => 'bool',
+                'default' => FALSE,
+            ),
+            'data_format' => array(
+                'type'  => 'string',
+                //'default' => 'passage', // breaking!
+            ),
+            'highlight' => array(
+                'type'  => 'bool',
+                'default' => FALSE,
+            ),
+            'page' => array(
+                'type'  => 'int'
+            ),
+            'page_all' => array(
+                'type'  => 'bool',
+                'default' => $this->default_page_all,
+            ),
+            'highlight_tag' => array(
+                'type'  => 'string',
+            ),
+            'search_type' => array(
+                'type'  => 'string',
+            ),
+            'proximity_limit' => array(
+                'type'  => 'int',
+            ),
+            'callback' => array(
+                'type'  => 'string',
+            ),
+            'search_all' => array(
+                'type'  => 'string',
+            ),
+            'search_any' => array(
+                'type'  => 'string',
+            ),
+            'search_one' => array(
+                'type'  => 'string',
+            ),
+            'search_none' => array(
+                'type'  => 'string',
+            ),
+            'search_phrase' => array(
+                'type'  => 'string',
+            ),
+        );
+
         $this->resetErrors();
         $results = $bible_no_results = array();
         !empty($input['bible']) && $this->setBibles($input['bible']);
+        $input = $this->_sanitizeInput($input, $parsing);
+        $input['bible'] = array_keys($this->Bibles);
+        $input['multi_bibles'] = (count($input['bible']) > 1) ? TRUE : FALSE;
 
         // Secondary search elements are detected automatically by Search class
         $references = empty($input['reference']) ? NULL : $input['reference'];
@@ -136,12 +203,10 @@ class Engine {
 
         if(!$Search || $Search && $search_valid) {
             foreach($this->Bibles as $Bible) {
-                $bible_results = $Bible->getSearch($Passages, $Search, $input);
-                //var_dump(get_class($bible_results));
+                $BibleResults = $Bible->getSearch($Passages, $Search, $input); // Laravel Collection
 
-                //if(!$bible_results->isEmpty()) { // Laravel Collection
-                if(!empty($bible_results)) {
-                    $results[$Bible->module] = $bible_results;
+                if(!empty($BibleResults) && !$BibleResults->isEmpty()) {
+                    $results[$Bible->module] = $BibleResults->all();
                 }
                 else {
                     $bible_no_results[] = trans('errors.bible_no_results', ['module' => $Bible->module]);
@@ -274,8 +339,50 @@ class Engine {
         return $Search->highlightResults($results);
     }
 
+    protected function _sanitizeInput($input, $parsing) {
+        $clean = array();
+
+        foreach($parsing as $index => $s) {
+            $value = NULL;
+
+            if(array_key_exists($index, $input) && !empty($input[$index])) {
+                switch($s['type']) {
+                    case 'boola':
+                        $value = ($input[$index] && $input[$index] != 'false') ? TRUE : FALSE;
+                        break;
+                    case 'array_string':
+                    case 'string_array':
+                        // This needs to be parsed here - just passing through now
+                        $value = $input[$index];
+                        break;
+                    case 'int':
+                        $value = intval($input[$index]);
+                        break;
+                    case 'string':
+                        $value = strval($input[$index]);
+                        break;
+                    default:
+                        $value = $input[$index];
+                }
+            }
+
+            if(!$value && array_key_exists('default', $s)) {
+                $clean[$index] = $s['default'];
+            }
+            elseif($value) {
+                $clean[$index] = $value;
+            }
+        }
+
+        return $clean;
+    }
+
     public function setDefaultDataType($type) {
         $this->default_data_format = $type;
+    }
+
+    public function setDefaultPageAll($value) {
+        $this->default_page_all = ($value) ? TRUE : FALSE;
     }
 }
 
