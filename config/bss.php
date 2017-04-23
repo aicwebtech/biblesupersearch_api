@@ -12,5 +12,6 @@ return array(
 
     'pagination' => array(
         'limit' => 30,
-    )
+    ),
+    'global_maximum_results' => 500,
 );
