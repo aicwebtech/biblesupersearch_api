@@ -217,4 +217,8 @@ class SearchTest extends TestCase {
         $this->assertEquals('(hope AND love)', $Searches[1]->search);
         $this->assertEquals('(charity)',       $Searches[2]->search);
     }
+
+    function testExactPhrase() {
+
+    }
 }

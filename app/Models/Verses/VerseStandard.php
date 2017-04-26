@@ -51,12 +51,21 @@ class VerseStandard extends VerseAbstract {
             else {
                 list($search_query, $binddata) = static::_buildSearchQuery($Search, $parameters);
 
+                if(!$search_query) {
+                    return FALSE;
+                }
+
                 if(!config('app.query_use_named_placeholders')) {
                     $binddata = array_values($binddata);
                 }
 
                 $Query->whereRaw('(' . $search_query . ')', $binddata);
             }
+        }
+
+        if(config('app.debug')) {
+            $_SESSION['debug']['query']      = $Query->toSql();
+            $_SESSION['debug']['query_data'] = (isset($binddata)) ? $binddata : NULL;
         }
 
         //echo(PHP_EOL . $Query->toSql() . PHP_EOL);

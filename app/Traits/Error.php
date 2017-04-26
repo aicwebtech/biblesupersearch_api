@@ -16,9 +16,9 @@ trait Error {
      * 1 - Notice - message to the user, not nessessarily even an error
      * 2 - Warning
      * 3 - Non-fatal error
-     * 4 - Fatal error 
+     * 4 - Fatal error
      */
-    
+
     /**
      * Indicates if we have any errors
      * @return bool $has_errors
@@ -26,7 +26,7 @@ trait Error {
     public function hasErrors() {
         return $this->has_errors;
     }
-    
+
     /**
      * Returns an array of all error messages
      * @return array $errors
@@ -34,7 +34,7 @@ trait Error {
     public function getErrors() {
         return $this->errors;
     }
-    
+
     /**
      * Returns the error level
      * @return int error_level
@@ -42,7 +42,7 @@ trait Error {
     public function getErrorLevel() {
         return $this->error_level;
     }
-    
+
     /**
      * Force set the error level
      * @param int $level
@@ -50,7 +50,7 @@ trait Error {
     public function setErrorLevel($level) {
         $this->error_level = intval($level);
     }
-    
+
     /**
      * Clears out all errors
      */
@@ -59,30 +59,30 @@ trait Error {
         $this->has_errors = FALSE;
         $this->error_level = 0;
     }
-    
+
     /**
-     * Adds an error 
+     * Adds an error
      * @param string $message
      * @return bool FALSE
      */
-    protected function addError($message, $level = 1, $unique = TRUE) {
-        if(!in_array($message, $this->errors)) {  
+    public function addError($message, $level = 1, $unique = TRUE) {
+        if(!in_array($message, $this->errors)) {
             $this->errors[] = $message;
         }
-        
+
         $this->has_errors = TRUE;
         $this->error_level = max($this->error_level, $level);
         return FALSE;
     }
-    
+
     /**
      * Adds multiple errors at once
      * @param array $errors
      */
-    protected function addErrors($errors, $level = 1) {
+    public function addErrors($errors, $level = 1) {
         foreach($errors as $error) {
             $this->addError($error, $level);
         }
     }
-    
+
 }
