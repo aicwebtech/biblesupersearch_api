@@ -12,6 +12,7 @@ class ApiController extends Controller {
 
     public function genericAction($action = 'query', Request $Request) {
         $allowed_actions = ['query', 'bibles', 'books', 'statics', 'version'];
+        $_SESSION['debug'] = array();
 
         if(!in_array($action, $allowed_actions)) {
             return new Response('Action not found', 404);
@@ -37,6 +38,11 @@ class ApiController extends Controller {
             return (new Response($ex->getMessage(), 500))
                 -> header('Content-Type', 'application/json; charset=utf-8')
                 -> header('Access-Control-Allow-Origin', '*');
+        }
+
+        if(config('app.debug') && $action == 'query') {
+            $Engine->addError( '<pre>' . print_r($_SESSION['debug'], TRUE) . '</pre>', 1);
+            //$Engine->addErrors( $_SESSION['debug'], 1);
         }
 
         if($Engine->hasErrors()) {

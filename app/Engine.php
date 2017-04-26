@@ -219,7 +219,12 @@ class Engine {
 
             if(empty($results)) {
                 if($Search) {
-                    $this->addError( trans('errors.no_results'), 4);
+                    if($Search->hasErrors()) {
+                        $this->addErrors($Search->getErrors(), $Search->getErrorLevel());
+                    }
+                    else {
+                        $this->addError( trans('errors.no_results'), 4);
+                    }
                 }
                 else {
                     $this->setErrorLevel(4);
@@ -243,6 +248,12 @@ class Engine {
         }
 
         $results = $this->_formatDataStructure($results, $input, $Passages, $Search);
+
+        if(config('app.debug')) {
+            //$this->addError( '<pre>' . print_r($_SESSION['debug'], TRUE) . '</pre>', 1);
+            //$results['debug'] = $_SESSION['debug'];
+        }
+
         return $results;
     }
 

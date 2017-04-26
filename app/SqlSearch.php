@@ -25,6 +25,10 @@ class SqlSearch {
     protected $use_named_bindings = FALSE;
     public $search_fields = 'text'; // Comma separated
 
+    static protected $regexp_phrase = '/["][\p{L}0-9\.\*\+\[\]\{\},\^\$\\\\\(\) ]+["]/u'; // Works at matching phrases and (some) regexp
+    //static protected $regexp_phrase = '/["][\p{L}0-9\.\*\+\[\]\{\},\^\$\\\\\(\) ]+["]/u'; // Attempt at matching phrases and regexp
+    //static protected $regexp_phrase = '/["][\p{L}0-9 ]+["]/u'; // Old way - works for text phrases, not for REGEXP
+
     static protected $search_inputs = array(
         'search' => array(
             'label' => 'Search',
@@ -150,6 +154,7 @@ class SqlSearch {
         $not_at_beg = ['AND', 'XOR', 'OR'];
         $not_at_end = ['AND', 'XOR', 'OR', 'NOT'];
         $len = strlen($standardized);
+        $terms = static::parseQueryTerms($search);
 
         foreach($not_at_beg as $op) {
             if(strpos($standardized, $op) === 0) {
@@ -219,6 +224,11 @@ class SqlSearch {
         //$operators = static::parseQueryOperators($std_bool, $terms);
         $sql = $std_bool;
 
+        if(static::containsInvalidCharacters($terms)) {
+            $this->addError( trans('errors.invalid_search.general', ['search' => $search]), 4);
+            return FALSE;
+        }
+
         foreach($terms as $term) {
             list($term_sql, $bind_index) = $this->_termSql($term, $binddata, $fields, $table_alias);
             //$sql = str_replace($term, $term_sql, $sql);
@@ -274,13 +284,20 @@ class SqlSearch {
             return 'REGEXP';
         }
         else {
-            return (strpos($term, ' ') !== FALSE) ? 'REGEXP' : 'LIKE';
+            return (strpos($term, '"') !== FALSE) ? 'REGEXP' : 'LIKE';
         }
     }
 
     protected function _termFormat($term, $exact_case = FALSE, $whole_words = FALSE) {
-        if(strpos($term, ' ') !== FALSE) {
-            return trim($term, '"');
+        // Phrases, REGEXP
+        if(strpos($term, '"') !== FALSE) {
+            $term = trim($term, '"');
+
+            if($whole_words) {
+                $term = '[[:<:]]' . $term . '[[:>:]]';
+            }
+
+            return $term;
         }
 
         if(!$whole_words) {
@@ -383,9 +400,11 @@ class SqlSearch {
         //preg_match_all('/"[a-zA-z0-9 ]+"/', $parsing, $phrases, PREG_SET_ORDER);
         $phrases = static::parseQueryPhrases($query);
         //$parsing = preg_replace('/"[a-zA-z0-9 ]+"/', '', $parsing); // Remove phrases once parsed
-        $parsing = preg_replace('/["][\p{L}0-9 ]+["]/u', '', $parsing); // Remove phrases once parsed
+        //$parsing = preg_replace('/["][\p{L}0-9 ]+["]/u', '', $parsing); // Remove phrases once parsed
+        $parsing = preg_replace(static::$regexp_phrase, '', $parsing); // Remove phrases once parsed
         //preg_match_all('/%?[a-zA-Z0-9]+%?/', $parsing, $matches, PREG_SET_ORDER);
         preg_match_all('/%?[\p{L}0-9\']+%?/u', $parsing, $matches, PREG_SET_ORDER);
+        //preg_match_all('/%?[.*]+%?/u', $parsing, $matches, PREG_SET_ORDER);
 
         foreach ($matches as $item) {
             $parsed[] = $item[0];
@@ -397,6 +416,31 @@ class SqlSearch {
 
         //$parsed = array_unique($parsed); // Causing breakage
         return $parsed;
+    }
+
+    /**
+     * Parses out the terms of a boolean query
+     * @param string $terms parsed query terms
+     * @return bool
+     */
+    public static function containsInvalidCharacters($terms) {
+        //$terms = static::parseQueryTerms($query);
+        //print_r($terms);
+
+        foreach($terms as $term) {
+            if($term{0} == '"') {
+                // Ignore phrases and REGEXP
+                continue;
+            }
+
+            $invalid_chars = preg_replace('/[\p{L}\(\)|!&^ "\'0-9%]+/u', '', $term);
+
+            if(!empty($invalid_chars)) {
+                return TRUE;
+            }
+        }
+
+        return FALSE;
     }
 
     /**
@@ -414,7 +458,8 @@ class SqlSearch {
     public static function parseQueryPhrases($query, $underscore_map = FALSE) {
         $matches = $phrases = $underscores = array();
         //preg_match_all('/"[a-zA-z0-9 ]+"/', $query, $matches, PREG_SET_ORDER);
-        preg_match_all('/["][\p{L}0-9 ]+["]/u', $query, $matches, PREG_SET_ORDER);
+        //preg_match_all('/["][\p{L}0-9 ]+["]/u', $query, $matches, PREG_SET_ORDER);
+        preg_match_all(static::$regexp_phrase, $query, $matches, PREG_SET_ORDER);
 
         foreach ($matches as $item) {
             $phrase = $item[0];
@@ -458,7 +503,15 @@ class SqlSearch {
         $xor = array(' XOR ', '^^', '^');
 
         list($phrases, $underscored) = static::parseQueryPhrases($query, TRUE);
-        $query = str_replace($phrases, $underscored, $query);
+
+        $phrase_placeholders = array();
+
+        foreach($phrases as $key => $phrase) {
+            $phrase_placeholders[] = 'ph' . $key . 'ph';
+        }
+
+        //$query = str_replace($phrases, $underscored, $query);
+        $query = str_replace($phrases, $phrase_placeholders, $query);
         $query = str_replace($xor, ' ^ ', $query);
         $query = str_replace($and, ' & ', $query);
         $query = str_replace($or,  ' | ', $query);
@@ -477,7 +530,8 @@ class SqlSearch {
         $find  = array('&', '|', '-', '^');
         $repl  = array('AND', 'OR', ' NOT ', 'XOR');
         $query = str_replace($find, $repl, $query);
-        $query = str_replace($underscored, $phrases, $query);
+        $query = str_replace($phrase_placeholders, $phrases, $query);
+        //$query = str_replace($underscored, $phrases, $query);
         $query = trim(preg_replace('/\s+/', ' ', $query));
         return $query;
     }

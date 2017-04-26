@@ -38,4 +38,16 @@ class KeywordTest extends TestCase
         //$this->assertCount(9, $results['kjv']);
 
     }
+
+    public function testExactPhraseOneWord() {
+        $Engine = new Engine();
+        $Engine->setDefaultDataType('raw');
+        $results = $Engine->actionQuery(['bible' => 'kjv', 'search' => 'faith', 'search_type' => 'phrase', 'page_all' => TRUE, 'whole_words' => FALSE]);
+        $this->assertFalse($Engine->hasErrors());
+        $this->assertCount(338, $results['kjv']);
+
+        $results = $Engine->actionQuery(['bible' => 'kjv', 'search' => 'faith', 'search_type' => 'phrase', 'page_all' => TRUE, 'whole_words' => TRUE]);
+        $this->assertFalse($Engine->hasErrors());
+        $this->assertCount(231, $results['kjv']);
+    }
  }
