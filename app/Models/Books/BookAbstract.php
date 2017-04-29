@@ -71,6 +71,15 @@ class BookAbstract extends Model
 
         $name = trim(trim($name), '.');
 
+        // Attempt 0: Book Number
+        if(preg_match('/^[0-9]{2}[B]$/', $name)) {
+            $id = intval($name);
+
+            if($id) {
+                return $class_name::find($id);
+            }
+        }
+
         // Attempt 1: Direct matching
         $Book = $class_name::where('name', $name)
                 -> orwhere('shortname', $name)

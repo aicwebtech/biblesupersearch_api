@@ -233,6 +233,17 @@ class PassageTest extends TestCase
         $this->assertEquals(1, $Passages[2]->chapter_max);
     }
 
+    public function testBookNumberParse() {
+        $reference = '19 91:2-8';
+        $Passages = Passage::parseReferences($reference, ['en']);
+        $this->assertFalse($Passages);
+
+        $reference = '19B 91:2-8';
+        $references = Passage::explodeReferences($reference, TRUE);
+        $this->assertTrue(is_array($references), 'References failed to parse');
+        $this->assertEquals('19B', $references[0]['book']);
+    }
+
     public function testMultipleVerses() {
         // Really varying up format, punctuation, whitespace
         $reference = '  Rm 1:16 ;  1Thes 4:5- 6:3, 8:2-3, Tit 1:4, Rev 3:1-3;  4:  , Rom 3:23, 6:23; 5:8, 10:8  - 14    ';

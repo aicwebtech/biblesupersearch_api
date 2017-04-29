@@ -188,6 +188,11 @@ class Engine {
             }
         }
 
+        if(!empty($references) && empty($Passages)) {
+            $this->addError(trans('errors.passage_not_found', ['passage' => $references]), 4);
+            return FALSE;
+        }
+
         // Search validation
         if($Search) {
             $search_valid = $Search->validate();
