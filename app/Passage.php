@@ -732,9 +732,13 @@ class Passage {
                     $exploded[] = $ref;
                 }
 
-                $ref_end = $pos;
+                $ref_end  = $pos;
                 $book_end = FALSE;
             }
+        }
+
+        if($ref_end !== 0) {
+            //$exploded[] = substr($reference, 0, $ref_end - 1);
         }
 
         // To keep the references in the same order that they were submitted

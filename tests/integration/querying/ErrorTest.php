@@ -57,6 +57,12 @@ class ErrorTest extends TestCase {
         $this->assertEquals(trans('errors.book.not_found', ['book' => '1 Tom']), $errors[1]);
     }
 
+    public function testBookNumber() {
+        $Engine = new Engine();
+        $results = $Engine->actionQuery(['bible' => 'kjv', 'reference' => '19 91:2-8']);
+        $this->assertTrue($Engine->hasErrors());
+    }
+
     public function testUnfoundVerses() {
         $Engine = new Engine();
         $results = $Engine->actionQuery(['bible' => 'kjv', 'reference' => 'Rom 4:29-39 ']);
