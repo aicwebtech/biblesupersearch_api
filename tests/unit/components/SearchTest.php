@@ -10,13 +10,13 @@ class SearchTest extends TestCase {
 
     public function testEmptySearch() {
         $empty = array('', NULL, FALSE, array());
-        
-        foreach($empty as $val) {            
+
+        foreach($empty as $val) {
             $Search = Search::parseSearch($val);
             $this->assertFalse($Search);
         }
     }
-    
+
     public function testMethodIsSpecial() {
         $this->assertFalse( Search::isSpecial('faith hope charity','and') );
         $this->assertFalse( Search::isSpecial('faith hope charity','or') );
@@ -34,7 +34,7 @@ class SearchTest extends TestCase {
         $this->assertTrue(  Search::isSpecial('faith PROX(4) hope PROX(12) charity','boolean') );
         $this->assertTrue(  Search::isSpecial('faith BOOK hope CHAP charity','boolean') );
     }
-    
+
     public function testBooleanize() {
         $search = 'faith hope joy';
         $bp = Search::booleanizeQuery($search, 'all_words');
@@ -60,7 +60,7 @@ class SearchTest extends TestCase {
         $bp = Search::booleanizeQuery('faith AND (hope OR love)', 'boolean');
         $this->assertEquals('faith AND (hope OR love)', $bp);
     }
-    
+
     public function testBooleanParse() {
         $parsed = Search::parseQueryTerms('faith AND (hope OR love)');
         $this->assertEquals(array('faith', 'hope', 'love'), $parsed);
@@ -83,13 +83,13 @@ class SearchTest extends TestCase {
         $parsed = Search::parseQueryTerms('(faith OR hope) charity PROX(12) (Joy or love)');
         $this->assertEquals(array('faith', 'hope', 'charity', 'Joy', 'or', 'love'), $parsed); // lowercase 'or' is considered a keyword
         $parsed = Search::parseQueryTerms('(faith OR hope) charity PROX(12) (Joy OR love)');
-        $this->assertEquals(array('faith', 'hope', 'charity', 'Joy', 'love'), $parsed); 
+        $this->assertEquals(array('faith', 'hope', 'charity', 'Joy', 'love'), $parsed);
         $parsed = Search::parseQueryTerms('(faith OR hope) charity PROC(12) (Joy OR love)');
-        $this->assertEquals(array('faith', 'hope', 'charity', 'Joy', 'love'), $parsed); 
+        $this->assertEquals(array('faith', 'hope', 'charity', 'Joy', 'love'), $parsed);
         $parsed = Search::parseQueryTerms('(faith OR hope) charity PROXC(12) (Joy OR love)');
-        $this->assertEquals(array('faith', 'hope', 'charity', 'Joy', 'love'), $parsed); 
+        $this->assertEquals(array('faith', 'hope', 'charity', 'Joy', 'love'), $parsed);
     }
-    
+
     public function testBooleanStandardization() {
         // Make sure we haven't broke inherited functionality
         $std = Search::standardizeBoolean('faith hope love');
@@ -108,7 +108,7 @@ class SearchTest extends TestCase {
         $this->assertEquals('faith AND (hope AND love)', $std);
         $std = Search::standardizeBoolean('faith (hope love)  joy');
         $this->assertEquals('faith AND (hope AND love) AND joy', $std);
-        
+
         // Testing added functionality
         $std = Search::standardizeBoolean('(faith OR hope) charity PROX(12) (Joy or love)');
         $this->assertEquals('(faith OR hope) AND charity PROX(12) (Joy AND or AND love)', $std);
@@ -123,55 +123,54 @@ class SearchTest extends TestCase {
         $std = Search::standardizeBoolean('faith chapter hope book charity');
         $this->assertEquals('faith AND chapter AND hope AND book AND charity', $std);
     }
-    
+
     public function testSqlGeneration() {
         $Search = Search::parseSearch('faith hope love');
         $search_type = $Search->search_type;
         $this->assertEquals('and', $Search->search_type);
         list($sql, $binddata) = $Search->generateQuery();
         $this->assertEquals('(`text` LIKE :bd1) AND (`text` LIKE :bd2) AND (`text` LIKE :bd3)', $sql);
-        $this->assertEquals('(`text` LIKE :bd1) AND (`text` LIKE :bd2) AND (`text` LIKE :bd3)', $sql);
         $this->assertEquals(array(':bd1' => '%faith%', ':bd2' => '%hope%', ':bd3' => '%love%'), $binddata);
-        
+
         $Search = Search::parseSearch('faith hope love', array('search_type' => 'or'));
         $this->assertEquals('or', $Search->search_type);
         list($sql, $binddata) = $Search->generateQuery();
         $this->assertEquals('(`text` LIKE :bd1) OR (`text` LIKE :bd2) OR (`text` LIKE :bd3)', $sql);
         $this->assertEquals(array(':bd1' => '%faith%', ':bd2' => '%hope%', ':bd3' => '%love%'), $binddata);
     }
-    
+
     public function testProximityParsing() {
         $Search = Search::parseSearch('(faith OR hope) charity CHAPTER (Joy or love)', ['search_type' => 'boolean']);
         $this->assertTrue($Search->is_special);
         list($Searches, $operators) = $Search->parseProximitySearch();
         $this->assertEquals(array('~c'), $operators);
-        $this->assertEquals('(faith OR hope) charity', $Searches[0]->search);
-        $this->assertEquals('(Joy or love)', $Searches[1]->search);
-        
+        $this->assertEquals('((faith OR hope) charity)', $Searches[0]->search);
+        $this->assertEquals('((Joy or love))', $Searches[1]->search);
+
         $Search = Search::parseSearch('(faith OR hope) charity BOOK (Joy or love)', ['search_type' => 'boolean']);
         $this->assertTrue($Search->is_special);
         list($Searches, $operators) = $Search->parseProximitySearch();
         $this->assertEquals(array('~b'), $operators);
-        $this->assertEquals('(faith OR hope) charity', $Searches[0]->search);
-        $this->assertEquals('(Joy or love)', $Searches[1]->search);
-        
+        $this->assertEquals('((faith OR hope) charity)', $Searches[0]->search);
+        $this->assertEquals('((Joy or love))', $Searches[1]->search);
+
         $Search = Search::parseSearch('(faith OR hope) charity PROX (Joy or love)', ['search_type' => 'boolean']);
         $this->assertTrue($Search->is_special);
-        list($Searches, $operators) = $Search->parseProximitySearch();
+        list($Searches, $operators) = $Search->parseProximitySearch(TRUE);
         $this->assertEquals(array('~p'), $operators);
         $this->assertEquals('(faith OR hope) charity', $Searches[0]->search);
         $this->assertEquals('(Joy or love)', $Searches[1]->search);
-        
+
         $Search = Search::parseSearch('(faith OR hope) charity PROX(15) (Joy or love)', ['search_type' => 'boolean']);
         $this->assertTrue($Search->is_special);
-        list($Searches, $operators) = $Search->parseProximitySearch();
+        list($Searches, $operators) = $Search->parseProximitySearch(TRUE);
         $this->assertEquals(array('~p(15)'), $operators);
         $this->assertEquals('(faith OR hope) charity', $Searches[0]->search);
         $this->assertEquals('(Joy or love)', $Searches[1]->search);
-        
+
         $Search = Search::parseSearch('faith PROX(4) hope PROX(12) charity', ['search_type' => 'boolean']);
         $this->assertTrue($Search->is_special);
-        list($Searches, $operators) = $Search->parseProximitySearch();
+        list($Searches, $operators) = $Search->parseProximitySearch(TRUE);
         $this->assertEquals(array('~p(4)','~p(12)'), $operators);
         $this->assertEquals('faith',   $Searches[0]->search);
         $this->assertEquals('hope',    $Searches[1]->search);
@@ -179,12 +178,12 @@ class SearchTest extends TestCase {
 
         $Search = Search::parseSearch('faith PROC(4) hope PROC(12) charity', ['search_type' => 'boolean']);
         $this->assertTrue($Search->is_special);
-        list($Searches, $operators) = $Search->parseProximitySearch();
+        list($Searches, $operators) = $Search->parseProximitySearch(TRUE);
         $this->assertEquals(array('~l(4)','~l(12)'), $operators);
         $this->assertEquals('faith',   $Searches[0]->search);
         $this->assertEquals('hope',    $Searches[1]->search);
         $this->assertEquals('charity', $Searches[2]->search);
-        
+
         $Search = Search::parseSearch('faith hope charity', ['search_type' => 'proximity']);
         $this->assertTrue($Search->is_special);
         list($Searches, $operators) = $Search->parseProximitySearch();
@@ -192,7 +191,7 @@ class SearchTest extends TestCase {
         $this->assertEquals('faith',   $Searches[0]->search);
         $this->assertEquals('hope',    $Searches[1]->search);
         $this->assertEquals('charity', $Searches[2]->search);
-        
+
         $Search = Search::parseSearch('faith hope charity', ['search_type' => 'book']);
         $this->assertTrue($Search->is_special);
         list($Searches, $operators) = $Search->parseProximitySearch();
@@ -200,7 +199,7 @@ class SearchTest extends TestCase {
         $this->assertEquals('faith',   $Searches[0]->search);
         $this->assertEquals('hope',    $Searches[1]->search);
         $this->assertEquals('charity', $Searches[2]->search);
-        
+
         $Search = Search::parseSearch('faith hope charity', ['search_type' => 'chapter']);
         $this->assertTrue($Search->is_special);
         list($Searches, $operators) = $Search->parseProximitySearch();
@@ -208,13 +207,40 @@ class SearchTest extends TestCase {
         $this->assertEquals('faith',   $Searches[0]->search);
         $this->assertEquals('hope',    $Searches[1]->search);
         $this->assertEquals('charity', $Searches[2]->search);
-        
+
         $Search = Search::parseSearch('faith | joy CHAP hope AND love BOOK charity', ['search_type' => 'boolean']);
         $this->assertTrue($Search->is_special);
         list($Searches, $operators) = $Search->parseProximitySearch();
         $this->assertEquals(array('~c','~b'), $operators);
-        $this->assertEquals('faith | joy',   $Searches[0]->search);
-        $this->assertEquals('hope AND love', $Searches[1]->search);
-        $this->assertEquals('charity',       $Searches[2]->search);
+        $this->assertEquals('(faith | joy)',   $Searches[0]->search);
+        $this->assertEquals('(hope AND love)', $Searches[1]->search);
+        $this->assertEquals('(charity)',       $Searches[2]->search);
+    }
+
+    function testWildcardParse() {
+        $query = 'tempt% world';
+        $terms = Search::parseQueryTerms($query);
+        $this->assertCount(2, $terms);
+
+        // With whole words
+        $Search = Search::parseSearch($query, ['whole_words' => TRUE]);
+        $this->assertEquals('and', $Search->search_type);
+        list($sql, $binddata) = $Search->generateQuery();
+        $this->assertEquals('(`text` REGEXP :bd1) AND (`text` REGEXP :bd2)', $sql);
+        $this->assertEquals(array(':bd1' => '[[:<:]]tempt', ':bd2' => '[[:<:]]world[[:>:]]'), $binddata);
+
+        $query = 'tempt% %world';
+        $Search = Search::parseSearch($query, ['whole_words' => TRUE]);
+        $this->assertEquals('and', $Search->search_type);
+        list($sql, $binddata) = $Search->generateQuery();
+        $this->assertEquals('(`text` REGEXP :bd1) AND (`text` REGEXP :bd2)', $sql);
+        $this->assertEquals(array(':bd1' => '[[:<:]]tempt', ':bd2' => 'world[[:>:]]'), $binddata);
+
+        $query = 'tempt %world';
+        $Search = Search::parseSearch($query, ['whole_words' => TRUE]);
+        $this->assertEquals('and', $Search->search_type);
+        list($sql, $binddata) = $Search->generateQuery();
+        $this->assertEquals('(`text` REGEXP :bd1) AND (`text` REGEXP :bd2)', $sql);
+        $this->assertEquals(array(':bd1' => '[[:<:]]tempt[[:>:]]', ':bd2' => 'world[[:>:]]'), $binddata);
     }
 }

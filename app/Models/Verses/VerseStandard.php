@@ -43,13 +43,17 @@ class VerseStandard extends VerseAbstract {
                 $search_query = static::_buildSpecialSearchQuery($Search, $parameters, $passage_query_special);
 
                 if(!$search_query) {
-                    return array(); // No results
+                    return FALSE; // No results
                 }
 
                 $Query->whereRaw('(' . $search_query . ')');
             }
             else {
                 list($search_query, $binddata) = static::_buildSearchQuery($Search, $parameters);
+
+                if(!$search_query) {
+                    return FALSE;
+                }
 
                 if(!config('app.query_use_named_placeholders')) {
                     $binddata = array_values($binddata);
@@ -59,9 +63,24 @@ class VerseStandard extends VerseAbstract {
             }
         }
 
+        if(config('app.debug')) {
+            $_SESSION['debug']['query']      = $Query->toSql();
+            $_SESSION['debug']['query_data'] = (isset($binddata)) ? $binddata : NULL;
+        }
+
         //echo(PHP_EOL . $Query->toSql() . PHP_EOL);
         //var_dump($binddata);
-        $verses = $Query->get();
+
+        if($Search && !$parameters['multi_bibles'] && !$parameters['page_all']) {
+            $verses = $Query->paginate( config('bss.pagination.limit') );
+        }
+        else {
+            ini_set('max_execution_time', 120);
+            $Query->limit( config('bss.global_maximum_results') );
+            $verses = $Query->get();
+        }
+
+        //$verses = $Query->paginate(100);
         return (empty($verses)) ? FALSE : $verses;
     }
 
@@ -146,12 +165,6 @@ class VerseStandard extends VerseAbstract {
 
         // Need to use raw queries because of complex JOIN statements
         $sql = 'SELECT ' . implode(', ', $selects) . PHP_EOL . $from . PHP_EOL . implode(PHP_EOL, $joins) . PHP_EOL . 'WHERE ' . $where;
-
-        //echo PHP_EOL;
-        //var_dump($sql);
-        //var_dump($binddata);
-        //die();
-
         $results_raw = DB::select($sql, $binddata);
 
         foreach($results_raw as $a1) {
@@ -218,7 +231,8 @@ class VerseStandard extends VerseAbstract {
             //$table->charset('utf8mb4');
             //$table->collate('utf8mb4_unicode_ci');
 
-            $table->increments('id');
+            //$table->increments('id');
+            $table->integer('id', TRUE);
             $table->tinyInteger('book')->unsigned();
             $table->tinyInteger('chapter')->unsigned();
             $table->tinyInteger('verse')->unsigned();

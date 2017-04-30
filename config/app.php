@@ -9,9 +9,9 @@ return [
     |
     |
     */
-    
+
     'name' => 'Bible SuperSearch API',
-    
+
     /*
     |--------------------------------------------------------------------------
     | Application Version
@@ -19,9 +19,9 @@ return [
     |
     |
     */
-    
+
     'version' => '2.5 beta',
-    
+
     /*
     |--------------------------------------------------------------------------
     | Application Debug Mode
@@ -33,8 +33,8 @@ return [
     |
     */
 
-    'debug' => env('APP_DEBUG', TRUE),
-    
+    'debug' => env('APP_DEBUG', FALSE),
+
     'env' => env('APP_ENV', 'production'),
 
 
@@ -216,7 +216,7 @@ return [
         'View'      => Illuminate\Support\Facades\View::class,
 
     ],
-    
+
     /* Whether to use named placeholders for the primary query. *
      * Do not change, or things may / will break!
      */

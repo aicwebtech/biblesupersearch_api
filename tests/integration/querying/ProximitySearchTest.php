@@ -11,17 +11,25 @@ class ProximitySearchTest extends TestCase {
     public function testParenthensesMismatch() {
         $Engine = new Engine();
         $Engine->setDefaultDataType('raw');
+        $Engine->setDefaultPageAll(TRUE);
 
         $results = $Engine->actionQuery(['bible' => 'kjv', 'search' => '(faith PROX(2) joy joy love joy', 'search_type' => 'boolean']);
         $this->assertTrue($Engine->hasErrors());
         $errors = $Engine->getErrors();
         $this->assertCount(1, $errors);
         $this->assertEquals( trans('errors.prox_paren_mismatch'), $errors[0]);
+
+        $results = $Engine->actionQuery(['bible' => 'kjv', 'search' => '(escape hide PROX(5) wrath indignation)', 'search_type' => 'boolean']);
+        $this->assertTrue($Engine->hasErrors());
+        $errors = $Engine->getErrors();
+        $this->assertCount(1, $errors);
+        $this->assertEquals( trans('errors.prox_paren_mismatch'), $errors[0]);
     }
-    
+
     public function testNotBoolean() {
         $Engine = new Engine();
         $Engine->setDefaultDataType('raw');
+        $Engine->setDefaultPageAll(TRUE);
 
         $results = $Engine->actionQuery(['bible' => 'kjv', 'search' => 'faith PROX(2) joy', 'search_type' => 'any']);
         $this->assertTrue($Engine->hasErrors());
@@ -37,6 +45,7 @@ class ProximitySearchTest extends TestCase {
     public function testProximitySearchType() {
         $Engine = new Engine();
         $Engine->setDefaultDataType('raw');
+        $Engine->setDefaultPageAll(TRUE);
 
         $results = $Engine->actionQuery(['bible' => 'kjv', 'search' => 'faith joy love', 'search_type' => 'proximity', 'proximity_limit' => 10, 'whold_words' => FALSE]);
         $this->assertFalse($Engine->hasErrors());
@@ -70,6 +79,7 @@ class ProximitySearchTest extends TestCase {
     public function testMixedProxLimits() {
         $Engine = new Engine();
         $Engine->setDefaultDataType('raw');
+        $Engine->setDefaultPageAll(TRUE);
 
         $results = $Engine->actionQuery(['bible' => 'kjv', 'search' => 'faith PROX(2) joy PROX(5) love', 'search_type' => 'boolean']);
         $this->assertFalse($Engine->hasErrors());
@@ -102,6 +112,7 @@ class ProximitySearchTest extends TestCase {
     public function testProximitySearchTypeDefaultLimit() {
         $Engine = new Engine();
         $Engine->setDefaultDataType('raw');
+        $Engine->setDefaultPageAll(TRUE);
         // Default proximity limit is 5 (hardcoded)
         $results = $Engine->actionQuery(['bible' => 'kjv', 'search' => 'faith hope', 'search_type' => 'proximity', 'reference' => 'Rom 4']);
         $this->assertFalse($Engine->hasErrors());
@@ -111,6 +122,7 @@ class ProximitySearchTest extends TestCase {
     public function testChapterSearchType() {
         $Engine = new Engine();
         $Engine->setDefaultDataType('raw');
+        $Engine->setDefaultPageAll(TRUE);
         $results = $Engine->actionQuery(['bible' => 'kjv', 'search' => 'faith hope', 'search_type' => 'chapter', 'reference' => 'Rom 4']);
         $this->assertFalse($Engine->hasErrors());
         $this->assertCount(10, $results['kjv']);
@@ -119,10 +131,28 @@ class ProximitySearchTest extends TestCase {
     public function testBookSearchType() {
         $Engine = new Engine();
         $Engine->setDefaultDataType('raw');
+        $Engine->setDefaultPageAll(TRUE);
         // This essentially asks, which book(s) contain both 'hall' and 'hallowed'?
         $results = $Engine->actionQuery(['bible' => 'kjv', 'search' => 'hall hallowed', 'search_type' => 'book', 'whole_words' => TRUE]);
         $this->assertFalse($Engine->hasErrors());
         $this->assertCount(4, $results['kjv']);
+    }
+
+    public function testAPI118() {
+        $Engine = new Engine();
+        $Engine->setDefaultDataType('raw');
+        $Engine->setDefaultPageAll(TRUE);
+        $results = $Engine->actionQuery(['bible' => 'kjv', 'search' => '(refuge) PROX(5) (try | tempt)', 'search_type' => 'boolean', 'reference' => 'Prophets; NT;', 'whole_words' => TRUE]);
+        $this->assertTrue($Engine->hasErrors());
+    }
+
+    public function testAPI117() {
+        $Engine = new Engine();
+        $Engine->setDefaultDataType('raw');
+        $Engine->setDefaultPageAll(TRUE);
+        $results = $Engine->actionQuery(['bible' => 'kjv', 'search' => 'escape | hide PROX(5) wrath | indignation', 'search_type' => 'boolean']);
+        $this->assertFalse($Engine->hasErrors());
+        $this->assertLessThan(100, count($results['kjv'])); // Return count not vetted to the number
     }
 
     public function _testQueryBinding() {

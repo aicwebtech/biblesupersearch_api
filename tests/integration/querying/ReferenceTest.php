@@ -38,6 +38,7 @@ class ReferenceTest extends TestCase {
         $this->assertEquals('Random Verse', $results[0]['book_raw']);
     }
 
+    
     public function testIndefiniteStartRange() {
         $Engine = new Engine();
         $results = $Engine->actionQuery(['bible' => 'kjv', 'reference' => 'Rev - 3:8', 'data_format' => 'raw']);
@@ -91,4 +92,12 @@ class ReferenceTest extends TestCase {
         $this->assertEquals(22, $last->chapter);
         $this->assertEquals(21, $last->verse);
     }
+
+    public function testBookNumber() {
+        $Engine = new Engine();
+        $results = $Engine->actionQuery(['bible' => 'kjv', 'reference' => '19B 91:5-9', 'data_format' => 'passage']);
+        $this->assertFalse($Engine->hasErrors());
+        $this->assertEquals('Psalms', $results[0]['book_name']);
+    }
+
 }

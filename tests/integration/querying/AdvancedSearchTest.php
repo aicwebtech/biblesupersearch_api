@@ -11,81 +11,86 @@ class AdvancedSearchTest extends TestCase {
     public function testAllWords() {
         $Engine = new Engine();
         $Engine->setDefaultDataType('raw');
-        
+        $Engine->setDefaultPageAll(TRUE);
+
         $input = ['bible' => 'kjv', 'search_all' => 'faith hope', 'format_structure' => 'raw'];
-        
+
         $results = $Engine->actionQuery($input);
         $this->assertCount(9, $results['kjv']);
-        
+
         $input = ['bible' => 'kjv', 'search_all' => 'faith hope', 'reference' => '1 Thess', 'format_structure' => 'raw'];
         $results = $Engine->actionQuery($input);
         $this->assertCount(2, $results['kjv']);
     }
-    
+
     public function testAnyWords() {
         $Engine = new Engine();
         $Engine->setDefaultDataType('raw');
-        
+        $Engine->setDefaultPageAll(TRUE);
+
         $input = ['bible' => 'kjv', 'search_any' => 'faith hope', 'format_structure' => 'raw'];
-        
+
         $results = $Engine->actionQuery($input);
         $this->assertCount(462, $results['kjv']);
-        
+
         $input['whole_words'] = 'on';
         $results = $Engine->actionQuery($input);
         $this->assertCount(344, $results['kjv']);
-        
+
         $input = ['bible' => 'kjv', 'search_any' => 'faith hope', 'reference' => 'Acts', 'format_structure' => 'raw'];
         $results = $Engine->actionQuery($input);
         $this->assertCount(24, $results['kjv']);
     }
-    
+
     public function testOneWord() {
         $Engine = new Engine();
         $Engine->setDefaultDataType('raw');
-        
+        $Engine->setDefaultPageAll(TRUE);
+
         $input = ['bible' => 'kjv', 'search_one' => 'faith hope', 'format_structure' => 'raw'];
-        
+
         $results = $Engine->actionQuery($input);
         $this->assertCount(453, $results['kjv']);
-        
+
         $input['whole_words'] = 'on';
-        
+
         $results = $Engine->actionQuery($input);
         $this->assertCount(336, $results['kjv']);
-        
+
         $input = ['bible' => 'kjv', 'search_one' => 'faith hope', 'reference' => 'Acts', 'format_structure' => 'raw'];
         $results = $Engine->actionQuery($input);
         $this->assertCount(24, $results['kjv']);
     }
-    
+
     public function testExactPhrase() {
         $Engine = new Engine();
         $Engine->setDefaultDataType('raw');
-        
+        $Engine->setDefaultPageAll(TRUE);
+
         $input = ['bible' => 'kjv', 'search_phrase' => 'free spirit', 'format_structure' => 'raw'];
         $results = $Engine->actionQuery($input);
         $this->assertCount(1, $results['kjv']);
-        
+
         $input = ['bible' => 'kjv', 'search_phrase' => 'Lord of Hosts', 'format_structure' => 'raw'];
         $results = $Engine->actionQuery($input);
         $this->assertCount(235, $results['kjv']);
-        
+
         $input['whole_words'] = 'yes';
         $results = $Engine->actionQuery($input);
         $this->assertCount(235, $results['kjv']);
     }
-    
+
     public function testNoneWords() {
         $Engine = new Engine();
         $Engine->setDefaultDataType('raw');
-        
+        $Engine->setDefaultPageAll(TRUE);
+
         $input = ['bible' => 'kjv', 'search_none' => 'faith hope', 'reference' => 'Rom', 'format_structure' => 'raw'];
-        
+
         $results = $Engine->actionQuery($input);
         $this->assertCount(432, $results['kjv']);
     }
-    
+
     public function testLongPassageQuery() {
         $reference = 'Gen 3:36; Exodus 3:36; Leviticus 3:36; Numbers 3:36; Deuteronomy 3:36; Joshua 3:36; Judges 3:36; Ruth 3:36; 1 Samuel 3:36; '
                 . '2 Samuel 3:36; '
@@ -98,27 +103,28 @@ class AdvancedSearchTest extends TestCase {
                 . '2 Timothy 3:36;'
                 . ' Titus 3:36; Philemon 3:36; Hebrews 3:36; James 3:36; 1 Peter 3:36; 2 Peter 3:36; 1 John 3:36; 2 John 3:36; 3 John 3:36; Jude 3:36; '
                 . 'Revelation 3:36';
-        
+
         $Engine = new Engine();
         $Engine->setDefaultDataType('raw');
-        
-        $input = ['bible' => 'kjv', 'reference' => $reference, 'format_structure' => 'raw'];
-        
+
+        $input = ['bible' => 'kjv', 'reference' => $reference, 'format_structure' => 'raw', 'page_all' => TRUE];
+
         $results = $Engine->actionQuery($input);
         $this->assertCount(5, $results['kjv']);
     }
-    
+
     public function testProxRange() {
         $Engine = new Engine();
         $Engine->setDefaultDataType('raw');
-        
+        $Engine->setDefaultPageAll(TRUE);
+
         $input = ['bible' => 'kjv', 'search' => 'joy peace', 'search_type' => 'proximity', 'proximity_limit' => 10, 'whole_words' => TRUE];
-        
+
         $results = $Engine->actionQuery($input);
-        
+
         $query = "
             SELECT bible_1.id AS id_1, bible_2.id AS id_2
-            
+
             FROM bss_verses_kjv AS bible_1
             INNER JOIN bss_verses_kjv AS bible_2 ON bible_2.book = bible_1.book
             AND bible_2.id BETWEEN bible_1.id - 10
@@ -131,11 +137,11 @@ class AdvancedSearchTest extends TestCase {
                             `bible_1`.`text` REGEXP '[[:<:]]peace[[:>:]]'
                     )
         ";
-        
+
         //var_dump(VerseStandard::proximityQueryTest($query));
-        
+
         $this->assertFalse($Engine->hasErrors());
-        
+
         $this->assertCount(92, $results['kjv']);
     }
 }
