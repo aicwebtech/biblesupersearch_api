@@ -423,6 +423,14 @@ class PassageTest extends TestCase
                 'c_max' => 14,
             ),
             array(
+                'ref' => 'Rev 12:2 - :',
+                'exp' => array(
+                        array('cst' => 12, 'vst' => 2, 'cen' => NULL, 'ven' => NULL, 'type' => 'range'),
+                    ),
+                'c_min' => 12,
+                'c_max' => 12,
+            ),
+            array(
                 'ref' => 'Genesis 14-,3:4',
                 'exp' => array(
                         array('cst' => 14, 'vst' => NULL, 'cen' => NULL, 'ven' => NULL, 'type' => 'range'),
@@ -486,11 +494,16 @@ class PassageTest extends TestCase
             array(
                 'ref' => 'Rev 12:2 - ',
                 'exp' => array(
-                        array('cst' => 12, 'vst' => 5, 'cen' => 12, 'ven' => NULL, 'type' => 'range'),
+                        array('cst' => 12, 'vst' => 2, 'cen' => 12, 'ven' => NULL, 'type' => 'range'),
                     ),
                 'c_min' => 12,
                 'c_max' => 12,
             ),
+            // Breaking references:
+            // These need to be added to data structure above, and fixed!
+            /**
+             * Romans 4:19 - 5:
+             */
         );
 
         foreach($tests as $test) {

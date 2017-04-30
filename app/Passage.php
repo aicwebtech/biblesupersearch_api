@@ -255,6 +255,9 @@ class Passage {
             //print_r($preparsed_values);
         }
 
+        // Parse out chapter and verse information from the reference.
+        // Brute-force method
+
         // Chapters only - if reference contains no verses
         if($counts['colon'] == 0) {
             foreach($preparsed_values as $in => $value) {
@@ -331,9 +334,15 @@ class Passage {
                     }
 
                     if($is_range && $end_of_ref) {
-                        $parsed[] = array('cst' => $cst, 'vst' => $vst, 'cen' => $current_chapter, 'ven' => $current_verse, 'type' => 'range');
-                        $chapters[] = $cst;
-                        $chapters[] = $current_chapter;
+                        if($last == '-') {
+                            $parsed[] = array('cst' => $cst, 'vst' => $vst, 'cen' => NULL, 'ven' => NULL, 'type' => 'range');
+                            $chapters[] = $cst;
+                        }
+                        else {
+                            $parsed[] = array('cst' => $cst, 'vst' => $vst, 'cen' => $current_chapter, 'ven' => $current_verse, 'type' => 'range');
+                            $chapters[] = $cst;
+                            $chapters[] = $current_chapter;
+                        }
                         $is_range = FALSE;
                         $cst = $vst = NULL;
                     }
@@ -350,9 +359,19 @@ class Passage {
                     }
 
                     if($end_of_ref) {
-                        $cen = $current_chapter;
+                        // If we have a verse with this reference range, the end chapter is the same as the start
+                        // Otherwise, we have an indefinite chapter range, and will pull everything to end of book.
+                        $cen = ($current_verse || $last == ':') ? $current_chapter : NULL;
 
-                        $parsed[] = array('cst' => $current_chapter, 'vst' => $current_verse, 'cen' => $cen, 'ven' => NULL, 'type' => 'range');
+                        // Needed for (indefinite) chapter ranges when listed along with single verses: Ex: Genesis 3:4,14:-
+                        if($last == ':') {
+                            $parsed[] = array('c' => $current_chapter, 'v' => NULL, 'type' => 'single');
+                        }
+                        else {
+                            $parsed[] = array('cst' => $current_chapter, 'vst' => $current_verse, 'cen' => $cen, 'ven' => NULL, 'type' => 'range');
+                        }
+
+
                         //$parsed[] = array('c' => $current_chapter, 'v' => $current_verse, 'type' => 'single');
                         $chapters[] = $current_chapter;
                     }
