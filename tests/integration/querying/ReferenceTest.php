@@ -38,6 +38,7 @@ class ReferenceTest extends TestCase {
         $this->assertEquals('Random Verse', $results[0]['book_raw']);
     }
 
+
     public function testIndefiniteStartRange() {
         $Engine = new Engine();
         $results = $Engine->actionQuery(['bible' => 'kjv', 'reference' => 'Rev - 3:8', 'data_format' => 'raw']);
@@ -65,6 +66,7 @@ class ReferenceTest extends TestCase {
 
     public function testIndefiniteEndRange() {
         $Engine = new Engine();
+        // Matthew chapter 25 through end of book
         $results = $Engine->actionQuery(['bible' => 'kjv', 'reference' => 'Matt 25 - ', 'data_format' => 'raw']);
         $res = $results['kjv'];
 
@@ -78,7 +80,22 @@ class ReferenceTest extends TestCase {
         $this->assertEquals(28, $last->chapter);
         $this->assertEquals(20, $last->verse);
 
+        // Rev 12:2 through end of CHAPTER
         $results = $Engine->actionQuery(['bible' => 'kjv', 'reference' => 'Rev 12:2 -', 'data_format' => 'raw']);
+        $res = $results['kjv'];
+
+        $this->assertFalse($Engine->hasErrors());
+        $this->assertEquals(66, $results['kjv'][0]->book);
+        $this->assertEquals(12, $results['kjv'][0]->chapter);
+        $this->assertEquals(2,  $results['kjv'][0]->verse);
+
+        $last = array_pop($res);
+        $this->assertEquals(66, $last->book);
+        $this->assertEquals(12, $last->chapter);
+        $this->assertEquals(17, $last->verse);
+
+        // Rev 12:2 through end of BOOK
+        $results = $Engine->actionQuery(['bible' => 'kjv', 'reference' => 'Rev 12:2 - :', 'data_format' => 'raw']);
         $res = $results['kjv'];
 
         $this->assertFalse($Engine->hasErrors());
