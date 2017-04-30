@@ -130,7 +130,6 @@ class SearchTest extends TestCase {
         $this->assertEquals('and', $Search->search_type);
         list($sql, $binddata) = $Search->generateQuery();
         $this->assertEquals('(`text` LIKE :bd1) AND (`text` LIKE :bd2) AND (`text` LIKE :bd3)', $sql);
-        $this->assertEquals('(`text` LIKE :bd1) AND (`text` LIKE :bd2) AND (`text` LIKE :bd3)', $sql);
         $this->assertEquals(array(':bd1' => '%faith%', ':bd2' => '%hope%', ':bd3' => '%love%'), $binddata);
 
         $Search = Search::parseSearch('faith hope love', array('search_type' => 'or'));
@@ -218,7 +217,30 @@ class SearchTest extends TestCase {
         $this->assertEquals('(charity)',       $Searches[2]->search);
     }
 
-    function testExactPhrase() {
+    function testWildcardParse() {
+        $query = 'tempt% world';
+        $terms = Search::parseQueryTerms($query);
+        $this->assertCount(2, $terms);
 
+        // With whole words
+        $Search = Search::parseSearch($query, ['whole_words' => TRUE]);
+        $this->assertEquals('and', $Search->search_type);
+        list($sql, $binddata) = $Search->generateQuery();
+        $this->assertEquals('(`text` REGEXP :bd1) AND (`text` REGEXP :bd2)', $sql);
+        $this->assertEquals(array(':bd1' => '[[:<:]]tempt', ':bd2' => '[[:<:]]world[[:>:]]'), $binddata);
+
+        $query = 'tempt% %world';
+        $Search = Search::parseSearch($query, ['whole_words' => TRUE]);
+        $this->assertEquals('and', $Search->search_type);
+        list($sql, $binddata) = $Search->generateQuery();
+        $this->assertEquals('(`text` REGEXP :bd1) AND (`text` REGEXP :bd2)', $sql);
+        $this->assertEquals(array(':bd1' => '[[:<:]]tempt', ':bd2' => 'world[[:>:]]'), $binddata);
+
+        $query = 'tempt %world';
+        $Search = Search::parseSearch($query, ['whole_words' => TRUE]);
+        $this->assertEquals('and', $Search->search_type);
+        list($sql, $binddata) = $Search->generateQuery();
+        $this->assertEquals('(`text` REGEXP :bd1) AND (`text` REGEXP :bd2)', $sql);
+        $this->assertEquals(array(':bd1' => '[[:<:]]tempt[[:>:]]', ':bd2' => 'world[[:>:]]'), $binddata);
     }
 }

@@ -25,8 +25,8 @@ class SqlSearch {
     protected $use_named_bindings = FALSE;
     public $search_fields = 'text'; // Comma separated
 
-    static protected $regexp_phrase = '/["][\p{L}0-9\.\*\+\[\]\{\},\^\$\\\\\(\) ]+["]/u'; // Works at matching phrases and (some) regexp
-    //static protected $regexp_phrase = '/["][\p{L}0-9\.\*\+\[\]\{\},\^\$\\\\\(\) ]+["]/u'; // Attempt at matching phrases and regexp
+    static protected $regexp_phrase = '/["][\p{L}0-9\.\*\+\[\]\{\},\^\$\\\\\(\)%\' ]+["]/u'; // Works at matching phrases and (some) regexp
+    //static protected $regexp_phrase = '/["][\p{L}0-9\.\*\+\[\]\{\},\^\$\\\\\(\)%\' ]+["]/u'; // Attempt at matching phrases and regexp
     //static protected $regexp_phrase = '/["][\p{L}0-9 ]+["]/u'; // Old way - works for text phrases, not for REGEXP
 
     static protected $search_inputs = array(
@@ -289,15 +289,22 @@ class SqlSearch {
     }
 
     protected function _termFormat($term, $exact_case = FALSE, $whole_words = FALSE) {
+        $is_phrase = FALSE;
+
         // Phrases, REGEXP
         if(strpos($term, '"') !== FALSE) {
             $term = trim($term, '"');
+            $is_phrase = TRUE;
 
-            if($whole_words) {
-                $term = '[[:<:]]' . $term . '[[:>:]]';
+            if(!$whole_words) {
+                return $term;
             }
 
-            return $term;
+            if($whole_words) {
+                //$term = '[[:<:]]' . $term . '[[:>:]]';
+            }
+
+            //return $term;
         }
 
         if(!$whole_words) {
@@ -311,10 +318,12 @@ class SqlSearch {
             return $term;
         }
 
-        $pre  = ($has_st_pct) ? '/' : '[[:<:]]';
-        $post = ($has_en_pct) ? '.' : '[[:>:]]';
+        $pre  = ($has_st_pct) ? '' : '[[:<:]]';
+        $post = ($has_en_pct) ? '' : '[[:>:]]';
 
-        return $pre . str_replace('%', '.', trim($term, '%')) . $post;
+        $term = ($is_phrase) ? $term : str_replace('%', '.*', trim($term, '%'));
+
+        return $pre . trim($term, '%') . $post;
 
         //return ($whole_words) ? '[[:<:]]' . str_replace('%', '/', $term) . '[[:>:]]' : '%' . $term . '%';
     }
@@ -330,6 +339,12 @@ class SqlSearch {
 
     protected function _assembleTermSql($field, $bind_index, $operator, $exact_case) {
         //$binding = ($this->use_named_bindings) ? $bind_index : '?';
+
+//        var_dump($field);
+//        var_dump($bind_index);
+//        var_dump($operator);
+//        var_dump($exact_case);
+
         $binding = $bind_index;
         $binary = ($exact_case) ? 'BINARY ' : '';
         return $binary . $field . ' ' . $operator . ' ' . $binding;
@@ -519,8 +534,9 @@ class SqlSearch {
         $query = str_replace(array('(', ')'), array(' (', ') '), $query);
         $query = trim(preg_replace('/\s+/', ' ', $query));
 
+        // Insert implied AND
         //$patterns = array('/\) [a-zA-Z0-9"]/', '/[a-zA-Z0-9"] \(/', '/[a-zA-Z0-9"] [a-zA-Z0-9"]/');
-        $patterns = array('/\) [\p{L}0-9\'"]/u', '/[\p{L}0-9\'"] \(/u', '/[\p{L}0-9\'"] [\p{L}0-9\'"]/u');
+        $patterns = array('/\) [\p{L}0-9\'%"]/u', '/[\p{L}0-9\'%"] \(/u', '/[\p{L}0-9\'%"] [\p{L}0-9\'%"]/u');
         //$patterns = array('/\) [\p{L}0-9"\']/u', '/[\p{L}0-9"\'] \(/u', '/[\p{L}0-9] [\p{L}0-9]/u', '/["\'] [\p{L}0-9"\']/u');
         $query = preg_replace_callback($patterns, function($matches) {
             return str_replace(' ', ' & ', $matches[0]);
