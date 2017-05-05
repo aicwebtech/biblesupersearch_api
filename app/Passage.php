@@ -311,9 +311,15 @@ class Passage {
                     if($end_of_ref) {
                         // Detect and parse out a range
                         if($is_range && $end_of_ref) {
-                            $parsed[] = array('cst' => $cst, 'vst' => $vst, 'cen' => $current_chapter, 'ven' => $current_verse, 'type' => 'range');
+                            // Detect if the 'end verse' is actually a chapter.  (When it's less than the start verse and greater than start chapter)
+                            $cen = ($current_verse < $vst && $current_verse > $cst && $current_chapter == $cst) ? $current_verse : $current_chapter;
+                            $ven = ($current_verse < $vst && $current_verse > $cst && $current_chapter == $cst) ? NULL : $current_verse;
+
+                            //$parsed[] = array('cst' => $cst, 'vst' => $vst, 'cen' => $current_chapter, 'ven' => $current_verse, 'type' => 'range');
+                            $parsed[] = array('cst' => $cst, 'vst' => $vst, 'cen' => $cen, 'ven' => $ven, 'type' => 'range');
                             $chapters[] = $cst;
-                            $chapters[] = $current_chapter;
+                            $chapters[] = $cen;
+                            //$chapters[] = $current_chapter;
                             $is_range = FALSE;
                             $cst = $vst = NULL;
                         }
