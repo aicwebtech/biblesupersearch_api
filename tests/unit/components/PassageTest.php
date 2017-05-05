@@ -499,10 +499,47 @@ class PassageTest extends TestCase
                 'c_min' => 12,
                 'c_max' => 12,
             ),
+            array(
+                'ref' => '2 Cor 9:3 - 7',
+                'exp' => array(
+                        array('cst' => 9, 'vst' => 3, 'cen' => 9, 'ven' => 7, 'type' => 'range'),
+                    ),
+                'c_min' => 9,
+                'c_max' => 9,
+            ),
+            array(
+                'ref' => 'Romans 4:19 - 5',
+                'exp' => array(
+                        array('cst' => 4, 'vst' => 19, 'cen' => 5, 'ven' => NULL, 'type' => 'range'),
+                    ),
+                'c_min' => 4,
+                'c_max' => 5,
+            ),
+            array(
+                'ref' => 'Isa 5:16 - 7, 9:10 - 11, 15, 19; 25:19 - 28, 31:51 - 35',
+                'exp' => array(
+                        array('cst' => 5, 'vst' => 16, 'cen' => 7, 'ven' => NULL, 'type' => 'range'),
+                        array('cst' => 9, 'vst' => 10, 'cen' => 9, 'ven' => 11, 'type' => 'range'),
+                        array('c' => 9, 'v' => 15, 'type' => 'single'),
+                        array('c' => 9, 'v' => 19, 'type' => 'single'),
+                        array('cst' => 25, 'vst' => 19, 'cen' => 25, 'ven' => 28, 'type' => 'range'),
+                        array('cst' => 31, 'vst' => 51, 'cen' => 35, 'ven' => NULL, 'type' => 'range'),
+                    ),
+                'c_min' => 5,
+                'c_max' => 35,
+            ),
+            array(
+                'ref' => 'Romans 4:19 - 4', // Invalid reference
+                'exp' => array(
+                        array('cst' => 4, 'vst' => 19, 'cen' => 4, 'ven' => 4, 'type' => 'range'),
+                    ),
+                'c_min' => 4,
+                'c_max' => 4,
+            ),
             // Breaking references:
             // These need to be added to data structure above, and fixed!
             /**
-             * Romans 4:19 - 5:
+             * NONE RIGHT NOW :)
              */
         );
 
