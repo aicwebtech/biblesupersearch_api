@@ -63,11 +63,6 @@ class VerseStandard extends VerseAbstract {
             }
         }
 
-        if(config('app.debug')) {
-            $_SESSION['debug']['query']      = $Query->toSql();
-            $_SESSION['debug']['query_data'] = (isset($binddata)) ? $binddata : NULL;
-        }
-
         //echo(PHP_EOL . $Query->toSql() . PHP_EOL);
         //var_dump($binddata);
 
@@ -80,7 +75,11 @@ class VerseStandard extends VerseAbstract {
             $verses = $Query->get();
         }
 
-        //$verses = $Query->paginate(100);
+        if(config('app.debug')) {
+            $_SESSION['debug']['query']      = $Query->toSql();
+            $_SESSION['debug']['query_data'] = (isset($binddata)) ? $binddata : NULL;
+        }
+
         return (empty($verses)) ? FALSE : $verses;
     }
 
@@ -387,8 +386,32 @@ class VerseStandard extends VerseAbstract {
         }
     }
 
+    /**
+     * Fetches verses by BCV
+     * $bcv = $book * 1000000 + $chapter * 1000 + $verse
+     * @param array|int $bcv
+     * @return array $Verses array of Verses instances (found verses)
+     */
+    public function getVersesByBCV($bcv) {
+        $bcv = (is_array($bcv)) ? $bcv : array($bcv);
+        $Query = DB::table($this->getTable() . ' AS tb')->select('id','book','chapter','verse','text');
+        $Query->orderBy('book', 'ASC')->orderBy('chapter', 'ASC')->orderBy('verse', 'ASC');
+
+        foreach($bcv as $single) {
+            $Query->orwhere(function($sub) use ($single) {
+                $book = intval($single / 1000000);
+                $chapter_verse = $single - $book * 1000000;
+                $sub->where('book', $book);
+                $sub->where('chapter_verse', $chapter_verse);
+            });
+        }
+
+        return $Query->get()->all();
+    }
+
     /*
-    protected static function _buildPassageQuery__OLD($Passages) {
+     * KEEP THIS, FOR NOW
+     * protected static function _buildPassageQuery__OLD($Passages) {
         $query = array();
 
         foreach($Passages as $Passage) {
