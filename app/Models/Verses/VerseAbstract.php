@@ -28,18 +28,18 @@ abstract class VerseAbstract extends Model {
             //$this->module = strtolower(array_pop($class));
             $this->module = snake_case(array_pop($class));
         }
-        
+
         $this->table = ($this->table) ? $this->table : self::getTableByModule($this->module);
         parent::__construct($attributes);
     }
-    
+
     public function setBible(Bible &$Bible) {
         $this->Bible = $Bible;
     }
-    
+
     public function setModule($module, $set_table = FALSE) {
         $this->module = $module;
-        
+
         if($set_table) {
             $this->table = self::getTableByModule($this->module);
         }
@@ -52,9 +52,9 @@ abstract class VerseAbstract extends Model {
     abstract public function install();
     abstract public function uninstall();
     abstract public function exportData(); // Exports ALL data from Bible table
-    
+
     /**
-     * 
+     *
      * @param array $Passages Array of App/Passage instances, represents the passages requested, if any
      * @param App/Search $Search App/Search instance, reporesenting the search keywords, if any
      * @param array $parameters Search parameters - user input
@@ -63,7 +63,15 @@ abstract class VerseAbstract extends Model {
     public static function getSearch($Passages = NULL, $Search = NULL, $parameters = array()) {
         throw new StandardException('Must implement getSearch in child class!');
     }
-    
+
+    /**
+     * Fetches verses by BCV
+     * $bcv = $book * 1000000 + $chapter * 1000 + $verse
+     * @param array|int $bcv
+     * @return array $Verses array of Verses instances (found verses)
+     */
+    abstract public function getVersesByBCV($bcv);
+
     /**
      * Gets the table name by the module
      * @param string $module
@@ -72,7 +80,7 @@ abstract class VerseAbstract extends Model {
     public static function getTableByModule($module) {
         return 'verses_' . $module;
     }
-    
+
     public function getRandomReferences($random_mode) {
         return FALSE;
     }

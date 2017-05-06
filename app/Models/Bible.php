@@ -15,9 +15,9 @@ class Bible extends Model {
     protected $verses_class_name; // Name of verses class
     //protected $guarded = array('id'); // BAD idea!
     protected $fillable = array(
-        'name', 
-        'shortname', 
-        'lang', 
+        'name',
+        'shortname',
+        'lang',
         'lang_short',
         'module',
         'year',
@@ -27,7 +27,7 @@ class Bible extends Model {
         'strongs',
         'rank',
     );
-    
+
     // List of fields to NOT export when creating modules
     protected $do_not_export = array('id', 'created_at', 'updated_at', 'enabled', 'installed');
 
@@ -53,8 +53,8 @@ class Bible extends Model {
         if (!$this->Verses || $force) {
             $attributes = $this->getAttributes();
             $class_name = self::getVerseClassNameByModule($this->module);
-            
-            if(class_exists($class_name)) {                
+
+            if(class_exists($class_name)) {
                 $this->Verses = new $class_name();
                 $this->Verses->setBible($this); // This circular reference may be a bad thing
             }
@@ -64,13 +64,13 @@ class Bible extends Model {
                 $this->Verses->setBible($this); // This circular reference may be a bad thing
             }
         }
-        
+
         return $this->Verses;
     }
-    
+
     /**
      * Processes and executes the Bible search query
-     * 
+     *
      * @param array $Passages Array of App/Passage instances, represents the passages requested, if any
      * @param App/Search $Search App/Search instance, reporesenting the search keywords, if any
      * @param array $parameters Search parameters - user input
@@ -78,9 +78,10 @@ class Bible extends Model {
      */
     public function getSearch($Passages = NULL, $Search = NULL, $parameters = array()) {
         return $this->verses()->getSearch($Passages, $Search, $parameters);
-        //$verses_class = self::getVerseClassNameByModule($this->module);
-        //$Verses = $verses_class::getSearch($Passages, $Search, $parameters);
-        //return $Verses;
+    }
+
+    public function getVersesByBCV($bcv) {
+        return $this->verses()->getVersesByBCV($bcv);
     }
 
     public function install($structure_only = FALSE) {
@@ -99,7 +100,7 @@ class Bible extends Model {
             $this->save();
         }
     }
-    
+
     public function export($overwrite = FALSE) {
         $export_fields = static::getExportFields();
         $mode = ($overwrite) ? ZipArchive::OVERWRITE : ZipArchive::CREATE;
@@ -111,11 +112,11 @@ class Bible extends Model {
         $data = $this->verses()->exportData();
         $path = $this->getModuleFilePath();
         $eol  = PHP_EOL; //'\n';
-        
+
         if(!$data) {
             return FALSE;
         }
-        
+
         // Add headers - # makes it a comment
         $data_str = '';
         $data_str .= "# Bible SuperSearch Module for '{$this->name}'  (Module:{$this->module})" . $eol;
@@ -127,40 +128,40 @@ class Bible extends Model {
         $data_str .= '# Separator: ' . $del . $eol;
         $data_str .= '# Columns: ' . implode($del, $export_fields) . $eol;
         $data_str .= '#' . $eol;
-        
+
         foreach($data as $key => $row) {
             $rd = array();
             //$row['text'] = trim($row['text']);
-            
+
             foreach($export_fields as $field) {
                 $rd[] = empty($row[$field]) ? NULL : trim($row[$field]);
             }
-            
+
             $data_str .= implode($del, $rd) . $eol;
         }
-        
+
         $Zip = new ZipArchive();
         $res = $Zip->open($path, $mode);
-        
+
         if($res === TRUE) {
             $Zip->addFromString('verses.txt', $data_str);
             $Zip->addFromString('info.json', $info);
             $Zip->close();
             return TRUE;
         }
-        
+
         return FALSE;
     }
-    
+
     public function getModuleFilePath() {
         return static::getModulePath() . $this->module . '.zip';
     }
-    
+
     public static function getExportFields() {
         // Warning: Add new items to the end, do not change the order or existing modules will break
         return array('book', 'chapter', 'verse', 'text', 'italics', 'strongs');
     }
-    
+
     public static function getExportDelimiter() {
         return '|';
     }
@@ -168,16 +169,16 @@ class Bible extends Model {
     public static function findByModule($module, $fail = FALSE) {
         if ($fail) {
             return Bible::where('module', $module)->firstOrFail();
-        } 
+        }
         else {
             return Bible::where('module', $module)->first();
         }
     }
-    
+
     public static function getModulePath() {
         return dirname(__FILE__) . '/../../bibles/modules/';
     }
-    
+
     public static function createFromModuleFile($module) {
         $file  = static::getModulePath() . $module . '.zip';
         $Bible = static::findByModule($module);
@@ -194,45 +195,45 @@ class Bible extends Model {
             $Zip->close();
             return $Bible;
         }
-        
+
         return FALSE;
     }
-    
+
     public static function getListOfModuleFiles() {
         $dir = static::getModulePath();
         $list = array();
-        
+
         if(is_dir($dir)) {
             $list_raw = scandir($dir);
-            
+
             foreach($list_raw as $item) {
                 if($item == '.' || $item == '..' || $item == 'readme.txt') {
                     continue;
                 }
-                
+
                 if(!preg_match('/\.(zip)$/i', $item)) {
                     continue;
                 }
-                
+
                 $list[] = $item;
             }
         }
-        
+
         return $list;
     }
-    
+
     /* Scans the module directory
      * Adds Bible records for Bibles not existing
      */
     public static function populateBibleTable() {
         $list = static::getListOfModuleFiles();
-        
+
         foreach($list as $file) {
             $module = substr($file, 0, strlen($file) - 4);
             $Bible  = static::createFromModuleFile($module);
         }
     }
-    
+
     public static function openModuleFileByModule($module) {
         $file  = static::getModulePath() . $module . '.zip';
         $Zip   = new ZipArchive();
@@ -240,14 +241,14 @@ class Bible extends Model {
         if($Zip->open($file) === TRUE) {
             return $Zip;
         }
-        
+
         return FALSE;
     }
-    
+
     public function openModuleFile() {
         return static::openModuleFileByModule($this->module);
     }
-    
+
     /**
      * Determine the class name for the Verses model for the given module
      * @param string $module
@@ -257,7 +258,7 @@ class Bible extends Model {
         $model_class = studly_case($module);
         $namespace = __NAMESPACE__ . '\Verses';
         $class_name = $namespace . '\\' . $model_class;
-        
+
         if (!class_exists($class_name)) {
             $code = '
                 namespace ' . $namespace . ';
@@ -265,13 +266,13 @@ class Bible extends Model {
                         protected $hasClass = FALSE;
                 }
             ';
-            
+
             eval($code); // Need this working on live server.
         }
-        
+
         return $class_name;
     }
-    
+
     /**
      * Determine the class name for the Verses model for the current Bible instance
      * @return string $class_name;
@@ -279,7 +280,7 @@ class Bible extends Model {
     public function getVerseClassName() {
         return self::getVerseClassNameByModule($this->module);
     }
-    
+
     /**
      * Enabled mutator
      * @param string $value
@@ -297,7 +298,7 @@ class Bible extends Model {
         $this->attributes['module'] = $value;
         self::where('1','1')->get();
     }
-    
+
     public function getRandomReference($random_mode) {
         return $this->verses()->getRandomReference($random_mode);
     }

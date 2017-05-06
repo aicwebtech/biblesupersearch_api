@@ -118,7 +118,8 @@ class Engine {
                 'default' => FALSE,
             ),
             'page' => array(
-                'type'  => 'int'
+                'type'  => 'int',
+                'default' => 1,
             ),
             'page_all' => array(
                 'type'  => 'bool',
@@ -332,6 +333,7 @@ class Engine {
 
     protected function _formatDataStructure($results, $input, $Passages, $Search) {
         $format_type = (!empty($input['data_format'])) ? $input['data_format'] : $this->default_data_format;
+        $parallel_unmatched_verses = TRUE;
 
         // Defines avaliable data formats and their aliases
         $format_map = array(
@@ -342,6 +344,20 @@ class Engine {
 
         $format_type  = (array_key_exists($format_type, $format_map)) ? $format_map[$format_type] : 'passage';
         $format_class = '\App\Formatters\\' . ucfirst($format_type);
+
+        if($input['multi_bibles']) {
+            if($parallel_unmatched_verses) {
+                $results = $this->_parallelUnmatchedVerses($results, $Search);
+            }
+
+            $limit = config('bss.pagination.limit');
+            $slice_len = ($input['page_all']) ? config('bss.global_maximum_results') : $limit;
+            $slice_off = ($input['page_all']) ? 0 : ($input['page'] - 1) * $limit;
+
+            foreach($results as &$res) {
+                $res = array_slice($res, $slice_off, $slice_len);
+            }
+        }
 
         if($this->isTruthy('highlight', $input)) {
             $results = $this->_highlightResults($results, $Search);
@@ -357,6 +373,82 @@ class Engine {
         }
 
         return $Search->highlightResults($results);
+    }
+
+    protected function _parallelUnmatchedVerses($results, $Search) {
+        $bibles = $agg = array();
+        $has_missing = FALSE;
+
+        if(!$Search) {
+            return $results;
+        }
+
+        foreach($results as $bible => $verses) {
+            $bibles[] = $bible;
+
+            foreach($verses as $key => $verse) {
+                $bcv = $verse->book * 1000000 + $verse->chapter * 1000 + $verse->verse;
+
+                if(!isset($agg[$bcv])) {
+                    $agg[$bcv] = array();
+                }
+
+                $agg[$bcv][$bible] = $verse;
+            }
+        }
+
+        $missing = $results_new = array_fill_keys($bibles, array());
+
+        foreach($agg as $bcv => $verses) {
+            foreach($bibles as $bible) {
+                if(!array_key_exists($bible, $verses) || !is_object($verses[$bible])) {
+                    $missing[$bible][] = $bcv;
+                    $has_missing = TRUE;
+                }
+            }
+        }
+
+        if(!$has_missing) {
+            return $results;
+        }
+
+        if($has_missing) {
+            //print_r($missing);
+
+            foreach($missing as $bible => $bcvs) {
+                if(empty($bcvs)) {
+                    continue;
+                }
+
+                $Bible = $this->Bibles[$bible];
+                $found = $Bible->getVersesByBCV($bcvs);
+
+                //print_r($found);
+
+                if(!is_array($found)) {
+                    continue;
+                }
+
+                foreach($found as $verse) {
+                    $bcv = $verse->book * 1000000 + $verse->chapter * 1000 + $verse->verse;
+//                    var_dump($bcv);
+//                    var_dump($bible);
+                    $agg[$bcv][$bible] = $verse;
+                }
+            }
+        }
+
+        ksort($agg, SORT_NUMERIC);
+
+        foreach($agg as $bcv => $verses) {
+            foreach($verses as $bible => $verse) {
+                $results_new[$bible][] = $verse;
+            }
+        }
+
+        //print_r(array_diff($results, $results_new));
+        //return $results;
+        return $results_new;
     }
 
     protected function _sanitizeInput($input, $parsing) {
