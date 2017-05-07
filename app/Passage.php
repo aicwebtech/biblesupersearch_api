@@ -136,7 +136,7 @@ class Passage {
 
         $rand = $Bible->getRandomReference($random);
 
-        If(!$rand) {
+        if(!$rand) {
 
         }
 
@@ -454,6 +454,10 @@ class Passage {
         return $parsed;
     }
 
+    public function getNormalizedChapterVerse() {
+
+    }
+
     public function __set($name, $value) {
         $settable = ['languages', 'is_search', 'Bibles'];
 
@@ -671,12 +675,13 @@ class Passage {
                 }
                 else {
                     $cst = ($parsed['cst']) ? $parsed['cst'] : 1;
-                    $cen = ($parsed['cen']) ? $parsed['cen'] : 150;
+                    $cen = ($parsed['cen']) ? $parsed['cen'] : 999;
                     $parsed_st = $parsed_en = $parsed;
 
-                    $parsed_st['cen'] = $parsed['cst'];
+                    $parsed_st['cst'] = $cst;
+                    $parsed_st['cen'] = $cst;
                     $parsed_st['ven'] = NULL;
-                    $parsed_en['cst'] = $parsed['cen'];
+                    $parsed_en['cst'] = $cen;
                     $parsed_en['vst'] = NULL;
                     $cvst = $cven = '';
 
@@ -696,8 +701,11 @@ class Passage {
                     $Passage->setChapterVerseFromParsed($parsed_st);
                     $Passages[] = $Passage;
 
+                    //var_dump('cst', $cst);
+                    //var_dump('cen', $cen);
+
                     for($chapter = $cst + 1; $chapter < $cen; $chapter ++) {
-                        //var_dump('dddd');
+                        //var_dump($chapter);
                         $Passage = clone $this;
                         $Passage->setChapterVerse($chapter);
                         $Passages[] = $Passage;
@@ -708,9 +716,9 @@ class Passage {
                     $Passage->setChapterVerseFromParsed($parsed_en);
                     $Passages[] = $Passage;
 
+                    //var_dump('passage', count($Passages));
                 }
             }
-
 
             return $Passages;
         }

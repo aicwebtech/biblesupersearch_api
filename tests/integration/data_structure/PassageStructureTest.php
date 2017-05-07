@@ -323,6 +323,39 @@ class PassageStructureTest extends TestCase {
         $this->assertArrayHasKey(5, $results[0]['verses']['kjv'][1]);
     }
 
+    public function testIndefiniteChapterStart() {
+        $Engine  = new Engine();
+        $Engine->setDefaultPageAll(TRUE);
+        $results = $Engine->actionQuery(['bible' => ['kjv'], 'reference' => 'Gen -3', 'data_format' => 'passage', 'whole_words' => TRUE]);
+        $this->assertFalse($Engine->hasErrors());
+        $this->assertCount(3, $results);
+        $this->assertEquals('1', $results[0]['chapter_verse']);
+        $this->assertEquals('2', $results[1]['chapter_verse']);
+        $this->assertEquals('3', $results[2]['chapter_verse']);
+
+        $results = $Engine->actionQuery(['bible' => ['kjv'], 'reference' => 'Genesis -2,3:4', 'data_format' => 'passage', 'whole_words' => TRUE]);
+        $this->assertFalse($Engine->hasErrors());
+        $this->assertCount(3, $results);
+        $this->assertEquals('3:4', $results[2]['chapter_verse']);
+    }
+
+    public function testIndefiniteChapterEnd() {
+        $Engine  = new Engine();
+        $Engine->setDefaultPageAll(TRUE);
+        $results = $Engine->actionQuery(['bible' => ['kjv'], 'reference' => 'Ps 145 -', 'data_format' => 'passage', 'whole_words' => TRUE]);
+        $this->assertFalse($Engine->hasErrors());
+        $this->assertCount(6, $results);
+        $this->assertEquals('145', $results[0]['chapter_verse']);
+        $this->assertEquals('147', $results[2]['chapter_verse']);
+        $this->assertEquals('148', $results[3]['chapter_verse']);
+        $this->assertEquals('150', $results[5]['chapter_verse']);
+
+        $results = $Engine->actionQuery(['bible' => ['kjv'], 'reference' => 'Ps 145-,3:4', 'data_format' => 'passage', 'whole_words' => TRUE]);
+        $this->assertFalse($Engine->hasErrors());
+        $this->assertCount(7, $results);
+        $this->assertEquals('3:4', $results[6]['chapter_verse']);
+    }
+
     /**
      * Test searching with a book range limitation
      * Obsolete?? - Searches now return a passage for every verse returned, and do not group them
