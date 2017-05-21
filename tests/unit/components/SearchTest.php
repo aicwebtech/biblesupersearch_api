@@ -122,6 +122,12 @@ class SearchTest extends TestCase {
         // When in all lower case, chapter and book are interpreted as keywords
         $std = Search::standardizeBoolean('faith chapter hope book charity');
         $this->assertEquals('faith AND chapter AND hope AND book AND charity', $std);
+
+        $std = Search::standardizeBoolean('(hour | time | day | moment) (tempt% | try% )');
+        $this->assertEquals('(hour OR time OR day OR moment) AND (tempt% OR try% )', $std);
+
+        //$std = Search::standardizeBoolean('(faith OR hope) charity PROX(bacon) (Joy or love)');
+        //$this->assertEquals('(faith OR hope) AND charity PROX(bacon) (Joy AND or AND love)', $std);
     }
 
     public function testSqlGeneration() {

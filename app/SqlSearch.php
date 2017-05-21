@@ -536,7 +536,8 @@ class SqlSearch {
 
         // Insert implied AND
         //$patterns = array('/\) [a-zA-Z0-9"]/', '/[a-zA-Z0-9"] \(/', '/[a-zA-Z0-9"] [a-zA-Z0-9"]/');
-        $patterns = array('/\) [\p{L}0-9\'%"]/u', '/[\p{L}0-9\'%"] \(/u', '/[\p{L}0-9\'%"] [\p{L}0-9\'%"]/u');
+        // Note - this will break if we ever have
+        $patterns = array('/\) [\p{L}0-9\'%"]/u', '/[\p{L}0-9\'%"] \(/u', '/[\p{L}0-9\'%"] [\p{L}0-9\'%"]/u', '/[\p{L}]\) \(/u');
         //$patterns = array('/\) [\p{L}0-9"\']/u', '/[\p{L}0-9"\'] \(/u', '/[\p{L}0-9] [\p{L}0-9]/u', '/["\'] [\p{L}0-9"\']/u');
         $query = preg_replace_callback($patterns, function($matches) {
             return str_replace(' ', ' & ', $matches[0]);
