@@ -20,7 +20,7 @@ INSERT INTO `%sbooks_es` (`id`,`name`,`shortname`, `matching1`, `matching2`) VAL
 INSERT INTO `%sbooks_es` (`id`,`name`,`shortname`, `matching1`, `matching2`) VALUES ('16','Nehemías','', '', '');
 INSERT INTO `%sbooks_es` (`id`,`name`,`shortname`, `matching1`, `matching2`) VALUES ('17','Esther','', '', '');
 INSERT INTO `%sbooks_es` (`id`,`name`,`shortname`, `matching1`, `matching2`) VALUES ('18','Job','', '', '');
-INSERT INTO `%sbooks_es` (`id`,`name`,`shortname`, `matching1`, `matching2`) VALUES ('19','Salmos',,'', '', '');
+INSERT INTO `%sbooks_es` (`id`,`name`,`shortname`, `matching1`, `matching2`) VALUES ('19','Salmos','', '', '');
 INSERT INTO `%sbooks_es` (`id`,`name`,`shortname`, `matching1`, `matching2`) VALUES ('20','Proverbios','', '', '');
 INSERT INTO `%sbooks_es` (`id`,`name`,`shortname`, `matching1`, `matching2`) VALUES ('21','Ecclesiastés','', '', '');
 INSERT INTO `%sbooks_es` (`id`,`name`,`shortname`, `matching1`, `matching2`) VALUES ('22','Canción de canciones','', '', '');

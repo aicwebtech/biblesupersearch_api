@@ -47,7 +47,7 @@ class Passage {
             $this->is_book_range = FALSE;
         }
         else {
-            return $this->_addBookError(trans('errors.book.not_found', ['book' => $book]));
+            return $this->_addBookError(trans('errors.book.not_found', ['book' => $book_id]));
         }
     }
 
