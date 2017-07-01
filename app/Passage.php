@@ -144,7 +144,6 @@ class Passage {
         $this->setBookById($rand['book_id']);
         $this->setChapterVerse($rand['chapter_verse']);
         $this->raw_chapter_verse = $cb_raw;
-
         $this->is_random = TRUE;
     }
 
@@ -176,7 +175,7 @@ class Passage {
      * Returns the reference if no shortcut is found.
      * @param string $reference
      * @param array $languages
-     * @return object|strins
+     * @return object|string
      */
     static public function findShortcut($reference, $languages, $return_as_string = FALSE) {
         $SC = Shortcut::findByEnteredName($reference);
@@ -250,10 +249,6 @@ class Passage {
         $count = count($preparsed_values);
         $current_chapter = $current_verse = $cst = $vst = $last_int = NULL;
         $is_range = $has_verse = FALSE;
-
-        if($this->raw_chapter_verse == '25 -') {
-            //print_r($preparsed_values);
-        }
 
         // Parse out chapter and verse information from the reference.
         // Brute-force method
@@ -454,7 +449,44 @@ class Passage {
         return $parsed;
     }
 
-    public function getNormalizedChapterVerse() {
+    public function getAdjustedReferences() {
+        $adjusted = $pre = array();
+
+        if(!is_array($this->verses)) {
+            return FALSE;
+        }
+
+        foreach($this->verses as $bible => $chapters) {
+            foreach($chapters as $chapter => $verses) {
+                foreach($verses as $verse => $content) {
+                    $pre[$chapter][$verse] = 1;
+                }
+            }
+        }
+
+        foreach($pre as $chapter => $verses) {
+            $v = array();
+            $last_verse = $first_verse = NULL;
+
+            foreach($verses as $verse => $s) {
+                $first_verse = ($first_verse) ? $first_verse : $verse;
+
+                if($last_verse && $verse != $last_verse + 1) {
+                    $v[] = ($first_verse == $last_verse) ? $first_verse : $first_verse . ' - ' . $verse;
+                    $first_verse = $verse;
+                }
+
+                $last_verse = $verse;
+            }
+
+            $v[] = ($first_verse == $last_verse) ? $first_verse : $first_verse . ' - ' . $verse;
+            $adjusted[] = $chapter . ':' . implode(',', $v);
+        }
+
+        return implode('; ', $adjusted);
+    }
+
+    public function getAdjustedChapterVerse() {
 
     }
 
@@ -495,7 +527,8 @@ class Passage {
             'book_name'         => $this->Book->name,
             'book_short'        => $this->Book->shortname,
             'book_raw'          => $this->raw_book,
-            'chapter_verse'     => $this->chapter_verse,
+            'chapter_verse'     => $this->getAdjustedReferences(),
+            //'chapter_verse'     => $this->chapter_verse,
             'chapter_verse_raw' => $this->raw_chapter_verse,
             'verse_index'       => $this->generateVerseIndex(),
             'verses'            => $this->verses,
@@ -700,9 +733,6 @@ class Passage {
                     //$Passage->setChapterVerse($cvst);
                     $Passage->setChapterVerseFromParsed($parsed_st);
                     $Passages[] = $Passage;
-
-                    //var_dump('cst', $cst);
-                    //var_dump('cen', $cen);
 
                     for($chapter = $cst + 1; $chapter < $cen; $chapter ++) {
                         //var_dump($chapter);
