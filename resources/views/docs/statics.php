@@ -1,7 +1,9 @@
 <?php
     $context = 'api.statics';
     $url = '/statics';
-    include( dirname(__FILE__) . '/generic.php');
+   // include( dirname(__FILE__) . '/generic.php');
+
+    renderActionHeader($context, $url);
 
     renderParameterHeader();
     renderCommonParameters(['language', 'callback']);

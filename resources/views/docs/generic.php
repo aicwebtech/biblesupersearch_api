@@ -1,11 +1,11 @@
 <?php
     global $context, $url, $params;
-    $context = ($context) ? $context : 'query';
+    //$context = ($context) ? $context : 'query';
     $http = (array_key_exists('HTTPS', $_SERVER) && !empty($_SERVER['HTTPS'])) ? 'https://' : 'http://';
     $server = (array_key_exists('SERVER_NAME', $_SERVER) && !empty($_SERVER['SERVER_NAME'])) ? $_SERVER['SERVER_NAME'] : 'biblesupersearch.com';
 ?>
 
-<!--<?php echo $context ?>-->
+<?php echo $context ?>
 <table>
     <tr>
         <td><?php echo trans('api.action') ?>: </td><td><?php echo trans($context . '.name') ?></td>
