@@ -1,8 +1,9 @@
 <?php
     $context = 'api.version';
     $url = '/version';
-    include( dirname(__FILE__) . '/generic.php');
+    //include( dirname(__FILE__) . '/generic.php');
 
+    renderActionHeader($context, $url);
     renderParameterHeader();
     renderCommonParameters(['callback']);
     renderParameterFooter();

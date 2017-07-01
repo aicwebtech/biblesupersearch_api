@@ -1,8 +1,9 @@
 <?php
     $context = 'api.books';
     $url = '/books';
-    include( dirname(__FILE__) . '/generic.php');
+    //include( dirname(__FILE__) . '/generic.php');
 
+    renderActionHeader($context, $url);
     renderParameterHeader();
     renderCommonParameters(['language', 'callback']);
     renderParameterFooter();
