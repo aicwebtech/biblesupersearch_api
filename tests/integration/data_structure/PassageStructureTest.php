@@ -336,6 +336,8 @@ class PassageStructureTest extends TestCase {
         $results = $Engine->actionQuery(['bible' => ['kjv'], 'reference' => 'Genesis -2,3:4', 'data_format' => 'passage', 'whole_words' => TRUE]);
         $this->assertFalse($Engine->hasErrors());
         $this->assertCount(3, $results);
+        $this->assertEquals('1', $results[0]['chapter_verse']);
+        $this->assertEquals('2', $results[1]['chapter_verse']);
         $this->assertEquals('3:4', $results[2]['chapter_verse']);
     }
 
