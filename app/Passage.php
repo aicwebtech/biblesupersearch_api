@@ -449,8 +449,9 @@ class Passage {
         return $parsed;
     }
 
-    public function getAdjustedReferences() {
+    public function getAdjustedChapterVerse() {
         $adjusted = $pre = array();
+        $chapter_only = $this->isChapterOnly();
 
         if(!is_array($this->verses)) {
             return FALSE;
@@ -468,26 +469,27 @@ class Passage {
             $v = array();
             $last_verse = $first_verse = NULL;
 
-            foreach($verses as $verse => $s) {
-                $first_verse = ($first_verse) ? $first_verse : $verse;
+            if($chapter_only) {
+                $adjusted[] = $chapter;
+            }
+            else {
+                foreach($verses as $verse => $s) {
+                    $first_verse = ($first_verse) ? $first_verse : $verse;
 
-                if($last_verse && $verse != $last_verse + 1) {
-                    $v[] = ($first_verse == $last_verse) ? $first_verse : $first_verse . ' - ' . $verse;
-                    $first_verse = $verse;
+                    if($last_verse && $verse != $last_verse + 1) {
+                        $v[] = ($first_verse == $last_verse) ? $first_verse : $first_verse . ' - ' . $verse;
+                        $first_verse = $verse;
+                    }
+
+                    $last_verse = $verse;
                 }
 
-                $last_verse = $verse;
+                $v[] = ($first_verse == $last_verse) ? $first_verse : $first_verse . ' - ' . $verse;
+                $adjusted[] = $chapter . ':' . implode(',', $v);
             }
-
-            $v[] = ($first_verse == $last_verse) ? $first_verse : $first_verse . ' - ' . $verse;
-            $adjusted[] = $chapter . ':' . implode(',', $v);
         }
 
         return implode('; ', $adjusted);
-    }
-
-    public function getAdjustedChapterVerse() {
-
     }
 
     public function __set($name, $value) {
@@ -527,7 +529,7 @@ class Passage {
             'book_name'         => $this->Book->name,
             'book_short'        => $this->Book->shortname,
             'book_raw'          => $this->raw_book,
-            'chapter_verse'     => $this->getAdjustedReferences(),
+            'chapter_verse'     => $this->getAdjustedChapterVerse(),
             //'chapter_verse'     => $this->chapter_verse,
             'chapter_verse_raw' => $this->raw_chapter_verse,
             'verse_index'       => $this->generateVerseIndex(),
@@ -682,6 +684,16 @@ class Passage {
         }
 
         return (empty($this->getNormalizedReferences())) ? TRUE : FALSE;
+    }
+
+    /**
+     * Indicates that the passage reference contains reference to chapter(s) only
+     * and not to individual verses
+     *
+     * @return bool
+     */
+    public function isChapterOnly() {
+        return (strpos($this->chapter_verse, ':') === FALSE) ? TRUE : FALSE;
     }
 
     public function explodePassage($separate_book_ranges, $separate_chapters) {

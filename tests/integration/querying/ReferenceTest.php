@@ -116,4 +116,30 @@ class ReferenceTest extends TestCase {
         $this->assertEquals('Psalms', $results[0]['book_name']);
     }
 
+    public function testReferenceAdjustment() {
+        $Engine = new Engine();
+        $results = $Engine->actionQuery(['bible' => 'kjv', 'reference' => 'Rom', 'data_format' => 'passage']);
+        $this->assertFalse($Engine->hasErrors());
+        $this->assertEquals('1', $results[0]['chapter_verse']);
+
+        // Romans only has 16 chapters
+        $results = $Engine->actionQuery(['bible' => 'kjv', 'reference' => 'Rom 16-17', 'data_format' => 'passage']);
+        $this->assertCount(1, $results);
+        $this->assertEquals('16', $results[0]['chapter_verse']);
+
+        // Ps 91 has 16 verses
+        $results = $Engine->actionQuery(['bible' => 'kjv', 'reference' => 'Ps 91:14-20', 'data_format' => 'passage']);
+        $this->assertFalse($Engine->hasErrors());
+        $this->assertEquals('91:14 - 16', $results[0]['chapter_verse']);
+
+        // Rev 12:2 through end of CHAPTER
+        $results = $Engine->actionQuery(['bible' => 'kjv', 'reference' => 'Rev 12:2 -', 'data_format' => 'passage']);
+        $this->assertFalse($Engine->hasErrors());
+        $this->assertEquals('12:2 - 17', $results[0]['chapter_verse']);
+
+        // Rev 12:2 through end of BOOK
+        $results = $Engine->actionQuery(['bible' => 'kjv', 'reference' => 'Rev 12:2 - :', 'data_format' => 'passage']);
+        $this->assertEquals('12:2 - 17', $results[0]['chapter_verse']);
+        $this->assertEquals('22', $results[10]['chapter_verse']);
+    }
 }
