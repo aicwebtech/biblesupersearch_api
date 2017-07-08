@@ -127,7 +127,7 @@ class Search extends SqlSearch {
             }
         }
 
-        if($search_type != 'regexp' && strpos($search, '"') === FALSE) {
+        if($search_type != 'regexp' && strpos($search, '"') === FALSE && strpos($search, '`') === FALSE) {
             // Check for invalid characters
             $invalid_chars = preg_replace('/[\p{L}\(\)|!&^ "\'0-9%]+/u', '', $search);
 
