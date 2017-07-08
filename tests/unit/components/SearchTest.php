@@ -88,6 +88,11 @@ class SearchTest extends TestCase {
         $this->assertEquals(array('faith', 'hope', 'charity', 'Joy', 'love'), $parsed);
         $parsed = Search::parseQueryTerms('(faith OR hope) charity PROXC(12) (Joy OR love)');
         $this->assertEquals(array('faith', 'hope', 'charity', 'Joy', 'love'), $parsed);
+        // Regexp
+        $parsed = Search::parseQueryTerms('`gr[ae]y matt?er` && faith');
+        //$this->assertEquals(array('`gr[ae]y matt?er`', 'faith'), $parsed);
+        $this->assertContains('`gr[ae]y matt?er`', $parsed);
+        $this->assertCount(2, $parsed);
     }
 
     public function testBooleanStandardization() {

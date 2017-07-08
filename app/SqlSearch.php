@@ -284,14 +284,14 @@ class SqlSearch {
             return 'REGEXP';
         }
         else {
-            return (strpos($term, '"') !== FALSE) ? 'REGEXP' : 'LIKE';
+            return (strpos($term, '"') !== FALSE || strpos($term, '`') !== FALSE) ? 'REGEXP' : 'LIKE';
         }
     }
 
     protected function _termFormat($term, $exact_case = FALSE, $whole_words = FALSE) {
-        $is_phrase = FALSE;
+        $is_phrase = $is_regexp = FALSE;
 
-        // Phrases, REGEXP
+        // Phrases
         if(strpos($term, '"') !== FALSE) {
             $term = trim($term, '"');
             $is_phrase = TRUE;
@@ -305,6 +305,13 @@ class SqlSearch {
             }
 
             //return $term;
+        }
+
+        // Regexp
+        if(strpos($term, '`') !== FALSE) {
+            $term = trim($term, '`');
+            $is_regexp = TRUE;
+            return $term; // Whole words ignored for regexp
         }
 
         if(!$whole_words) {
@@ -384,8 +391,10 @@ class SqlSearch {
             case 'any_word':
                 $query = implode(' OR ', $parsed);
                 break;
-            case 'phrase':
             case 'regexp':
+                $query = '`' . $query . '`';
+                break;
+            case 'phrase':
                 $query = '"' . $query . '"';
                 break;
             case 'xor':
@@ -414,9 +423,11 @@ class SqlSearch {
 
         //preg_match_all('/"[a-zA-z0-9 ]+"/', $parsing, $phrases, PREG_SET_ORDER);
         $phrases = static::parseQueryPhrases($query);
+        $regexp  = static::parseQueryRegexp($query);
         //$parsing = preg_replace('/"[a-zA-z0-9 ]+"/', '', $parsing); // Remove phrases once parsed
-        //$parsing = preg_replace('/["][\p{L}0-9 ]+["]/u', '', $parsing); // Remove phrases once parsed
-        $parsing = preg_replace(static::$regexp_phrase, '', $parsing); // Remove phrases once parsed
+        $parsing = preg_replace('/["][\p{L}0-9 \'%]+["]/u', '', $parsing); // Remove phrases once parsed
+        $parsing = preg_replace('/[`].*[`]/u', '', $parsing); // Remove phrases once parsed
+        //$parsing = preg_replace(static::$regexp_phrase, '', $parsing); // Remove phrases once parsed (with regexp)
         //preg_match_all('/%?[a-zA-Z0-9]+%?/', $parsing, $matches, PREG_SET_ORDER);
         preg_match_all('/%?[\p{L}0-9\']+%?/u', $parsing, $matches, PREG_SET_ORDER);
         //preg_match_all('/%?[.*]+%?/u', $parsing, $matches, PREG_SET_ORDER);
@@ -426,6 +437,10 @@ class SqlSearch {
         }
 
         foreach ($phrases as $item) {
+            $parsed[] = $item;
+        }
+
+        foreach($regexp as $item) {
             $parsed[] = $item;
         }
 
@@ -443,7 +458,7 @@ class SqlSearch {
         //print_r($terms);
 
         foreach($terms as $term) {
-            if($term{0} == '"') {
+            if($term{0} == '"' || $term{0} == '`') {
                 // Ignore phrases and REGEXP
                 continue;
             }
@@ -473,8 +488,31 @@ class SqlSearch {
     public static function parseQueryPhrases($query, $underscore_map = FALSE) {
         $matches = $phrases = $underscores = array();
         //preg_match_all('/"[a-zA-z0-9 ]+"/', $query, $matches, PREG_SET_ORDER);
-        //preg_match_all('/["][\p{L}0-9 ]+["]/u', $query, $matches, PREG_SET_ORDER);
-        preg_match_all(static::$regexp_phrase, $query, $matches, PREG_SET_ORDER);
+        preg_match_all('/["][\p{L}0-9 \'%]+["]/u', $query, $matches, PREG_SET_ORDER); // No regexp
+        //preg_match_all(static::$regexp_phrase, $query, $matches, PREG_SET_ORDER); // Include regexp as phrase
+
+        foreach ($matches as $item) {
+            $phrase = $item[0];
+            $phrases[] = $phrase;
+
+            if($underscore_map) {
+                $underscores[] = str_replace(' ', '_', $item[0]);
+            }
+        }
+
+        if($underscore_map) {
+            return array($phrases, $underscores);
+        }
+        else {
+            return $phrases;
+        }
+    }
+
+    public static function parseQueryRegexp($query, $underscore_map = FALSE) {
+        $matches = $phrases = $underscores = array();
+        //preg_match_all('/"[a-zA-z0-9 ]+"/', $query, $matches, PREG_SET_ORDER);
+        preg_match_all('/[`].*[`]/u', $query, $matches, PREG_SET_ORDER); // No regexp
+        //preg_match_all(static::$regexp_phrase, $query, $matches, PREG_SET_ORDER); // Include regexp as phrase
 
         foreach ($matches as $item) {
             $phrase = $item[0];
@@ -517,16 +555,22 @@ class SqlSearch {
         $not = array('NOT ', '!');
         $xor = array(' XOR ', '^^', '^');
 
-        list($phrases, $underscored) = static::parseQueryPhrases($query, TRUE);
+        list($phrases, $underscored) = static::parseQueryPhrases($query, TRUE);  // Underscored stuff doesn't seem to be used.  remove?
+        list($regexp, $regexp_uc) = static::parseQueryRegexp($query, TRUE);
 
-        $phrase_placeholders = array();
+        $phrase_placeholders = $regexp_placeholders = array();
 
         foreach($phrases as $key => $phrase) {
             $phrase_placeholders[] = 'ph' . $key . 'ph';
         }
 
+        foreach($regexp as $key => $phrase) {
+            $regexp_placeholders[] = 're' . $key . 're';
+        }
+
         //$query = str_replace($phrases, $underscored, $query);
         $query = str_replace($phrases, $phrase_placeholders, $query);
+        $query = str_replace($regexp, $regexp_placeholders, $query);
         $query = str_replace($xor, ' ^ ', $query);
         $query = str_replace($and, ' & ', $query);
         $query = str_replace($or,  ' | ', $query);
@@ -548,6 +592,7 @@ class SqlSearch {
         $repl  = array('AND', 'OR', ' NOT ', 'XOR');
         $query = str_replace($find, $repl, $query);
         $query = str_replace($phrase_placeholders, $phrases, $query);
+        $query = str_replace($regexp_placeholders, $regexp, $query);
         //$query = str_replace($underscored, $phrases, $query);
         $query = trim(preg_replace('/\s+/', ' ', $query));
         return $query;
