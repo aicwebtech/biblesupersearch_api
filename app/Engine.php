@@ -254,12 +254,6 @@ class Engine {
         }
 
         $results = $this->_formatDataStructure($results, $input, $Passages, $Search);
-
-        if(config('app.debug')) {
-            //$this->addError( '<pre>' . print_r($_SESSION['debug'], TRUE) . '</pre>', 1);
-            //$results['debug'] = $_SESSION['debug'];
-        }
-
         return $results;
     }
 
@@ -413,8 +407,6 @@ class Engine {
         }
 
         if($has_missing) {
-            //print_r($missing);
-
             foreach($missing as $bible => $bcvs) {
                 if(empty($bcvs)) {
                     continue;
@@ -423,16 +415,12 @@ class Engine {
                 $Bible = $this->Bibles[$bible];
                 $found = $Bible->getVersesByBCV($bcvs);
 
-                //print_r($found);
-
                 if(!is_array($found)) {
                     continue;
                 }
 
                 foreach($found as $verse) {
                     $bcv = $verse->book * 1000000 + $verse->chapter * 1000 + $verse->verse;
-//                    var_dump($bcv);
-//                    var_dump($bible);
                     $agg[$bcv][$bible] = $verse;
                 }
             }
@@ -446,8 +434,6 @@ class Engine {
             }
         }
 
-        //print_r(array_diff($results, $results_new));
-        //return $results;
         return $results_new;
     }
 
@@ -459,8 +445,9 @@ class Engine {
 
             if(array_key_exists($index, $input) && !empty($input[$index])) {
                 switch($s['type']) {
-                    case 'boola':
-                        $value = ($input[$index] && $input[$index] != 'false') ? TRUE : FALSE;
+                    case 'bool':
+                        $value = ($input[$index]) ? TRUE : FALSE;
+                        $value = (is_string($input[$index]) && ($input[$index] == 'false' || $input[$index] == 'off' || $input[$index] == 'no')) ? FALSE : $value;
                         break;
                     case 'array_string':
                     case 'string_array':

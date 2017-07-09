@@ -6,7 +6,7 @@ use App\Models\Books\BookAbstract as Book;
 use App\Models\Shortcuts\ShortcutAbstract as Shortcut;
 
 /**
- * Class for parsing passage references
+ * Class for parsing and handling of Bible passage references
  */
 
 class Passage {
@@ -589,7 +589,6 @@ class Passage {
             foreach($verses as $key => $verse) {
                 if($this->verseInPassage($verse)) {
                     $this->verses[ $bible ][ $verse->chapter ][ $verse->verse ] = $verse;
-                    //$this->verses_count ++;
                     $count[$bible] ++;
                     $verse_claimed = TRUE;
 
@@ -757,8 +756,6 @@ class Passage {
                     //$Passage->setChapterVerse($cven);
                     $Passage->setChapterVerseFromParsed($parsed_en);
                     $Passages[] = $Passage;
-
-                    //var_dump('passage', count($Passages));
                 }
             }
 

@@ -58,6 +58,10 @@ class KeywordTest extends TestCase
         $this->assertFalse($Engine->hasErrors());
         $this->assertCount(338, $results['kjv']);
 
+        $results = $Engine->actionQuery(['bible' => 'kjv', 'search' => 'faith', 'search_type' => 'phrase', 'page_all' => TRUE, 'whole_words' => 'false']);
+        $this->assertFalse($Engine->hasErrors());
+        $this->assertCount(338, $results['kjv']);
+
         $results = $Engine->actionQuery(['bible' => 'kjv', 'search' => 'faith', 'search_type' => 'phrase', 'page_all' => TRUE, 'whole_words' => TRUE]);
         $this->assertFalse($Engine->hasErrors());
         $this->assertCount(231, $results['kjv']);

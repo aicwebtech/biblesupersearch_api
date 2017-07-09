@@ -104,4 +104,17 @@ class RegexpTest extends TestCase {
         $this->assertFalse($Engine->hasErrors());
         $this->assertCount(216, $results['kjv']);
     }
+
+    public function testBooleanProx() {
+        $Engine = new Engine();
+        $results = $Engine->actionQuery(['bible' => 'kjv', 'search' => '`tempt.*world` PROX(11) hear', 'data_format' => 'raw', 'search_type' => 'boolean', 'whole_words' => TRUE]);
+        $this->assertFalse($Engine->hasErrors());
+        $this->assertCount(5, $results['kjv']);
+        $this->assertEquals(66, $results['kjv'][0]->book);
+        $this->assertEquals(2,  $results['kjv'][0]->chapter);
+        $this->assertEquals(29, $results['kjv'][0]->verse);
+        $this->assertEquals(66, $results['kjv'][2]->book);
+        $this->assertEquals(3,  $results['kjv'][2]->chapter);
+        $this->assertEquals(10, $results['kjv'][2]->verse);
+    }
 }

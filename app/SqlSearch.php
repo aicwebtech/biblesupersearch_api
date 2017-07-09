@@ -15,6 +15,7 @@ class SqlSearch {
     protected $options = array();
     protected $languages = array();
     protected $search_type = 'and';
+
     protected $options_default = array(
         'search_type' => 'and',
         'whole_words' => FALSE,
@@ -25,9 +26,8 @@ class SqlSearch {
     protected $use_named_bindings = FALSE;
     public $search_fields = 'text'; // Comma separated
 
-    static protected $regexp_phrase = '/["][\p{L}0-9\.\*\+\[\]\{\},\^\$\\\\\(\)%\' ]+["]/u'; // Works at matching phrases and (some) regexp
-    //static protected $regexp_phrase = '/["][\p{L}0-9\.\*\+\[\]\{\},\^\$\\\\\(\)%\' ]+["]/u'; // Attempt at matching phrases and regexp
-    //static protected $regexp_phrase = '/["][\p{L}0-9 ]+["]/u'; // Old way - works for text phrases, not for REGEXP
+    static protected $term_match_regexp = '/[`].*[`]/u'; // Regexp to match a regexp term
+    static protected $term_match_phrase = '/["][\p{L}0-9 \'%]+["]/u'; // Regexp to match an exact phrase term
 
     static protected $search_inputs = array(
         'search' => array(
@@ -244,19 +244,16 @@ class SqlSearch {
     }
 
     protected function _termSql($term, &$binddata = array(), $fields = '', $table_alias = '') {
-        $exact_case  = (array_key_exists('exact_case',  $this->options))  ? $this->options['exact_case'] : FALSE;
-        $exact_case  = ($exact_case  && $exact_case  !== 'false') ? TRUE : FALSE;
-        $whole_words = (array_key_exists('whole_words',  $this->options)) ? $this->options['whole_words'] : FALSE;
-        $whole_words = ($whole_words && $whole_words !== 'false') ? TRUE : FALSE;
+        $exact_case  = $this->options['exact_case'];
+        $whole_words = $this->options['whole_words'];
 
-        $fields = $this->_termFields($term, $fields, $table_alias);
-        $op = $this->_termOperator($term, $exact_case, $whole_words);
-        $term_fmt = $this->_termFormat($term, $exact_case, $whole_words);
+        $fields     = $this->_termFields($term, $fields, $table_alias);
+        $op         = $this->_termOperator($term, $exact_case, $whole_words);
+        $term_fmt   = $this->_termFormat($term, $exact_case, $whole_words);
         $bind_index = static::pushToBindData($term_fmt, $binddata);
         $sql = array();
 
         foreach($fields as $field) {
-            //$sql[] = ($whole_words) ? $this->_assembleTermSqlWholeWords($field, $bind_index, $op) : $this->_assembleTermSql($field, $bind_index, $op);
             $sql[] = $this->_assembleTermSql($field, $bind_index, $op, $exact_case);
         }
 
@@ -284,7 +281,7 @@ class SqlSearch {
             return 'REGEXP';
         }
         else {
-            return (strpos($term, '"') !== FALSE || strpos($term, '`') !== FALSE) ? 'REGEXP' : 'LIKE';
+            return (static::isTermPhrase($term) || static::isTermRegexp($term)) ? 'REGEXP' : 'LIKE';
         }
     }
 
@@ -292,23 +289,17 @@ class SqlSearch {
         $is_phrase = $is_regexp = FALSE;
 
         // Phrases
-        if(strpos($term, '"') !== FALSE) {
+        if(static::isTermPhrase($term)) {
             $term = trim($term, '"');
             $is_phrase = TRUE;
 
             if(!$whole_words) {
                 return $term;
             }
-
-            if($whole_words) {
-                //$term = '[[:<:]]' . $term . '[[:>:]]';
-            }
-
-            //return $term;
         }
 
         // Regexp
-        if(strpos($term, '`') !== FALSE) {
+        if(static::isTermRegexp($term)) {
             $term = trim($term, '`');
             $is_regexp = TRUE;
             return $term; // Whole words ignored for regexp
@@ -327,7 +318,6 @@ class SqlSearch {
 
         $pre  = ($has_st_pct) ? '' : '[[:<:]]';
         $post = ($has_en_pct) ? '' : '[[:>:]]';
-
         $term = ($is_phrase) ? $term : str_replace('%', '.*', trim($term, '%'));
 
         return $pre . trim($term, '%') . $post;
@@ -346,11 +336,6 @@ class SqlSearch {
 
     protected function _assembleTermSql($field, $bind_index, $operator, $exact_case) {
         //$binding = ($this->use_named_bindings) ? $bind_index : '?';
-
-//        var_dump($field);
-//        var_dump($bind_index);
-//        var_dump($operator);
-//        var_dump($exact_case);
 
         $binding = $bind_index;
         $binary = ($exact_case) ? 'BINARY ' : '';
@@ -421,16 +406,13 @@ class SqlSearch {
         $find = array(' AND ', ' XOR ', ' OR ', 'NOT ');
         $parsing = str_replace($find, ' ', $query);
 
-        //preg_match_all('/"[a-zA-z0-9 ]+"/', $parsing, $phrases, PREG_SET_ORDER);
         $phrases = static::parseQueryPhrases($query);
         $regexp  = static::parseQueryRegexp($query);
-        //$parsing = preg_replace('/"[a-zA-z0-9 ]+"/', '', $parsing); // Remove phrases once parsed
-        $parsing = preg_replace('/["][\p{L}0-9 \'%]+["]/u', '', $parsing); // Remove phrases once parsed
-        $parsing = preg_replace('/[`].*[`]/u', '', $parsing); // Remove phrases once parsed
-        //$parsing = preg_replace(static::$regexp_phrase, '', $parsing); // Remove phrases once parsed (with regexp)
-        //preg_match_all('/%?[a-zA-Z0-9]+%?/', $parsing, $matches, PREG_SET_ORDER);
+
+        $parsing = preg_replace(static::$term_match_phrase, '', $parsing); // Remove phrase terms once parsed
+        $parsing = preg_replace(static::$term_match_regexp, '', $parsing); // Remove regexp terms once parsed
+
         preg_match_all('/%?[\p{L}0-9\']+%?/u', $parsing, $matches, PREG_SET_ORDER);
-        //preg_match_all('/%?[.*]+%?/u', $parsing, $matches, PREG_SET_ORDER);
 
         foreach ($matches as $item) {
             $parsed[] = $item[0];
@@ -449,16 +431,43 @@ class SqlSearch {
     }
 
     /**
+     * Gets the type of the term, to determine if it's something other than a simple keyword
+     * @param string $term
+     * @return string
+     */
+    public static function getTermType($term) {
+        $type = 'keyword'; // Default type for non-special terms
+
+        if(static::isTermPhrase($term)) {
+            $type = 'phrase';
+        }
+        elseif(static::isTermRegexp($term)) {
+            $type = 'regexp';
+        }
+
+        return $type;
+    }
+
+    public static function isTermSpecial($term) {
+        return (static::getTermType($term) == 'keyword') ? FALSE : TRUE;
+    }
+
+    public static function isTermPhrase($term) {
+        return ($term{0} == '"') ? TRUE : FALSE;
+    }
+
+    public static function isTermRegexp($term) {
+        return ($term{0} == '`') ? TRUE : FALSE;
+    }
+
+    /**
      * Parses out the terms of a boolean query
      * @param string $terms parsed query terms
      * @return bool
      */
     public static function containsInvalidCharacters($terms) {
-        //$terms = static::parseQueryTerms($query);
-        //print_r($terms);
-
         foreach($terms as $term) {
-            if($term{0} == '"' || $term{0} == '`') {
+            if(static::isTermPhrase($term) || static::isTermRegexp($term)) {
                 // Ignore phrases and REGEXP
                 continue;
             }
@@ -486,33 +495,16 @@ class SqlSearch {
     }
 
     public static function parseQueryPhrases($query, $underscore_map = FALSE) {
-        $matches = $phrases = $underscores = array();
-        //preg_match_all('/"[a-zA-z0-9 ]+"/', $query, $matches, PREG_SET_ORDER);
-        preg_match_all('/["][\p{L}0-9 \'%]+["]/u', $query, $matches, PREG_SET_ORDER); // No regexp
-        //preg_match_all(static::$regexp_phrase, $query, $matches, PREG_SET_ORDER); // Include regexp as phrase
-
-        foreach ($matches as $item) {
-            $phrase = $item[0];
-            $phrases[] = $phrase;
-
-            if($underscore_map) {
-                $underscores[] = str_replace(' ', '_', $item[0]);
-            }
-        }
-
-        if($underscore_map) {
-            return array($phrases, $underscores);
-        }
-        else {
-            return $phrases;
-        }
+        return static::_parseQueryTermsSpecialHelpser($query, $underscore_map, static::$term_match_phrase);
     }
 
     public static function parseQueryRegexp($query, $underscore_map = FALSE) {
+        return static::_parseQueryTermsSpecialHelpser($query, $underscore_map, static::$term_match_regexp);
+    }
+
+    protected static function _parseQueryTermsSpecialHelpser($query, $underscore_map, $matching) {
         $matches = $phrases = $underscores = array();
-        //preg_match_all('/"[a-zA-z0-9 ]+"/', $query, $matches, PREG_SET_ORDER);
-        preg_match_all('/[`].*[`]/u', $query, $matches, PREG_SET_ORDER); // No regexp
-        //preg_match_all(static::$regexp_phrase, $query, $matches, PREG_SET_ORDER); // Include regexp as phrase
+        preg_match_all($matching, $query, $matches, PREG_SET_ORDER);
 
         foreach ($matches as $item) {
             $phrase = $item[0];
@@ -568,7 +560,6 @@ class SqlSearch {
             $regexp_placeholders[] = 're' . $key . 're';
         }
 
-        //$query = str_replace($phrases, $underscored, $query);
         $query = str_replace($phrases, $phrase_placeholders, $query);
         $query = str_replace($regexp, $regexp_placeholders, $query);
         $query = str_replace($xor, ' ^ ', $query);
