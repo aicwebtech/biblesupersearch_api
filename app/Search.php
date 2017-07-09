@@ -47,10 +47,6 @@ class Search extends SqlSearch {
         }
     }
 
-    protected function _parseHelper($search, $search_type) {
-
-    }
-
     /**
      * Checks the given search query and type to see if it is a 'special' search
      * Special searches include proximity, within chapter and within book searches
@@ -96,7 +92,7 @@ class Search extends SqlSearch {
 
         switch($search_type) {
             case 'strongs':
-                // Do nothing
+                // Do nothing, for now
                 break;
             case 'proximity':
                 $query = implode(' PROX(' . $arg3 . ') ', $parsed);
@@ -193,6 +189,23 @@ class Search extends SqlSearch {
     }
 
     /**
+     * Indicates if the given term is a Strongs number
+     * @param string $term
+     * @return boolean
+     */
+    public static function isTermStrongs($term) {
+        return FALSE; // Not yet implemented
+    }
+
+    public static function getTermType($term) {
+        if(static::isTermStrongs($term)) {
+            return 'strongs';
+        }
+
+        return parent::getTermType($term);
+    }
+
+    /**
      * Standardizes the boolean query, adds AND where implied
      * @param string $query
      * @return string
@@ -253,7 +266,6 @@ class Search extends SqlSearch {
         $operators = array_values($operators);
         $parsed    = str_replace($operators, '~~', $unexploded);
         $split     = explode('~~', $parsed);
-        //$terms = array();
 
         foreach($split as $separate) {
             $separate = trim($separate);
