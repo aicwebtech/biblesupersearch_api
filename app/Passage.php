@@ -908,4 +908,30 @@ class Passage {
 
         return $Exploded;
     }
+
+    public static function mapRequest($request, $keywords, $reference, $languages, $Bibles) {
+        if(!empty($request)) {
+            if(!$keywords && !$reference) {
+                $passages = static::explodeReferences($request);
+                //$Passages = static::parseReferences($request, $languages, FALSE, $Bibles); // Worst case senariao - lots of overhead
+
+                //print_r($passages);
+                // Todo - treat as passage if multiple passages found, need tests for this as well.
+                if(!empty($passages) && preg_match('/[0-9]/', $request)) {
+                    $reference = $request;
+                }
+                else {
+                    $keywords = $request;
+                }
+            }
+            elseif($keywords && !$reference) {
+                $reference = $request;
+            }
+            elseif($reference && !$keywords) {
+                $keywords = $request;
+            }
+        }
+
+        return array($keywords, $reference);
+    }
 }

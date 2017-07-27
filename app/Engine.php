@@ -98,6 +98,9 @@ class Engine {
             'search' => array(
                 'type'  => 'string',
             ),
+            'request' => array(
+                'type'  => 'string',
+            ),
             'bible' => array(
                 'type'  => 'array_string',
             ),
@@ -164,6 +167,14 @@ class Engine {
         // Secondary search elements are detected automatically by Search class
         $references = empty($input['reference']) ? NULL : $input['reference'];
         $keywords   = empty($input['search'])    ? NULL : $input['search'];
+        $request    = empty($input['request'])   ? NULL : $input['request'];
+
+        if($references && $keywords && $request) {
+            $this->addError(trans('errors.triple_request'), 4);
+            return FALSE;
+        }
+
+        list($keywords, $references) = Passage::mapRequest($request, $keywords, $references, $this->languages, $this->Bibles);
         $Search     = Search::parseSearch($keywords, $input);
         $is_search  = ($Search) ? TRUE : FALSE;
 
