@@ -44,6 +44,7 @@ class RequestTest extends TestCase {
 
     /**
      * 'Romans 1' will be recognized as a reference
+     * 'Romans, John' will be recognized as a reference
      */
     public function testAsReference() {
         $Engine = new Engine();
@@ -52,9 +53,9 @@ class RequestTest extends TestCase {
         $this->assertFalse($Engine->hasErrors());
         $this->assertCount(32, $results['kjv']);
 
-//        $results = $Engine->actionQuery(['bible' => 'kjv', 'request' => 'Peter,John', 'whole_words' => FALSE, 'page_all' => TRUE]);
-//        $this->assertFalse($Engine->hasErrors());
-//        $this->assertCount(6, $results['kjv']);
+        $results = $Engine->actionQuery(['bible' => 'kjv', 'request' => 'Romans,John', 'whole_words' => FALSE, 'page_all' => TRUE]);
+        $this->assertFalse($Engine->hasErrors());
+        $this->assertCount(83, $results['kjv']);
     }
 
     /**

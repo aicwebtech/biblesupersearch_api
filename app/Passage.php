@@ -909,17 +909,28 @@ class Passage {
         return $Exploded;
     }
 
+    /**
+     * Maps the generic 'request' input to either the search keywords or the reference input
+     * But not both
+     *
+     * @param string $request
+     * @param string $keywords
+     * @param string $reference
+     * @param array $languages
+     * @param array $Bibles
+     * @return array containing $keywords and $reference
+     */
     public static function mapRequest($request, $keywords, $reference, $languages, $Bibles) {
         if(!empty($request)) {
             if(!$keywords && !$reference) {
                 $passages = static::explodeReferences($request);
                 //$Passages = static::parseReferences($request, $languages, FALSE, $Bibles); // Worst case senariao - lots of overhead
 
-                //print_r($passages);
-                // Todo - treat as passage if multiple passages found, need tests for this as well.
-                if(!empty($passages) && preg_match('/[0-9]/', $request)) {
+                // Treats as passage if 1) It contains numbers or 2) It resolves to multiple (possible) passages
+                if(!empty($passages) && (preg_match('/[0-9]/', $request) || count($passages) >= 2)) {
                     $reference = $request;
                 }
+                // Otherwise, treats it as search keywords
                 else {
                     $keywords = $request;
                 }
