@@ -14,23 +14,23 @@ class Passage {
     use Traits\Error;
 
     public $is_search = FALSE;
-    protected $Book;    // Book instance - Single or Start of range
-    protected $Book_En; // Book instance - Range end
+    protected $Book;                        // Book instance - Single or Start of range
+    protected $Book_En;                     // Book instance - Range end
     protected $is_book_range = FALSE;
-    protected $raw_reference; // Reference as entered by user
-    protected $raw_book;          // Book as entered by user
-    protected $raw_chapter_verse; // Chapter and verse as entered by user
-    protected $chapter_verse; // Chapter and verse part of reference
-    protected $chapter_verse_parsed; // Chapter and verse, parsed into an array of arrays
-    protected $chapter_max; // Maximum chapter number requested
-    protected $chapter_min; // Minimum chapter number requested
-    protected $verses; // Array of verses, grouped by bible, book, chapter, verse as found by the query
-    protected $verses_index; // Array of book / chapter / verse
-    protected $verses_count = 0; // Count of the verses matched to this passage (as found by the query).
-    protected $languages; // Array of language short names
-    protected $Bibles = array(); //Array of Bibles
-    protected $is_valid = FALSE; // Is the provided reference valid?
-    protected $is_random = FALSE; // Is the user requesting a random chapter or verse?
+    protected $raw_reference;               // Reference as entered by user
+    protected $raw_book;                    // Book as entered by user
+    protected $raw_chapter_verse;           // Chapter and verse as entered by user
+    protected $chapter_verse;               // Chapter and verse part of reference
+    protected $chapter_verse_parsed;        // Chapter and verse, parsed into an array of arrays
+    protected $chapter_max;                 // Maximum chapter number requested
+    protected $chapter_min;                 // Minimum chapter number requested
+    protected $verses;                      // Array of verses, grouped by bible, book, chapter, verse as found by the query
+    protected $verses_index;                // Array of book / chapter / verse
+    protected $verses_count = 0;            // Count of the verses matched to this passage (as found by the query).
+    protected $languages;                   // Array of language short names
+    protected $Bibles = array();            // Array of Bibles
+    protected $is_valid = FALSE;            // Is the provided reference valid?
+    protected $is_random = FALSE;           // Is the user requesting a random chapter or verse?
 
     public function __construct() {
         // Do something?
