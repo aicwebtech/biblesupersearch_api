@@ -27,8 +27,34 @@ class BookAbstract extends Model
         parent::__construct($attributes);
     }
 
-    public static function getClassNameByLanguage($language) {
+    /**
+     * Gets the class name for the book list model for the given language
+     * Warning:  This does NOT verify that the class exists.
+     * @param string $language
+     * @return string the class name
+     */
+    public static function getClassNameByLanguageRaw($language) {
         $class_name = __NAMESPACE__ . '\\' . ucfirst($language);
+        return $class_name;
+    }
+
+    /**
+     * Gets the class name for the book list model for the given language
+     * If no class exists for the specified language, returns that for the default language.
+     * @param string $language
+     * @return string the class name
+     */
+    public static function getClassNameByLanguage($language) {
+        $class_name = static::getClassNameByLanguageRaw($language);
+
+        if(!class_exists($class_name)) {
+            $class_name = static::getClassNameByLanguageRaw(config('app.locale'));
+        }
+
+        if(!class_exists($class_name)) {
+            throw new StandardException('Cannot find book class for default language!');
+        }
+
         return $class_name;
     }
 

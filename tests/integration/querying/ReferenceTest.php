@@ -38,6 +38,22 @@ class ReferenceTest extends TestCase {
         $this->assertEquals('Random Verse', $results[0]['book_raw']);
     }
 
+    public function testRandomForeign() {
+        $Engine = new Engine();
+        $results = $Engine->actionQuery(['bible' => 'lith', 'reference' => 'Random Chapter', 'data_format' => 'passage']);
+        $this->assertFalse($Engine->hasErrors());
+        // The shortest chapter has 2 verses
+        $this->assertGreaterThanOrEqual(2, $results[0]['verses_count']);
+        $this->assertNotEquals($results[0]['book_raw'], $results[0]['book_name']);
+        $this->assertEquals('Random Chapter', $results[0]['book_raw']);
+
+        $Engine = new Engine();
+        $results = $Engine->actionQuery(['bible' => 'lith', 'reference' => 'Random Verse', 'data_format' => 'passage']);
+        $this->assertFalse($Engine->hasErrors());
+        $this->assertEquals(1, $results[0]['verses_count']);
+        $this->assertNotEquals($results[0]['book_raw'], $results[0]['book_name']);
+        $this->assertEquals('Random Verse', $results[0]['book_raw']);
+    }
 
     public function testIndefiniteStartRange() {
         $Engine = new Engine();
@@ -148,7 +164,7 @@ class ReferenceTest extends TestCase {
         // Tyndale doesn't have a vs 27
         $results = $Engine->actionQuery(['bible' => ['tyndale'], 'reference' => 'Rev 21:17 -', 'data_format' => 'passage']);
         $this->assertEquals('21:17 - 26', $results[0]['chapter_verse']);
-        
+
         $results = $Engine->actionQuery(['bible' => ['kjv','tyndale'], 'reference' => 'Rev 21:17 -', 'data_format' => 'passage']);
         $this->assertEquals('21:17 - 27', $results[0]['chapter_verse']);
     }

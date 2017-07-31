@@ -39,9 +39,6 @@ class Bible extends Model {
      */
     public function __construct(array $attributes = []) {
         parent::__construct($attributes);
-
-        //print_r($attributes);
-        //print_r($this);
     }
 
     /**
@@ -222,7 +219,8 @@ class Bible extends Model {
         return $list;
     }
 
-    /* Scans the module directory
+    /**
+     * Scans the module directory
      * Adds Bible records for Bibles not existing
      */
     public static function populateBibleTable() {
