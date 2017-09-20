@@ -14,4 +14,39 @@ return array(
         'limit' => 30,
     ),
     'global_maximum_results' => 500,
+    // List of all search types the API supports
+    'search_types' => [
+        [
+            'label' => 'All Words',
+            'value' => 'and'
+        ],
+        [
+            'label' => 'Any Word',
+            'value' => 'or'
+        ],
+        [
+            'label' => 'Exact Phrase',
+            'value' => 'phrase'
+        ],
+        [
+            'label' => 'Only One Word',
+            'value' => 'xor'
+        ],
+        [
+            'label' => 'Words Within 5 Verses',
+            'value' => 'proximity'
+        ],
+        [
+            'label' => 'Words Within Same Chapter',
+            'value' => 'chapter'
+        ],
+        [
+            'label' => 'Boolean Expression',
+            'value' => 'boolean'
+        ],
+        [
+            'label' => 'Regular Expression',
+            'value' => 'regexp'
+        ],
+    ]
 );

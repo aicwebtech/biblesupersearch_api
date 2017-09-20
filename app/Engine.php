@@ -322,10 +322,25 @@ class Engine {
         $response = new \stdClass;
         $response->bibles       = $this->actionBibles($input);
         $response->books        = $this->actionBooks($input);
+        $response->shortcuts    = $this->actionShortcuts($input);
+        $response->search_types = config('bss.search_types');
         $response->name         = config('app.name');
         $response->version      = config('app.version');
         $response->environment  = config('app.env');
         return $response;
+    }
+
+    public function actionShortcuts($input) {
+        // Todo - multi language support
+        $language = (!empty($input['language'])) ? $input['language'] : env('DEFAULT_LANGUAGE_SHORT', 'en');
+        $namespaced_class = 'App\Models\Shortcuts\\' . ucfirst($language);
+
+        if(!class_exists($namespaced_class)) {
+            $namespaced_class = 'App\Models\Shortcuts\\' . env('DEFAULT_LANGUAGE_SHORT', 'en');
+        }
+
+        $Shortcuts = $namespaced_class::select('id', 'name', 'reference')->orderBy('id', 'ASC') ->where('display', 1) -> get() -> all();
+        return $Shortcuts;
     }
 
     public function actionVersion($input) {
