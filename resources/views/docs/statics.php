@@ -1,10 +1,7 @@
 <?php
     $context = 'api.statics';
     $url = '/statics';
-   // include( dirname(__FILE__) . '/generic.php');
-
     renderActionHeader($context, $url);
-
     renderParameterHeader();
     renderCommonParameters(['language', 'callback']);
     renderParameterFooter();
@@ -20,6 +17,8 @@
     "results": {
         "bibles": { ... }, // <?php echo trans('api.see') . ' ' . trans('api.bibles.name') . ' ' . trans('api.action'). PHP_EOL ?>
         "books": [ ... ],  // <?php echo trans('api.see') . ' ' . trans('api.books.name')  . ' ' . trans('api.action'). PHP_EOL ?>
+        "search_types": [ ... ],
+        "shortcuts": [ ... ],
         "name": "<?php echo config('app.name') ?>",
         "version": "<?php echo config('app.version') ?>",
         "environment": "<?php echo config('app.env') ?>",

@@ -39,6 +39,10 @@ class Engine {
         $primary = NULL;
 
         foreach($modules as $module) {
+            if(empty($module)) {
+                continue;
+            }
+
             $added = $this->addBible($module);
             $primary = ($added && !$primary) ? $module : $primary;
         }
