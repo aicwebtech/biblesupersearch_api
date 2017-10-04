@@ -24,6 +24,19 @@ class PaginationTest extends TestCase {
         $this->assertEquals('18:42', $results[29]['chapter_verse']);
     }
 
+    public function testSearchPageFirstMulti() {
+        $Engine = new Engine();
+
+        $results = $Engine->actionQuery(['bible' => ['kjv','tyndale'], 'search' => 'faith', 'whole_words' => TRUE, 'page' => 1]);
+        $this->assertFalse($Engine->hasErrors());
+        $this->assertCount(config('bss.pagination.limit'), $results);
+
+        $this->assertEquals(5, $results[0]['book_id']);
+        $this->assertEquals('32:20', $results[0]['chapter_verse']);
+        $this->assertEquals(42, $results[29]['book_id']);
+        $this->assertEquals('17:19', $results[29]['chapter_verse']);
+    }
+
     // Still can't get this to test right - works from frontend
     // Issue is with how the 'page' variable gets through the request to Laravel's pagination
     public function _testSearchPageMiddle() {
@@ -41,7 +54,6 @@ class PaginationTest extends TestCase {
 
     public function testSearchPageAll() {
         $Engine = new Engine();
-
         $results = $Engine->actionQuery(['bible' => 'kjv', 'search' => 'faith', 'whole_words' => TRUE, 'page_all' => TRUE]);
         $this->assertFalse($Engine->hasErrors());
         $this->assertCount(231, $results);

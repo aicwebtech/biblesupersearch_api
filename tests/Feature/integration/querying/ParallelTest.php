@@ -42,12 +42,12 @@ class ParallelTest extends TestCase {
         config(['bss.pagination.limit' => 30]);
         $page_limit = config('bss.pagination.limit'); // 30
 
-        // Raw data structure check.
-        $results = $Engine->actionQuery(['bible' => ['kjv','bishops'], 'search' => 'faith', 'whole_words' => FALSE, 'page' => 1, 'data_format' => 'raw']);
-        $this->assertFalse($Engine->hasErrors());
+        // Raw data structure check. - no longer applicable, multi Bible is no longer paginated for raw data_format
+        // $results = $Engine->actionQuery(['bible' => ['kjv','bishops'], 'search' => 'faith', 'whole_words' => FALSE, 'page' => 1, 'data_format' => 'raw']);
+        // $this->assertFalse($Engine->hasErrors());
 
-        $this->assertCount($page_limit, $results['kjv']);
-        $this->assertCount($page_limit, $results['bishops']);
+        // $this->assertCount($page_limit, $results['kjv']);
+        // $this->assertCount($page_limit, $results['bishops']);
 
         // Passage format check
         $results = $Engine->actionQuery(['bible' => ['kjv','bishops'], 'search' => 'faith', 'whole_words' => FALSE, 'page' => 1]);

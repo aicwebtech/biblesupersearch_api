@@ -6,6 +6,7 @@ use App\User;
 use App\Models\Bible;
 use App\Passage;
 use App\Search;
+use Illuminate\Pagination\LengthAwarePaginator as Paginator;
 
 class Engine {
     use Traits\Error;
@@ -160,12 +161,15 @@ class Engine {
         $input = $this->_sanitizeInput($input, $parsing);
         $input['bible'] = array_keys($this->Bibles);
         $input['multi_bibles'] = (count($input['bible']) > 1) ? TRUE : FALSE;
+        $input['data_format'] = (!empty($input['data_format'])) ? $input['data_format'] : $this->default_data_format;
 
         // Secondary search elements are detected automatically by Search class
         $references = empty($input['reference']) ? NULL : $input['reference'];
         $keywords   = empty($input['search'])    ? NULL : $input['search'];
         $Search     = Search::parseSearch($keywords, $input);
         $is_search  = ($Search) ? TRUE : FALSE;
+        $paginate   = ($is_search && !$input['page_all'] && (!$input['multi_bibles'] || $this->_canPaginate($input['data_format']))) ? TRUE : FALSE;
+        $paging     = array();
 
         if(!$is_search && empty($references)) {
             $this->addError(trans('errors.no_query'), 4);
@@ -214,6 +218,13 @@ class Engine {
                 if(!empty($BibleResults) && !$BibleResults->isEmpty()) {
                     $results[$Bible->module] = $BibleResults->all();
 
+                    if($paginate && !$input['multi_bibles']) {
+                        $paging = $this->_getCleanPagingData($BibleResults);
+//                        var_dump(get_class($BibleResults));
+//                        print_r($paging);
+//                        die();
+                    }
+
                     if($BibleResults->count() == config('bss.global_maximum_results')) {
                         $this->addError( trans('errors.result_limit_reached', ['maximum' => config('bss.global_maximum_results')]), 3);
                     }
@@ -254,6 +265,19 @@ class Engine {
         }
 
         $results = $this->_formatDataStructure($results, $input, $Passages, $Search);
+
+        if($input['multi_bibles'] && $paginate) {
+            $Paginator = $this->_buildPaginator($results, config('bss.pagination.limit'), $input['page']);
+            $results = $Paginator->all();
+
+//            $Paginator = new Paginator($results, count($results), config('bss.pagination.limit'), $input['page']);
+//            print_r($this->_getCleanPagingData($Paginator));
+//            die();
+        }
+        elseif($input['multi_bibles'] && !$paginate) {
+            $results = array_slice($results, 0, config('bss.global_maximum_results'));
+        }
+
         return $results;
     }
 
@@ -339,18 +363,19 @@ class Engine {
         $format_type  = (array_key_exists($format_type, $format_map)) ? $format_map[$format_type] : 'passage';
         $format_class = '\App\Formatters\\' . ucfirst($format_type);
 
+        // This doesn't work right!
         if($input['multi_bibles']) {
             if($parallel_unmatched_verses) {
                 $results = $this->_parallelUnmatchedVerses($results, $Search);
             }
 
-            $limit = config('bss.pagination.limit');
-            $slice_len = ($input['page_all']) ? config('bss.global_maximum_results') : $limit;
-            $slice_off = ($input['page_all']) ? 0 : ($input['page'] - 1) * $limit;
-
-            foreach($results as &$res) {
-                $res = array_slice($res, $slice_off, $slice_len);
-            }
+//            $limit = config('bss.pagination.limit');
+//            $slice_len = ($input['page_all']) ? config('bss.global_maximum_results') : $limit;
+//            $slice_off = ($input['page_all']) ? 0 : ($input['page'] - 1) * $limit;
+//
+//            foreach($results as &$res) {
+//                $res = array_slice($res, $slice_off, $slice_len);
+//            }
         }
 
         if($this->isTruthy('highlight', $input)) {
@@ -435,6 +460,26 @@ class Engine {
         }
 
         return $results_new;
+    }
+
+    protected function _getCleanPagingData(\Illuminate\Pagination\LengthAwarePaginator $Paginator) {
+        $paging = $Paginator->toArray();
+        unset($paging['data']);
+        unset($paging['next_page_url']);
+        unset($paging['prev_page_url']);
+        return $paging;
+    }
+
+    protected function _canPaginate($data_format) {
+        return (strpos($data_format, 'passage') !== FALSE) ? TRUE : FALSE;
+    }
+
+    protected function _buildPaginator($data, $per_page, $current_page) {
+        $total = count($data);
+        $offset = $per_page * ($current_page - 1);
+        $data = array_slice($data, $offset, $per_page);
+        $Paginator = new Paginator($data, $total, $per_page, $current_page);
+        return $Paginator;
     }
 
     protected function _sanitizeInput($input, $parsing) {
