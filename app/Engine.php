@@ -17,6 +17,7 @@ class Engine {
     protected $languages = array();
     protected $default_data_format = 'passage';
     protected $default_page_all = FALSE;
+    protected $metadata = NULL;
     public $debug = FALSE;
 
     public function __construct() {
@@ -24,6 +25,7 @@ class Engine {
         $default_bible = config('bss.defaults.bible');
         $this->addBible($default_bible);
         $this->setPrimaryBible($default_bible);
+        $this->metadata = new \stdClass();
     }
 
     public function setBibles($modules) {
@@ -80,6 +82,21 @@ class Engine {
 
     public function getBibles() {
         return $this->Bibles;
+    }
+
+    public function getMetadata($include_errors = FALSE) {
+        if(!$include_errors) {
+            return $this->metadata;
+        }
+
+        $metadata = $this->metadata;
+        $metadata->errors = $this->getErrors();
+        $metadata->error_level = $this->getErrorLevel();
+        return $metadata;
+    }
+
+    protected function setMetadata($data) {
+        $this->metadata = (object) $data;
     }
 
     /**
@@ -269,15 +286,13 @@ class Engine {
         if($input['multi_bibles'] && $paginate) {
             $Paginator = $this->_buildPaginator($results, config('bss.pagination.limit'), $input['page']);
             $results = $Paginator->all();
-
-//            $Paginator = new Paginator($results, count($results), config('bss.pagination.limit'), $input['page']);
-//            print_r($this->_getCleanPagingData($Paginator));
-//            die();
+            $paging = $this->_getCleanPagingData($Paginator);
         }
         elseif($input['multi_bibles'] && !$paginate) {
             $results = array_slice($results, 0, config('bss.global_maximum_results'));
         }
 
+        $this->metadata->paging = $paging;
         return $results;
     }
 
