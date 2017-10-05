@@ -15,6 +15,7 @@ class PaginationTest extends TestCase {
         $Engine = new Engine();
 
         $results = $Engine->actionQuery(['bible' => 'kjv', 'search' => 'faith', 'whole_words' => TRUE]);
+        $metadata = $Engine->getMetadata();
         $this->assertFalse($Engine->hasErrors());
         $this->assertCount(config('bss.pagination.limit'), $results);
 
@@ -22,12 +23,18 @@ class PaginationTest extends TestCase {
         $this->assertEquals('32:20', $results[0]['chapter_verse']);
         $this->assertEquals(42, $results[29]['book_id']);
         $this->assertEquals('18:42', $results[29]['chapter_verse']);
+
+        $total_pages = ceil(231 / config('bss.pagination.limit'));
+        $this->assertEquals(1, $metadata->paging['current_page']);
+        $this->assertEquals($total_pages, $metadata->paging['last_page']);
+        $this->assertEquals(config('bss.pagination.limit'), $metadata->paging['per_page']);
     }
 
     public function testSearchPageFirstMulti() {
         $Engine = new Engine();
 
         $results = $Engine->actionQuery(['bible' => ['kjv','tyndale'], 'search' => 'faith', 'whole_words' => TRUE, 'page' => 1]);
+        $metadata = $Engine->getMetadata();
         $this->assertFalse($Engine->hasErrors());
         $this->assertCount(config('bss.pagination.limit'), $results);
 
@@ -35,6 +42,8 @@ class PaginationTest extends TestCase {
         $this->assertEquals('32:20', $results[0]['chapter_verse']);
         $this->assertEquals(42, $results[29]['book_id']);
         $this->assertEquals('17:19', $results[29]['chapter_verse']);
+
+        $this->assertEquals(1, $metadata->paging['current_page']);
     }
 
     // Still can't get this to test right - works from frontend

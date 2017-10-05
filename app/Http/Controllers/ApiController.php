@@ -25,13 +25,19 @@ class ApiController extends Controller {
 //        print_r($input);
 //        die();
 
-        $response = new \stdClass();
-        $response->errors = array();
-        $response->error_level = 0;
+//        $response = new \stdClass();
+//        $response->errors = array();
+//        $response->error_level = 0;
         $code = 200;
 
         try {
             $results = $Engine->$actionMethod($input);
+
+            if(config('app.debug') && $action == 'query') {
+                $Engine->addError( '<pre>' . print_r($_SESSION['debug'], TRUE) . '</pre>', 1);
+            }
+
+            $response = $Engine->getMetadata(TRUE);
             $response->results = $results;
         }
         catch (Exception $ex) {
@@ -40,15 +46,10 @@ class ApiController extends Controller {
                 -> header('Access-Control-Allow-Origin', '*');
         }
 
-        if(config('app.debug') && $action == 'query') {
-            $Engine->addError( '<pre>' . print_r($_SESSION['debug'], TRUE) . '</pre>', 1);
-            //$Engine->addErrors( $_SESSION['debug'], 1);
-        }
-
         if($Engine->hasErrors()) {
-            $errors = $Engine->getErrors();
-            $response->errors = $errors;
-            $response->error_level = $Engine->getErrorLevel();
+//            $errors = $Engine->getErrors();
+//            $response->errors = $errors;
+//            $response->error_level = $Engine->getErrorLevel();
             $code = 400;
         }
 
