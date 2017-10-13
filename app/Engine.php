@@ -6,6 +6,7 @@ use App\User;
 use App\Models\Bible;
 use App\Passage;
 use App\Search;
+use App\CacheManager;
 use Illuminate\Pagination\LengthAwarePaginator as Paginator;
 
 class Engine {
@@ -181,6 +182,11 @@ class Engine {
 
         $this->resetErrors();
         $results = $bible_no_results = array();
+
+        $CacheManager = new CacheManager();
+        $Cache = $CacheManager->createCache($input, $parsing);
+        $this->metadata->hash = $Cache->hash;
+
         !empty($input['bible']) && $this->setBibles($input['bible']);
         $input = $this->_sanitizeInput($input, $parsing);
         $input['bible'] = array_keys($this->Bibles);
@@ -392,6 +398,24 @@ class Engine {
         $response->version      = config('app.version');
         $response->environment  = config('app.env');
         return $response;
+    }
+
+    public function actionReadcache($input) {
+        if(!array_key_exists('hash', $input)) {
+            $this->addError('hash is required', 4);
+            return;
+        }
+
+        $Cache = \App\Models\Cache::where('hash', $input['hash'])->first();
+
+        if(!$Cache) {
+            $this->addError('Cache not found', 4);
+        }
+        else {
+            $cache = $Cache->toArray();
+            $cache['form_data'] = json_decode($cache['form_data'], TRUE);
+            return $cache;
+        }
     }
 
     protected function _formatDataStructure($results, $input, $Passages, $Search) {

@@ -11,7 +11,7 @@ use App\Engine;
 class ApiController extends Controller {
 
     public function genericAction($action = 'query', Request $Request) {
-        $allowed_actions = ['query', 'bibles', 'books', 'statics', 'version'];
+        $allowed_actions = ['query', 'bibles', 'books', 'statics', 'version', 'readcache'];
         $_SESSION['debug'] = array();
 
         if(!in_array($action, $allowed_actions)) {
