@@ -25,7 +25,7 @@ class VerseStandard extends VerseAbstract {
         $table = $Verse->getTable();
         $passage_query = $search_query = NULL;
         $is_special_search = ($Search && $Search->is_special) ? TRUE : FALSE;
-        $Query = DB::table($table . ' AS tb')->select('id','book','chapter','verse','text');
+        $Query = DB::table($table . ' AS tb')->select('id','book','chapter','verse','text','italics');
         $Query->orderBy('book', 'ASC')->orderBy('chapter', 'ASC')->orderBy('verse', 'ASC');
 
         if($Passages) {
