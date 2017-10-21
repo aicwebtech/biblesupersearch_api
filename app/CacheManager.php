@@ -64,10 +64,11 @@ class CacheManager {
 
     protected function processFormData($form_data, $parsing = array()) {
         $processed = array();
+        $exclude   = ['page','page_all'];
 
         if(!empty($parsing) && is_array($parsing)) {
             foreach($parsing as $key => $info) {
-                if(array_key_exists($key, $form_data)) {
+                if(array_key_exists($key, $form_data) && !in_array($key, $exclude)) {
                     $processed[$key] = $form_data[$key];
                 }
             }
