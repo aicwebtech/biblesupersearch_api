@@ -636,4 +636,54 @@ class SqlSearch {
 
         return $results;
     }
+
+    /**
+     * Given a list of keywords, builds a query of $number or more
+     * @param array $keywords list of keywords
+     * @param int $number
+     */
+    static function buildTwoOrMoreQuery($keywords, $number, $glue = ' OR ') {
+        $count = count($keywords);
+        var_dump($keywords);
+        var_dump($number);
+
+        if($count == 1) {
+            return implode(' OR ', $keywords);
+        }
+
+        if($count <= $number) {
+            return implode(' AND ', $keywords);
+        }
+
+        $pieces = static::_buildTwoOrMoreQueryHelper($keywords, $number, $count);
+
+        var_dump('final');
+        var_dump($pieces);
+        $query = implode($glue, $pieces);
+        var_dump($query);
+        return $query;
+    }
+
+    static function _buildTwoOrMoreQueryHelper($keywords, $number, $count) {
+        $kw = $keywords; // $kw will be destroyed
+        $big_pieces = [];
+
+        if($number == 1) {
+            return $keywords;
+        }
+
+        if($number > 1) {
+            // array_pop($kw); // not needed - breaks things
+        }
+
+        while($word = array_shift($kw)) {
+            $pieces = static::_buildTwoOrMoreQueryHelper($kw, $number - 1, $count);
+
+            foreach($pieces as $p) {
+                $big_pieces[] = $word . ' AND ' . $p;
+            }
+        }
+
+        return $big_pieces;
+    }
 }
