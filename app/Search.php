@@ -82,7 +82,7 @@ class Search extends SqlSearch {
         return $prox_found;
     }
 
-    public static function booleanizeQuery($query, $search_type, $arg3 = NULL) {
+    public function booleanizeQuery($query, $search_type, $arg3 = NULL) {
         if($search_type == 'boolean') {
             return $query;
         }
@@ -245,7 +245,7 @@ class Search extends SqlSearch {
         }
 
         $limit  = (isset($this->options['proximity_limit'])) ? intval($this->options['proximity_limit']) : 5;
-        $search = static::booleanizeQuery($this->search, $this->search_type, $limit);
+        $search = $this->booleanizeQuery($this->search, $this->search_type, $limit);
         $terms  = static::parseQueryTerms($search);
         $unexploded = static::standardizeProximityOperators($search);
         $Searches = $operators = $matches = array();

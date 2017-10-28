@@ -10,19 +10,20 @@ class SqlSearchTest extends TestCase
 {
     public function testBooleanize() {
         $search = 'faith hope joy';
-        $bp = SqlSearch::booleanizeQuery($search, 'all_words');
+        $SqlSearch = new SqlSearch();
+        $bp = $SqlSearch->booleanizeQuery($search, 'all_words');
         $this->assertEquals('faith hope joy', $bp);
-        $bp = SqlSearch::booleanizeQuery($search, 'and');
+        $bp = $SqlSearch->booleanizeQuery($search, 'and');
         $this->assertEquals('faith hope joy', $bp);
-        $bp = SqlSearch::booleanizeQuery($search, 'boolean');
+        $bp = $SqlSearch->booleanizeQuery($search, 'boolean');
         $this->assertEquals('faith hope joy', $bp);
-        $bp = SqlSearch::booleanizeQuery($search, 'any_word');
+        $bp = $SqlSearch->booleanizeQuery($search, 'any_word');
         $this->assertEquals('faith OR hope OR joy', $bp);
-        $bp = SqlSearch::booleanizeQuery($search, 'or');
+        $bp = $SqlSearch->booleanizeQuery($search, 'or');
         $this->assertEquals('faith OR hope OR joy', $bp);
-        $bp = SqlSearch::booleanizeQuery($search, 'phrase');
+        $bp = $SqlSearch->booleanizeQuery($search, 'phrase');
         $this->assertEquals('"faith hope joy"', $bp);
-        $bp = SqlSearch::booleanizeQuery($search, 'not');
+        $bp = $SqlSearch->booleanizeQuery($search, 'not');
         $this->assertEquals('NOT (faith hope joy)', $bp);
     }
 

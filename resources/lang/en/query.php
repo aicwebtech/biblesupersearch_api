@@ -30,14 +30,16 @@ return array(
             'default' => 'and',
             'description' => 'Type of search when using keyword search. <br />'
             . 'Options: <ul>'
-            . '<li>"and" or "all_words" - Searches for verses containing all words given</li>'
-            . '<li>"or" or "any_words" - Searches for verses containing any words given</li>'
-            . '<li>"xor" or "one_words" - Searches for verses containing only one word given</li>'
-            . '<li>"phrase" - Searches for verses containing the exact phrase given</li>'
-            . '<li>"boolean" - Searches for verses matching the boolean expression</li>'
-            . '<li>"regexp" - Searches for verses matching the regular expression</li>'
-            . '<li>"proximity" - Searches for words within 5 verses but not nessessarily in the same verse or chapter.<br />'
-            . 'This limit can be set via proximity_limit</li>'
+            . '<li>"and" or "all_words" - Searches for verses containing all words given.</li>'
+            . '<li>"or" or "any_words" - Searches for verses containing any words given.</li>'
+            . '<li>"xor" or "one_words" - Searches for verses containing only one word given.</li>'
+            . '<li>"two_or_more" - Searches for two or more of the given keywords.<br />'
+            . '<li>"keyword_limit" - Searches for two or more of the given keywords, with limit being changable via \'keyword_limit\'.<br />'
+            . '<li>"phrase" - Searches for verses containing the exact phrase given.</li>'
+            . '<li>"boolean" - Searches for verses matching the boolean expression.</li>'
+            . '<li>"regexp" - Searches for verses matching the regular expression.</li>'
+            . '<li>"proximity" - Searches for words within 5 verses but not nessessarily in the same verse or chapter. <br />'
+            . 'This limit can be set via \'proximity_limit\'</li>'
             . '<li>"chapter" - Searches for words within the same chapter but not nessessarily in the same verse.</li>'
             . '<li>"book" - Searches for words within the same book but not nessessarily in the same chapter or verse.</li>'
             . '</ul>',
@@ -108,6 +110,12 @@ return array(
                 'chapter_verse_raw' => 'Chapter and verse as entered by user',
                 'verse_index' => 'A list of all chapters and verses retrieved.'
             ),
+        ),
+        'keyword_limit' => array(
+            'type' => 'Integer',
+            'name' => 'Keyword Limit',
+            'default' => '5',
+            'description' => 'Keyword limit.  For \'keyword_limit\' search type, sets the minimum number of keywords.',
         ),
         'proximity_limit' => array(
             'type' => 'Integer',

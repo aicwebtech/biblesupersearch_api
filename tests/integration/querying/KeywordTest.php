@@ -85,4 +85,14 @@ class KeywordTest extends TestCase
         $this->assertEquals(30, $results['kjv'][0]->chapter);
         $this->assertEquals(7,  $results['kjv'][0]->verse);
     }
+
+    public function testTwoOrMore() {
+        $Engine = new Engine();
+        $Engine->setDefaultDataType('raw');
+        $results = $Engine->actionQuery(['bible' => 'kjv', 'search' => 'faith hope love', 'search_type' => 'two_or_more', 'page_all' => TRUE, 'whole_words' => TRUE]);
+        $this->assertCount(23, $results['kjv']);
+        $this->assertEquals(45, $results['kjv'][0]->book);
+        $this->assertEquals(5, $results['kjv'][0]->chapter);
+        $this->assertEquals(2, $results['kjv'][0]->verse);
+    }
  }
