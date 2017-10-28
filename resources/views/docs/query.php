@@ -40,6 +40,7 @@
         'page',
         'page_all',
         'search_type',
+        'keyword_limit',
         'proximity_limit',
     );
 

@@ -37,27 +37,28 @@ class SearchTest extends TestCase {
 
     public function testBooleanize() {
         $search = 'faith hope joy';
-        $bp = Search::booleanizeQuery($search, 'all_words');
+        $Search = new Search();
+        $bp = $Search->booleanizeQuery($search, 'all_words');
         $this->assertEquals('faith hope joy', $bp);
-        $bp = Search::booleanizeQuery($search, 'and');
+        $bp = $Search->booleanizeQuery($search, 'and');
         $this->assertEquals('faith hope joy', $bp);
-        $bp = Search::booleanizeQuery($search, 'boolean');
+        $bp = $Search->booleanizeQuery($search, 'boolean');
         $this->assertEquals('faith hope joy', $bp);
-        $bp = Search::booleanizeQuery($search, 'any_word');
+        $bp = $Search->booleanizeQuery($search, 'any_word');
         $this->assertEquals('faith OR hope OR joy', $bp);
-        $bp = Search::booleanizeQuery($search, 'or');
+        $bp = $Search->booleanizeQuery($search, 'or');
         $this->assertEquals('faith OR hope OR joy', $bp);
-        $bp = Search::booleanizeQuery($search, 'phrase');
+        $bp = $Search->booleanizeQuery($search, 'phrase');
         $this->assertEquals('"faith hope joy"', $bp);
-        $bp = Search::booleanizeQuery($search, 'not');
+        $bp = $Search->booleanizeQuery($search, 'not');
         $this->assertEquals('NOT (faith hope joy)', $bp);
-        $bp = Search::booleanizeQuery($search, 'proximity', 5);
+        $bp = $Search->booleanizeQuery($search, 'proximity', 5);
         $this->assertEquals('faith PROX(5) hope PROX(5) joy', $bp);
-        $bp = Search::booleanizeQuery($search, 'proximity', 50);
+        $bp = $Search->booleanizeQuery($search, 'proximity', 50);
         $this->assertEquals('faith PROX(50) hope PROX(50) joy', $bp);
-        $bp = Search::booleanizeQuery($search, 'book');
+        $bp = $Search->booleanizeQuery($search, 'book');
         $this->assertEquals('faith BOOK hope BOOK joy', $bp);
-        $bp = Search::booleanizeQuery('faith AND (hope OR love)', 'boolean');
+        $bp = $Search->booleanizeQuery('faith AND (hope OR love)', 'boolean');
         $this->assertEquals('faith AND (hope OR love)', $bp);
     }
 

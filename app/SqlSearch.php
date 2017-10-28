@@ -17,9 +17,10 @@ class SqlSearch {
     protected $search_type = 'and';
 
     protected $options_default = array(
-        'search_type' => 'and',
-        'whole_words' => FALSE,
-        'exact_case'  => FALSE,
+        'search_type'   => 'and',
+        'whole_words'   => FALSE,
+        'exact_case'    => FALSE,
+        'keyword_limit' => 2,
     );
 
     //protected $use_unnamed_bindings = FALSE;
@@ -126,9 +127,9 @@ class SqlSearch {
 
     protected function _validateHelper($search, $search_type) {
         switch ($search_type) {
-            case 'boolean' :
-            case 'all_words' :
-            case 'and' :
+            case 'boolean':
+            case 'all_words':
+            case 'and':
                 return $this->_validateBoolean($search);
                 break;
             default:
@@ -198,13 +199,13 @@ class SqlSearch {
         $searches   = array();
 
         if($search) {
-            $searches[] = static::booleanizeQuery($search, $search_type);
+            $searches[] = $this->booleanizeQuery($search, $search_type);
         }
 
         if($include_extra_fields) {
             foreach(static::$search_inputs as $input => $settings) {
                 if(!empty($settings['type']) && isset($this->options[$input])) {
-                    $searches[] = static::booleanizeQuery($this->options[$input], $settings['type']);
+                    $searches[] = $this->booleanizeQuery($this->options[$input], $settings['type']);
                 }
             }
         }
@@ -358,7 +359,7 @@ class SqlSearch {
         return $idx;
     }
 
-    public static function booleanizeQuery($query, $search_type, $arg3 = NULL) {
+    public function booleanizeQuery($query, $search_type, $arg3 = NULL) {
         $query = trim(preg_replace('/\s+/', ' ', $query));
 
         if ($search_type == 'boolean') {
@@ -375,6 +376,12 @@ class SqlSearch {
             case 'or':
             case 'any_word':
                 $query = implode(' OR ', $parsed);
+                break;
+            case 'keyword_limit':
+            case 'two_or_more':
+                $limit = ($search_type == 'two_or_more') ? 2 : $this->options['keyword_limit'];
+                $full  = static::parseQueryTerms($query);
+                $query = static::buildTwoOrMoreQuery($full, $limit);
                 break;
             case 'regexp':
                 $query = '`' . $query . '`';
@@ -403,9 +410,8 @@ class SqlSearch {
     public static function parseQueryTerms($query) {
         $parsed = $phrases = $matches = array();
         // Remove operators that otherwise would be interpreted as terms
-        $find = array(' AND ', ' XOR ', ' OR ', 'NOT ');
+        $find    = array(' AND ', ' XOR ', ' OR ', 'NOT ');
         $parsing = str_replace($find, ' ', $query);
-
         $phrases = static::parseQueryPhrases($query);
         $regexp  = static::parseQueryRegexp($query);
 
@@ -644,8 +650,6 @@ class SqlSearch {
      */
     static function buildTwoOrMoreQuery($keywords, $number, $glue = ' OR ') {
         $count = count($keywords);
-        var_dump($keywords);
-        var_dump($number);
 
         if($count == 1) {
             return implode(' OR ', $keywords);
@@ -656,11 +660,7 @@ class SqlSearch {
         }
 
         $pieces = static::_buildTwoOrMoreQueryHelper($keywords, $number, $count);
-
-        var_dump('final');
-        var_dump($pieces);
-        $query = implode($glue, $pieces);
-        var_dump($query);
+        $query  = implode($glue, $pieces);
         return $query;
     }
 
@@ -670,10 +670,6 @@ class SqlSearch {
 
         if($number == 1) {
             return $keywords;
-        }
-
-        if($number > 1) {
-            // array_pop($kw); // not needed - breaks things
         }
 
         while($word = array_shift($kw)) {

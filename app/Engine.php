@@ -152,6 +152,9 @@ class Engine {
             'proximity_limit' => array(
                 'type'  => 'int',
             ),
+            'keyword_limit' => array(
+                'type'  => 'int',
+            ),
             'callback' => array(
                 'type'  => 'string',
             ),
