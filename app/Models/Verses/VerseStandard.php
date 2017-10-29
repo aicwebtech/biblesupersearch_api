@@ -29,7 +29,7 @@ class VerseStandard extends VerseAbstract {
         $Query->orderBy('book', 'ASC')->orderBy('chapter', 'ASC')->orderBy('verse', 'ASC');
 
         if($Passages) {
-            $passage_query = static::_buildPassageQuery($Passages);
+            $passage_query = static::_buildPassageQuery($Passages, NULL, $parameters);
 
             if($passage_query) {
                 $Query->whereRaw('(' . $passage_query . ')');
@@ -39,7 +39,7 @@ class VerseStandard extends VerseAbstract {
         if($Search) {
             if($is_special_search) {
                 $table = static::$special_table . '_1';
-                $passage_query_special = static::_buildPassageQuery($Passages, $table);
+                $passage_query_special = static::_buildPassageQuery($Passages, $table, $parameters);
                 $search_query = static::_buildSpecialSearchQuery($Search, $parameters, $passage_query_special);
 
                 if(!$search_query) {
@@ -83,7 +83,7 @@ class VerseStandard extends VerseAbstract {
         return (empty($verses)) ? FALSE : $verses;
     }
 
-    protected static function _buildPassageQuery($Passages, $table = '') {
+    protected static function _buildPassageQuery($Passages, $table = '', $parameters = array()) {
         if(empty($Passages)) {
             return FALSE;
         }

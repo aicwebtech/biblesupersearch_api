@@ -181,6 +181,14 @@ class Engine {
             'search_phrase' => array(
                 'type'  => 'string',
             ),
+            'context' => array(
+                'type'   => 'bool',
+                'default' => FALSE,
+            ),
+            'context_range' => array(
+                'type'   => 'int',
+                'default' => config('bss.context.range'),
+            ),
         );
 
         $this->resetErrors();
@@ -218,7 +226,7 @@ class Engine {
         }
 
         // Passage parsing and validation
-        $Passages = Passage::parseReferences($references, $this->languages, $is_search, $this->Bibles);
+        $Passages = Passage::parseReferences($references, $this->languages, $is_search, $this->Bibles, $input);
 
         if(is_array($Passages)) {
             foreach($Passages as $key => $Passage) {
