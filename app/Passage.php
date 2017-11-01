@@ -553,7 +553,9 @@ class Passage {
         return $this->chapter_verse_parsed;
     }
 
-    public function toArray() {
+    public function toArray($verbose = FALSE) {
+        $single = $this->containsSingleVerse();
+
         $passage = array(
             'book_id'           => $this->Book->id,
             'book_name'         => $this->Book->name,
@@ -566,8 +568,8 @@ class Passage {
             'verses'            => $this->verses,
             'verses_count'      => $this->verses_count,
             //'single_verse'      => $this->isSingleVerse(),
-            'single_verse'      => $this->containsSingleVerse(),
-            'navigation'        => $this->getNavigationData(),
+            'single_verse'      => $single,
+            'nav'               => ($single) ? [] : $this->getNavigationData($verbose),
             //'chapter_verse_parsed' => $this->chapter_verse_parsed, // Debugging only
         );
 
@@ -579,37 +581,75 @@ class Passage {
         return $passage;
     }
 
-    public function getNavigationData() {
+    public function getNavigationData($verbose = FALSE) {
         $nav = array();
         $language = $this->getPrimaryLanguage();
         $book_class = Book::getClassNameByLanguage($language);
         $book_com = config('bss.books_common.' . $this->Book->id);
-        $PrevBook = $book_class::find($this->Book->id - 1);
-        $NextBook = $book_class::find($this->Book->id + 1);
 
-        $nav['prev_book'] = ($PrevBook) ? $PrevBook->name : NULL;
-        $nav['next_book'] = ($NextBook) ? $NextBook->name : NULL;
+        $prev_book_id = $this->Book->id - 1;
+        $prev_book_id = ($prev_book_id >= 1) ? $prev_book_id : NULL;
+        $next_book_id = $this->Book->id + 1;
+        $next_book_id = ($next_book_id <= count(config('bss.books_common'))) ? $next_book_id : NULL;
+        $PrevBook = $NextBook = NULL;
+        $whole_chapter = ($this->chapter_min && strval($this->chapter_min) != $this->chapter_verse) ? TRUE : FALSE;
+
+        if($verbose) {
+            $PrevBook = ($prev_book_id) ? $book_class::find($prev_book_id) : NULL;
+            $NextBook = ($next_book_id) ? $book_class::find($next_book_id) : NULL;
+            $nav['prev_book'] = ($PrevBook) ? $PrevBook->name : NULL;
+            $nav['next_book'] = ($NextBook) ? $NextBook->name : NULL;
+
+            if($this->chapter_max == $book_com['chapters']) {
+                $nav['next_chapter'] = ($NextBook) ? $NextBook->name . ' 1' : NULL;
+            }
+            else {
+                $nav['next_chapter'] = $this->Book->name . ' ' . ($this->chapter_max + 1);
+            }
+
+            if($this->chapter_min == 1) {
+                $nav['prev_chapter'] = NULL;
+
+                if($PrevBook) {
+                    $prev_com = config('bss.books_common.' . $PrevBook->id);
+                    $nav['prev_chapter'] = $PrevBook->name . ' ' . $prev_com['chapters'];
+                }
+            }
+            else {
+                $nav['prev_chapter'] = $this->Book->name . ' ' . ($this->chapter_min - 1);
+            }
+
+            $nav['cur_chapter'] = ($whole_chapter) ? $this->Book->name . ' ' .$this->chapter_min : NULL;
+        }
 
         if($this->chapter_max == $book_com['chapters']) {
-            $nav['next_chapter'] = ($NextBook) ? $NextBook->name . ' 1' : NULL;
+            $nav['ncb'] = ($next_book_id) ? $next_book_id : NULL;
+            $nav['ncc'] = ($next_book_id) ? ' 1' : NULL;
         }
         else {
-            $nav['next_chapter'] = $this->Book->name . ' ' . ($this->chapter_max + 1);
+            $nav['ncb'] = $this->Book->id;
+            $nav['ncc'] = $this->chapter_max + 1;
         }
 
         if($this->chapter_min == 1) {
-            $nav['prev_chapter'] = NULL;
+            $nav['pcb'] = $nav['pcc'] = NULL;
 
-            if($PrevBook) {
-                $prev_com = config('bss.books_common.' . $PrevBook->id);
-                $nav['prev_chapter'] = $PrevBook->name . ' ' . $prev_com['chapters'];
+            if($prev_book_id) {
+                $prev_com = config('bss.books_common.' . $prev_book_id);
+                $nav['pcb'] = $prev_book_id;
+                $nav['pcc'] = $prev_com['chapters'];
             }
         }
         else {
-            $nav['prev_chapter'] = $this->Book->name . ' ' . ($this->chapter_min - 1);
+            $nav['pcb'] = $this->Book->id;
+            $nav['pcc'] = $this->chapter_min - 1;
         }
 
-        $nav['cur_chapter'] = ($this->chapter_min && strval($this->chapter_min) != $this->chapter_verse) ? $this->Book->name . ' ' .$this->chapter_min : NULL;
+        $nav['ccb'] = ($whole_chapter) ? $this->Book->id : NULL;
+        $nav['ccc'] = ($whole_chapter) ? $this->chapter_min : NULL;
+        $nav['nb']  = $next_book_id;
+        $nav['pb']  = $prev_book_id;
+
         return $nav;
     }
 

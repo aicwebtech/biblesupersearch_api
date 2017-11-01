@@ -14,19 +14,35 @@ class NavigationTest extends TestCase {
         $Engine = new Engine();
         $results = $Engine->actionQuery(['bible' => 'kjv', 'reference' => 'Jn 6', 'context' => TRUE]);
         $this->assertFalse($Engine->hasErrors());
-        $this->assertEquals('Luke', $results[0]['navigation']['prev_book']);
-        $this->assertEquals('Acts', $results[0]['navigation']['next_book']);
-        $this->assertEquals('John 5', $results[0]['navigation']['prev_chapter']);
-        $this->assertEquals('John 7', $results[0]['navigation']['next_chapter']);
-        $this->assertEquals(NULL, $results[0]['navigation']['cur_chapter']);
+        $this->assertEquals('Luke', $results[0]['nav']['prev_book']);
+        $this->assertEquals('Acts', $results[0]['nav']['next_book']);
+        $this->assertEquals('John 5', $results[0]['nav']['prev_chapter']);
+        $this->assertEquals('John 7', $results[0]['nav']['next_chapter']);
+        $this->assertEquals(44, $results[0]['nav']['nb']); // Next book id
+        $this->assertEquals(42, $results[0]['nav']['pb']); // Prev book id
+        $this->assertEquals(43, $results[0]['nav']['pcb']); // Prev chapter book
+        $this->assertEquals(5,  $results[0]['nav']['pcc']); // Prev chapter chapter
+        $this->assertEquals(43, $results[0]['nav']['ncb']); // Next chapter book
+        $this->assertEquals(7,  $results[0]['nav']['ncc']); // Next chapter chapter
+        $this->assertEquals(NULL, $results[0]['nav']['ccb']); // Current chapter book
+        $this->assertEquals(NULL, $results[0]['nav']['ccc']); // Current chapter chapter
+        $this->assertEquals(NULL, $results[0]['nav']['cur_chapter']);
 
         $results = $Engine->actionQuery(['bible' => 'kjv', 'reference' => 'Jn 6:1-5', 'context' => TRUE]);
         $this->assertFalse($Engine->hasErrors());
-        $this->assertEquals('Luke', $results[0]['navigation']['prev_book']);
-        $this->assertEquals('Acts', $results[0]['navigation']['next_book']);
-        $this->assertEquals('John 5', $results[0]['navigation']['prev_chapter']);
-        $this->assertEquals('John 7', $results[0]['navigation']['next_chapter']);
-        $this->assertEquals('John 6', $results[0]['navigation']['cur_chapter']);
+        $this->assertEquals('Luke', $results[0]['nav']['prev_book']);
+        $this->assertEquals('Acts', $results[0]['nav']['next_book']);
+        $this->assertEquals('John 5', $results[0]['nav']['prev_chapter']);
+        $this->assertEquals('John 7', $results[0]['nav']['next_chapter']);
+        $this->assertEquals('John 6', $results[0]['nav']['cur_chapter']);
+        $this->assertEquals(44, $results[0]['nav']['nb']); // Next book id
+        $this->assertEquals(42, $results[0]['nav']['pb']); // Prev book id
+        $this->assertEquals(43, $results[0]['nav']['pcb']); // Prev chapter book
+        $this->assertEquals(5,  $results[0]['nav']['pcc']); // Prev chapter chapter
+        $this->assertEquals(43, $results[0]['nav']['ncb']); // Next chapter book
+        $this->assertEquals(7,  $results[0]['nav']['ncc']); // Next chapter chapter
+        $this->assertEquals(43, $results[0]['nav']['ccb']); // Current chapter book
+        $this->assertEquals(6,  $results[0]['nav']['ccc']); // Current chapter chapter
     }
 
     public function testNavMultiReferences() {
@@ -35,55 +51,71 @@ class NavigationTest extends TestCase {
         $this->assertFalse($Engine->hasErrors());
         $this->assertCount(3, $results);
 
-        $this->assertEquals('Luke',   $results[0]['navigation']['prev_book']);
-        $this->assertEquals('Acts',   $results[0]['navigation']['next_book']);
-        $this->assertEquals('John 4', $results[0]['navigation']['prev_chapter']);
-        $this->assertEquals('John 6', $results[0]['navigation']['next_chapter']);
-        $this->assertEquals(NULL,     $results[0]['navigation']['cur_chapter']);
-        $this->assertEquals('Luke',   $results[1]['navigation']['prev_book']);
-        $this->assertEquals('Acts',   $results[1]['navigation']['next_book']);
-        $this->assertEquals('John 5', $results[1]['navigation']['prev_chapter']);
-        $this->assertEquals('John 7', $results[1]['navigation']['next_chapter']);
-        $this->assertEquals(NULL,     $results[1]['navigation']['cur_chapter']);
-        $this->assertEquals('Luke',   $results[2]['navigation']['prev_book']);
-        $this->assertEquals('Acts',   $results[2]['navigation']['next_book']);
-        $this->assertEquals('John 6', $results[2]['navigation']['prev_chapter']);
-        $this->assertEquals('John 8', $results[2]['navigation']['next_chapter']);
-        $this->assertEquals(NULL,     $results[2]['navigation']['cur_chapter']);
+        $this->assertEquals('Luke',   $results[0]['nav']['prev_book']);
+        $this->assertEquals('Acts',   $results[0]['nav']['next_book']);
+        $this->assertEquals('John 4', $results[0]['nav']['prev_chapter']);
+        $this->assertEquals('John 6', $results[0]['nav']['next_chapter']);
+        $this->assertEquals(NULL,     $results[0]['nav']['cur_chapter']);
+        $this->assertEquals('Luke',   $results[1]['nav']['prev_book']);
+        $this->assertEquals('Acts',   $results[1]['nav']['next_book']);
+        $this->assertEquals('John 5', $results[1]['nav']['prev_chapter']);
+        $this->assertEquals('John 7', $results[1]['nav']['next_chapter']);
+        $this->assertEquals(NULL,     $results[1]['nav']['cur_chapter']);
+        $this->assertEquals('Luke',   $results[2]['nav']['prev_book']);
+        $this->assertEquals('Acts',   $results[2]['nav']['next_book']);
+        $this->assertEquals('John 6', $results[2]['nav']['prev_chapter']);
+        $this->assertEquals('John 8', $results[2]['nav']['next_chapter']);
+        $this->assertEquals(NULL,     $results[2]['nav']['cur_chapter']);
     }
 
     public function testNavBeginningGen() {
         $Engine = new Engine();
         $results = $Engine->actionQuery(['bible' => 'kjv', 'reference' => 'Gen 1', 'context' => TRUE]);
         $this->assertFalse($Engine->hasErrors());
-        $this->assertEquals(NULL, $results[0]['navigation']['prev_book']);
-        $this->assertEquals('Exodus', $results[0]['navigation']['next_book']);
-        $this->assertEquals(NULL, $results[0]['navigation']['prev_chapter']);
-        $this->assertEquals('Genesis 2', $results[0]['navigation']['next_chapter']);
+        $this->assertEquals(NULL, $results[0]['nav']['prev_book']);
+        $this->assertEquals('Exodus', $results[0]['nav']['next_book']);
+        $this->assertEquals(NULL, $results[0]['nav']['prev_chapter']);
+        $this->assertEquals('Genesis 2', $results[0]['nav']['next_chapter']);
+        $this->assertEquals(2,  $results[0]['nav']['nb']);      // Next book id
+        $this->assertEquals(NULL, $results[0]['nav']['pb']);    // Prev book id
+        $this->assertEquals(NULL, $results[0]['nav']['pcb']);   // Prev chapter book
+        $this->assertEquals(NULL,  $results[0]['nav']['pcc']);  // Prev chapter chapter
+        $this->assertEquals(1, $results[0]['nav']['ncb']);      // Next chapter book
+        $this->assertEquals(2,  $results[0]['nav']['ncc']);     // Next chapter chapter
+        $this->assertEquals(NULL, $results[0]['nav']['ccb']);   // Current chapter book
+        $this->assertEquals(NULL, $results[0]['nav']['ccc']);   // Current chapter chapter
 
         $results = $Engine->actionQuery(['bible' => 'kjv', 'reference' => 'Gen 6', 'context' => TRUE]);
         $this->assertFalse($Engine->hasErrors());
-        $this->assertEquals(NULL, $results[0]['navigation']['prev_book']);
-        $this->assertEquals('Exodus', $results[0]['navigation']['next_book']);
-        $this->assertEquals('Genesis 5', $results[0]['navigation']['prev_chapter']);
-        $this->assertEquals('Genesis 7', $results[0]['navigation']['next_chapter']);
+        $this->assertEquals(NULL, $results[0]['nav']['prev_book']);
+        $this->assertEquals('Exodus', $results[0]['nav']['next_book']);
+        $this->assertEquals('Genesis 5', $results[0]['nav']['prev_chapter']);
+        $this->assertEquals('Genesis 7', $results[0]['nav']['next_chapter']);
     }
 
     public function testNavEndRev() {
         $Engine = new Engine();
         $results = $Engine->actionQuery(['bible' => 'kjv', 'reference' => 'Rev 22', 'context' => TRUE]);
         $this->assertFalse($Engine->hasErrors());
-        $this->assertEquals('Jude', $results[0]['navigation']['prev_book']);
-        $this->assertEquals(NULL, $results[0]['navigation']['next_book']);
-        $this->assertEquals('Revelation 21', $results[0]['navigation']['prev_chapter']);
-        $this->assertEquals(NULL, $results[0]['navigation']['next_chapter']);
+        $this->assertEquals('Jude', $results[0]['nav']['prev_book']);
+        $this->assertEquals(NULL, $results[0]['nav']['next_book']);
+        $this->assertEquals('Revelation 21', $results[0]['nav']['prev_chapter']);
+        $this->assertEquals(NULL, $results[0]['nav']['next_chapter']);
+        $this->assertEquals(NULL, $results[0]['nav']['nb']);    // Next book id
+        $this->assertEquals(65, $results[0]['nav']['pb']);      // Prev book id
+        $this->assertEquals(66, $results[0]['nav']['pcb']);     // Prev chapter book
+        $this->assertEquals(21, $results[0]['nav']['pcc']);     // Prev chapter chapter
+        $this->assertEquals(NULL, $results[0]['nav']['ncb']);   // Next chapter book
+        $this->assertEquals(NULL, $results[0]['nav']['ncc']);   // Next chapter chapter
+        $this->assertEquals(NULL, $results[0]['nav']['ccb']);   // Current chapter book
+        $this->assertEquals(NULL, $results[0]['nav']['ccc']);   // Current chapter chapter
 
         $results = $Engine->actionQuery(['bible' => 'kjv', 'reference' => 'Rev 18', 'context' => TRUE]);
         $this->assertFalse($Engine->hasErrors());
-        $this->assertEquals('Jude', $results[0]['navigation']['prev_book']);
-        $this->assertEquals(NULL, $results[0]['navigation']['next_book']);
-        $this->assertEquals('Revelation 17', $results[0]['navigation']['prev_chapter']);
-        $this->assertEquals('Revelation 19', $results[0]['navigation']['next_chapter']);
+        $this->assertEquals('Jude', $results[0]['nav']['prev_book']);
+        $this->assertEquals(NULL, $results[0]['nav']['next_book']);
+        $this->assertEquals('Revelation 17', $results[0]['nav']['prev_chapter']);
+        $this->assertEquals('Revelation 19', $results[0]['nav']['next_chapter']);
     }
 
     public function testContext() {

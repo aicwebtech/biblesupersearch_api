@@ -9,11 +9,11 @@
 namespace App\Formatters;
 
 /**
- * Description of Passage
+ * Lite passage format
  *
  * @author Computer
  */
-class Passage extends FormatterAbstract {
+class Lite extends FormatterAbstract {
 
     public function format() {
         $results  = $this->_preFormatVerses($this->results);
@@ -21,14 +21,11 @@ class Passage extends FormatterAbstract {
 
         if(!$this->_mapResultsToPassages($results)) {
             $this->Passages = array();
-
-            //foreach($this->results as $verse) {
-
-            //}
+            // Do something??
         }
 
         foreach($this->Passages as $Passage) {
-            $passages[] = $Passage->toArray(TRUE);
+            $passages[] = $Passage->toArray(FALSE);
         }
 
         return $passages;
