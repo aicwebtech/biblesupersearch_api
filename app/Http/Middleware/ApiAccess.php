@@ -23,7 +23,8 @@ class ApiAccess
         $host = (array_key_exists('HTTP_REFERER', $_SERVER)) ? $_SERVER['HTTP_REFERER'] : NULL;
         // $ip = gethostbyname($host); // Cannot do this - as this is for IP v4 ONLY
         // $ip = ($ip == $host) ? $_SERVER['REMOTE_ADDR'] : $ip;
-        $ip = ($host) ? $_SERVER['REMOTE_ADDR'] : NULL;
+        // $ip = ($host) ? $_SERVER['REMOTE_ADDR'] : NULL;
+        $ip = $_SERVER['REMOTE_ADDR'];
         $IP = IpAccess::findOrCreateByIpOrDomain($ip, $host);
 
         if(!$IP->incrementDailyHits()) {
