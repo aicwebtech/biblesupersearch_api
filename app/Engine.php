@@ -113,6 +113,9 @@ class Engine {
      * @return array $results search / look up results.
      */
     public function actionQuery($input) {
+//        return $this->setErrorLevel(4);
+
+
         // To do - add labels
         $parsing = array(
             'reference' => array(
@@ -261,6 +264,7 @@ class Engine {
         }
 
         if(!$Search || $Search && $search_valid) {
+
             foreach($this->Bibles as $Bible) {
                 $BibleResults = $Bible->getSearch($Passages, $Search, $input); // Laravel Collection
 
@@ -269,9 +273,6 @@ class Engine {
 
                     if($paginate && !$input['multi_bibles']) {
                         $paging = $this->_getCleanPagingData($BibleResults);
-//                        var_dump(get_class($BibleResults));
-//                        print_r($paging);
-//                        die();
                     }
 
                     if($BibleResults->count() == config('bss.global_maximum_results')) {
