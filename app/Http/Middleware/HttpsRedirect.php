@@ -13,7 +13,7 @@ class HttpsRedirect {
      * @return mixed
      */
     public function handle($request, Closure $next) {
-        if (!$request->secure() && env('REDIRECT_HTTPS') === TRUE) {
+        if (!$request->secure() && config('app.redirect_https') === TRUE) {
             return redirect()->secure($request->getRequestUri());
         }
 

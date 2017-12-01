@@ -39,7 +39,7 @@ class Passage {
     }
 
     public function setBookById($book_id) {
-        $language = (is_array($this->languages) && count($this->languages)) ? $this->languages[0] : env('DEFAULT_LANGUAGE_SHORT', 'en');
+        $language = (is_array($this->languages) && count($this->languages)) ? $this->languages[0] : config('bss.defaults.language_short');
         $book_class = Book::getClassNameByLanguage($language);
         $Book = $book_class::find($book_id);
 
@@ -654,7 +654,7 @@ class Passage {
     }
 
     public function getPrimaryLanguage() {
-        return (is_array($this->languages) && count($this->languages)) ? $this->languages[0] : env('DEFAULT_LANGUAGE_SHORT', 'en');
+        return (is_array($this->languages) && count($this->languages)) ? $this->languages[0] : config('bss.defaults.language_short');
     }
 
     public function generateVerseIndex() {
@@ -888,7 +888,7 @@ class Passage {
 
         $Passages   = array();
         $pre_parsed = static::explodeReferences($reference);
-        $def_language = env('DEFAULT_LANGUAGE_SHORT', 'en');
+        $def_language = config('bss.defaults.language_short');
 
         if(!in_array($def_language, $languages)) {
             $languages[] = $def_language;

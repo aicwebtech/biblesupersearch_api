@@ -32,7 +32,7 @@ class CreateBibleVersionsTable extends Migration
             $table->timestamps();
         });
 
-        if(env('IMPORT_FROM_V2', FALSE)) {
+        if(config('bss.import_from_v2')) {
             //echo('importing from v2' . PHP_EOL);
         }
     }

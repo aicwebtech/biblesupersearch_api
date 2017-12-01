@@ -10,7 +10,7 @@ class HighlightTest extends TestCase {
         $Engine = new Engine();
         $Engine->setDefaultDataType('raw');
         $results = $Engine->actionQuery(['bible' => 'kjv', 'reference' => 'Rom 12', 'search' => 'be for']);
-        $tag = env('DEFAULT_HIGHLIGHT_TAG', 'b');
+        $tag = config('bss.defaults.highlight_tag');
 
         foreach($results['kjv'] as $verse) {
             $this->assertTrue((strpos($verse->text, '<' . $tag . '>') === FALSE), 'Should not have highlighting: ' . $verse->text);
@@ -21,7 +21,7 @@ class HighlightTest extends TestCase {
         $Engine = new Engine();
         $Engine->setDefaultDataType('raw');
         $results = $Engine->actionQuery(['bible' => 'kjv', 'reference' => 'Rom 12', 'search' => 'be for', 'highlight' => TRUE]);
-        $tag = env('DEFAULT_HIGHLIGHT_TAG', 'b');
+        $tag = config('bss.defaults.highlight_tag');
 
         foreach($results['kjv'] as $verse) {
             $this->assertFalse((strpos($verse->text, '<' . $tag . '>be</' . $tag . '>') === FALSE), 'No highlight: ' . $verse->text);
@@ -60,7 +60,7 @@ class HighlightTest extends TestCase {
         $Engine = new Engine();
         $Engine->setDefaultDataType('raw');
         $results = $Engine->actionQuery(['bible' => 'kjv', 'reference' => 'Rom 12', 'search' => 'be for', 'highlight' => TRUE, 'whole_words' => TRUE, 'search_type' => 'or']);
-        $tag = env('DEFAULT_HIGHLIGHT_TAG', 'b');
+        $tag = config('bss.defaults.highlight_tag');
 
         foreach($results['kjv'] as $verse) {
             $this->assertFalse((strpos($verse->text, '<' . $tag . '>') === FALSE), 'No highlight: ' . $verse->text);
@@ -73,7 +73,7 @@ class HighlightTest extends TestCase {
         $Engine = new Engine();
         $Engine->setDefaultDataType('raw');
         $results = $Engine->actionQuery(['bible' => 'kjv', 'reference' => 'Rom 12', 'search' => 'be for', 'highlight' => TRUE, 'exact_case' => TRUE, 'search_type' => 'or']);
-        $tag = env('DEFAULT_HIGHLIGHT_TAG', 'b');
+        $tag = config('bss.defaults.highlight_tag');
 
         foreach($results['kjv'] as $verse) {
             $this->assertFalse((strpos($verse->text, '<' . $tag . '>') === FALSE), 'No highlight: ' . $verse->text);
@@ -86,7 +86,7 @@ class HighlightTest extends TestCase {
         $Engine = new Engine();
         $Engine->setDefaultDataType('raw');
         $results = $Engine->actionQuery(['bible' => 'kjv', 'reference' => 'Rom', 'search' => 'cometh by hearing', 'highlight' => TRUE, 'search_type' => 'proximity']);
-        $tag = env('DEFAULT_HIGHLIGHT_TAG', 'b');
+        $tag = config('bss.defaults.highlight_tag');
 
         foreach($results['kjv'] as $verse) {
             $this->assertFalse((strpos($verse->text, '<' . $tag . '>') === FALSE), 'No highlight: ' . $verse->text);
@@ -97,7 +97,7 @@ class HighlightTest extends TestCase {
         $Engine = new Engine();
         $Engine->setDefaultDataType('raw');
         $results = $Engine->actionQuery(['bible' => 'kjv', 'reference' => 'Rom', 'search' => 'cometh by hearing', 'highlight' => TRUE, 'search_type' => 'phrase']);
-        $tag = env('DEFAULT_HIGHLIGHT_TAG', 'b');
+        $tag = config('bss.defaults.highlight_tag');
 
         foreach($results['kjv'] as $verse) {
             $this->assertFalse((strpos($verse->text, '<' . $tag . '>') === FALSE), 'No highlight: ' . $verse->text);

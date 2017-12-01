@@ -47,7 +47,7 @@ return array(
         'bible' => array(
             'type' => 'String<br />(Drop Down Menu - Multiple)',
             'name' => 'Bibles',
-            'default' => env('DEFAULT_BIBLE', 'kjv'),
+            'default' => config('bss.defaults.bible'),
             'description' => 'MODULE of the Bible(s) to query against. Can be a string, array or JSON-encoded array.<br />'
             . 'Use the Bibles action to get a list of available Bibles for your app or website.',
         ),

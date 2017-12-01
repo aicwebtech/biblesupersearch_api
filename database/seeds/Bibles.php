@@ -13,8 +13,8 @@ class Bibles extends Seeder
     public function run()
     {
         $supported = Config::get('bss_supported_bibles');
-        $lang = env('DEFAULT_LANGUAGE','English');
-        $lang_st = env('DEFAULT_LANGUAGE_SHORT','en');
+        $lang = config('bss.defaults.language');
+        $lang_st = config('bss.defaults.language_short');
         $rank = 0;
 
         foreach($supported as $bible) {
@@ -33,7 +33,7 @@ class Bibles extends Seeder
             }
         }
 
-        if(env('IMPORT_FROM_V2', FALSE)) {
+        if(config('bss.import_from_v2')) {
             $this->_importFromV2();
         }
     }

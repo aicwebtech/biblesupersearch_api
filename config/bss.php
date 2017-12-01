@@ -6,6 +6,7 @@ return array(
         'language'       => env('DEFAULT_LANGUAGE', 'English'),
         'language_short' => env('DEFAULT_LANGUAGE_SHORT', 'en'),
         'bible'          => env('DEFAULT_BIBLE', 'kjv'),
+        'highlight_tag'  => env('DEFAULT_HIGHLIGHT_TAG', 'b'),
     ),
     'import_from_v2' => env('IMPORT_FROM_V2', FALSE),
     'daily_access_limit' => env('DAILY_ACCESS_LIMIT', 2000),

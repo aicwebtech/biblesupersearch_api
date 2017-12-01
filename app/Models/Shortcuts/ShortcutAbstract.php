@@ -15,7 +15,7 @@ class ShortcutAbstract extends Model
      * @return void
      */
     public function __construct(array $attributes = []) {
-        if(empty($this->language)) {            
+        if(empty($this->language)) {
             $class = explode('\\', get_called_class());
             $this->language = strtolower(array_pop($class));
         }
@@ -29,11 +29,11 @@ class ShortcutAbstract extends Model
 
     public static function getClassNameByLanguage($language) {
         $class_name = __NAMESPACE__ . '\\' . ucfirst($language);
-        return $class_name; 
+        return $class_name;
     }
-    
+
     /**
-     * 
+     *
      * @param string|int $name
      */
     public static function findByEnteredName($name, $language = NULL) {
@@ -49,26 +49,26 @@ class ShortcutAbstract extends Model
             $class_name = get_called_class();
         }
         else {
-            $class_name = self::getClassNameByLanguage(env('DEFAULT_LANGUAGE_SHORT', 'en'));
+            $class_name = self::getClassNameByLanguage(config('bss.defaults.language_short'));
         }
-        
+
         if(!is_string($name)) {
             return $class_name::find(intval($name));
         }
-        
+
         $name = trim(trim($name), '.');
-        
+
         // Attempt 1: Direct matching
         $SC = $class_name::where('name', $name)
                 -> orwhere('short1', $name)
                 -> orwhere('short2', $name)
                 -> orwhere('short3', $name)
                 -> first();
-        
+
         if($SC) {
             return $SC;
         }
-        
+
         return FALSE;
     }
 }

@@ -68,7 +68,7 @@ class SqlSearch {
     public $punctuation = array('.',',',':',';','\'','"','!','-','?','(',')','[',']');
 
     public function __construct($search = NULL, $options = array()) {
-        $this->options_default['highlight_tag'] = env('DEFAULT_HIGHLIGHT_TAG', 'b');
+        $this->options_default['highlight_tag'] = config('bss.defaults.highlight_tag');
         $this->setSearch($search);
         $this->setOptions($options, TRUE);
     }

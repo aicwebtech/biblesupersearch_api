@@ -99,7 +99,7 @@ class BibleTest extends TestCase {
 
     public function testBibleTable() {
         // Raw queries require us to include the db prefix
-        $prefix = env('DB_PREFIX', '');
+        $prefix = DB::getTablePrefix();
         $bibles = DB::select(sprintf('SELECT * FROM %sbibles LIMIT 1', $prefix));
 
         $this->assertCount(1, $bibles);

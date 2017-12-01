@@ -368,11 +368,11 @@ class Engine {
      * @param array $input
      */
     public function actionBooks($input) {
-        $language = (!empty($input['language'])) ? $input['language'] : env('DEFAULT_LANGUAGE_SHORT', 'en');
+        $language = (!empty($input['language'])) ? $input['language'] : config('bss.defaults.language_short');
         $namespaced_class = 'App\Models\Books\\' . ucfirst($language);
 
         if(!class_exists($namespaced_class)) {
-            $namespaced_class = 'App\Models\Books\\' . env('DEFAULT_LANGUAGE_SHORT', 'en');
+            $namespaced_class = 'App\Models\Books\\' . config('bss.defaults.language_short');
         }
 
         $Books = $namespaced_class::select('id', 'name', 'shortname')->orderBy('id', 'ASC') -> get() -> all();
@@ -393,11 +393,11 @@ class Engine {
 
     public function actionShortcuts($input) {
         // Todo - multi language support
-        $language = (!empty($input['language'])) ? $input['language'] : env('DEFAULT_LANGUAGE_SHORT', 'en');
+        $language = (!empty($input['language'])) ? $input['language'] : config('bss.defaults.language_short');
         $namespaced_class = 'App\Models\Shortcuts\\' . ucfirst($language);
 
         if(!class_exists($namespaced_class)) {
-            $namespaced_class = 'App\Models\Shortcuts\\' . env('DEFAULT_LANGUAGE_SHORT', 'en');
+            $namespaced_class = 'App\Models\Shortcuts\\' . config('bss.defaults.language_short');
         }
 
         $Shortcuts = $namespaced_class::select('id', 'name', 'reference')->orderBy('id', 'ASC') ->where('display', 1) -> get() -> all();

@@ -310,13 +310,13 @@ class VerseStandard extends VerseAbstract {
         $in_console = (strpos(php_sapi_name(), 'cli') !== FALSE) ? TRUE : FALSE;
 
         // If importing from V2, make sure v2 table exists
-        if (env('IMPORT_FROM_V2', FALSE)) {
+        if (config('bss.import_from_v2')) {
             $v2_table = 'bible_' . $this->Bible->module_v2;
             $res = DB::select("SHOW TABLES LIKE '" . $v2_table . "'");
             $v2_table_exists = (count($res)) ? TRUE : FALSE;
         }
 
-        if (env('IMPORT_FROM_V2', FALSE) && $v2_table_exists) {
+        if (config('bss.import_from_v2') && $v2_table_exists) {
             if ($in_console) {
                 echo(PHP_EOL . 'Importing Bible from V2: ' . $this->Bible->name . ' (' . $this->module . ')' . PHP_EOL);
             }
