@@ -42,7 +42,7 @@ function renderCommonParameters($params) {
 function renderActionHeader($action, $url = NULL) {
     $context = $action;
     $server = getServerUrl();
-    $url = ($url === NULL) ? '/' . $action : '/' . $url;
+    $url = ($url === NULL) ? '/' . $action : $url;
 
     ?>
     <table>
