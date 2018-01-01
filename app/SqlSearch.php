@@ -319,6 +319,8 @@ class SqlSearch {
 
         $pre  = ($has_st_pct) ? '' : '[[:<:]]';
         $post = ($has_en_pct) ? '' : '[[:>:]]';
+//        $pre  = ($has_st_pct) ? '' : '\b';
+//        $post = ($has_en_pct) ? '' : '\b';
         $term = ($is_phrase) ? $term : str_replace('%', '.*', trim($term, '%'));
 
         return $pre . trim($term, '%') . $post;
@@ -330,6 +332,7 @@ class SqlSearch {
         $preformat = $this->_termFormat($term, $exact_case, $whole_words);
         //$preformat = ($whole_words) ? $preformat : trim($preformat, '%');
         $preformat = trim($preformat, '%./');
+        $preformat = str_replace(['[[:<:]]', '[[:>:]]'], '\b', $preformat);
         $case_insensitive = ($exact_case) ? '' : 'i';
         $term_format = '/' . $preformat . '/' . $case_insensitive;
         return $term_format;
