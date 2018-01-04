@@ -248,6 +248,10 @@ class SqlSearch {
         $exact_case  = $this->options['exact_case'];
         $whole_words = $this->options['whole_words'];
 
+        if($this->options['whole_words_debug']) {
+            $whole_words = FALSE;
+        }
+
         $fields     = $this->_termFields($term, $fields, $table_alias);
         $op         = $this->_termOperator($term, $exact_case, $whole_words);
         $term_fmt   = $this->_termFormat($term, $exact_case, $whole_words);
@@ -324,8 +328,6 @@ class SqlSearch {
         $term = ($is_phrase) ? $term : str_replace('%', '.*', trim($term, '%'));
 
         return $pre . trim($term, '%') . $post;
-
-        //return ($whole_words) ? '[[:<:]]' . str_replace('%', '/', $term) . '[[:>:]]' : '%' . $term . '%';
     }
 
     protected function _termFormatForHighlight($term, $exact_case = FALSE, $whole_words = FALSE) {

@@ -134,6 +134,10 @@ class Engine {
                 'type'  => 'bool',
                 'default' => FALSE,
             ),
+            'whole_words_debug' => array(  // temp, for attempting to debug slowness here!
+                'type'  => 'bool',
+                'default' => FALSE,
+            ),
             'exact_case' => array(
                 'type'  => 'bool',
                 'default' => FALSE,
@@ -282,6 +286,8 @@ class Engine {
                 else {
                     $bible_no_results[] = trans('errors.bible_no_results', ['module' => $Bible->module]);
                 }
+
+                unset($BibleResults);
             }
 
             if(empty($results)) {
