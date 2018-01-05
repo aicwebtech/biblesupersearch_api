@@ -19,6 +19,7 @@ class SqlSearch {
     protected $options_default = array(
         'search_type'   => 'and',
         'whole_words'   => FALSE,
+        'whole_words_debug'   => FALSE,
         'exact_case'    => FALSE,
         'keyword_limit' => 2,
     );
