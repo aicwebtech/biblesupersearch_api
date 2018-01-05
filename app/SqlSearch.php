@@ -248,20 +248,35 @@ class SqlSearch {
     protected function _termSql($term, &$binddata = array(), $fields = '', $table_alias = '') {
         $exact_case  = $this->options['exact_case'];
         $whole_words = $this->options['whole_words'];
+        $exact_phrase = ($this->options['search_type'] == 'phrase') ? TRUE : FALSE;
+        var_dump($exact_phrase);
 
         if($this->options['whole_words_debug']) {
             $whole_words = FALSE;
         }
 
         $fields     = $this->_termFields($term, $fields, $table_alias);
-        $op         = $this->_termOperator($term, $exact_case, $whole_words);
-        $term_fmt   = $this->_termFormat($term, $exact_case, $whole_words);
-        $bind_index = static::pushToBindData($term_fmt, $binddata);
+        $op         = $this->_termOperator($term, $exact_phrase, $whole_words);
+//        $term_fmt   = $this->_termFormat($term, $exact_case, $whole_words);
+//        $bind_index = static::pushToBindData($term_fmt, $binddata);
+
+
         $sql = array();
+        $term_fmts = $this->_termFormat($term, $exact_case, $whole_words, FALSE);
+        $term_ops  = $this->_termOperator($term, $exact_phrase, $whole_words, FALSE);
 
         foreach($fields as $field) {
-            $sql[] = $this->_assembleTermSql($field, $bind_index, $op, $exact_case);
+            $sql_sub = array();
+
+            foreach($term_fmts AS $key => $term_fmt) {
+                $bind_index = static::pushToBindData($term_fmt, $binddata);
+                $sql_sub[] = $this->_assembleTermSql($field, $bind_index, $term_ops[$key], $exact_case);
+            }
+
+            $sql[] = implode(' AND ', $sql_sub);
         }
+
+
 
         $sql = (count($sql) == 1) ? '(' . $sql[0] . ')' : '(' . implode(' OR ', $sql) . ')';
         return array($sql, $bind_index);
@@ -282,16 +297,19 @@ class SqlSearch {
         return $fields;
     }
 
-    protected function _termOperator($term, $exact_case = FALSE, $whole_words = FALSE) {
-        if($whole_words) {
-            return 'REGEXP';
+    protected function _termOperator($term, $exact_phrase = FALSE, $whole_words = FALSE, $primary_only = TRUE) {
+        $is_special = ($exact_phrase || static::isTermPhrase($term) || static::isTermRegexp($term)) ? TRUE : FALSE;
+
+        if($whole_words && !$is_special) {
+            return ($primary_only) ? 'REGEXP' : ['LIKE', 'REGEXP'];
         }
         else {
-            return (static::isTermPhrase($term) || static::isTermRegexp($term)) ? 'REGEXP' : 'LIKE';
+            $op = ($is_special) ? 'REGEXP' : 'LIKE';
+            return ($primary_only) ? $op : [$op];
         }
     }
 
-    protected function _termFormat($term, $exact_case = FALSE, $whole_words = FALSE) {
+    protected function _termFormat($term, $exact_case = FALSE, $whole_words = FALSE, $primary_only = TRUE) {
         $is_phrase = $is_regexp = FALSE;
 
         // Phrases
@@ -300,7 +318,7 @@ class SqlSearch {
             $is_phrase = TRUE;
 
             if(!$whole_words) {
-                return $term;
+                return ($primary_only) ? $term : [$term];
             }
         }
 
@@ -308,12 +326,15 @@ class SqlSearch {
         if(static::isTermRegexp($term)) {
             $term = trim($term, '`');
             $is_regexp = TRUE;
-            return $term; // Whole words ignored for regexp
+            return ($primary_only) ? $term : [$term]; // Whole words ignored for regexp
         }
 
         if(!$whole_words) {
-            return '%' . $term . '%';
+            $term = '%' . $term . '%';
+            return ($primary_only) ? $term : [$term];
         }
+
+        $terms = ['%' . trim($term, '%') . '%'];
 
         $has_st_pct = (strpos($term, '%') === 0) ? TRUE : FALSE;
         $has_en_pct = (strrpos($term, '%') === strlen($term) - 1) ? TRUE : FALSE;
@@ -324,11 +345,15 @@ class SqlSearch {
 
         $pre  = ($has_st_pct) ? '' : '[[:<:]]';
         $post = ($has_en_pct) ? '' : '[[:>:]]';
-//        $pre  = ($has_st_pct) ? '' : '\b';
-//        $post = ($has_en_pct) ? '' : '\b';
-        $term = ($is_phrase) ? $term : str_replace('%', '.*', trim($term, '%'));
+        $regexp_term = ($is_phrase) ? $term : str_replace('%', '.*', trim($term, '%'));
+        $regexp_term = $pre . trim($term, '%') . $post;
 
-        return $pre . trim($term, '%') . $post;
+        if($primary_only) {
+            return $regexp_term;
+        }
+
+        $terms[] = $regexp_term;
+        return $terms;
     }
 
     protected function _termFormatForHighlight($term, $exact_case = FALSE, $whole_words = FALSE) {

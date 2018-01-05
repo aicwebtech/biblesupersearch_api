@@ -165,10 +165,10 @@ class VerseStandard extends VerseAbstract {
         // Need to use raw queries because of complex JOIN statements
         $sql = 'SELECT ' . implode(', ', $selects) . PHP_EOL . $from . PHP_EOL . implode(PHP_EOL, $joins) . PHP_EOL . 'WHERE ' . $where;
 
-        //echo PHP_EOL;
-        //var_dump($sql);
-        //var_dump($binddata);
-        //die();
+        if(config('app.debug')) {
+            $_SESSION['debug']['prox_query']      = $sql;
+            $_SESSION['debug']['prox_query_data'] = (isset($binddata)) ? $binddata : NULL;
+        }
 
         $results_raw = DB::select($sql, $binddata);
 

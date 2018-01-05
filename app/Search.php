@@ -135,6 +135,8 @@ class Search extends SqlSearch {
 
         switch ($search_type) {
             case 'boolean' :
+            //case 'all_words':
+            //case 'and':
                 return $this->_validateBoolean($search);
                 break;
             default:

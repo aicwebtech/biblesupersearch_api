@@ -105,13 +105,15 @@ class SqlSearchTest extends TestCase
 
         $Search = SqlSearch::parseSearch('faith', array('whole_words' => 'on'));
         list($sql, $binddata) = $Search->generateQuery();
-        $this->assertEquals('(`text` REGEXP :bd1)', $sql);
-        $this->assertEquals(array(':bd1' => '[[:<:]]faith[[:>:]]'), $binddata);
+        $this->assertEquals('(`text` LIKE :bd1 AND `text` REGEXP :bd2)', $sql);
+        $this->assertEquals(array(':bd1' => '%faith%', ':bd2' => '[[:<:]]faith[[:>:]]'), $binddata);
 
         $Search = SqlSearch::parseSearch('faith% ', array('whole_words' => 'on'));
         list($sql, $binddata) = $Search->generateQuery();
-        $this->assertEquals('(`text` REGEXP :bd1)', $sql);
-        $this->assertEquals(array(':bd1' => '[[:<:]]faith'), $binddata);
+        //$this->assertEquals('(`text` REGEXP :bd1)', $sql);
+        //$this->assertEquals(array(':bd1' => '[[:<:]]faith'), $binddata);
+        $this->assertEquals('(`text` LIKE :bd1 AND `text` REGEXP :bd2)', $sql);
+        $this->assertEquals(array(':bd1' => '%faith%', ':bd2' => '[[:<:]]faith'), $binddata);
     }
 
     public function testAdvancedQuery() {
