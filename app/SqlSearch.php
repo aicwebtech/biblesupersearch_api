@@ -249,7 +249,7 @@ class SqlSearch {
         $exact_case  = $this->options['exact_case'];
         $whole_words = $this->options['whole_words'];
         $exact_phrase = ($this->options['search_type'] == 'phrase') ? TRUE : FALSE;
-        var_dump($exact_phrase);
+//        var_dump($exact_phrase);
 
         if($this->options['whole_words_debug']) {
             $whole_words = FALSE;
