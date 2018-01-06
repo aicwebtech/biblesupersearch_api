@@ -100,8 +100,8 @@ class SqlSearchTest extends TestCase
         $Search = SqlSearch::parseSearch('faith | "free spirit"', array('search_type' => 'boolean'));
         $this->assertEquals('boolean', $Search->search_type);
         list($sql, $binddata) = $Search->generateQuery();
-        $this->assertEquals('(`text` LIKE :bd1) OR (`text` REGEXP :bd2)', $sql);
-        $this->assertEquals(array(':bd1' => '%faith%', ':bd2' => 'free spirit'), $binddata);
+        $this->assertEquals('(`text` LIKE :bd1) OR (`text` LIKE :bd2 AND `text` REGEXP :bd3)', $sql);
+        $this->assertEquals(array(':bd1' => '%faith%', ':bd2' => '%free spirit%', ':bd3' => 'free spirit'), $binddata);
 
         $Search = SqlSearch::parseSearch('faith', array('whole_words' => 'on'));
         list($sql, $binddata) = $Search->generateQuery();
@@ -152,7 +152,7 @@ class SqlSearchTest extends TestCase
         $Search = SqlSearch::parseSearch(NULL, ['search_phrase' => 'faith hope love']);
         $this->assertInstanceOf('App\SqlSearch', $Search);
         list($sql, $binddata) = $Search->generateQuery();
-        $this->assertEquals('(`text` REGEXP :bd1)', $sql);
-        $this->assertEquals(array(':bd1' => 'faith hope love'), $binddata);
+        $this->assertEquals('(`text` LIKE :bd1 AND `text` REGEXP :bd2)', $sql);
+        $this->assertEquals(array(':bd1' => '%faith hope love%', ':bd2' => 'faith hope love'), $binddata);
     }
 }

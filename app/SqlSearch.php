@@ -249,20 +249,14 @@ class SqlSearch {
         $exact_case  = $this->options['exact_case'];
         $whole_words = $this->options['whole_words'];
         $exact_phrase = ($this->options['search_type'] == 'phrase') ? TRUE : FALSE;
-//        var_dump($exact_phrase);
 
         if($this->options['whole_words_debug']) {
             $whole_words = FALSE;
         }
 
-        $fields     = $this->_termFields($term, $fields, $table_alias);
-        $op         = $this->_termOperator($term, $exact_phrase, $whole_words);
-//        $term_fmt   = $this->_termFormat($term, $exact_case, $whole_words);
-//        $bind_index = static::pushToBindData($term_fmt, $binddata);
-
-
         $sql = array();
-        $term_fmts = $this->_termFormat($term, $exact_case, $whole_words, FALSE);
+        $fields    = $this->_termFields($term, $fields, $table_alias);
+        $term_fmts = $this->_termFormat($term, $exact_phrase, $whole_words, FALSE);
         $term_ops  = $this->_termOperator($term, $exact_phrase, $whole_words, FALSE);
 
         foreach($fields as $field) {
@@ -270,13 +264,11 @@ class SqlSearch {
 
             foreach($term_fmts AS $key => $term_fmt) {
                 $bind_index = static::pushToBindData($term_fmt, $binddata);
-                $sql_sub[] = $this->_assembleTermSql($field, $bind_index, $term_ops[$key], $exact_case);
+                $sql_sub[]  = $this->_assembleTermSql($field, $bind_index, $term_ops[$key], $exact_case);
             }
 
             $sql[] = implode(' AND ', $sql_sub);
         }
-
-
 
         $sql = (count($sql) == 1) ? '(' . $sql[0] . ')' : '(' . implode(' OR ', $sql) . ')';
         return array($sql, $bind_index);
@@ -298,9 +290,18 @@ class SqlSearch {
     }
 
     protected function _termOperator($term, $exact_phrase = FALSE, $whole_words = FALSE, $primary_only = TRUE) {
-        $is_special = ($exact_phrase || static::isTermPhrase($term) || static::isTermRegexp($term)) ? TRUE : FALSE;
+        //$is_special = ($exact_phrase || static::isTermPhrase($term) || static::isTermRegexp($term)) ? TRUE : FALSE;
+        $is_regexp   = ($this->_isRegexpSearch($term));
+        // Other searches that use REGEXP
+        $uses_regexp = ($this->_isPhraseSearch($term) || $whole_words) ? TRUE : FALSE;
 
-        if($whole_words && !$is_special) {
+        if($is_regexp) {
+            return ($primary_only) ? 'REGEXP' : ['REGEXP'];
+        }
+
+        $is_special = (static::isTermRegexp($term) || $exact_phrase) ? TRUE : FALSE;
+
+        if($whole_words || $uses_regexp) {
             return ($primary_only) ? 'REGEXP' : ['LIKE', 'REGEXP'];
         }
         else {
@@ -309,38 +310,40 @@ class SqlSearch {
         }
     }
 
-    protected function _termFormat($term, $exact_case = FALSE, $whole_words = FALSE, $primary_only = TRUE) {
-        $is_phrase = $is_regexp = FALSE;
-
-        // Phrases
-        if(static::isTermPhrase($term)) {
-            $term = trim($term, '"');
-            $is_phrase = TRUE;
-
-            if(!$whole_words) {
-                return ($primary_only) ? $term : [$term];
-            }
-        }
+    protected function _termFormat($term, $exact_phrase = FALSE, $whole_words = FALSE, $primary_only = TRUE) {
+        $is_phrase = $is_regexp = $uses_regexp = FALSE;
+        $term_inexact = '%' . trim($term, '%"`\'') . '%';
 
         // Regexp
-        if(static::isTermRegexp($term)) {
+        if($this->_isRegexpSearch($term)) {
             $term = trim($term, '`');
             $is_regexp = TRUE;
             return ($primary_only) ? $term : [$term]; // Whole words ignored for regexp
         }
 
-        if(!$whole_words) {
+        // Phrases
+        if($this->_isPhraseSearch($term)) {
+            $term = trim($term, '"');
+            $is_phrase = TRUE;
+            $uses_regexp = TRUE;
+
+            if(!$whole_words) {
+                return ($primary_only) ? $term : [$term_inexact, $term];
+            }
+        }
+
+        if(!$whole_words && !$uses_regexp) {
             $term = '%' . $term . '%';
             return ($primary_only) ? $term : [$term];
         }
 
-        $terms = ['%' . trim($term, '%') . '%'];
+        $terms = [$term_inexact];
 
         $has_st_pct = (strpos($term, '%') === 0) ? TRUE : FALSE;
         $has_en_pct = (strrpos($term, '%') === strlen($term) - 1) ? TRUE : FALSE;
 
         if($has_st_pct && $has_en_pct) {
-            return $term;
+            return ($primary_only) ? $term : [$term];
         }
 
         $pre  = ($has_st_pct) ? '' : '[[:<:]]';
@@ -357,7 +360,7 @@ class SqlSearch {
     }
 
     protected function _termFormatForHighlight($term, $exact_case = FALSE, $whole_words = FALSE) {
-        $preformat = $this->_termFormat($term, $exact_case, $whole_words);
+        $preformat = $this->_termFormat($term, FALSE, $whole_words);
         //$preformat = ($whole_words) ? $preformat : trim($preformat, '%');
         $preformat = trim($preformat, '%./');
         $preformat = str_replace(['[[:<:]]', '[[:>:]]'], '\b', $preformat);
@@ -372,6 +375,30 @@ class SqlSearch {
         $binding = $bind_index;
         $binary = ($exact_case) ? 'BINARY ' : '';
         return $binary . $field . ' ' . $operator . ' ' . $binding;
+    }
+
+    protected function _isRegexpSearch($term = NULL) {
+        if($term && static::isTermRegexp($term)) {
+            return TRUE;
+        }
+
+        if($this->options['search_type'] == 'regexp') {
+            return TRUE;
+        }
+
+        return FALSE;
+    }
+
+    protected function _isPhraseSearch($term = NULL) {
+        if($term && static::isTermPhrase($term)) {
+            return TRUE;
+        }
+
+        if($this->options['search_type'] == 'phrase') {
+            return TRUE;
+        }
+
+        return FALSE;
     }
 
     public static function pushToBindData($item, &$binddata, $index_prefix = 'bd', $avoid_duplicates = FALSE) {

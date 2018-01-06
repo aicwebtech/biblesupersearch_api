@@ -60,6 +60,7 @@ class HighlightTest extends TestCase {
         $Engine = new Engine();
         $Engine->setDefaultDataType('raw');
         $results = $Engine->actionQuery(['bible' => 'kjv', 'reference' => 'Rom 12', 'search' => 'be for', 'highlight' => TRUE, 'whole_words' => TRUE, 'search_type' => 'or']);
+        $this->assertFalse($Engine->hasErrors());
         $tag = config('bss.defaults.highlight_tag');
 
         foreach($results['kjv'] as $verse) {
@@ -73,6 +74,7 @@ class HighlightTest extends TestCase {
         $Engine = new Engine();
         $Engine->setDefaultDataType('raw');
         $results = $Engine->actionQuery(['bible' => 'kjv', 'reference' => 'Rom 12', 'search' => 'be for', 'highlight' => TRUE, 'exact_case' => TRUE, 'search_type' => 'or']);
+        $this->assertFalse($Engine->hasErrors());
         $tag = config('bss.defaults.highlight_tag');
 
         foreach($results['kjv'] as $verse) {
@@ -86,6 +88,7 @@ class HighlightTest extends TestCase {
         $Engine = new Engine();
         $Engine->setDefaultDataType('raw');
         $results = $Engine->actionQuery(['bible' => 'kjv', 'reference' => 'Rom', 'search' => 'cometh by hearing', 'highlight' => TRUE, 'search_type' => 'proximity']);
+        $this->assertFalse($Engine->hasErrors());
         $tag = config('bss.defaults.highlight_tag');
 
         foreach($results['kjv'] as $verse) {
@@ -97,6 +100,7 @@ class HighlightTest extends TestCase {
         $Engine = new Engine();
         $Engine->setDefaultDataType('raw');
         $results = $Engine->actionQuery(['bible' => 'kjv', 'reference' => 'Rom', 'search' => 'cometh by hearing', 'highlight' => TRUE, 'search_type' => 'phrase']);
+        $this->assertFalse($Engine->hasErrors());
         $tag = config('bss.defaults.highlight_tag');
 
         foreach($results['kjv'] as $verse) {
