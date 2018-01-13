@@ -17,6 +17,7 @@ Route::post('/api/{action?}', 'ApiController@genericAction')->middleware('api');
 
 /* Route for Documentation UI */
 Route::get('/', 'DocumentationController')->middleware('https');
+Route::get('/documentation', 'DocumentationController')->middleware('https');
 
 
 
