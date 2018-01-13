@@ -65,7 +65,12 @@ class VerseStandard extends VerseAbstract {
 
         //echo(PHP_EOL . $Query->toSql() . PHP_EOL);
         //var_dump($binddata);
+        //$verses = $Query->get();
 
+        //$verses = DB::select($Query->toSql(), $binddata);
+        //print_r($verses);
+        //die();
+        
         if($Search && !$parameters['multi_bibles'] && !$parameters['page_all']) {
             $verses = $Query->paginate( config('bss.pagination.limit') );
         }
@@ -78,6 +83,7 @@ class VerseStandard extends VerseAbstract {
         if(config('app.debug')) {
             $_SESSION['debug']['query']      = $Query->toSql();
             $_SESSION['debug']['query_data'] = (isset($binddata)) ? $binddata : NULL;
+            // $_SESSION['debug']['query_raw_output'] = $verses->all();
         }
 
         return (empty($verses)) ? FALSE : $verses;
