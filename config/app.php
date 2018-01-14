@@ -222,4 +222,7 @@ return [
      */
     'query_use_named_placeholders' => TRUE,
 
+    'redirect_https' => env('REDIRECT_HTTPS', TRUE),
+
+    'client_url' => env('CLIENT_URL', NULL),
 ];

@@ -1,13 +1,10 @@
 <?php
     $context = 'query';
     $url = '';
-    //include( dirname(__FILE__) . '/generic.php');
 
     renderActionHeader('query', '');
-
     $url = getServerUrl();
-
-    ?>
+?>
 <h3>Examples</h3>
 <?php echo trans('query.examples.lookup1') ?><br />
 <a href="<?php echo $url ?>/api?bible=kjv&reference=Rom 4:1-10" target="querylookup1">
@@ -31,6 +28,7 @@
     $params = array(
         'reference',
         'search',
+        'request',
         'bible',
         'whole_words',
         'exact_case',

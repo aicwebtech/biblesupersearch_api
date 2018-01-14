@@ -31,13 +31,15 @@ class Passage {
     protected $Bibles = array();            // Array of Bibles
     protected $is_valid = FALSE;            // Is the provided reference valid?
     protected $is_random = FALSE;           // Is the user requesting a random chapter or verse?
+    protected $is_contextual = FALSE;
+    protected $contextual_range = 5;
 
     public function __construct() {
         // Do something?
     }
 
     public function setBookById($book_id) {
-        $language = (is_array($this->languages) && count($this->languages)) ? $this->languages[0] : env('DEFAULT_LANGUAGE_SHORT', 'en');
+        $language = (is_array($this->languages) && count($this->languages)) ? $this->languages[0] : config('bss.defaults.language_short');
         $book_class = Book::getClassNameByLanguage($language);
         $Book = $book_class::find($book_id);
 
@@ -222,9 +224,7 @@ class Passage {
         $chapter_verse = (!$this->is_search && empty($chapter_verse)) ? '1' : $chapter_verse;
         $this->chapter_verse = $chapter_verse;
 
-        $chapters = array();
-
-        $preparsed = $matches = $counts = $parsed = array();
+        $preparsed = $matches = $counts = $parsed = $chapters = array();
         $counts['number'] = preg_match_all('/[0-9]+/', $chapter_verse, $matches['number'], PREG_OFFSET_CAPTURE | PREG_SET_ORDER);
 
         if(!$counts['number']) {
@@ -321,7 +321,7 @@ class Passage {
 
                         // Detect and parse out a single verse reference
                         elseif($current_chapter) {
-                            $parsed[] = array('c' => $current_chapter, 'v' => $current_verse, 'type' => 'single');
+                            $parsed[] = $this->_singleVerseHelper($current_chapter, $current_verse);
                             $chapters[] = $current_chapter;
                         }
                     }
@@ -372,7 +372,6 @@ class Passage {
                             $parsed[] = array('cst' => $current_chapter, 'vst' => $current_verse, 'cen' => $cen, 'ven' => NULL, 'type' => 'range');
                         }
 
-
                         //$parsed[] = array('c' => $current_chapter, 'v' => $current_verse, 'type' => 'single');
                         $chapters[] = $current_chapter;
                     }
@@ -387,14 +386,37 @@ class Passage {
         $this->chapter_verse_parsed = $parsed;
     }
 
+    protected function _singleVerseHelper($chapter, $verse) {
+        if($this->is_contextual && $verse) {
+            $item = array(
+                'cst' => $chapter,
+                'vst' => $verse - $this->contextual_range,
+                'cen' => $chapter,
+                'ven' => $verse + $this->contextual_range,
+                'type' => 'range'
+            );
+        }
+        else {
+            $item = array('c' => $chapter, 'v' => $verse, 'type' => 'single');
+        }
+
+        return $item;
+    }
+
     public function setChapterVerseFromParsed($parsed_item) {
         $this->clearChapterVerse();
         $chapter_verse = '';
+        $chapters = array();
 
         if($parsed_item['type'] == 'range') {
             if($parsed_item['cst']) {
+                $chapters[] = $parsed_item['cst'];
                 $chapter_verse .= ($parsed_item['cst']);
                 $chapter_verse .= ($parsed_item['vst']) ? ':' . $parsed_item['vst'] : '';
+            }
+
+            if($parsed_item['cen']) {
+                $chapters[] = $parsed_item['cen'];
             }
 
             if($parsed_item['cen'] && $parsed_item['cst'] != $parsed_item['cen']) {
@@ -412,10 +434,16 @@ class Passage {
             $chapter_verse .= ($parsed_item['ven']) ? $parsed_item['ven'] : '';
         }
         elseif($parsed_item['type'] == 'single') {
+            if($parsed_item['c']) {
+                $chapters[] = $parsed_item['c'];
+            }
+
             $chapter_verse .= ($parsed_item['c']) ? $parsed_item['c'] : '';
             $chapter_verse .= ($parsed_item['v']) ? ':' . $parsed_item['v'] : '';
         }
 
+        $this->chapter_max = (is_array($chapters) && count($chapters)) ? max($chapters) : NULL;
+        $this->chapter_min = (is_array($chapters) && count($chapters)) ? min($chapters) : 1;
         $this->chapter_verse = $chapter_verse;
         $this->chapter_verse_parsed = array($parsed_item);
     }
@@ -493,14 +521,16 @@ class Passage {
     }
 
     public function __set($name, $value) {
-        $settable = ['languages', 'is_search', 'Bibles'];
+        $settable = ['languages', 'is_search', 'Bibles', 'is_contextual', 'contextual_range'];
 
         if($name == 'book') {
             $this->setBook($value);
         }
+
         if($name == 'chapter_verse') {
             $this->setChapterVerse($value);
         }
+
         if(in_array($name, $settable)) {
             $this->$name = $value;
         }
@@ -523,7 +553,9 @@ class Passage {
         return $this->chapter_verse_parsed;
     }
 
-    public function toArray() {
+    public function toArray($verbose = FALSE) {
+        $single = $this->containsSingleVerse();
+
         $passage = array(
             'book_id'           => $this->Book->id,
             'book_name'         => $this->Book->name,
@@ -536,7 +568,8 @@ class Passage {
             'verses'            => $this->verses,
             'verses_count'      => $this->verses_count,
             //'single_verse'      => $this->isSingleVerse(),
-            'single_verse'      => $this->containsSingleVerse(),
+            'single_verse'      => $single,
+            'nav'               => ($single) ? [] : $this->getNavigationData($verbose),
             //'chapter_verse_parsed' => $this->chapter_verse_parsed, // Debugging only
         );
 
@@ -546,6 +579,82 @@ class Passage {
         }
 
         return $passage;
+    }
+
+    public function getNavigationData($verbose = FALSE) {
+        $nav = array();
+        $language = $this->getPrimaryLanguage();
+        $book_class = Book::getClassNameByLanguage($language);
+        $book_com = config('bss.books_common.' . $this->Book->id);
+
+        $prev_book_id = $this->Book->id - 1;
+        $prev_book_id = ($prev_book_id >= 1) ? $prev_book_id : NULL;
+        $next_book_id = $this->Book->id + 1;
+        $next_book_id = ($next_book_id <= count(config('bss.books_common'))) ? $next_book_id : NULL;
+        $PrevBook = $NextBook = NULL;
+        $whole_chapter = ($this->chapter_min && strval($this->chapter_min) != $this->chapter_verse) ? TRUE : FALSE;
+
+        if($verbose) {
+            $PrevBook = ($prev_book_id) ? $book_class::find($prev_book_id) : NULL;
+            $NextBook = ($next_book_id) ? $book_class::find($next_book_id) : NULL;
+            $nav['prev_book'] = ($PrevBook) ? $PrevBook->name : NULL;
+            $nav['next_book'] = ($NextBook) ? $NextBook->name : NULL;
+
+            if($this->chapter_max == $book_com['chapters']) {
+                $nav['next_chapter'] = ($NextBook) ? $NextBook->name . ' 1' : NULL;
+            }
+            else {
+                $nav['next_chapter'] = $this->Book->name . ' ' . ($this->chapter_max + 1);
+            }
+
+            if($this->chapter_min == 1) {
+                $nav['prev_chapter'] = NULL;
+
+                if($PrevBook) {
+                    $prev_com = config('bss.books_common.' . $PrevBook->id);
+                    $nav['prev_chapter'] = $PrevBook->name . ' ' . $prev_com['chapters'];
+                }
+            }
+            else {
+                $nav['prev_chapter'] = $this->Book->name . ' ' . ($this->chapter_min - 1);
+            }
+
+            $nav['cur_chapter'] = ($whole_chapter) ? $this->Book->name . ' ' .$this->chapter_min : NULL;
+        }
+
+        if($this->chapter_max == $book_com['chapters']) {
+            $nav['ncb'] = ($next_book_id) ? $next_book_id : NULL;
+            $nav['ncc'] = ($next_book_id) ? ' 1' : NULL;
+        }
+        else {
+            $nav['ncb'] = $this->Book->id;
+            $nav['ncc'] = $this->chapter_max + 1;
+        }
+
+        if($this->chapter_min == 1) {
+            $nav['pcb'] = $nav['pcc'] = NULL;
+
+            if($prev_book_id) {
+                $prev_com = config('bss.books_common.' . $prev_book_id);
+                $nav['pcb'] = $prev_book_id;
+                $nav['pcc'] = $prev_com['chapters'];
+            }
+        }
+        else {
+            $nav['pcb'] = $this->Book->id;
+            $nav['pcc'] = $this->chapter_min - 1;
+        }
+
+        $nav['ccb'] = ($whole_chapter) ? $this->Book->id : NULL;
+        $nav['ccc'] = ($whole_chapter) ? $this->chapter_min : NULL;
+        $nav['nb']  = $next_book_id;
+        $nav['pb']  = $prev_book_id;
+
+        return $nav;
+    }
+
+    public function getPrimaryLanguage() {
+        return (is_array($this->languages) && count($this->languages)) ? $this->languages[0] : config('bss.defaults.language_short');
     }
 
     public function generateVerseIndex() {
@@ -772,14 +881,14 @@ class Passage {
      * @param bool $is_search - whether the parser should interpret this as a search
      * @return array|bool $Passages - array of passage instances, or FALSE if nothing parsed
      */
-    public static function parseReferences($reference, $languages = array(), $is_search = FALSE, $Bibles = array()) {
+    public static function parseReferences($reference, $languages = array(), $is_search = FALSE, $Bibles = array(), $parameters = array()) {
         if(!is_string($reference)) {
             return FALSE;
         }
 
         $Passages   = array();
         $pre_parsed = static::explodeReferences($reference);
-        $def_language = env('DEFAULT_LANGUAGE_SHORT', 'en');
+        $def_language = config('bss.defaults.language_short');
 
         if(!in_array($def_language, $languages)) {
             $languages[] = $def_language;
@@ -794,7 +903,7 @@ class Passage {
         $parsed = static::explodeReferences($mid_parsed, TRUE);
 
         foreach($parsed as $ref) {
-            $Passages[] = self::parseSingleReference($ref['book'], $ref['chapter_verse'], $languages, $is_search, $Bibles);
+            $Passages[] = self::parseSingleReference($ref['book'], $ref['chapter_verse'], $languages, $is_search, $Bibles, $parameters);
         }
 
         return (empty($Passages)) ? FALSE : $Passages;
@@ -856,7 +965,6 @@ class Passage {
     public static function normalizeRandom($reference) {
         $ref = strtolower($reference);
         $ref = str_replace(' ', '_', $ref);
-
         $randoms = ['random_chapter', 'random_verse'];
 
         foreach($randoms as $rand) {
@@ -874,10 +982,12 @@ class Passage {
      * @param string $chapter_verse - string representing the chapter and verse references
      * @return \App\Passage
      */
-    public static function parseSingleReference($book, $chapter_verse, $languages = array(), $is_search = FALSE, $Bibles = array()) {
+    public static function parseSingleReference($book, $chapter_verse, $languages = array(), $is_search = FALSE, $Bibles = array(), $parameters = array()) {
         $Passage = new static;
         $Passage->languages = $languages;
         $Passage->is_search = $is_search;
+        $Passage->is_contextual = (array_key_exists('context', $parameters) && $parameters['context'] == TRUE) ? TRUE : FALSE;
+        $Passage->contextual_range = (array_key_exists('context_range', $parameters)) ? intval($parameters['context_range']) : 5;
         $Passage->Bibles = $Bibles;
         $Passage->setBook($book);
         $Passage->setChapterVerse($chapter_verse);
@@ -907,5 +1017,42 @@ class Passage {
         }
 
         return $Exploded;
+    }
+
+    /**
+     * Maps the generic 'request' input to either the search keywords or the reference input
+     * But not both
+     *
+     * @param string $request
+     * @param string $keywords
+     * @param string $reference
+     * @param array $languages
+     * @param array $Bibles
+     * @return array containing $keywords and $reference
+     */
+    public static function mapRequest($request, $keywords, $reference, $languages, $Bibles) {
+        if(!empty($request)) {
+            if(!$keywords && !$reference) {
+                $passages = static::explodeReferences($request);
+                //$Passages = static::parseReferences($request, $languages, FALSE, $Bibles); // Worst case senariao - lots of overhead
+
+                // Treats as passage if 1) It contains numbers or 2) It resolves to multiple (possible) passages
+                if(!empty($passages) && (preg_match('/[0-9]/', $request) || count($passages) >= 2)) {
+                    $reference = $request;
+                }
+                // Otherwise, treats it as search keywords
+                else {
+                    $keywords = $request;
+                }
+            }
+            elseif($keywords && !$reference) {
+                $reference = $request;
+            }
+            elseif($reference && !$keywords) {
+                $keywords = $request;
+            }
+        }
+
+        return array($keywords, $reference);
     }
 }

@@ -25,11 +25,11 @@ class VerseStandard extends VerseAbstract {
         $table = $Verse->getTable();
         $passage_query = $search_query = NULL;
         $is_special_search = ($Search && $Search->is_special) ? TRUE : FALSE;
-        $Query = DB::table($table . ' AS tb')->select('id','book','chapter','verse','text');
+        $Query = DB::table($table . ' AS tb')->select('id','book','chapter','verse','text','italics');
         $Query->orderBy('book', 'ASC')->orderBy('chapter', 'ASC')->orderBy('verse', 'ASC');
 
         if($Passages) {
-            $passage_query = static::_buildPassageQuery($Passages);
+            $passage_query = static::_buildPassageQuery($Passages, NULL, $parameters);
 
             if($passage_query) {
                 $Query->whereRaw('(' . $passage_query . ')');
@@ -39,7 +39,7 @@ class VerseStandard extends VerseAbstract {
         if($Search) {
             if($is_special_search) {
                 $table = static::$special_table . '_1';
-                $passage_query_special = static::_buildPassageQuery($Passages, $table);
+                $passage_query_special = static::_buildPassageQuery($Passages, $table, $parameters);
                 $search_query = static::_buildSpecialSearchQuery($Search, $parameters, $passage_query_special);
 
                 if(!$search_query) {
@@ -65,7 +65,12 @@ class VerseStandard extends VerseAbstract {
 
         //echo(PHP_EOL . $Query->toSql() . PHP_EOL);
         //var_dump($binddata);
+        //$verses = $Query->get();
 
+        //$verses = DB::select($Query->toSql(), $binddata);
+        //print_r($verses);
+        //die();
+        
         if($Search && !$parameters['multi_bibles'] && !$parameters['page_all']) {
             $verses = $Query->paginate( config('bss.pagination.limit') );
         }
@@ -78,12 +83,13 @@ class VerseStandard extends VerseAbstract {
         if(config('app.debug')) {
             $_SESSION['debug']['query']      = $Query->toSql();
             $_SESSION['debug']['query_data'] = (isset($binddata)) ? $binddata : NULL;
+            // $_SESSION['debug']['query_raw_output'] = $verses->all();
         }
 
         return (empty($verses)) ? FALSE : $verses;
     }
 
-    protected static function _buildPassageQuery($Passages, $table = '') {
+    protected static function _buildPassageQuery($Passages, $table = '', $parameters = array()) {
         if(empty($Passages)) {
             return FALSE;
         }
@@ -164,6 +170,12 @@ class VerseStandard extends VerseAbstract {
 
         // Need to use raw queries because of complex JOIN statements
         $sql = 'SELECT ' . implode(', ', $selects) . PHP_EOL . $from . PHP_EOL . implode(PHP_EOL, $joins) . PHP_EOL . 'WHERE ' . $where;
+
+        if(config('app.debug')) {
+            $_SESSION['debug']['prox_query']      = $sql;
+            $_SESSION['debug']['prox_query_data'] = (isset($binddata)) ? $binddata : NULL;
+        }
+
         $results_raw = DB::select($sql, $binddata);
 
         foreach($results_raw as $a1) {
@@ -304,13 +316,13 @@ class VerseStandard extends VerseAbstract {
         $in_console = (strpos(php_sapi_name(), 'cli') !== FALSE) ? TRUE : FALSE;
 
         // If importing from V2, make sure v2 table exists
-        if (env('IMPORT_FROM_V2', FALSE)) {
+        if (config('bss.import_from_v2')) {
             $v2_table = 'bible_' . $this->Bible->module_v2;
             $res = DB::select("SHOW TABLES LIKE '" . $v2_table . "'");
             $v2_table_exists = (count($res)) ? TRUE : FALSE;
         }
 
-        if (env('IMPORT_FROM_V2', FALSE) && $v2_table_exists) {
+        if (config('bss.import_from_v2') && $v2_table_exists) {
             if ($in_console) {
                 echo(PHP_EOL . 'Importing Bible from V2: ' . $this->Bible->name . ' (' . $this->module . ')' . PHP_EOL);
             }

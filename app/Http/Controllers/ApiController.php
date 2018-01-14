@@ -11,7 +11,7 @@ use App\Engine;
 class ApiController extends Controller {
 
     public function genericAction($action = 'query', Request $Request) {
-        $allowed_actions = ['query', 'bibles', 'books', 'statics', 'version'];
+        $allowed_actions = ['query', 'bibles', 'books', 'statics', 'version', 'readcache'];
         $_SESSION['debug'] = array();
 
         if(!in_array($action, $allowed_actions)) {
@@ -25,11 +25,6 @@ class ApiController extends Controller {
 //        print_r($input);
 //        die();
 
-//        $response = new \stdClass();
-//        $response->errors = array();
-//        $response->error_level = 0;
-        $code = 200;
-
         try {
             $results = $Engine->$actionMethod($input);
 
@@ -39,6 +34,7 @@ class ApiController extends Controller {
 
             $response = $Engine->getMetadata(TRUE);
             $response->results = $results;
+            $code = ($Engine->hasErrors()) ? 400 : 200;
         }
         catch (Exception $ex) {
             return (new Response($ex->getMessage(), 500))
@@ -46,12 +42,12 @@ class ApiController extends Controller {
                 -> header('Access-Control-Allow-Origin', '*');
         }
 
-        if($Engine->hasErrors()) {
+//        if($Engine->hasErrors()) {
 //            $errors = $Engine->getErrors();
 //            $response->errors = $errors;
 //            $response->error_level = $Engine->getErrorLevel();
-            $code = 400;
-        }
+//            $code = 400;
+//        }
 
         if(array_key_exists('callback', $input)) {
             return response()->jsonp($input['callback'], $response);

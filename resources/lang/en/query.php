@@ -24,6 +24,13 @@ return array(
             'default' => '(none)',
             'description' => 'Keyword search',
         ),
+        'request' => array(
+            'type' => 'String',
+            'name' => 'Request',
+            'default' => '(none)',
+            'description' => 'Single field that can recieve either reference or keywords.  If item resolves to a valid passage and specifies a chapter (or ' .
+                'verse), request will be treated as a passage request; otherwise the request will be treated as a keyword search.',
+        ),
         'search_type' => array(
             'type' => 'String<br />(Drop Down menu)',
             'name' => 'Search Type',
@@ -47,7 +54,7 @@ return array(
         'bible' => array(
             'type' => 'String<br />(Drop Down Menu - Multiple)',
             'name' => 'Bibles',
-            'default' => env('DEFAULT_BIBLE', 'kjv'),
+            'default' => config('bss.defaults.bible'),
             'description' => 'MODULE of the Bible(s) to query against. Can be a string, array or JSON-encoded array.<br />'
             . 'Use the Bibles action to get a list of available Bibles for your app or website.',
         ),
