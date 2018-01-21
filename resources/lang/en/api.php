@@ -18,6 +18,8 @@ return array(
     'data_structure' => 'Data Structure',
     'bible_list' => 'Bible List',
     'bibles_avail' => 'Bibles Available via API',
+    'tos' => 'Terms',
+    'privacy' => 'Privacy',
 
     'bible_fields' => array(
         'module' => 'Module',
