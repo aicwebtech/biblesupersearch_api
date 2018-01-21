@@ -49,6 +49,7 @@ trait Error {
      */
     public function setErrorLevel($level) {
         $this->error_level = intval($level);
+        return ($this->error_level) ? FALSE : TRUE;
     }
 
     /**

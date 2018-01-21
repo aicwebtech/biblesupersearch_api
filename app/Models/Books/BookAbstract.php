@@ -75,7 +75,7 @@ class BookAbstract extends Model
         }
 
         // This logic may be needed elsewhere
-        $default_class_name = self::getClassNameByLanguage(env('DEFAULT_LANGUAGE_SHORT', 'en'));
+        $default_class_name = self::getClassNameByLanguage(config('bss.defaults.language_short'));
 
         if($language) {
             $class_name = self::getClassNameByLanguage($language);

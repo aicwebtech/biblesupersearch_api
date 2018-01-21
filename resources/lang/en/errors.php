@@ -5,6 +5,7 @@
 return array(
     'no_query'  => 'No query terms provided. Please specify search term(s) and/or passage reference(s).',
     'no_results' => 'Your search produced no results.',
+    'triple_request' => 'Cannot use request, search and reference at the same time.  Please inform webmaster of UI design error.',
     'bible_no_results' => 'Your search produced no results in \':module\'.',
     'passage_not_found' => 'Your request for :passage produced no results.',
     'bible_no_exist' => 'Bible text \':module\' not found.',

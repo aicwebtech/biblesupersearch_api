@@ -42,6 +42,10 @@ class Engine {
         $primary = NULL;
 
         foreach($modules as $module) {
+            if(empty($module)) {
+                continue;
+            }
+
             $added = $this->addBible($module);
             $primary = ($added && !$primary) ? $module : $primary;
         }
@@ -108,6 +112,9 @@ class Engine {
      * @return array $results search / look up results.
      */
     public function actionQuery($input) {
+//        return $this->setErrorLevel(4);
+
+
         // To do - add labels
         $parsing = array(
             'reference' => array(
@@ -116,10 +123,17 @@ class Engine {
             'search' => array(
                 'type'  => 'string',
             ),
+            'request' => array(
+                'type'  => 'string',
+            ),
             'bible' => array(
                 'type'  => 'array_string',
             ),
             'whole_words' => array(
+                'type'  => 'bool',
+                'default' => FALSE,
+            ),
+            'whole_words_debug' => array(  // temp, for attempting to debug slowness here!
                 'type'  => 'bool',
                 'default' => FALSE,
             ),
@@ -173,10 +187,23 @@ class Engine {
             'search_phrase' => array(
                 'type'  => 'string',
             ),
+            'context' => array(
+                'type'   => 'bool',
+                'default' => FALSE,
+            ),
+            'context_range' => array(
+                'type'   => 'int',
+                'default' => config('bss.context.range'),
+            ),
         );
 
         $this->resetErrors();
         $results = $bible_no_results = array();
+
+        $CacheManager = new CacheManager();
+        $Cache = $CacheManager->createCache($input, $parsing);
+        $this->metadata->hash = $Cache->hash;
+
         !empty($input['bible']) && $this->setBibles($input['bible']);
         $input = $this->_sanitizeInput($input, $parsing);
         $input['bible'] = array_keys($this->Bibles);
@@ -186,6 +213,14 @@ class Engine {
         // Secondary search elements are detected automatically by Search class
         $references = empty($input['reference']) ? NULL : $input['reference'];
         $keywords   = empty($input['search'])    ? NULL : $input['search'];
+        $request    = empty($input['request'])   ? NULL : $input['request'];
+
+        if($references && $keywords && $request) {
+            $this->addError(trans('errors.triple_request'), 4);
+            return FALSE;
+        }
+
+        list($keywords, $references) = Passage::mapRequest($request, $keywords, $references, $this->languages, $this->Bibles);
         $Search     = Search::parseSearch($keywords, $input);
         $is_search  = ($Search) ? TRUE : FALSE;
         $paginate   = ($is_search && !$input['page_all'] && (!$input['multi_bibles'] || $this->_canPaginate($input['data_format']))) ? TRUE : FALSE;
@@ -197,7 +232,7 @@ class Engine {
         }
 
         // Passage parsing and validation
-        $Passages = Passage::parseReferences($references, $this->languages, $is_search, $this->Bibles);
+        $Passages = Passage::parseReferences($references, $this->languages, $is_search, $this->Bibles, $input);
 
         if(is_array($Passages)) {
             foreach($Passages as $key => $Passage) {
@@ -232,6 +267,7 @@ class Engine {
         }
 
         if(!$Search || $Search && $search_valid) {
+
             foreach($this->Bibles as $Bible) {
                 $BibleResults = $Bible->getSearch($Passages, $Search, $input); // Laravel Collection
 
@@ -240,9 +276,6 @@ class Engine {
 
                     if($paginate && !$input['multi_bibles']) {
                         $paging = $this->_getCleanPagingData($BibleResults);
-//                        var_dump(get_class($BibleResults));
-//                        print_r($paging);
-//                        die();
                     }
 
                     if($BibleResults->count() == config('bss.global_maximum_results')) {
@@ -252,6 +285,8 @@ class Engine {
                 else {
                     $bible_no_results[] = trans('errors.bible_no_results', ['module' => $Bible->module]);
                 }
+
+                unset($BibleResults);
             }
 
             if(empty($results)) {
@@ -338,11 +373,11 @@ class Engine {
      * @param array $input
      */
     public function actionBooks($input) {
-        $language = (!empty($input['language'])) ? $input['language'] : env('DEFAULT_LANGUAGE_SHORT', 'en');
+        $language = (!empty($input['language'])) ? $input['language'] : config('bss.defaults.language_short');
         $namespaced_class = 'App\Models\Books\\' . ucfirst($language);
 
         if(!class_exists($namespaced_class)) {
-            $namespaced_class = 'App\Models\Books\\' . env('DEFAULT_LANGUAGE_SHORT', 'en');
+            $namespaced_class = 'App\Models\Books\\' . config('bss.defaults.language_short');
         }
 
         $Books = $namespaced_class::select('id', 'name', 'shortname')->orderBy('id', 'ASC') -> get() -> all();
@@ -353,10 +388,25 @@ class Engine {
         $response = new \stdClass;
         $response->bibles       = $this->actionBibles($input);
         $response->books        = $this->actionBooks($input);
+        $response->shortcuts    = $this->actionShortcuts($input);
+        $response->search_types = config('bss.search_types');
         $response->name         = config('app.name');
         $response->version      = config('app.version');
         $response->environment  = config('app.env');
         return $response;
+    }
+
+    public function actionShortcuts($input) {
+        // Todo - multi language support
+        $language = (!empty($input['language'])) ? $input['language'] : config('bss.defaults.language_short');
+        $namespaced_class = 'App\Models\Shortcuts\\' . ucfirst($language);
+
+        if(!class_exists($namespaced_class)) {
+            $namespaced_class = 'App\Models\Shortcuts\\' . config('bss.defaults.language_short');
+        }
+
+        $Shortcuts = $namespaced_class::select('id', 'name', 'reference')->orderBy('id', 'ASC') ->where('display', 1) -> get() -> all();
+        return $Shortcuts;
     }
 
     public function actionVersion($input) {
@@ -365,6 +415,24 @@ class Engine {
         $response->version      = config('app.version');
         $response->environment  = config('app.env');
         return $response;
+    }
+
+    public function actionReadcache($input) {
+        if(!array_key_exists('hash', $input)) {
+            $this->addError('hash is required', 4);
+            return;
+        }
+
+        $Cache = \App\Models\Cache::where('hash', $input['hash'])->first();
+
+        if(!$Cache) {
+            $this->addError('Cache not found', 4);
+        }
+        else {
+            $cache = $Cache->toArray();
+            $cache['form_data'] = json_decode($cache['form_data'], TRUE);
+            return $cache;
+        }
     }
 
     protected function _formatDataStructure($results, $input, $Passages, $Search) {
@@ -376,6 +444,7 @@ class Engine {
             'raw'       => 'minimal',
             'minimal'   => 'minimal',
             'passage'   => 'passage',
+            'lite'      => 'lite',
         );
 
         $format_type  = (array_key_exists($format_type, $format_map)) ? $format_map[$format_type] : 'passage';

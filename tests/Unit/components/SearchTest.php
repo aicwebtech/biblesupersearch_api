@@ -238,21 +238,27 @@ class SearchTest extends TestCase {
         $Search = Search::parseSearch($query, ['whole_words' => TRUE]);
         $this->assertEquals('and', $Search->search_type);
         list($sql, $binddata) = $Search->generateQuery();
-        $this->assertEquals('(`text` REGEXP :bd1) AND (`text` REGEXP :bd2)', $sql);
-        $this->assertEquals(array(':bd1' => '[[:<:]]tempt', ':bd2' => '[[:<:]]world[[:>:]]'), $binddata);
+        //$this->assertEquals('(`text` REGEXP :bd1) AND (`text` REGEXP :bd2)', $sql);
+        //$this->assertEquals(array(':bd1' => '[[:<:]]tempt', ':bd2' => '[[:<:]]world[[:>:]]'), $binddata);
+        $this->assertEquals('(`text` LIKE :bd1 AND `text` REGEXP :bd2) AND (`text` LIKE :bd3 AND `text` REGEXP :bd4)', $sql);
+        $this->assertEquals(array(':bd1' => '%tempt%', ':bd2' => '[[:<:]]tempt', ':bd3' => '%world%', ':bd4' => '[[:<:]]world[[:>:]]'), $binddata);
 
         $query = 'tempt% %world';
         $Search = Search::parseSearch($query, ['whole_words' => TRUE]);
         $this->assertEquals('and', $Search->search_type);
         list($sql, $binddata) = $Search->generateQuery();
-        $this->assertEquals('(`text` REGEXP :bd1) AND (`text` REGEXP :bd2)', $sql);
-        $this->assertEquals(array(':bd1' => '[[:<:]]tempt', ':bd2' => 'world[[:>:]]'), $binddata);
+        //$this->assertEquals('(`text` REGEXP :bd1) AND (`text` REGEXP :bd2)', $sql);
+        //$this->assertEquals(array(':bd1' => '[[:<:]]tempt', ':bd2' => 'world[[:>:]]'), $binddata);
+        $this->assertEquals('(`text` LIKE :bd1 AND `text` REGEXP :bd2) AND (`text` LIKE :bd3 AND `text` REGEXP :bd4)', $sql);
+        $this->assertEquals(array(':bd1' => '%tempt%', ':bd2' => '[[:<:]]tempt', ':bd3' => '%world%', ':bd4' => 'world[[:>:]]'), $binddata);
 
         $query = 'tempt %world';
         $Search = Search::parseSearch($query, ['whole_words' => TRUE]);
         $this->assertEquals('and', $Search->search_type);
         list($sql, $binddata) = $Search->generateQuery();
-        $this->assertEquals('(`text` REGEXP :bd1) AND (`text` REGEXP :bd2)', $sql);
-        $this->assertEquals(array(':bd1' => '[[:<:]]tempt[[:>:]]', ':bd2' => 'world[[:>:]]'), $binddata);
+        //$this->assertEquals('(`text` REGEXP :bd1) AND (`text` REGEXP :bd2)', $sql);
+        //$this->assertEquals(array(':bd1' => '[[:<:]]tempt[[:>:]]', ':bd2' => 'world[[:>:]]'), $binddata);
+        $this->assertEquals('(`text` LIKE :bd1 AND `text` REGEXP :bd2) AND (`text` LIKE :bd3 AND `text` REGEXP :bd4)', $sql);
+        $this->assertEquals(array(':bd1' => '%tempt%', ':bd2' => '[[:<:]]tempt[[:>:]]', ':bd3' => '%world%', ':bd4' => 'world[[:>:]]'), $binddata);
     }
 }

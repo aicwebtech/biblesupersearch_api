@@ -3,7 +3,7 @@
 </div>
 
 <?php
-    $client_url = env('CLIENT_URL', NULL);
+    $client_url = config('app.client_url');
     if($client_url): ?>
 
     <div>

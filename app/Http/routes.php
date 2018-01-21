@@ -11,12 +11,22 @@
 |
 */
 
+/* Routes for the API  */
+Route::get('/api/{action?}' , 'ApiController@genericAction')->middleware('api'); // 'Action' defaults to 'query'
+Route::post('/api/{action?}', 'ApiController@genericAction')->middleware('api'); // 'Action' defaults to 'query'
+
+/* Route for Documentation UI */
+Route::get('/', 'DocumentationController')->middleware('https');
+Route::get('/documentation', 'DocumentationController')->middleware('https');
+
+
+
+/* EVERYTHING BELOW IS EXPERIMENTAL, NON-PRODUCTION CODE */
+
 //Route::get('/', function() {
 //    return view('docs.home');
 //    //return view('welcome2');
 //});
-
-Route::get('/', 'DocumentationController')->middleware('https');
 
 /* Routes for administrative backend */
 Route::get('/admin', function() {
@@ -39,8 +49,4 @@ Route::post('/auth/login', 'Auth\AuthController@postLogin');
 Route::get('/auth/logout', 'Auth\AuthController@getLogout');
 Route::get('/admin/main', 'AdminController@getMain');
 //Route::controller('admin', 'AdminController');
-
-/* Routes for the API  */
-Route::get('/api/{action?}','ApiController@genericAction')->middleware('api'); // 'Action' defaults to 'query'
-Route::post('/api/{action?}','ApiController@genericAction')->middleware('api'); // 'Action' defaults to 'query'
 

@@ -18,6 +18,8 @@ return array(
     'data_structure' => 'Data Structure',
     'bible_list' => 'Bible List',
     'bibles_avail' => 'Bibles Available via API',
+    'tos' => 'Terms',
+    'privacy' => 'Privacy',
 
     'bible_fields' => array(
         'module' => 'Module',
@@ -74,6 +76,8 @@ return array(
         . 'This includes: <ul>'
         . '<li>A list of all avaliable Bibles</li>'
         . '<li>A list of Bible books in the specified language</li>'
+        . '<li>A list of shortcuts in the specified language</li>'
+        . '<li>A list of search types</li>'
         . '<li>The API name</li>'
         . '<li>The API version</li>'
         . '<li>The API environment (production/beta/development)</li>'

@@ -14,7 +14,7 @@ class ShortcutsSeeder extends Seeder
     {
         $languages = Config::get('bss_table_languages.shortcuts');
 
-        if(env('IMPORT_FROM_V2', FALSE)) {
+        if(config('bss.import_from_v2')) {
             return $this->_importFromV2();
         }
 
