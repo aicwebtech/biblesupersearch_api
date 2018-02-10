@@ -3,6 +3,8 @@
 [BibleSuperSearch.com](http://www.biblesupersearch.com)
 
 Webservice API for Bible SuperSearch built using the Laravel framework.
+Currently version-locked to Laravel 5.4, to allow users to easily migrate from Bible SuperSearch legacy.
+(The legacy software will not work in PHP 7, and PHP 7 is required by Laravel 5.5)
 
 ## Notice
 While we believe the API itself to be functional, this software has yet to be officially released.
@@ -12,7 +14,7 @@ Download and use at your own risk.
 ## Official Documentation
 
 ###Server Requirements:
-* PHP >= 5.6.4
+* PHP >= 5.6.4 (PHP 7.0.0 >= highly recommended)
 * OpenSSL PHP Extension
 * PDO PHP Extension
 * Mbstring PHP Extension
