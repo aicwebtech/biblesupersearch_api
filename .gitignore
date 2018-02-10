@@ -7,4 +7,11 @@ Homestead.json
 .env
 *.orig
 
+composer-temp.phar
+
 /bibles/unbound/*.zip
+/bibles/misc/*.csv
+/bibles/misc/*.zip
+/bibles/misc/*.gz
+/bibles/misc/*.txt
+

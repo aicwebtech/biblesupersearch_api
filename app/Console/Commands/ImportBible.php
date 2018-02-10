@@ -20,15 +20,16 @@ abstract class ImportBible extends Command {
     protected $options = ['name', 'shortname', 'lang', 'lang_short'];
     protected $import_dir = ''; // Subdirectory of bibles
     protected $file_extension = ''; // Used for filtering file list
-    
+    protected $require_file = TRUE;
+
     protected $hints = array(
         'lang' => [
             'English', 'Spanish', 'Chinese', 'Arabic', 'Hindi', 'French', 'Portuguese', 'Russian', 'German', 'Bengali', 'Malay', 'Urdo', 'Italian',
             'Greek', 'Hebrew',
-            ],
+        ],
         'lang_short' => ['en', 'es', 'zh', 'ar', 'de', 'el', 'he', 'hi', 'fi','fr','bn', 'it', 'ru', 'ms', 'ur']
     );
-    
+
     protected $ask = array(
         'name' => 'Full name of this Bible',
         //'shortname' => 'What is the short display name of this Bible?',
@@ -42,10 +43,10 @@ abstract class ImportBible extends Command {
      */
     public function __construct() {
         // Auto-add the arguments and options
-        //$this->signature .= ' {file} {module} {--name=} {--shortname=} {--lang=} {--lang_short=} {--overwrite}'; 
-        $this->signature .= ' {--file=} {--module=} {--name=} {--shortname=} {--lang=} {--lang_short=} {--overwrite} {--list}'; 
+        //$this->signature .= ' {file} {module} {--name=} {--shortname=} {--lang=} {--lang_short=} {--overwrite}';
+        $this->signature .= ' {--file=} {--module=} {--name=} {--shortname=} {--lang=} {--lang_short=} {--overwrite} {--list}';
         //$this->description .= '';
-        
+
         parent::__construct();
     }
 
@@ -56,7 +57,7 @@ abstract class ImportBible extends Command {
     public function handle() {
         //
     }
-    
+
     protected function _handleHelper($Importer) {
         //$file       = $this->argument('file');
         //$module     = $this->argument('module');
@@ -64,17 +65,19 @@ abstract class ImportBible extends Command {
         $module     = $this->option('module');
         $overwrite  = $this->option('overwrite');
         $attributes = array();
-        
+
         if($this->option('list')) {
             return $this->_displayFileList();
         }
 
-        $file = ($file) ? $file : $this->anticipate('Input file (Use --list to see all files)', $this->_getFileList());
-        
+        if($this->require_file) {
+            $file = ($file) ? $file : $this->anticipate('Input file (Use --list to see all files)', $this->_getFileList());
+        }
+
         while(!$module) {
             $mod = $this->ask('Module Name (lower case characters, digits and underscores only)');
             $filtered = preg_replace('/[a-z_0-9]*/', '', $mod);
-            
+
             if($mod && empty($filtered)) {
                 $module = $mod;
             }
@@ -82,21 +85,21 @@ abstract class ImportBible extends Command {
                 print PHP_EOL . 'Invalid module name.  Module name may only contain lower case characters, digits and underscores' . PHP_EOL;
             }
         }
-        
+
         $Bible = Bible::findByModule($module);
-        
+
         if($Bible && !$overwrite) {
             $overwrite = $this->confirm('Module \'' . $module . '\' already exists.  Overwrite? [y|N]');
-            
+
             if(!$overwrite) {
                 return;
             }
         }
-        
+
         foreach($this->options as $option) {
             $attributes[$option] = $this->option($option);
         }
-        
+
         foreach($this->ask as $field => $question) {
             if(empty($attributes[$field])) {
                 if(isset($this->hints[$field])) {
@@ -107,16 +110,16 @@ abstract class ImportBible extends Command {
                 }
             }
         }
-        
+
         $Importer->setProperties($file, $module, $overwrite, $attributes);
-        
+
         // Settings errors check
         if(!$this->_handleErrors($Importer)) {
             $Importer->import();
             $this->_handleErrors($Importer); // Import errors check
         }
     }
-    
+
     /**
      * Returns the fully qualified import directory
      * @return type
@@ -124,7 +127,7 @@ abstract class ImportBible extends Command {
     public function getImportDir() {
         return dirname(__FILE__) . '/../../../bibles/' . $this->import_dir;
     }
-    
+
     protected function _displayFileList() {
         $list = $this->_getFileList();
         $tab = '    ';
@@ -137,7 +140,7 @@ abstract class ImportBible extends Command {
         foreach($list as $item) {
             print $tab . $tab . $item . PHP_EOL;
         }
-        
+
         if(empty($list)) {
             print $tab . 'NO BIBLES FOUND!' . PHP_EOL;
         }
@@ -149,39 +152,39 @@ abstract class ImportBible extends Command {
         print PHP_EOL;
         return;
     }
-    
+
     protected function _getFileList() {
         $dir = $this->getImportDir();
         $list = array();
-        
+
         if(is_dir($dir)) {
             $list_raw = scandir($dir);
-            
+
             foreach($list_raw as $item) {
                 if($item == '.' || $item == '..' || $item == 'readme.txt') {
                     continue;
                 }
-                
+
                 if($this->file_extension && !preg_match('/\.(' . $this->file_extension . ')$/i', $item)) {
                     continue;
                 }
-                
+
                 $list[] = $item;
             }
         }
-        
+
         return $list;
     }
-    
+
     private function _handleErrors($Importer) {
         if($Importer->hasErrors()) {
             foreach($Importer->getErrors() as $error) {
                 echo($error . PHP_EOL);
             }
-            
+
             return TRUE;
         }
-        
+
         return FALSE;
     }
 }
