@@ -36,6 +36,7 @@ Route::get('/admin', function() {
 
     return view('admin.login');
 });
+
 Route::get('/admin/login', function() {
     return redirect('/admin');
 });
@@ -44,9 +45,11 @@ Route::get('/admin/login', function() {
 Route::get('/auth/login', function () {
     return redirect('/admin');
 });
-Route::post('/auth/login', 'Auth\AuthController@postLogin');
 
-Route::get('/auth/logout', 'Auth\AuthController@getLogout');
+//Route::post('/auth/login', 'Auth\AuthController@postLogin');
+Route::post('/auth/login', 'Auth\AuthController@login')->name('login');
+Route::get('/auth/logout', 'Auth\AuthController@logout');
+Route::get('/auth/reset', 'Auth\PasswordController@showResetForm')->name('password.request');
 Route::get('/admin/main', 'AdminController@getMain');
 //Route::controller('admin', 'AdminController');
 

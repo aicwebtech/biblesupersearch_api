@@ -15,12 +15,9 @@
     </head>
 
     <body>
-
         <div class='container'>
             <div class='content'>
-
-                <form action='/auth/login' method='POST'>
-                    <input name='username' class='text' placeholder='Username' /><br />
+                <form action='/auth/reset' method='POST'>
                     <input name='password' type='password' class='text' placeholder='Password'/><br />
                     <input type='submit' value='Log In' class='button' />
                     <?php echo csrf_field() ?>
@@ -28,6 +25,5 @@
                 <?php require( dirname(__FILE__) . '/../errors/form.php'); ?>
             </div>
         </div>
-
     </body>
 </html>

@@ -4,9 +4,14 @@ namespace App\Http\Controllers\Auth;
 
 use App\User;
 use Validator;
+use Auth;
 use App\Http\Controllers\Controller;
 use Illuminate\Foundation\Auth\ThrottlesLogins;
-use Illuminate\Foundation\Auth\AuthenticatesAndRegistersUsers;
+//use Illuminate\Foundation\Auth\AuthenticatesAndRegistersUsers;
+use Illuminate\Foundation\Auth\AuthenticatesUsers;
+use Illuminate\Foundation\Auth\RegistersUsers;
+use Illuminate\Http\Request;
+
 
 class AuthController extends Controller
 {
@@ -21,13 +26,18 @@ class AuthController extends Controller
     |
     */
 
-    use AuthenticatesAndRegistersUsers, ThrottlesLogins;
-    
-    protected $username = 'username'; // This should force it to authenticate on username instead of email
-    
+//    use AuthenticatesAndRegistersUsers, ThrottlesLogins;
+//    use ThrottlesLogins;
+
+    use AuthenticatesUsers, RegistersUsers {
+        AuthenticatesUsers::redirectPath insteadof RegistersUsers;
+//        AuthenticatesUsers::getGuard insteadof RegistersUsers;
+        AuthenticatesUsers::guard insteadof RegistersUsers;
+    }
+
     protected $redirectTo = '/admin/main';
     protected $loginPath = '/admin';
-    
+
     /**
      * Create a new authentication controller instance.
      *
@@ -35,7 +45,7 @@ class AuthController extends Controller
      */
     public function __construct()
     {
-        $this->middleware('guest', ['except' => 'getLogout']);
+        $this->middleware('guest', ['except' => 'logout']);
     }
 
     /**
@@ -66,5 +76,34 @@ class AuthController extends Controller
             'email' => $data['email'],
             'password' => bcrypt($data['password']),
         ]);
+    }
+
+    // This should force it to authenticate on username instead of email
+    protected function username() {
+        return 'username';
+    }
+
+
+    /**
+     * Log the user out of the application.
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @return \Illuminate\Http\Response
+     */
+    public function _logout(Request $request)
+    {
+        $this->guard()->logout();
+        $request->session()->invalidate();
+
+        if(Auth::check()) {
+
+//            die('ITS ALIVE!');
+        }
+        else {
+//            die("DEAD");
+        }
+
+
+        return redirect('/');
     }
 }
