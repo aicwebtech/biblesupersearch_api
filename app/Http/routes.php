@@ -56,6 +56,7 @@ Route::get('/auth/reset', 'Auth\PasswordController@showLinkRequestForm')->name('
 Route::post('/auth/reset', 'Auth\PasswordController@sendResetLinkEmail')->name('password.email');
 Route::get('/auth/change', 'Auth\PasswordController@showResetForm')->name('password.reset');
 Route::post('/auth/change', 'Auth\PasswordController@reset');
+Route::post('/auth/success', 'Auth\PasswordController@success');
 Route::get('/admin/main', 'AdminController@getMain');
 //Route::controller('admin', 'AdminController');
 

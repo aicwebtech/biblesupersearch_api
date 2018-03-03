@@ -70,7 +70,7 @@ class VerseStandard extends VerseAbstract {
         //$verses = DB::select($Query->toSql(), $binddata);
         //print_r($verses);
         //die();
-        
+
         if($Search && !$parameters['multi_bibles'] && !$parameters['page_all']) {
             $verses = $Query->paginate( config('bss.pagination.limit') );
         }
@@ -300,11 +300,7 @@ class VerseStandard extends VerseAbstract {
 
             $map['chapter_verse'] = $map['chapter'] * 1000 + $map['verse'];
 
-            //$insertable[] = $map;
-
-
             DB::table($table)->insert($map);
-            //static::insert($map);
         }
 
         return TRUE;

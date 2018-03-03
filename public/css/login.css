@@ -18,9 +18,9 @@ body {
 
 input.text {
     heigth: 30px;
-    width: 200px;
+    width: 300px;
     font-size: 15px;
-    margin-bottom: 20px;
+    margin-bottom: 30px;
     border-radius: 10px;
     padding: 5px;
     background-color: #faffbd;
@@ -32,7 +32,7 @@ input.text {
     display: inline-block;
     background-color: #57bef2;
     border-radius: 15px;
-    padding: 15px;
+    padding: 40px;
 }
 
 .alert.alert-danger {

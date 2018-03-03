@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use Illuminate\Foundation\Auth\ResetsPasswords;
 use Illuminate\Foundation\Auth\SendsPasswordResetEmails;
 use Illuminate\Http\Request;
+use Illuminate\Support\Str;
 
 class PasswordController extends Controller
 {
@@ -31,31 +32,8 @@ class PasswordController extends Controller
      *
      * @return void
      */
-    public function __construct()
-    {
+    public function __construct() {
         $this->middleware('guest');
-    }
-
-        /**
-     * Display the password reset view for the given token.
-     *
-     * If no token is present, display the link request form.
-     *
-     * @param  \Illuminate\Http\Request  $request
-     * @param  string|null  $token
-     * @return \Illuminate\Contracts\View\Factory|\Illuminate\View\View
-     */
-    public function _showResetForm(Request $request, $token = null) {
-        if($token) {
-            return view('auth.passwords.reset')->with(
-                ['token' => $token, 'email' => $request->email]
-            );
-        }
-        else {
-            return view('auth.passwords.email')->with(
-                ['token' => $token, 'email' => $request->email]
-            );
-        }
     }
 
     /**
@@ -66,24 +44,42 @@ class PasswordController extends Controller
      * @param  \Illuminate\Http\Request  $request
      * @param  string|null  $token
      * @return \Illuminate\Contracts\View\Factory|\Illuminate\View\View
+     *
+     * OVERRIDING THIS BECAUSE SOMETHING WRONG W ROUTE, NOT GETTING TOKEN
      */
-    public function showResetForm(Request $request, $token = null)
-    {
+    public function showResetForm(Request $request, $token = null) {
         $data = $request->toArray();
-        //print_r($request->toArray());
 
         if(!$token && count($data) == 1) {
             $keys  = array_keys($data);
             $token = array_shift($keys);
         }
 
-        //var_dump($token);
-        //die;
-
-//        return parent::showResetForm($request, $token);
-
         return view('auth.passwords.reset')->with(
             ['token' => $token, 'email' => $request->email]
         );
+    }
+
+    public function success() {
+        return view('auth.passwords.success');
+    }
+
+    /**
+     * Reset the given user's password.
+     *
+     * @param  \Illuminate\Contracts\Auth\CanResetPassword  $user
+     * @param  string  $password
+     * @return void
+     *
+     * OVERRIDING THIS SO THE USER ISN'T AUTOMATICALLY LOGGED IN
+     */
+    protected function resetPassword($user, $password)
+    {
+        $user->forceFill([
+            'password' => bcrypt($password),
+            'remember_token' => Str::random(60),
+        ])->save();
+
+//        $this->guard()->login($user);
     }
 }
