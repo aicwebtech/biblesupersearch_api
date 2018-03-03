@@ -28,7 +28,7 @@ Route::get('/documentation', 'DocumentationController')->middleware('https');
 //    //return view('welcome2');
 //});
 
-/* Routes for administrative backend */
+/* Routes for (administrative) backend */
 Route::get('/admin', function() {
     if(Auth::check()) {
         return redirect('/admin/main');
@@ -42,14 +42,20 @@ Route::get('/admin/login', function() {
 });
 
 //Route::get('/admin/login', 'Auth\AuthController@getLogin');
-Route::get('/auth/login', function () {
-    return redirect('/admin');
-});
+//Route::get('/auth/login', function () {
+//    return redirect('/admin');
+//});
 
 //Route::post('/auth/login', 'Auth\AuthController@postLogin');
-Route::post('/auth/login', 'Auth\AuthController@login')->name('login');
-Route::get('/auth/logout', 'Auth\AuthController@logout');
-Route::get('/auth/reset', 'Auth\PasswordController@showResetForm')->name('password.request');
+Route::get('/login', 'Auth\AuthController@viewLogin')->name('login');
+Route::post('/login', 'Auth\AuthController@login');
+Route::post('/auth/login', 'Auth\AuthController@login');
+Route::get('/logout', 'Auth\AuthController@logout')->name('logout');
+Route::get('/auth/reset', 'Auth\PasswordController@showLinkRequestForm')->name('password.request');
+//Route::get('/auth/reset', 'Auth\PasswordController@showResetForm')->name('password.request');
+Route::post('/auth/reset', 'Auth\PasswordController@sendResetLinkEmail')->name('password.email');
+Route::get('/auth/change', 'Auth\PasswordController@showResetForm')->name('password.reset');
+Route::post('/auth/change', 'Auth\PasswordController@reset');
 Route::get('/admin/main', 'AdminController@getMain');
 //Route::controller('admin', 'AdminController');
 

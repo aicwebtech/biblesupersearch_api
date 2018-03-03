@@ -22,8 +22,9 @@
                 <form action='/auth/login' method='POST'>
                     <input name='username' class='text' placeholder='Username' /><br />
                     <input name='password' type='password' class='text' placeholder='Password'/><br />
-                    <input type='submit' value='Log In' class='button' />
+                    <input type='submit' value='Log In' class='button' /><br /><br />
                     <?php echo csrf_field() ?>
+                    <a href='<?php echo route('password.request') ?>'>Reset Password</a>
                 </form>
                 <?php require( dirname(__FILE__) . '/../errors/form.php'); ?>
             </div>

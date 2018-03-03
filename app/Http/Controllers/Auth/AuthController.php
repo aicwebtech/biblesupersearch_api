@@ -83,6 +83,9 @@ class AuthController extends Controller
         return 'username';
     }
 
+    public function viewLogin() {
+        return view('admin.login');
+    }
 
     /**
      * Log the user out of the application.
