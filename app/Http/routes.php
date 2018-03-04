@@ -49,8 +49,10 @@ Route::get('/admin/login', function() {
 //Route::post('/auth/login', 'Auth\AuthController@postLogin');
 Route::get('/login', 'Auth\AuthController@viewLogin')->name('login');
 Route::post('/login', 'Auth\AuthController@login');
+Route::get('/auth/login', 'Auth\AuthController@viewLogin');
 Route::post('/auth/login', 'Auth\AuthController@login');
 Route::get('/logout', 'Auth\AuthController@logout')->name('logout');
+Route::get('/landing', 'Auth\AuthController@landing')->name('auth.landing')->middleware('auth');
 Route::get('/auth/reset', 'Auth\PasswordController@showLinkRequestForm')->name('password.request');
 //Route::get('/auth/reset', 'Auth\PasswordController@showResetForm')->name('password.request');
 Route::post('/auth/reset', 'Auth\PasswordController@sendResetLinkEmail')->name('password.email');

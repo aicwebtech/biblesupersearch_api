@@ -30,8 +30,8 @@ class AuthController extends Controller
         AuthenticatesUsers::guard insteadof RegistersUsers;
     }
 
-    protected $redirectTo = '/admin/main';
-    protected $loginPath = '/admin';
+    protected $redirectTo = '/landing';
+    protected $loginPath = '/login';
 
     /**
      * Create a new authentication controller instance.
@@ -40,7 +40,7 @@ class AuthController extends Controller
      */
     public function __construct()
     {
-        $this->middleware('guest', ['except' => 'logout']);
+        $this->middleware('guest', ['except' => ['logout','landing']]);
     }
 
     /**
@@ -81,5 +81,35 @@ class AuthController extends Controller
     public function viewLogin() {
         return view('admin.login');
     }
-    
+
+    /**
+     * Generic landing page for all authenticated users
+     * Will redirect based on user's role
+     */
+    public function landing() {
+//        if(!Auth::check()) {
+//            return redirect($this->loginPath);
+//        }
+
+//        print_r($User->toArray());
+        die('dead');
+    }
+
+    /**
+     * The user has been authenticated.
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @param  mixed  $user
+     * @return mixed
+     */
+    protected function authenticated(Request $request, $user)
+    {
+        //
+
+//        print_r($user->toArray());
+//        die();
+
+        return redirect('/landing');
+    }
+
 }
