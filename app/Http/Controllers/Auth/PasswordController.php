@@ -10,7 +10,7 @@ use Illuminate\Support\Str;
 
 class PasswordController extends Controller
 {
-    protected $redirectTo = '/login';
+    protected $redirectTo = '/auth/success';
 
     /*
     |--------------------------------------------------------------------------

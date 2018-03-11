@@ -7,10 +7,12 @@ use Illuminate\Http\Request;
 use App\Http\Requests;
 use App\Http\Controllers\Controller;
 
+// Controller for views only accessible by Administrative users (access_level >= 100)
+
 class AdminController extends Controller
 {
     public function __construct() {
-        $this->middleware('auth');
+        $this->middleware('auth:100');
     }
 
     /**
@@ -20,8 +22,11 @@ class AdminController extends Controller
      */
     public function getMain()
     {
-        echo('WHAT');
         return view('admin.main');
+    }
+
+    public function todo() {
+        return view('admin.todo');
     }
 
     /**

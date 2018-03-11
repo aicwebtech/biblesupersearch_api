@@ -33,6 +33,8 @@ class AuthController extends Controller
     protected $redirectTo = '/landing';
     protected $loginPath = '/login';
 
+    protected $landing_page = '/landing';
+
     /**
      * Create a new authentication controller instance.
      *
@@ -83,33 +85,39 @@ class AuthController extends Controller
     }
 
     /**
-     * Generic landing page for all authenticated users
+     * Generic landing page accessible by ALL authenticated users
      * Will redirect based on user's role
      */
     public function landing() {
-//        if(!Auth::check()) {
-//            return redirect($this->loginPath);
-//        }
+        if(!Auth::check()) {
+            return redirect($this->loginPath);
+        }
 
-//        print_r($User->toArray());
-        die('dead');
+        return view('auth.landing');
     }
 
     /**
      * The user has been authenticated.
+     * Redirect based on user's role
      *
      * @param  \Illuminate\Http\Request  $request
      * @param  mixed  $user
      * @return mixed
      */
-    protected function authenticated(Request $request, $user)
-    {
-        //
+    protected function authenticated(Request $request, $user) {
+        // print_r($user->toArray());
+        // die();
 
-//        print_r($user->toArray());
-//        die();
+        // Redirect based on user's role
+        if(!$user) {
+            return redirect($this->loginPath);
+        }
 
-        return redirect('/landing');
+        if($user->access_level >= 100) {
+            return redirect('/admin');
+        }
+
+        return redirect($this->landing_page);
     }
 
 }

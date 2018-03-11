@@ -6,6 +6,7 @@ use Illuminate\Bus\Queueable;
 use Illuminate\Notifications\Notification;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Messages\MailMessage;
+use App\User;
 
 
 class CustomPasswordReset extends Notification
@@ -19,15 +20,18 @@ class CustomPasswordReset extends Notification
      */
     public $token;
 
+    protected $User;
+
     /**
      * Create a notification instance.
      *
      * @param  string  $token
      * @return void
      */
-    public function __construct($token)
+    public function __construct(User $User, $token)
     {
         $this->token = $token;
+        $this->User = $User;
     }
 
     /**
@@ -52,7 +56,9 @@ class CustomPasswordReset extends Notification
         return (new MailMessage)
             ->line('You are receiving this email because we received a password reset request for your account.')
             ->action('Reset Password', url(config('app.url').route('password.reset', $this->token, false)))
-            ->line('If you did not request a password reset, no further action is required.');
+            ->line('If you did not request a password reset, no further action is required.')
+            ->greeting('Hello, ' . $this->User->name . ' ( ' . $this->User->username . ' )')
+            ->subject('Bible SuperSearch - Password Reset');
     }
 
       /**

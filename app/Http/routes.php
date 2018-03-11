@@ -20,13 +20,8 @@ Route::get('/', 'DocumentationController')->middleware('https');
 Route::get('/documentation', 'DocumentationController')->middleware('https');
 
 
-
 /* EVERYTHING BELOW IS EXPERIMENTAL, NON-PRODUCTION CODE */
 
-//Route::get('/', function() {
-//    return view('docs.home');
-//    //return view('welcome2');
-//});
 
 /* Routes for (administrative) backend */
 Route::get('/admin', function() {
@@ -59,6 +54,17 @@ Route::post('/auth/reset', 'Auth\PasswordController@sendResetLinkEmail')->name('
 Route::get('/auth/change', 'Auth\PasswordController@showResetForm')->name('password.reset');
 Route::post('/auth/change', 'Auth\PasswordController@reset');
 Route::post('/auth/success', 'Auth\PasswordController@success');
-Route::get('/admin/main', 'AdminController@getMain');
+Route::get('/auth/success', 'Auth\PasswordController@success');
+Route::get('/admin/main', 'AdminController@getMain')->name('admin.main');
+
+Route::get('/admin/bibles/grid', 'Admin\BibleController@grid');
+
+Route::resource('/admin/bibles', 'Admin\BibleController', ['as' => 'admin', 'except' => [
+    'create', 'edit'
+]]);
+
 //Route::controller('admin', 'AdminController');
 
+// todos
+Route::get('/admin/options', 'AdminController@todo')->name('admin.options');
+Route::get('/admin/test', 'AdminController@todo')->name('admin.test');
