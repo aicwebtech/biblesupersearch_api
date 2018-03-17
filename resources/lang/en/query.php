@@ -11,6 +11,18 @@ return array(
         'search1' => 'Search for \'faith\'',
         'search2' => '\'Romans\' searched \'for faith\'',
     ),
+    'navigation' => [
+        'label' => 'Navigation',
+        'browsing' => [
+            'label' => 'Book Browsing',
+            'desc' => 'For multiverse ranges and chapters, this gives the book and chapter metadata for generating browsing buttons.  Only available on'
+            . ' \'passage\' data structures and is not currently provided for single verses. ',
+        ],
+        'pagination' => [
+            'label' => 'Search Pagination',
+            'desc' => 'For all searches, this provides the metadata for building pagination.  (Please note, setting \'page_all\' to true disables all pagination),'
+        ],
+    ],
     'params' => array(
         'reference' => array(
             'type' => 'String',
@@ -93,7 +105,20 @@ return array(
             'type' => 'Integer',
             'name' => 'Page',
             'default' => '1',
-            'description' => 'For search results, the page to show.  Currently, only searches support pagination.',
+            'description' => 'For search results, the page to show.  Currently, only searches support pagination.'
+            . '&nbsp; See <a href="#pagination">details below</a>',
+        ),
+        'context' => array(
+            'type' => 'Boolean',
+            'name' => 'Show in Context',
+            'default' => 'false',
+            'description' => 'For a given single verse, will return the verse with verses around it.',
+        ),
+        'context_range' => array(
+            'type' => 'Integer',
+            'name' => 'Context Range',
+            'default' => config('bss.context.range') . '',
+            'description' => 'Range of verses to pull when \'context\' is true.',
         ),
         'data_format' => array(
             'type' => 'String',
@@ -115,7 +140,8 @@ return array(
                 'book_raw' => 'Book name as entered by user',
                 'chapter_verse' => 'Standardized chapter and verse',
                 'chapter_verse_raw' => 'Chapter and verse as entered by user',
-                'verse_index' => 'A list of all chapters and verses retrieved.'
+                'verse_index' => 'A list of all chapters and verses retrieved.',
+                'nav' => 'Metadata for browsing buttons, see below for details',
             ),
         ),
         'keyword_limit' => array(
