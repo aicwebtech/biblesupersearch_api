@@ -23,6 +23,10 @@
          <?php echo $url ?>/api?bible=kjv&reference=Rom&search=faith
 </a><br /><br />
 
+<h4>
+    Jump to: <a href='#query_structures'>Data Formats</a> &nbsp; <a href='#navigation'>Navigation</a> &nbsp; <a href='#pagination'>Pagination</a>
+</h4>
+
 <?php
 
     $params = array(
@@ -37,6 +41,8 @@
         'highlight_tag',
         'page',
         'page_all',
+        'context',
+        'context_range',
         'search_type',
         'keyword_limit',
         'proximity_limit',
