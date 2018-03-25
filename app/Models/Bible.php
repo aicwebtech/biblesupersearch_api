@@ -154,6 +154,10 @@ class Bible extends Model {
         return static::getModulePath() . $this->module . '.zip';
     }
 
+    public function hasModuleFile() {
+        return is_file($this->getModuleFilePath());
+    }
+
     public static function getExportFields() {
         // Warning: Add new items to the end, do not change the order or existing modules will break
         return array('book', 'chapter', 'verse', 'text', 'italics', 'strongs');

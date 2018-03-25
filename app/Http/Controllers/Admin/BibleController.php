@@ -26,21 +26,25 @@ class BibleController extends Controller
 
     public function grid(Request $request) {
         $data = $request->toArray();
+        $rows = [];
         $rows_per_page = intval($data['rows']);
 
         $Bibles = Bible::orderBy($data['sidx'], $data['sord'])->paginate($rows_per_page);
 
+        foreach($Bibles as $Bible) {
+            $row = $Bible->getAttributes();
+            $row['has_module_file'] = $Bible->hasModuleFile() ? 1 : 0;
+            $rows[] = $row;
+        }
+
         $resp = [
-            'total' => $Bibles->lastPage(),
-            'page'  => $Bibles->currentPage(),
-            'rows'  => $Bibles->items(),
-            'records' => $Bibles->total()
+            'total'     => $Bibles->lastPage(),
+            'page'      => $Bibles->currentPage(),
+            'rows'      => $rows,
+            'records'   => $Bibles->total(),
         ];
 
-//        print_r($Bibles);
-
         return response($resp, 200);
-        return response($Bibles, 200);
     }
 
     /**

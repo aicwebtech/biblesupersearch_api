@@ -51,3 +51,19 @@ body {
     text-align: center;
     padding: 20px;
 }
+
+.ralign {
+    text-align: right;
+}
+
+.config_block {
+    background-color: #b3c8f9;
+    padding: 10px;
+    border-radius: 10px;
+    margin-bottom: 20px;
+}
+
+.config_block h1 {
+    margin: 0;
+    font-size: 1.2em;
+}

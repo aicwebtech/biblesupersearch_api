@@ -4,15 +4,16 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 
-class Config extends Model {
-    public $timestamps = false;
-    protected $table = 'config';
+// Please use ConfigManager to create config items
 
-    public function getValueAttribute($value) {
-        return $value;
+class Config extends Model {
+    public $timestamps = FALSE;
+
+    public function getDefaultAttribute($value) {
+        return \App\ConfigManager::getValueAttribute($value, $this->type);
     }
 
-    public function setValueAttribute($value) {
-        $this->attributes['value'] = $value;
+    public function setDefaultAttribute($value) {
+        $this->attributes['default'] = \App\ConfigManager::setValueAttribute($value, $this->type);
     }
 }

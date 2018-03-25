@@ -2,6 +2,7 @@
     $javascripts = [
         //'/js/bin/jqGrid-v4.6.0/jquery.js',
         '/js/bin/jqGrid-v4.6.0/js/jquery.jqGrid.js',
+        '/js/bin/jqGrid-v4.6.0/js/i18n/grid.locale-en.js',
         '/js/admin/bibles/package.js'
     ];
 
@@ -16,9 +17,6 @@
     <div class='container'>
         <div class='content'>
             <?php echo csrf_field() ?>
-            Bibles go here<br /><br />
-            <a href='<?php echo route('logout') ?>'>Log Out</a>
-
             <table id='grid'></table>
             <div id='grid_footer'></div>
         </div>

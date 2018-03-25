@@ -63,6 +63,10 @@ Route::resource('/admin/bibles', 'Admin\BibleController', ['as' => 'admin', 'exc
     'create', 'edit'
 ]]);
 
+Route::get('/admin/config', 'Admin\ConfigController@index')->name('admin.configs');
+Route::post('/admin/config', 'Admin\ConfigController@store')->name('admin.configs.store');
+Route::delete('/admin/config', 'Admin\ConfigController@destroy')->name('admin.configs.destroy');
+
 //Route::controller('admin', 'AdminController');
 
 // todos

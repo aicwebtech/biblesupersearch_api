@@ -7,17 +7,6 @@ use Illuminate\Foundation\Console\Kernel as ConsoleKernel;
 
 class Kernel extends ConsoleKernel
 {
-    protected $bootstrappers = [
-        \Illuminate\Foundation\Bootstrap\LoadEnvironmentVariables::class,
-        \Illuminate\Foundation\Bootstrap\LoadConfiguration::class,
-//        \App\Http\Bootstrap\LoadConfiguration::class,
-        \Illuminate\Foundation\Bootstrap\HandleExceptions::class,
-        \Illuminate\Foundation\Bootstrap\RegisterFacades::class,
-        \Illuminate\Foundation\Bootstrap\SetRequestForConsole::class,
-        \Illuminate\Foundation\Bootstrap\RegisterProviders::class,
-        \Illuminate\Foundation\Bootstrap\BootProviders::class,
-        \App\Http\Bootstrap\LoadSoftConfiguration::class, // Todo:  Override constructor and push this on to existing bootstrappers array
-    ];
 
     /**
      * The Artisan commands provided by your application.
@@ -51,5 +40,11 @@ class Kernel extends ConsoleKernel
             $CM = new \App\CacheManager();
             $CM->cleanUpCache();
         })->weekly();
+    }
+
+    public function __construct(\Illuminate\Contracts\Foundation\Application $app, \Illuminate\Contracts\Events\Dispatcher $events) {
+        $this->bootstrappers[] = \App\Http\Bootstrap\LoadSoftConfiguration::class;
+
+        parent::__construct($app, $events);
     }
 }
