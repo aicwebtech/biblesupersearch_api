@@ -7,6 +7,17 @@
         ['label' => 'Log Out', 'route' => 'logout'],
     ];
 
+if(!isset($javascripts)) {
+    $javascripts = array();
+}
+else if(!is_array($javascripts)) {
+    $javascripts = array($javascripts);
+}
+
+if(isset($include_enyo) && $include_enyo) {
+    $javascripts[] = '/js/bin/enyo/2.5.1.1/enyo.js';
+}
+
 @endphp
 
 <!DOCTYPE html>
