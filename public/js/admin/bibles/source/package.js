@@ -1,5 +1,5 @@
 enyo.depends(
-    // 'components',
+    'components',
     'view.js',
     'app.js'
 );

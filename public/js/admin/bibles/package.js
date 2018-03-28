@@ -1,4 +1,5 @@
 enyo.depends(
+    '/js/bin/custom/dialog',
     'source',
     'assets/style.css'
 );
