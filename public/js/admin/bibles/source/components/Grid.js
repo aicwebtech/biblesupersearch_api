@@ -6,6 +6,10 @@ enyo.kind({
         {name: 'GridFooter'}
     ],
 
+    events: {
+        onSelectionsChanged: ''
+    },
+
     selectedIds: [],
     gridHandle: null,
     idPrefix: 'bible_',
@@ -27,12 +31,12 @@ enyo.kind({
                     {name: 'has_module_file', index: 'has_module_file', label: 'Has File', width:'140', title: false, sortable: false, formatter: enyo.bind(this, this._formatHasFile)}, // will be sortable when grid is using local data
                     {name: 'lang', index: 'lang', label: 'Language', width:'100'},
                     {name: 'year', index: 'year', label: 'Year', width:'100'},
-
                     {name: 'installed', index: 'installed', label: 'Installed', width:'80', title: false, formatter: enyo.bind(this, this._formatInstalled)},
                     {name: 'enabled', index: 'enabled', label: 'Enabled', width:'80', title: false, formatter: enyo.bind(this, this._formatEnabled)},
                     {name: 'official', index: 'official', label: 'Official', width:'60', title: false, formatter: enyo.bind(this, this._formatSinpleBoolean)},
-                    {name: 'rank', index: 'rank', label: 'Display Order', width:'100', editable: true, edittype: 'text', editoptions: {size:10, maxlength: 15}},
-                    {name: 'actions', index: 'actions', label: '&nbsp', width:'100'},
+                    {name: 'rank', index: 'rank', label: 'Display Order', width:'100'},
+                    {name: 'actions', index: 'actions', label: '&nbsp', width:'100', title: false, formatter: enyo.bind(this, this._formatActions)},
+                    {name: 'id', index: 'id', hidden: true}
                 ],
                 jsonReader: {
                     repeatitems: false,
@@ -46,9 +50,10 @@ enyo.kind({
                 width: 'auto',
                 multiselect: true,
                 rowNum: 15,
-                rowList: [10, 15, 20, 30],
+                rowList: [10, 15, 20, 30, 50, 100],
                 onSelectRow: enyo.bind(this, this._selectRow),
-                onSelectAll: enyo.bind(this, this._selectRow)
+                onSelectAll: enyo.bind(this, this._selectRow),
+                loadComplete: enyo.bind(this, this._loadComplete)
             });
 
             this.gridHandle.navGrid(pagerId, {search: false, edit: false, view: false, del: false, add: false, refresh: true, nav: {
@@ -62,6 +67,9 @@ enyo.kind({
     refreshGrid: function() {
         this.gridHandle && this.gridHandle.trigger('reloadGrid');
     },
+    _loadComplete: function() {
+        this.doSelectionsChanged({length: 0});
+    },
     getRowByPk: function(pk) {
         var id = this.idPrefix + pk.toString();
         return this.getRowById(id);
@@ -70,10 +78,11 @@ enyo.kind({
         return this.gridHandle ? this.gridHandle.jqGrid('getRowData', id) : null;
     },
     _selectRow: function(rowId, status, e) {
-        this.log('rowId', rowId);
-        this.log('status', status);
-        this.log('e', e);
-        this.set('selectedIds', enyo.clone(this.gridHandle.getGridParam('selarrrow')));
+        // this.log('rowId', rowId);
+        // this.log('status', status);
+        // this.log('e', e);
+        // this.set('selectedIds', enyo.clone(this.gridHandle.getGridParam('selarrrow')));
+        this.doSelectionsChanged({length: this.gridHandle.getGridParam('selarrrow').length});
     },
 
     selectedIdsChanged: function(was, is) {
@@ -85,6 +94,12 @@ enyo.kind({
         var propsJson = JSON.stringify(props);
         var url = 'enyo.Signals.send("' + signal + '",' + propsJson + ')';
         return url;
+    },
+
+    __makeSignalLink: function(text, signal, props) {
+        var url = this.__makeSignalUrl(signal, props);
+        var html = "<a href='javascript:" + url + "'>" + text + "</a>";
+        return html;
     },
 
     __setCellColor: function(rowId, cellIndex, color) {
@@ -101,8 +116,7 @@ enyo.kind({
         if(cellvalue == '1' || rowObject.has_module_file == '1') {        
             var action = (cellvalue == '1') ? 'Uninstall' : 'Install';
             var signal = (cellvalue == '1') ? 'onConfirmAction' : 'onBibleInstall';
-
-            var props = (cellvalue == '1') ? {id: options.rowId, action: 'uninstall'} : {id: options.rowId};
+            var props  = (cellvalue == '1') ? {id: options.rowId, action: 'uninstall'} : {id: options.rowId};
             var url = this.__makeSignalUrl(signal, props);
             fmt += " &nbsp; &nbsp;<a href='javascript:" + url + "'>" + action + "</a>";
         }
@@ -139,4 +153,27 @@ enyo.kind({
 
         return fmt;
     },
+    _formatActions: function(cellvalue, options, rowObject) {
+        var props = {id: options.rowId};
+        var html = '';
+        html += this.__makeSignalLink('View Description', 'onViewDescription', props);
+        return html;
+    },
+    getSelectionsWithName: function() {
+        var selArr = enyo.clone(this.gridHandle.getGridParam('selarrrow'));
+        var selections = [];
+        this.log(selArr);
+
+        for(i in selArr) {
+            var data = this.getRowById(selArr[i]);
+            this.log(data);
+
+            selections.push({
+                id: data.id,
+                name: data.name
+            });
+        }
+
+        return selections;
+    }
 });

@@ -33,6 +33,7 @@ class BibleController extends Controller
 
         foreach($Bibles as $Bible) {
             $row = $Bible->getAttributes();
+            unset($row['description']);
             $row['has_module_file'] = $Bible->hasModuleFile() ? 1 : 0;
             $rows[] = $row;
         }

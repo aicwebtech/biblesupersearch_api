@@ -77,6 +77,8 @@ enyo.kind({
         this.set('showing', false);
     },
     open: function() {
+        var dialogClass = (this.title) ? '' : 'dialogNoTitle';
+        this.handle.dialog('option', 'dialogClass', dialogClass);
         this.set('showing', true);
     }
 });
