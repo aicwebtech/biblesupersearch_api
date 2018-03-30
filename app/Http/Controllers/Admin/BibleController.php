@@ -3,7 +3,8 @@
 namespace App\Http\Controllers\Admin;
 
 use Illuminate\Http\Request;
-use Illuminate\Http\Response;
+//use Illuminate\Http\Response;
+use App\Http\Responses\Response;
 use App\Http\Controllers\Controller;
 use App\Models\Bible;
 
@@ -76,10 +77,9 @@ class BibleController extends Controller
     public function show($id) {
         $Bible = Bible::findOrFail($id);
 
-        $resp = [
-            'success' => TRUE,
-            'Bible'   => $Bible->attributesToArray()
-        ];
+        $resp = new \stdClass();
+        $resp->success = TRUE;
+        $resp->Bible   = $Bible->attributesToArray();
 
         return new Response($resp, 200);
     }
@@ -125,12 +125,9 @@ class BibleController extends Controller
             $Bible = new Bible();
         }
 
-
-
-        $resp = [
-            'success' => TRUE,
-            'Bible'   => $Bible->attributesToArray()
-        ];
+        $resp = new \stdClass();
+        $resp->success = TRUE;
+        $resp->Bible   = $Bible->attributesToArray();
 
         return new Response($resp, 200);
     }
@@ -159,6 +156,57 @@ class BibleController extends Controller
         $resp = [
             'success' => TRUE,
         ];
+
+        return new Response($resp, 200);
+    }
+
+    public function install(Request $request, $id) {
+        $Bible = Bible::findOrFail($id);
+        $data  = $request->toArray();
+        $enable = (array_key_exists('enable', $data) && $data['enable']) ? TRUE : FALSE;
+        $Bible->install(FALSE, $enable);
+
+        $resp = new \stdClass();
+        $resp->success = TRUE;
+
+        if($Bible->hasErrors()) {
+            $resp->success = FALSE;
+            $resp->errors  = $Bible->getErrors();
+        }
+
+        return new Response($resp, 200);
+    }
+
+    public function uninstall(Request $request, $id) {
+        $Bible = Bible::findOrFail($id);
+        $Bible->uninstall();
+
+        $resp = new \stdClass();
+        $resp->success = TRUE;
+
+        if($Bible->hasErrors()) {
+            $resp->success = FALSE;
+            $resp->errors  = $Bible->getErrors();
+        }
+
+        return new Response($resp, 200);
+    }
+
+    public function export(Request $request, $id) {
+        $Bible = Bible::findOrFail($id);
+        $data  = $request->toArray();
+        $over  = (array_key_exists('overwrite', $data) && $data['overwrite']) ? TRUE : FALSE;
+//        var_dump($over);
+//        die();
+        $Bible->export($over);
+
+        $resp = new \stdClass();
+        $resp->success = TRUE;
+
+        if($Bible->hasErrors()) {
+            $resp->success = FALSE;
+            $resp->errors  = $Bible->getErrors();
+        }
 
         return new Response($resp, 200);
     }

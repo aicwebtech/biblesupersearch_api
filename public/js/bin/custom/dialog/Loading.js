@@ -1,12 +1,13 @@
 enyo.kind({
     name: 'AICWEBTECH.Enyo.jQuery.Loading',
     kind: 'AICWEBTECH.Enyo.jQuery.Dialog',
-    text: null,
+    text: 'Loading ...',
     autoOpen: true,
     title: null,
 
     components: [
-        {name: 'Alert', allowHtml: true, classes: 'dialogCenterText'}
+        {name: 'Alert', content: 'Loading ...'},
+        {name: 'Img', kind: 'enyo.Image', src: '/images/Spinner.gif', style: 'margin-top: 20px'}
     ],
 
     create: function() {
@@ -17,13 +18,7 @@ enyo.kind({
             width: 'auto',
             modal: true,
             autoOpen: false,
-            buttons: [
-                {
-                    text: 'OK',
-                    icon: 'ui-icon-check',
-                    click: enyo.bind(this, this.close)
-                },            
-            ]
+            closeOnEscape: false
         });
 
         this.$.Alert.set('content', this.text);
@@ -32,9 +27,5 @@ enyo.kind({
     textChanged: function(was, is) {
         this.$.Alert.set('content', is);
         return this;
-    },
-    alert: function(text, callback) {
-        this.set('text', text);
-        this.open();
     }
 });

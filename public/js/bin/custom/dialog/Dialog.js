@@ -5,6 +5,7 @@ enyo.kind({
     published: {
         showing: false,
         title: null,
+        closeable: true,
 
         dialogOptions: {
             height: 'auto',
@@ -29,7 +30,7 @@ enyo.kind({
 
     create: function() {
         this.inherited(arguments);
-        this.dialogOptions.close = enyo.bind(this, this.close);
+        this.dialogOptions.beforeClose = enyo.bind(this, this.close);
 
         this.titleChanged(null, this.title);
     },
@@ -54,8 +55,6 @@ enyo.kind({
         this.dialogOptions.title = is;
         this.dialogOptions.dialogClass = (is) ? '' : 'dialogNoTitle';
 
-        this.log(this.dialogOptions);
-
         if(this.handle) {        
             if(is) {
                 this.handle.dialog('option', 'dialogClass', '');
@@ -75,7 +74,12 @@ enyo.kind({
         }
     },
     close: function() {
+        if(!this.closeable) {
+            // return false;
+        }
+
         this.set('showing', false);
+        return true;
     },
     open: function() {
         var dialogClass = (this.title) ? '' : 'dialogNoTitle';

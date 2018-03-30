@@ -50,6 +50,7 @@ enyo.kind({
             width: 600,
             modal: true,
             autoOpen: false,
+            closeOnEscape: false,
             buttons: [                    
                 {
                     text: 'Ok',
@@ -132,6 +133,11 @@ enyo.kind({
         });
 
         ajax.error(this, function(inSender, inResponse) {
+            this.errors.push({
+                bible: item.name,
+                errors: ['Unknown Error']
+            });
+
             // todo handle errors!
             this.processed.push(item);
             this._incrementTimer();

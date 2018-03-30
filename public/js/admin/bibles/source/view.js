@@ -61,10 +61,13 @@ enyo.kind({
         {name: 'Dialogs', components: [
             {name: 'Alert', kind: 'AICWEBTECH.Enyo.jQuery.Alert'},
             {name: 'Confirm', kind: 'AICWEBTECH.Enyo.jQuery.Confirm'},
+            {name: 'Loading', kind: 'AICWEBTECH.Enyo.jQuery.Loading'},
             {name: 'Install', kind: 'BibleManager.Components.Dialogs.Install'},
             {name: 'Export', kind: 'BibleManager.Components.Dialogs.Export'},
             {name: 'Description', kind: 'BibleManager.Components.Dialogs.Description'},
             {name: 'MultiConfirm', kind: 'BibleManager.Components.Dialogs.MultiConfirm'},
+            {name: 'MultiInstall', kind: 'BibleManager.Components.Dialogs.MultiInstall'},
+            {name: 'MultiExport', kind: 'BibleManager.Components.Dialogs.MultiExport'},
             {name: 'MultiQueue', kind: 'BibleManager.Components.Dialogs.MultiQueue'}
         ]},
         {
@@ -75,6 +78,10 @@ enyo.kind({
             onDoAction: 'doAction', 
             onViewDescription: 'viewDescription'
         }
+    ],
+
+    bindings: [
+        {from: 'app.ajaxLoading', to: '$.Loading.showing'}
     ],
 
     bibleInstall: function(inSender, inEvent) {
@@ -135,6 +142,33 @@ enyo.kind({
         var url = '/admin/bibles/' + action + '/' + id;
         this.log('about to load', url);
         this.log('postData', postData);
+        this.app.set('ajaxLoading', true);
+        postData._token = laravelCsrfToken;
+
+        var ajax = new enyo.Ajax({
+            url: url,
+            method: 'POST',
+            postBody: postData
+        });
+
+        ajax.response(this, function(inSender, inResponse) {
+            if(!inResponse.success) {
+                var msg = 'An Error has occurred';
+                this.app.alert(msg);
+            }
+
+            this.app.set('ajaxLoading', false);
+            this.app.refreshGrid();
+        });
+
+        ajax.error(this, function(inSender, inResponse) {
+            // todo handle errors!
+            this.app.set('ajaxLoading', false);
+            var msg = 'An Error has occurred';
+            this.app.alert(msg);
+        });
+        
+        ajax.go();
     },
     
     multiEnable: function(inSender, inEvent) {
@@ -154,6 +188,14 @@ enyo.kind({
             this.$.Alert.alert('Nothing selected');
             return;
         }
+
+        this.$.MultiInstall.set('items', enyo.clone(this.selections));
+
+        this.$.MultiInstall.confirm(enyo.bind(this, function(confirmed, props) {
+            if(confirmed) {
+                this._multiActionHelper('install', 'Installing', props);
+            }
+        }));
     },    
     multiExport: function(inSender, inEvent) {
         this._processSelections();
@@ -162,6 +204,14 @@ enyo.kind({
             this.$.Alert.alert('Nothing selected');
             return;
         }
+
+        this.$.MultiExport.set('items', enyo.clone(this.selections));
+
+        this.$.MultiExport.confirm(enyo.bind(this, function(confirmed, props) {
+            if(confirmed) {
+                this._multiActionHelper('export', 'Exporting', props);
+            }
+        }));
     }, 
     _confirmMultiAction: function(action, actioning) {
         this._processSelections();
@@ -175,6 +225,7 @@ enyo.kind({
 
         this.$.MultiConfirm.set('items', enyo.clone(this.selections));
         this.$.MultiConfirm.set('action', action);
+        this.$.MultiConfirm.set('title', actioning);
 
         this.$.MultiConfirm.confirm(enyo.bind(this, function(confirmed) {
             if(confirmed) {

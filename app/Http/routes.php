@@ -60,6 +60,9 @@ Route::get('/admin/main', 'AdminController@getMain')->name('admin.main');
 Route::get('/admin/bibles/grid', 'Admin\BibleController@grid');
 Route::post('/admin/bibles/enable/{id}', 'Admin\BibleController@enable');
 Route::post('/admin/bibles/disable/{id}', 'Admin\BibleController@disable');
+Route::post('/admin/bibles/install/{id}', 'Admin\BibleController@install');
+Route::post('/admin/bibles/uninstall/{id}', 'Admin\BibleController@uninstall');
+Route::post('/admin/bibles/export/{id}', 'Admin\BibleController@export');
 
 Route::resource('/admin/bibles', 'Admin\BibleController', ['as' => 'admin', 'except' => [
     'create', 'edit'
