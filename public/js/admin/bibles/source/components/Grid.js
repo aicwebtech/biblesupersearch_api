@@ -162,11 +162,9 @@ enyo.kind({
     getSelectionsWithName: function() {
         var selArr = enyo.clone(this.gridHandle.getGridParam('selarrrow'));
         var selections = [];
-        this.log(selArr);
 
         for(i in selArr) {
             var data = this.getRowById(selArr[i]);
-            this.log(data);
 
             selections.push({
                 id: data.id,

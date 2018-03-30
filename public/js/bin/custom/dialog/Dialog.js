@@ -39,6 +39,7 @@ enyo.kind({
 
         if(this.hasNode() && this.handle == null) {
             this.handle = $(this.hasNode()).dialog(this.dialogOptions);
+            this.titleChanged(null, this.title);
 
             if(this.showing) {
                 this.handle.dialog('open');

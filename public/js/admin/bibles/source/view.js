@@ -11,11 +11,46 @@ enyo.kind({
         {name: 'BulkActionsContainer', classes: 'buik_actions_container', components: [
             {name: 'BulkActions', style: 'float: left', showing: false, components: [
                 {tag: 'span', content: 'With Selected: '},
-                {tag: 'button', classes: 'button bulk', content: 'Install', ontap: 'multiInstall', action: 'install', actioning: 'Installing'},
-                {tag: 'button', classes: 'button bulk', content: 'Uninstall', ontap: 'multiUninstall', action: 'uninstall', actioning: 'Uninstalling'},
-                {tag: 'button', classes: 'button bulk', content: 'Enable', ontap: 'multiEnable', action: 'enable', actioning: 'Enabling'},
-                {tag: 'button', classes: 'button bulk', content: 'Disable', ontap: 'multiDisable', action: 'disable', actioning: 'Disabling'},
-                {tag: 'button', classes: 'button bulk', content: 'Export Module File', ontap: 'multiExport', action: 'export', actioning: 'Exporting'},
+                {
+                    tag: 'button', 
+                    classes: 'button bulk', 
+                    content: 'Install', 
+                    ontap: 'multiInstall', 
+                    action: 'install', 
+                    actioning: 'Installing'
+                },
+                {
+                    tag: 'button', 
+                    classes: 'button bulk', 
+                    content: 'Uninstall', 
+                    ontap: 'multiUninstall', 
+                    action: 'uninstall', 
+                    actioning: 'Uninstalling'
+                },
+                {
+                    tag: 'button', 
+                    classes: 'button bulk', 
+                    content: 'Enable', 
+                    ontap: 'multiEnable',
+                    action: 'enable', 
+                    actioning: 'Enabling'
+                },
+                {
+                    tag: 'button', 
+                    classes: 'button bulk', 
+                    content: 'Disable', 
+                    ontap: 'multiDisable', 
+                    action: 'disable', 
+                    actioning: 'Disabling'
+                },
+                {
+                    tag: 'button', 
+                    classes: 'button bulk', 
+                    content: 'Export Module File', 
+                    ontap: 'multiExport', 
+                    action: 'export', 
+                    actioning: 'Exporting'
+                },
             ]},
             {name: 'SortOptions', style: 'float: right', components: [
                 {tag: 'button', classes: 'button bulk', content: 'Auto Sort'},
@@ -28,7 +63,9 @@ enyo.kind({
             {name: 'Confirm', kind: 'AICWEBTECH.Enyo.jQuery.Confirm'},
             {name: 'Install', kind: 'BibleManager.Components.Dialogs.Install'},
             {name: 'Export', kind: 'BibleManager.Components.Dialogs.Export'},
-            {name: 'Description', kind: 'BibleManager.Components.Dialogs.Description'}
+            {name: 'Description', kind: 'BibleManager.Components.Dialogs.Description'},
+            {name: 'MultiConfirm', kind: 'BibleManager.Components.Dialogs.MultiConfirm'},
+            {name: 'MultiQueue', kind: 'BibleManager.Components.Dialogs.MultiQueue'}
         ]},
         {
             kind: 'enyo.Signals', 
@@ -136,11 +173,23 @@ enyo.kind({
             return;
         }
 
-        this.log('selections', this.selections);
+        this.$.MultiConfirm.set('items', enyo.clone(this.selections));
+        this.$.MultiConfirm.set('action', action);
+
+        this.$.MultiConfirm.confirm(enyo.bind(this, function(confirmed) {
+            if(confirmed) {
+                this._multiActionHelper(action, actioning, {});
+            }
+        }));
     },
 
     _multiActionHelper: function(action, actioning, postData) {
-
+        this.log(action, actioning, postData);
+        this.$.MultiQueue.set('action', action);
+        this.$.MultiQueue.set('actioning', actioning);
+        this.$.MultiQueue.set('postData', enyo.clone(postData));
+        this.$.MultiQueue.set('queue', enyo.clone(this.selections));
+        this.$.MultiQueue.open();
     },
 
     _processSelections: function() {

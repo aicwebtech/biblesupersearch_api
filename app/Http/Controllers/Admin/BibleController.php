@@ -134,4 +134,32 @@ class BibleController extends Controller
 
         return new Response($resp, 200);
     }
+
+    public function enable(Request $request, $id) {
+        $Bible = Bible::findOrFail($id);
+        $Bible->enabled = 1;
+        $Bible->save();
+
+        $resp = [
+            'success' => ($Bible->enabled) ? TRUE : FALSE,
+        ];
+
+        if(!$Bible->enabled) {
+            $resp['errors'] = ['Cannot enable, Bible is not installed.'];
+        }
+
+        return new Response($resp, 200);
+    }
+
+    public function disable(Request $request, $id) {
+        $Bible = Bible::findOrFail($id);
+        $Bible->enabled = 0;
+        $Bible->save();
+
+        $resp = [
+            'success' => TRUE,
+        ];
+
+        return new Response($resp, 200);
+    }
 }

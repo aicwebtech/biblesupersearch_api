@@ -58,6 +58,8 @@ Route::get('/auth/success', 'Auth\PasswordController@success');
 Route::get('/admin/main', 'AdminController@getMain')->name('admin.main');
 
 Route::get('/admin/bibles/grid', 'Admin\BibleController@grid');
+Route::post('/admin/bibles/enable/{id}', 'Admin\BibleController@enable');
+Route::post('/admin/bibles/disable/{id}', 'Admin\BibleController@disable');
 
 Route::resource('/admin/bibles', 'Admin\BibleController', ['as' => 'admin', 'except' => [
     'create', 'edit'

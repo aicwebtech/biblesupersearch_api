@@ -49,6 +49,9 @@ if(isset($include_enyo) && $include_enyo) {
         @endforeach
         @endif
 
+        <script>
+            var laravelCsrfToken = '{{ csrf_token() }}';
+        </script>
         <title>{{ config('app.name', 'Laravel') }} - Manager</title>
     </head>
     <body>
