@@ -1,5 +1,6 @@
 body {
     background-color: #a4adbc;
+    font-family: sans-serif;
 }
 
 #top_menu {
@@ -21,9 +22,9 @@ body {
 #top_menu .menu_item, #top_menu .menu_item:visited {
     display: inline-block;
     font-family: sans-serif;
-    margin: 0 10px;
+    margin: 0 6px;
     padding: 8px;
-    border-radius: 6px;
+    border-radius: 10px;
     background-color: #6f94f2;
     color: white;
     text-decoration: none;
@@ -66,4 +67,8 @@ body {
 .config_block h1 {
     margin: 0;
     font-size: 1.2em;
+}
+
+title.h1 {
+    font-family: sans-serif;
 }

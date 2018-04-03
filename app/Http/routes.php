@@ -64,6 +64,11 @@ Route::post('/admin/bibles/install/{id}', 'Admin\BibleController@install');
 Route::post('/admin/bibles/uninstall/{id}', 'Admin\BibleController@uninstall');
 Route::post('/admin/bibles/export/{id}', 'Admin\BibleController@export');
 
+Route::get('/admin/tos', 'Admin\PostConfigController@tos')->name('admin.tos');
+Route::post('/admin/tos', 'Admin\PostConfigController@saveTos');
+Route::get('/admin/privacy', 'Admin\PostConfigController@privacy')->name('admin.privacy');
+Route::post('/admin/privacy', 'Admin\PostConfigController@savePrivacy');
+
 Route::resource('/admin/bibles', 'Admin\BibleController', ['as' => 'admin', 'except' => [
     'create', 'edit'
 ]]);
