@@ -61,14 +61,51 @@ body {
     background-color: #b3c8f9;
     padding: 10px;
     border-radius: 10px;
-    margin-bottom: 20px;
+    width: 600px;
+    margin: 0 auto 20px;
 }
 
 .config_block h1 {
-    margin: 0;
+    margin: 0 0 10px;
     font-size: 1.2em;
+}
+
+.config_block td {
+    padding: 3px;
 }
 
 title.h1 {
     font-family: sans-serif;
+}
+
+.info:hover {
+    position: relative;
+}
+
+.info span {
+    display: inline-block;
+    width: 10px;
+    height: 10px;
+    border-radius: 20px;
+    padding: 1px;
+    border: 1px solid black;
+    font-size: 10px;
+    background-color: yellow;
+    text-align: center;
+    cursor: pointer;
+}
+
+.info p {
+    display: none;
+}
+
+.info:hover p {
+    display: block;
+    position: absolute;
+    border: 1px solid red;
+    width:  400px;
+    background-color: white;
+    font-size: .9em;
+    padding: 10px;
+    text-align: justify;
 }
