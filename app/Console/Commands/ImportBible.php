@@ -134,7 +134,7 @@ abstract class ImportBible extends Command {
 
         print PHP_EOL;
         print 'Bibles ready for Import: ' . PHP_EOL;
-        print $tab . '(Note: Bible files must be in <biblesupersearch dir>/bibles/' . $this->import_dir . ')' . PHP_EOL;
+        print $tab . '(Note: Bible files for this specific importer must be in <biblesupersearch dir>/bibles/' . $this->import_dir . ')' . PHP_EOL;
         print PHP_EOL;
 
         foreach($list as $item) {

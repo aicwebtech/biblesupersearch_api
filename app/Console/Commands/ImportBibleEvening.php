@@ -3,7 +3,7 @@
 namespace App\Console\Commands;
 
 use Illuminate\Console\Command;
-use App\Importers\Analyzer as Importer;
+use App\Importers\Evening as Importer;
 
 class ImportBibleEvening extends ImportBible {
     /**

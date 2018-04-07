@@ -348,8 +348,10 @@ class SqlSearch {
 
         $pre  = ($has_st_pct) ? '' : '[[:<:]]';
         $post = ($has_en_pct) ? '' : '[[:>:]]';
-        $regexp_term = ($is_phrase) ? $term : str_replace('%', '.*', trim($term, '%'));
-        $regexp_term = $pre . trim($term, '%') . $post;
+        $phrase_whitespace = ' ';
+//        $phrase_whitespace = '.*';
+        $regexp_term = ($is_phrase) ? str_replace(' ', $phrase_whitespace, $term) : str_replace('%', '.*', trim($term, '%'));
+        $regexp_term = $pre . trim($regexp_term, '%') . $post;
 
         if($primary_only) {
             return $regexp_term;

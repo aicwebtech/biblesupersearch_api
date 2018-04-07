@@ -49,6 +49,10 @@ class Bible extends Model {
      * Each Bible record points to an entire DB table
      */
     public function verses($force = FALSE) {
+        if(!$this->module) {
+            throw new \Exception('Module required on Bible model to access verses model');
+        }
+
         if (!$this->Verses || $force) {
             $attributes = $this->getAttributes();
             $class_name = self::getVerseClassNameByModule($this->module);
