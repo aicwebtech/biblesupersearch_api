@@ -15,6 +15,11 @@ use \DB; //Todo - something is wrong with namespaces here, shouldn't this be aut
 /**
  * Imports Bibles in the Bible Analyzer .bib (SQLite) format
  *
+ * Incoming meta:
+ *  <i>, </i> - italics
+ *  <r>, </r> - red letter
+ *  <fn>, </fn> - footnote (remove)
+ *  [,] - strongs
  */
 
 class Analyzer extends ImporterAbstract {

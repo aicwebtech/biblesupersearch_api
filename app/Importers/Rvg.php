@@ -4,10 +4,16 @@ namespace App\Importers;
 use App\Models\Bible;
 use \DB; //Todo - something is wrong with namespaces here, shouldn't this be automatically avaliable??
 
-// New RVG importer
-//
-//Markup is as follows:
-//
+/*
+ * New RVG importer
+ *
+ * Incoming markup / meta is as follows:
+ *  [,] - italics
+ *  <,> - red letter
+ *  «,» - Chapter titles in Psalms
+ *
+ */
+
 //[brackets] are for Italicized words
 //
 //<brackets> are for the Words of Christ in Red

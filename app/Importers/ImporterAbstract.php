@@ -64,6 +64,17 @@ abstract class ImporterAbstract {
         $verse   = intval($verse);
         $text    = trim($text);
 
+        /*
+         * Items that need to be mapped (for each import type):
+         *
+         * Italics
+         * Strongs #
+         * Red letter
+         * Paragraph
+         * Psalm titles (future?)
+         * Pauline postscripts (future?)
+         */
+
         $binddata = array(
             'book'             => $book,
             'chapter'          => $chapter,
@@ -86,6 +97,6 @@ abstract class ImporterAbstract {
     }
 
     protected function _processBibleAttributes($attr) {
-        
+
     }
 }

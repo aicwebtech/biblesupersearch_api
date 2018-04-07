@@ -14,6 +14,10 @@ use \DB; //Todo - something is wrong with namespaces here, shouldn't this be aut
 
 /**
  * Imports Bibles in the eveningdew format
+ *
+ *  *Incoming meta:
+ *  [,] - italics
+ *  {,} - strongs
  */
 
 class Evening extends ImporterAbstract {
