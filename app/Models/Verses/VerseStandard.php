@@ -281,9 +281,7 @@ class VerseStandard extends VerseAbstract {
         $del    = ($info['delimiter']) ? $info['delimiter'] : '|';
         $fields = ($info['fields']) ? $info['fields'] : ["book","chapter","verse","text","italics","strongs"];
         $verses = preg_split("/\\r\\n|\\r|\\n/", $verses);
-        //return TRUE;
         $table = $this->getTable();
-
         $insertable = array();
 
         foreach($verses as $verse) {
@@ -299,10 +297,16 @@ class VerseStandard extends VerseAbstract {
             }
 
             $map['chapter_verse'] = $map['chapter'] * 1000 + $map['verse'];
+            $insertable[] = $map;
 
-            DB::table($table)->insert($map);
+            // Chunk size of 100 has proven to be the most efficient
+            if(count($insertable) >= 100) {
+                DB::table($table)->insert($insertable);
+                $insertable = [];
+            }
         }
 
+        DB::table($table)->insert($insertable); // Finish inserting data
         return TRUE;
     }
 
