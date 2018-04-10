@@ -23,6 +23,13 @@ use \DB; //Todo - something is wrong with namespaces here, shouldn't this be aut
 class Rvg extends ImporterAbstract {
     protected $required = ['module', 'lang', 'lang_short']; // Array of required fields
 
+    protected $italics_st = '[';
+    protected $italics_en = ']';
+    protected $redletter_st = '<';
+    protected $redletter_en = '>';
+    protected $strongs_st = NULL;
+    protected $strongs_en = NULL;
+
     public function import() {
         ini_set("memory_limit", "500M");
 
@@ -86,18 +93,9 @@ class Rvg extends ImporterAbstract {
 
             // <> indicate red letter. Removing for now as it will screw up display in HTML
             $text = str_replace(array('<', '>'), '', $text);
-
-            $binddata = array(
-                'book'             => $mapped->book,
-                'chapter'          => $mapped->chapter,
-                'verse'            => $mapped->verse,
-                'chapter_verse'    => $mapped->chapter * 1000 + $mapped->verse,
-                'text'             => $text,
-            );
-
-            //$Verses->forceCreate($binddata);
-            DB::table($table)->insert($binddata);
+            $this->_addVerse($mapped->book, $mapped->chapter, $mapped->verse, $text);
         }
 
+        $this->_insertVerses();
     }
 }

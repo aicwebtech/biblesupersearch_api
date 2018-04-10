@@ -23,6 +23,13 @@ use \DB; //Todo - something is wrong with namespaces here, shouldn't this be aut
 class Evening extends ImporterAbstract {
     protected $required = ['module', 'lang', 'lang_short']; // Array of required fields
 
+    protected $italics_st = '[';
+    protected $italics_en = ']';
+    protected $redletter_st = NULL;
+    protected $redletter_en = NULL;
+    protected $strongs_st = '{';
+    protected $strongs_en = '}';
+
     public function import() {
         ini_set("memory_limit", "50M");
 
@@ -98,7 +105,7 @@ class Evening extends ImporterAbstract {
             $stop  = 100;
             $chap  = 0;
 
-            foreach($file as $line){
+            foreach($file as $line) {
                 if(substr($line,0,7) == "Chapter"){
                     $chap += 1;
                 }
@@ -110,7 +117,6 @@ class Evening extends ImporterAbstract {
                         $text  = substr($line, $sp);
                         //$text = str_replace("'", "\'", $text);
                         //$text=str_replace("  ", " ", $text);
-                        $text = trim($text);
                         $this->_addVerse($bnum, $chap, $verse, $text);
                     }
                 }
@@ -121,6 +127,8 @@ class Evening extends ImporterAbstract {
                     break;
                 }
             }
+
+            $this->_insertVerses();
         }
     }
 

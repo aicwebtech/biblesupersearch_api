@@ -366,7 +366,7 @@ class SqlSearch {
         $phrase_whitespace = ' ';
         $phrase_whitespace = '[[:>:]]\s|(\{.*\})[[:<:]]';
         $phrase_whitespace = '([^a-fi-zA-FI-Z]+)';  // General approximation (fails open - may pull MORE results than it should)
-        $phrase_whitespace = "\]?[ {]([^a-fi-zA-FI-Z]*)"; // This prefered whitespace separator works in navicat but not in this software?
+        // $phrase_whitespace = "\]?[ {]([^a-fi-zA-FI-Z]*)"; // This prefered whitespace separator works in navicat but not in this software?
         $regexp_term = ($is_phrase) ? str_replace(' ', $phrase_whitespace, $term) : str_replace('%', '.*', trim($term, '%'));
         $regexp_term = $pre . trim($regexp_term, '%') . $post;
 

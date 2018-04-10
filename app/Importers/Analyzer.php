@@ -25,6 +25,13 @@ use \DB; //Todo - something is wrong with namespaces here, shouldn't this be aut
 class Analyzer extends ImporterAbstract {
     protected $required = ['module', 'lang', 'lang_short']; // Array of required fields
 
+    protected $italics_st = '<i>';
+    protected $italics_en = '</i>';
+    protected $redletter_st = '<r>';
+    protected $redletter_en = '</r>';
+    protected $strongs_st = '[';
+    protected $strongs_en = ']';
+
     public function import() {
         ini_set("memory_limit", "50M");
 
@@ -117,15 +124,8 @@ class Analyzer extends ImporterAbstract {
                 continue;
             }
 
-            $binddata = array(
-                'book'             => $book,
-                'chapter'          => $chapter,
-                'verse'            => $verse,
-                'chapter_verse'    => $chapter * 1000 + $verse,
-                'text'             => $text,
-            );
+            $this->_addVerse($book, $chapter, $verse, $text);
 
-            DB::table($table)->insert($binddata);
             $i++;
 
             if($i > 100) {
@@ -133,6 +133,6 @@ class Analyzer extends ImporterAbstract {
             }
         }
 
-
+        $this->_insertVerses();
     }
 }
