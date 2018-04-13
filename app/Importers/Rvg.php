@@ -23,12 +23,13 @@ use \DB; //Todo - something is wrong with namespaces here, shouldn't this be aut
 class Rvg extends ImporterAbstract {
     protected $required = ['module', 'lang', 'lang_short']; // Array of required fields
 
-    protected $italics_st = '[';
-    protected $italics_en = ']';
+    protected $italics_st   = '[';
+    protected $italics_en   = ']';
     protected $redletter_st = '<';
     protected $redletter_en = '>';
-    protected $strongs_st = NULL;
-    protected $strongs_en = NULL;
+    protected $strongs_st   = NULL;
+    protected $strongs_en   = NULL;
+    protected $paragraph    = NULL;
 
     public function import() {
         ini_set("memory_limit", "500M");
@@ -92,7 +93,7 @@ class Rvg extends ImporterAbstract {
             $mapped = $map[$key];
 
             // <> indicate red letter. Removing for now as it will screw up display in HTML
-            $text = str_replace(array('<', '>'), '', $text);
+            // $text = str_replace(array('<', '>'), '', $text);
             $this->_addVerse($mapped->book, $mapped->chapter, $mapped->verse, $text);
         }
 

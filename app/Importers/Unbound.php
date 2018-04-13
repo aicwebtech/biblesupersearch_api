@@ -36,12 +36,13 @@ use \DB; //Todo - something is wrong with namespaces here, shouldn't this be aut
 class Unbound extends ImporterAbstract {
     protected $required = ['module', 'lang', 'lang_short']; // Array of required fields
 
-    protected $italics_st = '[';
-    protected $italics_en = ']';
+    protected $italics_st   = '[';
+    protected $italics_en   = ']';
     protected $redletter_st = NULL;
     protected $redletter_en = NULL;
-    protected $strongs_st = NULL;
-    protected $strongs_en = NULL;
+    protected $strongs_st   = NULL;
+    protected $strongs_en   = NULL;
+    protected $paragraph    = '¶ ';
 
     public function import() {
         ini_set("memory_limit", "50M");

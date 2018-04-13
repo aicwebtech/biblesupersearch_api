@@ -24,8 +24,7 @@ abstract class ImportBible extends Command {
 
     protected $hints = array(
         'lang' => [
-            'English', 'Spanish', 'Chinese', 'Arabic', 'Hindi', 'French', 'Portuguese', 'Russian', 'German', 'Bengali', 'Malay', 'Urdo', 'Italian',
-            'Greek', 'Hebrew',
+            'English', 'Spanish', 'Chinese', 'Arabic', 'German', 'Greek', 'Hebrew', 'Hindi', 'French', 'Portuguese', 'Russian', 'Bengali', 'Malay', 'Urdo', 'Italian',
         ],
         'lang_short' => ['en', 'es', 'zh', 'ar', 'de', 'el', 'he', 'hi', 'fi','fr','bn', 'it', 'ru', 'ms', 'ur']
     );
@@ -65,6 +64,7 @@ abstract class ImportBible extends Command {
         $module     = $this->option('module');
         $overwrite  = $this->option('overwrite');
         $attributes = array();
+        $autopopulate   = FALSE;
 
         if($this->option('list')) {
             return $this->_displayFileList();
@@ -94,24 +94,34 @@ abstract class ImportBible extends Command {
             if(!$overwrite) {
                 return;
             }
+
+            $autopopulate = $this->confirm('Use existing Bible attributes? [y|N]');
         }
 
         foreach($this->options as $option) {
             $attributes[$option] = $this->option($option);
         }
 
-        foreach($this->ask as $field => $question) {
-            if(empty($attributes[$field])) {
-                if(isset($this->hints[$field])) {
-                    $attributes[$field] = $this->anticipate($question, $this->hints[$field]);
-                }
-                else {
-                    $attributes[$field] = $this->ask($question);
+        if(!$autopopulate) {
+            foreach($this->ask as $field => $question) {
+                if(empty($attributes[$field])) {
+                    if(isset($this->hints[$field])) {
+                        $attributes[$field] = $this->anticipate($question, $this->hints[$field]);
+                    }
+                    else {
+                        $attributes[$field] = $this->ask($question);
+                    }
                 }
             }
+
+//            $lang_pos = array_search($attributes['lang'], $this->hints['lang']);
+//
+//            if($lang_pos !== FALSE) {
+//                $attributes['lang_short'] = $this->hints['lang_short'][$lang_pos];
+//            }
         }
 
-        $Importer->setProperties($file, $module, $overwrite, $attributes);
+        $Importer->setProperties($file, $module, $overwrite, $attributes, $autopopulate);
 
         // Settings errors check
         if(!$this->_handleErrors($Importer)) {

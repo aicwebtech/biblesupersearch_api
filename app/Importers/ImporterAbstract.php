@@ -25,6 +25,7 @@ abstract class ImporterAbstract {
     protected $file;
     protected $module;
     protected $overwrite = FALSE;
+    protected $save_bible = TRUE;
     protected $_existing = FALSE;
     protected $_table = NULL;
 
@@ -34,12 +35,16 @@ abstract class ImporterAbstract {
     protected $_insert_threshold = 200;
 
     // Formats for incoming markup
-    protected $italics_st = '[';
-    protected $italics_en = ']';
+    protected $italics_st   = '[';
+    protected $italics_en   = ']';
     protected $redletter_st = '<';
     protected $redletter_en = '>';
-    protected $strongs_st = '{';
-    protected $strongs_en = '}';
+    protected $paragraph    = '¶ ';
+    protected $strongs_st   = '{';
+    protected $strongs_en   = '}';
+
+    // What do do whith Strongs numbers in parentheses: retain, trim, discard
+    protected $strongs_parentheses = 'retain';
 
     public function __construct() {
 
@@ -55,24 +60,29 @@ abstract class ImporterAbstract {
         $this->file = $file;
     }
 
-    public function setProperties($file, $module, $overwrite, $attributes) {
+    public function setProperties($file, $module, $overwrite, $attributes, $autopopulate) {
         $this->file      = $file;
         $this->module    = $module;
         $this->overwrite = ($overwrite) ? TRUE : FALSE;
+        $this->save_bible = (!$overwrite || !$autopopulate) ? TRUE : FALSE;
 
-        $attributes['module']       = $module;
-        $attributes['shortname']    = (!empty($attributes['shortname']))    ? $attributes['shortname'] : $module;
-        //$attributes['name']         = (!empty($attributes['name']))         ? $attributes['name'] : $attributes['shortname'];
-        $attributes['lang']         = (!empty($attributes['lang']))         ? $attributes['lang'] : NULL;
-        $attributes['lang_short']   = (!empty($attributes['lang_short']))   ? $attributes['lang_short'] : NULL;
+        if(!($overwrite && $autopopulate)) {
+            $attributes['module']       = $module;
+            $attributes['shortname']    = (!empty($attributes['shortname']))    ? $attributes['shortname'] : $module;
+            //$attributes['name']         = (!empty($attributes['name']))         ? $attributes['name'] : $attributes['shortname'];
+            $attributes['lang']         = (!empty($attributes['lang']))         ? $attributes['lang'] : NULL;
+            $attributes['lang_short']   = (!empty($attributes['lang_short']))   ? $attributes['lang_short'] : NULL;
+            $attributes['rank'] = 9999;
+        }
 
-        foreach($this->required as $item) {
-            if(empty($attributes[$item])) {
-                $this->addError($item . ' is required', 4);
+        if(!($overwrite && $autopopulate)) {
+            foreach($this->required as $item) {
+                if(empty($attributes[$item])) {
+                    $this->addError($item . ' is required', 4);
+                }
             }
         }
 
-        $attributes['rank'] = 9999;
         $this->bible_attributes = $attributes;
         return ($this->has_errors) ? FALSE : TRUE;
     }
@@ -81,18 +91,18 @@ abstract class ImporterAbstract {
         $book    = intval($book);
         $chapter = intval($chapter);
         $verse   = intval($verse);
-        $text    = $this->_formatText($text);
+
+        // Text formatting
+        $text    = $this->_preFormatText($text);
         $text    = $this->_formatItalics($text);
         $text    = $this->_formatStrongs($text);
         $text    = $this->_formatRedLetter($text);
-
-        // SHOULD PARAGRAPH MARKER BE PART OF THE TEXT?
         $text    = $this->_formatParagraph($text);
+        $text    = $this->_postFormatText($text);
 
         /*
-         * Items that need to be mapped (for each import type):
+         * Items that still need to be mapped (for each import type):
          *
-         * Paragraph
          * Psalm titles (future?)
          * Pauline postscripts (future?)
          */
@@ -105,8 +115,6 @@ abstract class ImporterAbstract {
             'text'             => $text,
         );
 
-//        die('bacon');
-
         if(count($this->_insertable) > $this->_insert_threshold) {
             $this->_insertVerses();
         }
@@ -117,44 +125,61 @@ abstract class ImporterAbstract {
         $this->_insertable = [];
     }
 
-    protected function _formatText($text) {
+    protected function _preFormatText($text) {
         return trim($text);
     }
 
+    protected function _postFormatText($text) {
+        return preg_replace('/\s+/', ' ', $text);
+    }
+
     protected function _formatStrongs($text) {
+        if(!$this->strongs_st || !$this->strongs_en) {
+            return $text;
+        }
+
         $find = [$this->strongs_st, $this->strongs_en];
         $rep  = ['{', '}'];
         $text = $this->_replaceTagsIfNeeded($find, $rep, $text);
 
-        $text = preg_replace_callback('/\{[^\}]+\}/', function($matches) {
-//            var_dump($matches[0]);
-            $st_numbers = [];
-//            die();
+        $parentheses = $this->strongs_parentheses;
+        $subpattern  = ($parentheses == 'trim') ? '/[GHgh][0-9]+/' : '/\(?[GHgh][0-9]+\)?/';
 
-            preg_match_all('/[GHgh][0-9]+/', $matches[0], $submatches);
-//            var_dump($submatches);
+        $text = preg_replace_callback('/\{[^\}]+\}/', function($matches) use ($subpattern, $parentheses) {
+            $st_numbers = [];
+            preg_match_all($subpattern, $matches[0], $submatches);
 
             foreach($submatches as $smatch) {
+                if($parentheses == 'discard' && $smatch[0]{0} == '(') {
+                    continue;
+                }
+
                 $st_numbers[] = '{' . $smatch[0] . '}';
             }
 
-//            var_dump($st_numbers);
             return implode(' ', $st_numbers);
-
         }, $text);
 
         return $text;
     }
 
     protected function _formatItalics($text) {
-        return $text;
+        $find = [$this->italics_st, $this->italics_en];
+        $rep  = ['[', ']'];
+        return $this->_replaceTagsIfNeeded($find, $rep, $text);
     }
 
     protected function _formatRedLetter($text) {
-        return $text;
+        $find = [$this->redletter_st, $this->redletter_en];
+        $rep  = ['<', '>'];
+        return $this->_replaceTagsIfNeeded($find, $rep, $text);
     }
 
     protected function _formatParagraph($text) {
+        if($this->paragraph && $this->paragraph != '¶ ') {
+            return str_replace($this->paragraph, '¶ ', $text);
+        }
+
         return $text;
     }
 
@@ -168,7 +193,7 @@ abstract class ImporterAbstract {
 
     protected function _getBible($module) {
         $Bible  = Bible::findByModule($module);
-        $this->_existing = ($Bible) ? TRUE   : FALSE;
+        $this->_existing = ($Bible) ? TRUE : FALSE;
         $Bible  = ($Bible) ? $Bible : new Bible;
         $Bible->module = $module;
         $Verses = $Bible->verses();
@@ -178,5 +203,13 @@ abstract class ImporterAbstract {
 
     protected function _processBibleAttributes($attr) {
 
+    }
+
+    public function __get($name) {
+        $gettable = ['required'];
+
+        if(in_array($name, $gettable)) {
+            return $this->$name;
+        }
     }
 }

@@ -25,12 +25,13 @@ use \DB; //Todo - something is wrong with namespaces here, shouldn't this be aut
 class Analyzer extends ImporterAbstract {
     protected $required = ['module', 'lang', 'lang_short']; // Array of required fields
 
-    protected $italics_st = '<i>';
-    protected $italics_en = '</i>';
+    protected $italics_st   = '<i>';
+    protected $italics_en   = '</i>';
     protected $redletter_st = '<r>';
     protected $redletter_en = '</r>';
-    protected $strongs_st = '[';
-    protected $strongs_en = ']';
+    protected $strongs_st   = '[';
+    protected $strongs_en   = ']';
+    protected $paragraph    = '¶ ';
 
     public function import() {
         ini_set("memory_limit", "50M");
@@ -48,9 +49,8 @@ class Analyzer extends ImporterAbstract {
         $insert_into_bible_table    = TRUE; // Inserts (or updates) the record in the Bible versions table
         $overwrite_existing         = $this->overwrite;
 
-        $Bible    = Bible::findByModule($module);
-        $existing = ($Bible) ? TRUE   : FALSE;
-        $Bible    = ($Bible) ? $Bible : new Bible;
+        $Bible    = $this->_getBible($module);
+        $existing = $this->_existing;
         $filepath = $dir . $file;
 
         if(!$overwrite_existing && $existing) {
