@@ -25,6 +25,7 @@ class Kernel extends ConsoleKernel
         Commands\UninstallBible::class,
         Commands\GenerateModule::class,
         Commands\BibleRefresh::class,
+        Commands\TempMigrateStrongs::class,
     ];
 
     /**

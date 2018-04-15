@@ -418,6 +418,28 @@ class Engine {
         return $response;
     }
 
+    public function actionStrongs($input) {
+        $response = [];
+        $strongs = explode(' ', strip_tags(trim($input['strongs'])));
+
+        foreach($strongs as $num) {
+            if(preg_match('/[GHgh][0-9]+/', $num, $matches)) {
+                $clean = $matches[0];
+
+                $Def = \App\Models\StrongsDefinition::where('number', $clean)->first();
+
+                if(!$Def) {
+                    $this->addError('Strong\s Number ' . $clean . ' not found');
+                }
+                else {
+                    $response[] = $Def->toArray();
+                }
+            }
+        }
+
+        return $response;
+    }
+
     public function actionReadcache($input) {
         if(!array_key_exists('hash', $input)) {
             $this->addError('hash is required', 4);
