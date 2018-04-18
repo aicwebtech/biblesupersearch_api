@@ -3,6 +3,7 @@
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Database\Migrations\Migration;
+use App\Importers\Database as DatabaseImport;
 
 class CreateStrongsTable extends Migration
 {
@@ -22,16 +23,9 @@ class CreateStrongsTable extends Migration
             $table->unique('number', 'snum');
         });
 
-//        Schema::create('strongs_definitions', function (Blueprint $table) {
-//            $table->increments('id');
-//            $table->string('number', 20);
-//            $table->string('root_word', 200)->nullable();
-//            $table->string('transliteration', 200)->nullable();
-//            $table->string('pronunciation', 200)->nullable();
-//            $table->longText('tvm', 200)->nullable();
-//            $table->longText('entry')->nullable();
-//            $table->timestamps();
-//        });
+        DB::table('strongs_definitions')->truncate();
+
+        DatabaseImport::importSqlFile('strongs_definitions_en');
     }
 
     /**

@@ -20,7 +20,7 @@ class TempMigrateStrongs extends Command
      *
      * @var string
      */
-    protected $description = 'Temp command: Migrate strongs definitions from V2';
+    protected $description = 'Temp command: Migrate strongs definitions from V3';
 
     /**
      * Execute the console command.
@@ -52,27 +52,13 @@ class TempMigrateStrongs extends Command
         $attr  = [ 'number' => $row->number ];
         $entry = trim($row->entry, "^~");
 	$entry = str_replace(array("^","~"), "", $entry);
-
-        //var_dump($entry);
         $entry = preg_replace("/(<br>)+/", '<br>', $entry);
-        //var_dump($entry);
-        //die();
 	$ent   = explode("<br>", $entry);
 
-
-
 	if(strpos($ent[0], "</b>") !== FALSE || strpos($ent[0], "##") !== FALSE || $ent[0] == 'Qal' || $ent[0] == 'No Tense or Voice Stated') {
-            // $tmv = array_slice($ent, 0, 3);
-
-//            $attr['tense'] = isset($ent[0]) ? $this->_parseTVMC($ent[0]) : NULL;
-//            $attr['voice'] = isset($ent[1]) ? $this->_parseTVMC($ent[1]) : NULL;
-//            $attr['mood']  = isset($ent[2]) ? $this->_parseTVMC($ent[2]) : NULL;
-            // $title="".trim($ent[0])."<br>".trim($ent[1])."<br>".trim($ent[2])."<br>";
-            // $text="";
+            // $title = "".trim($ent[0])."<br>".trim($ent[1])."<br>".trim($ent[2])."<br>";
+            // $text = "";
             $attr['tvm']   = $entry;
-
-//            print_r($row);
-//            print_r($attr);
 	}
 	else {
             $attr['root_word']       = isset($ent[0]) ? $this->_parseWord($ent[0]) : NULL;
@@ -80,9 +66,8 @@ class TempMigrateStrongs extends Command
             $attr['pronunciation']   = isset($ent[2]) ? $this->_parseWord($ent[2]) : NULL;
             $attr['entry']           = isset($ent[3]) ? trim($ent[3]) : NULL;
             // $attr['entry']           = isset($ent[4]) ? trim($ent[4]) : NULL; // original parsing, with no removal of duplicate <br>
-
-            // $title="<span style='font-size:$ft;font-weight:bold;'>".trim($ent[0])."</span> &nbsp; ($str)<br>".trim($ent[1])." (".trim($ent[2]).")";
-            // $text="<div style='background-color:#702424;padding:10px;color:white;text-align:justify'>".trim($ent[4])."</div>";
+            // $title = "<span style='font-size:$ft;font-weight:bold;'>".trim($ent[0])."</span> &nbsp; ($str)<br>".trim($ent[1])." (".trim($ent[2]).")";
+            // $text  = "<div style='background-color:#702424;padding:10px;color:white;text-align:justify'>".trim($ent[4])."</div>";
 	}
 
         return $attr;

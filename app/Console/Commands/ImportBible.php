@@ -4,6 +4,7 @@ namespace App\Console\Commands;
 
 use Illuminate\Console\Command;
 use App\Models\Bible;
+use App\Models\Language;
 
 abstract class ImportBible extends Command {
     /**
@@ -24,16 +25,16 @@ abstract class ImportBible extends Command {
 
     protected $hints = array(
         'lang' => [
-            'English', 'Spanish', 'Chinese', 'Arabic', 'German', 'Greek', 'Hebrew', 'Hindi', 'French', 'Portuguese', 'Russian', 'Bengali', 'Malay', 'Urdo', 'Italian',
+            //'English', 'Spanish', 'Chinese', 'Arabic', 'German', 'Greek', 'Hebrew', 'Hindi', 'French', 'Portuguese', 'Russian', 'Bengali', 'Malay', 'Urdo', 'Italian',
         ],
-        'lang_short' => ['en', 'es', 'zh', 'ar', 'de', 'el', 'he', 'hi', 'fi','fr','bn', 'it', 'ru', 'ms', 'ur']
+        'lang_short' => [], // ['en', 'es', 'zh', 'ar', 'de', 'el', 'he', 'hi', 'fi','fr','bn', 'it', 'ru', 'ms', 'ur']
     );
 
     protected $ask = array(
         'name' => 'Full name of this Bible',
         //'shortname' => 'What is the short display name of this Bible?',
         'lang' => 'Bible language (Full name: \'Spanish\')',
-        'lang_short' => 'Language code (\'es\' for Spanish)?',
+        // 'lang_short' => 'Language code (\'es\' for Spanish)?',
     );
 
     /**
@@ -47,6 +48,17 @@ abstract class ImportBible extends Command {
         //$this->description .= '';
 
         parent::__construct();
+
+        // For some weird reason the MIGRATION that creates the langage table BREAKS here!
+        // Not sure why that's even touching this completely unrelated class!
+        if (\Schema::hasTable('languages')) {
+            $Languages = Language::orderBy('name', 'asc')->get();
+
+            foreach($Languages as $Lang) {
+                $this->hints['lang'][]       = $Lang->name;
+                $this->hints['lang_short'][] = $Lang->code;
+            }
+        }
     }
 
     /**
@@ -114,11 +126,14 @@ abstract class ImportBible extends Command {
                 }
             }
 
-//            $lang_pos = array_search($attributes['lang'], $this->hints['lang']);
-//
-//            if($lang_pos !== FALSE) {
-//                $attributes['lang_short'] = $this->hints['lang_short'][$lang_pos];
-//            }
+            $lang_pos = array_search($attributes['lang'], $this->hints['lang']);
+
+            if($lang_pos !== FALSE) {
+                $attributes['lang_short'] = $this->hints['lang_short'][$lang_pos];
+            }
+            else {
+                throw new \Exception('Language ' . $attributes['lang'] . ' not found');
+            }
         }
 
         $Importer->setProperties($file, $module, $overwrite, $attributes, $autopopulate);

@@ -65,18 +65,16 @@ class Unbound extends ImporterAbstract {
 
         // To do - move this logic!
         if($install_bible) {
-            //$Bible    = Bible::where('module', $module)->first();
-            $Bible    = Bible::findByModule($module);
-            $existing = ($Bible) ? TRUE   : FALSE;
-            $Bible    = ($Bible) ? $Bible : new Bible;
+            $Bible    = $this->_getBible($module);
+            $existing = $this->_existing;
             $zipfile  = $dir . $file;
             $Zip      = new ZipArchive();
 
-            if(!$overwrite_existing && $existing) {
+            if(!$overwrite_existing && $this->_existing) {
                 return $this->addError('Module already exists: \'' . $module . '\' Use --overwrite to overwrite it.', 4);
             }
 
-            if($existing) {
+            if($this->_existing) {
                 $Bible->uninstall();
             }
 
@@ -133,8 +131,8 @@ class Unbound extends ImporterAbstract {
             }
 
             $Bible->install(TRUE);
-            $Verses = $Bible->verses();
-            $table  = $Verses->getTable();
+            // $Verses = $Bible->verses();
+            $table  = $this->_table;
             $st = ($testaments == 'nt') ? 40 : 0;
 
             if(\App::runningInConsole()) {

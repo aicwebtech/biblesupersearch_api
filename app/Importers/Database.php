@@ -1,47 +1,22 @@
 <?php
+namespace App\Importers;
 
-use Illuminate\Database\Seeder;
-use Illuminate\Database\Eloquent\Model;
+/*
+ * Generic importer for importing database dumps
+ */
 
-// This isn't autoloading??
-require_once(dirname(__FILE__) . '/UserTableSeeder.php');
-
-class DatabaseSeeder extends Seeder
-{
-    /**
-     * Run the database seeds.
-     *
-     * @return void
-     */
-    public function run()
-    {
-        Model::unguard();
-
-        // To do - move these 'seeds' to respective db table create migrations
-        // 'Seeds' are intended to fill db with test data,
-        // NOT populating with data needed for the application to work
-        // As we are doing here
-
-        $this->call('UserTableSeeder');
-        $this->call('Bibles');
-        $this->call('IndexTableSeeder');
-        $this->call('BookListSeeder');
-        $this->call('ShortcutsSeeder');
-        //// $this->call('StrongsDefinitionsSeeder'); // moved to migration, do NOT uncomment
-
-        Model::reguard();
-    }
+class Database {
 
     static public function importSqlFile($file, $dir = NULL) {
         $default_dir = ($dir) ? FALSE : TRUE;
-        $dir = ($dir) ? $dir : dirname(__FILE__) . '/../dumps';
-        $prefix = Config::get('database.prefix');
+        $dir = ($dir) ? $dir : dirname(__FILE__) . '/../../database/dumps';
+        $prefix = config('database.prefix');
         $path = $dir . '/' . $file;
         $display_path = ($default_dir) ? '<app_dir>/database/dumps/' . $file : $path;
         //var_dump($file);
 
         if(!is_file($path)) {
-            echo 'Warning: Sql import file not found, continuing: ' . $display_path . PHP_EOL;
+            echo 'Warning: Sql import file not found: ' . $display_path . PHP_EOL;
             return;
         }
 
@@ -57,13 +32,13 @@ class DatabaseSeeder extends Seeder
             try {
                 $line = sprintf($line, $prefix);
             }
-            catch (ErrorException $ex) {
+            catch (\ErrorException $ex) {
                 $line = str_replace('`%s', '`' . $prefix, $line);
             }
             //echo $line . PHP_EOL;
 
             try {
-                DB::insert($line);
+                \DB::insert($line);
             }
             catch (Illuminate\Database\QueryException $ex) {
                 // Ignore db errors?
@@ -75,7 +50,7 @@ class DatabaseSeeder extends Seeder
     static public function setCreatedUpdated($db_table) {
         $sql_date = date('Y-m-d H:i:s');
 
-        DB::table($db_table)
+        \DB::table($db_table)
             -> whereNull('created_at')
             -> update(['created_at' => $sql_date, 'updated_at' => $sql_date]);
     }
