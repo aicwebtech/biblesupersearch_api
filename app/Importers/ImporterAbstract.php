@@ -171,7 +171,8 @@ abstract class ImporterAbstract {
 
     protected function _formatRedLetter($text) {
         $find = [$this->redletter_st, $this->redletter_en];
-        $rep  = ['<', '>'];
+        // $rep  = ['<', '>'];
+        $rep = ['‹','›'];  // NOT <>!, U+2039, U+203A
         return $this->_replaceTagsIfNeeded($find, $rep, $text);
     }
 

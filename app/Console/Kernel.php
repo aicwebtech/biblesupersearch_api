@@ -18,7 +18,7 @@ class Kernel extends ConsoleKernel
         Commands\ImportBibleUnbound::class,
         Commands\ImportBibleAnalyzer::class,
         Commands\ImportBibleEvening::class,
-        // Commands\ImportBibleCustom::class,  // Comment out when not using
+         Commands\ImportBibleCustom::class,  // Comment out when not using
         Commands\EnableBible::class,
         Commands\DisableBible::class,
         Commands\InstallBible::class,

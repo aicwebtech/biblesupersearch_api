@@ -46,15 +46,14 @@ class Rvg extends ImporterAbstract {
         $insert_into_bible_table    = TRUE; // Inserts (or updates) the record in the Bible versions table
         $overwrite_existing         = $this->overwrite;
 
-        $Bible    = Bible::findByModule($module);
-        $existing = ($Bible) ? TRUE   : FALSE;
-        $Bible    = ($Bible) ? $Bible : new Bible;
+        $Bible    = $this->_getBible($module);
+        $existing = $this->_existing;
 
-        if(!$overwrite_existing && $existing) {
+        if(!$overwrite_existing && $this->_existing) {
             return $this->addError('Module already exists: \'' . $module . '\' Use --overwrite to overwrite it.', 4);
         }
 
-        if($existing) {
+        if($this->_existing) {
             $Bible->uninstall();
         }
 
