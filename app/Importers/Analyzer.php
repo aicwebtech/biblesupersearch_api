@@ -32,6 +32,7 @@ class Analyzer extends ImporterAbstract {
     protected $strongs_st   = '[';
     protected $strongs_en   = ']';
     protected $paragraph    = '¶ ';
+    protected $unused_tags  = ['fn'];
 
     public function import() {
         ini_set("memory_limit", "50M");
@@ -98,7 +99,7 @@ class Analyzer extends ImporterAbstract {
             echo('Installing: ' . $module . PHP_EOL);
         }
 
-        $res_bib = $SQLITE->query('SELECT * FROM bible');
+        $res_bib = $SQLITE->query('SELECT * FROM bible ORDER BY id ASC');
         $book = $i = 0;
         $last_book_name = NULL;
 
@@ -125,7 +126,6 @@ class Analyzer extends ImporterAbstract {
             }
 
             $this->_addVerse($book, $chapter, $verse, $text);
-
             $i++;
 
             if($i > 100) {
@@ -134,5 +134,16 @@ class Analyzer extends ImporterAbstract {
         }
 
         $this->_insertVerses();
+    }
+
+    protected function _formatText($text) {
+        $text    = $this->_preFormatText($text);
+        $text    = $this->_formatStrongs($text);
+        $text    = $this->_formatItalics($text);
+        $text    = $this->_formatRedLetter($text);
+        $text    = $this->_formatParagraph($text);
+        $text    = $this->_removeUnusedTags($text);
+        $text    = $this->_postFormatText($text);
+        return $text;
     }
 }

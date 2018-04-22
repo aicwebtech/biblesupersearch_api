@@ -42,6 +42,7 @@ abstract class ImporterAbstract {
     protected $paragraph    = '¶ ';
     protected $strongs_st   = '{';
     protected $strongs_en   = '}';
+    protected $unused_tags  = [];
 
     // What do do whith Strongs numbers in parentheses: retain, trim, discard
     protected $strongs_parentheses = 'retain';
@@ -91,21 +92,7 @@ abstract class ImporterAbstract {
         $book    = intval($book);
         $chapter = intval($chapter);
         $verse   = intval($verse);
-
-        // Text formatting
-        $text    = $this->_preFormatText($text);
-        $text    = $this->_formatItalics($text);
-        $text    = $this->_formatStrongs($text);
-        $text    = $this->_formatRedLetter($text);
-        $text    = $this->_formatParagraph($text);
-        $text    = $this->_postFormatText($text);
-
-        /*
-         * Items that still need to be mapped (for each import type):
-         *
-         * Psalm titles (future?)
-         * Pauline postscripts (future?)
-         */
+        $text    = $this->_formatText($text);
 
         $this->_insertable[] = array(
             'book'             => $book,
@@ -125,6 +112,23 @@ abstract class ImporterAbstract {
         $this->_insertable = [];
     }
 
+    /*
+     * Items that still need to be mapped (for each import type):
+     *
+     * Psalm titles (future?)
+     * Pauline postscripts (future?)
+     */
+    protected function _formatText($text) {
+        $text    = $this->_preFormatText($text);
+        $text    = $this->_formatItalics($text);
+        $text    = $this->_formatStrongs($text);
+        $text    = $this->_formatRedLetter($text);
+        $text    = $this->_formatParagraph($text);
+        $text    = $this->_removeUnusedTags($text);
+        $text    = $this->_postFormatText($text);
+        return $text;
+    }
+
     protected function _preFormatText($text) {
         return trim($text);
     }
@@ -138,6 +142,7 @@ abstract class ImporterAbstract {
             return $text;
         }
 
+//        var_dump($text);
         $find = [$this->strongs_st, $this->strongs_en];
         $rep  = ['{', '}'];
         $text = $this->_replaceTagsIfNeeded($find, $rep, $text);
@@ -145,8 +150,13 @@ abstract class ImporterAbstract {
         $parentheses = $this->strongs_parentheses;
         $subpattern  = ($parentheses == 'trim') ? '/[GHgh][0-9]+/' : '/\(?[GHgh][0-9]+\)?/';
 
-        $text = preg_replace_callback('/\{[^\}]+\}/', function($matches) use ($subpattern, $parentheses) {
+        $text = preg_replace_callback('/\{[^\}]+\}/', function($matches) use ($subpattern, $parentheses, $text) {
             $st_numbers = [];
+
+            //var_dump($text);
+            //var_dump($matches);
+            //die();
+
             preg_match_all($subpattern, $matches[0], $submatches);
 
             foreach($submatches as $smatch) {
@@ -154,12 +164,16 @@ abstract class ImporterAbstract {
                     continue;
                 }
 
-                $st_numbers[] = '{' . $smatch[0] . '}';
+                if(isset($smatch[0])) {
+                    $st_numbers[] = '{' . $smatch[0] . '}';
+                }
             }
 
-            return implode(' ', $st_numbers);
+            return (count($st_numbers)) ? implode(' ', $st_numbers) : $matches[0];
         }, $text);
 
+//        var_dump($text);
+//        die();
         return $text;
     }
 
@@ -179,6 +193,16 @@ abstract class ImporterAbstract {
     protected function _formatParagraph($text) {
         if($this->paragraph && $this->paragraph != '¶ ') {
             return str_replace($this->paragraph, '¶ ', $text);
+        }
+
+        return $text;
+    }
+
+    protected function _removeUnusedTags($text) {
+        foreach($this->unused_tags as $tag) {
+            // $regexp = '/<' . $tag . '>.*?</' . $tag . '>/';
+            $regexp = '/<' . $tag . '>[^>]*>/';
+            $text = preg_replace($regexp, '', $text);
         }
 
         return $text;
