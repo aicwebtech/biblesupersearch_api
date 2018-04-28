@@ -320,6 +320,10 @@ class SqlSearch {
     protected function _termFormat($term, $exact_phrase = FALSE, $whole_words = FALSE, $primary_only = TRUE) {
         $is_phrase = $is_regexp = $is_strongs = $uses_regexp = FALSE;
         $term_inexact = '%' . trim($term, '%"`\'') . '%';
+        $phrase_whitespace = ' ';
+        $phrase_whitespace = '[[:>:]]\s|(\{.*\})[[:<:]]';
+        $phrase_whitespace = '([^a-fi-zA-FI-Z]+)';  // General approximation (fails open - may pull MORE results than it should)
+        // $phrase_whitespace = "\]?[ {]([^a-fi-zA-FI-Z]*)"; // This prefered whitespace separator works in navicat but not in this software?
 
         // Regexp
         if($this->_isRegexpSearch($term)) {
@@ -337,8 +341,10 @@ class SqlSearch {
             $term_inexact = str_replace(' ', '%', $term_inexact);
 
             if(!$whole_words) {
+                $phrase_term = str_replace(' ', $phrase_whitespace, $term);
+
                 // to do - use this return if bible has no markup
-                // return ($primary_only) ? $term : [$term_inexact, $term];
+                return ($primary_only) ? $phrase_term : [$term_inexact, $phrase_term];
             }
         }
 
@@ -364,10 +370,6 @@ class SqlSearch {
 
         $pre  = ($has_st_pct) ? '' : '[[:<:]]';
         $post = ($has_en_pct) ? '' : '[[:>:]]';
-        $phrase_whitespace = ' ';
-        $phrase_whitespace = '[[:>:]]\s|(\{.*\})[[:<:]]';
-        $phrase_whitespace = '([^a-fi-zA-FI-Z]+)';  // General approximation (fails open - may pull MORE results than it should)
-        // $phrase_whitespace = "\]?[ {]([^a-fi-zA-FI-Z]*)"; // This prefered whitespace separator works in navicat but not in this software?
         $regexp_term = ($is_phrase) ? str_replace(' ', $phrase_whitespace, $term) : str_replace('%', '.*', trim($term, '%'));
         $regexp_term = $pre . trim($regexp_term, '%') . $post;
 
