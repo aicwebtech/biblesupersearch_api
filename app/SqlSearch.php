@@ -337,7 +337,8 @@ class SqlSearch {
             $term_inexact = str_replace(' ', '%', $term_inexact);
 
             if(!$whole_words) {
-                return ($primary_only) ? $term : [$term_inexact, $term];
+                // to do - use this return if bible has no markup
+                // return ($primary_only) ? $term : [$term_inexact, $term];
             }
         }
 

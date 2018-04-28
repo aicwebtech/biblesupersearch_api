@@ -19,6 +19,7 @@ class Engine {
     protected $default_data_format = 'passage';
     protected $default_page_all = FALSE;
     protected $metadata = NULL;
+    protected $multi_bibles = FALSE;
     public $debug = FALSE;
 
     public function __construct() {
@@ -32,6 +33,7 @@ class Engine {
     public function setBibles($modules) {
         $this->Bibles = array();
         $this->languages = array();
+        $this->multi_bibles = FALSE;
 
         if(is_string($modules)) {
             $decoded = json_decode($modules);
@@ -113,8 +115,6 @@ class Engine {
      * @return array $results search / look up results.
      */
     public function actionQuery($input) {
-//        return $this->setErrorLevel(4);
-
 
         // To do - add labels
         $parsing = array(
@@ -268,7 +268,6 @@ class Engine {
         }
 
         if(!$Search || $Search && $search_valid) {
-
             foreach($this->Bibles as $Bible) {
                 $BibleResults = $Bible->getSearch($Passages, $Search, $input); // Laravel Collection
 
@@ -341,7 +340,7 @@ class Engine {
      */
     public function actionBibles($input) {
         $include_desc = FALSE;
-        $Bibles = Bible::select('name','shortname','module','year','lang','lang_short','copyright','italics','strongs','rank','research');
+        $Bibles = Bible::select('name','shortname','module','year','lang','lang_short','copyright','italics','strongs','red_letter','paragraph','rank','research');
         $bibles = array(); // Array of associative arrays
 
         if($include_desc) {
@@ -581,7 +580,9 @@ class Engine {
     }
 
     protected function _canPaginate($data_format) {
-        return (strpos($data_format, 'passage') !== FALSE) ? TRUE : FALSE;
+        $data_format = strtolower($data_format);
+        $allowed     = ['passage', 'lite'];
+        return (in_array($data_format, $allowed)) ? TRUE : FALSE;
     }
 
     protected function _buildPaginator($data, $per_page, $current_page) {
