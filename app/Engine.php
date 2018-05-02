@@ -196,6 +196,10 @@ class Engine {
                 'type'   => 'int',
                 'default' => config('bss.context.range'),
             ),
+            'markup' => array(
+                'type'  => 'string',
+                'default' => 'none'
+            ),
         );
 
         $this->resetErrors();
@@ -431,7 +435,10 @@ class Engine {
                     $this->addError('Strong\s Number ' . $clean . ' not found');
                 }
                 else {
-                    $response[] = $Def->toArray();
+                    $data = $Def->toArray();
+                    // Remove 'count' from TVM
+                    $data['tvm'] = preg_replace('/<b>Count:<\/b> [0-9]+<br>/', '', $data['tvm']);
+                    $response[] = $data;
                 }
             }
         }
@@ -487,6 +494,8 @@ class Engine {
 //            }
         }
 
+        $results = $this->_processMarkup($results, $input['markup']);
+
         if($this->isTruthy('highlight', $input)) {
             $results = $this->_highlightResults($results, $Search);
         }
@@ -501,6 +510,26 @@ class Engine {
         }
 
         return $Search->highlightResults($results);
+    }
+
+    protected function _processMarkup($results, $mode) {
+        if($mode == 'raw') {
+            return $results;
+        }
+
+        $find = ['‹','›', '[', ']', '} {'];
+        $pattern = '/\{[^\}]+}/';
+
+        foreach($results as $bible => &$bible_results) {
+            foreach($bible_results as &$verse) {
+                $verse->text = str_replace($find, '', $verse->text);
+                $verse->text = preg_replace($pattern, '', $verse->text);
+            }
+            unset($verse);
+        }
+        unset($bible_results);
+
+        return $results;
     }
 
     protected function _parallelUnmatchedVerses($results, $Search) {

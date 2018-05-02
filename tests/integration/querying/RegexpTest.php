@@ -31,7 +31,7 @@ class RegexpTest extends TestCase {
         $Engine = new Engine();
         $results = $Engine->actionQuery(['bible' => 'kjv', 'search' => 'ab[b]+', 'data_format' => 'raw', 'search_type' => 'regexp', 'page_all' => TRUE]);
         $this->assertFalse($Engine->hasErrors());
-        $this->assertCount(216, $results['kjv']);
+        $this->assertCount(216, $results['kjv']); // 218 with Psalms headers
     }
 
     public function testBooleanPlusSquareBrackets() {
