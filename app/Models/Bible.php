@@ -8,8 +8,10 @@ use App\Passage;
 use App\Search;
 use Illuminate\Support\Arr;
 use ZipArchive;
+use App\Traits\Error;
 
 class Bible extends Model {
+    use Error;
 
     protected $Verses; // Verses model instance
     protected $verses_class_name; // Name of verses class
@@ -47,6 +49,10 @@ class Bible extends Model {
      * Each Bible record points to an entire DB table
      */
     public function verses($force = FALSE) {
+        if(!$this->module) {
+            throw new \Exception('Module required on Bible model to access verses model');
+        }
+
         if (!$this->Verses || $force) {
             $attributes = $this->getAttributes();
             $class_name = self::getVerseClassNameByModule($this->module);
@@ -81,11 +87,25 @@ class Bible extends Model {
         return $this->verses()->getVersesByBCV($bcv);
     }
 
-    public function install($structure_only = FALSE) {
+    public function install($structure_only = FALSE, $enable = FALSE) {
         if (!$this->installed) {
-            $this->verses()->install($structure_only);
-            $this->installed = 1;
-            $this->save();
+            $success = $this->verses()->install($structure_only);
+
+            if(!$success) {
+                $this->addError('Could not install Bible table', 4);
+            }
+            else {
+                $this->installed = 1;
+
+                if($enable) {
+                    $this->enabled = 1;
+                }
+
+                $this->save();
+            }
+        }
+        else {
+            $this->addError('Already installed', 1);
         }
     }
 
@@ -96,9 +116,19 @@ class Bible extends Model {
             $this->enabled = 0;
             $this->save();
         }
+        else {
+            $this->addError('Already uninstalled', 1);
+        }
     }
 
     public function export($overwrite = FALSE) {
+        $path = $this->getModuleFilePath();
+
+        if(!$overwrite && is_file($path)) {
+            $this->addError('Cannot export, file already exists', 4);
+            return FALSE;
+        }
+
         $export_fields = static::getExportFields();
         $mode = ($overwrite) ? ZipArchive::OVERWRITE : ZipArchive::CREATE;
         $info = Arr::except($this->attributes, $this->do_not_export);
@@ -106,8 +136,10 @@ class Bible extends Model {
         $info['delimiter'] = $del; // Store this in case we change it in the future
         $info['fields'] = $export_fields;
         $info = json_encode($info);
+        $ini_memory_limit = ini_get('memory_limit');
+        ini_set('memory_limit', 536870912);
+
         $data = $this->verses()->exportData();
-        $path = $this->getModuleFilePath();
         $eol  = PHP_EOL; //'\n';
 
         if(!$data) {
@@ -144,14 +176,19 @@ class Bible extends Model {
             $Zip->addFromString('verses.txt', $data_str);
             $Zip->addFromString('info.json', $info);
             $Zip->close();
-            return TRUE;
         }
 
-        return FALSE;
+        ini_set('memory_limit', $ini_memory_limit);
+
+        return ($res === TRUE) ? TRUE : FALSE;
     }
 
     public function getModuleFilePath() {
         return static::getModulePath() . $this->module . '.zip';
+    }
+
+    public function hasModuleFile() {
+        return is_file($this->getModuleFilePath());
     }
 
     public static function getExportFields() {
@@ -285,6 +322,16 @@ class Bible extends Model {
      */
     public function setEnabledAttribute($value) {
         $this->attributes['enabled'] = ($this->installed) ? $value : 0;
+    }
+
+    public function enable() {
+        $this->enabled = 1;
+        $this->save();
+    }
+
+    public function disable() {
+        $this->enabled = 0;
+        $this->save();
     }
 
     /**

@@ -101,19 +101,22 @@ class SqlSearchTest extends TestCase
         $this->assertEquals('boolean', $Search->search_type);
         list($sql, $binddata) = $Search->generateQuery();
         $this->assertEquals('(`text` LIKE :bd1) OR (`text` LIKE :bd2 AND `text` REGEXP :bd3)', $sql);
-        $this->assertEquals(array(':bd1' => '%faith%', ':bd2' => '%free spirit%', ':bd3' => 'free spirit'), $binddata);
+        // OLD $this->assertEquals(array(':bd1' => '%faith%', ':bd2' => '%free spirit%', ':bd3' => 'free spirit'), $binddata);
+        $this->assertEquals(array(':bd1' => '%faith%', ':bd2' => '%free%spirit%', ':bd3' => 'free([^a-fi-zA-FI-Z]+)spirit'), $binddata);
 
         $Search = SqlSearch::parseSearch('faith', array('whole_words' => 'on'));
         list($sql, $binddata) = $Search->generateQuery();
         $this->assertEquals('(`text` LIKE :bd1 AND `text` REGEXP :bd2)', $sql);
-        $this->assertEquals(array(':bd1' => '%faith%', ':bd2' => '[[:<:]]faith[[:>:]]'), $binddata);
+        // $this->assertEquals(array(':bd1' => '%faith%', ':bd2' => '[[:<:]]faith[[:>:]]'), $binddata);
+        $this->assertEquals(array(':bd1' => '%faith%', ':bd2' => '([[:<:]]|[‹])faith([[:>:]]|[›])'), $binddata);
 
         $Search = SqlSearch::parseSearch('faith% ', array('whole_words' => 'on'));
         list($sql, $binddata) = $Search->generateQuery();
         //$this->assertEquals('(`text` REGEXP :bd1)', $sql);
         //$this->assertEquals(array(':bd1' => '[[:<:]]faith'), $binddata);
         $this->assertEquals('(`text` LIKE :bd1 AND `text` REGEXP :bd2)', $sql);
-        $this->assertEquals(array(':bd1' => '%faith%', ':bd2' => '[[:<:]]faith'), $binddata);
+        // $this->assertEquals(array(':bd1' => '%faith%', ':bd2' => '[[:<:]]faith'), $binddata);
+        $this->assertEquals(array(':bd1' => '%faith%', ':bd2' => '([[:<:]]|[‹])faith'), $binddata);
     }
 
     public function testAdvancedQuery() {
@@ -153,6 +156,7 @@ class SqlSearchTest extends TestCase
         $this->assertInstanceOf('App\SqlSearch', $Search);
         list($sql, $binddata) = $Search->generateQuery();
         $this->assertEquals('(`text` LIKE :bd1 AND `text` REGEXP :bd2)', $sql);
-        $this->assertEquals(array(':bd1' => '%faith hope love%', ':bd2' => 'faith hope love'), $binddata);
+        // OLD $this->assertEquals(array(':bd1' => '%faith hope love%', ':bd2' => 'faith hope love'), $binddata);
+        $this->assertEquals(array(':bd1' => '%faith%hope%love%', ':bd2' => 'faith([^a-fi-zA-FI-Z]+)hope([^a-fi-zA-FI-Z]+)love'), $binddata);
     }
 }

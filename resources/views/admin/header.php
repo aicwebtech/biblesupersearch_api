@@ -1,7 +1,7 @@
 <html>
     <head>
-        <title>Something</title>
+        <title>Bible SuperSearch Admin</title>
     </head>
 
     <body>
-        <a href='/auth/logout'>Log Out</a><br /><br />
+        <a href='<?php echo route('logout')?>'>Log Out</a><br /><br />

@@ -18,6 +18,7 @@ class Engine {
     protected $default_data_format = 'passage';
     protected $default_page_all = FALSE;
     protected $metadata = NULL;
+    protected $multi_bibles = FALSE;
     public $debug = FALSE;
 
     public function __construct() {
@@ -31,6 +32,7 @@ class Engine {
     public function setBibles($modules) {
         $this->Bibles = array();
         $this->languages = array();
+        $this->multi_bibles = FALSE;
 
         if(is_string($modules)) {
             $decoded = json_decode($modules);
@@ -112,8 +114,6 @@ class Engine {
      * @return array $results search / look up results.
      */
     public function actionQuery($input) {
-//        return $this->setErrorLevel(4);
-
 
         // To do - add labels
         $parsing = array(
@@ -195,6 +195,10 @@ class Engine {
                 'type'   => 'int',
                 'default' => config('bss.context.range'),
             ),
+            'markup' => array(
+                'type'  => 'string',
+                'default' => 'none'
+            ),
         );
 
         $this->resetErrors();
@@ -267,7 +271,6 @@ class Engine {
         }
 
         if(!$Search || $Search && $search_valid) {
-
             foreach($this->Bibles as $Bible) {
                 $BibleResults = $Bible->getSearch($Passages, $Search, $input); // Laravel Collection
 
@@ -340,7 +343,7 @@ class Engine {
      */
     public function actionBibles($input) {
         $include_desc = FALSE;
-        $Bibles = Bible::select('name','shortname','module','year','lang','lang_short','copyright','italics','strongs','rank','research');
+        $Bibles = Bible::select('name','shortname','module','year','lang','lang_short','copyright','italics','strongs','red_letter','paragraph','rank','research');
         $bibles = array(); // Array of associative arrays
 
         if($include_desc) {
@@ -417,6 +420,31 @@ class Engine {
         return $response;
     }
 
+    public function actionStrongs($input) {
+        $response = [];
+        $strongs = explode(' ', strip_tags(trim($input['strongs'])));
+
+        foreach($strongs as $num) {
+            if(preg_match('/[GHgh][0-9]+/', $num, $matches)) {
+                $clean = $matches[0];
+
+                $Def = \App\Models\StrongsDefinition::where('number', $clean)->first();
+
+                if(!$Def) {
+                    $this->addError('Strong\s Number ' . $clean . ' not found');
+                }
+                else {
+                    $data = $Def->toArray();
+                    // Remove 'count' from TVM
+                    $data['tvm'] = preg_replace('/<b>Count:<\/b> [0-9]+.*?<br>/', '', $data['tvm']);
+                    $response[] = $data;
+                }
+            }
+        }
+
+        return $response;
+    }
+
     public function actionReadcache($input) {
         if(!array_key_exists('hash', $input)) {
             $this->addError('hash is required', 4);
@@ -465,6 +493,8 @@ class Engine {
 //            }
         }
 
+        $results = $this->_processMarkup($results, $input['markup']);
+
         if($this->isTruthy('highlight', $input)) {
             $results = $this->_highlightResults($results, $Search);
         }
@@ -479,6 +509,26 @@ class Engine {
         }
 
         return $Search->highlightResults($results);
+    }
+
+    protected function _processMarkup($results, $mode) {
+        if($mode == 'raw') {
+            return $results;
+        }
+
+        $find = ['‹','›', '[', ']', '} {'];
+        $pattern = '/\{[^\}]+}/';
+
+        foreach($results as $bible => &$bible_results) {
+            foreach($bible_results as &$verse) {
+                $verse->text = str_replace($find, '', $verse->text);
+                $verse->text = preg_replace($pattern, '', $verse->text);
+            }
+            unset($verse);
+        }
+        unset($bible_results);
+
+        return $results;
     }
 
     protected function _parallelUnmatchedVerses($results, $Search) {
@@ -558,7 +608,9 @@ class Engine {
     }
 
     protected function _canPaginate($data_format) {
-        return (strpos($data_format, 'passage') !== FALSE) ? TRUE : FALSE;
+        $data_format = strtolower($data_format);
+        $allowed     = ['passage', 'lite'];
+        return (in_array($data_format, $allowed)) ? TRUE : FALSE;
     }
 
     protected function _buildPaginator($data, $per_page, $current_page) {

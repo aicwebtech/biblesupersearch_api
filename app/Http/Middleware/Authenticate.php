@@ -20,8 +20,7 @@ class Authenticate
      * @param  Guard  $auth
      * @return void
      */
-    public function __construct(Guard $auth)
-    {
+    public function __construct(Guard $auth) {
         $this->auth = $auth;
     }
 
@@ -30,15 +29,28 @@ class Authenticate
      *
      * @param  \Illuminate\Http\Request  $request
      * @param  \Closure  $next
+     * @param integer $access_level minimal access level to view
      * @return mixed
      */
-    public function handle($request, Closure $next)
-    {
+    public function handle($request, Closure $next, $access_level = 1) {
         if ($this->auth->guest()) {
             if ($request->ajax()) {
                 return response('Unauthorized.', 401);
-            } else {
-                return redirect()->guest('auth/login');
+            }
+            else {
+                return redirect()->guest('login');
+            }
+        }
+
+        // Check the user's access level against the minimal
+        if($this->auth->user()->access_level < $access_level) {
+            if ($request->ajax()) {
+                return response('Access Denied', 403);
+            }
+            else {
+                die('access denied');
+                // Send authenticated users without the appropiate access leve back to the landing page
+                return redirect('/landing');
             }
         }
 

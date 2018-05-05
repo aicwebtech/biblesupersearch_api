@@ -10,6 +10,8 @@ Homestead.json
 composer-temp.phar
 
 /bibles/unbound/*.zip
+/bibles/analyzer/*.bib
+/bibles/evening/*
 /bibles/misc/*.csv
 /bibles/misc/*.zip
 /bibles/misc/*.gz
