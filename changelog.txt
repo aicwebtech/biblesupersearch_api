@@ -1,0 +1,217 @@
+Bible SuperSearch Changelog
+
+= 2.7.0 =
+* Added Strong's Numbers with definitions (KJV)
+* Added support for Italicised words (KJV / RVG)
+* Added support for Words of Christ in Red (KJV / RVG)
+* Misc bugfixes
+
+= 2.6.5 =
+* Adding several new interfaces
+* Misc bug fixes and formatting fixes
+
+= 2.6.2 =
+* Bugfix: checking custom API URL to make sure it's valid (WP Plugin)
+
+= 2.6.1 =
+* Bugfix: Allowing for cURL or allow_url_fopen for loading statics on options page (WP Plugin)
+
+= 2.6.0 =
+* Initial release of official WordPress plugin.
+* Complete rebuild of legacy Bible SuperSearch (version 2.2.x) code.
+* This version adds support for PHP 7+
+
+
+LEGACY CHANGELOG
+
+For versions of Bible SuperSearch prior to the version 2.6 rebuild
+
+2.2.13
+Feb 17, 2018
+- Added error message indicating no PHP 7 support
+- Reapplied 2.2.07 fix (was missing in new GIT repo)
+
+2.2.07
+Sept 25, 2015
+- Fixed a bug on the installer Bible list page
+- Tested and confirmed working on PHP 5.6
+
+
+2.2.00
+March 14, 2015
+- Added the ability to use Bible SuperSearch as a WordPress plugin
+
+2.1.45
+Sept 10, 2013
+- Fixed a few serious security issues
+- Fixed some bugs with the verse proximity search
+- Suppressed mysql deprecation error in PHP 5.5
+
+2.1.01
+December 24,2012
+- Bug fixes to make compatible with PHP 5.4
+
+2.1.00
+July 12, 2008
+- New authentication system for installer, the installer should now work on more servers.
+- System can now handle large Bibles that require more than 3 module files.
+- Highlighting revised to handle quotes in the text.
+- Issues with the advanced search page and Internet Explorer/Firefox for Windows resolved
+- New Bible modules:
+    + Thai KJV
+    + Spanish Reina Valera 1858 NT
+    + Textus Receptus - Parsed
+- Other minor bug fixes
+
+2.0.73
+July 2, 2008
+- Fixed minor bugs:
+- Fixed <div> tag imbalance that may disrupt site formatting.
+- Issues with using period in references.
+- Internet Explorer and Firefox for Windows format issues
+- Random Chapter/Verse now works for user_friendly2 interface
+- Proximity/Chapter search with only one word now works, acts as a basic search
+
+2.0.71
+April 12, 2008
+- Fixed bug in Bible search tester.
+
+2.0.70
+March 28, 2008
+- Completly new proximity search algorithm, much faster than original, and 100% accurate.
+- Find search terms within the same chapter.
+- Numerous bug fixes, especially in the lookup syntax.
+- Minor changes to user manual, installation manual.
+
+2.0.60
+Jan 23, 2008
+- Complete revision of Bible modules to function properly with a PHPMyAdmin installation
+- If you are not having problems installing the Bible search, you do not need to upgrade.
+
+2.0.49
+Oct 27, 2007
+- Fixed a bug where lookup without search wouldn't work when "Words within 5 verses" was selected.
+- Clarified the instructions for adding unsupported Bibles.
+
+2.0.45
+Sept 25, 2007
+Fixed a couple of bugs in the parallel Bible lookup.
+- "database table not found"
+- Browsing buttons now working.
+
+2.0.40
+Aug 18, 2007
+New "accordian Bible list" in certain interfaces. This automatically shrinks or expands the number of parallel Bible drop down menus depending on the number of Bibles installed on your system. If only one Bible is installed, just the name of the Bible is displayed. If 2 or 3 are installed, 2 or 3 menus are given.  If 4 or more are installed, 4 menus are given. (Parallel Bible has a maximum of 4 Bibles.) The Accordian Bible List is avalable on the "User Friendly" interface series, and the "Advanced" interface.
+
+New Bible module: William Tyndale Bible (English)
+
+Increased support for Bible translations with only some books.
+
+New "user_friendly2" interface.
+
+2.0.26
+July 21, 2007
+Fixed a bug with the regular expression search.
+
+2.0.25
+July 14, 2007
+Added new user-requested interface
+Added Regular expression support.
+
+2.0.00
+June 30, 2007
+Official Release
+New Features:
+Parallel Bible - look up and search in up to 4 different versions
+User-frendly, improved interface
+More interfaces to choose from
+Advanced search interface
+Text size/font options
+Proximity search - find words within 5 verses, or N verses
+HTML help (replacing the PDF help)
+Easy configuration in Installation Manager
+Remote Modual Installation - allows installing Bibles without having to upload them to your server (experimental)
+
+New Modules:
+Textus Receptus Greek NT
+Bible Kralicka (Czech)
+Finnish 1776
+Lithuanian Bible
+Maori Bible
+
+1.9.95
+May 11, 2007
+Beta Release
+New Features:
+Parallel Bible - look up and search in up to 4 different versions
+User-frendly, improved interface
+More interfaces to choose from
+Advanced search interface
+Text size/font options
+Proximity search - find words within 5 verses, or N verses
+HTML help (replacing the PDF help)
+Easy configuration in Installation Manager
+Remote Modual Installation - allows installing Bibles without having to upload them to your server (experimental)
+
+New Bible Module: Textus Receptus Greek NT
+
+
+1.6.30
+Feb 07, 2007
+New Features:
+More Bibles released
+Support for Russian, and Right-to-Left (Hebrew, Arabic) text
+Module creator
+Bible list organizer
+Updates:
+Many tweaks on manager
+Misc. bug fixes.
+
+1.6.00
+Jan 15, 2007
+Paginated searches show only 20 verses per page.
+Can switch to "show all results."
+Added new formatting option.  Switch between an easy copy format to a better looking display.
+Produced a new interface, with book browsing buttons removed.
+
+1.5.07
+Nov 6, 2006
+Added resiliency in scanning for Bible version installation files
+Fixed bug that prevented version 1.5 from working in PHP 4
+
+1.5.03
+Nov 1, 2006
+Encoding bug fixed. This prevented German and Spanish text from displaying correctly.
+Fixed minor bug with Boolean search (implied AND)
+
+1.5.00
+Oct 28, 2006
+
+New Features:
+Multiple Bible version support
+Several Bibles offered
+Boolean search with parenthenses
+New "Installation Manager"
+
+Updates:
+Better browsing buttons
+Book requests without search return only first chapter
+Standard interface now has "Bible SuperSearch" title
+Some MySQL tables renamed.
+Errors in 'bible_versions' table structure fixed
+Typo in 'kjv' bible_versions entry fixed.
+
+1.1.00
+Sept 23, 2006
+
+Added a much better interface, the one seen on BibleSuperSearch.com
+
+1.0.10
+July 04, 2006
+
+Fixed a major bug that prevented "Exact Phrase" searches from functioning in PHP 4.x. PHP 5 users are not affected.
+Also fixed a JavaScript error regarding non-existant frames.
+
+1.0.00
+June 24, 2006 - Initial Release
+
