@@ -55,33 +55,33 @@ class EngineTest extends TestCase
         $this->assertEquals(4,  $results['kjv'][0]->book);
         $this->assertEquals(12, $results['kjv'][0]->chapter);
         $this->assertEquals(7,  $results['kjv'][0]->verse);
-        $this->assertEquals('My servant Moses is not so, who is faithful in all mine house.',  $results['kjv'][0]->text);
+        $this->assertEquals('My servant Moses is not so, who is faithful in all mine house.',  $this->_tp($results['kjv'][0]->text));
         $this->assertEquals(51, $results['kjv'][201]->book);
         $this->assertEquals(1,  $results['kjv'][201]->chapter);
         $this->assertEquals(4,  $results['kjv'][201]->verse);
-        $this->assertEquals('Since we heard of your faith in Christ Jesus, and of the love which ye have to all the saints,',  $results['kjv'][201]->text);
+        $this->assertEquals('Since we heard of your faith in Christ Jesus, and of the love which ye have to all the saints,',  $this->_tp($results['kjv'][201]->text));
 
         $results = $Engine->actionQuery(['bible' => 'kjv', 'reference' => 'Rom']);
         $this->assertCount(32, $results['kjv']);
         $this->assertEquals(45, $results['kjv'][0]->book);
         $this->assertEquals(1,  $results['kjv'][0]->chapter);
         $this->assertEquals(1,  $results['kjv'][0]->verse);
-        $this->assertEquals('Paul, a servant of Jesus Christ, called to be an apostle, separated unto the gospel of God,',  $results['kjv'][0]->text);
+        $this->assertEquals('Paul, a servant of Jesus Christ, called to be an apostle, separated unto the gospel of God,',  $this->_tp($results['kjv'][0]->text));
         $this->assertEquals(45, $results['kjv'][29]->book);
         $this->assertEquals(1,  $results['kjv'][29]->chapter);
         $this->assertEquals(30, $results['kjv'][29]->verse);
-        $this->assertEquals('Backbiters, haters of God, despiteful, proud, boasters, inventors of evil things, disobedient to parents,',  $results['kjv'][29]->text);
+        $this->assertEquals('Backbiters, haters of God, despiteful, proud, boasters, inventors of evil things, disobedient to parents,',  $this->_tp($results['kjv'][29]->text));
 
         $results = $Engine->actionQuery(['bible' => 'kjv', 'search' => 'faith', 'reference' => 'Rom']);
         $this->assertCount(34, $results['kjv']);
         $this->assertEquals(45, $results['kjv'][0]->book);
         $this->assertEquals(1,  $results['kjv'][0]->chapter);
         $this->assertEquals(5,  $results['kjv'][0]->verse);
-        $this->assertEquals('By whom we have received grace and apostleship, for obedience to the faith among all nations, for his name:',  $results['kjv'][0]->text);
+        $this->assertEquals('By whom we have received grace and apostleship, for obedience to the faith among all nations, for his name:',  $this->_tp($results['kjv'][0]->text));
         $this->assertEquals(45, $results['kjv'][30]->book);
         $this->assertEquals(14, $results['kjv'][30]->chapter);
         $this->assertEquals(1,  $results['kjv'][30]->verse);
-        $this->assertEquals('Him that is weak in the faith receive ye, but not to doubtful disputations.',  $results['kjv'][30]->text);
+        $this->assertEquals('Him that is weak in the faith receive ye, but not to doubtful disputations.',  $this->_tp($results['kjv'][30]->text));
     }
 
     public function testWholeWordSearch() {
@@ -105,7 +105,7 @@ class EngineTest extends TestCase
         $this->assertEquals(19,  $results['kjv'][0]->book);
         $this->assertEquals(51, $results['kjv'][0]->chapter);
         $this->assertEquals(12, $results['kjv'][0]->verse);
-        $this->assertEquals('Restore unto me the joy of thy salvation; and uphold me with thy free spirit.', $results['kjv'][0]->text);
+        $this->assertEquals('Restore unto me the joy of thy salvation; and uphold me with thy free spirit.', $this->_tp($results['kjv'][0]->text));
     }
 
     public function testBookRangeSearch() {
@@ -142,5 +142,9 @@ class EngineTest extends TestCase
         $Engine = new Engine();
         $Books = $Engine->actionBooks(array('language' => 'en'));
         $this->assertCount(66, $Books);
+    }
+
+    private function _tp($text) {
+        return trim($text, '¶ ');
     }
 }

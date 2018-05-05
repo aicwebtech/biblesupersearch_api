@@ -437,7 +437,7 @@ class Engine {
                 else {
                     $data = $Def->toArray();
                     // Remove 'count' from TVM
-                    $data['tvm'] = preg_replace('/<b>Count:<\/b> [0-9]+<br>/', '', $data['tvm']);
+                    $data['tvm'] = preg_replace('/<b>Count:<\/b> [0-9]+.*?<br>/', '', $data['tvm']);
                     $response[] = $data;
                 }
             }

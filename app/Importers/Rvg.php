@@ -97,5 +97,6 @@ class Rvg extends ImporterAbstract {
         }
 
         $this->_insertVerses();
+        $Bible->enable();
     }
 }

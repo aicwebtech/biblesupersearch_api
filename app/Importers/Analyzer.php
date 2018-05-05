@@ -71,7 +71,6 @@ class Analyzer extends ImporterAbstract {
         $res_desc = $SQLITE->query('SELECT * FROM title');
         $info = $res_desc->fetchArray(SQLITE3_ASSOC);
         $desc = $info['info'];
-//        var_dump($info);
 
         if($insert_into_bible_table) {
             $attr = $this->bible_attributes;
@@ -134,6 +133,7 @@ class Analyzer extends ImporterAbstract {
         }
 
         $this->_insertVerses();
+        $Bible->enable();
     }
 
     protected function _formatText($text) {

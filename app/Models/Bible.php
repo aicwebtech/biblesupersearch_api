@@ -324,6 +324,16 @@ class Bible extends Model {
         $this->attributes['enabled'] = ($this->installed) ? $value : 0;
     }
 
+    public function enable() {
+        $this->enabled = 1;
+        $this->save();
+    }
+
+    public function disable() {
+        $this->enabled = 0;
+        $this->save();
+    }
+
     /**
      * Module mutator
      * @param string $value

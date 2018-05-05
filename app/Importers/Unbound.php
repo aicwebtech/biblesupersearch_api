@@ -177,6 +177,7 @@ class Unbound extends ImporterAbstract {
             }
 
             $this->_insertVerses();
+            $Bible->enable();
         }
     }
 }

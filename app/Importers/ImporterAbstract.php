@@ -187,7 +187,14 @@ abstract class ImporterAbstract {
         $find = [$this->redletter_st, $this->redletter_en];
         // $rep  = ['<', '>'];
         $rep = ['‹','›'];  // NOT <>!, U+2039, U+203A
-        return $this->_replaceTagsIfNeeded($find, $rep, $text);
+        $text = $this->_replaceTagsIfNeeded($find, $rep, $text);
+
+        if($find[0] && $find[1]) {
+            $text = str_replace('› [', ' [', $text);
+            $text = str_replace('] ‹', '] ', $text);
+        }
+
+        return $text;
     }
 
     protected function _formatParagraph($text) {
@@ -200,7 +207,6 @@ abstract class ImporterAbstract {
 
     protected function _removeUnusedTags($text) {
         foreach($this->unused_tags as $tag) {
-            // $regexp = '/<' . $tag . '>.*?</' . $tag . '>/';
             $regexp = '/<' . $tag . '>[^>]*>/';
             $text = preg_replace($regexp, '', $text);
         }
