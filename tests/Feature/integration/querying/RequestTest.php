@@ -72,7 +72,7 @@ class RequestTest extends TestCase {
 
         $results = $Engine->actionQuery(['bible' => 'kjv', 'request' => 'Romans', 'whole_words' => FALSE, 'page_all' => TRUE]);
         $this->assertFalse($Engine->hasErrors());
-        $this->assertCount(6, $results['kjv']);
+        $this->assertCount(6, $results['kjv']); // 7 if module has Pauline postscripts
 
 //        $results = $Engine->actionQuery(['bible' => 'kjv', 'request' => 'Peter John', 'whole_words' => FALSE, 'page_all' => TRUE]);
 //        $this->assertFalse($Engine->hasErrors());

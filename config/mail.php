@@ -54,7 +54,10 @@ return [
     |
     */
 
-    'from' => ['address' => null, 'name' => null],
+    'from' => [
+        'address' => env('MAIL_SYSTEM_ADDRESS', NULL),
+        'name'    => env('MAIL_SYSTEM_NAME', NULL),
+    ],
 
     /*
     |--------------------------------------------------------------------------
@@ -120,7 +123,7 @@ return [
     */
 
     'pretend' => env('MAIL_PRETEND', false),
-    
+
     'markdown' => [
         'theme' => 'default',
 

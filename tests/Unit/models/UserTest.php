@@ -9,24 +9,10 @@ use App\User;
 class UserTest extends TestCase
 {
     public function testOneUser() {
-        //$users = DB::select('select * from bss_users');
-
-        //print_r($users);        
 
         $users = DB::table('users')->get();
 
-        //print_r($users);
-	
-		// Make sure there is exactly ONE user in the system
-        $this->assertEquals(count($users), 1);
-
-        /*
-        $data = array(
-            ':email' => 'goofyball12@gmail.com',
-            ':created' => date('Y-m-d H:i:s', strtotime('yesterday'))
-        );
-
-        DB::update('update bss_users set email=:email, created_at=:created',$data);
-        */
+        // Make sure there is at leste ONE user in the system
+        $this->assertGreaterThanOrEqual(1, count($users));
     }
 }

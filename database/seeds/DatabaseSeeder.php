@@ -17,12 +17,17 @@ class DatabaseSeeder extends Seeder
     {
         Model::unguard();
 
+        // To do - move these 'seeds' to respective db table create migrations
+        // 'Seeds' are intended to fill db with test data,
+        // NOT populating with data needed for the application to work
+        // As we are doing here
+
         $this->call('UserTableSeeder');
         $this->call('Bibles');
         $this->call('IndexTableSeeder');
         $this->call('BookListSeeder');
         $this->call('ShortcutsSeeder');
-        $this->call('StrongsDefinitionsSeeder');
+        //// $this->call('StrongsDefinitionsSeeder'); // moved to migration, do NOT uncomment
 
         Model::reguard();
     }

@@ -20,15 +20,10 @@ Route::get('/', 'DocumentationController')->middleware('https');
 Route::get('/documentation', 'DocumentationController')->middleware('https');
 
 
-
 /* EVERYTHING BELOW IS EXPERIMENTAL, NON-PRODUCTION CODE */
 
-//Route::get('/', function() {
-//    return view('docs.home');
-//    //return view('welcome2');
-//});
 
-/* Routes for administrative backend */
+/* Routes for (administrative) backend */
 Route::get('/admin', function() {
     if(Auth::check()) {
         return redirect('/admin/main');
@@ -36,17 +31,54 @@ Route::get('/admin', function() {
 
     return view('admin.login');
 });
+
 Route::get('/admin/login', function() {
     return redirect('/admin');
 });
 
 //Route::get('/admin/login', 'Auth\AuthController@getLogin');
-Route::get('/auth/login', function () {
-    return redirect('/admin');
-});
-Route::post('/auth/login', 'Auth\AuthController@postLogin');
+//Route::get('/auth/login', function () {
+//    return redirect('/admin');
+//});
 
-Route::get('/auth/logout', 'Auth\AuthController@getLogout');
-Route::get('/admin/main', 'AdminController@getMain');
+//Route::post('/auth/login', 'Auth\AuthController@postLogin');
+Route::get('/login', 'Auth\AuthController@viewLogin')->name('login');
+Route::post('/login', 'Auth\AuthController@login');
+Route::get('/auth/login', 'Auth\AuthController@viewLogin');
+Route::post('/auth/login', 'Auth\AuthController@login');
+Route::get('/logout', 'Auth\AuthController@logout')->name('logout');
+Route::get('/landing', 'Auth\AuthController@landing')->name('auth.landing')->middleware('auth');
+Route::get('/auth/reset', 'Auth\PasswordController@showLinkRequestForm')->name('password.request');
+//Route::get('/auth/reset', 'Auth\PasswordController@showResetForm')->name('password.request');
+Route::post('/auth/reset', 'Auth\PasswordController@sendResetLinkEmail')->name('password.email');
+Route::get('/auth/change', 'Auth\PasswordController@showResetForm')->name('password.reset');
+Route::post('/auth/change', 'Auth\PasswordController@reset');
+Route::post('/auth/success', 'Auth\PasswordController@success');
+Route::get('/auth/success', 'Auth\PasswordController@success');
+Route::get('/admin/main', 'AdminController@getMain')->name('admin.main');
+
+Route::get('/admin/bibles/grid', 'Admin\BibleController@grid');
+Route::post('/admin/bibles/enable/{id}', 'Admin\BibleController@enable');
+Route::post('/admin/bibles/disable/{id}', 'Admin\BibleController@disable');
+Route::post('/admin/bibles/install/{id}', 'Admin\BibleController@install');
+Route::post('/admin/bibles/uninstall/{id}', 'Admin\BibleController@uninstall');
+Route::post('/admin/bibles/export/{id}', 'Admin\BibleController@export');
+
+Route::get('/admin/tos', 'Admin\PostConfigController@tos')->name('admin.tos');
+Route::post('/admin/tos', 'Admin\PostConfigController@saveTos');
+Route::get('/admin/privacy', 'Admin\PostConfigController@privacy')->name('admin.privacy');
+Route::post('/admin/privacy', 'Admin\PostConfigController@savePrivacy');
+
+Route::resource('/admin/bibles', 'Admin\BibleController', ['as' => 'admin', 'except' => [
+    'create', 'edit'
+]]);
+
+Route::get('/admin/config', 'Admin\ConfigController@index')->name('admin.configs');
+Route::post('/admin/config', 'Admin\ConfigController@store')->name('admin.configs.store');
+Route::delete('/admin/config', 'Admin\ConfigController@destroy')->name('admin.configs.destroy');
+
 //Route::controller('admin', 'AdminController');
 
+// todos
+Route::get('/admin/options', 'AdminController@todo')->name('admin.options');
+Route::get('/admin/test', 'AdminController@todo')->name('admin.test');

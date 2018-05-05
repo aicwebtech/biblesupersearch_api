@@ -7,6 +7,7 @@ use Illuminate\Foundation\Console\Kernel as ConsoleKernel;
 
 class Kernel extends ConsoleKernel
 {
+
     /**
      * The Artisan commands provided by your application.
      *
@@ -15,13 +16,16 @@ class Kernel extends ConsoleKernel
     protected $commands = [
         Commands\Inspire::class,
         Commands\ImportBibleUnbound::class,
-        // Commands\ImportBibleCustom::class,  // Comment out when not using
+        Commands\ImportBibleAnalyzer::class,
+        Commands\ImportBibleEvening::class,
+         Commands\ImportBibleCustom::class,  // Comment out when not using
         Commands\EnableBible::class,
         Commands\DisableBible::class,
         Commands\InstallBible::class,
         Commands\UninstallBible::class,
         Commands\GenerateModule::class,
         Commands\BibleRefresh::class,
+        Commands\TempMigrateStrongs::class,
     ];
 
     /**
@@ -39,5 +43,11 @@ class Kernel extends ConsoleKernel
             $CM = new \App\CacheManager();
             $CM->cleanUpCache();
         })->weekly();
+    }
+
+    public function __construct(\Illuminate\Contracts\Foundation\Application $app, \Illuminate\Contracts\Events\Dispatcher $events) {
+        $this->bootstrappers[] = \App\Http\Bootstrap\LoadSoftConfiguration::class;
+
+        parent::__construct($app, $events);
     }
 }

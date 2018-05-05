@@ -4,9 +4,13 @@ namespace App\Http\Controllers\Auth;
 
 use App\User;
 use Validator;
+use Auth;
 use App\Http\Controllers\Controller;
 use Illuminate\Foundation\Auth\ThrottlesLogins;
-use Illuminate\Foundation\Auth\AuthenticatesAndRegistersUsers;
+use Illuminate\Foundation\Auth\AuthenticatesUsers;
+use Illuminate\Foundation\Auth\RegistersUsers;
+use Illuminate\Http\Request;
+
 
 class AuthController extends Controller
 {
@@ -21,13 +25,16 @@ class AuthController extends Controller
     |
     */
 
-    use AuthenticatesAndRegistersUsers, ThrottlesLogins;
-    
-    protected $username = 'username'; // This should force it to authenticate on username instead of email
-    
-    protected $redirectTo = '/admin/main';
-    protected $loginPath = '/admin';
-    
+    use AuthenticatesUsers, RegistersUsers {
+        AuthenticatesUsers::redirectPath insteadof RegistersUsers;
+        AuthenticatesUsers::guard insteadof RegistersUsers;
+    }
+
+    protected $redirectTo = '/landing';
+    protected $loginPath = '/login';
+
+    protected $landing_page = '/landing';
+
     /**
      * Create a new authentication controller instance.
      *
@@ -35,7 +42,7 @@ class AuthController extends Controller
      */
     public function __construct()
     {
-        $this->middleware('guest', ['except' => 'getLogout']);
+        $this->middleware('guest', ['except' => ['logout','landing']]);
     }
 
     /**
@@ -47,9 +54,9 @@ class AuthController extends Controller
     protected function validator(array $data)
     {
         return Validator::make($data, [
-            'name' => 'required|max:255',
-            'email' => 'required|email|max:255|unique:users',
-            'password' => 'required|confirmed|min:6',
+            'name'      => 'required|max:255',
+            'email'     => 'required|email|max:255|unique:users',
+            'password'  => 'required|confirmed|min:6',
         ]);
     }
 
@@ -62,9 +69,55 @@ class AuthController extends Controller
     protected function create(array $data)
     {
         return User::create([
-            'name' => $data['name'],
-            'email' => $data['email'],
-            'password' => bcrypt($data['password']),
+            'name'      => $data['name'],
+            'email'     => $data['email'],
+            'password'  => bcrypt($data['password']),
         ]);
     }
+
+    // This should force it to authenticate on username instead of email
+    protected function username() {
+        return 'username';
+    }
+
+    public function viewLogin() {
+        return view('admin.login');
+    }
+
+    /**
+     * Generic landing page accessible by ALL authenticated users
+     * Will redirect based on user's role
+     */
+    public function landing() {
+        if(!Auth::check()) {
+            return redirect($this->loginPath);
+        }
+
+        return view('auth.landing');
+    }
+
+    /**
+     * The user has been authenticated.
+     * Redirect based on user's role
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @param  mixed  $user
+     * @return mixed
+     */
+    protected function authenticated(Request $request, $user) {
+        // print_r($user->toArray());
+        // die();
+
+        // Redirect based on user's role
+        if(!$user) {
+            return redirect($this->loginPath);
+        }
+
+        if($user->access_level >= 100) {
+            return redirect('/admin');
+        }
+
+        return redirect($this->landing_page);
+    }
+
 }

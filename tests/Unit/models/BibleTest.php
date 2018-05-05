@@ -38,7 +38,13 @@ class BibleTest extends TestCase {
     }
 
     public function testAddBible() {
-        $module = 'bobs_bible';
+        $module = 'bobs_test_bible';
+        $Bible = Bible::findByModule($module);
+
+        if($Bible) {
+            $Bible->uninstall();
+            $Bible->forceDelete();
+        }
 
         Bible::create([
             'module' => $module,
@@ -59,15 +65,15 @@ class BibleTest extends TestCase {
         $Bible->enabled = 1;
         $this->assertEquals(0, $Bible->enabled);
 
-        $Bible->install();
+        $Bible->install(TRUE);
+        $this->assertFalse($Bible->hasErrors());
         $this->assertEquals(1, $Bible->installed);
 
         $Bible->enabled = 1;
-
         $this->assertEquals(1, $Bible->enabled);
 
         $class_name = $Bible->getVerseClassName();
-        $this->assertEquals('App\Models\Verses\BobsBible', $class_name);
+        $this->assertEquals('App\Models\Verses\BobsTestBible', $class_name);
 
         $this->assertTrue(Schema::hasTable('verses_' . $module));
 

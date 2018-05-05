@@ -132,7 +132,7 @@ class VersesTest extends TestCase
             $verses = $Verses->orderBy('id', 'asc')->take(10)->get();
             $this->assertCount(10, $verses, $Bible->module . ' has empty table');
             $this->assertTrue(in_array($verses[0]->book, [1, 40]), 'Test verese did not come from Genesis or Matthew');
-            $this->assertEquals(1, $verses[0]->id);
+            $this->assertEquals(1, $verses[0]->id, $Bible->module . ' verses are misnumbered');
             $this->assertNotEmpty($verses[0]->text);
         }
     }
@@ -145,7 +145,7 @@ class VersesTest extends TestCase
 
         foreach($Bibles as $Bible) {
             // Make sure it's installed and the verses table exists
-            $this->assertEquals(1, $Bible->installed);
+            $this->assertEquals(1, $Bible->installed, $Bible->module . ' is enabled but NOT installed.');
             $this->assertTrue( Schema::hasTable('verses_' . $Bible->module), 'No table for module: verses_' . $Bible->module);
         }
     }

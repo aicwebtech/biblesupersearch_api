@@ -1,0 +1,5 @@
+.dialogNoTitle .ui-dialog-titlebar {
+    display:none
+}
+
+.dialogCenterText { text-align: center; }

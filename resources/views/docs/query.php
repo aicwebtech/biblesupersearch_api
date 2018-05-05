@@ -46,6 +46,7 @@
         'search_type',
         'keyword_limit',
         'proximity_limit',
+        'markup',
     );
 
     $advanced_params = array(

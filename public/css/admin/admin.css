@@ -1,0 +1,111 @@
+body {
+    background-color: #a4adbc;
+    font-family: sans-serif;
+}
+
+#top_menu {
+    text-align: center;
+    margin-bottom: 20px
+}
+
+#top_menu form {
+    display: inline-block;
+}
+
+#header h1 {
+    text-align:center;
+    color:darkred;
+    font-size:140%;
+    font-weight:bold;
+}
+
+#top_menu .menu_item, #top_menu .menu_item:visited {
+    display: inline-block;
+    font-family: sans-serif;
+    margin: 0 6px;
+    padding: 8px;
+    border-radius: 10px;
+    background-color: #6f94f2;
+    color: white;
+    text-decoration: none;
+}
+
+#top_menu .menu_item:hover {
+    background-color: #5579e0;
+}
+
+#top_menu .active.menu_item {
+    background-color: #7a84a0;
+}
+
+#app {
+    padding: 20px;
+    border-radius: 20px;
+    background-color: white;
+    min-height: 50vh;
+    margin: 10px 30px;
+}
+
+#footer {
+    font-size: .7em;
+    font-family: sans-serif;
+    text-align: center;
+    padding: 20px;
+}
+
+.ralign {
+    text-align: right;
+}
+
+.config_block {
+    background-color: #b3c8f9;
+    padding: 10px;
+    border-radius: 10px;
+    width: 600px;
+    margin: 0 auto 20px;
+}
+
+.config_block h1 {
+    margin: 0 0 10px;
+    font-size: 1.2em;
+}
+
+.config_block td {
+    padding: 3px;
+}
+
+title.h1 {
+    font-family: sans-serif;
+}
+
+.info:hover {
+    position: relative;
+}
+
+.info span {
+    display: inline-block;
+    width: 10px;
+    height: 10px;
+    border-radius: 20px;
+    padding: 1px;
+    border: 1px solid black;
+    font-size: 10px;
+    background-color: yellow;
+    text-align: center;
+    cursor: pointer;
+}
+
+.info p {
+    display: none;
+}
+
+.info:hover p {
+    display: block;
+    position: absolute;
+    border: 1px solid red;
+    width:  400px;
+    background-color: white;
+    font-size: .9em;
+    padding: 10px;
+    text-align: justify;
+}
