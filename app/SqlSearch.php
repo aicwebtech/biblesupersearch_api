@@ -292,8 +292,15 @@ class SqlSearch {
     protected function _termOperator($term, $exact_phrase = FALSE, $whole_words = FALSE, $primary_only = TRUE) {
         //$is_special = ($exact_phrase || static::isTermPhrase($term) || static::isTermRegexp($term)) ? TRUE : FALSE;
         $is_regexp   = ($this->_isRegexpSearch($term));
+
+        $is_strongs = $this->_isStrongsSearch($term);
+
+        if($is_strongs) {
+
+        }
+
         // Other searches that use REGEXP
-        $uses_regexp = ($this->_isPhraseSearch($term) || $whole_words) ? TRUE : FALSE;
+        $uses_regexp = ($this->_isPhraseSearch($term) || $whole_words || $is_strongs) ? TRUE : FALSE;
 
         if($is_regexp) {
             return ($primary_only) ? 'REGEXP' : ['REGEXP'];
@@ -311,13 +318,18 @@ class SqlSearch {
     }
 
     protected function _termFormat($term, $exact_phrase = FALSE, $whole_words = FALSE, $primary_only = TRUE) {
-        $is_phrase = $is_regexp = $uses_regexp = FALSE;
+        $is_phrase = $is_regexp = $is_strongs = $uses_regexp = FALSE;
         $term_inexact = '%' . trim($term, '%"`\'') . '%';
+        $phrase_whitespace = ' ';
+        $phrase_whitespace = '[[:>:]]\s|(\{.*\})[[:<:]]';
+        $phrase_whitespace = '([^a-fi-zA-FI-Z]+)';  // General approximation (fails open - may pull MORE results than it should)
+        // $phrase_whitespace = "\]?[ {]([^a-fi-zA-FI-Z]*)"; // This prefered whitespace separator works in navicat but not in this software?
 
         // Regexp
         if($this->_isRegexpSearch($term)) {
             $term = trim($term, '`');
             $is_regexp = TRUE;
+            $uses_regexp = TRUE;
             return ($primary_only) ? $term : [$term]; // Whole words ignored for regexp
         }
 
@@ -326,10 +338,20 @@ class SqlSearch {
             $term = trim($term, '"');
             $is_phrase = TRUE;
             $uses_regexp = TRUE;
+            $term_inexact = str_replace(' ', '%', $term_inexact);
 
             if(!$whole_words) {
-                return ($primary_only) ? $term : [$term_inexact, $term];
+                $phrase_term = str_replace(' ', $phrase_whitespace, $term);
+
+                // to do - use this return if bible has no markup
+                return ($primary_only) ? $phrase_term : [$term_inexact, $phrase_term];
             }
+        }
+
+        // Strongs number
+        if($this->_isStrongsSearch($term)) {
+            $is_strongs = TRUE;
+            $whole_words = TRUE;
         }
 
         if(!$whole_words && !$uses_regexp) {
@@ -348,10 +370,12 @@ class SqlSearch {
 
         $pre  = ($has_st_pct) ? '' : '[[:<:]]';
         $post = ($has_en_pct) ? '' : '[[:>:]]';
-        $phrase_whitespace = ' ';
-//        $phrase_whitespace = '.*';
+        $pre  = ($has_st_pct) ? '' : '([[:<:]]|[‹])';
+        $post = ($has_en_pct) ? '' : '([[:>:]]|[›])';
         $regexp_term = ($is_phrase) ? str_replace(' ', $phrase_whitespace, $term) : str_replace('%', '.*', trim($term, '%'));
         $regexp_term = $pre . trim($regexp_term, '%') . $post;
+
+        // die($regexp_term);
 
         if($primary_only) {
             return $regexp_term;
@@ -365,7 +389,8 @@ class SqlSearch {
         $preformat = $this->_termFormat($term, FALSE, $whole_words);
         //$preformat = ($whole_words) ? $preformat : trim($preformat, '%');
         $preformat = trim($preformat, '%./');
-        $preformat = str_replace(['[[:<:]]', '[[:>:]]'], '\b', $preformat);
+        // $preformat = str_replace(['[[:<:]]', '[[:>:]]'], '\b', $preformat);
+        $preformat = str_replace(['([[:<:]]|[‹])', '([[:>:]]|[›])'], '\b', $preformat);
         $case_insensitive = ($exact_case) ? '' : 'i';
         $term_format = '/' . $preformat . '/' . $case_insensitive;
         return $term_format;
@@ -397,6 +422,18 @@ class SqlSearch {
         }
 
         if($this->options['search_type'] == 'phrase') {
+            return TRUE;
+        }
+
+        return FALSE;
+    }
+
+    protected function _isStrongsSearch($term = NULL) {
+        if($term && static::isTermStrongs($term)) {
+            return TRUE;
+        }
+
+        if($this->options['search_type'] == 'strongs') {
             return TRUE;
         }
 
@@ -524,6 +561,10 @@ class SqlSearch {
 
     public static function isTermRegexp($term) {
         return ($term{0} == '`') ? TRUE : FALSE;
+    }
+
+    public static function isTermStrongs($term) {
+        return FALSE;
     }
 
     /**

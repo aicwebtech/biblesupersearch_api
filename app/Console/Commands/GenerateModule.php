@@ -28,6 +28,6 @@ class GenerateModule extends BibleAbstract {
     }
 
     protected function _handleSingleBible(Bible $Bible) {
-        $Bible->export();
+        $Bible->export(TRUE);
     }
 }

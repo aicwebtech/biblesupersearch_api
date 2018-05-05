@@ -144,6 +144,13 @@ return array(
                 'nav' => 'Metadata for browsing buttons, see below for details',
             ),
         ),
+        'markup' => array(
+            'type' => 'String',
+            'name' => 'Markup Format',
+            'default' => 'none',
+            'description' => 'Format of markup for Bibles having Strongs numbers or red letter.<br/ >\'none\' returns no markup. <br />\'raw\' returns the '
+            . 'markup as stored in the database:  {} indicates Strongs numbers, [] indicates added words, and ‹› (not <>) indicates red letter.',
+        ),
         'keyword_limit' => array(
             'type' => 'Integer',
             'name' => 'Keyword Limit',

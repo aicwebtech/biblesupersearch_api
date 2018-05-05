@@ -11,9 +11,9 @@ class StrongsDefinitionsSeeder extends Seeder
      */
     public function run()
     {
-        if(config('bss.import_from_v2')) {
-            return $this->_importFromV2();
-        }
+//        if(config('bss.import_from_v2')) {
+//            return $this->_importFromV2();
+//        }
 
         // Import from file
         $file  = 'strongs_definitions_en.sql';

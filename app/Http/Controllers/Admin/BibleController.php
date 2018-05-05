@@ -22,6 +22,7 @@ class BibleController extends Controller
      * @return \Illuminate\Http\Response
      */
     public function index() {
+        Bible::populateBibleTable();
         return view('admin.bibles');
     }
 

@@ -15,10 +15,24 @@ use \DB; //Todo - something is wrong with namespaces here, shouldn't this be aut
 /**
  * Imports Bibles in the Bible Analyzer .bib (SQLite) format
  *
+ * Incoming meta:
+ *  <i>, </i> - italics
+ *  <r>, </r> - red letter
+ *  <fn>, </fn> - footnote (remove)
+ *  [,] - strongs
  */
 
 class Analyzer extends ImporterAbstract {
     protected $required = ['module', 'lang', 'lang_short']; // Array of required fields
+
+    protected $italics_st   = '<i>';
+    protected $italics_en   = '</i>';
+    protected $redletter_st = '<r>';
+    protected $redletter_en = '</r>';
+    protected $strongs_st   = '[';
+    protected $strongs_en   = ']';
+    protected $paragraph    = '¶ ';
+    protected $unused_tags  = ['fn'];
 
     public function import() {
         ini_set("memory_limit", "50M");
@@ -36,9 +50,8 @@ class Analyzer extends ImporterAbstract {
         $insert_into_bible_table    = TRUE; // Inserts (or updates) the record in the Bible versions table
         $overwrite_existing         = $this->overwrite;
 
-        $Bible    = Bible::findByModule($module);
-        $existing = ($Bible) ? TRUE   : FALSE;
-        $Bible    = ($Bible) ? $Bible : new Bible;
+        $Bible    = $this->_getBible($module);
+        $existing = $this->_existing;
         $filepath = $dir . $file;
 
         if(!$overwrite_existing && $existing) {
@@ -58,7 +71,6 @@ class Analyzer extends ImporterAbstract {
         $res_desc = $SQLITE->query('SELECT * FROM title');
         $info = $res_desc->fetchArray(SQLITE3_ASSOC);
         $desc = $info['info'];
-//        var_dump($info);
 
         if($insert_into_bible_table) {
             $attr = $this->bible_attributes;
@@ -86,7 +98,7 @@ class Analyzer extends ImporterAbstract {
             echo('Installing: ' . $module . PHP_EOL);
         }
 
-        $res_bib = $SQLITE->query('SELECT * FROM bible');
+        $res_bib = $SQLITE->query('SELECT * FROM bible ORDER BY id ASC');
         $book = $i = 0;
         $last_book_name = NULL;
 
@@ -112,15 +124,7 @@ class Analyzer extends ImporterAbstract {
                 continue;
             }
 
-            $binddata = array(
-                'book'             => $book,
-                'chapter'          => $chapter,
-                'verse'            => $verse,
-                'chapter_verse'    => $chapter * 1000 + $verse,
-                'text'             => $text,
-            );
-
-            DB::table($table)->insert($binddata);
+            $this->_addVerse($book, $chapter, $verse, $text);
             $i++;
 
             if($i > 100) {
@@ -128,6 +132,18 @@ class Analyzer extends ImporterAbstract {
             }
         }
 
+        $this->_insertVerses();
+        $Bible->enable();
+    }
 
+    protected function _formatText($text) {
+        $text    = $this->_preFormatText($text);
+        $text    = $this->_formatStrongs($text);
+        $text    = $this->_formatItalics($text);
+        $text    = $this->_formatRedLetter($text);
+        $text    = $this->_formatParagraph($text);
+        $text    = $this->_removeUnusedTags($text);
+        $text    = $this->_postFormatText($text);
+        return $text;
     }
 }
