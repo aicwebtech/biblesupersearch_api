@@ -101,6 +101,7 @@ enyo.kind({
         this.$.Export.set('bible', rowData.name);
         
         this.$.Export.confirm(enyo.bind(this, function(confirmed, props) {
+            
             if(confirmed) {
                 this._singleActionHelper('export', id, props);
             }
@@ -163,6 +164,8 @@ enyo.kind({
 
         ajax.error(this, function(inSender, inResponse) {
             // todo handle errors!
+            console.log('ERROR', inSender, inResponse);
+
             this.app.set('ajaxLoading', false);
             var msg = 'An Error has occurred';
             this.app.alert(msg);

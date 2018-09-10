@@ -49,7 +49,8 @@ enyo.kind({
     },
 
     dialogOptionsChanged: function(was, is) {
-
+        this.dialogOptions.beforeClose = enyo.bind(this, this.close);
+        this.handle && this.handle.dialog('option', this.dialogOptions);
     },
     titleChanged: function(was, is) {
         this.dialogOptions.title = is;
@@ -68,6 +69,7 @@ enyo.kind({
     showingChanged: function(was, is) {
         if(is) {
             this.handle.dialog('open');
+            this.handle.scrollTop(0);
         }
         else {
             this.handle.dialog('close');
