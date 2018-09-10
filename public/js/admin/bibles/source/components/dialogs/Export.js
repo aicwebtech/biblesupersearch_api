@@ -7,6 +7,7 @@ enyo.kind({
     title: 'Export Bible',
     callback: null,
     confirmed: false,
+    selected: false,
     props: null,
     bible: null,
 
@@ -65,9 +66,16 @@ enyo.kind({
     open: function() {
         this.inherited(arguments);
         this.confirmed = false;
+        this.selected = false;
     },
     close: function() {
         this.inherited(arguments);
+
+        if(this.selected) {
+            return;
+        }
+
+        this.selected = true;
 
         if(typeof this.callback == 'function') {
             this.callback(this.confirmed, enyo.clone(this.props));
