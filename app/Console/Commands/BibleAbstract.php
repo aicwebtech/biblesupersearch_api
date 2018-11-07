@@ -57,19 +57,32 @@ abstract class BibleAbstract extends Command {
     }
 
     protected function _listBibles() {
+        $Bibles = Bible::orderBy('rank')->get();
+        $module_len = 25;
+        $name_len = 0;
+
+        foreach($Bibles as $Bible) {
+            $module_len = max($module_len, strlen($Bible->module));
+            $name_len = max($name_len, strlen($Bible->name));
+        }
+
         print '' . PHP_EOL;
         print 'List of Bibles (automatically refreshed from module files)' . PHP_EOL;
         print '' . PHP_EOL;
-        print "\t" . str_pad('Module', 10) . "\tInstalled  Enabled  " . 'Name' . PHP_EOL;
-        print "\t" . str_repeat('-', 80) . PHP_EOL;
+        print "\t" . str_pad('Module', $module_len) . "  Installed  Enabled  " . str_pad('Year', 12) . '  ' . str_pad('Name', $name_len) . PHP_EOL;
+        print "\t" . str_repeat('-', $module_len + $name_len + 36) . PHP_EOL;
 
         Bible::populateBibleTable();
 
-        foreach(Bible::orderBy('rank')->get() as $Bible) {
+        foreach($Bibles as $Bible) {
             $ena = ($Bible->enabled)   ? 'Yes' : 'No';
             $ins = ($Bible->installed) ? 'Yes' : 'No';
             //$this->print();
-            print "\t" . str_pad($Bible->module, 10) . "\t" . str_pad($ins, 9) .  "  " . str_pad($ena, 7) .  "  " . $Bible->name . PHP_EOL;
+
+            $text = "\t" . str_pad($Bible->module, $module_len) . "  " . str_pad($ins, 9) .  "  " . str_pad($ena, 7) .  "  " . str_pad($Bible->year, 12);
+            $text .= '  ' . str_pad($Bible->name, $name_len) . PHP_EOL;
+
+            print $text;
         }
 
         print '' . PHP_EOL;
