@@ -26,6 +26,7 @@ class Kernel extends ConsoleKernel
         Commands\GenerateModule::class,
         Commands\BibleRefresh::class,
         Commands\TempMigrateStrongs::class,
+        Commands\TestEmail::class,
     ];
 
     /**
