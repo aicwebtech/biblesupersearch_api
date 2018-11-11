@@ -7,6 +7,7 @@ use Illuminate\Foundation\Auth\ResetsPasswords;
 use Illuminate\Foundation\Auth\SendsPasswordResetEmails;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
+use Illuminate\Support\Facades\Password;
 
 class PasswordController extends Controller
 {
@@ -81,5 +82,57 @@ class PasswordController extends Controller
         ])->save();
 
 //        $this->guard()->login($user);
+    }
+
+
+    /**
+     * Send a reset link to the given user.
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @return \Illuminate\Http\RedirectResponse
+     */
+    public function _sendResetLinkEmail(Request $request)
+    {
+//        return 'bacon';
+
+        $this->validateEmail($request);
+
+        // We will send the password reset link to this user. Once we have attempted
+        // to send the link, we will examine the response then see the message we
+        // need to show to the user. Finally, we'll send out a proper response.
+
+        $broker = $this->broker();
+
+        $response = $broker->sendResetLink($request->only('email'), function (Message $message) {
+            $message->subject($this->getEmailSubject());
+                $message->from('baconman@example.com', 'You can be a big pig too');
+//            $message->from(env('MAIL_FROM'), env('APP_NAME'));
+                throw new Exception('farquad was here');
+        });
+
+//        $response = $this->broker()->sendResetLink(
+//            $request->only('email'),
+//            function(Message $message) {
+//                $message->subject($this->getEmailSubject());
+////                $message->from(config('mail.from.address'), config('mail.from.name'));
+//                $message->from('baconman@example.com', 'You can be a big pig too');
+//                $message->from('baconman@example.com', 'You can be a big pig too');
+//                die('dead');
+//            }
+//        );
+
+        return $response == Password::RESET_LINK_SENT
+                    ? $this->sendResetLinkResponse($response)
+                    : $this->sendResetLinkFailedResponse($request, $response);
+    }
+
+    protected function resetEmailBuilder()
+    {
+        return function (Message $message) {
+            $message->subject($this->getEmailSubject());
+            $message->from('baconman@bacon.com', 'You can be a big pig too');
+            throw new Exception('farquad was here');
+//            $message->from('you@email.com', 'you');
+        };
     }
 }
