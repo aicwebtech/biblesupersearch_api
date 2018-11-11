@@ -91,7 +91,7 @@ class PasswordController extends Controller
      * @param  \Illuminate\Http\Request  $request
      * @return \Illuminate\Http\RedirectResponse
      */
-    public function _sendResetLinkEmail(Request $request)
+    public function sendResetLinkEmail(Request $request)
     {
 //        return 'bacon';
 
