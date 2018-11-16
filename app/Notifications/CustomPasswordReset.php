@@ -53,11 +53,18 @@ class CustomPasswordReset extends Notification
      */
     public function toMail($notifiable)
     {
+        $data = [
+            'url' => url(config('app.url').route('password.reset', $this->token, false)),
+            'User' => $this->User,
+        ];
+
         return (new MailMessage)
             ->line('You are receiving this email because we received a password reset request for your account.')
             ->action('Reset Password', url(config('app.url').route('password.reset', $this->token, false)))
             ->line('If you did not request a password reset, no further action is required.')
             ->greeting('Hello, ' . $this->User->name . ' ( ' . $this->User->username . ' )')
+            ->view('mail.pwreset', $data)
+            ->from(config('mail.from.address'), config('mail.from.name'))
             ->subject('Bible SuperSearch - Password Reset');
     }
 
