@@ -33,6 +33,7 @@ class Kernel extends HttpKernel
         'can' => \Illuminate\Auth\Middleware\Authorize::class,
         'api.access' => \App\Http\Middleware\ApiAccess::class,
         'https' => \App\Http\Middleware\HttpsRedirect::class,
+        'install' => \App\Http\Middleware\InstallRedirect::class,
         'bindings' => \Illuminate\Routing\Middleware\SubstituteBindings::class,
         'throttle' => \Illuminate\Routing\Middleware\ThrottleRequests::class,
     ];

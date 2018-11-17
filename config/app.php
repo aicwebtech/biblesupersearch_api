@@ -39,6 +39,8 @@ return [
 
     'config_cache' => FALSE,
 
+    'installed' => FALSE,
+
     /*
     |--------------------------------------------------------------------------
     | Application URL
