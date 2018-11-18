@@ -16,7 +16,7 @@ Route::get('/api/{action?}' , 'ApiController@genericAction')->middleware('api');
 Route::post('/api/{action?}', 'ApiController@genericAction')->middleware('api'); // 'Action' defaults to 'query'
 
 /* Route for Documentation UI */
-Route::get('/', 'DocumentationController');
+Route::get('/', 'DocumentationController')->name('docs');
 Route::get('/documentation', 'DocumentationController');
 
 
@@ -83,6 +83,8 @@ Route::delete('/admin/config', 'Admin\ConfigController@destroy')->name('admin.co
 Route::get('/install/{action?}' , 'Admin\InstallController@index')->name('admin.install');
 //Route::post('/install/{action?}', 'Admin\InstallController@genericAction'); // Inside controller actions are required to be post
 Route::post('/install/check', 'Admin\InstallController@check')->name('admin.install.check'); // Inside controller actions are required to be post
+Route::post('/install/config', 'Admin\InstallController@config')->name('admin.install.config'); // Inside controller actions are required to be post
+Route::post('/install/config/process', 'Admin\InstallController@handleConfig')->name('admin.install.config.process'); // Inside controller actions are required to be post
 
 // todos
 Route::get('/admin/options', 'AdminController@todo')->name('admin.options');

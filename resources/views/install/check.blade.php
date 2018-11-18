@@ -58,7 +58,16 @@ Let's check to see if you're ready to install {{ config('app.name') }} on your s
 
 <?php if($success): ?>
 
+You are ready to install {{ config('app.name') }}. <br /><br />
+
+<form class="form-horizontal" method="POST" action="{{ route('admin.install.config') }}">
+   {{ csrf_field() }}
+   <button type="submit" class="button">Continue</button>
+</form>
+
 <?php else: ?>
+
+Please fix the the items in red, and check again. <br /><br />
 
 <form class="form-horizontal" method="POST" action="{{ route('admin.install.check') }}">
    {{ csrf_field() }}

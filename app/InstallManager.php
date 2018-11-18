@@ -1,6 +1,10 @@
 <?php
 
 namespace App;
+use Illuminate\Http\Request;
+use App\Models\Bible;
+use Artisan;
+use App\ConfigManager;
 
 /**
  * Description of InstallManager
@@ -11,11 +15,49 @@ class InstallManager {
     //put your code here
 
     static function isInstalled() {
+//        return TRUE;
+
         if(config('app.installed')) {
             return TRUE;
         }
 
         return FALSE;
+    }
+
+    static function install(Request $request) {
+        // Generate application key
+        Artisan::call('key:generate');
+
+        // Set up database
+        $exit_code = Artisan::call('migrate', array('--seed' => TRUE, '--force' => TRUE));
+//        Artisan::call('migrate', array('--seed' => FALSE, '--force' => TRUE));
+//        var_dump($exit_code);
+//        die();
+//
+//        if($exit_code == 0) {
+//
+//        }
+
+        // Install default Bible (usally KJV)
+        $Bible = Bible::findByModule(config('bss.defaults.bible'));
+        $Bible->install(FALSE, TRUE);
+
+        // Add admin user
+        $User = User::create([
+            'name'          => $request->get('name'),
+            'username'      => $request->get('username'),
+            'email'         => $request->get('email'),
+            'password'      => bcrypt( $request->get('password') ),
+            'access_level'  => 100,
+        ]);
+
+        $User->access_level = 100;
+        $User->save();
+
+        // Set 'installed' config
+        ConfigManager::setConfigs(['app.installed' => TRUE]);
+
+        return TRUE;
     }
 
     static function checkSettings() {
@@ -29,10 +71,9 @@ class InstallManager {
         $checklist = [];
 
         $checklist[] = ['type' => 'header', 'label' => 'Software'];
-
-        $checklist[] = ['type' => 'item', 'label' => '.env config file', 'success' => is_file(base_path('.env'))];
+        $env = (is_file(base_path('.env')) && is_writable(base_path('.env'))) ? TRUE : FALSE;
+        $checklist[] = ['type' => 'item', 'label' => '.env config file exists and is writable', 'success' => $env];
         $checklist[] = ['type' => 'item', 'label' => 'PHP Version >= ' . $php_version, 'success' => $php_success];
-
 
         $extensions = ['OpenSSL', 'PDO', 'Mbstring', 'Tokenizer', 'XML'];
 
@@ -93,7 +134,6 @@ class InstallManager {
         }
         catch (\Exception $e) {
             $able_to_connect = FALSE;
-            //die("Could not connect to the database.  Please check your configuration. error:" . $e );
         }
 
         $checklist[] = ['type' => 'item', 'label' => 'Able to Connect', 'success' => $able_to_connect];

@@ -11,7 +11,6 @@
         <link rel="stylesheet" href="/css/admin/install.css">
         <link rel="stylesheet" href="/js/bin/jquery-ui/jquery-ui.css">
         <link rel="stylesheet" href="/js/bin/jquery-ui/jquery-ui.theme.css">
-        <link href="{{ asset('css/app.css') }}" rel="stylesheet">
         <script src='/js/bin/jquery/jquery-3.1.1.min.js'></script>
         <script src='/js/bin/jquery-ui/jquery-ui.js'></script>
         <script>

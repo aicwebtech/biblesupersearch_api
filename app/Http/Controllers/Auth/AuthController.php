@@ -43,6 +43,7 @@ class AuthController extends Controller
     public function __construct()
     {
         $this->middleware('guest', ['except' => ['logout','landing']]);
+        $this->middleware('install');
     }
 
     /**

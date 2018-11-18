@@ -1,5 +1,7 @@
 html, body {
     height: 100%;
+    font-family: Arial;
+    font-size: .9em;
 }
 
 body {
@@ -33,8 +35,35 @@ td {
     text-align: left;
 }
 
+.error .message {
+    border-left: 4px solid #dc3232;
+    padding: .3em .6em;
+    background-color: #fbeaea;
+    text-align: left;
+    /*list-style: none;*/
+    margin: 5px 0;
+}
+
+.error {
+    margin-bottom: 20px;
+}
+
 h2.title {
 
+}
+
+#config_form input {
+    width: 300px;
+    height: 15px;
+    border-radius: 10px;
+    padding: 3px 8px;
+}
+
+#config_form h3 {
+    display: inline-block;
+    width: 135px;
+    text-align: right;
+    margin: 10px 10px;
 }
 
 .good {
