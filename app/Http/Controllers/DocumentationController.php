@@ -22,6 +22,7 @@ class DocumentationController extends Controller {
             'bibles'    => $bibles,
             'TOS'       => $TOS,
             'Privacy'   => $Privacy,
+            'version'   => $Engine->getHardcodedVersion(),
         ]);
     }
 }

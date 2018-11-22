@@ -25,7 +25,7 @@
         <div id="app">
             <div id='container'>
                 <div id='content'>
-                    <h2>{{$title}}</h2>
+                    <h2 id='title'>{{$title}}</h2>
                     @yield('content')
                 </div>
             </div>

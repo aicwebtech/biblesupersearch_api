@@ -26,7 +26,8 @@ Route::get('/documentation', 'DocumentationController');
 /* Routes for (administrative) backend */
 Route::get('/admin', function() {
     if(Auth::check()) {
-        return redirect('/admin/main');
+        return redirect('/admin/bibles');
+        // return redirect('/admin/main'); // todo - make dashboard!
     }
 
     return view('admin.login');

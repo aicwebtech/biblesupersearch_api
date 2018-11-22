@@ -668,5 +668,10 @@ class Engine {
     public function setDefaultPageAll($value) {
         $this->default_page_all = ($value) ? TRUE : FALSE;
     }
+
+    function getHardcodedVersion() {
+        $app_configs = include(base_path('config/app.php'));
+        return $app_configs['version'];
+    }
 }
 

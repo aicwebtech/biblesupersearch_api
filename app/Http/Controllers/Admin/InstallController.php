@@ -20,6 +20,7 @@ class InstallController extends Controller {
      * @return type
      */
     public function index() {
+//        return view('install.config');
         return view('install.index');
     }
 

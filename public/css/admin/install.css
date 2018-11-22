@@ -87,3 +87,11 @@ h2.title {
 .zebra {
     background-color: #50D4FD;
 }
+
+#install-timer-container {
+    margin-top: 20px;
+    border-radius: 10px;
+    padding: 14px;
+    font-weight: bold;
+    background-color: #ffff4d;
+}
