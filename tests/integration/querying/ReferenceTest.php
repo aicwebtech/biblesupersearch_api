@@ -5,6 +5,7 @@ use Illuminate\Foundation\Testing\DatabaseMigrations;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 
 use App\Engine;
+use App\Models\Bible;
 
 class ReferenceTest extends TestCase {
     public function testBasic() {
@@ -39,6 +40,10 @@ class ReferenceTest extends TestCase {
     }
 
     public function testRandomForeign() {
+        if(!Bible::isEnabled('lith')) {
+            return;
+        }
+
         $Engine = new Engine();
         $results = $Engine->actionQuery(['bible' => 'lith', 'reference' => 'Random Chapter', 'data_format' => 'passage']);
         $this->assertFalse($Engine->hasErrors());
@@ -160,6 +165,10 @@ class ReferenceTest extends TestCase {
 
         $results = $Engine->actionQuery(['bible' => ['kjv'], 'reference' => 'Rev 21:17 -', 'data_format' => 'passage']);
         $this->assertEquals('21:17 - 27', $results[0]['chapter_verse']);
+
+        if(!Bible::isEnabled('tyndale')) {
+            return;
+        }
 
         // Tyndale doesn't have a vs 27
         $results = $Engine->actionQuery(['bible' => ['tyndale'], 'reference' => 'Rev 21:17 -', 'data_format' => 'passage']);

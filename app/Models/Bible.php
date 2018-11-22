@@ -209,6 +209,11 @@ class Bible extends Model {
         }
     }
 
+    public static function isEnabled($module) {
+        $Bible = static::findByModule($module);
+        return ($Bible && $Bible->enabled) ? TRUE : FALSE;
+    }
+
     public static function getModulePath() {
         return dirname(__FILE__) . '/../../bibles/modules/';
     }

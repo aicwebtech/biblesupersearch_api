@@ -8,10 +8,16 @@ use Illuminate\Foundation\Testing\WithoutMiddleware;
 use Illuminate\Foundation\Testing\DatabaseMigrations;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 
+use App\Models\Bible;
+
 class ParallelTest extends TestCase {
     public function testParallelSearch() {
         $Engine = new Engine();
         $Engine->setDefaultDataType('raw');
+
+        if(!Bible::isEnabled('tyndale')) {
+            return;
+        }
 
         // KJV and Tyndales
         $results = $Engine->actionQuery(['bible' => ['kjv','tyndale'], 'search' => 'faith', 'whole_words' => FALSE, 'page_all' => TRUE]);
@@ -31,6 +37,10 @@ class ParallelTest extends TestCase {
     }
 
     public function testMaxResults() {
+        if(!Bible::isEnabled('bishops')) {
+            return;
+        }
+
         $Engine = new Engine();
         $results = $Engine->actionQuery(['bible' => ['kjv','bishops'], 'search' => 'God', 'whole_words' => FALSE, 'page_all' => TRUE]);
         $this->assertTrue($Engine->hasErrors());
@@ -38,6 +48,10 @@ class ParallelTest extends TestCase {
     }
 
     public function testPagination() {
+        if(!Bible::isEnabled('bishops')) {
+            return;
+        }
+
         $Engine = new Engine();
         config(['bss.pagination.limit' => 30]);
         $page_limit = config('bss.pagination.limit'); // 30
