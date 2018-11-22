@@ -5,6 +5,7 @@ use Illuminate\Foundation\Testing\DatabaseMigrations;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 
 use App\Engine;
+use App\Models\Bible;
 
 class ErrorTest extends TestCase {
     public function testNoQuery() {
@@ -28,6 +29,10 @@ class ErrorTest extends TestCase {
     public function testBibleNoResults() {
         $Engine = new Engine();
         $Engine->setDefaultDataType('raw');
+
+        if(!Bible::isEnabled('tr') || !Bible::isEnabled('tyndale')) {
+            return;
+        }
 
         // Neither Textus Receptus nor the Tyndale Bible have Isaiah
         $results = $Engine->actionQuery(['bible' => array('kjv', 'tr', 'tyndale'), 'reference' => 'Isaiah 1:1']);
