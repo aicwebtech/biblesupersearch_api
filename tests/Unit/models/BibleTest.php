@@ -98,9 +98,12 @@ class BibleTest extends TestCase {
         $this->assertEquals('App\Models\Verses\Kjv', $class_name);
 
         $Bible = Bible::where('module', '<>', 'kjv')->where('installed', '=', 1)->first();
-        $class_name = $Bible->getVerseClassName();
-        $module = $Bible->module;
-        $this->assertEquals('App\Models\Verses\\' . studly_case($module), $class_name);
+
+        if($Bible) {
+            $class_name = $Bible->getVerseClassName();
+            $module = $Bible->module;
+            $this->assertEquals('App\Models\Verses\\' . studly_case($module), $class_name);
+        }
     }
 
     public function testBibleTable() {

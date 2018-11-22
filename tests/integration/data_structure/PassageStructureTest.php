@@ -6,6 +6,7 @@ use Illuminate\Foundation\Testing\DatabaseTransactions;
 
 use App\Engine;
 use App\Models\Verses\VerseStandard;
+use App\Models\Bible;
 
 /**
  * Tests for the 'Passage' Structure type
@@ -83,6 +84,15 @@ class PassageStructureTest extends TestCase {
     public function testMixedLookup() {
         $Engine  = new Engine();
         $bibles  = ['kjv','tr'];
+
+        foreach($bibles as $key => $bible) {
+            $Bible = Bible::findByModule($bible);
+
+            if(!$Bible || !$Bible->enabled) {
+                unset($bibles[$key]);
+            }
+        }
+
         $results = $Engine->actionQuery(['bible' => $bibles, 'reference' => 'Rom 3:23; Rom 6:23; Rom 5:8; Rom 10:9, 13', 'data_format' => 'passage']);
 
         $this->assertFalse($Engine->hasErrors());
@@ -97,6 +107,7 @@ class PassageStructureTest extends TestCase {
 
         // Test each individual passage in each Bible
         foreach($bibles as $bible) {
+
             // Rom 3:23
             $this->assertTrue($results[0]['single_verse']);
             $this->assertArrayHasKey(3, $results[0]['verses'][$bible]);
@@ -152,6 +163,15 @@ class PassageStructureTest extends TestCase {
         $Engine  = new Engine();
         //$Engine->debug = TRUE;
         $bibles  = ['kjv','tr'];
+
+        foreach($bibles as $key => $bible) {
+            $Bible = Bible::findByModule($bible);
+
+            if(!$Bible || !$Bible->enabled) {
+                unset($bibles[$key]);
+            }
+        }
+
         $results = $Engine->actionQuery(['bible' => $bibles, 'reference' => 'John 3:16, 23, 2:1-5; 14:30-15:2', 'data_format' => 'passage']);
 
         $this->assertFalse($Engine->hasErrors());
@@ -271,6 +291,10 @@ class PassageStructureTest extends TestCase {
         $this->assertArrayHasKey(52, $results[17]['verses']['kjv'][10]);
 
         // Add a second Bible (Tyndale Bible will produce less results because it lacks most OT books)
+        if(!Bible::isEnabled('tyndale')) {
+            return;
+        }
+
         $results = $Engine->actionQuery(['bible' => ['kjv','tyndale'], 'search' => 'faith', 'data_format' => 'passage', 'whole_words' => TRUE]);
         $this->assertFalse($Engine->hasErrors());
         $this->assertCount(234, $results); // Tyndale returns 3 verses that KJV doesn't

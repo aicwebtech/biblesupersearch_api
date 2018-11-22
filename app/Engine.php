@@ -71,7 +71,7 @@ class Engine {
     public function addBible($module) {
         $Bible = Bible::findByModule($module);
 
-        if($Bible) {
+        if($Bible && $Bible->enabled) {
             $this->Bibles[$module] = $Bible;
 
             if(!in_array($Bible->lang_short, $this->languages)) {

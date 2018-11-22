@@ -8,6 +8,7 @@ use Illuminate\Foundation\Testing\DatabaseMigrations;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 
 use App\Engine;
+use App\Models\Bible;
 
 class PaginationTest extends TestCase {
 
@@ -32,6 +33,10 @@ class PaginationTest extends TestCase {
 
     public function testSearchPageFirstMulti() {
         $Engine = new Engine();
+
+        if(!Bible::isEnabled('tyndale')) {
+            return;
+        }
 
         $results = $Engine->actionQuery(['bible' => ['kjv','tyndale'], 'search' => 'faith', 'whole_words' => TRUE, 'page' => 1]);
         $metadata = $Engine->getMetadata();

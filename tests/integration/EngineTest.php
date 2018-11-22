@@ -4,6 +4,7 @@ use Illuminate\Foundation\Testing\WithoutMiddleware;
 use Illuminate\Foundation\Testing\DatabaseMigrations;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 use App\Engine;
+use App\Models\Bible;
 
 class EngineTest extends TestCase
 {
@@ -31,11 +32,23 @@ class EngineTest extends TestCase
     }
 
     public function testMethodSetBibles() {
+        $bibles = ['kjv', 'tr', 'tyndale', 'luther'];
+
+        foreach($bibles as $key => $bible) {
+            if(!Bible::isEnabled($bible)) {
+                unset($bibles[$key]);
+            }
+        }
+
+        if(empty($bibles)) {
+            return;
+        }
+
         $engine = new Engine();
-        $engine->setBibles(['kjv', 'tr', 'tyndale', 'luther']);
+        $engine->setBibles($bibles);
         $this->assertFalse($engine->hasErrors());
         $Bibles = $engine->getBibles();
-        $this->assertCount(4, $Bibles);
+        $this->assertCount(count($bibles), $Bibles);
     }
 
     public function testOtherBibles() {
