@@ -8,6 +8,7 @@ enyo.kind({
     postData: {},
     action: null,
     actioning: null,
+    closeWhenFinished: true,
     queue: [],
     processed: [],
     errors: [],
@@ -17,7 +18,7 @@ enyo.kind({
     processBarHandle: null,
 
     components: [
-        {name: 'CurrentProcess', showing: false, components: [
+        {name: 'CurrentProcess', showing: false, style: 'margin-bottom: 20px', components: [
             {name: 'ProcessBar'}, 
             {style: 'margin-top: 10px', components: [
                 {tag: 'span', name: 'actioning'},
@@ -33,11 +34,17 @@ enyo.kind({
                 {tag: 'span', content: ' some Bibles:'}
             ]},
             {name: 'Errors', tag: 'ul'}
-        ]}
+        ]},
+        {name: 'SuccessContainer', showing: false, classes: 'success', components: [
+            {tag: 'span', name: 'actioningSuccess'},
+            {tag: 'span', content: ' Successful!'}
+        ]},
+        {name: 'MessageContainer', showing: false, classes: 'console'}
     ],
 
     bindings: [
         {from: 'actioning', to: '$.actioning.content'},
+        {from: 'actioning', to: '$.actioningSuccess.content'},
         {from: 'action', to: '$.ErrorAction.content'},
         {from: 'processing', to: '$.CurrentProcess.showing'},
     ],
@@ -81,6 +88,9 @@ enyo.kind({
     },
     open: function() {
         this.inherited(arguments);
+        this.$.SuccessContainer.hide();
+        this.$.MessageContainer.hide();
+        this.$.MessageContainer.destroyClientControls();
 
         if(!this.processBarHandle) {
             this.render();
@@ -125,6 +135,17 @@ enyo.kind({
                     bible: item.name,
                     errors: inResponse.errors
                 });
+            }
+
+            if(Array.isArray(inResponse.messages)) {
+                inResponse.messages.forEach(enyo.bind(this, function(item) {
+                    this.$.MessageContainer.createComponent({
+                        content: item,
+                        allowHtml: true
+                    }).render();
+
+                    this.$.MessageContainer.show();
+                }));
             }
 
             this.processed.push(item);
@@ -175,8 +196,16 @@ enyo.kind({
             this.$.Errors.render();
             this.$.ErrorContainer.set('showing', true);
         }
-        else {
+        else if(this.closeWhenFinished) {
             this.close();
+        }
+        else {
+            this.$.SuccessContainer.show();
+
+            // this.$.MessageContainer.createComponent({
+            //     content: '<b>' + this.actioning + ' successful!</b>',
+            //     allowHtml: true
+            // }).render();
         }
     }
 });

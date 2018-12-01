@@ -42,6 +42,14 @@ enyo.kind({
                     ontap: 'multiDisable', 
                     action: 'disable', 
                     actioning: 'Disabling'
+                },                
+                {
+                    tag: 'button', 
+                    classes: 'button bulk', 
+                    content: 'Test', 
+                    ontap: 'multiTest', 
+                    action: 'test', 
+                    actioning: 'Testing'
                 },
                 {
                     tag: 'button', 
@@ -112,6 +120,7 @@ enyo.kind({
         var action = inEvent.action;
         var rowData = this.$.GridContainer.getRowByPk(inEvent.id);
         var text = "Are you sure that you want to <b>" + inEvent.action + "</b><br /><br />'" + rowData.name + "'?";
+        this.log('confirming', text);
 
         this.$.Confirm.confirm(text, enyo.bind(this, function(confirmed) {
             this.log('confirmed', confirmed);
@@ -175,7 +184,6 @@ enyo.kind({
     },
     
     multiEnable: function(inSender, inEvent) {
-        this.log(inSender);
         this._confirmMultiAction('enable', 'Enabling');
     },    
     multiDisable: function(inSender, inEvent) {
@@ -216,6 +224,20 @@ enyo.kind({
             }
         }));
     }, 
+    multiTest: function(inSender, inEvent) {
+        this._multiAction('test', 'Testing', {}, false);
+    },
+    _multiAction: function(action, actioning, postData, closeWhenFinished) {
+        this._processSelections();
+
+        if(this.selections.length == 0) {
+            this.$.Alert.alert('Nothing selected');
+            return;
+        }
+
+        this.$.MultiExport.set('items', enyo.clone(this.selections));
+        this._multiActionHelper(action, actioning, {}, closeWhenFinished);
+    },
     _confirmMultiAction: function(action, actioning) {
         this._processSelections();
         var actioning = (typeof actioning == 'undefined') ? 'Processing' : actioning;
@@ -237,10 +259,12 @@ enyo.kind({
         }));
     },
 
-    _multiActionHelper: function(action, actioning, postData) {
-        this.log(action, actioning, postData);
+    _multiActionHelper: function(action, actioning, postData, closeWhenFinished) {
+        var closeWhenFinished = (typeof closeWhenFinished == 'undefined') ? true : closeWhenFinished;
+        this.log(action, actioning, postData, closeWhenFinished);
         this.$.MultiQueue.set('action', action);
         this.$.MultiQueue.set('actioning', actioning);
+        this.$.MultiQueue.set('closeWhenFinished', closeWhenFinished);
         this.$.MultiQueue.set('postData', enyo.clone(postData));
         this.$.MultiQueue.set('queue', enyo.clone(this.selections));
         this.$.MultiQueue.open();

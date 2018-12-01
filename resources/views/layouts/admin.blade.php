@@ -5,7 +5,7 @@
         ['label' => 'Options', 'route' => 'admin.configs'],
         ['label' => 'Terms of Service', 'route' => 'admin.tos'],
         ['label' => 'Privacy Policy', 'route' => 'admin.privacy'],
-        ['label' => 'Test', 'route' => 'admin.test'],
+        // ['label' => 'Test', 'route' => 'admin.test'],
         ['label' => 'Log Out', 'route' => 'logout'],
     ];
 

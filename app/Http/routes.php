@@ -64,6 +64,7 @@ Route::post('/admin/bibles/disable/{id}', 'Admin\BibleController@disable');
 Route::post('/admin/bibles/install/{id}', 'Admin\BibleController@install');
 Route::post('/admin/bibles/uninstall/{id}', 'Admin\BibleController@uninstall');
 Route::post('/admin/bibles/export/{id}', 'Admin\BibleController@export');
+Route::post('/admin/bibles/test/{id}', 'Admin\BibleController@test');
 
 Route::get('/admin/tos', 'Admin\PostConfigController@tos')->name('admin.tos');
 Route::post('/admin/tos', 'Admin\PostConfigController@saveTos');

@@ -6,6 +6,7 @@ enyo.kind({
     title: null,
     callback: null,
     confirmed: false,
+    closing: false,
 
     components: [
         {name: 'Alert', allowHtml: true, classes: 'dialogCenterText'}
@@ -44,15 +45,24 @@ enyo.kind({
     open: function() {
         this.inherited(arguments);
         this.confirmed = false;
+        this.closing = false;
     },
     close: function() {
         this.inherited(arguments);
+
+        if(this.closing) {
+            return;
+        }
+
+        this.log();
+        this.closing = true;
 
         if(typeof this.callback == 'function') {
             this.callback(this.confirmed);
         }
     },
     ok: function() {
+        // this.log();
         this.confirmed = true;
         this.close();
     },

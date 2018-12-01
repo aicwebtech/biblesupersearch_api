@@ -32,3 +32,13 @@ td.good {
     color: white;
 }
 
+.console {
+    white-space: pre;
+    font-family: monospace;
+}
+
+.success {
+    margin-bottom: 20px;
+    font-weight: bold;
+    text-align: center; 
+}
