@@ -669,9 +669,28 @@ class Engine {
         $this->default_page_all = ($value) ? TRUE : FALSE;
     }
 
-    function getHardcodedVersion() {
+    public static function getHardcodedVersion() {
         $app_configs = include(base_path('config/app.php'));
         return $app_configs['version'];
+    }
+    /**
+     * Get's the version number of the production version of this API
+     * Used for checking for updates
+     * @return type
+     */
+    public static function getUpstreamVersion() {
+        $json = NULL;
+
+        if(ini_get('allow_url_fopen') == 1) {
+            $json = file_get_contents('https://api.biblesupersearch.com/api/version');
+        }
+
+        if(!$json) {
+            return NULL;
+        }
+
+        $results = json_decode($json);
+        return $results->results->version;
     }
 }
 

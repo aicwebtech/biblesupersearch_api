@@ -56,7 +56,10 @@ Route::get('/auth/change', 'Auth\PasswordController@showResetForm')->name('passw
 Route::post('/auth/change', 'Auth\PasswordController@reset');
 Route::post('/auth/success', 'Auth\PasswordController@success');
 Route::get('/auth/success', 'Auth\PasswordController@success');
+
 Route::get('/admin/main', 'AdminController@getMain')->name('admin.main');
+Route::get('/admin/help', 'AdminController@help')->name('admin.help');
+Route::get('/admin/update', 'AdminController@softwareUpdate')->name('admin.update');
 
 Route::get('/admin/bibles/grid', 'Admin\BibleController@grid');
 Route::post('/admin/bibles/enable/{id}', 'Admin\BibleController@enable');

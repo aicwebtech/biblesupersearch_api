@@ -12,8 +12,6 @@ use App\ConfigManager;
  * @author Computer
  */
 class InstallManager {
-    //put your code here
-
     static function isInstalled() {
 //        return TRUE;
 
@@ -30,13 +28,6 @@ class InstallManager {
 
         // Set up database
         $exit_code = Artisan::call('migrate', array('--seed' => TRUE, '--force' => TRUE));
-//        Artisan::call('migrate', array('--seed' => FALSE, '--force' => TRUE));
-//        var_dump($exit_code);
-//        die();
-//
-//        if($exit_code == 0) {
-//
-//        }
 
         // Install default Bible (usally KJV)
         $Bible = Bible::findByModule(config('bss.defaults.bible'));

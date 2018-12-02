@@ -1,12 +1,14 @@
 @php
     $buttons = [
-        // ['label' => 'Dashboard', 'route' => 'admin.main'],
-        ['label' => 'Bibles', 'route' => 'admin.bibles.index'],
-        ['label' => 'Options', 'route' => 'admin.configs'],
-        ['label' => 'Terms of Service', 'route' => 'admin.tos'],
-        ['label' => 'Privacy Policy', 'route' => 'admin.privacy'],
-        // ['label' => 'Test', 'route' => 'admin.test'],
-        ['label' => 'Log Out', 'route' => 'logout'],
+        // ['label' => 'Dashboard', 'route' => 'admin.main', 'new_tab' => FALSE],
+        ['label' => 'Bibles', 'route' => 'admin.bibles.index', 'new_tab' => FALSE],
+        ['label' => 'Options', 'route' => 'admin.configs', 'new_tab' => FALSE],
+        ['label' => 'Terms of Service', 'route' => 'admin.tos', 'new_tab' => FALSE],
+        ['label' => 'Privacy Policy', 'route' => 'admin.privacy', 'new_tab' => FALSE],
+        ['label' => 'Help', 'route' => 'admin.help', 'new_tab' => FALSE],
+        ['label' => 'Update', 'route' => 'admin.update', 'new_tab' => FALSE],
+        ['label' => 'API Documentation', 'route' => 'docs', 'new_tab' => TRUE],
+        ['label' => 'Log Out', 'route' => 'logout', 'new_tab' => FALSE],
     ];
 
 if(!isset($javascripts)) {
@@ -61,7 +63,12 @@ if(isset($include_enyo) && $include_enyo) {
             <h1>Bible SuperSearch API Installation Manager</h1>
             <div id='top_menu'>
                 @foreach ($buttons as $button)
-                    <a href='{{ route($button['route']) }}' class='menu_item @if(Route::currentRouteName() == $button['route'])active @endif'>{{ $button['label'] }}</a>
+                    <a href='{{ route($button['route']) }}'
+                       class='menu_item @if(Route::currentRouteName() == $button['route'])active @endif'
+                       @if($button['new_tab'])target='_NEW'@endif;
+                       >
+                       {{ $button['label'] }}
+                    </a>
                 @endforeach
             </div>
         </div>
