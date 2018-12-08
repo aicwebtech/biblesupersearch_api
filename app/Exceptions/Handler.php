@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Symfony\Component\HttpKernel\Exception\HttpException;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 use Illuminate\Foundation\Exceptions\Handler as ExceptionHandler;
+use Illuminate\Auth\AuthenticationException;
 
 class Handler extends ExceptionHandler
 {
@@ -65,3 +66,8 @@ class Handler extends ExceptionHandler
        return redirect()->guest('login');
    }
 }
+
+  // Declaration of App\Exceptions\Handler::unauthenticated($request, App\Except  
+  // ions\AuthenticationException $exception) should be compatible with Illumina  
+  // te\Foundation\Exceptions\Handler::unauthenticated($request, Illuminate\Auth  
+  // \AuthenticationException $exception)      
