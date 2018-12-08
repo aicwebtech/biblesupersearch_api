@@ -58,25 +58,38 @@ class InstallManager {
 
         $php_version = substr($composer->require->php, 2);
         $php_success = (version_compare(phpversion(), $php_version, '>=') == -1) ? TRUE : FALSE;
+        $conname = config('database.default');
+        $db_info = config('database.connections.' . $conname);
+        $sqlite_required = ($db_info['driver'] == 'sqlite') ? TRUE : FALSE;
 
         $checklist = [];
 
         $checklist[] = ['type' => 'header', 'label' => 'Software'];
         $env = (is_file(base_path('.env')) && is_writable(base_path('.env'))) ? TRUE : FALSE;
         $checklist[] = ['type' => 'item', 'label' => '.env config file exists and is writable', 'success' => $env];
-        $checklist[] = ['type' => 'item', 'label' => 'PHP Version >= ' . $php_version, 'success' => $php_success];
+        $checklist[] = ['type' => 'item', 'label' => 'PHP Version >= ' . $php_version . ' (' . PHP_VERSION . ')', 'success' => $php_success];
 
-        $extensions = ['OpenSSL', 'PDO', 'Mbstring', 'Tokenizer', 'XML'];
+        $extensions = ['OpenSSL', 'PDO', 'Mbstring', 'Tokenizer', 'XML', 'Zip'];
+        $rec_extensions = [];
+
+        if($sqlite_required) {
+            $extensions[] = 'SQLite3';
+        }
+        else {
+            $rec_extensions[] = 'SQLite3';
+        }
 
         foreach($extensions as $ext) {
             $checklist[] = ['type' => 'item', 'label' => 'PHP Extension: ' . $ext, 'success' => extension_loaded($ext)];
+        }        
+
+        foreach($rec_extensions as $ext) {
+            $checklist[] = ['type' => 'item', 'label' => 'PHP Extension: ' . $ext, 'success' => extension_loaded($ext) ?: NULL];
         }
 
         $checklist[] = ['type' => 'hr'];
         $checklist[] = ['type' => 'header', 'label' => 'Database'];
 
-        $conname = config('database.default');
-        $db_info = config('database.connections.' . $conname);
 
         if(empty($db_info)) {
             $checklist[] = ['type' => 'item', 'label' => 'Unknown DB_CONNECTION: ' . $conname, 'success' => FALSE];
@@ -87,7 +100,7 @@ class InstallManager {
         $db_type_map = [
             'mysql'  => 'MySQL',
             'sqlite' => 'SQLite',
-            'sqlsrv' => 'Microsoft SQL Server / SQL Azure',
+            // 'sqlsrv' => 'Microsoft SQL Server / SQL Azure',
             'pgsql'  => 'PostgreSQL'
         ];
 
@@ -111,8 +124,11 @@ class InstallManager {
         }
         else {
             $db_file = database_path('database.' . $db_info['driver']);
-            $db_file_writable = is_writable($db_file);
+            $db_file_writable = is_writable($db_file);            
+            $db_dir = database_path();
+            $db_dir_writable = is_writable($db_dir);
             $checklist[] = ['type' => 'item', 'label' => 'DB file is writable: ' . $db_file, 'success' => $db_file_writable];
+            $checklist[] = ['type' => 'item', 'label' => 'DB directory is writable: ' . $db_dir, 'success' => $db_dir_writable];
         }
 
         $checklist[] = ['type' => 'item', 'label' => 'DB_PREFIX ('. $db_info['prefix'] . ')', 'success' => (!empty($db_info['prefix'])) ? TRUE : NULL];
@@ -122,6 +138,12 @@ class InstallManager {
 
         try {
             \DB::connection()->getPdo();
+
+            if($db_info['driver'] == 'sqlite') {
+                $rows = \DB::select('SELECT * FROM sqlite_master');
+
+                print_r($rows);
+            }
         }
         catch (\Exception $e) {
             $able_to_connect = FALSE;
