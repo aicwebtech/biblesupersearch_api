@@ -8,6 +8,9 @@ use Illuminate\Foundation\Console\Kernel as ConsoleKernel;
 class Kernel extends ConsoleKernel
 {
 
+    // Upgrade note: Commands can be auto loaded by adding this line to 'commands' method
+    // $this->load(__DIR__.'/Commands');
+
     /**
      * The Artisan commands provided by your application.
      *
