@@ -680,9 +680,21 @@ class Engine {
      */
     public static function getUpstreamVersion() {
         $json = NULL;
+        $url  = 'https://api.biblesupersearch.com/api/version';
 
         if(ini_get('allow_url_fopen') == 1) {
-            $json = file_get_contents('https://api.biblesupersearch.com/api/version');
+            $json = file_get_contents($url);
+        }
+
+        // Attempt 2: Fall back to cURL
+        if(!$json === FALSE && function_exists('curl_init')) {        
+            $ch = curl_init();
+            curl_setopt($ch, CURLOPT_HEADER, 0);
+            curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
+            curl_setopt($ch, CURLOPT_URL, $url);
+            // curl_setopt($ch, CURLOPT_POSTFIELDS, http_build_query($data));
+            $json = curl_exec($ch);
+            curl_close($ch);
         }
 
         if(!$json) {

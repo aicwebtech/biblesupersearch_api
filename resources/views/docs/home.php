@@ -86,7 +86,7 @@
     <body>
         <div id='container'>
             <h1 class='hcenter'><?php echo trans('app.name') ?> <?php echo trans('app.documentation') ?></h1>
-            <h2 class='hcenter'><?php echo trans('app.version') ?> <?php echo config('app.version'); ?> <?php echo $version ?></h2>
+            <h2 class='hcenter'><?php echo trans('app.version') ?> <?php echo $version ?> <!-- this is the hardcoded app version --></h2>
             <?php if(config('app.env') != 'production'): ?>
                 <h2 class='hcenter warning'><?php echo trans('app.env_warnings.' . config('app.env')) ?></h2>
             <?php endif; ?>

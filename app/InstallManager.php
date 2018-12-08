@@ -63,13 +63,15 @@ class InstallManager {
         $sqlite_required = ($db_info['driver'] == 'sqlite') ? TRUE : FALSE;
 
         $checklist = [];
+        $installed_php_parts = explode('.', PHP_VERSION);
+        $installed_php = $installed_php_parts[0] . '.' . $installed_php_parts[1] . '.' . intval($installed_php_parts[2]);
 
         $checklist[] = ['type' => 'header', 'label' => 'Software'];
         $env = (is_file(base_path('.env')) && is_writable(base_path('.env'))) ? TRUE : FALSE;
         $checklist[] = ['type' => 'item', 'label' => '.env config file exists and is writable', 'success' => $env];
-        $checklist[] = ['type' => 'item', 'label' => 'PHP Version >= ' . $php_version . ' (' . PHP_VERSION . ')', 'success' => $php_success];
+        $checklist[] = ['type' => 'item', 'label' => 'PHP Version >= ' . $php_version . ' (' . $installed_php . ')', 'success' => $php_success];
 
-        $extensions = ['OpenSSL', 'PDO', 'Mbstring', 'Tokenizer', 'XML', 'Zip'];
+        $extensions = ['OpenSSL', 'PDO', 'Mbstring', 'Tokenizer', 'XML', 'Zip', 'Ctype', 'JSON', 'BCMath'];
         $rec_extensions = [];
 
         if($sqlite_required) {
@@ -99,9 +101,9 @@ class InstallManager {
 
         $db_type_map = [
             'mysql'  => 'MySQL',
-            'sqlite' => 'SQLite',
+            // 'sqlite' => 'SQLite',
             // 'sqlsrv' => 'Microsoft SQL Server / SQL Azure',
-            'pgsql'  => 'PostgreSQL'
+            // 'pgsql'  => 'PostgreSQL'
         ];
 
         if(isset($db_type_map[$db_info['driver']])) {

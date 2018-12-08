@@ -90,6 +90,7 @@ Route::get('/install/{action?}' , 'Admin\InstallController@index')->name('admin.
 Route::post('/install/check', 'Admin\InstallController@check')->name('admin.install.check'); // Inside controller actions are required to be post
 Route::post('/install/config', 'Admin\InstallController@config')->name('admin.install.config'); // Inside controller actions are required to be post
 Route::post('/install/config/process', 'Admin\InstallController@handleConfig')->name('admin.install.config.process'); // Inside controller actions are required to be post
+Route::get('/install/config/process', 'Admin\InstallController@index');
 
 // todos
 Route::get('/admin/options', 'AdminController@todo')->name('admin.options');

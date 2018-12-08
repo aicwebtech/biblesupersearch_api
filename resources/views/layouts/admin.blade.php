@@ -34,6 +34,7 @@ if(isset($include_enyo) && $include_enyo) {
         <meta name="csrf-token" content="{{ csrf_token() }}">
         <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
         <meta contentType="text/html; charset=UTF-8"/>
+        <link rel="stylesheet" href="/css/common.css" >
         <link rel="stylesheet" href="/css/admin/admin.css" >
         <link rel="stylesheet" href="/js/bin/jquery-ui/jquery-ui.css">
         <link rel="stylesheet" href="/js/bin/jquery-ui/jquery-ui.theme.css">
