@@ -344,7 +344,8 @@ class Engine {
      */
     public function actionBibles($input) {
         $include_desc = FALSE;
-        $Bibles = Bible::select('name','shortname','module','year','lang','lang_short','copyright','italics','strongs','red_letter','paragraph','rank','research');
+        $Bibles = Bible::select('bibles.name','shortname','module','year','languages.name AS lang','lang_short','copyright','italics','strongs','red_letter','paragraph','rank','research');
+        $Bibles->leftJoin('languages', 'bibles.lang_short', 'languages.code');
         $bibles = array(); // Array of associative arrays
 
         if($include_desc) {
@@ -687,7 +688,7 @@ class Engine {
         }
 
         // Attempt 2: Fall back to cURL
-        if(!$json === FALSE && function_exists('curl_init')) {        
+        if(!$json === FALSE && function_exists('curl_init')) {
             $ch = curl_init();
             curl_setopt($ch, CURLOPT_HEADER, 0);
             curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);

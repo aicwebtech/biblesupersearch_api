@@ -19,8 +19,7 @@ class ConfigController extends Controller
      *
      * @return \Illuminate\Http\Response
      */
-    public function index()
-    {
+    public function index() {
         $config_values = ConfigManager::getGlobalConfigs();
         $Bibles = \App\Models\Bible::where('enabled', 1)->where('installed', 1)->get();
 
@@ -37,8 +36,7 @@ class ConfigController extends Controller
      * @param  \Illuminate\Http\Request  $request
      * @return \Illuminate\Http\Response
      */
-    public function store(Request $request)
-    {
+    public function store(Request $request) {
         $data = $request->toArray();
         ConfigManager::setGlobalConfigs($data);
 
@@ -57,9 +55,8 @@ class ConfigController extends Controller
      *
      * @return \Illuminate\Http\Response
      */
-    public function destroy()
-    {
-        //
+    public function destroy() {
+        // to do
 
 
     }

@@ -1,8 +1,12 @@
+<?php
+    $mail_drivers = ["smtp", "mail", "sendmail", "mailgun", "mandrill", "ses", "log"];
+?>
+
 @extends('layouts.admin')
 
 @section('content')
     <div class='container'>
-        <div class='content'>
+        <div class='content' style='margin-left: 200px; margin-right: 200px;'>
             <form method='POST'>
                 <?php echo csrf_field() ?>
                 <div class='config_block'>
@@ -12,17 +16,6 @@
                         <tr>
                             <td class='ralign'>Application Name: </td>
                             <td><input name='app__name' size='50' value='{{$configs['app.name']}}'></td>
-                        </tr>
-                        <tr>
-                            <td class='ralign'>Default Bible: </td>
-                            <td>
-                                <select name='bss__defaults__bible' style='width: 300px'>
-                                    @foreach($bibles as $bible)
-                                    <option value='{{$bible->module}}'
-                                        @if($configs['bss.defaults.bible'] == $bible->module)selected='selected'@endif>{{$bible->name}}</option>
-                                    @endforeach
-                                </select>
-                            </td>
                         </tr>
                         <tr>
                             <td class='ralign'>Default Highlight Tag: </td>
@@ -38,6 +31,16 @@
                                     <p>
                                         HTML tag used for highlighting keywords in search results.
                                     </p>
+                                </span>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td class='ralign'>Application URL: </td>
+                            <td>
+                                <input name='app__url' size='50' value='{{$configs['app.url']}}'>
+                                <span class='info'>
+                                    <span>i</span>
+                                    <p>Base URL of this Bible SuperSearch API install.</p>
                                 </span>
                             </td>
                         </tr>
@@ -73,6 +76,33 @@
                     </table>
                 </div>
                 <div class='config_block'>
+                    <h1>Bible List</h1>
+                    <table>
+                        <tr>
+                            <td class='ralign'>Default Bible: </td>
+                            <td>
+                                <select name='bss__defaults__bible' style='width: 300px'>
+                                    @foreach($bibles as $bible)
+                                    <option value='{{$bible->module}}'
+                                        @if($configs['bss.defaults.bible'] == $bible->module)selected='selected'@endif>{{$bible->name}}</option>
+                                    @endforeach
+                                </select>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td class='ralign'>Default Bible Sort Order: </td>
+                            <td>
+                                <select name='bss__defaults__bible_sord' style='width: 300px'>
+                                    @foreach($bibles as $bible)
+                                    <option value='{{$bible->module}}'
+                                        @if($configs['bss.defaults.bible_sord'] == $bible->module)selected='selected'@endif>{{$bible->name}}</option>
+                                    @endforeach
+                                </select>
+                            </td>
+                        </tr>
+                    </table>
+                </div>
+                <div class='config_block'>
                     <h1>Limitations</h1>
 
                     <table>
@@ -82,9 +112,7 @@
                                 <input name='bss__pagination__limit' size='5' value='{{$configs['bss.pagination.limit']}}'>
                                 <span class='info'>
                                     <span>i</span>
-                                    <p>
-                                        The maximum number of verses displayed per page for paginated search results.
-                                    </p>
+                                    <p>The maximum number of verses displayed per page for paginated search results.</p>
                                 </span>
                             </td>
                         </tr>
@@ -120,8 +148,48 @@
                             <td class='ralign'>System Mail Address: </td>
                             <td><input name='mail__from__address' size='50' value='{{$configs['mail.from.address']}}'></td>
                         </tr>
+                        <tr>
+                            <td class='ralign'>Mail Driver: </td>
+                            <td>
+                                <select name='bss__driver' style='width: 300px'>
+                                    @foreach($mail_drivers as $dr)
+                                    <option value='{{$dr}}'
+                                        @if($configs['mail.driver'] == $dr)selected='selected'@endif>{{$dr}}</option>
+                                    @endforeach
+                                </select>
+                                <span class='info'>
+                                    <span>i</span>
+                                    <p>Default: sendmail</p>
+                                </span>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td class='ralign'>Sendmail Path: </td>
+                            <td><input name='mail__sendmail' size='50' value='{{$configs['mail.sendmail']}}'></td>
+                        </tr>
+                        <tr>
+                            <td class='ralign'>Mail Username: </td>
+                            <td><input name='mail__username' size='50' value='{{$configs['mail.username']}}'></td>
+                        </tr>
+                        <tr>
+                            <td class='ralign'>Mail Password: </td>
+                            <td><input name='mail__password' size='50' value='{{$configs['mail.password']}}'></td>
+                        </tr>
+                        <tr>
+                            <td class='ralign'>Mail Host: </td>
+                            <td><input name='mail__host' size='50' value='{{$configs['mail.host']}}'></td>
+                        </tr>
+                        <tr>
+                            <td class='ralign'>Mail Port: </td>
+                            <td><input name='mail__port' size='50' value='{{$configs['mail.port']}}'></td>
+                        </tr>
+                        <tr>
+                            <td class='ralign'>Mail Encryption: </td>
+                            <td><input name='mail__encryption' size='50' value='{{$configs['mail.encryption']}}'></td>
+                        </tr>
                     </table>
                 </div>
+                <div style="clear:both"></div>
                 <div style='text-align: center'>
                     <input type='submit' value='Save Configs' class='button' />
                 </div>

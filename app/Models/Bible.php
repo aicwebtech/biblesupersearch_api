@@ -43,6 +43,10 @@ class Bible extends Model {
         parent::__construct($attributes);
     }
 
+    public function language() {
+        return $this->hasOne('App\Models\Language', 'code', 'lang_short');
+    }
+
     /**
      * Mimic a DB relationship
      * 'One to TABLE' relationship
@@ -129,6 +133,10 @@ class Bible extends Model {
             return FALSE;
         }
 
+        if(is_file($path) && !is_writable($path)) {
+            return $this->addError('Cannot write file: ' . $this->getModuleFilePathShort() . ' as user ' . exec('whoami'), 4);
+        }
+
         $export_fields = static::getExportFields();
         $mode = ($overwrite) ? ZipArchive::OVERWRITE : ZipArchive::CREATE;
         $info = Arr::except($this->attributes, $this->do_not_export);
@@ -178,13 +186,62 @@ class Bible extends Model {
             $Zip->close();
         }
 
-        ini_set('memory_limit', $ini_memory_limit);
+        return ($res === TRUE) ? TRUE : FALSE;
+    }
+
+    protected function _getExportInfo() {
+        $info = Arr::except($this->attributes, $this->do_not_export);
+        $info['delimiter'] = static::getExportDelimiter(); // Store this in case we change it in the future
+        $info['fields']    = static::getExportFields();
+        $info = json_encode($info);
+        return $info;
+    }
+
+    public function updateMetaInfo($create_if_needed = FALSE) {
+        $path = $this->getModuleFilePath();
+
+        if(!$create_if_needed && !is_file($path)) {
+            return $this->addError('Cannot update info, file does not exist', 4);
+        }
+
+        if($create_if_needed && !is_file($path)) {
+            $this->export();
+        }
+
+        if(!is_writable($path)) {
+            return $this->addError('Cannot write file: ' . $this->getModuleFilePathShort() . ' as user ' . exec('whoami'), 4);
+        }
+
+        $info = $this->_getExportInfo();
+        $Zip  = new ZipArchive();
+        $res  = $Zip->open($path);
+
+        if($res === TRUE) {
+            $info_old = $Zip->getFromName('info.json');
+
+            if($info_old != $info) {
+                $Zip->addFromString('info.json', $info);
+            }
+            else {
+                $this->addError('no changed needed');
+            }
+
+            $Zip->close();
+        }
 
         return ($res === TRUE) ? TRUE : FALSE;
     }
 
     public function getModuleFilePath() {
-        return static::getModulePath() . $this->module . '.zip';
+        return static::getModulePath() . $this->getModuleFileName();
+    }
+
+    public function getModuleFilePathShort() {
+        return static::getModulePathShort() . $this->getModuleFileName();
+    }
+
+    public function getModuleFileName() {
+        return $this->module . '.zip';
     }
 
     public function hasModuleFile() {
@@ -216,6 +273,10 @@ class Bible extends Model {
 
     public static function getModulePath() {
         return dirname(__FILE__) . '/../../bibles/modules/';
+    }
+
+    public static function getModulePathShort() {
+        return 'bibles/modules/';
     }
 
     public static function createFromModuleFile($module) {

@@ -8,6 +8,7 @@ enyo.kind({
     postData: {},
     action: null,
     actioning: null,
+    actionLabel: null,
     closeWhenFinished: true,
     queue: [],
     processed: [],
@@ -45,7 +46,7 @@ enyo.kind({
     bindings: [
         {from: 'actioning', to: '$.actioning.content'},
         {from: 'actioning', to: '$.actioningSuccess.content'},
-        {from: 'action', to: '$.ErrorAction.content'},
+        {from: 'actionLabel', to: '$.ErrorAction.content'},
         {from: 'processing', to: '$.CurrentProcess.showing'},
     ],
 

@@ -31,7 +31,17 @@ class BibleController extends Controller
         $rows = [];
         $rows_per_page = intval($data['rows']);
 
-        $Bibles = Bible::orderBy($data['sidx'], $data['sord'])->paginate($rows_per_page);
+        if($data['sidx'] == 'lang') {
+            $data['sidx'] = 'languages.name';
+        }
+        else {
+            $data['sidx'] = 'bibles.' . $data['sidx'];
+        }
+
+        $Bibles = Bible::select('bibles.*', 'languages.name AS lang')
+            ->leftJoin('languages', 'bibles.lang_short', 'languages.code')
+            ->orderBy($data['sidx'], $data['sord'])
+            ->paginate($rows_per_page);
 
         foreach($Bibles as $Bible) {
             $row = $Bible->getAttributes();
@@ -250,9 +260,24 @@ class BibleController extends Controller
         $Bible = Bible::findOrFail($id);
         $data  = $request->toArray();
         $over  = (array_key_exists('overwrite', $data) && $data['overwrite']) ? TRUE : FALSE;
-//        var_dump($over);
-//        die();
         $Bible->export($over);
+
+        $resp = new \stdClass();
+        $resp->success = TRUE;
+
+        if($Bible->hasErrors()) {
+            $resp->success = FALSE;
+            $resp->errors  = $Bible->getErrors();
+        }
+
+        return new Response($resp, 200);
+    }
+
+    public function meta(Request $request, $id) {
+        $Bible  = Bible::findOrFail($id);
+        $data   = $request->toArray();
+        $create = (array_key_exists('create_new', $data) && $data['create_new']) ? TRUE : FALSE;
+        $Bible->updateMetaInfo($create);
 
         $resp = new \stdClass();
         $resp->success = TRUE;
