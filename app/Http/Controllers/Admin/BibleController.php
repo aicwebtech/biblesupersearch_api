@@ -114,6 +114,7 @@ class BibleController extends Controller
      * @return \Illuminate\Http\Response
      */
     public function update(Request $request, $id) {
+        die('update');
         return $this->_save($request, $id);
     }
 

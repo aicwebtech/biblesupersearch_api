@@ -75,9 +75,11 @@ Route::post('/admin/tos', 'Admin\PostConfigController@saveTos');
 Route::get('/admin/privacy', 'Admin\PostConfigController@privacy')->name('admin.privacy');
 Route::post('/admin/privacy', 'Admin\PostConfigController@savePrivacy');
 
-Route::resource('/admin/bibles', 'Admin\BibleController', ['as' => 'admin', 'except' => [
-    'create', 'edit'
-]]);
+Route::resource('/admin/bibles', 'Admin\BibleController', ['as' => 'admin']);
+
+// Route::resource('/admin/bibles', 'Admin\BibleController', ['as' => 'admin', 'except' => [
+//     'create', 'edit'// , 'update'
+// ]]);
 
 Route::get('/admin/config', 'Admin\ConfigController@index')->name('admin.configs');
 Route::post('/admin/config', 'Admin\ConfigController@store')->name('admin.configs.store');

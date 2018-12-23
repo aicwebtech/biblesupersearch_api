@@ -5,6 +5,7 @@ enyo.depends(
     'MultiMetaUpdate.js',
     'MultiExport.js',
     'Description.js',
+    'Edit.js',
     'Install.js',
     'Export.js'
 );

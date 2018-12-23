@@ -35,7 +35,7 @@ enyo.kind({
                     {name: 'enabled', index: 'enabled', label: 'Enabled', width:'80', title: false, formatter: enyo.bind(this, this._formatEnabled)},
                     {name: 'official', index: 'official', label: 'Official', width:'60', title: false, formatter: enyo.bind(this, this._formatSinpleBoolean)},
                     {name: 'rank', index: 'rank', label: 'Rank', width:'100'},
-                    {name: 'actions', index: 'actions', label: '&nbsp', width:'100', title: false, formatter: enyo.bind(this, this._formatActions)},
+                    {name: 'actions', index: 'actions', label: '&nbsp', width:'150', title: false, formatter: enyo.bind(this, this._formatActions)},
                     {name: 'id', index: 'id', hidden: true}
                 ],
                 jsonReader: {
@@ -157,6 +157,8 @@ enyo.kind({
         var props = {id: options.rowId};
         var html = '';
         html += this.__makeSignalLink('View Description', 'onViewDescription', props);
+        html += ' &nbsp; ';
+        html += this.__makeSignalLink('Edit', 'onEdit', props);
         return html;
     },
     getSelectionsWithName: function() {

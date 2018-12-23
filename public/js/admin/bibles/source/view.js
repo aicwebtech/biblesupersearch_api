@@ -80,6 +80,7 @@ enyo.kind({
             {name: 'Loading', kind: 'AICWEBTECH.Enyo.jQuery.Loading'},
             {name: 'Install', kind: 'BibleManager.Components.Dialogs.Install'},
             {name: 'Export', kind: 'BibleManager.Components.Dialogs.Export'},
+            {name: 'Edit', kind: 'BibleManager.Components.Dialogs.Edit'},
             {name: 'Description', kind: 'BibleManager.Components.Dialogs.Description'},
             {name: 'MultiConfirm', kind: 'BibleManager.Components.Dialogs.MultiConfirm'},
             {name: 'MultiInstall', kind: 'BibleManager.Components.Dialogs.MultiInstall'},
@@ -93,7 +94,8 @@ enyo.kind({
             onBibleExport: 'bibleExport', 
             onConfirmAction: 'confirmAction', 
             onDoAction: 'doAction', 
-            onViewDescription: 'viewDescription'
+            onViewDescription: 'viewDescription',
+            onEdit: 'openEdit'
         }
     ],
 
@@ -306,7 +308,12 @@ enyo.kind({
     _processSelections: function() {
         this.selections = enyo.clone(this.$.GridContainer.getSelectionsWithName());
     },
-
+    openEdit: function(inSender, inEvent) {
+        this.log(inEvent.id);
+        this.$.Edit.set('pk', inEvent.id);
+        // this.log('PKQ', this.$.Edit.get('pk'));
+        this.$.Edit.open();
+    },
     selectionsChanged: function(inSender, inEvent) {
         this.$.BulkActions.set('showing', inEvent.length ? true : false);
     },
