@@ -272,11 +272,15 @@ class Bible extends Model {
     }
 
     public static function getModulePath() {
-        return dirname(__FILE__) . '/../../bibles/modules/';
+        return static::_getModulePathBase() . 'modules/';
     }
 
     public static function getModulePathShort() {
-        return 'bibles/modules/';
+        return static::_getModulePathBase(TRUE) . 'modules/';
+    }
+
+    protected static function _getModulePathBase($short = FALSE) {
+        return $short ? 'bibles/' : dirname(__FILE__) . '/../../bibles/';
     }
 
     public static function createFromModuleFile($module) {

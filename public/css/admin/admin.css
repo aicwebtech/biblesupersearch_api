@@ -57,16 +57,31 @@ body {
     text-align: right;
 }
 
+.config_group {
+    display: inline-block;
+    float: left;
+}
+
+.ui-button.button-small {
+    background-color: green;
+    padding: 2px 6px;
+    font-size: .8em;
+}
+
 .config_block {
     background-color: #b3c8f9;
     padding: 10px;
     border-radius: 10px;
     width: 600px;
     margin: 0 auto 20px;
-    float: left;
-    display: inline-block;
+    /*float: left;*/
+    /*display: inline-block;*/
     margin-left: 25px;
     margin-bottom: 25px;
+}
+
+input[readonly='readonly'] {
+    background-color: #d1d1d1;
 }
 
 .config_block h1 {

@@ -9,7 +9,7 @@ use App\Models\Post;
 class DocumentationController extends Controller {
     public function __construct() {
         parent::__construct();
-        $this->middleware(['install','https']);
+        $this->middleware(['install','https','migrate']);
     }
 
     public function __invoke() {

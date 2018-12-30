@@ -12,6 +12,7 @@ class ConfigController extends Controller
     public function __construct() {
         parent::__construct();
         $this->middleware('auth:100');
+        $this->middleware('migrate')->only('index');
     }
 
     /**
@@ -57,7 +58,5 @@ class ConfigController extends Controller
      */
     public function destroy() {
         // to do
-
-
     }
 }

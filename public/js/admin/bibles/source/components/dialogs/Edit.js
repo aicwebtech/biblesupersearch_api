@@ -36,15 +36,15 @@ enyo.kind({
     bindings: [
         {from: 'formData.name', to: '$.name.value', oneWay: false, transform: function(value, dir) {
             this.log('name', value, dir);
-            return value || null;
+            return value || '';
         }},           
         {from: 'formData.shortname', to: '$.shortname.value', oneWay: false, transform: function(value, dir) {
             this.log('shortname', value, dir);
-            return value || null;
+            return value || '';
         }},         
         {from: 'formData.year', to: '$.year.value', oneWay: false, transform: function(value, dir) {
             this.log('year', value, dir);
-            return value || null;
+            return value || '';
         }},
         {from: 'formData.rank', to: '$.rank.value', oneWay: false, transform: function(value, dir) {
             this.log('rank', value, dir);
@@ -124,18 +124,19 @@ enyo.kind({
         var postData = enyo.clone(this.formData);
         postData._token = laravelCsrfToken;
 
+        this.log(postData);
+
         var ajax = new enyo.Ajax({
             url: '/admin/bibles/' + this.pk,
             method: 'PUT',
+            postBody: postData
         });
 
         ajax.response(this, function(inSender, inResponse) {
             this.app.set('ajaxLoading', false);
             
             if(!inResponse.success) {
-                var msg = 'An Error has occurred';
-                this.app.alert(msg);
-                return;
+                return this._errorHandler(inSender, inResponse)
             }
 
             this.app.refreshGrid();
@@ -145,10 +146,28 @@ enyo.kind({
         ajax.error(this, function(inSender, inResponse) {
             console.log('ERROR', inSender, inResponse);
             this.app.set('ajaxLoading', false);
-            var msg = 'An Error has occurred';
-            this.app.alert(msg);
+            var response = JSON.parse(inSender.xhrResponse.body);
+            this._errorHandler(inSender, response);
         });
         
         ajax.go();
+    },
+
+    _errorHandler: function(inSender, inResponse) {
+        var msg = 'An Error has occurred';
+
+        if(inResponse.errors) {
+            msg += '<br /><br />';
+
+            for(field in inResponse.errors) {
+                var err = inResponse.errors[field];
+
+                err.forEach(function(e) {
+                    msg += e + '<br />';
+                });
+            }
+        }
+
+        this.app.alert(msg);
     }
 });

@@ -7,12 +7,14 @@ use Illuminate\Http\Request;
 use App\Http\Responses\Response;
 use App\Http\Controllers\Controller;
 use App\Models\Bible;
+use Validator;
 
 class BibleController extends Controller
 {
     public function __construct() {
         parent::__construct();
         $this->middleware('auth:100');
+        $this->middleware('migrate')->only('index');
     }
 
     /**
@@ -114,7 +116,6 @@ class BibleController extends Controller
      * @return \Illuminate\Http\Response
      */
     public function update(Request $request, $id) {
-        die('update');
         return $this->_save($request, $id);
     }
 
@@ -130,6 +131,8 @@ class BibleController extends Controller
     }
 
     protected function _save(Request $request, $id = NULL) {
+        $resp = new \stdClass();
+
         if($id) {
             $Bible = Bible::findOrFail($id);
         }
@@ -137,7 +140,28 @@ class BibleController extends Controller
             $Bible = new Bible();
         }
 
-        $resp = new \stdClass();
+        $rules = [
+            'name'      => 'required|max:255',
+            'shortname' => 'required|max:255',
+            'year'      => 'nullable',
+            'rank'      => 'required|int',
+        ];
+
+        $data = $request->only(array_keys($rules));
+
+        // $request->validate($rules); // This breaks, even though docs say it will return 422 with JSON data for an AJAX request
+
+        $v = Validator::make($data, $rules);
+
+        if($v->fails()) {
+            $resp->success = FALSE;
+            $resp->errors = $v->errors();
+            return new Response($resp, 422);
+        }
+
+        $Bible->fill($data);
+        $Bible->save();
+
         $resp->success = TRUE;
         $resp->Bible   = $Bible->attributesToArray();
 

@@ -69,7 +69,7 @@ enyo.kind({
                 },
             ]},
             {name: 'SortOptions', style: 'float: right', components: [
-                {tag: 'button', classes: 'button bulk', content: 'Auto Sort'},
+                // {tag: 'button', classes: 'button bulk', content: 'Auto Sort'},
             ]},
             {style: 'clear: both'},
         ]},
