@@ -45,7 +45,7 @@ class IpAccess extends Model {
             $domain = substr($domain, 0, $col_pos);
         }
 
-        $hash_pos = strpos($domain, ':');
+        $hash_pos = strpos($domain, '#');
 
         if($hash_pos !== FALSE) {
             $domain = substr($domain, 0, $hash_pos);
