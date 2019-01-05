@@ -9,12 +9,8 @@ class IpAccess extends Model {
     protected $table = 'ip_access';
     protected $fillable = ['ip_address','domain', 'limit'];
 
-    static public function findOrCreateByIpOrDomain($ip_address = NULL, $domain = NULL) {
-        if($domain) {
-            $domain = str_replace(array('http:','https:'), '', $domain);
-            $domain = trim($domain);
-            $domain = trim($domain, '/');
-        }
+    static public function findOrCreateByIpOrDomain($ip_address = NULL, $host = NULL) {
+        $domain = static::parseDomain($host);
 
         if($domain) {
             $IP = static::firstOrNew(['domain' => $domain]);
@@ -28,7 +24,45 @@ class IpAccess extends Model {
         return $IP;
     }
 
+    static public function parseDomain($host) {
+        if(empty($host)) {
+            return NULL;
+        }
+
+        $host = str_replace(array('http:','https:'), '', $host);
+        $host = trim($host);
+        $host = trim($host, '/');
+        $pieces = explode('/', $host);
+        $domain = $pieces[0];
+
+        if(strpos($domain, 'www.') === 0) {
+            $domain = substr($domain, 4);
+        }
+
+        $col_pos = strpos($domain, ':');
+
+        if($col_pos !== FALSE) {
+            $domain = substr($domain, 0, $col_pos);
+        }
+
+        $hash_pos = strpos($domain, ':');
+
+        if($hash_pos !== FALSE) {
+            $domain = substr($domain, 0, $hash_pos);
+        }
+
+        if($domain == 'localhost') {
+            return NULL;
+        }
+
+        return $domain;
+    }
+
     public function incrementDailyHits() {
+        if($this->isAccessRevoked()) {
+            return FALSE;
+        }
+
         $Log = IpAccessLog::firstOrNew(['ip_id' => $this->id, 'date' => date('Y-m-d')]);
         $limit = $this->getAccessLimit();
 
@@ -84,6 +118,10 @@ class IpAccess extends Model {
         }
 
         return $limit_raw;
+    }
+
+    public function isAccessRevoked() {
+        return ($this->getAccessLimit() < 0) ? TRUE : FALSE;
     }
 
     public function delete() {
