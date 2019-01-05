@@ -28,12 +28,22 @@ class ApiAccess
         $IP = IpAccess::findOrCreateByIpOrDomain($ip, $host);
 
         if(!$IP->incrementDailyHits()) {
-            $response = new \stdClass;
-            $response->errors = array(trans('errors.hit_limit_reached'));
+            if($IP->isAccessRevoked()) {
+                $err  = 'errors.access_revoked';
+                $code = 403;
+            }
+            else {
+                $err  = 'errors.hit_limit_reached';
+                $code = 500;
+            }
 
-            return (new Response(json_encode($response), 500))
-            -> header('Content-Type', 'application/json; charset=utf-8')
-            -> header('Access-Control-Allow-Origin', '*');
+            $response = new \stdClass;
+            $response->errors = array(trans($err));
+            $response->error_level = 4;
+
+            return (new Response(json_encode($response), $code))
+                -> header('Content-Type', 'application/json; charset=utf-8')
+                -> header('Access-Control-Allow-Origin', '*');
         }
 
         return $next($request);

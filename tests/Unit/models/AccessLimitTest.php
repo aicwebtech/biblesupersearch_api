@@ -11,8 +11,7 @@ class AccessLimitTest extends TestCase
      *
      * @return void
      */
-    public function testExample()
-    {
+    public function testHostParse() {
         $this->assertTrue(true);
     }
 }
