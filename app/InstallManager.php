@@ -83,7 +83,7 @@ class InstallManager {
 
         foreach($extensions as $ext) {
             $checklist[] = ['type' => 'item', 'label' => 'PHP Extension: ' . $ext, 'success' => extension_loaded($ext)];
-        }        
+        }
 
         foreach($rec_extensions as $ext) {
             $checklist[] = ['type' => 'item', 'label' => 'PHP Extension: ' . $ext, 'success' => extension_loaded($ext) ?: NULL];
@@ -126,7 +126,7 @@ class InstallManager {
         }
         else {
             $db_file = database_path('database.' . $db_info['driver']);
-            $db_file_writable = is_writable($db_file);            
+            $db_file_writable = is_writable($db_file);
             $db_dir = database_path();
             $db_dir_writable = is_writable($db_dir);
             $checklist[] = ['type' => 'item', 'label' => 'DB file is writable: ' . $db_file, 'success' => $db_file_writable];
@@ -156,7 +156,7 @@ class InstallManager {
         $checklist[] = ['type' => 'hr'];
         $checklist[] = ['type' => 'header', 'label' => 'Directories that need to be Writable'];
 
-        $dir = ['storage/app', 'storage/framework', 'storage/logs', 'bootstrap/cache'];
+        $dir = ['storage/app', 'storage/framework', 'storage/logs', 'bootstrap/cache', 'bibles/modules', 'bibles/unofficial'];
 
         foreach($dir as $d) {
            $checklist[] = ['type' => 'item', 'label' => 'Is Writable: ' . $d, 'success' => is_writable(base_path($d))];

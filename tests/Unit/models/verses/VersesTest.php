@@ -11,7 +11,7 @@ use App\Search;
 class VersesTest extends TestCase
 {
     // installation test can slow things down - should be TRUE in production
-    public $runInstallTest = FALSE;
+    public $runInstallTest = TRUE;
 
     public function testLookupQuery() {
         $Bible = Bible::findByModule('kjv');
@@ -100,9 +100,10 @@ class VersesTest extends TestCase
      */
     public function testInstall() {
         if(!$this->runInstallTest) {
-            //echo(PHP_EOL . 'Installation test disabled' . PHP_EOL);
             return;
         }
+
+        echo(PHP_EOL . 'Installation test - offiical module');
 
         $Bible = Bible::findByModule('kjv');
         $Bible->uninstall();
@@ -110,6 +111,39 @@ class VersesTest extends TestCase
         $Bible->install();
         $this->assertEquals(1, $Bible->installed);
         $this->assertTrue( Schema::hasTable('verses_kjv') );
+        $Bible->enabled = 1;
+        $Bible->save();
+    }
+
+    /**
+     * Test installation of an Unofficial Bible module
+     */
+    public function testInstallUnofficial() {
+       if(!$this->runInstallTest) {
+            return;
+        }
+
+        echo(PHP_EOL . 'Installation test - UNoffiical module');
+
+        $Bible = Bible::findByModule('kjv');
+        $Bible->uninstall();
+        $Bible->official = 0;
+        $Bible->save();
+        $Bible->migrateModuleFile();
+
+        $this->assertEquals(0, $Bible->installed);
+
+        $Bible->install();
+        $this->assertEquals(1, $Bible->installed);
+        $this->assertTrue( Schema::hasTable('verses_kjv') );
+        $this->testLookupQuery();
+
+//        $Bible->uninstall();
+        $Bible->official = 1;
+        $Bible->save();
+        $Bible->migrateModuleFile();
+
+//        $Bible->install();
         $Bible->enabled = 1;
         $Bible->save();
     }

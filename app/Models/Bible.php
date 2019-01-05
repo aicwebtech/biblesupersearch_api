@@ -30,8 +30,11 @@ class Bible extends Model {
         'rank',
     );
 
+
     // List of fields to NOT export when creating modules
     protected $do_not_export = array('id', 'created_at', 'updated_at', 'enabled', 'installed');
+
+    public $migrate_code = 0;  // 0 = no change, 1 = deleted unnessessary file, 2 = moved file, 3 = file does not exist
 
     /**
      * Create a new Bible Instance
@@ -232,12 +235,52 @@ class Bible extends Model {
         return ($res === TRUE) ? TRUE : FALSE;
     }
 
-    public function getModuleFilePath() {
-        return static::getModulePath() . $this->getModuleFileName();
+    public function migrateModuleFile($dry_run = FALSE) {
+        $path_of = static::getModulePath();
+        $path_un = static::getUnofficialModulePath();
+
+        $path_correct = ($this->official) ? $path_of : $path_un;
+        $path_wrong   = ($this->official) ? $path_un : $path_of;
+
+        $file_path_correct = $path_correct . $this->getModuleFileName();
+        $file_path_wrong   = $path_wrong   . $this->getModuleFileName();
+
+        if(is_file($file_path_correct) && !is_file($file_path_wrong)) {
+            $this->migrate_code = 0; // no changes
+            return TRUE;
+        }
+        elseif(is_file($file_path_correct) && is_file($file_path_wrong)) {
+            $this->migrate_code = 1;// deleted unneeded file
+
+            if(!$dry_run) {
+                return unlink($file_path_wrong);
+            }
+
+            return TRUE;
+        }
+        elseif(!is_file($file_path_correct) && is_file($file_path_wrong)) {
+            $this->migrate_code = 2; // moved file
+
+            if(!$dry_run) {
+                return rename($file_path_wrong, $file_path_correct);
+            }
+
+            return TRUE;
+        }
+        elseif(!is_file($file_path_correct) && !is_file($file_path_wrong)) {
+            $this->migrate_code = 3; // no module files
+            return TRUE;
+        }
+
+    }
+
+    public function getModuleFilePath($short = FALSE) {
+        $path = ($this->official) ? static::getModulePath($short) : static::getUnofficialModulePath($short);
+        return $path . $this->getModuleFileName();
     }
 
     public function getModuleFilePathShort() {
-        return static::getModulePathShort() . $this->getModuleFileName();
+        return $this->_getModulePath(TRUE);
     }
 
     public function getModuleFileName() {
@@ -271,12 +314,20 @@ class Bible extends Model {
         return ($Bible && $Bible->enabled) ? TRUE : FALSE;
     }
 
-    public static function getModulePath() {
-        return static::_getModulePathBase() . 'modules/';
+    public static function getModulePath($short = FALSE) {
+        return static::_getModulePathBase($short) . 'modules/';
     }
 
     public static function getModulePathShort() {
         return static::_getModulePathBase(TRUE) . 'modules/';
+    }
+
+    public static function getUnofficialModulePath($short = FALSE) {
+        return static::_getModulePathBase($short) . 'unofficial/';
+    }
+
+    public static function getUnofficialModulePathShort() {
+        return static::_getModulePathBase(TRUE) . 'unofficial/';
     }
 
     protected static function _getModulePathBase($short = FALSE) {
@@ -287,6 +338,7 @@ class Bible extends Model {
         $file  = static::getModulePath() . $module . '.zip';
         $Bible = static::findByModule($module);
         $Zip   = static::openModuleFileByModule($module);
+        $Zip   = $Bible->openModuleFile();
 
         if($Bible) {
             return FALSE;
@@ -340,18 +392,19 @@ class Bible extends Model {
     }
 
     public static function openModuleFileByModule($module) {
-        $file  = static::getModulePath() . $module . '.zip';
-        $Zip   = new ZipArchive();
+        $Bible = static::findByModule($module);
+        return $Bible->openModuleFile();
+    }
 
-        if($Zip->open($file) === TRUE) {
+    public function openModuleFile() {
+        $Zip  = new ZipArchive();
+        $path = $this->getModuleFilePath();
+
+        if($Zip->open($path) === TRUE) {
             return $Zip;
         }
 
         return FALSE;
-    }
-
-    public function openModuleFile() {
-        return static::openModuleFileByModule($this->module);
     }
 
     /**
