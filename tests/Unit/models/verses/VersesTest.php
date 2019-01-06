@@ -11,7 +11,7 @@ use App\Search;
 class VersesTest extends TestCase
 {
     // installation test can slow things down - should be TRUE in production
-    public $runInstallTest = TRUE;
+    public $runInstallTest = FALSE;
 
     public function testLookupQuery() {
         $Bible = Bible::findByModule('kjv');
@@ -103,7 +103,7 @@ class VersesTest extends TestCase
             return;
         }
 
-        echo(PHP_EOL . 'Installation test - offiical module');
+        echo(PHP_EOL . 'Installation test - offiical module' . PHP_EOL);
 
         $Bible = Bible::findByModule('kjv');
         $Bible->uninstall();
@@ -123,7 +123,7 @@ class VersesTest extends TestCase
             return;
         }
 
-        echo(PHP_EOL . 'Installation test - UNoffiical module');
+        echo(PHP_EOL . 'Installation test - UNoffiical module' . PHP_EOL);
 
         $Bible = Bible::findByModule('kjv');
         $Bible->uninstall();

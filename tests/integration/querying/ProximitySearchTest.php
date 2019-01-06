@@ -38,8 +38,8 @@ class ProximitySearchTest extends TestCase {
         $this->assertEquals( trans('errors.prox_operator_not_allowed'), $errors[0]);
     }
 
-    public function testWordsWithinNumberVerses() {
-        // ??
+    public function _testWordsWithinNumberVerses() {
+        // ?? not sure what this was supposed to test
     }
 
     public function testProximitySearchType() {

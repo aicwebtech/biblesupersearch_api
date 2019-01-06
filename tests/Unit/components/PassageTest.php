@@ -710,10 +710,13 @@ class PassageTest extends TestCase
     }
 
     function testParseRandomSearch() {
+        $is_search = FALSE;
         $ref = '1 John 1:1; Random Chapter, Random Verse, 2 Kings 1:1';
 
         $exploded = Passage::explodeReferences($ref, TRUE);
+        $Passages = Passage::parseReferences($ref, ['en'], $is_search);
 
-        //$Passges::parseReferences($ref);
+        $this->assertCount(4, $Passages);
+        $this->assertContainsOnlyInstancesOf('App\Passage', $Passages);
     }
 }
