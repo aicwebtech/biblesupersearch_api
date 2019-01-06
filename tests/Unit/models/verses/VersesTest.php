@@ -100,6 +100,7 @@ class VersesTest extends TestCase
      */
     public function testInstall() {
         if(!$this->runInstallTest) {
+            $this->assertTrue(TRUE);
             return;
         }
 
@@ -120,6 +121,7 @@ class VersesTest extends TestCase
      */
     public function testInstallUnofficial() {
        if(!$this->runInstallTest) {
+            $this->assertTrue(TRUE);
             return;
         }
 

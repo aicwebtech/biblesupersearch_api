@@ -1,0 +1,70 @@
+version=$(php artisan app:version)
+branch=$(git branch | grep \*) #this doesn't work, pulls in a directory listing?
+filename="biblesupersearch_api_$version.zip"
+filepath="../api_releases/$filename";
+
+delfiles=(
+    pack
+    install
+    uninstall
+    update
+)
+
+echo ${delfiles[*]};
+
+
+echo ''
+echo 'This script will pack the Bible SuperSearch API code for release'
+echo ''
+echo Application Version:
+echo $version
+echo ''
+read -p "Is this correct? (Y/n) " -n 1 -r
+if [[ !($REPLY =~ ^[Yy]$) ]]
+then
+    echo ''
+    exit
+fi
+
+echo ''
+echo ''
+echo Current git branch:
+git branch | grep \*
+echo ''
+read -p "Is this correct? (Y/n) " -n 1 -r
+if [[ !($REPLY =~ ^[Yy]$) ]]
+then
+    echo ''
+    exit
+fi
+
+echo ''
+echo ''
+echo Output Filename:
+echo $filename
+echo ''
+echo ''
+
+read -p "Create the release? (Y/n) " -n 1 -r
+echo    # (optional) move to a new line
+if [[ $REPLY =~ ^[Yy]$ ]]
+then
+    # do dangerous stuff
+    echo ''
+    echo 'Creating ZIP file'
+    git archive -o $filepath HEAD
+
+    echo 'Copying Composer dependencies to ZIP file'
+    zip -r -q $filepath vendor/
+
+    echo ''
+    echo 'Deleting unwanted files'
+
+    # delete unwanted files from ZIP file
+    zip -d $filepath "pack"
+    zip -d $filepath "install"
+
+    echo ''
+    echo "Done.  File created at $filepath"
+fi
+
