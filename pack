@@ -49,6 +49,10 @@ echo    # (optional) move to a new line
 if [[ $REPLY =~ ^[Yy]$ ]]
 then
     # do dangerous stuff
+    echo
+    # echo 'Clearing out Laravel caching'
+    # php artisan optimize:clear
+
     echo ''
     echo 'Creating ZIP file'
     git archive -o $filepath HEAD
