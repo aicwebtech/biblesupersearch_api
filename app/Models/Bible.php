@@ -335,10 +335,8 @@ class Bible extends Model {
     }
 
     public static function createFromModuleFile($module) {
-        $file  = static::getModulePath() . $module . '.zip';
         $Bible = static::findByModule($module);
         $Zip   = static::openModuleFileByModule($module);
-        $Zip   = $Bible->openModuleFile();
 
         if($Bible) {
             return FALSE;
@@ -356,22 +354,27 @@ class Bible extends Model {
     }
 
     public static function getListOfModuleFiles() {
-        $dir = static::getModulePath();
+        $dirs = [];
+
+        $dirs[] = static::getModulePath();
+        $dirs[] = static::getUnofficialModulePath();
         $list = array();
 
-        if(is_dir($dir)) {
-            $list_raw = scandir($dir);
+        foreach($dirs as $dir) {
+            if(is_dir($dir)) {
+                $list_raw = scandir($dir);
 
-            foreach($list_raw as $item) {
-                if($item == '.' || $item == '..' || $item == 'readme.txt') {
-                    continue;
+                foreach($list_raw as $item) {
+                    if($item == '.' || $item == '..' || $item == 'readme.txt') {
+                        continue;
+                    }
+
+                    if(!preg_match('/\.(zip)$/i', $item)) {
+                        continue;
+                    }
+
+                    $list[] = $item;
                 }
-
-                if(!preg_match('/\.(zip)$/i', $item)) {
-                    continue;
-                }
-
-                $list[] = $item;
             }
         }
 
@@ -393,7 +396,25 @@ class Bible extends Model {
 
     public static function openModuleFileByModule($module) {
         $Bible = static::findByModule($module);
-        return $Bible->openModuleFile();
+
+        if($Bible) {
+            $Bible->openModuleFile();
+        }
+
+        $file_of  = static::getModulePath() . $module . '.zip';
+        $file_un  = static::getUnofficialModulePath() . $module . '.zip';
+
+        $Zip = new ZipArchive();
+
+        if($Zip->open($file_of) === TRUE) {
+            return $Zip;
+        }
+
+        if($Zip->open($file_un) === TRUE) {
+            return $Zip;
+        }
+
+        return TRUE;
     }
 
     public function openModuleFile() {
