@@ -18,8 +18,10 @@ gitstatus=$(git status --porcelain)
 
 if [[ $gitstatus != '' ]]
 then
+    echo ''
     echo 'Please commit your changes before packing'
-    exit
+    echo 'Only committed changes will be packed'
+    exit # comment out ONLY for debugging of this script.
 fi
 
 echo ''
@@ -46,13 +48,19 @@ then
     exit
 fi
 
+echo ''
+echo ''
 echo 'Running tests (phpunit)'
 echo ''
 ./vendor/phpunit/phpunit/phpunit
 
-if[[ $? != 0 ]]
+code=$?
+
+if [[ !($code = 0) ]]
 then
-    echo 'Please fix test errors before continuing';
+    echo ''
+    echo 'The tests found some errors'
+    echo 'Please fix errors before continuing';
     exit
 fi
 
@@ -70,8 +78,8 @@ if [[ $REPLY =~ ^[Yy]$ ]]
 then
     # do dangerous stuff
     echo
-    # echo 'Clearing out Laravel caching'
-    # php artisan optimize:clear
+    echo 'Clearing out Laravel caching'
+    php artisan optimize:clear
 
     echo ''
     echo 'Creating ZIP file'
@@ -92,4 +100,3 @@ then
     echo ''
     echo "Success!  File created at $filepath"
 fi
-
