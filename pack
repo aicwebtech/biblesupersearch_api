@@ -14,9 +14,9 @@ echo "Branch: $gitbranch"
 
 gitstatus=$(git status --porcelain)
 
-echo "git status: $gitstatus"
+echo "git status: |$gitstatus|"
 
-if [[ getstatus != '' ]]
+if [[ gitstatus != '' ]]
 then
     echo 'Please commit your changes before packing'
     exit
