@@ -12,11 +12,22 @@ delfiles=(
 
 echo "Branch: $gitbranch"
 
+gitstatus=$(git status --porcelain)
+
+echo gitstatus
+
+if [[ getstatus != '' ]]
+then
+    echo 'Please commit your changes before packing'
+    exit
+fi
+
 echo ''
 echo 'This script will pack the Bible SuperSearch API code for release'
 echo ''
 echo Application Version:
 echo "* $version"
+echo ''
 echo ''
 read -p "Is this correct? (Y/n) " -n 1 -r
 if [[ !($REPLY =~ ^[Yy]$) ]]
