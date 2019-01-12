@@ -14,7 +14,7 @@ echo "Branch: $gitbranch"
 
 gitstatus=$(git status --porcelain)
 
-echo gitstatus
+echo "git status: $gitstatus"
 
 if [[ getstatus != '' ]]
 then
