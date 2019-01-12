@@ -16,7 +16,7 @@ gitstatus=$(git status --porcelain)
 
 echo "git status: |$gitstatus|"
 
-if [[ gitstatus != '' ]]
+if [[ $gitstatus != '' ]]
 then
     echo 'Please commit your changes before packing'
     exit
