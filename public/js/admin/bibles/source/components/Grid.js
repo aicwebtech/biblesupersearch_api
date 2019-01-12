@@ -25,9 +25,9 @@ enyo.kind({
                 datatype: 'json',
                 idPrefix: this.idPrefix,
                 colModel: [
-                    {name: 'name', index: 'name', label: 'Name', width:'300', editable: true},
-                    {name: 'shortname', index: 'shortname', label: 'Short Name', width:'100', editable: true},
-                    {name: 'module', index: 'module', label: 'Module', width:'100'},
+                    {name: 'name', index: 'name', label: 'Name', width:'200', editable: true},
+                    {name: 'shortname', index: 'shortname', label: 'Short Name', width:'150', editable: true},
+                    {name: 'module', index: 'module', label: 'Module', width:'150'},
                     {name: 'has_module_file', index: 'has_module_file', label: 'Has File', width:'140', title: false, sortable: false, formatter: enyo.bind(this, this._formatHasFile)}, // will be sortable when grid is using local data
                     {name: 'lang', index: 'lang', label: 'Language', width:'100'},
                     {name: 'year', index: 'year', label: 'Year', width:'100'},
@@ -35,7 +35,7 @@ enyo.kind({
                     {name: 'enabled', index: 'enabled', label: 'Enabled', width:'80', title: false, formatter: enyo.bind(this, this._formatEnabled)},
                     {name: 'official', index: 'official', label: 'Official', width:'60', title: false, formatter: enyo.bind(this, this._formatSinpleBoolean)},
                     {name: 'rank', index: 'rank', label: 'Rank', width:'100'},
-                    {name: 'actions', index: 'actions', label: '&nbsp', width:'150', title: false, formatter: enyo.bind(this, this._formatActions)},
+                    {name: 'actions', index: 'actions', label: '&nbsp', width:'120', title: false, formatter: enyo.bind(this, this._formatActions)},
                     {name: 'id', index: 'id', hidden: true}
                 ],
                 jsonReader: {
@@ -43,7 +43,7 @@ enyo.kind({
                     id: 'id'
                 },
                 pager: pagerId,
-                sortname: 'name',
+                sortname: 'rank',
                 sortorder: 'asc',
                 viewrecords: true,
                 height: 'auto',

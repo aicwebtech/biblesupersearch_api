@@ -27,7 +27,21 @@ class Bible extends Model {
         'copyright',
         'italics',
         'strongs',
+        'red_letter',
         'rank',
+        'official',
+        'research',
+        'publisher',
+        'hebrew_text_id',
+        'greek_text_id',
+        'translation_type_id',
+        'owner',
+        'copyright_id',
+        'citation_limit',
+        'restrict',
+        'module_v2',
+        'importer',
+        'import_file',
     );
 
 

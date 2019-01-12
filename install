@@ -3,7 +3,7 @@ echo 'This sets up the Bible SuperSearch API'
 echo ''
 echo 'Please copy .env.example to .env and configure your database before you run this set up.'
 echo ''
-echo 'Warning: Running this will erase the Bible SuperSearch tables if already installed'
+echo 'Warning: Running this will ERASE the Bible SuperSearch tables if already installed'
 echo ''
 
 read -p "Are you sure? (Y/n) " -n 1 -r
@@ -26,6 +26,10 @@ then
     php artisan migrate:refresh --seed
     echo ''
     echo 'Basic installation is complete'
+    echo ''
+    echo 'Bibles Available:'
+    echo ''
+    php artisan bible:list
     echo ''
     echo 'Run php artisan bible:install to install Bible Modules'
     echo 'Run php artisan bible:enable to enable Bible Modules after they are installed'
