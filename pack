@@ -10,11 +10,11 @@ delfiles=(
     update
 )
 
-echo "Branch: $gitbranch"
+echo ''
+echo 'This script will pack the Bible SuperSearch API code for release'
 
+# Check git status
 gitstatus=$(git status --porcelain)
-
-echo "git status: |$gitstatus|"
 
 if [[ $gitstatus != '' ]]
 then
@@ -22,8 +22,6 @@ then
     exit
 fi
 
-echo ''
-echo 'This script will pack the Bible SuperSearch API code for release'
 echo ''
 echo Application Version:
 echo "* $version"
@@ -47,6 +45,17 @@ then
     echo ''
     exit
 fi
+
+echo 'Running tests (phpunit)'
+echo ''
+./vendor/phpunit/phpunit/phpunit
+
+if[[ $? != 0 ]]
+then
+    echo 'Please fix test errors before continuing';
+    exit
+fi
+
 
 echo ''
 echo ''
