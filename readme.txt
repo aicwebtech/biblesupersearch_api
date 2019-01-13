@@ -32,15 +32,13 @@ Also, this API must have it's own subdomain.
 
 Installation (Web Browser):
 * Upload this entire directory to a directory (/path/to/biblesupersearch_api) on your web server.
-* Rename .env.example to .env and make it writable for the web server
+* Rename .env.example to .env and make sure that it's WRITABLE for the web server
 * Make sure the whole directory is readable by the web server
 * Make these directories writable by the web server:
-    * storage/app
-    * storage/framework
-    * storage/logs
+    * storage               (all subdirectories need to be writable)
     * bootstrap/cache
-    * bibles/modules
-    * bibles/unofficial
+    * bibles/modules        (all files need to be writable)
+    * bibles/unofficial     (all files need to be writable)
 
 * Now, point a subdomain (https://biblesupersearch-api.your-domain.com) to path/to/biblesupersearch_api/public
 * Point your Bible SuperSearch client software to the subdomain.
