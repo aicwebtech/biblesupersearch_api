@@ -1036,8 +1036,8 @@ class Passage {
                 $passages = static::explodeReferences($request);
                 //$Passages = static::parseReferences($request, $languages, FALSE, $Bibles); // Worst case senariao - lots of overhead
 
-                // Treats as passage if 1) It contains numbers or 2) It resolves to multiple (possible) passages
-                if(!empty($passages) && (preg_match('/[0-9]/', $request) || count($passages) >= 2)) {
+                // Treats as passage if 1) It contains numbers but no (parentheses) or 2) It resolves to multiple (possible) passages
+                if(!empty($passages) && ((preg_match('/[0-9]/', $request) && strpos($request, '(') === FALSE) || count($passages) >= 2)) {
                     $reference = $request;
                 }
                 // Otherwise, treats it as search keywords

@@ -58,6 +58,13 @@ class RequestTest extends TestCase {
         $this->assertCount(83, $results['kjv']);
     }
 
+    public function testWithBooleanProximity() {
+        $Engine = new Engine();
+        $Engine->setDefaultDataType('raw');
+        $results = $Engine->actionQuery(['bible' => 'kjv', 'request' => 'faith PROX(2) hope', 'search_type' => 'boolean']);
+        $this->assertFalse($Engine->hasErrors());
+    }
+
     /**
      * 'faith' will be recognized as a search
      * 'Romans' will be recognized as a search, not a reference
