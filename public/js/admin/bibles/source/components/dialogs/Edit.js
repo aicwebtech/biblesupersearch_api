@@ -11,7 +11,7 @@ enyo.kind({
                 {tag: 'td', classes: 'form_label right', components: [
                     {kind: 'enyo.Input', name: 'name'}
                 ]}
-            ]},            
+            ]},
             {tag: 'tr', components: [
                 {tag: 'td', classes: 'form_label right', content: 'Short Name: '},
                 {tag: 'td', classes: 'form_label right', components: [
@@ -37,11 +37,11 @@ enyo.kind({
         {from: 'formData.name', to: '$.name.value', oneWay: false, transform: function(value, dir) {
             this.log('name', value, dir);
             return value || '';
-        }},           
+        }},
         {from: 'formData.shortname', to: '$.shortname.value', oneWay: false, transform: function(value, dir) {
             this.log('shortname', value, dir);
             return value || '';
-        }},         
+        }},
         {from: 'formData.year', to: '$.year.value', oneWay: false, transform: function(value, dir) {
             this.log('year', value, dir);
             return value || '';
@@ -49,7 +49,7 @@ enyo.kind({
         {from: 'formData.rank', to: '$.rank.value', oneWay: false, transform: function(value, dir) {
             this.log('rank', value, dir);
             return (value || value === 0) ? value : null;
-        }},     
+        }},
         // {from: 'props.enable', to: '$.enable.checked', oneWay: false, transform: function(value, dir) {
         //     this.log('enable', value, dir);
 
@@ -75,21 +75,21 @@ enyo.kind({
                     text: 'Save',
                     icon: 'ui-icon-check',
                     click: enyo.bind(this, this.save)
-                },                      
+                },
                 {
                     text: 'Cancel',
                     icon: 'ui-icon-cancel',
                     click: enyo.bind(this, this.close)
-                },            
+                },
             ]
         });
     },
 
-    open: function() {
+    openLoad: function() {
         this.inherited(arguments);
         this.app.set('ajaxLoading', true);
         this.log('pk', this.pk);
-        
+
         var ajax = new enyo.Ajax({
             url: '/admin/bibles/' + this.pk,
             method: 'GET',
@@ -97,7 +97,7 @@ enyo.kind({
 
         ajax.response(this, function(inSender, inResponse) {
             this.app.set('ajaxLoading', false);
-            
+
             if(!inResponse.success) {
                 var msg = 'An Error has occurred';
                 this.app.alert(msg);
@@ -105,6 +105,7 @@ enyo.kind({
                 return;
             }
 
+            this.open();
             this.set('formData', enyo.clone(inResponse.Bible));
             this.set('title', 'Editing: ' + inResponse.Bible.name);
         });
@@ -116,7 +117,7 @@ enyo.kind({
             this.app.alert(msg);
             this.close();
         });
-        
+
         ajax.go();
     },
 
@@ -134,7 +135,7 @@ enyo.kind({
 
         ajax.response(this, function(inSender, inResponse) {
             this.app.set('ajaxLoading', false);
-            
+
             if(!inResponse.success) {
                 return this._errorHandler(inSender, inResponse)
             }
@@ -149,7 +150,7 @@ enyo.kind({
             var response = JSON.parse(inSender.xhrResponse.body);
             this._errorHandler(inSender, response);
         });
-        
+
         ajax.go();
     },
 

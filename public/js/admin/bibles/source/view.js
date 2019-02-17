@@ -12,59 +12,59 @@ enyo.kind({
             {name: 'BulkActions', style: 'float: left', showing: false, components: [
                 {tag: 'span', content: 'With Selected: '},
                 {
-                    tag: 'button', 
-                    classes: 'button bulk', 
-                    content: 'Install', 
-                    ontap: 'multiInstall', 
-                    action: 'install', 
+                    tag: 'button',
+                    classes: 'button bulk',
+                    content: 'Install',
+                    ontap: 'multiInstall',
+                    action: 'install',
                     actioning: 'Installing'
                 },
                 {
-                    tag: 'button', 
-                    classes: 'button bulk', 
-                    content: 'Uninstall', 
-                    ontap: 'multiUninstall', 
-                    action: 'uninstall', 
+                    tag: 'button',
+                    classes: 'button bulk',
+                    content: 'Uninstall',
+                    ontap: 'multiUninstall',
+                    action: 'uninstall',
                     actioning: 'Uninstalling'
                 },
                 {
-                    tag: 'button', 
-                    classes: 'button bulk', 
-                    content: 'Enable', 
+                    tag: 'button',
+                    classes: 'button bulk',
+                    content: 'Enable',
                     ontap: 'multiEnable',
-                    action: 'enable', 
+                    action: 'enable',
                     actioning: 'Enabling'
                 },
                 {
-                    tag: 'button', 
-                    classes: 'button bulk', 
-                    content: 'Disable', 
-                    ontap: 'multiDisable', 
-                    action: 'disable', 
+                    tag: 'button',
+                    classes: 'button bulk',
+                    content: 'Disable',
+                    ontap: 'multiDisable',
+                    action: 'disable',
                     actioning: 'Disabling'
-                },                
+                },
                 {
-                    tag: 'button', 
-                    classes: 'button bulk', 
-                    content: 'Test', 
-                    ontap: 'multiTest', 
-                    action: 'test', 
+                    tag: 'button',
+                    classes: 'button bulk',
+                    content: 'Test',
+                    ontap: 'multiTest',
+                    action: 'test',
                     actioning: 'Testing'
                 },
                 {
-                    tag: 'button', 
-                    classes: 'button bulk', 
-                    content: 'Export Module File', 
-                    ontap: 'multiExport', 
-                    action: 'export', 
+                    tag: 'button',
+                    classes: 'button bulk',
+                    content: 'Export Module File',
+                    ontap: 'multiExport',
+                    action: 'export',
                     actioning: 'Exporting'
-                },                
+                },
                 {
-                    tag: 'button', 
-                    classes: 'button bulk', 
-                    content: 'Update Module File', 
-                    ontap: 'multiUpdate', 
-                    action: 'meta', 
+                    tag: 'button',
+                    classes: 'button bulk',
+                    content: 'Update Module File',
+                    ontap: 'multiUpdate',
+                    action: 'meta',
                     actioning: 'Updating Meta'
                 },
             ]},
@@ -89,11 +89,11 @@ enyo.kind({
             {name: 'MultiQueue', kind: 'BibleManager.Components.Dialogs.MultiQueue'}
         ]},
         {
-            kind: 'enyo.Signals', 
-            onBibleInstall: 'bibleInstall', 
-            onBibleExport: 'bibleExport', 
-            onConfirmAction: 'confirmAction', 
-            onDoAction: 'doAction', 
+            kind: 'enyo.Signals',
+            onBibleInstall: 'bibleInstall',
+            onBibleExport: 'bibleExport',
+            onConfirmAction: 'confirmAction',
+            onDoAction: 'doAction',
             onViewDescription: 'viewDescription',
             onEdit: 'openEdit'
         }
@@ -107,25 +107,25 @@ enyo.kind({
         var rowData = this.$.GridContainer.getRowByPk(inEvent.id);
         var id = inEvent.id;
         this.$.Install.set('bible', rowData.name);
-        
+
         this.$.Install.confirm(enyo.bind(this, function(confirmed, props) {
             if(confirmed) {
                 this._singleActionHelper('install', id, props);
             }
         }));
-    },        
+    },
     bibleExport: function(inSender, inEvent) {
         var rowData = this.$.GridContainer.getRowByPk(inEvent.id);
         var id = inEvent.id;
         this.$.Export.set('bible', rowData.name);
-        
+
         this.$.Export.confirm(enyo.bind(this, function(confirmed, props) {
-            
+
             if(confirmed) {
                 this._singleActionHelper('export', id, props);
             }
         }));
-    },    
+    },
     confirmAction: function(inSender, inEvent) {
         var id = inEvent.id;
         var action = inEvent.action;
@@ -188,16 +188,16 @@ enyo.kind({
             var msg = 'An Error has occurred';
             this.app.alert(msg);
         });
-        
+
         ajax.go();
     },
-    
+
     multiEnable: function(inSender, inEvent) {
         this._confirmMultiAction('enable', 'Enabling');
-    },    
+    },
     multiDisable: function(inSender, inEvent) {
         this._confirmMultiAction('disable', 'Disabling');
-    },    
+    },
     multiUninstall: function(inSender, inEvent) {
         this._confirmMultiAction('uninstall', 'Uninstalling');
     },
@@ -216,7 +216,7 @@ enyo.kind({
                 this._multiActionHelper('install', 'Installing', props);
             }
         }));
-    },    
+    },
     multiExport: function(inSender, inEvent) {
         this._processSelections();
 
@@ -232,7 +232,7 @@ enyo.kind({
                 this._multiActionHelper('export', 'Exporting', props);
             }
         }));
-    },    
+    },
     multiUpdate: function(inSender, inEvent) {
         this._processSelections();
 
@@ -248,7 +248,7 @@ enyo.kind({
                 this._multiActionHelper('meta', 'Updating Meta', props);
             }
         }));
-    }, 
+    },
     multiTest: function(inSender, inEvent) {
         this._multiAction('test', 'Testing', {}, false);
     },
@@ -287,7 +287,7 @@ enyo.kind({
     _multiActionHelper: function(action, actioning, postData, closeWhenFinished) {
         var closeWhenFinished = (typeof closeWhenFinished == 'undefined') ? true : closeWhenFinished;
         this.log(action, actioning, postData, closeWhenFinished);
-        
+
         var actionLabel = action;
 
         if(action == 'meta') {
@@ -312,7 +312,7 @@ enyo.kind({
         this.log(inEvent.id);
         this.$.Edit.set('pk', inEvent.id);
         // this.log('PKQ', this.$.Edit.get('pk'));
-        this.$.Edit.open();
+        this.$.Edit.openLoad();
     },
     selectionsChanged: function(inSender, inEvent) {
         this.$.BulkActions.set('showing', inEvent.length ? true : false);
