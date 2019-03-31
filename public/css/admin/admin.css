@@ -97,8 +97,12 @@ title.h1 {
     font-family: sans-serif;
 }
 
-.info:hover {
+.info {
     position: relative;
+}
+
+.info:hover {
+    /*position: relative;*/
 }
 
 .info span {
@@ -119,12 +123,19 @@ title.h1 {
 }
 
 .info:hover p {
-    display: block;
+    display: inline-block;
     position: absolute;
-    border: 1px solid red;
+    /*border: 1px solid red;*/
     width:  400px;
-    background-color: white;
+    background-color: #f7f3cd;
     font-size: .9em;
-    padding: 10px;
+    padding: 5px;
     text-align: justify;
+    z-index: 10000;
+    left: 25px;
+    top: 0px;
+}
+
+.info.narrow:hover p {
+    width: 200px;
 }

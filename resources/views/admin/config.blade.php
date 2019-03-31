@@ -167,7 +167,7 @@
                                             @if($configs['mail.driver'] == $dr)selected='selected'@endif>{{$dr}}</option>
                                         @endforeach
                                     </select>
-                                    <span class='info'>
+                                    <span class='info narrow'>
                                         <span>i</span>
                                         <p>Default: sendmail</p>
                                     </span>
@@ -177,7 +177,7 @@
                                 <td class='ralign'>Sendmail Path: </td>
                                 <td>
                                     <input name='mail__sendmail' size='38' value='{{$configs['mail.sendmail']}}' readonly="readonly">
-                                    <span class='info'>
+                                    <span class='info narrow'>
                                         <span>i</span>
                                         <p>Default: /usr/sbin/sendmail -bs</p>
                                     </span>
@@ -200,7 +200,7 @@
                                 <td class='ralign'>Mail Port: </td>
                                 <td>
                                     <input name='mail__port' size='38' value='{{$configs['mail.port']}}' readonly="readonly">
-                                    <span class='info'>
+                                    <span class='info narrow'>
                                         <span>i</span>
                                         <p>Default: 587</p>
                                     </span>
@@ -211,7 +211,7 @@
                                 <td class='ralign'>Mail Encryption: </td>
                                 <td>
                                     <input name='mail__encryption' size='38' value='{{$configs['mail.encryption']}}'  readonly="readonly">
-                                    <span class='info'>
+                                    <span class='info narrow'>
                                         <span>i</span>
                                         <p>Default: tls</p>
                                     </span>

@@ -38,6 +38,7 @@ class Kernel extends HttpKernel
         'migrate' => \App\Http\Middleware\CheckMigration::class,
         'bindings' => \Illuminate\Routing\Middleware\SubstituteBindings::class,
         'throttle' => \Illuminate\Routing\Middleware\ThrottleRequests::class,
+        'dev_tools' => \App\Http\Middleware\CheckDevTools::class,
     ];
 
     /**

@@ -155,12 +155,14 @@ enyo.kind({
         });
 
         ajax.error(this, function(inSender, inResponse) {
+            var response = JSON.parse(inSender.xhrResponse.body);
+            var errors = response.errors || ['Unknown Error'];
+
             this.errors.push({
                 bible: item.name,
-                errors: ['Unknown Error']
+                errors: errors
             });
 
-            // todo handle errors!
             this.processed.push(item);
             this._incrementTimer();
             this._processQueue();

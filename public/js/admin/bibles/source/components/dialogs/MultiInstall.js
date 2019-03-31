@@ -4,7 +4,7 @@ enyo.kind({
     // classes: 'dialogCenterText',
     alert: null,
     autoOpen: true,
-    title: 'Export Bible',
+    title: 'Install Bible',
     callback: null,
     confirmed: false,
     closing: false,

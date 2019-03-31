@@ -15,6 +15,7 @@ class BibleController extends Controller
         parent::__construct();
         $this->middleware('auth:100');
         $this->middleware('migrate')->only('index');
+        $this->middleware('dev_tools')->only('export', 'meta');
     }
 
     /**
@@ -25,7 +26,12 @@ class BibleController extends Controller
      */
     public function index() {
         Bible::populateBibleTable();
-        return view('admin.bibles');
+
+        $bootstrap = new \stdClass;
+        $bootstrap->devToolsEnabled = config('bss.dev_tools') ? TRUE : FALSE;
+        $bootstrap = json_encode($bootstrap);
+
+        return view('admin.bibles', ['bootstrap' => $bootstrap]);
     }
 
     public function grid(Request $request) {

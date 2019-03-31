@@ -57,7 +57,8 @@ enyo.kind({
                     content: 'Export Module File',
                     ontap: 'multiExport',
                     action: 'export',
-                    actioning: 'Exporting'
+                    actioning: 'Exporting',
+                    requireDevTools: true
                 },
                 {
                     tag: 'button',
@@ -65,7 +66,8 @@ enyo.kind({
                     content: 'Update Module File',
                     ontap: 'multiUpdate',
                     action: 'meta',
-                    actioning: 'Updating Meta'
+                    actioning: 'Updating Meta',
+                    requireDevTools: true
                 },
             ]},
             {name: 'SortOptions', style: 'float: right', components: [
@@ -102,6 +104,18 @@ enyo.kind({
     bindings: [
         {from: 'app.ajaxLoading', to: '$.Loading.showing'}
     ],
+
+    create: function() {
+        this.inherited(arguments);
+
+        var multiTools = this.$.BulkActions.getClientControls();
+
+        multiTools.forEach(function(tool) {
+            if(tool.requireDevTools && tool.requireDevTools == true && !bootstrap.devToolsEnabled) {
+                tool.destroy();
+            }
+        }, this);
+    },
 
     bibleInstall: function(inSender, inEvent) {
         var rowData = this.$.GridContainer.getRowByPk(inEvent.id);
@@ -184,8 +198,10 @@ enyo.kind({
 
         ajax.error(this, function(inSender, inResponse) {
             console.log('ERROR', inSender, inResponse);
+            var response = JSON.parse(inSender.xhrResponse.body);
+            var errors = response.errors || ['Unknown Error'];
             this.app.set('ajaxLoading', false);
-            var msg = 'An Error has occurred';
+            var msg = 'An Error has occurred: <br /><ul><li>' + errors.join('</li><li>') + '</li></ul>';
             this.app.alert(msg);
         });
 

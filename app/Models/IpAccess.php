@@ -66,7 +66,7 @@ class IpAccess extends Model {
         $Log = IpAccessLog::firstOrNew(['ip_id' => $this->id, 'date' => date('Y-m-d')]);
         $limit = $this->getAccessLimit();
 
-        if($Log->limit_reached) {
+        if($Log->limit_reached && $limit > 0) {
             return FALSE;
         }
 
