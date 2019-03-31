@@ -113,6 +113,15 @@ class IpAccess extends Model {
     public function getAccessLimit() {
         $limit_raw = $this->limit;
 
+        if($this->domain) {
+            $current_domain = $_SERVER['HTTP_HOST'] ?: $_SERVER['SERVER_NAME'];
+            $current_domain = static::parseDomain($current_domain);
+            
+            if($current_domain == $this->domain) {
+                return 0;
+            }
+        }
+
         if($limit_raw === NULL) {
             $limit_raw = config('bss.daily_access_limit');
         }
