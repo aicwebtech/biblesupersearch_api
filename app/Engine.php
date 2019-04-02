@@ -258,9 +258,29 @@ class Engine {
             return FALSE;
         }
 
+        $this->metadata->strongs = [];
+
         // Search validation
         if($Search) {
             $search_valid = $Search->validate();
+
+            $strongs = Search::parseStrongs($keywords);
+
+            // print_r($strongs);
+
+            if(!empty($strongs)) {
+                $Strongs = \App\Models\StrongsDefinition::whereIn('number', $strongs)
+                    ->orderBy('number', 'asc')
+                    ->get();
+
+                // echo('<pre>');
+                // print_r($Strongs->all());
+                // die();
+
+                foreach($Strongs as $Str) {
+                    $this->metadata->strongs[] = $Str->getAttributes();
+                }
+            }
 
             if(!$search_valid) {
                 $this->addErrors($Search->getErrors(), $Search->getErrorLevel());
