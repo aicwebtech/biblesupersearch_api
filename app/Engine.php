@@ -271,9 +271,7 @@ class Engine {
                     ->get();
 
                 foreach($Strongs as $Str) {
-                    $sdata = $Str->toArray();
-                    $sdata['tvm'] = preg_replace('/<b>Count:<\/b> [0-9]+.*?<br>/', '', $sdata['tvm']);
-                    $this->metadata->strongs[] = $sdata;
+                    $this->metadata->strongs[] = $this->_formatStrongs($Str->toArray());
                 }
             }
 
@@ -439,27 +437,29 @@ class Engine {
 
     public function actionStrongs($input) {
         $response = [];
-        $strongs = explode(' ', strip_tags(trim($input['strongs'])));
+        $strongs = strip_tags(trim($input['strongs']));
 
-        foreach($strongs as $num) {
-            if(preg_match('/[GHgh][0-9]+/', $num, $matches)) {
-                $clean = $matches[0];
-
+        if(preg_match_all('/[GHgh][0-9]+/', $strongs, $matches)) {
+            foreach($matches[0] as $clean) {
                 $Def = \App\Models\StrongsDefinition::where('number', $clean)->first();
 
                 if(!$Def) {
                     $this->addError('Strong\s Number ' . $clean . ' not found');
                 }
                 else {
-                    $data = $Def->toArray();
-                    // Remove 'count' from TVM
-                    $data['tvm'] = preg_replace('/<b>Count:<\/b> [0-9]+.*?<br>/', '', $data['tvm']);
-                    $response[] = $data;
+                    $response[] = $this->_formatStrongs($Def->toArray());
                 }
             }
         }
 
         return $response;
+    }
+
+    protected function _formatStrongs($attr) {
+        $attr['tvm'] = preg_replace('/<b>Count:<\/b> [0-9]+.*?<br>/', '', $attr['tvm']); // Remove 'count' from TVM
+        unset($attr['created_at']);
+        unset($attr['updated_at']);
+        return $attr;
     }
 
     public function actionReadcache($input) {

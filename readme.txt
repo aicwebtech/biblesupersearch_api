@@ -26,8 +26,6 @@ Server Requirements:
 * BCMath PHP Extension
 * Composer
 
-
-
 Also, this API must have it's own subdomain.
 
 Installation (Web Browser):

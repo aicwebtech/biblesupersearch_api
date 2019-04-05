@@ -114,9 +114,17 @@ class IpAccess extends Model {
         $limit_raw = $this->limit;
 
         if($this->domain) {
-            $current_domain = $_SERVER['HTTP_HOST'] ?: $_SERVER['SERVER_NAME'];
-            $current_domain = static::parseDomain($current_domain);
+            $current_domain = '';
+
+            if(array_key_exists('HTTP_HOST', $_SERVER)) {
+                $current_domain = $_SERVER['HTTP_HOST'];
+            }
+            elseif(array_key_exists('SERVER_NAME', $_SERVER)) {
+                $current_domain = $_SERVER['SERVER_NAME'];
+            }
             
+            $current_domain = static::parseDomain($current_domain);
+
             if($current_domain == $this->domain) {
                 return 0;
             }
