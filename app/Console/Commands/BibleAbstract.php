@@ -57,6 +57,7 @@ abstract class BibleAbstract extends Command {
     }
 
     protected function _listBibles() {
+        Bible::populateBibleTable();
         $Bibles = Bible::orderBy('rank')->get();
         $module_len = 25;
         $name_len = 0;
@@ -71,8 +72,6 @@ abstract class BibleAbstract extends Command {
         print '' . PHP_EOL;
         print "\t" . str_pad('Module', $module_len) . "  Installed  Enabled  " . str_pad('Year', 12) . '  ' . str_pad('Name', $name_len) . PHP_EOL;
         print "\t" . str_repeat('-', $module_len + $name_len + 36) . PHP_EOL;
-
-        Bible::populateBibleTable();
 
         foreach($Bibles as $Bible) {
             $ena = ($Bible->enabled)   ? 'Yes' : 'No';

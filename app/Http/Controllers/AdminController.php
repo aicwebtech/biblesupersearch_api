@@ -12,7 +12,8 @@ use App\Http\Controllers\Controller;
 class AdminController extends Controller
 {
     public function __construct() {
-        $this->middleware('auth:100');
+        parent::__construct();
+        $this->middleware(['auth:100', 'migrate']);
     }
 
     /**
@@ -27,6 +28,22 @@ class AdminController extends Controller
 
     public function todo() {
         return view('admin.todo');
+    }
+
+    public function help() {
+        return view('admin.help');
+    }
+
+    public function softwareUpdate() {
+        $local_version    = \App\Engine::getHardcodedVersion();
+        $upstream_version = \App\Engine::getUpstreamVersion();
+        $needs_update     = $upstream_version ? version_compare($local_version, $upstream_version, '<') : FALSE;
+
+        return view('admin.update', [
+            'local'     => $local_version,
+            'upstream'  => $upstream_version,
+            'update'    => $needs_update,
+        ]);
     }
 
     /**

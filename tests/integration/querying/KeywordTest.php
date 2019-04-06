@@ -44,7 +44,7 @@ class KeywordTest extends TestCase
         $Engine->setDefaultDataType('raw');
 
         $results = $Engine->actionQuery(['bible' => 'kjv', 'search' => 'faith && joy || "free spirit"']);
-        //$this->assertCount(9, $results['kjv']);
+        $this->assertCount(9, $results['kjv']);
 
         $results = $Engine->actionQuery(['bible' => 'kjv', 'search' => "faith && joy || 'free spirit'"]);
         //$this->assertCount(9, $results['kjv']);

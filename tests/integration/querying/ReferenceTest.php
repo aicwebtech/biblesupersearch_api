@@ -41,6 +41,7 @@ class ReferenceTest extends TestCase {
 
     public function testRandomForeign() {
         if(!Bible::isEnabled('lith')) {
+            $this->assertTrue(TRUE);
             return;
         }
 

@@ -55,6 +55,26 @@ class EngineTest extends TestCase
         $Engine = new Engine();
         $Engine->setDefaultDataType('raw');
         $results = $Engine->actionQuery(['bible' => 'kjv_strongs', 'search' => 'faith']);
+
+        $modules = ['kjv_strongs', 'tyndale', 'bishops', 'coverdale'];
+
+        foreach($modules as $module) {
+            $Bible = Bible::findByModule($module);
+
+            if(!$Bible->enabled) {
+                continue;
+            }
+
+            $results = $Engine->actionQuery(['bible' => $module, 'search' => 'faith']);
+            $this->assertFalse($Engine->hasErrors(), 'failed search on module: ' . $module);
+            $this->assertTrue(count($results[$module]) > 0, 'empty results on module:' . $module);
+
+            $results = $Engine->actionQuery(['bible' => $module, 'reference' => 'Rom']);
+            $this->assertFalse($Engine->hasErrors(), 'failed lookup on module: ' . $module);
+            $this->assertTrue(count($results[$module]) > 0, 'empty results on module:' . $module);
+        }
+
+        $this->assertTrue(TRUE);
     }
 
     public function testBasicSearch() {

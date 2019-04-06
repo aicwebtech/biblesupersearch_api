@@ -12,6 +12,8 @@ class Bibles extends Seeder
      */
     public function run()
     {
+        return; // this is now no longer needed - doesn't import ENOUGH
+
         $supported = Config::get('bss_supported_bibles');
         $lang = config('bss.defaults.language');
         $lang_st = config('bss.defaults.language_short');

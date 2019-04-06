@@ -224,7 +224,7 @@ class Engine {
             return FALSE;
         }
 
-        list($keywords, $references) = Passage::mapRequest($request, $keywords, $references, $this->languages, $this->Bibles);
+        list($keywords, $references, $this->metadata->disambiguation) = Passage::mapRequest($input, $this->languages, $this->Bibles);
         $Search     = Search::parseSearch($keywords, $input);
         $is_search  = ($Search) ? TRUE : FALSE;
         $paginate   = ($is_search && !$input['page_all'] && (!$input['multi_bibles'] || $this->_canPaginate($input['data_format']))) ? TRUE : FALSE;
@@ -257,9 +257,22 @@ class Engine {
             return FALSE;
         }
 
+        $this->metadata->strongs = [];
+
         // Search validation
         if($Search) {
             $search_valid = $Search->validate();
+            $strongs = Search::parseStrongs($keywords);
+
+            if(!empty($strongs)) {
+                $Strongs = \App\Models\StrongsDefinition::whereIn('number', $strongs)
+                    ->orderBy('number', 'asc')
+                    ->get();
+
+                foreach($Strongs as $Str) {
+                    $this->metadata->strongs[] = $this->_formatStrongs($Str->toArray());
+                }
+            }
 
             if(!$search_valid) {
                 $this->addErrors($Search->getErrors(), $Search->getErrorLevel());
@@ -343,7 +356,8 @@ class Engine {
      */
     public function actionBibles($input) {
         $include_desc = FALSE;
-        $Bibles = Bible::select('name','shortname','module','year','lang','lang_short','copyright','italics','strongs','red_letter','paragraph','rank','research');
+        $Bibles = Bible::select('bibles.name','shortname','module','year','languages.name AS lang','lang_short','copyright','italics','strongs','red_letter','paragraph','rank','research');
+        $Bibles->leftJoin('languages', 'bibles.lang_short', 'languages.code');
         $bibles = array(); // Array of associative arrays
 
         if($include_desc) {
@@ -422,27 +436,29 @@ class Engine {
 
     public function actionStrongs($input) {
         $response = [];
-        $strongs = explode(' ', strip_tags(trim($input['strongs'])));
+        $strongs = strip_tags(trim($input['strongs']));
 
-        foreach($strongs as $num) {
-            if(preg_match('/[GHgh][0-9]+/', $num, $matches)) {
-                $clean = $matches[0];
-
+        if(preg_match_all('/[GHgh][0-9]+/', $strongs, $matches)) {
+            foreach($matches[0] as $clean) {
                 $Def = \App\Models\StrongsDefinition::where('number', $clean)->first();
 
                 if(!$Def) {
                     $this->addError('Strong\s Number ' . $clean . ' not found');
                 }
                 else {
-                    $data = $Def->toArray();
-                    // Remove 'count' from TVM
-                    $data['tvm'] = preg_replace('/<b>Count:<\/b> [0-9]+.*?<br>/', '', $data['tvm']);
-                    $response[] = $data;
+                    $response[] = $this->_formatStrongs($Def->toArray());
                 }
             }
         }
 
         return $response;
+    }
+
+    protected function _formatStrongs($attr) {
+        $attr['tvm'] = preg_replace('/<b>Count:<\/b> [0-9]+.*?<br>/', '', $attr['tvm']); // Remove 'count' from TVM
+        unset($attr['created_at']);
+        unset($attr['updated_at']);
+        return $attr;
     }
 
     public function actionReadcache($input) {
@@ -666,6 +682,42 @@ class Engine {
 
     public function setDefaultPageAll($value) {
         $this->default_page_all = ($value) ? TRUE : FALSE;
+    }
+
+    public static function getHardcodedVersion() {
+        $app_configs = include(base_path('config/app.php'));
+        return $app_configs['version'];
+    }
+    /**
+     * Get's the version number of the production version of this API
+     * Used for checking for updates
+     * @return type
+     */
+    public static function getUpstreamVersion() {
+        $json = NULL;
+        $url  = 'https://api.biblesupersearch.com/api/version';
+
+        if(ini_get('allow_url_fopen') == 1) {
+            $json = file_get_contents($url);
+        }
+
+        // Attempt 2: Fall back to cURL
+        if(!$json === FALSE && function_exists('curl_init')) {
+            $ch = curl_init();
+            curl_setopt($ch, CURLOPT_HEADER, 0);
+            curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
+            curl_setopt($ch, CURLOPT_URL, $url);
+            // curl_setopt($ch, CURLOPT_POSTFIELDS, http_build_query($data));
+            $json = curl_exec($ch);
+            curl_close($ch);
+        }
+
+        if(!$json) {
+            return NULL;
+        }
+
+        $results = json_decode($json);
+        return $results->results->version;
     }
 }
 

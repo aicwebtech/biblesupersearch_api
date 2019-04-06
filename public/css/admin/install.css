@@ -1,0 +1,97 @@
+html, body {
+    height: 100%;
+    font-family: Arial;
+    font-size: .9em;
+}
+
+body {
+    margin: 0;
+    padding: 0;
+}
+
+#app {
+    margin: 0;
+    padding: 0;
+    width: 100%;
+    height: 100%;
+    display: table;
+}
+
+#container {
+    text-align: center;
+    display: table-cell;
+    vertical-align: middle;
+}
+
+#content {
+    text-align: center;
+    display: inline-block;
+    background-color: #57bef2;
+    border-radius: 15px;
+    padding: 40px;
+}
+
+td {
+    text-align: left;
+}
+
+.error .message {
+    border-left: 4px solid #dc3232;
+    padding: .3em .6em;
+    background-color: #fbeaea;
+    text-align: left;
+    /*list-style: none;*/
+    margin: 5px 0;
+}
+
+.error {
+    margin-bottom: 20px;
+}
+
+h2.title {
+
+}
+
+#config_form input {
+    width: 300px;
+    height: 15px;
+    border-radius: 10px;
+    padding: 3px 8px;
+}
+
+#config_form h3 {
+    display: inline-block;
+    width: 135px;
+    text-align: right;
+    margin: 10px 10px;
+}
+
+.good {
+    background-color: #00ee00;
+    color: #008000;
+    text-align: center;
+}
+
+.ok {
+    background-color: #FCFB98;
+    color: #FF7200;
+    text-align: center;
+}
+
+.bad {
+    background-color: #cf867e;
+    color: #cd0a0a;
+    text-align: center;
+}
+
+.zebra {
+    background-color: #50D4FD;
+}
+
+#install-timer-container {
+    margin-top: 20px;
+    border-radius: 10px;
+    padding: 14px;
+    font-weight: bold;
+    background-color: #ffff4d;
+}

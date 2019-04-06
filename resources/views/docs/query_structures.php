@@ -19,6 +19,7 @@
 <pre><code>{
     "errors":[],
     "error_level":0,
+    "strongs":[], // <?php echo trans('query.strongs') , PHP_EOL ?>
     "paging":{
         "total":338,
         "per_page":30,
@@ -50,6 +51,7 @@
 <pre><code>{
     "errors":[],
     "error_level":0,
+    "strongs":[], // <?php echo trans('query.strongs') , PHP_EOL ?>
     "results":[
         {
             "book_id":45,

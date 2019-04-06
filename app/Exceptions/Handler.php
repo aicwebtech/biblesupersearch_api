@@ -8,6 +8,8 @@ use Symfony\Component\HttpKernel\Exception\HttpException;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 use Illuminate\Foundation\Exceptions\Handler as ExceptionHandler;
 use Illuminate\Auth\AuthenticationException;
+use Illuminate\Session\TokenMismatchException;
+use App\InstallManager;
 
 class Handler extends ExceptionHandler
 {
@@ -47,9 +49,18 @@ class Handler extends ExceptionHandler
             $e = new NotFoundHttpException($e->getMessage(), $e);
         }
 
+        if ($e instanceof TokenMismatchException){
+            if(!InstallManager::isInstalled()) {
+                return redirect(route('admin.install'))->with('csrf_error',"Your session timed out. Please try again.");
+            }
+
+            // Redirect to a form. Here is an example of how I handle mine
+            return redirect($request->fullUrl())->with('csrf_error',"Your session timed out. Please try again.");
+        }
+
         return parent::render($request, $e);
     }
-    
+
     /**
     * Convert an authentication exception into an unauthenticated response.
     *

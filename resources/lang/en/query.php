@@ -5,6 +5,8 @@ return array(
     'description' => 'Used for all queries against the Bibles in our database, including keyword searchs and passage retrieval. <br />'
     . 'When running a query, the only requirement is that either \'reference\' or \'search\' are required.',
     'advanced' => 'These advanced search fields can be used in addition to the standard ones above to build a powerful search interface',
+    'strongs' => 'If the search included any Strong\'s numbers, this array will contain the Strong\'s definition for each. '
+    . 'See the "Strong\'s Definition" tab for details.',
     'examples' => array(
         'lookup1' => 'Look up Romans 4:1 - 10',
         'lookup2' => 'Look up Rom 1:1-2; Matt 5:6-8; John 3:16',

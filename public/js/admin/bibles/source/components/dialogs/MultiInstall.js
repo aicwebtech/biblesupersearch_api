@@ -4,9 +4,10 @@ enyo.kind({
     // classes: 'dialogCenterText',
     alert: null,
     autoOpen: true,
-    title: 'Export Bible',
+    title: 'Install Bible',
     callback: null,
     confirmed: false,
+    closing: false,
     props: null,
     action: null,
     items: [],
@@ -64,9 +65,16 @@ enyo.kind({
         this._populateList();
         this.inherited(arguments);
         this.confirmed = false;
+        this.closing = false;
     },
     close: function() {
         this.inherited(arguments);
+
+        if(this.closing) {
+            return;
+        }
+
+        this.closing = true;
 
         if(typeof this.callback == 'function') {
             this.callback(this.confirmed, enyo.clone(this.props));

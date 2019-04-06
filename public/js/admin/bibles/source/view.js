@@ -12,48 +12,66 @@ enyo.kind({
             {name: 'BulkActions', style: 'float: left', showing: false, components: [
                 {tag: 'span', content: 'With Selected: '},
                 {
-                    tag: 'button', 
-                    classes: 'button bulk', 
-                    content: 'Install', 
-                    ontap: 'multiInstall', 
-                    action: 'install', 
+                    tag: 'button',
+                    classes: 'button bulk',
+                    content: 'Install',
+                    ontap: 'multiInstall',
+                    action: 'install',
                     actioning: 'Installing'
                 },
                 {
-                    tag: 'button', 
-                    classes: 'button bulk', 
-                    content: 'Uninstall', 
-                    ontap: 'multiUninstall', 
-                    action: 'uninstall', 
+                    tag: 'button',
+                    classes: 'button bulk',
+                    content: 'Uninstall',
+                    ontap: 'multiUninstall',
+                    action: 'uninstall',
                     actioning: 'Uninstalling'
                 },
                 {
-                    tag: 'button', 
-                    classes: 'button bulk', 
-                    content: 'Enable', 
+                    tag: 'button',
+                    classes: 'button bulk',
+                    content: 'Enable',
                     ontap: 'multiEnable',
-                    action: 'enable', 
+                    action: 'enable',
                     actioning: 'Enabling'
                 },
                 {
-                    tag: 'button', 
-                    classes: 'button bulk', 
-                    content: 'Disable', 
-                    ontap: 'multiDisable', 
-                    action: 'disable', 
+                    tag: 'button',
+                    classes: 'button bulk',
+                    content: 'Disable',
+                    ontap: 'multiDisable',
+                    action: 'disable',
                     actioning: 'Disabling'
                 },
                 {
-                    tag: 'button', 
-                    classes: 'button bulk', 
-                    content: 'Export Module File', 
-                    ontap: 'multiExport', 
-                    action: 'export', 
-                    actioning: 'Exporting'
+                    tag: 'button',
+                    classes: 'button bulk',
+                    content: 'Test',
+                    ontap: 'multiTest',
+                    action: 'test',
+                    actioning: 'Testing'
+                },
+                {
+                    tag: 'button',
+                    classes: 'button bulk',
+                    content: 'Export Module File',
+                    ontap: 'multiExport',
+                    action: 'export',
+                    actioning: 'Exporting',
+                    requireDevTools: true
+                },
+                {
+                    tag: 'button',
+                    classes: 'button bulk',
+                    content: 'Update Module File',
+                    ontap: 'multiUpdate',
+                    action: 'meta',
+                    actioning: 'Updating Meta',
+                    requireDevTools: true
                 },
             ]},
             {name: 'SortOptions', style: 'float: right', components: [
-                {tag: 'button', classes: 'button bulk', content: 'Auto Sort'},
+                // {tag: 'button', classes: 'button bulk', content: 'Auto Sort'},
             ]},
             {style: 'clear: both'},
         ]},
@@ -64,19 +82,22 @@ enyo.kind({
             {name: 'Loading', kind: 'AICWEBTECH.Enyo.jQuery.Loading'},
             {name: 'Install', kind: 'BibleManager.Components.Dialogs.Install'},
             {name: 'Export', kind: 'BibleManager.Components.Dialogs.Export'},
+            {name: 'Edit', kind: 'BibleManager.Components.Dialogs.Edit'},
             {name: 'Description', kind: 'BibleManager.Components.Dialogs.Description'},
             {name: 'MultiConfirm', kind: 'BibleManager.Components.Dialogs.MultiConfirm'},
             {name: 'MultiInstall', kind: 'BibleManager.Components.Dialogs.MultiInstall'},
             {name: 'MultiExport', kind: 'BibleManager.Components.Dialogs.MultiExport'},
+            {name: 'MultiUpdate', kind: 'BibleManager.Components.Dialogs.MultiMetaUpdate'},
             {name: 'MultiQueue', kind: 'BibleManager.Components.Dialogs.MultiQueue'}
         ]},
         {
-            kind: 'enyo.Signals', 
-            onBibleInstall: 'bibleInstall', 
-            onBibleExport: 'bibleExport', 
-            onConfirmAction: 'confirmAction', 
-            onDoAction: 'doAction', 
-            onViewDescription: 'viewDescription'
+            kind: 'enyo.Signals',
+            onBibleInstall: 'bibleInstall',
+            onBibleExport: 'bibleExport',
+            onConfirmAction: 'confirmAction',
+            onDoAction: 'doAction',
+            onViewDescription: 'viewDescription',
+            onEdit: 'openEdit'
         }
     ],
 
@@ -84,34 +105,47 @@ enyo.kind({
         {from: 'app.ajaxLoading', to: '$.Loading.showing'}
     ],
 
+    create: function() {
+        this.inherited(arguments);
+
+        var multiTools = this.$.BulkActions.getClientControls();
+
+        multiTools.forEach(function(tool) {
+            if(tool.requireDevTools && tool.requireDevTools == true && !bootstrap.devToolsEnabled) {
+                tool.destroy();
+            }
+        }, this);
+    },
+
     bibleInstall: function(inSender, inEvent) {
         var rowData = this.$.GridContainer.getRowByPk(inEvent.id);
         var id = inEvent.id;
         this.$.Install.set('bible', rowData.name);
-        
+
         this.$.Install.confirm(enyo.bind(this, function(confirmed, props) {
             if(confirmed) {
                 this._singleActionHelper('install', id, props);
             }
         }));
-    },        
+    },
     bibleExport: function(inSender, inEvent) {
         var rowData = this.$.GridContainer.getRowByPk(inEvent.id);
         var id = inEvent.id;
         this.$.Export.set('bible', rowData.name);
-        
+
         this.$.Export.confirm(enyo.bind(this, function(confirmed, props) {
-            
+
             if(confirmed) {
                 this._singleActionHelper('export', id, props);
             }
         }));
-    },    
+    },
     confirmAction: function(inSender, inEvent) {
         var id = inEvent.id;
         var action = inEvent.action;
         var rowData = this.$.GridContainer.getRowByPk(inEvent.id);
         var text = "Are you sure that you want to <b>" + inEvent.action + "</b><br /><br />'" + rowData.name + "'?";
+        this.log('confirming', text);
 
         this.$.Confirm.confirm(text, enyo.bind(this, function(confirmed) {
             this.log('confirmed', confirmed);
@@ -163,24 +197,23 @@ enyo.kind({
         });
 
         ajax.error(this, function(inSender, inResponse) {
-            // todo handle errors!
             console.log('ERROR', inSender, inResponse);
-
+            var response = JSON.parse(inSender.xhrResponse.body);
+            var errors = response.errors || ['Unknown Error'];
             this.app.set('ajaxLoading', false);
-            var msg = 'An Error has occurred';
+            var msg = 'An Error has occurred: <br /><ul><li>' + errors.join('</li><li>') + '</li></ul>';
             this.app.alert(msg);
         });
-        
+
         ajax.go();
     },
-    
+
     multiEnable: function(inSender, inEvent) {
-        this.log(inSender);
         this._confirmMultiAction('enable', 'Enabling');
-    },    
+    },
     multiDisable: function(inSender, inEvent) {
         this._confirmMultiAction('disable', 'Disabling');
-    },    
+    },
     multiUninstall: function(inSender, inEvent) {
         this._confirmMultiAction('uninstall', 'Uninstalling');
     },
@@ -199,7 +232,7 @@ enyo.kind({
                 this._multiActionHelper('install', 'Installing', props);
             }
         }));
-    },    
+    },
     multiExport: function(inSender, inEvent) {
         this._processSelections();
 
@@ -215,7 +248,37 @@ enyo.kind({
                 this._multiActionHelper('export', 'Exporting', props);
             }
         }));
-    }, 
+    },
+    multiUpdate: function(inSender, inEvent) {
+        this._processSelections();
+
+        if(this.selections.length == 0) {
+            this.$.Alert.alert('Nothing selected');
+            return;
+        }
+
+        this.$.MultiUpdate.set('items', enyo.clone(this.selections));
+
+        this.$.MultiUpdate.confirm(enyo.bind(this, function(confirmed, props) {
+            if(confirmed) {
+                this._multiActionHelper('meta', 'Updating Meta', props);
+            }
+        }));
+    },
+    multiTest: function(inSender, inEvent) {
+        this._multiAction('test', 'Testing', {}, false);
+    },
+    _multiAction: function(action, actioning, postData, closeWhenFinished) {
+        this._processSelections();
+
+        if(this.selections.length == 0) {
+            this.$.Alert.alert('Nothing selected');
+            return;
+        }
+
+        this.$.MultiExport.set('items', enyo.clone(this.selections));
+        this._multiActionHelper(action, actioning, {}, closeWhenFinished);
+    },
     _confirmMultiAction: function(action, actioning) {
         this._processSelections();
         var actioning = (typeof actioning == 'undefined') ? 'Processing' : actioning;
@@ -237,10 +300,22 @@ enyo.kind({
         }));
     },
 
-    _multiActionHelper: function(action, actioning, postData) {
-        this.log(action, actioning, postData);
+    _multiActionHelper: function(action, actioning, postData, closeWhenFinished) {
+        var closeWhenFinished = (typeof closeWhenFinished == 'undefined') ? true : closeWhenFinished;
+        this.log(action, actioning, postData, closeWhenFinished);
+
+        var actionLabel = action;
+
+        if(action == 'meta') {
+            actionLabel = 'update info on';
+        }
+
+        this.log('actionLabel', actionLabel);
+
         this.$.MultiQueue.set('action', action);
+        this.$.MultiQueue.set('actionLabel', actionLabel);
         this.$.MultiQueue.set('actioning', actioning);
+        this.$.MultiQueue.set('closeWhenFinished', closeWhenFinished);
         this.$.MultiQueue.set('postData', enyo.clone(postData));
         this.$.MultiQueue.set('queue', enyo.clone(this.selections));
         this.$.MultiQueue.open();
@@ -249,7 +324,12 @@ enyo.kind({
     _processSelections: function() {
         this.selections = enyo.clone(this.$.GridContainer.getSelectionsWithName());
     },
-
+    openEdit: function(inSender, inEvent) {
+        this.log(inEvent.id);
+        this.$.Edit.set('pk', inEvent.id);
+        // this.log('PKQ', this.$.Edit.get('pk'));
+        this.$.Edit.openLoad();
+    },
     selectionsChanged: function(inSender, inEvent) {
         this.$.BulkActions.set('showing', inEvent.length ? true : false);
     },

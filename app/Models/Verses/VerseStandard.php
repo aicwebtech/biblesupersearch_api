@@ -9,6 +9,12 @@ use App\Passage;
 use App\Search;
 use DB;
 
+/**
+ * Class VerseStandard
+ *
+ * Base model class for all Bibles stored on local DB using standard format
+ */
+
 class VerseStandard extends VerseAbstract {
     protected static $special_table = 'bible';
 

@@ -111,6 +111,18 @@ class IpAccessTest extends TestCase {
         }
     }
 
+    public function testSameDomain() {
+        $domain = 'http://www.example.com';
+
+        $IP = IpAccess::findOrCreateByIpOrDomain($this->_fakeIp(), $domain);
+        $this->assertEquals($IP->getAccessLimit(), config('bss.daily_access_limit'));
+
+        $_SERVER['HTTP_HOST'] = $_SERVER['SERVER_NAME'] = 'www.example.com';
+        $this->assertEquals($IP->getAccessLimit(), 0);
+
+        $IP->delete();
+    }
+
     protected function _fakeIp() {
         // Ip addresses intentionally invalid
         return rand(256,999) . '.' . rand(1,255) . '.' . rand(1,255) . '.' . rand(1,255);

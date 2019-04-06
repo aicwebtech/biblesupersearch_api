@@ -93,8 +93,6 @@ class PasswordController extends Controller
      */
     public function sendResetLinkEmail(Request $request)
     {
-//        return 'bacon';
-
         $this->validateEmail($request);
 
         // We will send the password reset link to this user. Once we have attempted
@@ -122,7 +120,7 @@ class PasswordController extends Controller
 //        );
 
         return $response == Password::RESET_LINK_SENT
-                    ? $this->sendResetLinkResponse($response)
+                    ? $this->sendResetLinkResponse($request, $response)
                     : $this->sendResetLinkFailedResponse($request, $response);
     }
 

@@ -1,0 +1,104 @@
+#!/bin/bash
+
+version=$(php artisan app:version)
+gitbranch=$(git branch | grep \*)
+filename="biblesupersearch_api_$version.zip"
+filepath="../api_releases/$filename";
+
+delfiles=(
+    pack
+    install
+    uninstall
+    update
+)
+
+echo ''
+echo 'This script will pack the Bible SuperSearch API code for release'
+
+# Check git status
+gitstatus=$(git status --porcelain)
+
+if [[ $gitstatus != '' ]]
+then
+    echo ''
+    echo 'Please commit your changes before packing'
+    echo 'Only committed changes will be packed'
+    exit # comment out ONLY for debugging of this script.
+fi
+
+echo ''
+echo Application Version:
+echo "* $version"
+echo ''
+echo ''
+read -p "Is this correct? (Y/n) " -n 1 -r
+if [[ !($REPLY =~ ^[Yy]$) ]]
+then
+    echo ''
+    exit
+fi
+
+echo ''
+echo ''
+echo Current git branch:
+echo "$gitbranch"
+echo ''
+read -p "Is this correct? (Y/n) " -n 1 -r
+if [[ !($REPLY =~ ^[Yy]$) ]]
+then
+    echo ''
+    exit
+fi
+
+echo ''
+echo ''
+echo 'Running tests (phpunit)'
+echo ''
+./vendor/phpunit/phpunit/phpunit
+
+code=$?
+
+if [[ !($code = 0) ]]
+then
+    echo ''
+    echo 'The tests found some errors'
+    echo 'Please fix errors before continuing';
+    exit
+fi
+
+
+echo ''
+echo ''
+echo Output Filename:
+echo "* $filename"
+echo ''
+echo ''
+
+read -p "Create the release? (Y/n) " -n 1 -r
+echo    # (optional) move to a new line
+if [[ $REPLY =~ ^[Yy]$ ]]
+then
+    # do dangerous stuff
+    echo
+    echo 'Clearing out Laravel caching'
+    php artisan optimize:clear
+
+    echo ''
+    echo 'Creating ZIP file'
+    git archive -o $filepath HEAD
+
+    echo 'Copying Composer dependencies to ZIP file'
+    zip -r -q $filepath vendor/
+
+    echo ''
+    echo 'Deleting unwanted files:'
+
+    # delete unwanted files from ZIP file
+    for i in ${delfiles[@]}; do
+        echo "    Deleting:  ${i}"
+        zip -d -q $filepath ${i}
+    done
+
+    echo ''
+    echo "Success!  File created at $filepath"
+fi

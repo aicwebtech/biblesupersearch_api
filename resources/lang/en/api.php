@@ -68,7 +68,24 @@ return array(
     'books' => array(
         'name' => 'Books',
         'description' => 'Retrieves a list of Bible Books in the specified language',
-
+    ),
+    'strongs' => array(
+        'name' => 'Strong\'s Definition',
+        'description' => 'Retrieves definitions for the given Strong\'s numbers.',
+        'params' => array(
+            'strongs' => array(
+                'type' => 'String',
+                'name' => 'Strong\'s Number(s)',
+                'default' => '(none)',
+                'description' => 'Retrieve Strong\'s definitions for the given Strong\'s numbers. Can be a single string, a comma-separated string or a '
+                . 'JSON-encoded array',
+            ),
+        ),
+        'results' => [
+            'tvm_note' => 'Note: Some Strong\'s numbers will return TVM (Tense / Voice / Mood) records.  Your app will need to be able to handle both.',
+            'tvm' => 'TVM record, "tvm" will be populated, and other items will be empty.',
+            'def' => 'Definition record, "tvm" will be empty.'
+        ]
     ),
     'statics' => array(
         'name' => 'Statics',

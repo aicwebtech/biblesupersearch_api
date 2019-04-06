@@ -5,9 +5,19 @@ namespace App\Models\Verses;
 use Illuminate\Database\Eloquent\Model;
 use App\Models\Bible;
 
-// Verses models should only be instantiated from within a Bible model instance
-// Abstraction allows for the potential for Bibles other than the 'standard' format
-// However, actual support for non-standard formats won't be implemented any time soon.
+/**
+ * Class VerseAbstract
+ *
+ * Base model class for the verses tables for all Bibles in the system
+ * Each Bible record in the Bibles table will have an extension of this class, which tells
+ *      it where (usually what table) to find it's verses
+ * 
+ * Used for executing searches against the Bible's verses
+ *
+ * Verses models should only be instantiated from within a Bible model instance
+ * Abstraction allows for the potential for Bibles other than the 'standard' format
+ * However, actual support for non-standard formats won't be implemented any time soon.
+ */
 
 abstract class VerseAbstract extends Model {
 

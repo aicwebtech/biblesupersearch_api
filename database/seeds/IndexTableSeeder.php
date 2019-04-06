@@ -15,7 +15,7 @@ class IndexTableSeeder extends Seeder
             return $this->_importFromV2();
         }
 
-        DatabaseSeeder::importSqlFile('master_index.sql');
+//        DatabaseSeeder::importSqlFile('master_index.sql');
     }
 
     private function _importFromV2() {

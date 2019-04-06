@@ -86,7 +86,7 @@
     <body>
         <div id='container'>
             <h1 class='hcenter'><?php echo trans('app.name') ?> <?php echo trans('app.documentation') ?></h1>
-            <h2 class='hcenter'><?php echo trans('app.version') ?> <?php echo config('app.version'); ?></h2>
+            <h2 class='hcenter'><?php echo trans('app.version') ?> <?php echo $version ?> <!-- this is the hardcoded app version --></h2>
             <?php if(config('app.env') != 'production'): ?>
                 <h2 class='hcenter warning'><?php echo trans('app.env_warnings.' . config('app.env')) ?></h2>
             <?php endif; ?>
@@ -100,6 +100,7 @@
                     <li><a href='#tab_bibles'><?php echo trans('api.action') . ': ' . trans('api.bibles.name') ?></a></li>
                     <li><a href='#tab_books'><?php echo trans('api.action') . ': ' . trans('api.books.name') ?></a></li>
                     <li><a href='#tab_version'><?php echo trans('api.action') . ': ' . trans('api.version.name') ?></a></li>
+                    <li><a href='#tab_strongs'><?php echo trans('api.action') . ': ' . trans('api.strongs.name') ?></a></li>
                     <li><a href='#tab_tos'><?php echo trans('api.tos') ?></a></li>
                     <li><a href='#tab_privacy'><?php echo trans('api.privacy') ?></a></li>
                 </ul>
@@ -120,6 +121,9 @@
                 </div>
                 <div id='tab_books'>
                     <?php include(dirname(__FILE__) . '/books.php'); ?>
+                </div>
+                <div id='tab_strongs'>
+                    <?php include(dirname(__FILE__) . '/strongs.php'); ?>
                 </div>
                 <div id='tab_version'>
                     <?php include(dirname(__FILE__) . '/version.php'); ?>

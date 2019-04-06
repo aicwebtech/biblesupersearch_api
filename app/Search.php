@@ -82,6 +82,19 @@ class Search extends SqlSearch {
         return $prox_found;
     }
 
+    static public function parseStrongs($search) {
+        $search = static::parseSimpleQueryTerms($search);
+        $strongs = [];
+
+        foreach($search as $term) {
+            if(static::isTermStrongs($term)) {
+                $strongs[] = $term;
+            }
+        }
+
+        return $strongs;
+    }
+
     public function booleanizeQuery($query, $search_type, $arg3 = NULL) {
         if($search_type == 'boolean') {
             return $query;
