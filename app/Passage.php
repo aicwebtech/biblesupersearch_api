@@ -155,9 +155,15 @@ class Passage {
      * @return Book $Book
      */
     public function findBook($book) {
-        if(is_array($this->languages)) {
-            foreach($this->languages as $lang) {
-                $Book = Book::findByEnteredName($book, $lang);
+        return static::findBookByNameAndLanguage($book, $this->languages);
+    }
+
+    public static function findBookByNameAndLanguage($book, $languages = [], $multiple = FALSE) {
+        $found = FALSE;
+
+        if(is_array($languages)) {
+            foreach($languages as $lang) {
+                $Book = Book::findByEnteredName($book, $lang, $multiple);
 
                 if($Book) {
                     $found = TRUE;
@@ -165,8 +171,9 @@ class Passage {
                 }
             }
         }
-        else {
-            $Book = Book::findByEnteredName($book);
+
+        if(!$found) {
+            $Book = Book::findByEnteredName($book, NULL, $multiple);
         }
 
         return $Book;
@@ -1023,21 +1030,24 @@ class Passage {
      * Maps the generic 'request' input to either the search keywords or the reference input
      * But not both
      *
-     * @param string $request
-     * @param string $keywords
-     * @param string $reference
+     * @param string $input
      * @param array $languages
      * @param array $Bibles
      * @return array containing $keywords and $reference
      */
-    public static function mapRequest($request, $keywords, $reference, $languages, $Bibles) {
+    public static function mapRequest($input, $languages, $Bibles) {
+        $reference  = empty($input['reference']) ? NULL : $input['reference'];
+        $keywords   = empty($input['search'])    ? NULL : $input['search'];
+        $request    = empty($input['request'])   ? NULL : $input['request'];
+        $disambiguation = [];
+
         if(!empty($request)) {
             if(!$keywords && !$reference) {
                 $passages = static::explodeReferences($request);
                 //$Passages = static::parseReferences($request, $languages, FALSE, $Bibles); // Worst case senariao - lots of overhead
 
                 // Treats as passage if it's not empty and doesn't contain Strong's Numbers and it
-                // 1) It contains numbers but no (parentheses) or 
+                // 1) It contains numbers but no (parentheses) or
                 // 2) It resolves to multiple (possible) passages
                 if(!empty($passages) && !(preg_match('/[GHgh][0-9]+/', $request)) && ((preg_match('/[0-9]/', $request) && strpos($request, '(') === FALSE) || count($passages) >= 2)) {
                     $reference = $request;
@@ -1045,6 +1055,23 @@ class Passage {
                 // Otherwise, treats it as search keywords
                 else {
                     $keywords = $request;
+
+                    // Check for a single book
+                    $Books = static::findBookByNameAndLanguage($request, $languages, TRUE);
+
+                    if($Books && is_array($Books)) {
+                        foreach($Books as $Book) {
+                            $disambiguation[] = [
+                                'description' => 'Were you looking for the Book of ' . $Book->name . '?',
+                                'simple' => $Book->name,
+                                'type' => 'book',
+                                'data' => [
+                                    'reference' => $Book->name,
+                                    'bible'     => $input['bible'],
+                                ],
+                            ];
+                        }
+                    }
                 }
             }
             elseif($keywords && !$reference) {
@@ -1055,6 +1082,6 @@ class Passage {
             }
         }
 
-        return array($keywords, $reference);
+        return array($keywords, $reference, $disambiguation);
     }
 }

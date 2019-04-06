@@ -85,4 +85,23 @@ class RequestTest extends TestCase {
 //        $this->assertFalse($Engine->hasErrors());
 //        $this->assertCount(6, $results['kjv']);
     }
+
+    public function testDisambiguation() {
+        $Engine = new Engine();
+        $Engine->setDefaultDataType('raw');
+        $results = $Engine->actionQuery(['bible' => 'kjv', 'request' => 'Romans']);
+        $this->assertFalse($Engine->hasErrors());
+        $metadata = $Engine->getMetadata();
+
+        $this->assertCount(1, $metadata->disambiguation);
+        $this->assertEquals('Romans', $metadata->disambiguation[0]['simple']);
+
+        $results = $Engine->actionQuery(['bible' => 'kjv', 'request' => 'kings']);
+        $this->assertFalse($Engine->hasErrors());
+        $metadata = $Engine->getMetadata();
+
+        $this->assertCount(2, $metadata->disambiguation);
+        $this->assertEquals('1 Kings', $metadata->disambiguation[0]['simple']);
+        $this->assertEquals('2 Kings', $metadata->disambiguation[1]['simple']);
+    }
 }

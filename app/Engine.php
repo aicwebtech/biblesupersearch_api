@@ -225,7 +225,7 @@ class Engine {
             return FALSE;
         }
 
-        list($keywords, $references) = Passage::mapRequest($request, $keywords, $references, $this->languages, $this->Bibles);
+        list($keywords, $references, $this->metadata->disambiguation) = Passage::mapRequest($input, $this->languages, $this->Bibles);
         $Search     = Search::parseSearch($keywords, $input);
         $is_search  = ($Search) ? TRUE : FALSE;
         $paginate   = ($is_search && !$input['page_all'] && (!$input['multi_bibles'] || $this->_canPaginate($input['data_format']))) ? TRUE : FALSE;
