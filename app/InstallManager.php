@@ -146,7 +146,7 @@ class InstallManager {
             if($db_info['driver'] == 'sqlite') {
                 $rows = \DB::select('SELECT * FROM sqlite_master');
 
-                print_r($rows);
+                // print_r($rows);
             }
         }
         catch (\Exception $e) {
