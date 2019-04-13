@@ -60,7 +60,7 @@ return array(
             'results' => 'Contains the actual data returned by the API',
         ),
         'official' => array(
-            'label' => 'Linking Official Bible SuperSearch Applications to this API',
+            'label' => 'Linking Official Bible SuperSearch Applications to this API:',
             'desc'  => '',
             'it_should_look_like_this' => 'It should look like this: ',
 
@@ -73,8 +73,8 @@ return array(
                 'label' => 'WordPress Plugin',
                 'desc1' => 'On the admin side, navigate to "Settings", then to "Bible SuperSearch:"',
                 'desc2' => 'Now, click on the Advanced tab:',
-                'desc3' => 'Now, change the API URL to ',
-                'desc4' => 'If you\'ve entered the URL correctly, the box will turn green.  Now, click save:',
+                'desc3' => 'Now, change the API URL to: ',
+                'desc4' => 'If you\'ve entered the URL correctly, the box will turn green.  Now, click "Save Changes:"',
                 'desc5' => 'Now, reload the application and it should be working off of this API.'
             ),
         )

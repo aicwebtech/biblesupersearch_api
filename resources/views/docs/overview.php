@@ -50,7 +50,7 @@
         <img src='images/screenshots/WP-Admin-Settings-Link.png' class='linking' />
         <p><?php echo trans('api.overview.official.wp.desc2') ?></p>
         <img src='images/screenshots/WP-Admin-Advanced-Tab-Select.png' class='linking' />
-        <p><?php echo trans('api.overview.official.wp.desc3') ?> "<?php echo $my_url ?>":</p>
+        <p><?php echo trans('api.overview.official.wp.desc3') ?> <?php echo $my_url ?></p>
         <div class='wp-link-container'>
             <img src='images/screenshots/WP-Admin-API-URL-Empty-Blank.png' class='linking' />
             <div class='wp-link-float'><?php echo $my_url ?></div>
