@@ -30,6 +30,41 @@
 
 <br />
 
+<h3><?php echo trans('api.overview.official.label') ?></h3>
+
+<div id='link-accordion'>
+    <h4><?php echo trans('api.overview.official.client.label') ?></h4>
+    <div>
+        <p><?php echo trans('api.overview.official.client.desc') ?>: "<?php echo $my_url ?>"</p>
+        <p><?php echo trans('api.overview.official.it_should_look_like_this') ?></p>
+        <pre><code> // URL of Bible SuperSearch API         (string)
+ //      Note:  You can install the Bible SuperSearch API on your own server
+ //             If you do, you will need to change this
+ //             Default: https://api.biblesupersearch.com
+ "apiUrl": "<?php echo $my_url ?>",</code></pre>
+        <p><?php echo trans('api.overview.official.client.desc2') ?></p>
+    </div>
+    <h4><?php echo trans('api.overview.official.wp.label') ?></h4>
+    <div>
+        <p><?php echo trans('api.overview.official.wp.desc1') ?></p>
+        <img src='images/screenshots/WP-Admin-Settings-Link.png' class='linking' />
+        <p><?php echo trans('api.overview.official.wp.desc2') ?></p>
+        <img src='images/screenshots/WP-Admin-Advanced-Tab-Select.png' class='linking' />
+        <p><?php echo trans('api.overview.official.wp.desc3') ?> "<?php echo $my_url ?>":</p>
+        <div class='wp-link-container'>
+            <img src='images/screenshots/WP-Admin-API-URL-Empty-Blank.png' class='linking' />
+            <div class='wp-link-float'><?php echo $my_url ?></div>
+        </div>
+        <p><?php echo trans('api.overview.official.wp.desc4') ?></p>
+        <div class='wp-link-container'>
+            <img src='images/screenshots/WP-Admin-API-URL-Save.png' class='linking' />
+            <div class='wp-link-float'><?php echo $my_url ?></div>
+        </div>
+        <p><?php echo trans('api.overview.official.wp.desc5') ?></p>
+    </div>
+</div>
+<br /><br />
+
 <div style='text-align: center'>
     <?php echo trans('app.bss') ?><br /><br />
     <a href='http://www.biblesupersearch.com' target='_NEW'>http://www.BibleSuperSearch.com</a>

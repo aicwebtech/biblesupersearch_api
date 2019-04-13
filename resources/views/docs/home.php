@@ -9,6 +9,10 @@
         <script>
             $( function() {
                 $( "#tabs" ).tabs();
+
+                $('#link-accordion').accordion({
+                    header: 'h4'
+                });
             });
         </script>
         <style>
@@ -71,6 +75,30 @@
                 color: #eee;
             }
 
+            img.linking {
+                margin: 0 auto;
+                /*text-align: center;*/
+                display: block;
+            }
+
+            div.wp-link-container {
+                position: relative;
+            }
+
+            div.wp-link-float {
+                position: absolute;
+                bottom: 8px;
+                background-color: transparent;
+                font-size: 14px;
+                z-index: 10000;
+                left: calc(50% - 231px);
+            }
+
+            #link-accordion div.ui-accordion-content {
+                height: 500px;
+                overflow-y: auto;
+            }
+
             @media print {
                 #container {
                     margin: 0px;
@@ -82,6 +110,8 @@
     <?php
         $http = (array_key_exists('HTTPS', $_SERVER) && !empty($_SERVER['HTTPS'])) ? 'https://' : 'http://';
         require_once( dirname(__FILE__) . '/functions.php');
+
+        $my_url = getServerUrl();
     ?>
     <body>
         <div id='container'>
