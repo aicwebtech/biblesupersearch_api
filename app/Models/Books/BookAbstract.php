@@ -98,7 +98,7 @@ class BookAbstract extends Model
         $name = trim(trim($name), '.');
 
         // Attempt 0: Book Number
-        if(preg_match('/^[0-9]{2}[B]$/', $name)) {
+        if(preg_match('/^[0-9]{1,2}[B]$/', $name)) {
             $id = intval($name);
 
             if($id) {
