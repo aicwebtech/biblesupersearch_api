@@ -3,6 +3,7 @@ This API, when combined with a UI, allows you to use Bible SuperSearch entirely 
 
 This includes the following:
 * Core Bible search engine functionality
+* Webservice API for accessing this functionality
 * API documentation
 * Administrative backend
 * Installer
@@ -24,25 +25,46 @@ Server Requirements:
 * Ctype PHP Extension
 * JSON PHP Extension
 * BCMath PHP Extension
-* Composer
 
 Also, this API must have it's own subdomain.
 
 Installation (Web Browser):
 * Upload this entire directory to a directory (/path/to/biblesupersearch_api) on your web server.
 * Rename .env.example to .env and make sure that it's WRITABLE for the web server
+* In .env, enter your database connection information:
+    * DB_HOST=localhost
+    * DB_DATABASE=<your database name>
+    * DB_USERNAME=<your username>
+    * DB_PASSWORD=<your password>
+    * DB_PREFIX=bss_
+
+    Nothing else needs to be edited here.  Save the file.
+
 * Make sure the whole directory is readable by the web server
-* Make these directories writable by the web server:
-    * storage               (all subdirectories need to be writable)
+
+* Make these directories writable by the web server: (UNIX permissions should be 775)
+    * storage               (all directories need to be writable)
+    * storage/app
+    * storage/framework
+    * storage/logs
     * bootstrap/cache
     * bibles/modules        (all files need to be writable)
     * bibles/unofficial     (all files need to be writable)
 
+
+    $ sudo chmod 775 -R storage
+    $ sudo chmod 775 bootstrap/cache
+    $ sudo chmod 775 bibles/modules/
+    $ sudo chmod 775 bibles/unofficial/
+    $ sudo chgrp www-data -R .
+
+
 * Now, point a subdomain (https://biblesupersearch-api.your-domain.com) to path/to/biblesupersearch_api/public
+
 * Point your Bible SuperSearch client software to the subdomain.
     * Standalone
         In config.js, set "apiUrl": "https://biblesupersearch-api.your-domain.com",
-    * Word Press plugin
+    * WordPress plugin
         On the Bible SuperSearch config page (https://your-domain.com/wp-admin/options-general.php?page=biblesupersearch)
         Set API URL to your subdomain (https://biblesupersearch-api.your-domain.com)
 
