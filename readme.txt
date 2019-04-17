@@ -28,6 +28,7 @@ Server Requirements:
 
 Also, this API must have it's own subdomain.
 
+
 Installation (Web Browser):
 * Upload this entire directory to a directory (/path/to/biblesupersearch_api) on your web server.
 * Rename .env.example to .env and make sure that it's WRITABLE for the web server
