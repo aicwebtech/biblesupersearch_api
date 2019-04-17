@@ -7,6 +7,7 @@ This API, when combined with a UI, allows you to use Bible SuperSearch entirely 
 
 This includes the following:
 * Core Bible search engine functionality
+* Webservice API for accessing this functionality
 * API documentation
 * Administrative backend
 * Installer
@@ -46,7 +47,7 @@ and follow the instructions in it's readme.txt
 NOTE: THIS CLI INSTALLATION IS NOT OFFICIALLY SUPPORTED AT THIS TIME
 
 * Clone this GIT repository into a directory (/path/to/biblesupersearch_api)
-* Rename .env.example to .env
+* Rename .env.example-cli to .env
 * Enter your database connection information in .env.  You may wish to set other configs as well at this time.
 
 
