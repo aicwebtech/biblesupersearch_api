@@ -1,5 +1,13 @@
 Bible SuperSearch API Changelog
 
+= 4.0.0 // May 4, 2019 =
+* Official release of this API code
+* Added: Inline Strong's Definitions - Returned when search includes Strong's number(s).
+* Added: Disambiguation links - Returned when using the single request field but requesting something that could be either a keyword or a book of the Bible.
+* Added: Browser-based installer
+* Added: Admin-side configs
+* Added: Admin-side Bible manager
+
 = 2.7.0 // May 1, 2018 =
 * Added Strong's Numbers with definitions (KJV)
 * Added support for Italicised words (KJV / RVG)
@@ -24,7 +32,7 @@ Bible SuperSearch API Changelog
 
 LEGACY CHANGELOG
 
-For versions of Bible SuperSearch prior to the version 2.6 rebuild
+For versions of Bible SuperSearch prior to the version 2.6 / 4.0 rebuild
 
 2.2.13
 Feb 17, 2018
