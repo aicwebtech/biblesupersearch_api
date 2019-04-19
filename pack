@@ -5,12 +5,14 @@ gitbranch=$(git branch | grep \*)
 filename="biblesupersearch_api_$version.zip"
 filepath="../api_releases/$filename";
 
+# files to be deleted / excluded from the release 
 delfiles=(
     pack
     install
     uninstall
     update
     .env.example-cli
+    readme.md
 )
 
 echo ''
