@@ -1,4 +1,4 @@
-Bible SuperSearch API 
+Bible SuperSearch API
 Copyright (C) 2006-2019  Luke Mounsey
 
 This program is free software; you can redistribute it and/or
@@ -15,9 +15,9 @@ You should have received a copy of the GNU General Public License (GPL)
 along with this program; if not, write to the Free Software
 Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
-This software is licensed for NON-COMMERCIAL use only.  
+This software is licensed for NON-COMMERCIAL use only.
 
-Commercial use will require a commercial license.  Commercial use includes:
+Any commercial use requires a commercial license.  Commercial use includes:
 
 * Putting the SOFTWARE behind a paywall
 * Charging others to access or use the SOFTWARE
@@ -88,7 +88,7 @@ Installation:
 Documentation for using the API can be found at this subdomain once installed.
 
 
-Troubleshooting: 
+Troubleshooting:
     If you run into errors, set APP_DEBUG=true in your .env file
     Now, you will see debugging information when you attempt to load the page.
     If the debugging information doesn't help you solve the problem, please contact us.
