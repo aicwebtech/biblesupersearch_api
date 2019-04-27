@@ -7,12 +7,15 @@ use Illuminate\Http\Request;
 use App\Http\Responses\Response;
 use App\Http\Controllers\Controller;
 use App\Models\Bible;
+use Validator;
 
 class BibleController extends Controller
 {
     public function __construct() {
         parent::__construct();
         $this->middleware('auth:100');
+        $this->middleware('migrate')->only('index');
+        $this->middleware('dev_tools')->only('export', 'meta');
     }
 
     /**
@@ -23,7 +26,12 @@ class BibleController extends Controller
      */
     public function index() {
         Bible::populateBibleTable();
-        return view('admin.bibles');
+
+        $bootstrap = new \stdClass;
+        $bootstrap->devToolsEnabled = config('bss.dev_tools') ? TRUE : FALSE;
+        $bootstrap = json_encode($bootstrap);
+
+        return view('admin.bibles', ['bootstrap' => $bootstrap]);
     }
 
     public function grid(Request $request) {
@@ -31,7 +39,17 @@ class BibleController extends Controller
         $rows = [];
         $rows_per_page = intval($data['rows']);
 
-        $Bibles = Bible::orderBy($data['sidx'], $data['sord'])->paginate($rows_per_page);
+        if($data['sidx'] == 'lang') {
+            $data['sidx'] = 'languages.name';
+        }
+        else {
+            $data['sidx'] = 'bibles.' . $data['sidx'];
+        }
+
+        $Bibles = Bible::select('bibles.*', 'languages.name AS lang')
+            ->leftJoin('languages', 'bibles.lang_short', 'languages.code')
+            ->orderBy($data['sidx'], $data['sord'])
+            ->paginate($rows_per_page);
 
         foreach($Bibles as $Bible) {
             $row = $Bible->getAttributes();
@@ -119,6 +137,8 @@ class BibleController extends Controller
     }
 
     protected function _save(Request $request, $id = NULL) {
+        $resp = new \stdClass();
+
         if($id) {
             $Bible = Bible::findOrFail($id);
         }
@@ -126,7 +146,28 @@ class BibleController extends Controller
             $Bible = new Bible();
         }
 
-        $resp = new \stdClass();
+        $rules = [
+            'name'      => 'required|max:255',
+            'shortname' => 'required|max:255',
+            'year'      => 'nullable',
+            'rank'      => 'required|int',
+        ];
+
+        $data = $request->only(array_keys($rules));
+
+        // $request->validate($rules); // This breaks, even though docs say it will return 422 with JSON data for an AJAX request
+
+        $v = Validator::make($data, $rules);
+
+        if($v->fails()) {
+            $resp->success = FALSE;
+            $resp->errors = $v->errors();
+            return new Response($resp, 422);
+        }
+
+        $Bible->fill($data);
+        $Bible->save();
+
         $resp->success = TRUE;
         $resp->Bible   = $Bible->attributesToArray();
 
@@ -193,13 +234,81 @@ class BibleController extends Controller
         return new Response($resp, 200);
     }
 
+    public function test(Request $request, $id) {
+        $Bible = Bible::findOrFail($id);
+        $Engine = new \App\Engine;
+        $resp = new \stdClass();
+        $resp->success  = FALSE;
+
+        if(!$Bible->installed) {
+            $resp->errors = ['Not installed or enabled, so can\'t test!'];
+            return new Response($resp, 200);
+        }
+
+        if(!$Bible->enabled) {
+            $resp->errors = ['Not enabled, so can\'t test!'];
+            return new Response($resp, 200);
+        }
+
+        // Tests a Bible to make sure it has data
+        // Only ONE test has to pass for it to be successful
+        $tests = [
+            ['label' => 'First Verse', 'ref' => 'Genesis 1:1'],
+            ['label' => 'Chapter', 'ref' => 'Psalm 23'],
+            ['label' => 'Book', 'ref' => '2 John'],
+            ['label' => 'Last Verse', 'ref' => 'Revelation 22:21'],
+        ];
+
+        $resp->messages = ['<b>Testing ' . $Bible->name . '</b>'];
+
+        foreach($tests as $test) {
+            $Engine->resetErrors();
+            $results = $Engine->actionQuery(['reference' => $test['ref'], 'bible' => $Bible->module, 'data_format' => 'minimal']);
+
+            if(!$Engine->hasErrors()) {
+                $resp->success = TRUE;
+                $resp->messages[] = $test['ref'] . ' (' . $test['label'] . ')';
+
+                foreach($results[$Bible->module] as $verse) {
+                    $resp->messages[] = $verse->text;
+                }
+            }
+        }
+
+        if(!$resp->success) {
+            $resp->success = FALSE;
+            $resp->errors  = $Engine->getErrors();
+            $resp->message[] = 'No data found';
+        }
+
+        $resp->messages[] = '&nbsp;';
+        $resp->messages[] = '&nbsp;';
+
+        return new Response($resp, 200);
+    }
+
     public function export(Request $request, $id) {
         $Bible = Bible::findOrFail($id);
         $data  = $request->toArray();
         $over  = (array_key_exists('overwrite', $data) && $data['overwrite']) ? TRUE : FALSE;
-//        var_dump($over);
-//        die();
         $Bible->export($over);
+
+        $resp = new \stdClass();
+        $resp->success = TRUE;
+
+        if($Bible->hasErrors()) {
+            $resp->success = FALSE;
+            $resp->errors  = $Bible->getErrors();
+        }
+
+        return new Response($resp, 200);
+    }
+
+    public function meta(Request $request, $id) {
+        $Bible  = Bible::findOrFail($id);
+        $data   = $request->toArray();
+        $create = (array_key_exists('create_new', $data) && $data['create_new']) ? TRUE : FALSE;
+        $Bible->updateMetaInfo($create);
 
         $resp = new \stdClass();
         $resp->success = TRUE;

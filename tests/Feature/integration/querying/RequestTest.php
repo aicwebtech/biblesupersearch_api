@@ -58,6 +58,13 @@ class RequestTest extends TestCase {
         $this->assertCount(83, $results['kjv']);
     }
 
+    public function testWithBooleanProximity() {
+        $Engine = new Engine();
+        $Engine->setDefaultDataType('raw');
+        $results = $Engine->actionQuery(['bible' => 'kjv', 'request' => 'faith PROX(2) hope', 'search_type' => 'boolean']);
+        $this->assertFalse($Engine->hasErrors());
+    }
+
     /**
      * 'faith' will be recognized as a search
      * 'Romans' will be recognized as a search, not a reference
@@ -77,5 +84,24 @@ class RequestTest extends TestCase {
 //        $results = $Engine->actionQuery(['bible' => 'kjv', 'request' => 'Peter John', 'whole_words' => FALSE, 'page_all' => TRUE]);
 //        $this->assertFalse($Engine->hasErrors());
 //        $this->assertCount(6, $results['kjv']);
+    }
+
+    public function testDisambiguation() {
+        $Engine = new Engine();
+        $Engine->setDefaultDataType('raw');
+        $results = $Engine->actionQuery(['bible' => 'kjv', 'request' => 'Romans']);
+        $this->assertFalse($Engine->hasErrors());
+        $metadata = $Engine->getMetadata();
+
+        $this->assertCount(1, $metadata->disambiguation);
+        $this->assertEquals('Romans', $metadata->disambiguation[0]['simple']);
+
+        $results = $Engine->actionQuery(['bible' => 'kjv', 'request' => 'kings']);
+        $this->assertFalse($Engine->hasErrors());
+        $metadata = $Engine->getMetadata();
+
+        $this->assertCount(2, $metadata->disambiguation);
+        $this->assertEquals('1 Kings', $metadata->disambiguation[0]['simple']);
+        $this->assertEquals('2 Kings', $metadata->disambiguation[1]['simple']);
     }
 }

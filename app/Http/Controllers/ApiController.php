@@ -12,6 +12,7 @@ class ApiController extends Controller {
 
     public function genericAction($action = 'query', Request $Request) {
         $allowed_actions = ['query', 'bibles', 'books', 'statics', 'version', 'readcache', 'strongs'];
+        $debug_input = FALSE;
         $_SESSION['debug'] = array();
 
         if(!in_array($action, $allowed_actions)) {
@@ -21,9 +22,12 @@ class ApiController extends Controller {
         $input = $Request->input();
         $Engine = new Engine();
         $actionMethod = 'action' . ucfirst($action);
-//        header("Access-Control-Allow-Origin: *"); // Enable for debugging
-//        print_r($input);
-//        die();
+
+        if($debug_input) {
+            header("Access-Control-Allow-Origin: *"); // Enable for debugging
+            print_r($input);
+            die();
+        }
 
         try {
             $results = $Engine->$actionMethod($input);
@@ -41,13 +45,6 @@ class ApiController extends Controller {
                 -> header('Content-Type', 'application/json; charset=utf-8')
                 -> header('Access-Control-Allow-Origin', '*');
         }
-
-//        if($Engine->hasErrors()) {
-//            $errors = $Engine->getErrors();
-//            $response->errors = $errors;
-//            $response->error_level = $Engine->getErrorLevel();
-//            $code = 400;
-//        }
 
         if(array_key_exists('callback', $input)) {
             return response()->jsonp($input['callback'], $response);

@@ -48,7 +48,8 @@ return array(
         'see_in_action' => 'See API in action here',
         'bullets' => array(
             'format' => 'Return a JSON-encoded string',
-            'cors' => 'Can be used cross-domain (By sending the CORS header: \'Access-Control-Allow-Origin: *\')',
+            'cors' => 'Can be used cross-domain',
+            'cors_old' => 'Can be used cross-domain (By sending the CORS header: \'Access-Control-Allow-Origin: *\')',
             'jsonp' => 'Support JSONP via the \'callback\' parameter',
             'structure' => 'Return this basic structure',
             'method' => 'Should be called using GET',
@@ -57,6 +58,25 @@ return array(
             'errors' => 'Array of error messages, if any.  If an error has occured, the API will return HTTP status code 400.',
             'error_level' => 'Integer indicating error level.  0 - No error, 1 & 2 - Reserved for future use, 3 - Non-fatal error,  4 - Fatal error ',
             'results' => 'Contains the actual data returned by the API',
+        ),
+        'official' => array(
+            'label' => 'Linking Official Bible SuperSearch Applications to this API:',
+            'desc'  => '',
+            'it_should_look_like_this' => 'It should look like this: ',
+
+            'client' => array(
+                'label' => 'Stand-Alone Client',
+                'desc'  => 'In your config.js file, set "apiUrl" to',
+                'desc2' => 'Now, save the file and reload the application to make sure it works.',
+            ),
+            'wp' => array(
+                'label' => 'WordPress Plugin',
+                'desc1' => 'On the admin side, navigate to "Settings", then to "Bible SuperSearch:"',
+                'desc2' => 'Now, click on the Advanced tab:',
+                'desc3' => 'Now, change the API URL to: ',
+                'desc4' => 'If you\'ve entered the URL correctly, the box will turn green.  Now, click "Save Changes:"',
+                'desc5' => 'Now, reload the application and it should be working off of this API.'
+            ),
         )
     ),
 
@@ -68,7 +88,24 @@ return array(
     'books' => array(
         'name' => 'Books',
         'description' => 'Retrieves a list of Bible Books in the specified language',
-
+    ),
+    'strongs' => array(
+        'name' => 'Strong\'s Definition',
+        'description' => 'Retrieves definitions for the given Strong\'s numbers.',
+        'params' => array(
+            'strongs' => array(
+                'type' => 'String',
+                'name' => 'Strong\'s Number(s)',
+                'default' => '(none)',
+                'description' => 'Retrieve Strong\'s definitions for the given Strong\'s numbers. Can be a single string, a comma-separated string or a '
+                . 'JSON-encoded array',
+            ),
+        ),
+        'results' => [
+            'tvm_note' => 'Note: Some Strong\'s numbers will return TVM (Tense / Voice / Mood) records.  Your app will need to be able to handle both.',
+            'tvm' => 'TVM record, "tvm" will be populated, and other items will be empty.',
+            'def' => 'Definition record, "tvm" will be empty.'
+        ]
     ),
     'statics' => array(
         'name' => 'Statics',

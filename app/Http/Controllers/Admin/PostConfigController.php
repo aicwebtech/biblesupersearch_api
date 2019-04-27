@@ -8,6 +8,11 @@ use App\Models\Post;
 
 class PostConfigController extends Controller
 {
+    public function __construct() {
+        parent::__construct();
+        $this->middleware('migrate');
+    }
+
     public function tos() {
         $Post = Post::where('key', 'tos')->firstOrFail();
 

@@ -123,4 +123,33 @@ class BibleTest extends TestCase {
         $this->assertInstanceOf('App\Models\Bible', $Bible);
     }
 
+    public function testBibleMigrate() {
+        $kjv = Bible::findByModule('kjv');
+        $of_path = Bible::getModulePath() . $kjv->getModuleFileName();
+        $un_path = Bible::getUnofficialModulePath() . $kjv->getModuleFileName();
+
+        // Attempt to migrate, it won't need it.
+        $kjv->migrateModuleFile();
+        $this->assertEquals($kjv->migrate_code, 0);
+        $path = $kjv->getModuleFilePath(TRUE);
+        $this->assertEquals($kjv->getModuleFilePath(), $of_path); // KJV is always official
+        $this->assertTrue(is_file($of_path));
+
+        // Temporarily make KJV unofficial and migrate it
+        $kjv->official = 0;
+        $kjv->save;
+        $this->assertEquals($kjv->getModuleFilePath(), $un_path);
+        $kjv->migrateModuleFile();
+        $this->assertEquals($kjv->migrate_code, 2);
+        $this->assertTrue(is_file($un_path));
+
+        // Make KJV official and migrate it back
+        $kjv->official = 1;
+        $kjv->save;
+        $this->assertEquals($kjv->getModuleFilePath(), $of_path);
+        $kjv->migrateModuleFile();
+        $this->assertEquals($kjv->migrate_code, 2);
+        $this->assertTrue(is_file($of_path));
+    }
+
 }

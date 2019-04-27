@@ -2,8 +2,10 @@ enyo.depends(
     'MultiConfirm.js',
     'MultiQueue.js',
     'MultiInstall.js',
+    'MultiMetaUpdate.js',
     'MultiExport.js',
     'Description.js',
+    'Edit.js',
     'Install.js',
     'Export.js'
 );

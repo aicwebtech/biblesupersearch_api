@@ -19,23 +19,34 @@ enyo.kind({
 
         if(this.$.Grid.hasNode() && this.gridHandle == null) {
             var pagerId = '#' + this.$.GridFooter.get('id');
+            var hasFileWidth = (bootstrap.devToolsEnabled) ? '140' : '60';
+            var hasFileAlign = (bootstrap.devToolsEnabled) ? 'left' : 'center';
 
             this.gridHandle = $(this.$.Grid.hasNode()).jqGrid({
                 url: '/admin/bibles/grid',
                 datatype: 'json',
                 idPrefix: this.idPrefix,
                 colModel: [
-                    {name: 'name', index: 'name', label: 'Name', width:'300', editable: true},
-                    {name: 'shortname', index: 'shortname', label: 'Short Name', width:'100', editable: true},
-                    {name: 'module', index: 'module', label: 'Module', width:'100'},
-                    {name: 'has_module_file', index: 'has_module_file', label: 'Has File', width:'140', title: false, sortable: false, formatter: enyo.bind(this, this._formatHasFile)}, // will be sortable when grid is using local data
+                    {name: 'name', index: 'name', label: 'Name', width:'200', editable: true},
+                    {name: 'shortname', index: 'shortname', label: 'Short Name', width:'150', editable: true},
+                    {name: 'module', index: 'module', label: 'Module', width:'150'},
+                    {
+                        name: 'has_module_file', 
+                        index: 'has_module_file', 
+                        label: 'Has File', 
+                        width: hasFileWidth, 
+                        title: false, 
+                        sortable: false, 
+                        align: hasFileAlign, 
+                        formatter: enyo.bind(this, this._formatHasFile) // will be sortable when grid is using local data
+                    }, 
                     {name: 'lang', index: 'lang', label: 'Language', width:'100'},
                     {name: 'year', index: 'year', label: 'Year', width:'100'},
                     {name: 'installed', index: 'installed', label: 'Installed', width:'80', title: false, formatter: enyo.bind(this, this._formatInstalled)},
                     {name: 'enabled', index: 'enabled', label: 'Enabled', width:'80', title: false, formatter: enyo.bind(this, this._formatEnabled)},
                     {name: 'official', index: 'official', label: 'Official', width:'60', title: false, formatter: enyo.bind(this, this._formatSinpleBoolean)},
-                    {name: 'rank', index: 'rank', label: 'Display Order', width:'100'},
-                    {name: 'actions', index: 'actions', label: '&nbsp', width:'100', title: false, formatter: enyo.bind(this, this._formatActions)},
+                    {name: 'rank', index: 'rank', label: 'Rank', width:'100'},
+                    {name: 'actions', index: 'actions', label: '&nbsp', width:'120', title: false, formatter: enyo.bind(this, this._formatActions)},
                     {name: 'id', index: 'id', hidden: true}
                 ],
                 jsonReader: {
@@ -43,7 +54,7 @@ enyo.kind({
                     id: 'id'
                 },
                 pager: pagerId,
-                sortname: 'name',
+                sortname: 'rank',
                 sortorder: 'asc',
                 viewrecords: true,
                 height: 'auto',
@@ -78,30 +89,22 @@ enyo.kind({
         return this.gridHandle ? this.gridHandle.jqGrid('getRowData', id) : null;
     },
     _selectRow: function(rowId, status, e) {
-        // this.log('rowId', rowId);
-        // this.log('status', status);
-        // this.log('e', e);
-        // this.set('selectedIds', enyo.clone(this.gridHandle.getGridParam('selarrrow')));
         this.doSelectionsChanged({length: this.gridHandle.getGridParam('selarrrow').length});
     },
-
     selectedIdsChanged: function(was, is) {
         this.log(is);
         // this.$.BulkActions.set('showing', (is.length) ? true : false);
     },
-
     __makeSignalUrl: function(signal, props) {
         var propsJson = JSON.stringify(props);
         var url = 'enyo.Signals.send("' + signal + '",' + propsJson + ')';
         return url;
     },
-
     __makeSignalLink: function(text, signal, props) {
         var url = this.__makeSignalUrl(signal, props);
         var html = "<a href='javascript:" + url + "'>" + text + "</a>";
         return html;
     },
-
     __setCellColor: function(rowId, cellIndex, color) {
         // this.gridHandle && this.gridHandle.
     },
@@ -129,16 +132,15 @@ enyo.kind({
         if(rowObject.installed == '1') {        
             var props = {id: options.rowId};
             var url = this.__makeSignalUrl('onBibleExport', props);
-            fmt += " &nbsp; &nbsp;<a href='javascript:" + url + "'>Export Module File</a>";
+
+            if(bootstrap.devToolsEnabled) {
+                fmt += " &nbsp; &nbsp;<a href='javascript:" + url + "'>Export Module File</a>";
+            }
         }
 
         return fmt;
     },    
     _formatEnabled: function(cellvalue, options, rowObject) {
-        // console.log('cellvalue', cellvalue);
-        // console.log('options', options);
-        // console.log('rowObject', rowObject);
-
         var fmt = (cellvalue == '1') ? 'Yes' : 'No&nbsp;';
         options.colModel.classes = (cellvalue == '1') ? 'on' : 'off';
 
@@ -157,6 +159,8 @@ enyo.kind({
         var props = {id: options.rowId};
         var html = '';
         html += this.__makeSignalLink('View Description', 'onViewDescription', props);
+        html += ' &nbsp; ';
+        html += this.__makeSignalLink('Edit', 'onEdit', props);
         return html;
     },
     getSelectionsWithName: function() {

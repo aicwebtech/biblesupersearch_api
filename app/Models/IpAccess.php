@@ -66,7 +66,7 @@ class IpAccess extends Model {
         $Log = IpAccessLog::firstOrNew(['ip_id' => $this->id, 'date' => date('Y-m-d')]);
         $limit = $this->getAccessLimit();
 
-        if($Log->limit_reached) {
+        if($Log->limit_reached && $limit > 0) {
             return FALSE;
         }
 
@@ -112,6 +112,23 @@ class IpAccess extends Model {
 
     public function getAccessLimit() {
         $limit_raw = $this->limit;
+
+        if($this->domain) {
+            $current_domain = '';
+
+            if(array_key_exists('HTTP_HOST', $_SERVER)) {
+                $current_domain = $_SERVER['HTTP_HOST'];
+            }
+            elseif(array_key_exists('SERVER_NAME', $_SERVER)) {
+                $current_domain = $_SERVER['SERVER_NAME'];
+            }
+            
+            $current_domain = static::parseDomain($current_domain);
+
+            if($current_domain == $this->domain) {
+                return 0;
+            }
+        }
 
         if($limit_raw === NULL) {
             $limit_raw = config('bss.daily_access_limit');

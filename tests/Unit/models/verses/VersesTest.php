@@ -100,9 +100,11 @@ class VersesTest extends TestCase
      */
     public function testInstall() {
         if(!$this->runInstallTest) {
-            //echo(PHP_EOL . 'Installation test disabled' . PHP_EOL);
+            $this->assertTrue(TRUE);
             return;
         }
+
+        echo(PHP_EOL . 'Installation test - offiical module' . PHP_EOL);
 
         $Bible = Bible::findByModule('kjv');
         $Bible->uninstall();
@@ -110,6 +112,40 @@ class VersesTest extends TestCase
         $Bible->install();
         $this->assertEquals(1, $Bible->installed);
         $this->assertTrue( Schema::hasTable('verses_kjv') );
+        $Bible->enabled = 1;
+        $Bible->save();
+    }
+
+    /**
+     * Test installation of an Unofficial Bible module
+     */
+    public function testInstallUnofficial() {
+       if(!$this->runInstallTest) {
+            $this->assertTrue(TRUE);
+            return;
+        }
+
+        echo(PHP_EOL . 'Installation test - UNoffiical module' . PHP_EOL);
+
+        $Bible = Bible::findByModule('kjv');
+        $Bible->uninstall();
+        $Bible->official = 0;
+        $Bible->save();
+        $Bible->migrateModuleFile();
+
+        $this->assertEquals(0, $Bible->installed);
+
+        $Bible->install();
+        $this->assertEquals(1, $Bible->installed);
+        $this->assertTrue( Schema::hasTable('verses_kjv') );
+        $this->testLookupQuery();
+
+//        $Bible->uninstall();
+        $Bible->official = 1;
+        $Bible->save();
+        $Bible->migrateModuleFile();
+
+//        $Bible->install();
         $Bible->enabled = 1;
         $Bible->save();
     }

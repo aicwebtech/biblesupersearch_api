@@ -7,6 +7,11 @@ use App\Engine;
 use App\Models\Post;
 
 class DocumentationController extends Controller {
+    public function __construct() {
+        parent::__construct();
+        $this->middleware(['install','https','migrate']);
+    }
+
     public function __invoke() {
         $Engine = new Engine();
         $bibles = $Engine->actionBibles( ['order_by_lang_name' => TRUE] );
@@ -17,6 +22,7 @@ class DocumentationController extends Controller {
             'bibles'    => $bibles,
             'TOS'       => $TOS,
             'Privacy'   => $Privacy,
+            'version'   => $Engine->getHardcodedVersion(),
         ]);
     }
 }

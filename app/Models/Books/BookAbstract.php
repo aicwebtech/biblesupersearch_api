@@ -62,7 +62,7 @@ class BookAbstract extends Model
      *
      * @param string|int $name
      */
-    public static function findByEnteredName($name, $language = NULL) {
+    public static function findByEnteredName($name, $language = NULL, $multiple = FALSE) {
         if(empty($name)) {
             return FALSE;
         }
@@ -98,20 +98,22 @@ class BookAbstract extends Model
         $name = trim(trim($name), '.');
 
         // Attempt 0: Book Number
-        if(preg_match('/^[0-9]{2}[B]$/', $name)) {
+        if(preg_match('/^[0-9]{1,2}[B]$/', $name)) {
             $id = intval($name);
 
             if($id) {
-                return $class_name::find($id);
+                $Book = $class_name::find($id);
+                return ($multiple) ? [$Book] : $Book;
             }
         }
 
         // Attempt 1: Direct matching
-        $Book = $class_name::where('name', $name)
+        $Query = $class_name::where('name', $name)
                 -> orwhere('shortname', $name)
                 -> orwhere('matching1', $name)
-                -> orwhere('matching2', $name)
-                -> first();
+                -> orwhere('matching2', $name);
+
+        $Book = ($multiple) ? $Query->get()->all() : $Query->first();
 
         if($Book) {
             return $Book;
@@ -119,11 +121,12 @@ class BookAbstract extends Model
 
         // Attempt 2: Begins with matching
         $matching = $name . '%';
-        $Book = $class_name::where('name', 'LIKE', $matching)
+        $Query = $class_name::where('name', 'LIKE', $matching)
             -> orwhere('shortname', 'LIKE', $matching)
             -> orwhere('matching1', 'LIKE', $matching)
-            -> orwhere('matching2', 'LIKE', $matching)
-            -> first();
+            -> orwhere('matching2', 'LIKE', $matching);
+
+        $Book = ($multiple) ? $Query->get()->all() : $Query->first();
 
         if($Book) {
             return $Book;
@@ -132,11 +135,12 @@ class BookAbstract extends Model
         // Attempt 3: Loose matching
         $matching_middle = '% '. $name . ' %';
         $matching_end = '% ' . $name;
-        $Book = $class_name::where('matching1', 'LIKE', $matching_middle)
+        $Query = $class_name::where('matching1', 'LIKE', $matching_middle)
             -> orwhere('matching2', 'LIKE', $matching_middle)
             -> orwhere('matching1', 'LIKE', $matching_end)
-            -> orwhere('matching2', 'LIKE', $matching_end)
-            -> first();
+            -> orwhere('matching2', 'LIKE', $matching_end);
+
+        $Book = ($multiple) ? $Query->get()->all() : $Query->first();
 
         if($Book) {
             return $Book;
@@ -145,11 +149,12 @@ class BookAbstract extends Model
         // Attempt 4: Loose matching with REGEXP
         $matching_middle = $name;
         //$matching_end = '/ ' . $name . '';
-        $Book = $class_name::where('matching1', 'REGEXP', $matching_middle)
-            -> orwhere('matching2', 'REGEXP', $matching_middle)
+        $Query = $class_name::where('matching1', 'REGEXP', $matching_middle)
+            -> orwhere('matching2', 'REGEXP', $matching_middle);
             //-> orwhere('matching1', 'REGEXP', $matching_end)
             //-> orwhere('matching2', 'REGEXP', $matching_end)
-            -> first();
+
+        $Book = ($multiple) ? $Query->get()->all() : $Query->first();
 
         if($Book) {
             return $Book;

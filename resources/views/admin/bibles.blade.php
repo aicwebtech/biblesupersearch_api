@@ -16,6 +16,10 @@
 
 @section('content')
     <div class='container'>
+        <script>
+            var bootstrap = @php echo $bootstrap @endphp;
+        </script>
+        
         <div class='content'>
             <?php echo csrf_field() ?>
             <table id='grid'></table>
