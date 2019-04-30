@@ -2,7 +2,7 @@ Bible SuperSearch API
 Copyright (C) 2006-2019  Luke Mounsey
 
 This program is free software; you can redistribute it and/or
-modify it under the terms of the GNU General Public License
+modify it under the terms of the GNU General Public License (GPL)
 as published by the Free Software Foundation; either version 3
 of the License, or (at your option) any later version.
 
@@ -40,6 +40,10 @@ This includes the following:
 
 This does NOT include:
 * A User Interface for the Bible search engine
+
+We reccommend our pre-built user interface, which is available both as a stand-alone application and as a WordPress plugin.
+These can be downloaded here: http://www.biblesupersearch.com/downloads
+You also have the option to build  your own.
 
 
 Server Requirements:
