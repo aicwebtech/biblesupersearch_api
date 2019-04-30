@@ -5,24 +5,23 @@
 Bible SuperSearch Webservice API built using the Laravel framework.
 This API, when combined with a UI, allows you to use Bible SuperSearch entirely on your website, not dependent on ours.
 
-This includes the following:
-* Core Bible search engine functionality
+#### This software includes the following:
+* Full Bible search engine functionality
 * Webservice API for accessing this functionality
 * API documentation
 * Administrative backend
 * Installer
 
-This does NOT include:
+#### This does NOT include:
 * A User Interface for the Bible search engine
 
-## Notice
-While we believe the API itself to be functional, this software has yet to be officially released.
-We cannot provide any support for installing or configuring it.
-Download and use at your own risk.
+We reccommend our pre-built user interface, which is available both as a stand-alone application and as a WordPress plugin.
+These can be downloaded here: [Download](http://www.biblesupersearch.com/downloads)
+You also have the option to build  your own.
 
 ## Official Documentation
 
-###Server Requirements:
+### Server Requirements:
 * PHP >= 7.1.3
 * MySQL
 * OpenSSL PHP Extension
@@ -39,11 +38,10 @@ Download and use at your own risk.
 
 Also, this API must have it's own subdomain.
 
-###Installation (Web Browser):
-[Download](http://www.biblesupersearch.com/downloads) the official release,
-and follow the instructions in it's readme.txt
+### Installation (Web Browser):
+(Recommended) [Download](http://www.biblesupersearch.com/downloads) the official release, and follow the instructions in it's readme.txt
 
-###Installation (CLI):
+### Installation (CLI):
 NOTE: THIS CLI INSTALLATION IS NOT OFFICIALLY SUPPORTED AT THIS TIME
 
 * Clone this GIT repository into a directory (/path/to/biblesupersearch_api)
@@ -80,8 +78,21 @@ Documentation for using the API can be found at this API URL once installed.
 
 ## Contributing
 
-Thank you for considering contributing to Bible SuperSearch.  If you find any bugs, please contact us.
+Thank you for considering contributing to Bible SuperSearch.  If you find any bugs, please [contact us](https://www.biblesupersearch.com/contact).
 
 ## License
 
-The Bible SuperSearch API is open-sourced software licensed under the [GNU GPL V3 or Greater](https://opensource.org/licenses/GPL-3.0)
+The Bible SuperSearch API is open-sourced software licensed under the [GNU General Public License (GPL) V3 or Greater](https://opensource.org/licenses/GPL-3.0)
+
+This software is licensed for NON-COMMERCIAL use only.
+
+Any commercial use requires a commercial license.  Commercial use includes:
+
+* Putting the SOFTWARE behind a paywall
+* Charging others to access or use the SOFTWARE
+* Selling the SOFTWARE for any amount, whether by itself or bundled with other software
+* Incorporating into third party software which is NOT compatible with the GNU GPL. See [GNU License Compatibility](https://www.gnu.org/licenses/license-list.html#GPLCompatibleLicenses)
+* Any other use which would violate the GNU GPL
+
+Please see full license at https://www.biblesupersearch.com/license/
+
