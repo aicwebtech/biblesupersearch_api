@@ -32,7 +32,7 @@ class InstallManager {
         Bible::populateBibleTable();
 
         // Install default Bible (usally KJV)
-        $Bible = Bible::findByModule(config('bss.defaults.bible'));
+        $Bible = Bible::findByModule( config('bss.defaults.bible') );
         $Bible->install(FALSE, TRUE);
 
         // Add admin user
@@ -49,6 +49,13 @@ class InstallManager {
 
         // Set 'installed' config
         ConfigManager::setConfigs(['app.installed' => TRUE]);
+
+        // Set Application URL
+        $server_url = static::getServerUrl();
+        ConfigManager::setConfigs(['app.url' => $server_url]);
+
+        // Set Application Email (System Mail Address)
+        ConfigManager::setConfigs(['mail.from.address' => $request->get('email')]);
 
         return TRUE;
     }
@@ -189,5 +196,21 @@ class InstallManager {
         }
 
         return array($checklist, $success);
+    }
+
+    static function getServerUrl() {
+        if(array_key_exists('HTTP_HOST', $_SERVER)) {
+            $current_domain = $_SERVER['HTTP_HOST'];
+        }
+        elseif(array_key_exists('SERVER_NAME', $_SERVER)) {
+            $current_domain = $_SERVER['SERVER_NAME'];
+        }
+        else {
+            $current_domain = 'example.com';
+        }
+
+        $http   = (array_key_exists('HTTPS', $_SERVER) && !empty($_SERVER['HTTPS'])) ? 'https://' : 'http://';
+        $server = $http . $current_domain;
+        return $server;
     }
 }
