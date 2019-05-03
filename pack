@@ -94,13 +94,16 @@ then
     zip -r -q $filepath vendor/
 
     echo ''
-    echo 'Deleting unwanted files:'
+    echo 'Deleting unwanted files / dirs:'
 
     # delete unwanted files from ZIP file
     for i in ${delfiles[@]}; do
-        echo "    Deleting:  ${i}"
+        echo "    Deleting file:  ${i}"
         zip -d -q $filepath ${i}
-    done
+    done    
+
+    # delete unwanted dirs from ZIP file
+    zip --delete -q $filepath 'public/js/bin/enyo/2.5.1.1/tools/minifier/*'
 
     echo ''
     echo "Success!  File created at $filepath"
