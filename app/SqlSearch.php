@@ -521,6 +521,8 @@ class SqlSearch {
             $parsed[] = $item[0];
         }
 
+        // $parsed = static::parseSimpleQueryTerms($parsing);
+
         foreach ($phrases as $item) {
             $parsed[] = $item;
         }
