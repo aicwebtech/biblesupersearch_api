@@ -720,5 +720,10 @@ class Engine {
         $results = json_decode($json);
         return $results->results->version;
     }
+
+    public static function isBibleEnabled($module) {
+        $Bible = Bible::findByModule($module);
+        return($Bible && $Bible->installed && $Bible->enabled) ? TRUE : FALSE;
+    }
 }
 

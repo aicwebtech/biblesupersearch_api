@@ -28,8 +28,23 @@ class SqlSearch {
     protected $use_named_bindings = FALSE;
     public $search_fields = 'text'; // Comma separated
 
+    // Base regexp for matching all valid Unicode characters in search terms
+    // Needs to be used in all search processing regexp
+    // Todo - including ALL punctuation fixes one problem, but causes other breakage
+    // Need to figure out exactly what punctuation needs to be included here
+
+    // Currently included:
+    // \p{L}: any kind of letter from any language.
+    // \p{M}: a character intended to be combined with another character (e.g. accents, umlauts, enclosing boxes, etc.).
+    // \p{N}: any kind of numeric character in any script.
+    // \p{Pi}: any kind of opening quote.
+    // \p{Pf}: any kind of closing quote.
+    // \p{Pd}: any kind of hyphen or dash.
+    static protected $term_base_regexp = '\p{L}\p{M}\p{N}\p{Pi}\p{Pf}\p{Pd}'; //
+
     static protected $term_match_regexp = '/[`].*[`]/u'; // Regexp to match a regexp term
-    static protected $term_match_phrase = '/["][\p{L}0-9 \'%]+["]/u'; // Regexp to match an exact phrase term
+    // static protected $term_match_phrase = '/["][\p{L}0-9 \'%]+["]/u'; // Regexp to match an exact phrase term
+    static protected $term_match_phrase = '/["][\p{L}\p{M}\p{N} \'%]+["]/u'; // Unicode-safe Regexp to match an exact phrase term
 
     static protected $search_inputs = array(
         'search' => array(
@@ -66,6 +81,7 @@ class SqlSearch {
         ),
     );
 
+    // Todo: Make Unicode safe by replacing with regexp \p{P}
     public $punctuation = array('.',',',':',';','\'','"','!','-','?','(',')','[',']');
 
     public function __construct($search = NULL, $options = array()) {
@@ -515,7 +531,8 @@ class SqlSearch {
         $parsing = preg_replace(static::$term_match_phrase, '', $parsing); // Remove phrase terms once parsed
         $parsing = preg_replace(static::$term_match_regexp, '', $parsing); // Remove regexp terms once parsed
 
-        preg_match_all('/%?[\p{L}0-9\']+%?/u', $parsing, $matches, PREG_SET_ORDER);
+//        preg_match_all('/%?[\p{L}0-9\']+%?/u', $parsing, $matches, PREG_SET_ORDER);
+        preg_match_all('/%?[' . static::$term_base_regexp . '\']+%?/u', $parsing, $matches, PREG_SET_ORDER); // Unicode safe??
 
         foreach ($matches as $item) {
             $parsed[] = $item[0];
@@ -577,11 +594,10 @@ class SqlSearch {
     public static function containsInvalidCharacters($terms) {
         foreach($terms as $term) {
             if(static::isTermPhrase($term) || static::isTermRegexp($term)) {
-                // Ignore phrases and REGEXP
-                continue;
+                continue; // Ignore phrases and REGEXP
             }
 
-            $invalid_chars = preg_replace('/[\p{L}\(\)|!&^ "\'0-9%]+/u', '', $term);
+            $invalid_chars = preg_replace('/[' . static::$term_base_regexp . '\(\)|!&^ "\'0-9%]+/u', '', $term);
 
             if(!empty($invalid_chars)) {
                 return TRUE;
@@ -681,8 +697,24 @@ class SqlSearch {
         // Insert implied AND
         //$patterns = array('/\) [a-zA-Z0-9"]/', '/[a-zA-Z0-9"] \(/', '/[a-zA-Z0-9"] [a-zA-Z0-9"]/');
         // Note - this will break if we ever have
-        $patterns = array('/\) [\p{L}0-9\'%"]/u', '/[\p{L}0-9\'%"] \(/u', '/[\p{L}0-9\'%"] [\p{L}0-9\'%"]/u', '/[\p{L}]\) \(/u');
-        //$patterns = array('/\) [\p{L}0-9"\']/u', '/[\p{L}0-9"\'] \(/u', '/[\p{L}0-9] [\p{L}0-9]/u', '/["\'] [\p{L}0-9"\']/u');
+        $patterns = array(
+            '/\) [\p{L}0-9\'%"]/u',
+            '/[\p{L}0-9\'%"] \(/u',
+            '/[\p{L}0-9\'%"] [\p{L}0-9\'%"]/u',
+            '/[\p{L}]\) \(/u',
+        ); // Pre-unicode-safe
+
+        $unicode_safe_base  = '\p{L}\p{M}\p{N}';
+        $unicode_safe_base2 = '\p{L}\p{M}';
+
+        $patterns = array(
+            '/\) [' . $unicode_safe_base . '\'%"]/u',
+            '/[' . $unicode_safe_base . '\'%"] \(/u',
+            '/[' . $unicode_safe_base . '\'%"] [' . $unicode_safe_base . '\'%"]/u',
+            '/[' . $unicode_safe_base2 . ']\) \(/u',
+        ); // Unicode safe, passing all unit tests
+
+        //$patterns = array('/\) [\p{L}0-9"\']/u', '/[\p{L}0-9"\'] \(/u', '/[\p{L}0-9] [\p{L}0-9]/u', '/["\'] [\p{L}0-9"\']/u');  // OLD??
         $query = preg_replace_callback($patterns, function($matches) {
             return str_replace(' ', ' & ', $matches[0]);
         }, $query);
