@@ -10,6 +10,7 @@ class ImportBibleUnbound extends ImportBible {
      * The name and signature of the console command.
      * @var string
      */
+    protected $name = 'Unbound Bible';
     protected $signature = 'bible:import-unbound';
     protected $import_dir = 'unbound';
     protected $file_extension = 'zip';
@@ -18,7 +19,8 @@ class ImportBibleUnbound extends ImportBible {
      * The console command description.
      * @var string
      */
-    protected $description = 'Import a Bible from a UTF-8 text file in the Unbound Bible Format
+    protected $description = 'Import a Bible from in a (zipped) Unbound Bible Format
+                              These can be downloaded at
                               https://unbound.biola.edu/index.cfm?method=downloads.showDownloadMain';
 
     /**

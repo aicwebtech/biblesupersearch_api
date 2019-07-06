@@ -17,7 +17,9 @@ abstract class ImportBible extends Command {
      * The console command description.
      * @var string
      */
+    protected $name = 'UTF-8';
     protected $description = 'Import a Bible from a UTF-8 text file';
+    protected $exe_descr = '';
     protected $options = ['name', 'shortname', 'lang', 'lang_short'];
     protected $import_dir = ''; // Subdirectory of bibles
     protected $file_extension = ''; // Used for filtering file list
@@ -59,6 +61,7 @@ abstract class ImportBible extends Command {
             $this->description .= PHP_EOL . '                              Files to be imported need to be placed in ' . $this->getImportDirReadable();
         }
 
+        $this->exe_descr = $this->description;
         $this->description .= PHP_EOL . PHP_EOL . 'Hint: Run without argments to be prompted for them.';
 
         parent::__construct();
@@ -96,9 +99,10 @@ abstract class ImportBible extends Command {
             return $this->_displayFileList();
         }
 
-        if($this->require_file) {
-            $file = ($file) ? $file : $this->anticipate('Input file (File must be present in ' . $this->getImportDirReadable() .
-                    ', Use --list to see all files)', $this->_getFileList());
+        if($this->require_file && !$file) {
+            echo(PHP_EOL . $this->exe_descr . PHP_EOL);
+
+            $file = $this->anticipate('Input file (Use --list to see all available files)', $this->_getFileList());
         }
 
         if($file == '--list') {
@@ -162,6 +166,7 @@ abstract class ImportBible extends Command {
                         continue;
                     }
 
+                    $lang_short = strtolower($lang_short);
                     $Existing = Language::where('code', $lang_short)->first();
 
                     if($Existing) {

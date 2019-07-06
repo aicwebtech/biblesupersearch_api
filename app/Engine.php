@@ -392,6 +392,19 @@ class Engine {
      */
     public function actionBooks($input) {
         $language = (!empty($input['language'])) ? $input['language'] : config('bss.defaults.language_short');
+
+        if($language == 'ALL') {
+            $list = \App\Models\Books\BookAbstract::getSupportedLanguages();
+            $books_by_lang = [];
+
+            foreach($list as $lang) {
+                $namespaced_class = 'App\Models\Books\\' . ucfirst($lang);
+                $books_by_lang[$lang] = $namespaced_class::select('id', 'name', 'shortname')->orderBy('id', 'ASC') -> get() -> all();
+            }
+
+            return $books_by_lang;
+        }
+
         $namespaced_class = 'App\Models\Books\\' . ucfirst($language);
 
         if(!class_exists($namespaced_class)) {

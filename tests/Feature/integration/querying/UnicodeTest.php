@@ -30,6 +30,9 @@ class UnicodeTest extends TestCase {
         $Engine->setDefaultDataType('raw');
         $results = $Engine->actionQuery(['bible' => 'diodati', 'request' => 'l’uomo', 'whole_words' => FALSE]);
         $this->assertFalse($Engine->hasErrors());
+
+        $results = $Engine->actionQuery(['bible' => 'diodati', 'request' => '(l’uomo) (alla)', 'whole_words' => FALSE]);
+        $this->assertFalse($Engine->hasErrors(), 'Failed on using implied AND');
     }
 
     public function testHebrew() {
@@ -62,6 +65,9 @@ class UnicodeTest extends TestCase {
         $Engine = new Engine();
         $Engine->setDefaultDataType('raw');
         $results = $Engine->actionQuery(['bible' => 'thaikjv', 'request' => 'ประการแรก', 'whole_words' => FALSE]);
+        $this->assertFalse($Engine->hasErrors());
+
+        $results = $Engine->actionQuery(['bible' => 'thaikjv', 'request' => '(ประการแรก) (เพราะว่า)', 'whole_words' => FALSE]);
         $this->assertFalse($Engine->hasErrors());
     }
 
