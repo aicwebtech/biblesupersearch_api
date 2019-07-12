@@ -67,10 +67,19 @@ class BookAbstract extends Model
             return FALSE;
         }
 
+//        var_dump($name);
+//        var_dump($language);
+
         // Because searches are also tested against this, we must filter out items with boolean or regexp operators
+        // Need this to work with Unicode book names such as Ésaïe (French for Isaiah)
+        // Cannot remove this test as it's needed for tests / ect - removing will cause breakage!
         $test = preg_replace('/[\p{L}0-9 ]+/i', '', $name);
+//        $test = preg_replace('/[\p{L}\p{M}\p{N}\p{P}\p{Pf}\p{Pd}\p{Zs}]+/', '', $name);
 
         if(!empty($test)) {
+//            var_dump('bad test ' . $test);
+//            var_dump($test);
+//            var_dump($name);
             return FALSE;
         }
 
@@ -114,6 +123,8 @@ class BookAbstract extends Model
                 -> orwhere('matching2', $name);
 
         $Book = ($multiple) ? $Query->get()->all() : $Query->first();
+
+//        var_dump($Book->getAttributes());
 
         if($Book) {
             return $Book;

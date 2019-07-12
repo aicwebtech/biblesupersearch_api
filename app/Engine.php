@@ -16,6 +16,7 @@ class Engine {
     protected $Bibles = array(); // Array of Bible objects
     protected $Bible_Primary = NULL; // Primary Bible version
     protected $languages = array();
+    protected $primary_language = NULL;
     protected $default_data_format = 'passage';
     protected $default_page_all = FALSE;
     protected $metadata = NULL;
@@ -33,6 +34,7 @@ class Engine {
     public function setBibles($modules) {
         $this->Bibles = array();
         $this->languages = array();
+        $this->primary_language = NULL;
         $this->multi_bibles = FALSE;
 
         if(is_string($modules)) {
@@ -54,6 +56,7 @@ class Engine {
         }
 
         $this->setPrimaryBible($primary);
+        $this->primary_language = $this->primary_language ?: config('bss.defaults.language_short');
     }
 
     public function setPrimaryBible($module) {
@@ -77,6 +80,10 @@ class Engine {
 
             if(!in_array($Bible->lang_short, $this->languages)) {
                 $this->languages[] = $Bible->lang_short;
+            }
+
+            if(!$this->primary_language && $this->languageHasBookSupport($Bible->lang_short)) {
+                $this->primary_language = $Bible->lang_short;
             }
         }
         else {
@@ -415,10 +422,15 @@ class Engine {
         return $Books;
     }
 
+    public function languageHasBookSupport($lang) {
+        return in_array($lang, \App\Models\Books\BookAbstract::getSupportedLanguages());
+    }
+
     public function actionStatics($input) {
         $response = new \stdClass;
         $response->bibles       = $this->actionBibles($input);
         $response->books        = $this->actionBooks($input);
+        $response->books_by_language        = $this->actionBooks(['language' => 'ALL']);
         $response->shortcuts    = $this->actionShortcuts($input);
         $response->search_types = config('bss.search_types');
         $response->name         = config('app.name');
@@ -529,7 +541,7 @@ class Engine {
             $results = $this->_highlightResults($results, $Search);
         }
 
-        $Formatter = new $format_class($results, $Passages, $Search);
+        $Formatter = new $format_class($results, $Passages, $Search, $this->languages);
         return $Formatter->format();
     }
 
