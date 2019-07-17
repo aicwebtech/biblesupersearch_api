@@ -71,5 +71,15 @@ class UnicodeTest extends TestCase {
         $this->assertFalse($Engine->hasErrors());
     }
 
+    public function testFrenchLookup() {
+        if(!Engine::isBibleEnabled('martin')) {
+            $this->markTestSkipped('Bible martin not installed or enabled');
+        }
+
+        $Engine = new Engine();
+        $Engine->setDefaultDataType('raw');
+        $results = $Engine->actionQuery(['bible' => 'martin', 'request' => 'Ésaïe 31', 'whole_words' => FALSE]);
+        $this->assertFalse($Engine->hasErrors());
+    }
 
 }
