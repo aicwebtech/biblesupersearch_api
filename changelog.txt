@@ -1,5 +1,11 @@
 Bible SuperSearch API Changelog
 
+= 4.0.1 // July 20, 2019
+* Improved command-line based Bible installers to make them a little more user-friendly.
+* Bugfix: Resolved issues with searching for terms containing Unicode characters
+* Bugfix: Resolved issues with retrieving passages using book names with Unicode characters
+* Bugfix: Selection of book language now based on primary Bible
+
 = 4.0.0 // May 4, 2019 =
 * Official release of this API code
 * Added: Inline Strong's Definitions - Returned when search includes Strong's number(s).

@@ -609,9 +609,11 @@ class Passage {
 
             if($this->chapter_max == $book_com['chapters']) {
                 $nav['next_chapter'] = ($NextBook) ? $NextBook->name . ' 1' : NULL;
+                $nav['ncb_name'] = ($NextBook) ? $NextBook->name : NULL;
             }
             else {
                 $nav['next_chapter'] = $this->Book->name . ' ' . ($this->chapter_max + 1);
+                $nav['ncb_name'] = $this->Book->name;
             }
 
             if($this->chapter_min == 1) {
@@ -620,13 +622,16 @@ class Passage {
                 if($PrevBook) {
                     $prev_com = config('bss.books_common.' . $PrevBook->id);
                     $nav['prev_chapter'] = $PrevBook->name . ' ' . $prev_com['chapters'];
+                    $nav['pcb_name'] = $PrevBook->name;
                 }
             }
             else {
                 $nav['prev_chapter'] = $this->Book->name . ' ' . ($this->chapter_min - 1);
+                $nav['pcb_name'] = $this->Book->name;
             }
 
-            $nav['cur_chapter'] = ($whole_chapter) ? $this->Book->name . ' ' .$this->chapter_min : NULL;
+            $nav['cur_chapter'] = ($whole_chapter) ? $this->Book->name . ' ' . $this->chapter_min : NULL;
+            $nav['ccb_name'] = ($whole_chapter) ? $this->Book->name : NULL;
         }
 
         if($this->chapter_max == $book_com['chapters']) {

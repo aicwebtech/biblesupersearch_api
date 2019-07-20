@@ -20,6 +20,8 @@ class ImportBibleEvening extends ImportBible {
      */
     protected $description = 'Import a Bible from textfiles in the obsolete \'eveningdew\' format';
 
+    protected $name = 'Evening Dew';
+
     /**
      * Create a new command instance.
      * @return void

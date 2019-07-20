@@ -21,12 +21,14 @@ abstract class FormatterAbstract {
     protected $Passages;
     protected $Search;
     protected $is_search;
+    protected $languages;
 
-    public function __construct($results, $Passages, $Search) {
+    public function __construct($results, $Passages, $Search, $languages) {
         $this->results      = $results;
         $this->Passages     = $Passages;
         $this->Search       = $Search;
         $this->is_search    = ($Search) ? TRUE : FALSE;
+        $this->languages    = $languages;
     }
 
     abstract public function format();
@@ -46,7 +48,7 @@ abstract class FormatterAbstract {
                     $bcv = $verse->book * 1000000 + $verse->chapter * 1000 + $verse->verse;
 
                     if(empty($Passages[$bcv])) {
-                        $Passages[$bcv] = Passage::createFromVerse($verse);
+                        $Passages[$bcv] = Passage::createFromVerse($verse, $this->languages);
                     }
                 }
             }

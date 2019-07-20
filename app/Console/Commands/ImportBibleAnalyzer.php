@@ -21,6 +21,8 @@ class ImportBibleAnalyzer extends ImportBible {
     protected $description = 'Import a Bible from a SQLite database in the Bible Analyser .bib format
                               http://www.bibleanalyzer.com/download.htm';
 
+    protected $name = 'Bible Analyser .bib';
+    
     /**
      * Create a new command instance.
      * @return void
