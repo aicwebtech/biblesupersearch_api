@@ -429,8 +429,7 @@ class Engine {
     public function actionStatics($input) {
         $response = new \stdClass;
         $response->bibles       = $this->actionBibles($input);
-        $response->books        = $this->actionBooks($input);
-        $response->books_by_language        = $this->actionBooks(['language' => 'ALL']);
+        $response->books        = $this->actionBooks($input);        
         $response->shortcuts    = $this->actionShortcuts($input);
         $response->search_types = config('bss.search_types');
         $response->name         = config('app.name');
