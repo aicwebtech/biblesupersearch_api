@@ -17,7 +17,9 @@ abstract class ImportBible extends Command {
      * The console command description.
      * @var string
      */
+    protected $name = 'UTF-8';
     protected $description = 'Import a Bible from a UTF-8 text file';
+    protected $exe_descr = '';
     protected $options = ['name', 'shortname', 'lang', 'lang_short'];
     protected $import_dir = ''; // Subdirectory of bibles
     protected $file_extension = ''; // Used for filtering file list
@@ -44,8 +46,23 @@ abstract class ImportBible extends Command {
     public function __construct() {
         // Auto-add the arguments and options
         //$this->signature .= ' {file} {module} {--name=} {--shortname=} {--lang=} {--lang_short=} {--overwrite}';
-        $this->signature .= ' {--file=} {--module=} {--name=} {--shortname=} {--lang=} {--lang_short=} {--overwrite} {--list}';
+//        $this->signature .= ' {--file=} {--module=} {--name=} {--shortname=} {--lang=} {--lang_short=} {--overwrite} {--list}';
+        $this->signature .= ' {--file= : File to import} '
+                . '{--module= : Module name - internal, unique identifer for this Bible, ie NIV2011} '
+                . '{--name= : Full text name of this Bible, ie "New International Version"} '
+                . '{--shortname= : Short display name of this Bible, ie "NIV"} '
+                . '{--lang= : This Bible\'s language, full name} '
+                . '{--lang_short= : This Bible\'s language as a 2 character ISO 639-1 code} '
+                . '{--overwrite : whether to overwrite the existing Bible of the module name, if it exists} '
+                . '{--list : lists all avaliable files for this importer}';
         //$this->description .= '';
+
+        if($this->require_file && $this->import_dir) {
+            $this->description .= PHP_EOL . '                              Files to be imported need to be placed in ' . $this->getImportDirReadable();
+        }
+
+        $this->exe_descr = $this->description;
+        $this->description .= PHP_EOL . PHP_EOL . 'Hint: Run without argments to be prompted for them.';
 
         parent::__construct();
 
@@ -82,8 +99,14 @@ abstract class ImportBible extends Command {
             return $this->_displayFileList();
         }
 
-        if($this->require_file) {
-            $file = ($file) ? $file : $this->anticipate('Input file (Use --list to see all files)', $this->_getFileList());
+        if($this->require_file && !$file) {
+            echo(PHP_EOL . $this->exe_descr . PHP_EOL);
+
+            $file = $this->anticipate('Input file (Use --list to see all available files)', $this->_getFileList());
+        }
+
+        if($file == '--list') {
+            return $this->_displayFileList();
         }
 
         while(!$module) {
@@ -132,7 +155,42 @@ abstract class ImportBible extends Command {
                 $attributes['lang_short'] = $this->hints['lang_short'][$lang_pos];
             }
             else {
-                throw new \Exception('Language ' . $attributes['lang'] . ' not found');
+                $lang_short = $this->option('lang_short');
+
+                while(!$lang_short) {
+                    $lang_short = $this->ask('What is the 2 character ISO 639-1 code for the language "' . $attributes['lang'] . '"? '
+                            . ' (See http://www.loc.gov/standards/iso639-2/php/code_list.php)');
+
+                    if(strlen($lang_short) != 2) {
+                        $lang_short = NULL;
+                        continue;
+                    }
+
+                    $lang_short = strtolower($lang_short);
+                    $Existing = Language::where('code', $lang_short)->first();
+
+                    if($Existing) {
+                        echo('ISO 639-1 code "' . $lang_short . '" is already attributed to the language "' . $Existing->name . '"' . PHP_EOL);
+                        $cor = $this->confirm('Is this correct?');
+
+                        if($cor) {
+                            $lang_short = NULL;
+                            continue;
+                        }
+                        else {
+                            throw new \Exception('This importer cannot currently fix pre-existing issues in the language table');
+                        }
+                    }
+                }
+
+                $Lang = new Language;
+                $Lang->name = $attributes['lang'];
+                $Lang->code = $lang_short;
+                $Lang->save();
+
+                $attributes['lang_short'] = $lang_short;
+
+                // throw new \Exception('Language ' . $attributes['lang'] . ' not found');
             }
         }
 
@@ -153,13 +211,17 @@ abstract class ImportBible extends Command {
         return dirname(__FILE__) . '/../../../bibles/' . $this->import_dir;
     }
 
+    public function getImportDirReadable() {
+        return getcwd() . '/bibles/' . $this->import_dir;
+    }
+
     protected function _displayFileList() {
         $list = $this->_getFileList();
         $tab = '    ';
 
         print PHP_EOL;
         print 'Bibles ready for Import: ' . PHP_EOL;
-        print $tab . '(Note: Bible files for this specific importer must be in <biblesupersearch dir>/bibles/' . $this->import_dir . ')' . PHP_EOL;
+        print $tab . '(Note: Bible files for this specific importer must be placed in ' . $this->getImportDirReadable() . ')' . PHP_EOL;
         print PHP_EOL;
 
         foreach($list as $item) {

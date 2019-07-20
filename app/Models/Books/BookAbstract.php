@@ -68,9 +68,19 @@ class BookAbstract extends Model
         }
 
         // Because searches are also tested against this, we must filter out items with boolean or regexp operators
-        $test = preg_replace('/[\p{L}0-9 ]+/i', '', $name);
+        // Need this to work with Unicode book names such as Ésaïe (French for Isaiah)
+        // Cannot remove this test as it's needed for tests / ect - removing will cause breakage!
+        $test = preg_match('/[\p{Ps}\p{Pe}\(\)\\\|\+&]/', $name, $matches);
+//        $test2 = preg_match('/".*"/', $name, $matches); // Additional test, if needed
+//        $test3 = preg_match("/'.*'/", $name, $matches); // Additional test, if needed
+
+//        $test = preg_replace('/[\p{L}0-9 ]+/i', '', $name); // Orignal 'working' test
+//        $test = preg_replace('/[\p{L}\p{M}\p{N}\p{P}\p{Pf}\p{Pd}\p{Zs}]+/', '', $name); // Attempted test, not working
 
         if(!empty($test)) {
+//            var_dump('bad test ' . $test);
+//            var_dump($test);
+//            var_dump($name);
             return FALSE;
         }
 
@@ -114,6 +124,8 @@ class BookAbstract extends Model
                 -> orwhere('matching2', $name);
 
         $Book = ($multiple) ? $Query->get()->all() : $Query->first();
+
+//        var_dump($Book->getAttributes());
 
         if($Book) {
             return $Book;
@@ -161,5 +173,9 @@ class BookAbstract extends Model
         }
 
         return $Book;
+    }
+
+    static public function getSupportedLanguages() {
+        return ['ar', 'de', 'en', 'es', 'fr', 'hu', 'it', 'nl', 'ro', 'ru'];
     }
 }
