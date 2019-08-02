@@ -214,6 +214,7 @@ class Engine {
 
         $CacheManager = new CacheManager();
         $Cache = $CacheManager->createCache($input, $parsing);
+        $this->metadata = new \stdClass;
         $this->metadata->hash = $Cache->hash;
 
         !empty($input['bible']) && $this->setBibles($input['bible']);
@@ -232,7 +233,7 @@ class Engine {
             return FALSE;
         }
 
-        list($keywords, $references, $this->metadata->disambiguation) = Passage::mapRequest($input, $this->languages, $this->Bibles);
+        list($keywords, $references, $this->metadata->disambiguation, $disamb_book) = Passage::mapRequest($input, $this->languages, $this->Bibles);
         $Search     = Search::parseSearch($keywords, $input);
         $is_search  = ($Search) ? TRUE : FALSE;
         $paginate   = ($is_search && !$input['page_all'] && (!$input['multi_bibles'] || $this->_canPaginate($input['data_format']))) ? TRUE : FALSE;
@@ -319,6 +320,20 @@ class Engine {
                         $this->addErrors($Search->getErrors(), $Search->getErrorLevel());
                     }
                     else {
+                        // No results error message
+                        // If the request found a 'disambiguation' book, send that instead of error messge
+                        if($disamb_book) {
+                            unset($input['request'], $input['search'], $input['reference']);
+
+                            foreach($this->metadata->disambiguation as $disambig) {
+                                if($disambig['type'] == 'book') {
+                                    $input['reference'] = $disambig['data']['reference'];
+                                    return $this->actionQuery($input);
+                                    break;
+                                }
+                            }
+                        }
+
                         $this->addError( trans('errors.no_results'), 4);
                     }
                 }
@@ -429,7 +444,7 @@ class Engine {
     public function actionStatics($input) {
         $response = new \stdClass;
         $response->bibles       = $this->actionBibles($input);
-        $response->books        = $this->actionBooks($input);        
+        $response->books        = $this->actionBooks($input);
         $response->shortcuts    = $this->actionShortcuts($input);
         $response->search_types = config('bss.search_types');
         $response->name         = config('app.name');
