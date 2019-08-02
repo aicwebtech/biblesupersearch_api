@@ -58,6 +58,10 @@ class BookAbstract extends Model
         return $class_name;
     }
 
+    public static function getLanguage() {
+        return strtolower(get_called_class());
+    }
+
     /**
      *
      * @param string|int $name
@@ -100,6 +104,8 @@ class BookAbstract extends Model
         if(!class_exists($class_name)) {
             $class_name = $default_class_name;
         }
+
+        // var_dump($class_name);
 
         if(!is_string($name)) {
             return $class_name::find(intval($name));
