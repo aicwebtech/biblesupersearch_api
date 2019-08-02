@@ -160,9 +160,19 @@ class Passage {
 
     public static function findBookByNameAndLanguage($book, $languages = [], $multiple = FALSE) {
         $found = FALSE;
+        $primary_language = NULL;
+
+        // DISAMBIG LINK NOT SHOWING WHEN SEARCH YIELDS NO RESULTS!  Ie requesting 'Eph' from a Spanish Bible
+
+        // var_dump($book);
+        // var_dump($multiple);
 
         if(is_array($languages)) {
-            foreach($languages as $lang) {
+            foreach($languages as $key => $lang) {
+                if($key == 0) {
+                    $primary_language = $lang;
+                }
+
                 $Book = Book::findByEnteredName($book, $lang, $multiple);
 
                 if($Book) {
@@ -174,6 +184,30 @@ class Passage {
 
         if(!$found) {
             $Book = Book::findByEnteredName($book, NULL, $multiple);
+        }
+
+        if(!$multiple) {
+            // var_dump($Book->name);
+        }
+
+        if(!$multiple && $Book && $Book->getLanguage() != $primary_language && $primary_language != config('bss.defaults.language_short')) {
+            $book_class = Book::getClassNameByLanguage($primary_language);
+            $Book = $book_class::find($Book->id);
+        }
+
+        if($multiple && $Book && $Book[0]->getLanguage() != $primary_language && $primary_language != config('bss.defaults.language_short')) {
+            $book_class = Book::getClassNameByLanguage($primary_language);
+            $BooksNew = [];
+
+            foreach($Book as $B) {
+                $BooksNew[] = $book_class::find($B->id);
+            }
+
+            return $BooksNew;
+        }
+
+        if(!$multiple) {
+            // die($Book->name);
         }
 
         return $Book;
@@ -1045,6 +1079,7 @@ class Passage {
         $keywords   = empty($input['search'])    ? NULL : $input['search'];
         $request    = empty($input['request'])   ? NULL : $input['request'];
         $disambiguation = [];
+        $has_disambiguation_book = FALSE;
 
         if(!empty($request)) {
             if(!$keywords && !$reference) {
@@ -1065,6 +1100,8 @@ class Passage {
                     $Books = static::findBookByNameAndLanguage($request, $languages, TRUE);
 
                     if($Books && is_array($Books)) {
+                        $has_disambiguation_book = TRUE;
+
                         foreach($Books as $Book) {
                             $disambiguation[] = [
                                 'description' => 'Were you looking for the Book of ' . $Book->name . '?',
@@ -1087,6 +1124,6 @@ class Passage {
             }
         }
 
-        return array($keywords, $reference, $disambiguation);
+        return array($keywords, $reference, $disambiguation, $has_disambiguation_book);
     }
 }
