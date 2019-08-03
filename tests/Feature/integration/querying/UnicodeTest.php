@@ -21,6 +21,20 @@ class UnicodeTest extends TestCase {
         $this->assertFalse($Engine->hasErrors());
     }
 
+    public function testSpanishLookup() {
+        if(!Engine::isBibleEnabled('rvg')) {
+            $this->markTestSkipped('Bible martin not installed or enabled');
+        }
+
+        $Engine = new Engine();
+        $Engine->setDefaultDataType('raw');
+        $results = $Engine->actionQuery(['bible' => 'rvg', 'request' => 'Efe 1', 'whole_words' => FALSE]); // Ephesians
+        $this->assertFalse($Engine->hasErrors());
+
+        $results = $Engine->actionQuery(['bible' => 'rvg', 'request' => 'Eph', 'whole_words' => FALSE]); // Ephesians, as 'eph' won't match any text here
+        $this->assertFalse($Engine->hasErrors());
+    }
+
     public function testItalian() {
         if(!Engine::isBibleEnabled('diodati')) {
             $this->markTestSkipped('Bible diodati not installed or enabled');
