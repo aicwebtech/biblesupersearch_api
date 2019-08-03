@@ -1,5 +1,10 @@
 Bible SuperSearch API Changelog
 
+= 4.0.2 / Aug 3, 2019
+* Bugfix: RVG Module was missing language information
+* Bugfix: Better disambiguation when using foreign language Bibles
+* Bugfix: Fixed more issues with matching language of book name to selected Bible
+
 = 4.0.1 // July 20, 2019
 * Improved command-line based Bible installers to make them a little more user-friendly.
 * Bugfix: Resolved issues with searching for terms containing Unicode characters
