@@ -409,6 +409,23 @@ class Engine {
     }
 
     /**
+     * API action for downloading a rendering of a Bible
+     * @param array $input
+     */
+    public function actionDownload($input) {
+        !empty($input['bible']) && $this->setBibles($input['bible']);
+        $bible = array_keys($this->Bibles);
+        $input['multi_bibles'] = (count($input['bible']) > 1) ? TRUE : FALSE;
+        $format = (!empty($input['format'])) ? $input['format'] : NULL;
+
+        $Manager = new \App\RenderManager;
+    }
+
+    public function actionDownloadlist($input) {
+        return \App\RenderManager::getRendererList();
+    }
+
+    /**
      * API Action query for getting the list of books for the specified language.
      * @param array $input
      */
@@ -446,6 +463,7 @@ class Engine {
         $response->bibles       = $this->actionBibles($input);
         $response->books        = $this->actionBooks($input);
         $response->shortcuts    = $this->actionShortcuts($input);
+        $response->downloads    = array_values(RenderManager::getRendererList());
         $response->search_types = config('bss.search_types');
         $response->name         = config('app.name');
         $response->version      = config('app.version');
