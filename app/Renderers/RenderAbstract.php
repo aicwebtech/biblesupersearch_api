@@ -5,6 +5,8 @@ namespace App\Renderers;
 use App\Models\Bible;
 
 abstract class RenderAbstract {
+    use Traits\Error;
+
     static public $name;
     static public $description;
 

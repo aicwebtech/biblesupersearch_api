@@ -37,12 +37,7 @@ class Engine {
         $this->primary_language = NULL;
         $this->multi_bibles = FALSE;
 
-        if(is_string($modules)) {
-            $decoded = json_decode($modules);
-            $modules = (json_last_error() == JSON_ERROR_NONE) ? $decoded : $modules;
-        }
-
-        $modules = (is_array($modules)) ? $modules : array($modules);
+        $modules = $this->_parseInputArray($modules);
         $Bibles = Bible::whereIn('module', $modules)->get();
         $primary = NULL;
 
@@ -57,6 +52,16 @@ class Engine {
 
         $this->setPrimaryBible($primary);
         $this->primary_language = $this->primary_language ?: config('bss.defaults.language_short');
+    }
+
+    protected function _parseInputArray($input) {
+        if(is_string($input)) {
+            $decoded = json_decode($input);
+            $input = (json_last_error() == JSON_ERROR_NONE) ? $decoded : $input;
+        }
+
+        $input = (is_array($input)) ? $input : array($input);
+        return $input;
     }
 
     public function setPrimaryBible($module) {
@@ -413,12 +418,40 @@ class Engine {
      * @param array $input
      */
     public function actionDownload($input) {
-        !empty($input['bible']) && $this->setBibles($input['bible']);
-        $bible = array_keys($this->Bibles);
-        $input['multi_bibles'] = (count($input['bible']) > 1) ? TRUE : FALSE;
-        $format = (!empty($input['format'])) ? $input['format'] : NULL;
+        if(empty($input['bible'])) {
+            $this->addError('Bible is required');
+            return FALSE;
+        }
 
-        $Manager = new \App\RenderManager;
+        if(empty($input['format'])) {
+            $this->addError('Format is required');
+            return FALSE;
+        }
+
+        if($input['bible'] == 'ALL') {
+            $modules = 'ALL';
+        }
+        else {
+            $this->setBibles($input['bible']);
+            $modules = array_keys($this->Bibles);
+        }
+
+        if($input['format'] == 'ALL') {
+            $format = 'ALL';
+        }
+        else {
+            $format = $this->_parseInputArray($input['format']);
+        }
+
+        $Manager = new \App\RenderManager($modules, $format, $input['zip']);
+        $Manager->render();
+
+        if(!$Manager->download()) {
+            $this->setErrors( $Manager->getErrors(), $Manager->getErrorLevel());
+            return FALSE;
+        }
+
+        // This action, when successful, returns a file, and not a standard JSON output
     }
 
     public function actionDownloadlist($input) {

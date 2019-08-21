@@ -214,6 +214,14 @@ class Bible extends Model {
         return $info;
     }
 
+    public function isDownloadable() {
+        if($this->restrict) {
+            return FALSE;
+        }
+
+        return TRUE;
+    }
+
     public function updateMetaInfo($create_if_needed = FALSE) {
         $path = $this->getModuleFilePath();
 
