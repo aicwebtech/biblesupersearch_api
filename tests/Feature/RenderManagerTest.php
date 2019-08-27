@@ -20,4 +20,12 @@ class RenderManagerTest extends TestCase {
         $this->assertArrayHasKey('desc', $list['text']);
         $this->assertArrayHasKey('desc', $list['pdf']);
     }
+
+    public function testRender() {
+        $TextRender = new \App\Renderers\PlainText('kjv');
+        $success = $TextRender->render(TRUE);
+
+        $this->assertTrue($success);
+        $this->assertFalse($TextRender->hasErrors());
+    }
 }
