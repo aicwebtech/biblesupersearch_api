@@ -1,7 +1,7 @@
 <?php
 
 namespace App;
-use Models\Bible;
+use App\Models\Bible;
 
 class RenderManager {
     use Traits\Error;
@@ -18,8 +18,8 @@ class RenderManager {
     protected $multi_format = FALSE;
 
     public function __construct($modules, $format, $zip = FALSE) {
-        $this->multi_bibles = ($modules == 'ALL' || count($modules) > 2) ? TRUE : FALSE;
-        $this->multi_format = ($format  == 'ALL' || count($format)  > 2) ? TRUE : FALSE;
+        $this->multi_bibles = ($modules == 'ALL' || count($modules) > 1) ? TRUE : FALSE;
+        $this->multi_format = ($format  == 'ALL' || count($format)  > 1) ? TRUE : FALSE;
         $this->zip = ($this->multi_bibles && $this->multi_format) ? TRUE : $zip;
 
         if($this->multi_bibles && $this->multi_format) {
@@ -31,6 +31,8 @@ class RenderManager {
             $this->format = array_keys(static::$register);
         }
         else {
+            $format = (array) $format;
+
             foreach($format as $fm) {
                 if(!static::$register[$fm]) {
                     $this->addError("Format {$fm} does not exist!");
@@ -45,6 +47,8 @@ class RenderManager {
             $this->_selectAllBibles();
         }
         else {
+            $modules = (array) $modules;
+
             foreach($modules as $module) {
                 $Bible = Bible::findByModule($module);
 
@@ -77,12 +81,24 @@ class RenderManager {
         }
     }
 
-    public function render() {
+    public function render($overwrite = FALSE) {
         if($this->hasErrors()) {
             return FALSE;
         }
 
+        foreach($this->format as $format) {
+            $CLASS = static::$register[$format];
 
+            foreach($this->Bibles as $Bible) {
+                $Renderer = new $CLASS($Bible);
+
+                if(!$Renderer->render($overwrite)) {
+                    $this->addErrors($Renderer->getErrors(), $Renderer->getErrorLevel());
+                }
+            }
+        }
+
+        return !$this->hasErrors();
     }
 
     public function download() {
@@ -90,6 +106,75 @@ class RenderManager {
             return FALSE;
         }
 
+        $rs = $this->render();
+
+        if(!$rs) {
+            return FALSE;
+        }
+
+        $download_file_path = NULL;
+
+        if($this->multi_bibles || $this->multi_format || $this->zip) {
+            $date = new \DateTime();
+            $zip_filename = 'truth_' . $date->format('Ymd_His_u') . '.zip';
+
+            // Create Zip File in tmp dir
+            $dir = sys_get_temp_dir();
+            $zip_path = $dir . $zip_filename;
+            $Zip = new \ZipArchive;
+
+            if(!$Zip->open($zip_path, \ZipArchive::CREATE)) {
+                return $this->addError('Unable to create ZIP file <tmppath>/' . $zip_filename);
+            }
+
+            // Copy all appropiate files into Zip file
+            foreach($this->format as $format) {
+                $CLASS = static::$register[$format];
+
+                foreach($this->Bibles as $Bible) {
+                    $Renderer = new $CLASS($Bible);
+                    $filepath = $Renderer->getRenderFilePath();
+                    $Zip->addFile($filepath);
+                }
+            }
+
+            $Zip->close();
+
+            // Send Zip file to browser as download
+            $download_file_path = $zip_path;
+            $download_file_name = $zip_filename;
+        }
+        else {
+            $format = $this->format[0];
+            $Bible = $this->Bible[0];
+            $CLASS = static::$register[$format];
+            $Renderer = new $Class($Bible);
+            $download_file_path = $Renderer->getRenderFilePath();
+            $download_file_name = basename($download_file_path);
+
+            // Send file to browser as download
+        }
+
+        if(file_exists($download_file_path)) {
+            header('Content-Description: File Transfer');
+            header('Content-Type: application/octet-stream');
+            header('Content-Disposition: attachment; filename=' . $download_file_name);
+            header('Content-Transfer-Encoding: binary');
+            header('Expires: 0');
+            header('Cache-Control: must-revalidate, post-check=0, pre-check=0');
+            header('Pragma: public');
+            header('Content-Length: ' . filesize($download_file_path));
+
+            readfile($download_file_path);
+
+            exit;
+        }
+        else {
+            return $this->addError('Unknown error - download file no longer exists');
+        }
+    }
+
+    static public function cleanUp() {
 
     }
 
@@ -101,9 +186,26 @@ class RenderManager {
                 'format' => $format,
                 'name'   => $CLASS::$name,
                 'desc'   => $CLASS::$description,
+                'CLASS'  => $CLASS,
             ];
         }
 
         return $list;
+    }
+
+    static public function getRenderFilepath($format, $module) {
+        $basedir = Renderers\RenderAbstract::getRenderBasePath();
+
+        $CLASS = static::$register[$format];
+
+        if(!$format || !$CLASS) {
+            return FALSE;
+        }
+
+        $cc = explode('\\', $CLASS);
+        $basename = array_pop($cc);
+
+        return $basedir . $basename . '/' . $module;
+
     }
 }

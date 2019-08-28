@@ -22,7 +22,7 @@ abstract class RenderAbstract {
     protected $include_special = FALSE;  // Include italics / strongs fields (that may not be used anymore)
 
     public function __construct($module) {
-        $this->Bible = Bible::findByModule($module);
+        $this->Bible = ($module instanceof Bible) ? $module : Bible::findByModule($module);
 
         if(!$this->Bible) {
             $this->addError( trans('errors.bible_no_exist', ['module' => $module]) );
