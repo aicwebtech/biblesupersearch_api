@@ -408,6 +408,7 @@ class Engine {
 
         foreach($Bibles as $Bible) {
             $bibles[$Bible->module] = $Bible->getAttributes();
+            $bibles[$Bible->module]['downloadable'] = $Bible->isDownloadable();
         }
 
         return $bibles;
@@ -419,12 +420,14 @@ class Engine {
      */
     public function actionDownload($input) {
         if(empty($input['bible'])) {
-            $this->addError('Bible is required');
-            return FALSE;
+            $this->addError('Bible is required', 4);
         }
 
         if(empty($input['format'])) {
-            $this->addError('Format is required');
+            $this->addError('Format is required', 4);
+        }
+
+        if($this->hasErrors()) {
             return FALSE;
         }
 
@@ -443,11 +446,19 @@ class Engine {
             $format = $this->_parseInputArray($input['format']);
         }
 
-        $Manager = new \App\RenderManager($modules, $format, $input['zip']);
-        $Manager->render();
+
+        if(array_key_exists('zip', $input)) {
+            $zip = ($input['zip']) ? TRUE : FALSE;
+        }
+        else {
+            $zip = FALSE;
+        }
+
+        $Manager = new \App\RenderManager($modules, $format, $zip);
+        // $Manager->render();
 
         if(!$Manager->download()) {
-            $this->setErrors( $Manager->getErrors(), $Manager->getErrorLevel());
+            $this->addErrors( $Manager->getErrors(), $Manager->getErrorLevel());
             return FALSE;
         }
 

@@ -12,6 +12,11 @@ class ApiController extends Controller {
 
     public function genericAction($action = 'query', Request $Request) {
         $allowed_actions = ['query', 'bibles', 'books', 'statics', 'version', 'readcache', 'strongs'];
+
+        if(config('download.enable')) {
+            $allowed_actions[] = 'download';
+        }
+
         $debug_input = FALSE;
         $_SESSION['debug'] = array();
 

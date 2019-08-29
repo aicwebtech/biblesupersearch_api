@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use App\Engine;
 use App\Models\Post;
+use App\RenderManager;
 
 class DocumentationController extends Controller {
     public function __construct() {
@@ -23,6 +24,7 @@ class DocumentationController extends Controller {
             'TOS'       => $TOS,
             'Privacy'   => $Privacy,
             'version'   => $Engine->getHardcodedVersion(),
+            'formats'   => RenderManager::getRendererList(),
         ]);
     }
 }

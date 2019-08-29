@@ -81,7 +81,7 @@ class RenderManager {
         }
     }
 
-    public function render($overwrite = FALSE) {
+    public function render($overwrite = FALSE, $suppress_overwrite_error = TRUE) {
         if($this->hasErrors()) {
             return FALSE;
         }
@@ -92,7 +92,7 @@ class RenderManager {
             foreach($this->Bibles as $Bible) {
                 $Renderer = new $CLASS($Bible);
 
-                if(!$Renderer->render($overwrite)) {
+                if(!$Renderer->render($overwrite, $suppress_overwrite_error)) {
                     $this->addErrors($Renderer->getErrors(), $Renderer->getErrorLevel());
                 }
             }
@@ -113,13 +113,16 @@ class RenderManager {
         }
 
         $download_file_path = NULL;
+        $delete_file = FALSE;
 
         if($this->multi_bibles || $this->multi_format || $this->zip) {
             $date = new \DateTime();
             $zip_filename = 'truth_' . $date->format('Ymd_His_u') . '.zip';
 
             // Create Zip File in tmp dir
-            $dir = sys_get_temp_dir();
+            // $dir = sys_get_temp_dir();
+            $dir = Renderers\RenderAbstract::getRenderBasePath(); // . 'temp_zip/';
+            $delete_file = TRUE;
             $zip_path = $dir . $zip_filename;
             $Zip = new \ZipArchive;
 
@@ -134,7 +137,7 @@ class RenderManager {
                 foreach($this->Bibles as $Bible) {
                     $Renderer = new $CLASS($Bible);
                     $filepath = $Renderer->getRenderFilePath();
-                    $Zip->addFile($filepath);
+                    $Zip->addFile($filepath, basename($filepath));
                 }
             }
 
@@ -145,10 +148,10 @@ class RenderManager {
             $download_file_name = $zip_filename;
         }
         else {
-            $format = $this->format[0];
-            $Bible = $this->Bible[0];
-            $CLASS = static::$register[$format];
-            $Renderer = new $Class($Bible);
+            $format     = $this->format[0];
+            $Bible      = $this->Bibles[0];
+            $CLASS      = static::$register[$format];
+            $Renderer   = new $CLASS($Bible);
             $download_file_path = $Renderer->getRenderFilePath();
             $download_file_name = basename($download_file_path);
 
@@ -166,6 +169,10 @@ class RenderManager {
             header('Content-Length: ' . filesize($download_file_path));
 
             readfile($download_file_path);
+
+            if($delete_file) {
+                unlink($download_file_path);
+            }
 
             exit;
         }

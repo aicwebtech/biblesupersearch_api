@@ -4,6 +4,7 @@
 
 return array(
     'action' => 'Action',
+    'usage' => 'Usage',
     'see' => 'See',
     'results' => 'Results',
     'description' => 'Description',
@@ -20,6 +21,8 @@ return array(
     'bibles_avail' => 'Bibles Available via API',
     'tos' => 'Terms of Service',
     'privacy' => 'Privacy Policy',
+    'download' => 'Download',
+    'free_download' => 'Free Downloads',
 
     'bible_fields' => array(
         'module' => 'Module',
@@ -34,6 +37,7 @@ return array(
         'rank_desc' => 'Default sorting order.',
         'italics_desc' => '(Future use) Supports Italicised words ',
         'strongs_desc' => '(Future use) Embedded strongs numbers',
+        'downloadable' => 'Downloadable',
         'research' => 'Research',
         'research_desc' => 'Indicates a Bible text that does not nessessarily adhere to the traditional Textus Receptus Greek and Masoretic Hebrew.'
         . ' These texts are intended for research purposes only.',
@@ -106,6 +110,19 @@ return array(
             'tvm' => 'TVM record, "tvm" will be populated, and other items will be empty.',
             'def' => 'Definition record, "tvm" will be empty.'
         ]
+    ),
+    'download' => array(
+        'name' => 'Bible File Download',
+        'description' => 'Returns the given Bible module(s) as a file download, rendered into the selected format',
+        'params' => array(
+            'strongs' => array(
+                'type' => 'String',
+                'name' => 'Strong\'s Number(s)',
+                'default' => '(none)',
+                'description' => 'Retrieve Strong\'s definitions for the given Strong\'s numbers. Can be a single string, a comma-separated string or a '
+                . 'JSON-encoded array',
+            ),
+        ),
     ),
     'statics' => array(
         'name' => 'Statics',

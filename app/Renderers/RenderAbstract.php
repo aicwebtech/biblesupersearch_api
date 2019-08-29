@@ -37,7 +37,7 @@ abstract class RenderAbstract {
      * Generates the output file and saves it to disk
      * @return boolean
      */
-    public function render($overwrite = FALSE) {
+    public function render($overwrite = FALSE, $suppress_overwrite_error = FALSE) {
         if($this->hasErrors()) {
             return FALSE;
         }
@@ -45,6 +45,10 @@ abstract class RenderAbstract {
         $file_path = $this->getRenderFilePath();
 
         if(!$overwrite && is_file($file_path)) {
+            if($suppress_overwrite_error) {
+                return TRUE;
+            }
+
             return $this->addError('File already exists');
         }
 
@@ -81,6 +85,14 @@ abstract class RenderAbstract {
         $success = $this->_renderFinish();
 
         return $success;
+    }
+
+    /**
+     * If render file does not exist, generates the output file and saves it to disk
+     * @return boolean
+     */
+    public function renderIfNeeded() {
+        return $this->render(FALSE, TRUE);
     }
 
     /**

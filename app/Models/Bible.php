@@ -215,7 +215,7 @@ class Bible extends Model {
     }
 
     public function isDownloadable() {
-        if($this->restrict) {
+        if($this->restrict || $this->copyright) {
             return FALSE;
         }
 

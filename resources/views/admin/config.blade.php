@@ -3,8 +3,9 @@
 
     $javascripts = [
         '/js/bin/enyo/2.5.1.1/enyo.js',
-        '/js/bin/custom/alert/package.js'
-    ]
+        '/js/bin/custom/alert/package.js',
+        '/js/admin/config.js',
+    ];
 ?>
 
 @extends('layouts.admin')
@@ -221,6 +222,82 @@
                         </table>
                     </div>
                     <div style="clear:both"></div>
+                        <div class='config_block'>
+                        <h1>Downloads</h1>
+
+                        <table>
+                            <tbody>
+                                <tr>
+                                    <td class='ralign' style='width:169px'>Enable Downloads: </td>
+                                    <td>
+                                        <label for='download_enable_1'>Yes</label>
+                                        <input
+                                            type='radio' name='download__enable' value='1' id='download_enable_1'
+                                            @if($configs['download.enable'] == 1)checked='checked'@endif
+                                         />
+                                        <label for='download_enable_0'>No</label>
+                                        <input
+                                            type='radio' name='download__enable' value='0' id='download_enable_0'
+                                            @if($configs['download.enable'] == 0)checked='checked'@endif
+                                            />
+                                        <span class='info'>
+                                            <span>i</span>
+                                            <p>
+                                                This enables the basic download functionality, including download of Bibles via the API.
+                                            </p>
+                                        </span>
+                                    </td>
+                                </tr>
+                            </tbody>
+                            <tbody id='download_addl_settings' @if($configs['download.enable'] == 0)style='display:none'@endif>
+                                <tr><td colspan='2'>&nbsp;</td></tr>
+                                <tr>
+                                    <td class='ralign'>Enable Downloads Tab: </td>
+                                    <td>
+                                        <label for='download_tab_enable_1'>Yes</label>
+                                        <input
+                                            type='radio' name='download__tab_enable' value='1' id='download_tab_enable_1'
+                                            @if($configs['download.tab_enable'] == 1)checked='checked'@endif
+                                         />
+                                        <label for='download_tab_enable_0'>No</label>
+                                        <input
+                                            type='radio' name='download__tab_enable' value='0' id='download_tab_enable_0'
+                                            @if($configs['download.tab_enable'] == 0)checked='checked'@endif
+                                            />
+                                        <span class='info'>
+                                            <span>i</span>
+                                            <p>
+                                                This enables a tab with links to download files on the API documentation page.
+                                            </p>
+                                        </span>
+                                    </td>
+                                </tr>
+                                   <tr>
+                                    <td class='ralign'>Days to Retain Files: </td>
+                                    <td>
+                                        <input name='download__cache__days' size='5' value='{{$configs['download.cache.days']}}'>
+                                        <span class='info'>
+                                            <span>i</span>
+                                            <p>Number of days to retain a Bible file before being deleted.  0 = unlimited days.  </p>
+                                        </span>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td class='ralign'>Maximum File Size: </td>
+                                    <td>
+                                        <input name='download__cache__max_filesize' size='5' value='{{$configs['download.cache.max_filesize']}}'> MB
+                                        <span class='info'>
+                                            <span>i</span>
+                                            <p>
+                                                Maximum allowable size of retained files.  Files larger than this will be deleted immediately after download.
+                                                Most Bibles will be about 5 - 10 MB.  0 = unlimited size
+                                            </p>
+                                        </span>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
                 <div style="clear:both"></div>
                 <div style='text-align: center'>
