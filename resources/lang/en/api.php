@@ -115,12 +115,26 @@ return array(
         'name' => 'Bible File Download',
         'description' => 'Returns the given Bible module(s) as a file download, rendered into the selected format',
         'params' => array(
-            'strongs' => array(
-                'type' => 'String',
-                'name' => 'Strong\'s Number(s)',
+            'bible' => array(
+                'type' => 'String - multiple',
+                'name' => 'Bibles',
                 'default' => '(none)',
-                'description' => 'Retrieve Strong\'s definitions for the given Strong\'s numbers. Can be a single string, a comma-separated string or a '
-                . 'JSON-encoded array',
+                'description' => '(required) MODULE of the Bible(s) to download. Can be a string, array or JSON-encoded array. &nbsp;'
+                . 'Set to ALL to get all downloadable Bibles'
+            ),
+            'format' => array(
+                'type' => 'String - multiple',
+                'name' => 'Format',
+                'default' => '(none)',
+                'description' => '(required) Format of the Bibles to download. Can be a string, array or JSON-encoded array. &nbsp;'
+                . 'See list of options below.'
+            ),
+            'zip' => array(
+                'type' => 'Boolean',
+                'name' => 'ZIP',
+                'default' => 'FALSE',
+                'description' => 'If specified, forces a ZIP file download when one Bible or format is selected. &nbsp;'
+                . 'Note: Selecting multiple Bibles or formats<br />automatially returns a ZIP file, and this parameter is ignored'
             ),
         ),
     ),
@@ -132,6 +146,7 @@ return array(
         . '<li>A list of Bible books in the specified language</li>'
         . '<li>A list of shortcuts in the specified language</li>'
         . '<li>A list of search types</li>'
+        . '<li>A list of download formats</li>'
         . '<li>The API name</li>'
         . '<li>The API version</li>'
         . '<li>The API environment (production/beta/development)</li>'

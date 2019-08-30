@@ -504,14 +504,14 @@ class Engine {
 
     public function actionStatics($input) {
         $response = new \stdClass;
-        $response->bibles       = $this->actionBibles($input);
-        $response->books        = $this->actionBooks($input);
-        $response->shortcuts    = $this->actionShortcuts($input);
-        $response->downloads    = array_values(RenderManager::getRendererList());
-        $response->search_types = config('bss.search_types');
-        $response->name         = config('app.name');
-        $response->version      = config('app.version');
-        $response->environment  = config('app.env');
+        $response->bibles           = $this->actionBibles($input);
+        $response->books            = $this->actionBooks($input);
+        $response->shortcuts        = $this->actionShortcuts($input);
+        $response->download_formats = array_values(RenderManager::getRendererList());
+        $response->search_types     = config('bss.search_types');
+        $response->name             = config('app.name');
+        $response->version          = config('app.version');
+        $response->environment      = config('app.env');
         return $response;
     }
 

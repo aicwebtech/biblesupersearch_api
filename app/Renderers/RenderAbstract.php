@@ -84,6 +84,8 @@ abstract class RenderAbstract {
         $this->_afterVerseRender();
         $success = $this->_renderFinish();
 
+        chmod($this->getRenderFilePath(), 0775);
+
         return $success;
     }
 
@@ -149,6 +151,12 @@ abstract class RenderAbstract {
 
     public function output() {
 
+    }
+
+    protected function _htmlToPlainText($html) {
+        $text = strip_tags($html);
+        $text = str_replace(['<br />', '<br>'], PHP_EOL, $text);
+        return $text;
     }
 
     public function getRenderFilePath($create_dir = FALSE) {

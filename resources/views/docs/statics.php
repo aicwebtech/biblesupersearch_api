@@ -19,6 +19,7 @@
         "books": [ ... ],  // <?php echo trans('api.see') . ' ' . trans('api.books.name')  . ' ' . trans('api.action'). PHP_EOL ?>
         "search_types": [ ... ],
         "shortcuts": [ ... ],
+        "download_formats": [ ... ],
         "name": "<?php echo config('app.name') ?>",
         "version": "<?php echo config('app.version') ?>",
         "environment": "<?php echo config('app.env') ?>",
