@@ -384,7 +384,9 @@ class Engine {
      */
     public function actionBibles($input) {
         $include_desc = FALSE;
-        $Bibles = Bible::select('bibles.name','shortname','module','year','languages.name AS lang','lang_short','copyright','italics','strongs','red_letter','paragraph','rank','research');
+        $Bibles = Bible::select('bibles.name','shortname','module','year','languages.name AS lang','lang_short','copyright','italics','strongs','red_letter',
+                'paragraph','rank','research','copyright_id','copyright_statement');
+        
         $Bibles->leftJoin('languages', 'bibles.lang_short', 'languages.code');
         $bibles = array(); // Array of associative arrays
 

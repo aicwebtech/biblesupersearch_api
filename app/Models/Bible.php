@@ -46,6 +46,9 @@ class Bible extends Model {
         'import_file',
     );
 
+    protected $attributes = [
+        'copyright_id' => NULL,
+    ];
 
     // List of fields to NOT export when creating modules
     protected $do_not_export = array('id', 'created_at', 'updated_at', 'enabled', 'installed');
@@ -217,9 +220,10 @@ class Bible extends Model {
     }
 
     public function isDownloadable() {
-        var_dump($this->copyright_id, $this->copyright);
-
-        var_dump($this->getAttributes('copyright_id'));
+        var_dump($this->copyright_id);
+//
+//        var_dump($this->attributes);
+//        die();
 
         if($this->restrict || !$this->copyright_id) {
             echo('no copyright');
@@ -230,8 +234,8 @@ class Bible extends Model {
         if(!$this->copyrightInfo) {
             $copyrightInfo = Copyright::find($this->copyright_id);
         }
-
-//        die();
+        var_dump($this->copyrightInfo);
+        die();
 
         if(!$this->copyrightInfo || !$this->copyrightInfo->download) {
             return FALSE;
@@ -240,9 +244,9 @@ class Bible extends Model {
         return TRUE;
     }
 
-//    public function copyrightInfo() {
-//        return $this->belongsTo('App\Models\Copyright', 'id', 'copyright_id');
-//    }
+    public function copyrightInfo() {
+        return $this->belongsTo('App\Models\Copyright', 'id', 'copyright_id');
+    }
 
     public function updateMetaInfo($create_if_needed = FALSE) {
         $path = $this->getModuleFilePath();
