@@ -25,6 +25,8 @@ class Bible extends Model {
         'year',
         'description',
         'copyright',
+        'copyright_id',
+        'copyright_statement',
         'italics',
         'strongs',
         'red_letter',
@@ -215,12 +217,32 @@ class Bible extends Model {
     }
 
     public function isDownloadable() {
-        if($this->restrict || $this->copyright) {
+        var_dump($this->copyright_id, $this->copyright);
+
+        var_dump($this->getAttributes('copyright_id'));
+
+        if($this->restrict || !$this->copyright_id) {
+            echo('no copyright');
+            return FALSE;
+        }
+
+
+        if(!$this->copyrightInfo) {
+            $copyrightInfo = Copyright::find($this->copyright_id);
+        }
+
+//        die();
+
+        if(!$this->copyrightInfo || !$this->copyrightInfo->download) {
             return FALSE;
         }
 
         return TRUE;
     }
+
+//    public function copyrightInfo() {
+//        return $this->belongsTo('App\Models\Copyright', 'id', 'copyright_id');
+//    }
 
     public function updateMetaInfo($create_if_needed = FALSE) {
         $path = $this->getModuleFilePath();
@@ -293,7 +315,6 @@ class Bible extends Model {
             $this->migrate_code = 3; // no module files
             return TRUE;
         }
-
     }
 
     public function getModuleFilePath($short = FALSE) {
