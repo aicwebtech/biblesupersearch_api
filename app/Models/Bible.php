@@ -220,22 +220,9 @@ class Bible extends Model {
     }
 
     public function isDownloadable() {
-        var_dump($this->copyright_id);
-//
-//        var_dump($this->attributes);
-//        die();
-
         if($this->restrict || !$this->copyright_id) {
-            echo('no copyright');
             return FALSE;
         }
-
-
-        if(!$this->copyrightInfo) {
-            $copyrightInfo = Copyright::find($this->copyright_id);
-        }
-        var_dump($this->copyrightInfo);
-        die();
 
         if(!$this->copyrightInfo || !$this->copyrightInfo->download) {
             return FALSE;
@@ -244,8 +231,20 @@ class Bible extends Model {
         return TRUE;
     }
 
+    public function getCopyrightStatement() {
+        if($this->copyright_statement) {
+            return $this->copyright_statement;
+        }
+
+        if($this->copyright_id) {
+            return $this->copyrightInfo->default_copyright_statement;
+        }
+
+        return $this->description;
+    }
+
     public function copyrightInfo() {
-        return $this->belongsTo('App\Models\Copyright', 'id', 'copyright_id');
+        return $this->hasOne('App\Models\Copyright', 'id', 'copyright_id');
     }
 
     public function updateMetaInfo($create_if_needed = FALSE) {

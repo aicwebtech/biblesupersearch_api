@@ -22,7 +22,7 @@ class PlainText extends RenderAbstract {
         $filepath = $this->getRenderFilePath(TRUE);
         $this->handle = fopen($filepath, 'w');
         fwrite($this->handle, $this->Bible->name . PHP_EOL . PHP_EOL);
-        fwrite($this->handle, $this->_htmlToPlainText($this->Bible->description) . PHP_EOL . PHP_EOL . PHP_EOL);
+        fwrite($this->handle, $this->_getCopyrightStatement(TRUE) . PHP_EOL . PHP_EOL . PHP_EOL);
         return TRUE;
     }
 

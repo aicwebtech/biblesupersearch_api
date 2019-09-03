@@ -7,8 +7,9 @@ class RenderManager {
     use Traits\Error;
 
     static public $register = [
-        'text'      => \App\Renderers\PlainText::class,
         'pdf'       => \App\Renderers\PdfPrintable::class,
+        'text'      => \App\Renderers\PlainText::class,
+        'csv'       => \App\Renderers\Csv::class,
     ];
 
     protected $Bibles = [];

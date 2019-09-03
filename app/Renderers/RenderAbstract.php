@@ -153,9 +153,20 @@ abstract class RenderAbstract {
 
     }
 
+    protected function _getCopyrightStatement($plain_text = FALSE) {
+        $cr_statement = $this->Bible->getCopyrightStatement();
+
+        if(config('download.derivative_copyright_statement')) {
+            $dr_statement = str_replace('YYYY', date('Y'), config('download.derivative_copyright_statement'));
+            $cr_statement .= '<br /><br />' . $dr_statement;
+        }
+
+        return ($plain_text) ? $this->_htmlToPlainText($cr_statement) : $cr_statement;
+    }
+
     protected function _htmlToPlainText($html) {
-        $text = strip_tags($html);
-        $text = str_replace(['<br />', '<br>'], PHP_EOL, $text);
+        $text = str_replace(['<br />', '<br>'], PHP_EOL, $html);
+        $text = strip_tags($text);
         return $text;
     }
 

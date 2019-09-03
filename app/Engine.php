@@ -386,7 +386,7 @@ class Engine {
         $include_desc = FALSE;
         $Bibles = Bible::select('bibles.name','shortname','module','year','languages.name AS lang','lang_short','copyright','italics','strongs','red_letter',
                 'paragraph','rank','research','copyright_id','copyright_statement');
-        
+
         $Bibles->leftJoin('languages', 'bibles.lang_short', 'languages.code');
         $bibles = array(); // Array of associative arrays
 
@@ -401,7 +401,7 @@ class Engine {
             $Bibles -> orderBy('rank', 'ASC');
         }
 
-        $Bibles = $Bibles -> where('enabled', 1) -> get() -> all();
+        $Bibles = $Bibles -> where('enabled', 1) -> with('copyrightInfo') -> get() -> all();
 
         if(empty($Bibles)) {
             $this->addError(trans('errors.no_bible_enabled'));
@@ -411,6 +411,7 @@ class Engine {
         foreach($Bibles as $Bible) {
             $bibles[$Bible->module] = $Bible->getAttributes();
             $bibles[$Bible->module]['downloadable'] = $Bible->isDownloadable();
+//            $bibles[$Bible->module]['copyright_statement'] = $Bible->isDownloadable();
         }
 
         return $bibles;

@@ -41,7 +41,7 @@ class RenderManagerTest extends TestCase {
             $this->markTestSkipped('Rendering tests skipped to save time');
         }
 
-        $Manager = new RenderManager(['kjv', 'tr', 'bishops'], 'text');
+        $Manager = new RenderManager(['kjv', 'rvg', 'bishops'], 'csv');
 
         $success = $Manager->render(TRUE);
         $this->assertTrue($success);

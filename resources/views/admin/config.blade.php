@@ -295,6 +295,16 @@
                                         </span>
                                     </td>
                                 </tr>
+                                <tr><td colspan="2">&nbsp;</td></tr>
+                                <tr><th colspan="2">Derivative Copyright Notice</th></tr>
+                                <tr><td colspan="2">If provided, will be appended to the copyright notice on each Bible file.</td></tr>
+                                <tr><td colspan="2">HTML is allowed.  YYYY will be replaced by the current year.</td></tr>
+                                <tr>
+                                    <td colspan="2">
+                                        <textarea style='width: 100%; height: 100px'
+                                            name='download__derivative_copyright_statement'>{{$configs['download.derivative_copyright_statement']}}</textarea>
+                                    </td>
+                                </tr>
                             </tbody>
                         </table>
                     </div>
