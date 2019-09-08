@@ -16,7 +16,6 @@ class PlainText extends RenderAbstract {
 
     /**
      * This initializes the file, and does other pre-rendering work
-     * @param bool $overwrite
      */
     protected function _renderStart() {
         $filepath = $this->getRenderFilePath(TRUE);
