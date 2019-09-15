@@ -18,12 +18,11 @@ abstract class PdfAbstract extends RenderAbstract {
     protected $pdf_width            = 8.5;      // Width, in $this->pdf_unit units.  Ignored if $this->pdf_format is specified
     protected $pdf_height           = 11;       // Height, in $this->pdf_unit units.  Ignored if $this->pdf_format is specified
     protected $pdf_columns          = 4;        // Number of columns of verses
-    protected $pdf_margin           = 10;        // General margin size, in $this->pdf_unit units
+    protected $pdf_column_width     = 47;       // Width of column, in $this->pdf_unit units.
+    protected $pdf_margin           = 8;        // General margin size, in $this->pdf_unit units
     protected $pdf_top_margin       = 10;        // Top margin size, in $this->pdf_unit units
-    protected $pdf_font_family      = 'times';
-    protected $pdf_font_family_lang = [
-                                        'ar' => 'aefurat', // needed for Arabic Bibles
-                                    ];
+    protected $pdf_font_family      = 'freeserif'; // Unicode-friendly serif font
+    // protected $pdf_font_family      = 'times';
     protected $pdf_text_size        = 10;
     protected $pdf_title_size       = 16;
     protected $pdf_header_size      = 8;
@@ -35,7 +34,18 @@ abstract class PdfAbstract extends RenderAbstract {
     protected $pdf_chapter_style    = 'B';
     protected $pdf_chapter_align    = 'C';
     protected $pdf_text_align       = 'J';
-    protected $pdf_verses_paragraph = FALSE;     // Needs to auto-detect
+    protected $pdf_verses_paragraph = 'auto';     // Needs to auto-detect
+
+    protected $pdf_language_overrides = [
+        'ar' => [
+            // 'pdf_font_family'   => 'aefurat', // do not use
+            'pdf_column_width'  => 45,
+        ],
+        'zh' => [
+            'pdf_font_family' => 'msungstdlight',
+        ]
+    ];
+
     /* END PDF-specific settings */
 
     protected $text_pending = ''; 
@@ -46,6 +56,8 @@ abstract class PdfAbstract extends RenderAbstract {
 
     public function __construct($module) {
         parent::__construct($module);
+
+        $this->_applyPdfLanguageOverride();
 
         $format = $this->pdf_format ?: [$this->pdf_width, $this->pdf_height];
         $this->TCPDF  = new $this->tcpdf_class($this->pdf_orientation, $this->pdf_unit, $format);
@@ -102,15 +114,19 @@ abstract class PdfAbstract extends RenderAbstract {
         // $this->TCPDF->addPage();
 
         if($this->pdf_columns > 1) {
-            $this->TCPDF->setEqualColumns($this->pdf_columns);
+            $this->TCPDF->setEqualColumns($this->pdf_columns, $this->pdf_column_width);
         }
 
         return TRUE;
     }
 
     protected function _renderSingleVerse($verse) {
-        if($verse->book > 2) {
-            // return;
+        if($verse->id > 200) {
+            return;
+        }
+
+        if($this->pdf_verses_paragraph === 'auto') {
+            $this->pdf_verses_paragraph = (strpos($verse->text, '¶') !== FALSE) ? TRUE : FALSE;
         }
 
         $this->TCPDF->current_book      = $verse->book_name;
@@ -149,6 +165,7 @@ abstract class PdfAbstract extends RenderAbstract {
             }
 
             $this->text_pending .= $text . '  ';
+
         }
 
         $this->last_render_book         = $verse->book;
@@ -161,6 +178,7 @@ abstract class PdfAbstract extends RenderAbstract {
             $this->TCPDF->Ln();   
         }
 
+        $this->TCPDF->endPage();
         $this->TCPDF->setEqualColumns(0);
         $this->TCPDF->current_book    = NULL;
         $this->TCPDF->current_chapter = NULL;
@@ -225,5 +243,13 @@ abstract class PdfAbstract extends RenderAbstract {
         $this->TCPDF->Ln();
         $this->TCPDF->Ln();
         $this->TCPDF->setFont($this->pdf_font_family, $this->pdf_text_size);
+    }
+
+    protected function _applyPdfLanguageOverride() {
+        if(array_key_exists($this->Bible->lang_short, $this->pdf_language_overrides) && is_array($this->pdf_language_overrides[ $this->Bible->lang_short ])) {
+            foreach($this->pdf_language_overrides[ $this->Bible->lang_short ] as $key => $value) {
+                $this->$key = $value;
+            }
+        }
     }
 }

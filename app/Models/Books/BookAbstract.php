@@ -182,7 +182,7 @@ class BookAbstract extends Model
     }
 
     static public function getSupportedLanguages() {
-        return ['ar', 'de', 'en', 'es', 'fr', 'hu', 'it', 'nl', 'ro', 'ru'];
+        return ['ar', 'de', 'en', 'es', 'fr', 'hu', 'it', 'nl', 'ro', 'ru', 'zh'];
     }
 
     static public function isSupportedLanguage($lang_code) {
