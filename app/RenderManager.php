@@ -2,6 +2,8 @@
 
 namespace App;
 use App\Models\Bible;
+use App\Models\Process;
+use App\ProcessManager;
 
 class RenderManager {
     use Traits\Error;
@@ -35,7 +37,7 @@ class RenderManager {
             $format = (array) $format;
 
             foreach($format as $fm) {
-                if(!static::$register[$fm]) {
+                if(!array_key_exists($fm, static::$register)) {
                     $this->addError("Format {$fm} does not exist!");
                     continue;
                 }
@@ -82,15 +84,37 @@ class RenderManager {
         }
     }
 
-    public function render($overwrite = FALSE, $suppress_overwrite_error = TRUE) {
+    public function render($overwrite = FALSE, $suppress_overwrite_error = TRUE, $bypass_render_limit = FALSE) {
         if($this->hasErrors()) {
             return FALSE;
         }
 
         foreach($this->format as $format) {
             $CLASS = static::$register[$format];
+            $limit = $CLASS::getRenderBiblesLimit();
 
-            foreach($this->Bibles as $Bible) {
+            if($overwrite) {
+                $Bibles_Needing_Render = $this->Bibles;
+            }
+            else {
+                $Bibles_Needing_Render = [];
+
+                foreach($this->Bibles as $Bible) {
+                    $Renderer = new $CLASS($Bible);
+
+                    if(!file_exists($Renderer->getRenderFilePath())) {
+                        $Bibles_Needing_Render[] = $Bible;
+                    }
+                }
+            }
+
+            if(!$bypass_render_limit && $limit !== TRUE && count($Bibles_Needing_Render) > $limit) {
+                $this->_createDetatchedProcess($format, $Bibles_Needing_Render, $overwrite);
+                return $this->addError('The requested Bibles will take a while to render.  Please come back in an hour and try your download again.');
+            }
+
+            
+            foreach($Bibles_Needing_Render as $Bible) {
                 $Renderer = new $CLASS($Bible);
 
                 if(!$Renderer->render($overwrite, $suppress_overwrite_error)) {
@@ -180,6 +204,51 @@ class RenderManager {
         else {
             return $this->addError('Unknown error - download file no longer exists');
         }
+    }
+
+    protected function _createDetatchedProcess($format, $Bibles_Needing_Render, $overwrite = FALSE) {
+        $Pending = Process::where('status', 'pending')->where('form_action', 'download')->get()->all();
+
+        $pending_bibles = $process_bibles = [];
+
+        foreach($Pending as $Process) {
+            $data = json_decode($Process->form_data);
+            $pending_bibles = array_merge($pending_bibles, $data->bible);
+        }
+
+        foreach($Bibles_Needing_Render as $Bible) {
+            if(!in_array($Bible->module, $pending_bibles)) {
+                $process_bibles[] = $Bible->module;
+            }
+        }
+
+        if(empty($process_bibles)) {
+            return;
+        }
+
+        $cmd = 'php ../artisan bible:render 2>&1'; // . $format . ' "' . implode(',', $process_bibles) . '"'; 
+
+        if($overwrite) {
+            $cmd .= ' --overwrite';
+        }
+
+        // Use Laravel queues???
+
+        // var_dump(getcwd());
+
+        // die($cmd);
+
+        $handle = popen($cmd, 'r');
+
+        echo "handle: '$handle'; " . gettype($handle) . "\n";
+        $read = fread($handle, 2096);
+        echo 'read' . $read;
+
+        if(!is_resource($handle)) {
+            return $this->addError('Unable to start render process');
+        }
+
+        pclose($handle);
     }
 
     static public function cleanUp() {

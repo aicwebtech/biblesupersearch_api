@@ -10,6 +10,10 @@ abstract class RenderAbstract {
 
     static public $name;
     static public $description;
+
+    static protected $render_bibles_limit = 3; // Maximum number of Bibles to render with the given format before detatched process is required.   Set to TRUE to never require detatched process.
+
+
     protected $file_extension;
 
     protected $Bible;
@@ -190,6 +194,10 @@ abstract class RenderAbstract {
 
     public static function getRenderBasePath() {
         return dirname(__FILE__) . '/../../bibles/rendered/';
+    }
+
+    public static function getRenderBiblesLimit() {
+        return static::$render_bibles_limit;
     }
 }
 
