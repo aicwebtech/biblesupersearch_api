@@ -449,7 +449,6 @@ class Engine {
             $format = $this->_parseInputArray($input['format']);
         }
 
-
         if(array_key_exists('zip', $input)) {
             $zip = ($input['zip']) ? TRUE : FALSE;
         }
@@ -457,10 +456,22 @@ class Engine {
             $zip = FALSE;
         }
 
+        $sanitized = [
+            'format'    => $format,
+            'modules'   => $modules,
+            'zip'       => $zip,
+            'email'     => array_key_exists('email', $input) ? $input['email'] : NULL,
+            'contents'  => array_key_exists('contents', $input) ? $input['contents'] : NULL,
+        ];
+
         $Manager = new \App\RenderManager($modules, $format, $zip);
         // $Manager->render();
 
         if(!$Manager->download()) {
+            if($Manager->needsProcess()) {
+                \App\Jobs\ProcessRender::dispatch($sanitized);
+            }
+
             $this->addErrors( $Manager->getErrors(), $Manager->getErrorLevel());
             return FALSE;
         }

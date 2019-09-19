@@ -38,6 +38,10 @@ class BibleRender extends Command
      * @return mixed
      */
     public function handle() {
+        // if (posix_getpid() != posix_getsid(getmypid())) {
+        //     posix_setsid();
+        // }
+
         $format     = $this->argument('format');
         $bible      = $this->argument('bible');
         $overwrite  = $this->option('overwrite');

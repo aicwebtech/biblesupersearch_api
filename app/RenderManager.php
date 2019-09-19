@@ -19,6 +19,7 @@ class RenderManager {
     protected $zip = FALSE;
     protected $multi_bibles = FALSE;
     protected $multi_format = FALSE;
+    protected $needs_process = FALSE;
 
     public function __construct($modules, $format, $zip = FALSE) {
         $this->multi_bibles = ($modules == 'ALL' || count($modules) > 1) ? TRUE : FALSE;
@@ -89,6 +90,8 @@ class RenderManager {
             return FALSE;
         }
 
+        $this->needs_process = FALSE;
+
         foreach($this->format as $format) {
             $CLASS = static::$register[$format];
             $limit = $CLASS::getRenderBiblesLimit();
@@ -109,7 +112,9 @@ class RenderManager {
             }
 
             if(!$bypass_render_limit && $limit !== TRUE && count($Bibles_Needing_Render) > $limit) {
-                $this->_createDetatchedProcess($format, $Bibles_Needing_Render, $overwrite);
+                // create detatched process on 'php artisan queue:work --once ONLY' if jobs table is EMPTY
+                // $this->_createDetatchedProcess($format, $Bibles_Needing_Render, $overwrite);
+                $this->needs_process = TRUE;
                 return $this->addError('The requested Bibles will take a while to render.  Please come back in an hour and try your download again.');
             }
 
@@ -206,6 +211,10 @@ class RenderManager {
         }
     }
 
+    public function needsProcess() {
+        return $this->needs_process;
+    }
+
     protected function _createDetatchedProcess($format, $Bibles_Needing_Render, $overwrite = FALSE) {
         $Pending = Process::where('status', 'pending')->where('form_action', 'download')->get()->all();
 
@@ -226,17 +235,28 @@ class RenderManager {
             return;
         }
 
-        $cmd = 'php ../artisan bible:render 2>&1'; // . $format . ' "' . implode(',', $process_bibles) . '"'; 
+        $cmd = 'php ' . $_SERVER['DOCUMENT_ROOT'] . '../artisan bible:render ' . $format . ' "' . implode(',', $process_bibles) . '"'; 
 
         if($overwrite) {
             $cmd .= ' --overwrite';
         }
 
+        // $cmd .= ' > /dev/null 2>&1';
+        // $cmd .= ' > /dev/null & ';
+        $cmd .= ' > /dev/null ';
+
         // Use Laravel queues???
+
+        // See these options on php artisan queue:work
+        //  --once
+        //  --stop-when-empty
 
         // var_dump(getcwd());
 
         // die($cmd);
+
+        exec($cmd);
+        return TRUE;
 
         $handle = popen($cmd, 'r');
 
@@ -249,6 +269,7 @@ class RenderManager {
         }
 
         pclose($handle);
+        return TRUE;
     }
 
     static public function cleanUp() {
