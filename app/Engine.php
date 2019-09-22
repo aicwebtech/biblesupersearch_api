@@ -418,10 +418,24 @@ class Engine {
     }
 
     /**
+     * API action for rendering of a Bible
+     * @param array $input
+     */
+    public function actionRender($input) {    
+        return $this->_renderDownloadHelper($input, FALSE);
+    }
+
+    /**
      * API action for downloading a rendering of a Bible
+     * This action, when successful, returns a file, and not a standard JSON output
      * @param array $input
      */
     public function actionDownload($input) {
+        return $this->_renderDownloadHelper($input, TRUE);
+    }
+
+    protected function _renderDownloadHelper($input, $download = false) {
+
         if(empty($input['bible'])) {
             $this->addError('Bible is required', 4);
         }
@@ -465,18 +479,49 @@ class Engine {
         ];
 
         $Manager = new \App\RenderManager($modules, $format, $zip);
-        // $Manager->render();
+        $success = ($download) ? $Manager->download() :  $Manager->getBiblesNeedingRender();
 
-        if(!$Manager->download()) {
+        if(!$success) {
             if($Manager->needsProcess()) {
+                $HasJobs = Models\Job::where('queue', 'default')->count();
+
+                var_dump($HasJobs);
+
                 \App\Jobs\ProcessRender::dispatch($sanitized);
+
+                if(!$HasJobs) {
+                    // $this->_startQueueProcess();
+                }
             }
 
             $this->addErrors( $Manager->getErrors(), $Manager->getErrorLevel());
             return FALSE;
         }
+        elseif(!$download) {
+            $response = new \stdClass;
+            $response->success = TRUE;
+            return $response;
+        }
+    }
 
-        // This action, when successful, returns a file, and not a standard JSON output
+    protected function _startQueueProcess($queue = 'default') {
+        $cmd = 'php ' . $_SERVER['DOCUMENT_ROOT'] . '../artisan queue:work --stop-when-empty'; 
+
+        // $cmd .= ' > /dev/null 2>&1';
+        // $cmd .= ' > /dev/null & ';
+        $cmd .= ' > /dev/null ';
+
+        // Use Laravel queues???
+
+        // See these options on php artisan queue:work
+        //  --once
+        //  --stop-when-empty
+
+        var_dump($cmd);
+        // die($cmd);
+
+        exec($cmd);
+        return TRUE;
     }
 
     public function actionDownloadlist($input) {

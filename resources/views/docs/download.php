@@ -1,4 +1,4 @@
-<form action='/api/download' method='POST'>
+<form action='/api/download' method='POST' id='bible_download_form'>
     <div style='float:left; width: 40%'>
         <h2>Select Bible(s)</h2>
         Some Bibles are not available due to copyright restrictions. <br /><br />

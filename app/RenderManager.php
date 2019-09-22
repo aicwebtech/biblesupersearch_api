@@ -85,6 +85,36 @@ class RenderManager {
         }
     }
 
+    public function getBiblesNeedingRender($format = NULL, $overwrite = FALSE, $bypass_render_limit = FALSE) {
+        $format = $format ?: $this->format[0];
+        $CLASS = static::$register[$format];
+        $limit = $CLASS::getRenderBiblesLimit();
+
+        if($overwrite) {
+            $Bibles_Needing_Render = $this->Bibles;
+        }
+        else {
+            $Bibles_Needing_Render = [];
+
+            foreach($this->Bibles as $Bible) {
+                $Renderer = new $CLASS($Bible);
+
+                if(!file_exists($Renderer->getRenderFilePath())) {
+                    $Bibles_Needing_Render[] = $Bible;
+                }
+            }
+        }
+
+        if(!$bypass_render_limit && $limit !== TRUE && count($Bibles_Needing_Render) > $limit) {
+            // create detatched process on 'php artisan queue:work --once ONLY' if jobs table is EMPTY
+            $this->_createDetatchedProcess($format, $Bibles_Needing_Render, $overwrite);
+            // $this->needs_process = TRUE;
+            return $this->addError('The requested Bibles will take a while to render.  Please come back in an hour and try your download again.');
+        }
+
+        return $Bibles_Needing_Render;
+    }
+
     public function render($overwrite = FALSE, $suppress_overwrite_error = TRUE, $bypass_render_limit = FALSE) {
         if($this->hasErrors()) {
             return FALSE;
@@ -94,30 +124,12 @@ class RenderManager {
 
         foreach($this->format as $format) {
             $CLASS = static::$register[$format];
-            $limit = $CLASS::getRenderBiblesLimit();
 
-            if($overwrite) {
-                $Bibles_Needing_Render = $this->Bibles;
+            $Bibles_Needing_Render = $this->getBiblesNeedingRender($format, $overwrite, $bypass_render_limit);
+
+            if($Bibles_Needing_Render === FALSE) {
+                return FALSE;
             }
-            else {
-                $Bibles_Needing_Render = [];
-
-                foreach($this->Bibles as $Bible) {
-                    $Renderer = new $CLASS($Bible);
-
-                    if(!file_exists($Renderer->getRenderFilePath())) {
-                        $Bibles_Needing_Render[] = $Bible;
-                    }
-                }
-            }
-
-            if(!$bypass_render_limit && $limit !== TRUE && count($Bibles_Needing_Render) > $limit) {
-                // create detatched process on 'php artisan queue:work --once ONLY' if jobs table is EMPTY
-                // $this->_createDetatchedProcess($format, $Bibles_Needing_Render, $overwrite);
-                $this->needs_process = TRUE;
-                return $this->addError('The requested Bibles will take a while to render.  Please come back in an hour and try your download again.');
-            }
-
             
             foreach($Bibles_Needing_Render as $Bible) {
                 $Renderer = new $CLASS($Bible);
@@ -243,7 +255,8 @@ class RenderManager {
 
         // $cmd .= ' > /dev/null 2>&1';
         // $cmd .= ' > /dev/null & ';
-        $cmd .= ' > /dev/null ';
+        // $cmd .= ' > /dev/null ';
+        $cmd .= ' > ' . $_SERVER['DOCUMENT_ROOT'] . '../bibles/rendered/log_' . time() . '.txt';
 
         // Use Laravel queues???
 

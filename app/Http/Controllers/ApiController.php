@@ -14,6 +14,7 @@ class ApiController extends Controller {
         $allowed_actions = ['query', 'bibles', 'books', 'statics', 'version', 'readcache', 'strongs'];
 
         if(config('download.enable')) {
+            $allowed_actions[] = 'render';
             $allowed_actions[] = 'download';
         }
 

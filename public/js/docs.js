@@ -1,3 +1,5 @@
+var bibleDownloadGo = false;
+
 $( function() {
     $( "#tabs" ).tabs();
     $( "#actions_tabs" ).tabs();
@@ -40,8 +42,21 @@ $( function() {
 
         if(!hasBibles || !hasFormat) {
             alert(err);
+        }
+
+        $.ajax({
+            url: '/api/render',
+            data: $('#bible_download_form').serialize(),
+            dataType: 'json',
+            success: function(data, status, xhr) {
+                console.log('success', data);
+            },
+            error: function(xhr, status, error) {
+                console.log('error', xhr);
+            }
+        })
+
             e.preventDefault();
             return false;
-        }
     });
 });

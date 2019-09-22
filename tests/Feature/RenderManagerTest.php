@@ -45,7 +45,12 @@ class RenderManagerTest extends TestCase {
         // $Manager = new RenderManager(['kjv', 'rvg'], 'pdf');
         $Manager = new RenderManager(['kjv', 'rvg', 'svd', 'thaikjv', 'synodal', 'tr', 'wlc','bkr', 'stve', 'cornilescu', 'chinese_union'], 'pdf');
 
-        $success = $Manager->render(TRUE);
+        $success = $Manager->render(TRUE, TRUE, TRUE);
+
+        if(!$success) {
+            print_r($Manager->getErrors());
+        }
+
         $this->assertTrue($success);
         $this->assertFalse($Manager->hasErrors());
     }
