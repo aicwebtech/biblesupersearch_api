@@ -10,31 +10,32 @@ abstract class PdfAbstract extends RenderAbstract {
     protected $include_book_name = TRUE;
 
     /* PDF-specific settings */
-    // protected $tcpdf_class          = \TCPDF::class;
-    protected $tcpdf_class          = TCPDFBible::class;
-    protected $pdf_orientation      = 'P';
-    protected $pdf_format           = 'LETTER';  // For options, see TCPDF_STATIC::$page_formats
-    protected $pdf_unit             = 'mm';
-    protected $pdf_width            = 8.5;      // Width, in $this->pdf_unit units.  Ignored if $this->pdf_format is specified
-    protected $pdf_height           = 11;       // Height, in $this->pdf_unit units.  Ignored if $this->pdf_format is specified
-    protected $pdf_columns          = 4;        // Number of columns of verses
-    protected $pdf_column_width     = 47;       // Width of column, in $this->pdf_unit units.
-    protected $pdf_margin           = 8;        // General margin size, in $this->pdf_unit units
-    protected $pdf_top_margin       = 10;        // Top margin size, in $this->pdf_unit units
-    protected $pdf_font_family      = 'freeserif'; // Unicode-friendly serif font
-    // protected $pdf_font_family      = 'times';
-    protected $pdf_text_size        = 10;
-    protected $pdf_title_size       = 16;
-    protected $pdf_header_size      = 8;
-    protected $pdf_header_style     = 'B';    
-    protected $pdf_book_size        = 12;
-    protected $pdf_book_style       = 'B';    
-    protected $pdf_book_align       = 'C';
-    protected $pdf_chapter_size     = 10;
-    protected $pdf_chapter_style    = 'B';
-    protected $pdf_chapter_align    = 'C';
-    protected $pdf_text_align       = 'J';
-    protected $pdf_verses_paragraph = 'auto';     // Needs to auto-detect
+    // protected $tcpdf_class           = \TCPDF::class;
+    protected $tcpdf_class              = TCPDFBible::class;
+    protected $pdf_orientation          = 'P';
+    protected $pdf_format               = 'LETTER';  // For options, see TCPDF_STATIC::$page_formats
+    protected $pdf_unit                 = 'mm';
+    protected $pdf_width                = 8.5;      // Width, in $this->pdf_unit units.  Ignored if $this->pdf_format is specified
+    protected $pdf_height               = 11;       // Height, in $this->pdf_unit units.  Ignored if $this->pdf_format is specified
+    protected $pdf_columns              = 4;        // Number of columns of verses
+    protected $pdf_column_width         = 47;       // Width of column, in $this->pdf_unit units.
+    protected $pdf_margin               = 8;        // General margin size, in $this->pdf_unit units
+    protected $pdf_top_margin           = 10;        // Top margin size, in $this->pdf_unit units
+    protected $pdf_font_family          = 'freeserif'; // Unicode-friendly serif font
+    // protected $pdf_font_family       = 'times';
+    protected $pdf_text_size            = 10;
+    protected $pdf_title_size           = 16;
+    protected $pdf_header_size          = 8;
+    protected $pdf_header_style         = 'B';    
+    protected $pdf_book_size            = 12;
+    protected $pdf_book_style           = 'B';    
+    protected $pdf_book_align           = 'C';
+    protected $pdf_chapter_size         = 10;
+    protected $pdf_chapter_style        = 'B';
+    protected $pdf_chapter_align        = 'C';
+    protected $pdf_text_align           = 'J';
+    protected $pdf_brackets_to_italics  = TRUE;
+    protected $pdf_verses_paragraph     = 'auto';     // Needs to auto-detect
 
     protected $pdf_language_overrides = [
         'ar' => [
@@ -121,8 +122,8 @@ abstract class PdfAbstract extends RenderAbstract {
     }
 
     protected function _renderSingleVerse($verse) {
-        if($verse->id > 200) {
-            // return;
+        if($verse->id > 20) {
+            return;
         }
 
         if($this->pdf_verses_paragraph === 'auto') {
@@ -145,19 +146,22 @@ abstract class PdfAbstract extends RenderAbstract {
 
         if(!$this->pdf_verses_paragraph) {
             // Verse format
-            $this->TCPDF->Write(0, $text, '', FALSE, $this->pdf_text_align);
-            $this->TCPDF->Ln();            
+            // $this->TCPDF->Write(0, $text, '', FALSE, $this->pdf_text_align);
+            // $this->TCPDF->Ln();       
+            $this->_writeText($text);     
         }
         else {
             // Paragraph format (preferred)
 
             if (strpos($verse->text, '¶') !== FALSE) {
-                if($this->text_pending) {
-                    $this->TCPDF->Write(0, $this->text_pending, '', FALSE, $this->pdf_text_align);
-                    $this->TCPDF->Ln();   
-                }
+                // if($this->text_pending) {
+                //     $this->TCPDF->Write(0, $this->text_pending, '', FALSE, $this->pdf_text_align);
+                //     $this->TCPDF->Ln();   
+                // }
 
-                $this->text_pending = '';
+                // $this->text_pending = '';
+
+                $this->_writeText();
             }
 
             if(!$this->text_pending) {
@@ -165,18 +169,68 @@ abstract class PdfAbstract extends RenderAbstract {
             }
 
             $this->text_pending .= $text . '  ';
-
         }
 
         $this->last_render_book         = $verse->book;
         $this->last_render_chapter      = $verse->chapter;
     }
 
-    protected function _renderFinish() {
-        if($this->text_pending) {
-            $this->TCPDF->Write(0, $this->text_pending, '', FALSE, $this->pdf_text_align);
-            $this->TCPDF->Ln();   
+    protected function _writeText($text = NULL) {
+        if(!$text) {
+            $text = $this->text_pending;
+            $this->text_pending = '';
         }
+
+        if(!$text) {
+            return;
+        }
+
+        if(!$this->pdf_brackets_to_italics) {
+            $this->TCPDF->Write(0, $text, '', FALSE, $this->pdf_text_align);
+            $this->TCPDF->Ln(); 
+            return;
+        }
+
+        $text_test = trim($text);
+
+        // Write as HTML - works but is SLOW!  Takes 3x as long.  And it alters the margins some
+        // $html = str_replace(array('[', ']', '  '), array('<i>', '</i>', '&nbsp;&nbsp;'), $text);
+        // $this->TCPDF->WriteHTML($html, TRUE, FALSE, FALSE, FALSE, $this->pdf_text_align);
+        // return;
+
+        $mod = ($text_test{0} == '[') ? 0 : 1;
+        $pieces = preg_split("/\[|]/", $text);
+
+        print_r($pieces);
+        // die();
+
+        foreach($pieces as $key => $t) {
+            $style = ($key % 2 == $mod) ? 'I' : '';
+            var_dump($style);
+
+            $this->TCPDF->SetFont($this->pdf_font_family, $style);
+
+            // while($t) {
+            //     $t = $this->TCPDF->Write(0, $t, '', FALSE, $this->pdf_text_align, FALSE, 0, TRUE); // 'works' but text not justified
+            // }
+            // $this->TCPDF->Write(0, $t, '', FALSE, $this->pdf_text_align, TRUE); // doesn't work
+
+            $this->TCPDF->Cell(0, 0, $t, 0, 0, $this->pdf_text_align);     // doesn't work
+            // $this->TCPDF->MultiCell(0, 0, $t, 0, $this->pdf_text_align);  // doesn't work
+        }
+
+        // die();
+        
+        $this->TCPDF->Ln(); 
+    }
+
+    protected function _renderFinish() {
+        $this->_writeText();
+
+        // if($this->text_pending) {
+        //     $this->TCPDF->Write(0, $this->text_pending, '', FALSE, $this->pdf_text_align);
+        //     $this->TCPDF->Ln();   
+        // }
 
         $this->TCPDF->endPage();
         $this->TCPDF->setEqualColumns(0);
@@ -207,6 +261,8 @@ abstract class PdfAbstract extends RenderAbstract {
     }
 
     protected function _renderNewBook($book, $book_name, $chapter = 1) {
+        $this->_writeText();
+
         // if($book == 1) {
         //     $this->TCPDF->addPage();
 
@@ -233,6 +289,7 @@ abstract class PdfAbstract extends RenderAbstract {
     }
 
     protected function _renderNewChapter($chapter) {
+        $this->_writeText();
 
         // todo - translate this!
         $chapter_name = 'Chapter ' . $chapter;

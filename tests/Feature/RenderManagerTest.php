@@ -41,9 +41,10 @@ class RenderManagerTest extends TestCase {
             $this->markTestSkipped('Rendering tests skipped to save time');
         }
 
+        $Manager = new RenderManager(['kjv'], 'pdf');
         // $Manager = new RenderManager(['chinese_union'], 'pdf');
         // $Manager = new RenderManager(['kjv', 'rvg'], 'pdf');
-        $Manager = new RenderManager(['kjv', 'rvg', 'svd', 'thaikjv', 'synodal', 'tr', 'wlc','bkr', 'stve', 'cornilescu', 'chinese_union'], 'pdf');
+        // $Manager = new RenderManager(['kjv', 'rvg', 'svd', 'thaikjv', 'synodal', 'tr', 'wlc','bkr', 'stve', 'cornilescu', 'chinese_union'], 'pdf');
 
         $success = $Manager->render(TRUE, TRUE, TRUE);
 
