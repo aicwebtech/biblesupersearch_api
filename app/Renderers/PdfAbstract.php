@@ -123,7 +123,7 @@ abstract class PdfAbstract extends RenderAbstract {
 
     protected function _renderSingleVerse($verse) {
         if($verse->id > 20) {
-            return;
+            // return;
         }
 
         if($this->pdf_verses_paragraph === 'auto') {
@@ -185,6 +185,8 @@ abstract class PdfAbstract extends RenderAbstract {
             return;
         }
 
+        // Todo: quick exit if Bible doesn't support italics, red letter, or strongs
+        // if(!$this->pdf_brackets_to_italics || (!$this->Bible->italics || !$this->Bible->)) {
         if(!$this->pdf_brackets_to_italics) {
             $this->TCPDF->Write(0, $text, '', FALSE, $this->pdf_text_align);
             $this->TCPDF->Ln(); 
@@ -193,27 +195,35 @@ abstract class PdfAbstract extends RenderAbstract {
 
         $text_test = trim($text);
 
-        // Write as HTML - works but is SLOW!  Takes 3x as long.  And it alters the margins some
-        // $html = str_replace(array('[', ']', '  '), array('<i>', '</i>', '&nbsp;&nbsp;'), $text);
-        // $this->TCPDF->WriteHTML($html, TRUE, FALSE, FALSE, FALSE, $this->pdf_text_align);
-        // return;
+        // This takes ~ 6.0 min
+       //  Write as HTML - works but is SLOW!  Takes 3x as long.  And it alters the margins some
+        $html = str_replace(array('‹', '›', '[', ']', '  '), array('<u>', '</u>', '<i>', '</i>', '&nbsp;&nbsp;'), $text);
+        $this->TCPDF->WriteHTML($html, TRUE, FALSE, FALSE, FALSE, $this->pdf_text_align);
+        // $this->TCPDF->writeHTMLCell(0,0,0,0, $html); // TAKES FOREVER - do not use as is
+        return;
 
         $mod = ($text_test{0} == '[') ? 0 : 1;
         $pieces = preg_split("/\[|]/", $text);
 
-        print_r($pieces);
+
+        // print_r($pieces);
         // die();
+        $first_line = TRUE;
 
         foreach($pieces as $key => $t) {
             $style = ($key % 2 == $mod) ? 'I' : '';
-            var_dump($style);
+            // var_dump($style);
 
             $this->TCPDF->SetFont($this->pdf_font_family, $style);
 
+            // This takes ~ 4.25 min
             // while($t) {
-            //     $t = $this->TCPDF->Write(0, $t, '', FALSE, $this->pdf_text_align, FALSE, 0, TRUE); // 'works' but text not justified
+            //     $t = $this->TCPDF->Write(0, $t, '', FALSE, $this->pdf_text_align, FALSE, 4, TRUE, $first_line); // 'works' but text not justified
+            //     $first_line = FALSE;
             // }
-            // $this->TCPDF->Write(0, $t, '', FALSE, $this->pdf_text_align, TRUE); // doesn't work
+            
+            // $this->TCPDF->Write(0, $t, '', FALSE, $this->pdf_text_align, TRUE); // doesn't work, 1.85 min
+            // $this->TCPDF->Write(0, $t, '', FALSE, $this->pdf_text_align, FALSE, 0, FALSE, $first_line); // doesn't work
 
             $this->TCPDF->Cell(0, 0, $t, 0, 0, $this->pdf_text_align);     // doesn't work
             // $this->TCPDF->MultiCell(0, 0, $t, 0, $this->pdf_text_align);  // doesn't work
