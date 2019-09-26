@@ -36,6 +36,7 @@ abstract class PdfAbstract extends RenderAbstract {
     protected $pdf_text_align           = 'J';
     protected $pdf_brackets_to_italics  = TRUE;
     protected $pdf_verses_paragraph     = 'auto';     // Needs to auto-detect
+    protected $pdf_red_letter_tag       = 'red';
 
     protected $pdf_language_overrides = [
         'ar' => [
@@ -195,9 +196,26 @@ abstract class PdfAbstract extends RenderAbstract {
 
         $text_test = trim($text);
 
+        switch($this->pdf_red_letter_tag) {
+            case 'red' :
+                $rl_st = "<span style='color:rgb(255, 0, 0);'>";
+                $rl_en = "</span>";
+                break;
+            case 'u':
+            case 'b':
+                $rl_st = '<' . $this->pdf_red_letter_tag . '>';
+                $rl_en = '</' . $this->pdf_red_letter_tag . '>';
+                break;
+            default: 
+                $rl_st = $rl_en = '';
+        }
+
+        // var_dump($rl_st, $rl_en);
+        // die();
+
         // This takes ~ 6.0 min
        //  Write as HTML - works but is SLOW!  Takes 3x as long.  And it alters the margins some
-        $html = str_replace(array('‹', '›', '[', ']', '  '), array('<u>', '</u>', '<i>', '</i>', '&nbsp;&nbsp;'), $text);
+        $html = str_replace(array('‹', '›', '[', ']', '  '), array($rl_st, $rl_en, '<i>', '</i>', '&nbsp;&nbsp;'), $text);
         $this->TCPDF->WriteHTML($html, TRUE, FALSE, FALSE, FALSE, $this->pdf_text_align);
         // $this->TCPDF->writeHTMLCell(0,0,0,0, $html); // TAKES FOREVER - do not use as is
         return;
