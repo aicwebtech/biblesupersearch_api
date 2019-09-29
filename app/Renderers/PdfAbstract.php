@@ -34,7 +34,7 @@ abstract class PdfAbstract extends RenderAbstract {
     protected $pdf_chapter_style        = 'B';
     protected $pdf_chapter_align        = 'C';
     protected $pdf_text_align           = 'J';
-    protected $pdf_brackets_to_italics  = TRUE;
+    protected $pdf_brackets_to_italics  = FALSE;
     protected $pdf_verses_paragraph     = 'auto';     // Needs to auto-detect
     protected $pdf_red_letter_tag       = 'red';
 
@@ -123,7 +123,7 @@ abstract class PdfAbstract extends RenderAbstract {
     }
 
     protected function _renderSingleVerse($verse) {
-        if($verse->id > 20) {
+        if($verse->id > 2000) {
             // return;
         }
 
@@ -198,7 +198,7 @@ abstract class PdfAbstract extends RenderAbstract {
 
         switch($this->pdf_red_letter_tag) {
             case 'red' :
-                $rl_st = "<span style='color:rgb(255, 0, 0);'>";
+                $rl_st = '<span style="color:rgb(255, 0, 0);">';
                 $rl_en = "</span>";
                 break;
             case 'u':
@@ -210,27 +210,21 @@ abstract class PdfAbstract extends RenderAbstract {
                 $rl_st = $rl_en = '';
         }
 
-        // var_dump($rl_st, $rl_en);
-        // die();
 
         // This takes ~ 6.0 min
-       //  Write as HTML - works but is SLOW!  Takes 3x as long.  And it alters the margins some
+        //  Write as HTML - works but is SLOW!  Takes 3x as long.  And it alters the margins some
         $html = str_replace(array('‹', '›', '[', ']', '  '), array($rl_st, $rl_en, '<i>', '</i>', '&nbsp;&nbsp;'), $text);
         $this->TCPDF->WriteHTML($html, TRUE, FALSE, FALSE, FALSE, $this->pdf_text_align);
         // $this->TCPDF->writeHTMLCell(0,0,0,0, $html); // TAKES FOREVER - do not use as is
         return;
 
+        // Retaining the below test code for reference
         $mod = ($text_test{0} == '[') ? 0 : 1;
-        $pieces = preg_split("/\[|]/", $text);
-
-
-        // print_r($pieces);
-        // die();
+        $pieces = preg_split("/\[|]/", $text); // split text into pieces by [ and ]
         $first_line = TRUE;
 
         foreach($pieces as $key => $t) {
             $style = ($key % 2 == $mod) ? 'I' : '';
-            // var_dump($style);
 
             $this->TCPDF->SetFont($this->pdf_font_family, $style);
 

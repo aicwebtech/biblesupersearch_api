@@ -99,7 +99,7 @@ class RenderManager {
             foreach($this->Bibles as $Bible) {
                 $Renderer = new $CLASS($Bible);
 
-                if(!file_exists($Renderer->getRenderFilePath())) {
+                if($Renderer->isRenderNeeded()) {
                     $Bibles_Needing_Render[] = $Bible;
                 }
             }
@@ -134,7 +134,8 @@ class RenderManager {
             foreach($Bibles_Needing_Render as $Bible) {
                 $Renderer = new $CLASS($Bible);
 
-                if(!$Renderer->render($overwrite, $suppress_overwrite_error)) {
+                // if(!$Renderer->render($overwrite, $suppress_overwrite_error)) {
+                if(!$Renderer->render(TRUE, $suppress_overwrite_error)) {
                     $this->addErrors($Renderer->getErrors(), $Renderer->getErrorLevel());
                 }
             }

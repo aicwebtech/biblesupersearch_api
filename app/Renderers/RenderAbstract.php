@@ -3,6 +3,7 @@
 namespace App\Renderers;
 
 use App\Models\Bible;
+use App\Models\Rendering;
 use DB;
 
 abstract class RenderAbstract {
@@ -12,7 +13,9 @@ abstract class RenderAbstract {
     static public $description;
 
     static protected $render_bibles_limit = 3; // Maximum number of Bibles to render with the given format before detatched process is required.   Set to TRUE to never require detatched process.
-
+    static protected $render_version = 0.1;    // All render classes must have this - indicates the version number of the file.  Must be changed if the file is changed, to trigger re-rendering.
+    static protected $render_est_time = 60;    // Estimated time to render a Bible of the given format, in seconds.
+    static protected $render_est_size = 6;     // Estimated size to render a Bible of the given format, in MB.
 
     protected $file_extension;
 
@@ -24,6 +27,8 @@ abstract class RenderAbstract {
     protected $book_name_language_force = NULL;
     protected $book_name_field = 'name';
     protected $include_special = FALSE;  // Include italics / strongs fields (that may not be used anymore)
+
+    protected $Rendering = NULL;
 
     public function __construct($module) {
         $this->Bible = ($module instanceof Bible) ? $module : Bible::findByModule($module);
@@ -55,6 +60,8 @@ abstract class RenderAbstract {
 
             return $this->addError('File already exists');
         }
+
+        $start_time = time();
 
         $success = $this->_renderStart();
 
@@ -90,7 +97,38 @@ abstract class RenderAbstract {
 
         chmod($this->getRenderFilePath(), 0775);
 
+        $file_size_bytes = filesize($this->getRenderFilePath());
+        $file_size_mb    = round( $file_size_bytes / 1024 / 1024);
+
+        $Rendering = $this->_getRenderingRecord();
+        $Rendering->rendered_duration   = time() - $start_time;
+        $Rendering->copyright_hash      = md5($this->_getCopyrightStatement());
+        $Rendering->rendered_at         = date('Y-m-d H:i:s');
+        $Rendering->version             = static::$render_version;
+        $Rendering->file_size           = $file_size_mb;
+        $Rendering->save();
+
         return $success;
+    }
+
+    public function isRenderNeeded() {
+        $file_path = $this->getRenderFilePath();
+
+        if(!is_file($file_path)) {
+            return TRUE;
+        }
+
+        $Rendering = $this->_getRenderingRecord();
+
+        if(static::$render_version != floatval($Rendering->version) || !$Rendering->rendered_at) {
+            return TRUE;
+        }
+
+        if(md5($this->_getCopyrightStatement()) != $Rendering->copyright_hash) {
+            return TRUE;
+        }
+
+        return FALSE;
     }
 
     /**
@@ -166,6 +204,17 @@ abstract class RenderAbstract {
         }
 
         return ($plain_text) ? $this->_htmlToPlainText($cr_statement) : $cr_statement;
+    }
+
+    protected function _getRenderingRecord() {
+        if(!$this->Rendering) {
+            $cl = explode('\\', get_called_class());
+            $cl = array_pop($cl);
+
+            $this->Rendering = Rendering::firstOrCreate(['renderer' => $cl, 'module' => $this->Bible->module]);
+        }
+
+        return $this->Rendering;
     }
 
     protected function _htmlToPlainText($html) {
