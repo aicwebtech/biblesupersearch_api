@@ -50,6 +50,21 @@ class TCPDFBible extends TCPDF {
         $this->start_chapter = '';
     }
 
+    // public function checkColumnLn() {
+    //     if (($this->num_columns > 1) AND (isset($this->columns[$this->current_column]['x']) AND ($this->x == $this->columns[$this->current_column]['x'])) {
+    //         // revove vertical space from the top of the column
+    //         return;
+    //     }
+    // }
+
+    public function isNewLine() {
+        if($this->num_columns > 1) {
+            return (isset($this->columns[$this->current_column]['x']) AND ($this->x == $this->columns[$this->current_column]['x'])) ? TRUE : FALSE;
+        }
+
+        return FALSE;
+    }
+
     /**
         CUSTOMIZED VERSION OF TCPDF::addTOC();
 

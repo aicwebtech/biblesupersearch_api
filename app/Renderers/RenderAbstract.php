@@ -102,7 +102,7 @@ abstract class RenderAbstract {
 
         $Rendering = $this->_getRenderingRecord();
         $Rendering->rendered_duration   = time() - $start_time;
-        $Rendering->copyright_hash      = md5($this->_getCopyrightStatement());
+        $Rendering->meta_hash           = md5($this->_getMetaString());
         $Rendering->rendered_at         = date('Y-m-d H:i:s');
         $Rendering->version             = static::$render_version;
         $Rendering->file_size           = $file_size_mb;
@@ -124,7 +124,7 @@ abstract class RenderAbstract {
             return TRUE;
         }
 
-        if(md5($this->_getCopyrightStatement()) != $Rendering->copyright_hash) {
+        if(md5($this->_getMetaString()) != $Rendering->meta_hash) {
             return TRUE;
         }
 
@@ -193,6 +193,13 @@ abstract class RenderAbstract {
 
     public function output() {
 
+    }
+
+    protected function _getMetaString($plain_text = FALSE) {
+        $meta_string = $this->Bible->name;
+        $meta_string .= ' ' . $this->_getCopyrightStatement($plain_text);
+
+        return $meta_string;
     }
 
     protected function _getCopyrightStatement($plain_text = FALSE) {

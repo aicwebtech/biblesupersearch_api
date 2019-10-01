@@ -23,7 +23,7 @@ abstract class PdfAbstract extends RenderAbstract {
     protected $pdf_top_margin           = 10;        // Top margin size, in $this->pdf_unit units
     protected $pdf_font_family          = 'freeserif'; // Unicode-friendly serif font
     // protected $pdf_font_family       = 'times';
-    protected $pdf_text_size            = 10;
+    protected $pdf_text_size            = 9; // Compact: 9? or less, Regular: 12, Large: 14?
     protected $pdf_title_size           = 16;
     protected $pdf_header_size          = 8;
     protected $pdf_header_style         = 'B';    
@@ -34,7 +34,7 @@ abstract class PdfAbstract extends RenderAbstract {
     protected $pdf_chapter_style        = 'B';
     protected $pdf_chapter_align        = 'C';
     protected $pdf_text_align           = 'J';
-    protected $pdf_brackets_to_italics  = FALSE;
+    protected $pdf_brackets_to_italics  = TRUE;
     protected $pdf_verses_paragraph     = 'auto';     // Needs to auto-detect
     protected $pdf_red_letter_tag       = 'red';
 
@@ -65,7 +65,7 @@ abstract class PdfAbstract extends RenderAbstract {
         $this->TCPDF  = new $this->tcpdf_class($this->pdf_orientation, $this->pdf_unit, $format);
         $this->TCPDF->setHeaderMargin(10);
         $this->TCPDF->setFooterMargin(0);
-        $this->TCPDF->setFont($this->pdf_font_family, $this->pdf_text_size);
+        $this->TCPDF->setFont($this->pdf_font_family, '', $this->pdf_text_size);
         $this->TCPDF->setHeaderFont([$this->pdf_font_family, $this->pdf_header_style, $this->pdf_header_size]);
         $this->TCPDF->setFooterFont([$this->pdf_font_family, $this->pdf_header_style, $this->pdf_header_size]);
         $this->TCPDF->SetAutoPageBreak(TRUE, $this->pdf_margin);
@@ -87,11 +87,6 @@ abstract class PdfAbstract extends RenderAbstract {
 
         $title_height = $h / 5;
         $title_pos = $h / 2 - $title_height;
-
-        // var_dump($h);
-        // var_dump($title_height);
-        // var_dump($title_pos);
-        // die();
 
         $this->TCPDF->addPage();
         $this->TCPDF->setFontSize($this->pdf_title_size);
@@ -118,6 +113,8 @@ abstract class PdfAbstract extends RenderAbstract {
         if($this->pdf_columns > 1) {
             $this->TCPDF->setEqualColumns($this->pdf_columns, $this->pdf_column_width);
         }
+        
+        $this->TCPDF->setFontSize($this->pdf_text_size);
 
         return TRUE;
     }
@@ -133,6 +130,7 @@ abstract class PdfAbstract extends RenderAbstract {
 
         $this->TCPDF->current_book      = $verse->book_name;
         $this->TCPDF->current_chapter   = $verse->chapter;
+        $this->TCPDF->current_verse     = $verse->verse;
 
         if($verse->book != $this->last_render_book) {
             $this->_renderNewBook($verse->book, $verse->book_name, $verse->chapter);
@@ -152,16 +150,8 @@ abstract class PdfAbstract extends RenderAbstract {
             $this->_writeText($text);     
         }
         else {
-            // Paragraph format (preferred)
-
+            // Paragraph format (preferred - takes up less paper)
             if (strpos($verse->text, '¶') !== FALSE) {
-                // if($this->text_pending) {
-                //     $this->TCPDF->Write(0, $this->text_pending, '', FALSE, $this->pdf_text_align);
-                //     $this->TCPDF->Ln();   
-                // }
-
-                // $this->text_pending = '';
-
                 $this->_writeText();
             }
 
@@ -189,8 +179,16 @@ abstract class PdfAbstract extends RenderAbstract {
         // Todo: quick exit if Bible doesn't support italics, red letter, or strongs
         // if(!$this->pdf_brackets_to_italics || (!$this->Bible->italics || !$this->Bible->)) {
         if(!$this->pdf_brackets_to_italics) {
-            $this->TCPDF->Write(0, $text, '', FALSE, $this->pdf_text_align);
-            $this->TCPDF->Ln(); 
+            $this->TCPDF->Write(0, $text, '', FALSE, $this->pdf_text_align, TRUE);
+
+            // if(!$this->TCPDF->isNewLine()) {
+            //     $this->TCPDF->Ln(); 
+            // }
+            // else {
+            //     var_dump($this->TCPDF->current_book, $this->TCPDF->current_chapter, $this->TCPDF->current_verse);
+            // //     die('hereo bob');
+            // }
+
             return;
         }
 
@@ -210,12 +208,19 @@ abstract class PdfAbstract extends RenderAbstract {
                 $rl_st = $rl_en = '';
         }
 
-
+        // Note:  WriteHTML apparently solves the 'extra linebreak problem' and probably should be used for everything, even if the text doesn't require HTML rendering
         // This takes ~ 6.0 min
         //  Write as HTML - works but is SLOW!  Takes 3x as long.  And it alters the margins some
+
+        $find = $repl = [];
+
+        $find[] = '  ';
+        $repl[] = '&nbsp;&nbsp;';
+
         $html = str_replace(array('‹', '›', '[', ']', '  '), array($rl_st, $rl_en, '<i>', '</i>', '&nbsp;&nbsp;'), $text);
+        $this->TCPDF->setFont($this->pdf_font_family, '', $this->pdf_text_size);
         $this->TCPDF->WriteHTML($html, TRUE, FALSE, FALSE, FALSE, $this->pdf_text_align);
-        // $this->TCPDF->writeHTMLCell(0,0,0,0, $html); // TAKES FOREVER - do not use as is
+        
         return;
 
         // Retaining the below test code for reference
