@@ -12,7 +12,7 @@ class RenderManager {
         'pdf'       => [
             'name'      => 'PDF',
             'desc'      => 'Ready-to-print PDF files',
-            'formats'   => ['pdf'],
+            'formats'   => ['pdf_cpt_let', 'pdf_cpt_a4', 'pdf_cpt_let_ul', 'pdf_cpt_a4_ul'],
         ],
         'text'      => [
             'name'      => 'Plain Text',
@@ -32,10 +32,14 @@ class RenderManager {
     ];
 
     static public $register = [
-        'pdf'       => \App\Renderers\PdfPrintable::class,
-        'text'      => \App\Renderers\PlainText::class,
-        'mr_text'   => \App\Renderers\MachineReadableText::class,
-        'csv'       => \App\Renderers\Csv::class,
+        'pdf'               => \App\Renderers\PdfCompact::class,
+        'pdf_cpt_let'       => \App\Renderers\PdfCompact::class,
+        'pdf_cpt_a4'        => \App\Renderers\PdfCompactA4::class,  
+        'pdf_cpt_let_ul'    => \App\Renderers\PdfCompactUl::class,
+        'pdf_cpt_a4_ul'     => \App\Renderers\PdfCompactUlA4::class,        
+        'text'              => \App\Renderers\PlainText::class,
+        'mr_text'           => \App\Renderers\MachineReadableText::class,
+        'csv'               => \App\Renderers\Csv::class,
     ];
 
     protected $Bibles = [];

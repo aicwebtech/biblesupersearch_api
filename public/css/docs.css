@@ -89,7 +89,8 @@ tr.download_disabled {
 }
 
 .format_group_box {
-    background-color: #5aa700;
+    /*background-color: #5aa700;*/
+    background-color: #3c729b;
     border-radius: 10px;
     padding: 8px;
     margin-bottom: 20px;
@@ -103,6 +104,10 @@ tr.download_disabled {
 
 .format_group_box div.desc {
     margin-bottom: 15px;
+}
+
+.format_group_box span.red {
+    color: red;
 }
 
 .format_box {

@@ -36,7 +36,7 @@ abstract class PdfAbstract extends RenderAbstract {
     protected $pdf_chapter_align        = 'C';
     protected $pdf_text_align           = 'J';
     protected $pdf_brackets_to_italics  = TRUE;
-    protected $pdf_verses_paragraph     = 'auto';     // Needs to auto-detect
+    protected $pdf_verses_paragraph     = FALSE;     // TRUE, FALSE or 'auto'  'auto' will set it to true if Bible has Paragraph markings in it's text
 
     protected $pdf_language_overrides = [
         'ar' => [
@@ -218,6 +218,7 @@ abstract class PdfAbstract extends RenderAbstract {
         $repl[] = '&nbsp;&nbsp;';
 
         $html = str_replace(array('‹', '›', '[', ']', '  '), array($rl_st, $rl_en, '<i>', '</i>', '&nbsp;&nbsp;'), $text);
+        $html = $text;
         $this->TCPDF->setFont($this->pdf_font_family, '', $this->pdf_text_size);
         $this->TCPDF->WriteHTML($html, TRUE, FALSE, FALSE, FALSE, $this->pdf_text_align);
         
@@ -342,13 +343,13 @@ abstract class PdfAbstract extends RenderAbstract {
 
         switch(static::$pdf_red_word_tag) {
             case 'b':
-                $woc = 'in Bold';
+                $woc = 'in <b>Bold</b>';
                 break;
             case 'u':
-                $woc = 'underlined';
+                $woc = '<u>Underlined</u>';
                 break;
             case 'red':
-                $woc = 'in Red';
+                $woc = 'in <span class="red">Red</span>';
                 break;
         }
 
@@ -361,5 +362,15 @@ abstract class PdfAbstract extends RenderAbstract {
         }
 
         return static::$name . ', ' . $format . ' format' . $woc;
+    }
+
+    public static function getDescription() {
+        $desc = static::$description;
+
+        if(static::$pdf_red_word_tag == 'u' || static::$pdf_red_word_tag == 'b') {
+            $desc .= ' Monochrome friendly.';
+        }
+
+        return $desc;
     }
 }
