@@ -50,6 +50,7 @@ $( function() {
             dataType: 'json',
             success: function(data, status, xhr) {
                 console.log('success', data);
+                $('#bible_download_form').submit();
             },
             error: function(xhr, status, error) {
                 console.log('error', xhr);

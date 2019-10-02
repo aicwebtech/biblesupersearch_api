@@ -10,13 +10,14 @@ abstract class PdfAbstract extends RenderAbstract {
     protected $include_book_name = TRUE;
 
     /* PDF-specific settings */
+    protected static $pdf_page_format   = 'LETTER';  // For options, see TCPDF_STATIC::$page_formats
+    protected static $pdf_red_word_tag  = 'red';     // HTML tag for words of Christ.  'red' colors them with traditional red
     // protected $tcpdf_class           = \TCPDF::class;
     protected $tcpdf_class              = TCPDFBible::class;
     protected $pdf_orientation          = 'P';
-    protected $pdf_format               = 'LETTER';  // For options, see TCPDF_STATIC::$page_formats
     protected $pdf_unit                 = 'mm';
-    protected $pdf_width                = 8.5;      // Width, in $this->pdf_unit units.  Ignored if $this->pdf_format is specified
-    protected $pdf_height               = 11;       // Height, in $this->pdf_unit units.  Ignored if $this->pdf_format is specified
+    protected $pdf_width                = 8.5;      // Width, in $this->pdf_unit units.  Ignored if static::$pdf_format is specified
+    protected $pdf_height               = 11;       // Height, in $this->pdf_unit units.  Ignored if static::$pdf_format is specified
     protected $pdf_columns              = 4;        // Number of columns of verses
     protected $pdf_column_width         = 47;       // Width of column, in $this->pdf_unit units.
     protected $pdf_margin               = 8;        // General margin size, in $this->pdf_unit units
@@ -36,7 +37,6 @@ abstract class PdfAbstract extends RenderAbstract {
     protected $pdf_text_align           = 'J';
     protected $pdf_brackets_to_italics  = TRUE;
     protected $pdf_verses_paragraph     = 'auto';     // Needs to auto-detect
-    protected $pdf_red_letter_tag       = 'red';
 
     protected $pdf_language_overrides = [
         'ar' => [
@@ -61,7 +61,7 @@ abstract class PdfAbstract extends RenderAbstract {
 
         $this->_applyPdfLanguageOverride();
 
-        $format = $this->pdf_format ?: [$this->pdf_width, $this->pdf_height];
+        $format = static::$pdf_page_format ?: [$this->pdf_width, $this->pdf_height];
         $this->TCPDF  = new $this->tcpdf_class($this->pdf_orientation, $this->pdf_unit, $format);
         $this->TCPDF->setHeaderMargin(10);
         $this->TCPDF->setFooterMargin(0);
@@ -194,15 +194,15 @@ abstract class PdfAbstract extends RenderAbstract {
 
         $text_test = trim($text);
 
-        switch($this->pdf_red_letter_tag) {
+        switch(static::$pdf_red_word_tag) {
             case 'red' :
                 $rl_st = '<span style="color:rgb(255, 0, 0);">';
                 $rl_en = "</span>";
                 break;
             case 'u':
             case 'b':
-                $rl_st = '<' . $this->pdf_red_letter_tag . '>';
-                $rl_en = '</' . $this->pdf_red_letter_tag . '>';
+                $rl_st = '<' . static::$pdf_red_word_tag . '>';
+                $rl_en = '</' . static::$pdf_red_word_tag . '>';
                 break;
             default: 
                 $rl_st = $rl_en = '';
@@ -335,5 +335,31 @@ abstract class PdfAbstract extends RenderAbstract {
                 $this->$key = $value;
             }
         }
+    }
+
+    public static function getName() {
+        $woc = '';
+
+        switch(static::$pdf_red_word_tag) {
+            case 'b':
+                $woc = 'in Bold';
+                break;
+            case 'u':
+                $woc = 'underlined';
+                break;
+            case 'red':
+                $woc = 'in Red';
+                break;
+        }
+
+        $woc = ($woc) ? ', Words of Christ ' . $woc : '';
+
+        $format = static::$pdf_page_format;
+
+        if($format == 'LETTER') {
+            $format = 'Letter';
+        }
+
+        return static::$name . ', ' . $format . ' format' . $woc;
     }
 }

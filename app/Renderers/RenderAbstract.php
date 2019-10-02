@@ -10,12 +10,19 @@ abstract class RenderAbstract {
     use \App\Traits\Error;
 
     static public $name;
-    static public $description;
+    static public $description = '';
 
-    static protected $render_bibles_limit = 3; // Maximum number of Bibles to render with the given format before detatched process is required.   Set to TRUE to never require detatched process.
-    static protected $render_version = 0.1;    // All render classes must have this - indicates the version number of the file.  Must be changed if the file is changed, to trigger re-rendering.
-    static protected $render_est_time = 60;    // Estimated time to render a Bible of the given format, in seconds.
-    static protected $render_est_size = 6;     // Estimated size to render a Bible of the given format, in MB.
+    // Maximum number of Bibles to render with the given format before detatched process is required.   Set to TRUE to never require detatched process.
+    static protected $render_bibles_limit = 3; 
+
+    // All render classes must have this - indicates the version number of the file.  Must be changed if the file is changed, to trigger re-rendering.
+    static protected $render_version = 0.1;    
+
+    // Estimated time to render a Bible of the given format, in seconds.
+    static protected $render_est_time = 60;    
+
+    // Estimated size to render a Bible of the given format, in MB.
+    static protected $render_est_size = 6;     
 
     protected $file_extension;
 
@@ -242,6 +249,7 @@ abstract class RenderAbstract {
 
         if(!is_dir($dir) && $create_dir) {
             mkdir($dir, 0775, TRUE);
+            chmod($dir, 0775);
         }
 
         $path = $dir . '/' . $module . '.' . $this->file_extension;
@@ -254,6 +262,14 @@ abstract class RenderAbstract {
 
     public static function getRenderBiblesLimit() {
         return static::$render_bibles_limit;
+    }
+
+    public static function getName() {
+        return static::$name;
+    }    
+
+    public static function getDescription() {
+        return static::$description;
     }
 }
 

@@ -24,7 +24,7 @@ class DocumentationController extends Controller {
             'TOS'       => $TOS,
             'Privacy'   => $Privacy,
             'version'   => $Engine->getHardcodedVersion(),
-            'formats'   => RenderManager::getRendererList(),
+            'formats'   => RenderManager::getGroupedRendererList(),
         ]);
     }
 }

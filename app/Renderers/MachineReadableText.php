@@ -2,9 +2,9 @@
 
 namespace App\Renderers;
 
-class PlainText extends RenderAbstract {
-    static public $name = 'Plain Text';
-    static public $description = 'Simple, plain text format';
+class MachineReadableText extends RenderAbstract {
+    static public $name = 'Machine readable Plain Text';
+    static public $description = 'Machine readable plain text format';
 
     // Maximum number of Bibles to render with the given format before detatched process is required.   Set to TRUE to never require detatched process.
     static protected $render_bibles_limit = TRUE; 
@@ -16,7 +16,7 @@ class PlainText extends RenderAbstract {
     static protected $render_est_time = 1;  
        
     // Estimated size to render a Bible of the given format, in MB. 
-    static protected $render_est_size = 5;      
+    static protected $render_est_size = 5;  
 
     protected $file_extension = 'txt';
     protected $include_book_name = TRUE;
@@ -33,13 +33,13 @@ class PlainText extends RenderAbstract {
         $filepath = $this->getRenderFilePath(TRUE);
         $this->handle = fopen($filepath, 'w');
         fwrite($this->handle, $this->Bible->name . PHP_EOL . PHP_EOL);
-        fwrite($this->handle, $this->_wordwrap( $this->_getCopyrightStatement(TRUE) ) . PHP_EOL . PHP_EOL . PHP_EOL);
+        fwrite($this->handle, $this->_getCopyrightStatement(TRUE) . PHP_EOL . PHP_EOL . PHP_EOL);
         return TRUE;
     }
 
     protected function _renderSingleVerse($verse) {
         $text = $verse->book_name . ' ' . $verse->chapter . ':' . $verse->verse . ' '  . $verse->text . PHP_EOL;
-        fwrite($this->handle, $this->_wordwrap($text) );
+        fwrite($this->handle, $text);
     }
 
     protected function _renderFinish() {
@@ -47,7 +47,5 @@ class PlainText extends RenderAbstract {
         return TRUE;
     }
 
-    protected function _wordwrap($text) {
-        return wordwrap($text, 80);
-    }
+
 }

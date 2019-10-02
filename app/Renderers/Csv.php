@@ -4,7 +4,7 @@ namespace App\Renderers;
 
 class Csv extends RenderAbstract {
     static public $name = 'CSV';
-    static public $description = 'Comma separated values.  Opens in Excel or other spreadsheet softwre.';
+    static public $description = 'Comma separated values.';
 
     protected $file_extension = 'csv';
     protected $include_book_name = TRUE;

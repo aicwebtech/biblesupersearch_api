@@ -34,11 +34,22 @@
     <div style='float:left; width: 40%; margin-left: 100px'>
         <h2>Select a Format</h2>
 
-        <?php foreach($formats as $fmt => $format) : ?>
-            <div class='format_box'>
-                <input type='radio' name='format' value='<?php echo $fmt; ?>' id='format_<?php echo $fmt; ?>' />
-                <label class='format_name' for='format_<?php echo $fmt; ?>'><?php echo $format['name']; ?></label><br /><br />
-                <div class="format_description"><?php echo $format['desc']; ?></div>
+        <?php foreach($formats as $kind => $info) : ?>
+            <div class='format_group_box'>
+                <h2 class='name'><?php echo $info['name']; ?></h2>
+
+                <?php if($info['desc']): ?>
+                    <div class='desc'><?php echo $info['desc']; ?></div>
+                <?php endif; ?>
+
+                <?php foreach($info['renderers'] as $fmt => $format) : ?>
+                    <div class='format_box'>
+                        <input type='radio' name='format' value='<?php echo $fmt; ?>' id='format_<?php echo $fmt; ?>' />
+                        <label class='format_name' for='format_<?php echo $fmt; ?>'><?php echo $format['name']; ?></label> <?php echo $format['desc']; ?>
+<!--                         <br /><br />
+                        <div class="format_description"><?php echo $format['desc']; ?></div> -->
+                    </div>
+                <?php endforeach; ?>
             </div>
         <?php endforeach; ?>
     </div>

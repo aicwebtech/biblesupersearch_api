@@ -8,9 +8,33 @@ use App\ProcessManager;
 class RenderManager {
     use Traits\Error;
 
+    static public $format_kinds = [
+        'pdf'       => [
+            'name'      => 'PDF',
+            'desc'      => 'Ready-to-print PDF files',
+            'formats'   => ['pdf'],
+        ],
+        'text'      => [
+            'name'      => 'Plain Text',
+            'desc'      => '',
+            'formats'   => ['text', 'mr_text'],
+        ],       
+        'spreadsheet'      => [
+            'name'      => 'Spreadsheet',
+            'desc'      => 'Opens in MS Excel or other spreadsheet software.  Both human and machine readable.',
+            'formats'   => ['csv'],
+        ],
+        'database' => [
+            'name'      => 'Databases',
+            'desc'      => 'Databases and database dumps.  Ready to import into your own software',
+            'formats'   => ['csv', 'pdf'],
+        ],
+    ];
+
     static public $register = [
         'pdf'       => \App\Renderers\PdfPrintable::class,
         'text'      => \App\Renderers\PlainText::class,
+        'mr_text'   => \App\Renderers\MachineReadableText::class,
         'csv'       => \App\Renderers\Csv::class,
     ];
 
@@ -296,10 +320,32 @@ class RenderManager {
         foreach(static::$register as $format => $CLASS) {
             $list[$format] = [
                 'format' => $format,
-                'name'   => $CLASS::$name,
-                'desc'   => $CLASS::$description,
+                'name'   => $CLASS::getName(),
+                'desc'   => $CLASS::getDescription(),
                 'CLASS'  => $CLASS,
             ];
+        }
+
+        return $list;
+    }    
+
+    static public function getGroupedRendererList() {
+        $list = [];
+
+        foreach(static::$format_kinds as $kind => $info) {
+            $list[$kind] = $info;
+            $list[$kind]['renderers'] = [];
+
+            foreach($info['formats'] as $format) {
+                $CLASS = static::$register[$format];
+
+                $list[$kind]['renderers'][$format] = [
+                    'format' => $format,
+                    'name'   => $CLASS::getName(),
+                    'desc'   => $CLASS::getDescription(),
+                    'CLASS'  => $CLASS,
+                ];
+            }
         }
 
         return $list;
