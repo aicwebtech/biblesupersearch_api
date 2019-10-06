@@ -218,9 +218,10 @@ abstract class PdfAbstract extends RenderAbstract {
         $repl[] = '&nbsp;&nbsp;';
 
         $html = str_replace(array('‹', '›', '[', ']', '  '), array($rl_st, $rl_en, '<i>', '</i>', '&nbsp;&nbsp;'), $text);
-        $html = $text;
+        // $html = str_replace('  ', '&nbsp;&nbsp;', $text); // for some reason THIS takes 16 min for the KJV!
+        // $html = $text;
         $this->TCPDF->setFont($this->pdf_font_family, '', $this->pdf_text_size);
-        $this->TCPDF->WriteHTML($html, TRUE, FALSE, FALSE, FALSE, $this->pdf_text_align);
+        $this->TCPDF->WriteHTML($html, TRUE, FALSE, TRUE, FALSE, $this->pdf_text_align);
         
         return;
 
@@ -310,9 +311,11 @@ abstract class PdfAbstract extends RenderAbstract {
         $this->TCPDF->Bookmark($book_name, 1);
         $this->TCPDF->setFont($this->pdf_font_family, $this->pdf_book_style, $this->pdf_book_size);
         $this->TCPDF->Ln();
+        $this->TCPDF->Ln();
+        // $this->TCPDF->Ln();
         $this->TCPDF->Write(0, strtoupper($book_name), '', FALSE, $this->pdf_book_align);
         $this->TCPDF->Ln();
-        $this->TCPDF->Ln();
+        // $this->TCPDF->Ln();
         $this->_renderNewChapter($chapter);
     }
 

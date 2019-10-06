@@ -10,7 +10,7 @@ class PdfCompact extends PdfAbstract {
     protected $pdf_column_width         = 47;       // Width of column, in $this->pdf_unit units.
     protected $pdf_margin               = 8;        // General margin size, in $this->pdf_unit units
     protected $pdf_top_margin           = 10;       // Top margin size, in $this->pdf_unit units
-    protected $pdf_text_size            = 7;        // Compact: 9? or less
+    protected $pdf_text_size            = 8;        // Compact: 9? or less
     protected $pdf_title_size           = 16;
     protected $pdf_header_size          = 8;
     protected $pdf_header_style         = 'B';    
