@@ -21,9 +21,10 @@ abstract class PdfAbstract extends RenderAbstract {
     protected $pdf_columns              = 4;        // Number of columns of verses
     protected $pdf_column_width         = 47;       // Width of column, in $this->pdf_unit units.
     protected $pdf_margin               = 8;        // General margin size, in $this->pdf_unit units
+    protected $pdf_margin_inside        = 28;        // Inside (binding edge) side margin.  Defaults to $this->pdf_margin
+    protected $pdf_margin_outside       = 8;        // Inside (binding edge) side margin.  Defaults to $this->pdf_margin
     protected $pdf_top_margin           = 10;        // Top margin size, in $this->pdf_unit units
     protected $pdf_font_family          = 'freeserif'; // Unicode-friendly serif font
-    // protected $pdf_font_family       = 'times';
     protected $pdf_text_size            = 9; // Compact: 9? or less, Regular: 12, Large: 14?
     protected $pdf_title_size           = 16;
     protected $pdf_header_size          = 8;
@@ -61,6 +62,9 @@ abstract class PdfAbstract extends RenderAbstract {
 
         $this->_applyPdfLanguageOverride();
 
+        $this->pdf_margin_outside = $this->pdf_margin_outside ?: $this->pdf_margin;
+        $this->pdf_margin_inside  = $this->pdf_margin_inside  ?: $this->pdf_margin;
+
         $format = static::$pdf_page_format ?: [$this->pdf_width, $this->pdf_height];
         $this->TCPDF  = new $this->tcpdf_class($this->pdf_orientation, $this->pdf_unit, $format);
         $this->TCPDF->setHeaderMargin(10);
@@ -69,7 +73,7 @@ abstract class PdfAbstract extends RenderAbstract {
         $this->TCPDF->setHeaderFont([$this->pdf_font_family, $this->pdf_header_style, $this->pdf_header_size]);
         $this->TCPDF->setFooterFont([$this->pdf_font_family, $this->pdf_header_style, $this->pdf_header_size]);
         $this->TCPDF->SetAutoPageBreak(TRUE, $this->pdf_margin);
-        $this->TCPDF->SetMargins($this->pdf_margin, $this->pdf_top_margin);
+        $this->TCPDF->SetMargins($this->pdf_margin_inside, $this->pdf_top_margin, $this->pdf_margin_outside);
     }
 
     protected function _renderStart() {
@@ -79,6 +83,7 @@ abstract class PdfAbstract extends RenderAbstract {
         }
 
         $this->TCPDF->setTitle($this->Bible->name);
+        $this->TCPDF->addPage();
 
         $h       = $this->TCPDF->getPageHeight();
         $margins = $this->TCPDF->getMargins();
@@ -88,7 +93,6 @@ abstract class PdfAbstract extends RenderAbstract {
         $title_height = $h / 5;
         $title_pos = $h / 2 - $title_height;
 
-        $this->TCPDF->addPage();
         $this->TCPDF->setFontSize($this->pdf_title_size);
         $this->TCPDF->setY($title_pos);
         // // todo - translate this!
@@ -104,7 +108,7 @@ abstract class PdfAbstract extends RenderAbstract {
         // $this->TCPDF->writeHTML( $this->_getCopyrightStatement() );
         $this->TCPDF->Cell(0, 20, $this->Bible->name, 0, 1, 'L');
         // $this->TCPDF->ln();
-        $this->TCPDF->writeHTMLCell(0, 40, $this->pdf_margin, $this->TCPDF->getY(), $this->_getCopyrightStatement() );
+        $this->TCPDF->writeHTMLCell(0, 40, $this->pdf_margin_inside, $this->TCPDF->getY(), $this->_getCopyrightStatement() );
         $this->TCPDF->addPage();
         $this->TCPDF->addPage(); // TOC
         $this->TCPDF->addPage(); 
@@ -121,7 +125,7 @@ abstract class PdfAbstract extends RenderAbstract {
 
     protected function _renderSingleVerse($verse) {
         if($verse->id > 2000) {
-            // return;
+            return;
         }
 
         if($this->pdf_verses_paragraph === 'auto') {
@@ -180,15 +184,6 @@ abstract class PdfAbstract extends RenderAbstract {
         // if(!$this->pdf_brackets_to_italics || (!$this->Bible->italics || !$this->Bible->)) {
         if(!$this->pdf_brackets_to_italics) {
             $this->TCPDF->Write(0, $text, '', FALSE, $this->pdf_text_align, TRUE);
-
-            // if(!$this->TCPDF->isNewLine()) {
-            //     $this->TCPDF->Ln(); 
-            // }
-            // else {
-            //     var_dump($this->TCPDF->current_book, $this->TCPDF->current_chapter, $this->TCPDF->current_verse);
-            // //     die('hereo bob');
-            // }
-
             return;
         }
 
