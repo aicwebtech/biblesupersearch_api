@@ -21,7 +21,7 @@ abstract class PdfAbstract extends RenderAbstract {
     protected $pdf_columns              = 4;        // Number of columns of verses
     protected $pdf_column_width         = 47;       // Width of column, in $this->pdf_unit units.
     protected $pdf_margin               = 8;        // General margin size, in $this->pdf_unit units
-    protected $pdf_margin_inside        = 28;        // Inside (binding edge) side margin.  Defaults to $this->pdf_margin
+    protected $pdf_margin_inside        = 14;        // Inside (binding edge) side margin.  Defaults to $this->pdf_margin
     protected $pdf_margin_outside       = 8;        // Inside (binding edge) side margin.  Defaults to $this->pdf_margin
     protected $pdf_top_margin           = 10;        // Top margin size, in $this->pdf_unit units
     protected $pdf_font_family          = 'freeserif'; // Unicode-friendly serif font
@@ -114,9 +114,10 @@ abstract class PdfAbstract extends RenderAbstract {
         $this->TCPDF->addPage(); 
         // $this->TCPDF->addPage();
 
-        if($this->pdf_columns > 1) {
-            $this->TCPDF->setEqualColumns($this->pdf_columns, $this->pdf_column_width);
-        }
+        $this->_enableColumns();
+
+        // $style = '<style> p { text-indent:30px; } .id {width: 30px; display: inline-block}</style>';
+        // $this->TCPDF->WriteHTML($style);
         
         $this->TCPDF->setFontSize($this->pdf_text_size);
 
@@ -125,16 +126,14 @@ abstract class PdfAbstract extends RenderAbstract {
 
     protected function _renderSingleVerse($verse) {
         if($verse->id > 2000) {
-            return;
+            // return;
         }
 
         if($this->pdf_verses_paragraph === 'auto') {
             $this->pdf_verses_paragraph = (strpos($verse->text, '¶') !== FALSE) ? TRUE : FALSE;
         }
 
-        $this->TCPDF->current_book      = $verse->book_name;
-        $this->TCPDF->current_chapter   = $verse->chapter;
-        $this->TCPDF->current_verse     = $verse->verse;
+        $this->TCPDF->setCurrentVerse($verse);
 
         if($verse->book != $this->last_render_book) {
             $this->_renderNewBook($verse->book, $verse->book_name, $verse->chapter);
@@ -149,8 +148,6 @@ abstract class PdfAbstract extends RenderAbstract {
 
         if(!$this->pdf_verses_paragraph) {
             // Verse format
-            // $this->TCPDF->Write(0, $text, '', FALSE, $this->pdf_text_align);
-            // $this->TCPDF->Ln();       
             $this->_writeText($text);     
         }
         else {
@@ -160,7 +157,7 @@ abstract class PdfAbstract extends RenderAbstract {
             }
 
             if(!$this->text_pending) {
-                $this->text_pending .= '      ';
+                // $this->text_pending .= '<span style="padding-left:300px; display:inline-block;background-color:green">&nbsp;</span>';
             }
 
             $this->text_pending .= $text . '  ';
@@ -170,9 +167,14 @@ abstract class PdfAbstract extends RenderAbstract {
         $this->last_render_chapter      = $verse->chapter;
     }
 
-    protected function _writeText($text = NULL) {
+    protected function _writeText($text = NULL, $text_pending_addl = '') {
         if(!$text) {
-            $text = $this->text_pending;
+            if(!$this->text_pending) {
+                return;
+            }
+
+            // $text = $this->text_pending;
+            $text = '<div style="text-indent:20px">' . $this->text_pending . $text_pending_addl . '</div>';
             $this->text_pending = '';
         }
 
@@ -182,10 +184,10 @@ abstract class PdfAbstract extends RenderAbstract {
 
         // Todo: quick exit if Bible doesn't support italics, red letter, or strongs
         // if(!$this->pdf_brackets_to_italics || (!$this->Bible->italics || !$this->Bible->)) {
-        if(!$this->pdf_brackets_to_italics) {
-            $this->TCPDF->Write(0, $text, '', FALSE, $this->pdf_text_align, TRUE);
-            return;
-        }
+        // if(!$this->pdf_brackets_to_italics) {
+        //     $this->TCPDF->Write(0, $text, '', FALSE, $this->pdf_text_align, TRUE);
+        //     return;
+        // }
 
         $text_test = trim($text);
 
@@ -205,7 +207,7 @@ abstract class PdfAbstract extends RenderAbstract {
 
         // Note:  WriteHTML apparently solves the 'extra linebreak problem' and probably should be used for everything, even if the text doesn't require HTML rendering
         // This takes ~ 6.0 min
-        //  Write as HTML - works but is SLOW!  Takes 3x as long.  And it alters the margins some
+        // Write as HTML - works but is SLOW!  Takes 3x as long.  And it alters the margins some
 
         $find = $repl = [];
 
@@ -251,11 +253,6 @@ abstract class PdfAbstract extends RenderAbstract {
     protected function _renderFinish() {
         $this->_writeText();
 
-        // if($this->text_pending) {
-        //     $this->TCPDF->Write(0, $this->text_pending, '', FALSE, $this->pdf_text_align);
-        //     $this->TCPDF->Ln();   
-        // }
-
         $this->TCPDF->endPage();
         $this->TCPDF->setEqualColumns(0);
         $this->TCPDF->current_book    = NULL;
@@ -285,7 +282,11 @@ abstract class PdfAbstract extends RenderAbstract {
     }
 
     protected function _renderNewBook($book, $book_name, $chapter = 1) {
-        $this->_writeText();
+        if($this->pdf_verses_paragraph && $this->text_pending) {
+            // $this->text_pending .= '<br />';
+        }
+ 
+        $this->_writeText(NULL, '<br /><br />');
 
         // if($book == 1) {
         //     $this->TCPDF->addPage();
@@ -296,36 +297,76 @@ abstract class PdfAbstract extends RenderAbstract {
         // }
 
         if($book == 1) {
-            $this->TCPDF->Bookmark('Old Testament');
+            $this->_renderTestamentHeader('Old Testament');
         }
 
         if($book == 40) {
-            $this->TCPDF->Bookmark('New Testament');
+            $this->_renderTestamentHeader('New Testament');
         }
 
-        $this->TCPDF->Bookmark($book_name, 1);
         $this->TCPDF->setFont($this->pdf_font_family, $this->pdf_book_style, $this->pdf_book_size);
         $this->TCPDF->Ln();
         $this->TCPDF->Ln();
         // $this->TCPDF->Ln();
+
+        // if($this->pdf_verses_paragraph) {
+        //     $this->TCPDF->Ln();
+        //     $this->TCPDF->Ln();
+        // }
+        
+        // Add page or switch column, if needed
+        $height_pixel = $this->pdf_book_size * 3;
+        $height_units = $this->TCPDF->pixelsToUnits($height_pixel);
+        $this->TCPDF->checkPageBreak($height_units);
+
+        $this->TCPDF->Bookmark($book_name, 1);
         $this->TCPDF->Write(0, strtoupper($book_name), '', FALSE, $this->pdf_book_align);
         $this->TCPDF->Ln();
         // $this->TCPDF->Ln();
         $this->_renderNewChapter($chapter);
     }
 
+    protected function _renderTestamentHeader($testament) {
+        $this->TCPDF->Bookmark($testament);
+    }
+
     protected function _renderNewChapter($chapter) {
-        $this->_writeText();
+        if($this->pdf_verses_paragraph && $this->text_pending) {
+            // $this->text_pending .= '<br />';
+        }
+
+        $this->_writeText(NULL, '<br />');
 
         // todo - translate this!
         $chapter_name = 'Chapter ' . $chapter;
-        $this->TCPDF->Bookmark($chapter_name, 2);
         $this->TCPDF->setFont($this->pdf_font_family, $this->pdf_chapter_style, $this->pdf_chapter_size);
         $this->TCPDF->Ln();
+
+        // if($this->pdf_verses_paragraph) {
+        //     $this->TCPDF->Ln();
+        //     $this->TCPDF->Ln();
+        // }
+
+        // Add page or switch column, if needed
+        $height_pixel = $this->pdf_chapter_size * 3;
+        $height_units = $this->TCPDF->pixelsToUnits($height_pixel);
+        $this->TCPDF->checkPageBreak($height_units);
+
+        $this->TCPDF->Bookmark($chapter_name, 2);
         $this->TCPDF->Write(0, $chapter_name, '', FALSE, $this->pdf_chapter_align);
         $this->TCPDF->Ln();
         $this->TCPDF->Ln();
         $this->TCPDF->setFont($this->pdf_font_family, $this->pdf_text_size);
+    }
+
+    protected function _enableColumns() {
+        if($this->pdf_columns > 1) {
+            $this->TCPDF->setEqualColumns($this->pdf_columns, $this->pdf_column_width);
+        }
+    }
+
+    protected function _disableColumns() {
+        $this->TCPDF->setEqualColumns(0);
     }
 
     protected function _applyPdfLanguageOverride() {

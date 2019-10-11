@@ -57,6 +57,35 @@ class TCPDFBible extends TCPDF {
         return $this->bible_page_count;
     }
 
+    public function setCurrentVerse($verse) {
+        if($verse) {
+            $this->current_book     = $verse->book_name;
+            $this->current_chapter  = $verse->chapter;
+            $this->current_verse    = $verse->verse;
+
+            if(!$this->start_book) {
+                $this->start_book       = $verse->book_name;
+                $this->start_chapter    = $verse->chapter;
+            }
+        }
+        else {
+            $this->current_book         = NULL;
+            $this->current_chapter      = NULL;
+            $this->current_verse        = NULL;
+            $this->start_book           = NULL;
+            $this->start_chapter        = NULL;
+        }
+    }
+
+
+
+    // Customized TCPDF methods
+
+    // Making this public
+    public function checkPageBreak($h=0, $y='', $addpage=true) {
+        parent::checkPageBreak($h, $y, $addpage);
+    }
+
     /**
         CUSTOMIZED VERSION OF TCPDF::addTOC();
 
