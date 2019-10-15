@@ -479,29 +479,33 @@ class Engine {
         ];
 
         $Manager = new \App\RenderManager($modules, $format, $zip);
-        $success = ($download) ? $Manager->download() :  $Manager->getBiblesNeedingRender();
+        $success = ($download) ? $Manager->download() :  $Manager->render();
+        // $success = ($download) ? $Manager->download() :  $Manager->getBiblesNeedingRender();
+        $response = new \stdClass;
 
         if(!$success) {
-            if($Manager->needsProcess()) {
-                $HasJobs = Models\Job::where('queue', 'default')->count();
+            // if($Manager->needsProcess()) {
+            //     $HasJobs = Models\Job::where('queue', 'default')->count();
 
-                var_dump($HasJobs);
+            //     var_dump($HasJobs);
 
-                \App\Jobs\ProcessRender::dispatch($sanitized);
+            //     \App\Jobs\ProcessRender::dispatch($sanitized);
 
-                if(!$HasJobs) {
-                    // $this->_startQueueProcess();
-                }
-            }
+            //     if(!$HasJobs) {
+            //         // $this->_startQueueProcess();
+            //     }
+            // }
 
             $this->addErrors( $Manager->getErrors(), $Manager->getErrorLevel());
-            return FALSE;
+            $response->success = FALSE;
+            $response->separate_process_supported = $Manager->separateProcessSupported();
+            // return FALSE;
         }
         elseif(!$download) {
-            $response = new \stdClass;
             $response->success = TRUE;
-            return $response;
         }
+        
+        return $response;
     }
 
     protected function _startQueueProcess($queue = 'default') {
@@ -566,7 +570,8 @@ class Engine {
         $response->bibles           = $this->actionBibles($input);
         $response->books            = $this->actionBooks($input);
         $response->shortcuts        = $this->actionShortcuts($input);
-        $response->download_formats = array_values(RenderManager::getRendererList());
+        $response->download_enabled = config('download.enable') ? TRUE : FALSE;
+        $response->download_formats = $response->download_enabled ? array_values(RenderManager::getGroupedRendererList()) : [];
         $response->search_types     = config('bss.search_types');
         $response->name             = config('app.name');
         $response->version          = config('app.version');

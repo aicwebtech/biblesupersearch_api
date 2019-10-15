@@ -113,6 +113,10 @@ class RenderManager {
         }
     }
 
+    public function separateProcessSupported() {
+        return FALSE;
+    }
+
     public function getBiblesNeedingRender($format = NULL, $overwrite = FALSE, $bypass_render_limit = FALSE) {
         $format = $format ?: $this->format[0];
         $CLASS = static::$register[$format];
@@ -135,8 +139,8 @@ class RenderManager {
 
         if(!$bypass_render_limit && $limit !== TRUE && count($Bibles_Needing_Render) > $limit) {
             // create detatched process on 'php artisan queue:work --once ONLY' if jobs table is EMPTY
-            $this->_createDetatchedProcess($format, $Bibles_Needing_Render, $overwrite);
-            // $this->needs_process = TRUE;
+            // $this->_createDetatchedProcess($format, $Bibles_Needing_Render, $overwrite);
+            $this->needs_process = TRUE;
             return $this->addError('The requested Bibles will take a while to render.  Please come back in an hour and try your download again.');
         }
 
@@ -148,6 +152,7 @@ class RenderManager {
             return FALSE;
         }
 
+        set_time_limit(0);
         $this->needs_process = FALSE;
 
         foreach($this->format as $format) {
