@@ -153,6 +153,8 @@ class RenderManager {
         }
 
         set_time_limit(0);
+        $error_reporting_cache = error_reporting();
+        error_reporting(E_ERROR | E_WARNING | E_PARSE);
         $this->needs_process = FALSE;
 
         foreach($this->format as $format) {
@@ -174,6 +176,7 @@ class RenderManager {
             }
         }
 
+        error_reporting($error_reporting_cache);
         return !$this->hasErrors();
     }
 
