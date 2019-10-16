@@ -15,6 +15,7 @@ class ApiController extends Controller {
 
         if(config('download.enable')) {
             $allowed_actions[] = 'render';
+            $allowed_actions[] = 'render_needed';
             $allowed_actions[] = 'download';
         }
 
@@ -27,7 +28,8 @@ class ApiController extends Controller {
 
         $input = $Request->input();
         $Engine = new Engine();
-        $actionMethod = 'action' . ucfirst($action);
+        // $actionMethod = 'action' . ucfirst($action);
+        $actionMethod = 'action' . \Illuminate\Support\Str::studly($action);
 
         if($debug_input) {
             header("Access-Control-Allow-Origin: *"); // Enable for debugging

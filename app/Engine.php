@@ -422,7 +422,15 @@ class Engine {
      * @param array $input
      */
     public function actionRender($input) {    
-        return $this->_renderDownloadHelper($input, FALSE);
+        return $this->_renderDownloadHelper($input, 'render');
+    }
+    
+    /**
+     * API action for checking if rendering is needed of a Bible
+     * @param array $input
+     */
+    public function actionRenderNeeded($input) {    
+        return $this->_renderDownloadHelper($input, 'render_needed');
     }
 
     /**
@@ -431,10 +439,11 @@ class Engine {
      * @param array $input
      */
     public function actionDownload($input) {
-        return $this->_renderDownloadHelper($input, TRUE);
+        return $this->_renderDownloadHelper($input, 'download');
     }
 
-    protected function _renderDownloadHelper($input, $download = false) {
+    protected function _renderDownloadHelper($input, $action = 'render') {
+        $download = ($action == 'download') ? TRUE : FALSE;
 
         if(empty($input['bible'])) {
             $this->addError('Bible is required', 4);
@@ -470,6 +479,8 @@ class Engine {
             $zip = FALSE;
         }
 
+        $bypass_limit = (array_key_exists('bypass_limit', $input) && $input['bypass_limit']) ? TRUE : FALSE;
+
         $sanitized = [
             'format'    => $format,
             'modules'   => $modules,
@@ -479,8 +490,23 @@ class Engine {
         ];
 
         $Manager = new \App\RenderManager($modules, $format, $zip);
-        $success = ($download) ? $Manager->download() :  $Manager->render();
-        // $success = ($download) ? $Manager->download() :  $Manager->getBiblesNeedingRender();
+
+        if($action == 'render_needed') {
+            $bibles_needing_render = $Manager->getBiblesNeedingRender(NULL, FALSE, FALSE, 0);
+            $success = ($bibles_needing_render === FALSE || count($bibles_needing_render) > 0) ? FALSE : TRUE;
+        }
+        else {
+            // if($bypass_limit) {
+            //     $success = $Manager->render(FALSE, TRUE, TRUE);
+            //     $success = ($download) ? $Manager->download() : $success;
+            // }
+            // else {
+                $success = ($download) ? $Manager->download() : $Manager->render();
+                // $success = ($download) ? $Manager->download() :  $Manager->getBiblesNeedingRender();
+            // }
+
+        }
+
         $response = new \stdClass;
 
         if(!$success) {

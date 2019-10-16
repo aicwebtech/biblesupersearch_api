@@ -117,10 +117,10 @@ class RenderManager {
         return FALSE;
     }
 
-    public function getBiblesNeedingRender($format = NULL, $overwrite = FALSE, $bypass_render_limit = FALSE) {
+    public function getBiblesNeedingRender($format = NULL, $overwrite = FALSE, $bypass_render_limit = FALSE, $limit_override = NULL) {
         $format = $format ?: $this->format[0];
         $CLASS = static::$register[$format];
-        $limit = $CLASS::getRenderBiblesLimit();
+        $limit = isset($limit_override) ? $limit_override : $CLASS::getRenderBiblesLimit();
 
         if($overwrite) {
             $Bibles_Needing_Render = $this->Bibles;
