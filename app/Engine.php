@@ -501,7 +501,7 @@ class Engine {
             //     $success = ($download) ? $Manager->download() : $success;
             // }
             // else {
-                $success = ($download) ? $Manager->download() : $Manager->render();
+                $success = ($download) ? $Manager->download($bypass_limit) : $Manager->render(FALSE, TRUE, $bypass_limit);
                 // $success = ($download) ? $Manager->download() :  $Manager->getBiblesNeedingRender();
             // }
 

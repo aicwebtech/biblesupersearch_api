@@ -180,12 +180,12 @@ class RenderManager {
         return !$this->hasErrors();
     }
 
-    public function download() {
+    public function download($bypass_render_limit = FALSE) {
         if($this->hasErrors()) {
             return FALSE;
         }
 
-        $rs = $this->render();
+        $rs = $this->render(FALSE, TRUE, $bypass_render_limit);
 
         if(!$rs) {
             return FALSE;

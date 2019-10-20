@@ -125,6 +125,10 @@ tr.download_disabled {
     margin-left: 40px;
 }
 
+.pseudo_dialog_contents {
+    font-size: 14px;
+}
+
 @media print {
     #container {
         margin: 0px;

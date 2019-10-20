@@ -2,12 +2,22 @@
 <html>
     <head>
         <title><?php echo trans('app.name') ?> <?php echo config('app.version'); ?></title>
+        
+        <?php if(config('download.enable')): ?>
+            <link rel="stylesheet" href="/widgets/download/download.css">
+        <?php endif; ?>        
+
         <link rel="stylesheet" href="/js/bin/jquery-ui/jquery-ui.css">
         <link rel="stylesheet" href="/js/bin/jquery-ui/jquery-ui.theme.css">
         <link rel="stylesheet" href="/css/docs.css">
         <script src='/js/bin/jquery/jquery-3.1.1.min.js'></script>
         <script src='/js/bin/jquery-ui/jquery-ui.js'></script>
         <script src='/js/docs.js'></script>
+        
+        <?php if(config('download.enable')): ?>
+            <script src='/widgets/download/download.js'></script>
+        <?php endif; ?>
+
     </head>
     <?php
         $http = (array_key_exists('HTTPS', $_SERVER) && !empty($_SERVER['HTTPS'])) ? 'https://' : 'http://';
