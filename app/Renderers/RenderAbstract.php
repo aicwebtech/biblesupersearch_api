@@ -146,6 +146,18 @@ abstract class RenderAbstract {
         return $this->render(FALSE, TRUE);
     }
 
+    public function deleteRenderFile() {
+        $Rendering = $this->_getRenderingRecord();
+        $file_path = $this->getRenderFilePath();
+
+        if(is_file($file_path)) {
+            unlink($file_path);
+        }
+
+        $Rendering->rendered_at = NULL;
+        $Rendering->save();
+    }
+
     /**
      * This initializes the file, and does other pre-rendering work
      * @param bool $overwrite
@@ -222,10 +234,8 @@ abstract class RenderAbstract {
 
     protected function _getRenderingRecord() {
         if(!$this->Rendering) {
-            $cl = explode('\\', get_called_class());
-            $cl = array_pop($cl);
-
-            $this->Rendering = Rendering::firstOrCreate(['renderer' => $cl, 'module' => $this->Bible->module]);
+            $renderer = static::getRendererId();
+            $this->Rendering = Rendering::firstOrCreate(['renderer' => $renderer, 'module' => $this->Bible->module]);
         }
 
         return $this->Rendering;
@@ -270,6 +280,12 @@ abstract class RenderAbstract {
 
     public static function getDescription() {
         return static::$description;
+    }
+
+    public static function getRendererId($settings = array()) {
+        $cl = explode('\\', get_called_class());
+        $cl = array_pop($cl);
+        return $cl;
     }
 }
 

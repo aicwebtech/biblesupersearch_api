@@ -3,6 +3,7 @@
 namespace App;
 use App\Models\Bible;
 use App\Models\Process;
+use App\Models\Rendering;
 use App\ProcessManager;
 
 class RenderManager {
@@ -44,6 +45,7 @@ class RenderManager {
 
     protected $Bibles = [];
     protected $format = [];
+    protected $modules = [];
     protected $zip = FALSE;
     protected $multi_bibles = FALSE;
     protected $multi_format = FALSE;
@@ -80,6 +82,7 @@ class RenderManager {
         }
         else {
             $modules = (array) $modules;
+            $this->modules = $modules;
 
             foreach($modules as $module) {
                 $Bible = Bible::findByModule($module);
@@ -104,7 +107,8 @@ class RenderManager {
 
         foreach($Bibles as $Bible) {
             if($Bible->isDownloadable()) {
-                $this->Bibles[] = $Bible;
+                $this->Bibles[]  = $Bible;
+                $this->modules[] = $Bible->module;
             }
         }
 
@@ -264,6 +268,57 @@ class RenderManager {
         return $this->needs_process;
     }
 
+    /**
+     * Deletes files as needed to make room for the current batch
+     */
+    public function cleanUpFiles() {
+        $cur_space = $this->getUsedSpace();
+        $est_space = $this->getEstimatedSpace();
+        $max_space = config('download.cache.max_disk_space');
+
+        $total_space = $cur_space + $ext_space;
+
+        if($total_space <= $max_space) {
+            return;
+        }
+
+
+
+        $CLASS = $this->getRenderClass();
+        $RendererId = $CLASS::getRendererId();
+        $modules = $this->modules;
+
+        // 'WHERE rendered_at IS NOT NULL AND (renderer != :renderer OR module NOT IN () )'; // WHERE needs to be in this form!
+        $DeletableQuery = Rendering::whereNotNull('rendered_at') -> where( function($Query) use ($RendererId, $modules) {
+            $Query  -> where('renderer', '!=', $RendererId)
+                    -> orWhereNotIn('module', $modules);
+        });
+
+        // Todo: Add order conditions to query based on configs
+
+        $DeletableRenderings = $DeletableQuery->get();
+        
+        $space_needed = $total_space - $max_space;
+    }
+
+    public function getUsedSpace() {
+        return Rendering::whereNotNull('rendered_at')->sum('file_size');
+    }
+
+    /**
+      * Returns the estimated space needed to render the selected Bible(s) in the selected format
+      *
+      */
+    public function getEstimatedSpace() {
+        $CLASS = $this->getRenderClass();
+        return $CLASS::$render_est_size * count($this->Bibles);
+    }
+
+    public function getRenderClass() {
+        $format = $this->format[0];
+        return static::$register[$format];
+    }
+
     protected function _createDetatchedProcess($format, $Bibles_Needing_Render, $overwrite = FALSE) {
         $Pending = Process::where('status', 'pending')->where('form_action', 'download')->get()->all();
 
@@ -320,10 +375,6 @@ class RenderManager {
 
         pclose($handle);
         return TRUE;
-    }
-
-    static public function cleanUp() {
-
     }
 
     static public function getRendererList() {
