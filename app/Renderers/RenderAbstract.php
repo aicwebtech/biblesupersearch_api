@@ -102,7 +102,9 @@ abstract class RenderAbstract {
         $this->_afterVerseRender();
         $success = $this->_renderFinish();
 
-        chmod($this->getRenderFilePath(), 0775);
+        if(posix_getuid() == fileowner($file_path)) {
+            chmod($file_path, 0775);
+        }
 
         $file_size_bytes = filesize($this->getRenderFilePath());
         $file_size_mb    = round( $file_size_bytes / 1024 / 1024);
@@ -113,6 +115,7 @@ abstract class RenderAbstract {
         $Rendering->rendered_at         = date('Y-m-d H:i:s');
         $Rendering->version             = static::$render_version;
         $Rendering->file_size           = $file_size_mb;
+        $Rendering->file_name           = basename($file_path);
         $Rendering->save();
 
         return $success;
@@ -264,6 +267,12 @@ abstract class RenderAbstract {
 
         $path = $dir . '/' . $module . '.' . $this->file_extension;
         return $path;
+    }
+
+    public function incrementHitCounter() {
+        $Rendering = $this->_getRenderingRecord();
+        $Rendering->hits ++;
+        $Rendering->save();
     }
 
     public static function getRenderBasePath() {

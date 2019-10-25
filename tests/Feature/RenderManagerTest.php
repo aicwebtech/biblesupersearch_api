@@ -25,7 +25,7 @@ class RenderManagerTest extends TestCase {
     }
 
     public function testDirectRender() {
-        return;
+        // return;
 
         if($this->skip_render_tests) {
             $this->markTestSkipped('Rendering tests skipped to save time');
@@ -41,7 +41,7 @@ class RenderManagerTest extends TestCase {
     }
 
     public function testManagerRender() {
-        // return;
+        return;
 
         if($this->skip_render_tests) {
             $this->markTestSkipped('Rendering tests skipped to save time');

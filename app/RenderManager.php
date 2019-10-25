@@ -221,6 +221,7 @@ class RenderManager {
                     $Renderer = new $CLASS($Bible);
                     $filepath = $Renderer->getRenderFilePath();
                     $Zip->addFile($filepath, basename($filepath));
+                    $Renderer->incrementHitCounter();
                 }
             }
 
@@ -235,6 +236,7 @@ class RenderManager {
             $Bible      = $this->Bibles[0];
             $CLASS      = static::$register[$format];
             $Renderer   = new $CLASS($Bible);
+            $Renderer->incrementHitCounter();
             $download_file_path = $Renderer->getRenderFilePath();
             $download_file_name = basename($download_file_path);
 
@@ -268,25 +270,51 @@ class RenderManager {
         return $this->needs_process;
     }
 
+
+    public static function deleteAllFiles() {
+        $DeletableRenderings = Rendering::whereNotNull('rendered_at')->get();
+
+        foreach ($DeletableRenderings as $DR) {
+            $DR->deleteRenderedFile();
+        }
+    }
+
     /**
      * Deletes files as needed to make room for the current batch
      */
     public function cleanUpFiles() {
+        $CLASS = $this->getRenderClass();
+        $RendererId = $CLASS::getRendererId();
+        $modules_has_file = $modules_no_file = [];
+        $modules = $this->modules;
+
+        foreach($this->Bibles as $Bible) {
+            $Renderer = new $CLASS($Bible);
+
+            if(file_exists($Renderer->getRenderFilePath())) {
+                $modules_has_file[] = $Bible->module;
+            }
+            else {
+                $modules_no_file[] = $Bible->module;
+            }
+        }
+        
+
         $cur_space = $this->getUsedSpace();
-        $est_space = $this->getEstimatedSpace();
+        $est_space = $this->getEstimatedSpace( count($modules_no_file) );
         $max_space = config('download.cache.max_disk_space');
 
         $total_space = $cur_space + $ext_space;
 
         if($total_space <= $max_space) {
-            return;
+            return TRUE;
         }
 
+        $needed_space = $total_space - $max_space;
+        // Todo - what if needed space is more than allowed space????
 
 
-        $CLASS = $this->getRenderClass();
-        $RendererId = $CLASS::getRendererId();
-        $modules = $this->modules;
+
 
         // 'WHERE rendered_at IS NOT NULL AND (renderer != :renderer OR module NOT IN () )'; // WHERE needs to be in this form!
         $DeletableQuery = Rendering::whereNotNull('rendered_at') -> where( function($Query) use ($RendererId, $modules) {
@@ -297,8 +325,23 @@ class RenderManager {
         // Todo: Add order conditions to query based on configs
 
         $DeletableRenderings = $DeletableQuery->get();
-        
-        $space_needed = $total_space - $max_space;
+
+        $freed_space = 0;
+
+        foreach ($DeletableRenderings as $DR) {
+            $DR->deleteRenderedFile();
+            $freed_space += $DR->file_size;
+
+            if($freed_space >= $space_needed) {
+                break;
+            }
+        }
+
+        return TRUE;
+    }
+
+    private function _cleanUpFilesHelper() {
+
     }
 
     public function getUsedSpace() {
@@ -309,9 +352,10 @@ class RenderManager {
       * Returns the estimated space needed to render the selected Bible(s) in the selected format
       *
       */
-    public function getEstimatedSpace() {
+    public function getEstimatedSpace($number_of_bibles = NULL) {
         $CLASS = $this->getRenderClass();
-        return $CLASS::$render_est_size * count($this->Bibles);
+        $number_of_bibles = $number_of_bibles ?: count($this->Bibles);
+        return $CLASS::$render_est_size * $number_of_bibles;
     }
 
     public function getRenderClass() {
