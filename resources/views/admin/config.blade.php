@@ -44,6 +44,7 @@
                             <tr>
                                 <td class='ralign'>Application URL: </td>
                                 <td>
+                                    <a name='application_url' />
                                     <input name='app__url' size='50' value='{{$configs['app.url']}}'>
                                     <span class='info'>
                                         <span>i</span>
@@ -225,10 +226,10 @@
                         <div class='config_block'>
                         <h1>Downloads</h1>
 
-                        <table>
+                        <table border=0>
                             <tbody>
                                 <tr>
-                                    <td class='ralign' style='width:169px'>Enable Downloads: </td>
+                                    <td class='ralign' style='width:269px'>Enable Downloads: </td>
                                     <td>
                                         <label for='download_enable_1'>Yes</label>
                                         <input
@@ -243,14 +244,21 @@
                                         <span class='info'>
                                             <span>i</span>
                                             <p>
-                                                This enables the basic download functionality, including download of Bibles via the API.
+                                                This enables the basic Bible download functionality, including downloading of Bibles via the API.
                                             </p>
                                         </span>
                                     </td>
                                 </tr>
+                                <tr>
+                                    <td>&nbsp;</td>
+                                    <td style='text-align: right'>
+                                        <small>Space used: <span id='rendered_space_used'>{{$rendered_space}}</span>MB</small>
+                                        <button id='button_clear_all_rendered' class='button-small ui-button ui-corner-all ui-widget'>Delete All</button>
+                                    </td>
+                                </tr>
                             </tbody>
                             <tbody id='download_addl_settings' @if($configs['download.enable'] == 0)style='display:none'@endif>
-                                <tr><td colspan='2'>&nbsp;</td></tr>
+                                <tr><td colspan='3'>&nbsp;</td></tr>
                                 <tr>
                                     <td class='ralign'>Enable Downloads Tab: </td>
                                     <td>
@@ -271,8 +279,22 @@
                                             </p>
                                         </span>
                                     </td>
+                                    <!-- <td>&nbsp;</td> -->
                                 </tr>
-                                   <tr>
+                                <tr>
+                                    <td colspan="2">&nbsp;</td>
+                                </tr>
+                                <tr><th colspan="2">Rendered Files Settings</th></tr>
+                                <tr>
+                                    <td colspan="2">
+                                        <p>
+                                            When a download is requested by a user, the Bible(s) will be renderd into the selected format on the fly.
+                                            Some of these formats may take longer than others to render.  You have the option to retain rendered files
+                                            for quicker download.
+                                        </p>
+                                    </td>
+                                </tr>
+                                <tr>
                                     <td class='ralign'>Days to Retain Files: </td>
                                     <td>
                                         <input name='download__cache__days' size='5' value='{{$configs['download.cache.days']}}'>
@@ -281,6 +303,7 @@
                                             <p>Number of days to retain a Bible file before being deleted.  0 = unlimited days.  </p>
                                         </span>
                                     </td>
+                                    <!-- <td>&nbsp;</td> -->
                                 </tr>
                                 <tr>
                                     <td class='ralign'>Maximum File Size: </td>
@@ -294,6 +317,46 @@
                                             </p>
                                         </span>
                                     </td>
+                                    <!-- <td>&nbsp;</td> -->
+                                </tr>                                
+                                <tr>
+                                    <td class='ralign'>Maximum Space for Retained Files: </td>
+                                    <td>
+                                        <input name='download__cache__max_filesize' size='5' value='{{$configs['download.cache.max_filesize']}}'> MB
+                                        <span class='info'>
+                                            <span>i</span>
+                                            <p>
+                                                Maximum allowable disk space for retained files. 
+                                            </p>
+                                        </span>
+                                    </td>
+                                    <!-- <td>&nbsp;</td> -->
+                                </tr>                                
+                                <tr>
+                                    <td class='ralign'>Temporary Space for Rendered Files: </td>
+                                    <td>
+                                        <input name='download__cache__max_filesize' size='5' value='{{$configs['download.cache.max_filesize']}}'> MB
+                                        <span class='info'>
+                                            <span>i</span>
+                                            <p>
+                                                If not enough space to render files, this space is used temporarily to hold them.  Files will be cleaned up after download.
+                                            </p>
+                                        </span>
+                                    </td>
+                                    <!-- <td>&nbsp;</td> -->
+                                </tr>                             
+                                <tr>
+                                    <td class='ralign'>Minimum Rendering Time: </td>
+                                    <td>
+                                        <input name='download__cache__max_filesize' size='5' value='{{$configs['download.cache.max_filesize']}}'> Seconds
+                                        <span class='info'>
+                                            <span>i</span>
+                                            <p>
+                                                Rendered files that take LESS time than this will never be retained.
+                                            </p>
+                                        </span>
+                                    </td>
+                                    <!-- <td>&nbsp;</td> -->
                                 </tr>
                                 <tr><td colspan="2">&nbsp;</td></tr>
                                 <tr><th colspan="2">Derivative Copyright Notice</th></tr>
@@ -305,6 +368,48 @@
                                             name='download__derivative_copyright_statement'>{{$configs['download.derivative_copyright_statement']}}</textarea>
                                     </td>
                                 </tr>
+                                <tr>
+                                    <td class='ralign' style='width:269px'>Add link to <a href='#application_url' title='Application URL'>{{config('app.url')}}</a>: </td>
+                                    <td>
+                                        <label for='app_link_enable_1'>Yes</label>
+                                        <input
+                                            type='radio' name='download__app_link_enable' value='1' id='app_link_enable_1'
+                                            @if($configs['download.enable'] == 1)checked='checked'@endif
+                                         />
+                                        <label for='app_link_enable_0'>No</label>
+                                        <input
+                                            type='radio' name='download__app_link_enable' value='0' id='app_link_enable_0'
+                                            @if($configs['download.enable'] == 0)checked='checked'@endif
+                                            />
+                                        <span class='info'>
+                                            <span>i</span>
+                                            <p>
+                                                Adds a link to {{config('app.url')}} (Application URL) to the copyright information.
+                                            </p>
+                                        </span>
+                                    </td>
+                                </tr>                                
+                                <tr>
+                                    <td class='ralign' style='width:269px'>Add link to BibleSuperSearch.com: </td>
+                                    <td>
+                                        <label for='bss_link_enable_1'>Yes</label>
+                                        <input
+                                            type='radio' name='download__bss_link_enable' value='1' id='bss_link_enable_1'
+                                            @if($configs['download.enable'] == 1)checked='checked'@endif
+                                         />
+                                        <label for='bss_link_enable_0'>No</label>
+                                        <input
+                                            type='radio' name='download__bss_link_enable' value='0' id='bss_link_enable_0'
+                                            @if($configs['download.enable'] == 0)checked='checked'@endif
+                                            />
+                                        <span class='info'>
+                                            <span>i</span>
+                                            <p>
+                                                Adds a link to BibleSuperSearch.com to the copyright information.
+                                            </p>
+                                        </span>
+                                    </td>
+                                </tr>
                             </tbody>
                         </table>
                     </div>
@@ -314,6 +419,7 @@
                     <input type='submit' value='Save Configs' class='button' />
                 </div>
             </form>
+            <div id='dialog_container'></div>
         </div>
     </div>
 @endsection

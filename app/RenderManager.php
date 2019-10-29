@@ -300,7 +300,7 @@ class RenderManager {
         }
         
 
-        $cur_space = $this->getUsedSpace();
+        $cur_space = static::getUsedSpace();
         $est_space = $this->getEstimatedSpace( count($modules_no_file) );
         $max_space = config('download.cache.max_disk_space');
 
@@ -344,7 +344,7 @@ class RenderManager {
 
     }
 
-    public function getUsedSpace() {
+    public static function getUsedSpace() {
         return Rendering::whereNotNull('rendered_at')->sum('file_size');
     }
 

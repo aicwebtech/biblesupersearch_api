@@ -12,6 +12,13 @@ enyo.kind({
         {name: 'Alert', allowHtml: true, classes: 'dialogCenterText'}
     ],
 
+    statics: {
+        confirmStatic: function(text, callback) {
+            var Confirm = new AICWEBTECH.Enyo.jQuery.Confirm();
+            Confirm.confirm(text, callback);
+        }
+    },
+
     create: function() {
         this.inherited(arguments);
 

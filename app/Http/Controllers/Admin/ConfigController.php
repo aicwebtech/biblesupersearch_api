@@ -28,6 +28,7 @@ class ConfigController extends Controller
             'configs' => $config_values,
             'bibles'  => $Bibles,
             'hl_tags' => ['b', 'em', 'strong'],
+            'rendered_space' => \App\RenderManager::getUsedSpace(),
         ]);
     }
 

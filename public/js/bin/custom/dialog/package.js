@@ -3,5 +3,6 @@ enyo.depends(
     'Dialog.js',
     'Loading.js',
     'Alert.js',
-    'Confirm.js'
+    'Confirm.js',
+    'EmbeddedApp.js'
 );
