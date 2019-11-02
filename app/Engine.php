@@ -623,6 +623,21 @@ class Engine {
         $response->name         = config('app.name');
         $response->version      = config('app.version');
         $response->environment  = config('app.env');
+
+        // pher - unpublished property 'php version' checks against current required PHP version
+        if(array_key_exists('pher', $input) && $input['pher']) {
+            $composer_txt = file_get_contents(base_path() . '/composer.json');
+            $composer     = json_decode($composer_txt);
+
+            $php_version = substr($composer->require->php, 2);
+            $php_success = (version_compare($input['pher'], $php_version, '>=') == -1) ? TRUE : FALSE;
+            // var_dump($php_version);
+            // var_dump($input['pher']);
+
+            $response->php_required_min = $php_success ? NULL : $php_version;
+            $response->php_error = !$php_success;
+        }
+
         return $response;
     }
 
@@ -885,9 +900,15 @@ class Engine {
      * Used for checking for updates
      * @return type
      */
-    public static function getUpstreamVersion() {
+    public static function getUpstreamVersion($verbose = FALSE) {
         $json = NULL;
         $url  = 'https://api.biblesupersearch.com/api/version';
+
+        if($verbose) {
+            $ver = explode('.', PHP_VERSION);
+            $php_version = (int) $ver[0] . '.' . (int) $ver[1] . '.' . (int) $ver[2];
+            $url .= '?pher='. $php_version;
+        }
 
         if(ini_get('allow_url_fopen') == 1) {
             $json = file_get_contents($url);
@@ -909,7 +930,12 @@ class Engine {
         }
 
         $results = json_decode($json);
-        return $results->results->version;
+
+        if($verbose) {
+            $results->results->local_php_version = $php_version;
+        }
+
+        return $verbose ? $results->results : $results->results->version;
     }
 
     public static function isBibleEnabled($module) {

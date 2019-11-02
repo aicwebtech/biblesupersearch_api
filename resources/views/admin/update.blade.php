@@ -11,9 +11,21 @@
         @if($upstream === NULL)Cannot check for updates, please try again later.<br /><br />@endif
 
         @if($update)
-            Please download and install the latest updates!<br /><br />
+            @if($php_update)
+            There is an update available.  <br /><br />
 
-            <a href='https://www.biblesupersearch.com/downloads/' target='_NEW'>Bible SuperSearch Downloads</a>
+            However, you need to update your website's PHP before you can download and install it.<br /><br /><br />
+
+            <table>
+                <!-- <tr><td>Local PHP Version:</td><td>{{$php_local}}</td></tr> -->
+                <tr><td>Minimum PHP Version Needed:</td><td>{{$php_min}}</td></tr>
+            </table>
+            @else
+                Please download and install the latest update!<br /><br />
+
+                <a href='https://www.biblesupersearch.com/downloads/' target='_NEW'>Bible SuperSearch Downloads</a>
+            @endif
+
         @else
             You are up to date!
         @endif

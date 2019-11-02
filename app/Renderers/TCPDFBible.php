@@ -14,15 +14,17 @@ class TCPDFBible extends TCPDF {
     public $toc_bookmark_level = 1;
 
     protected $start_book;
-    protected $start_chapter;
+    protected $start_chapter;    
+    protected $prev_book;
+    protected $prev_chapter;
     protected $outlines_cache = [];
     protected $bible_page_count = 0;
 
     public function Header() {
+        // This doesn't actually generate a header!
         $this->bible_page_count ++;
-        $this->start_book    = $this->current_book;
-        $this->start_chapter = $this->current_chapter;
-
+        $this->start_book    = NULL;
+        $this->start_chapter = NULL;
         $this->swapMargins();
     }
 
@@ -31,9 +33,9 @@ class TCPDFBible extends TCPDF {
         $this->SetY(0);
         $this->SetFontSize(8);
         
-        if($this->current_book) {
+        if($this->prev_book) {
             $st = $this->start_book   . ' ' . $this->start_chapter;
-            $en = $this->current_book . ' ' . $this->current_chapter;
+            $en = $this->prev_book . ' ' . $this->prev_chapter;
 
             $index = ($st == $en) ? $st : $st . ' - ' . $en;
 
@@ -59,6 +61,8 @@ class TCPDFBible extends TCPDF {
 
     public function setCurrentVerse($verse) {
         if($verse) {
+            $this->prev_book        = $this->current_book;
+            $this->prev_chapter     = $this->current_chapter;
             $this->current_book     = $verse->book_name;
             $this->current_chapter  = $verse->chapter;
             $this->current_verse    = $verse->verse;
@@ -73,7 +77,9 @@ class TCPDFBible extends TCPDF {
             $this->current_chapter      = NULL;
             $this->current_verse        = NULL;
             $this->start_book           = NULL;
-            $this->start_chapter        = NULL;
+            $this->start_chapter        = NULL;            
+            $this->prev_book            = NULL;
+            $this->prev_chapter         = NULL;
         }
     }
 

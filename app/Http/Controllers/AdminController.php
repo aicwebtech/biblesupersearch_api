@@ -36,14 +36,32 @@ class AdminController extends Controller
 
     public function softwareUpdate() {
         $local_version    = \App\Engine::getHardcodedVersion();
-        $upstream_version = \App\Engine::getUpstreamVersion();
-        $needs_update     = $upstream_version ? version_compare($local_version, $upstream_version, '<') : FALSE;
+        $upstream_version = \App\Engine::getUpstreamVersion(TRUE);
 
-        return view('admin.update', [
-            'local'     => $local_version,
-            'upstream'  => $upstream_version,
-            'update'    => $needs_update,
-        ]);
+        // $upstream_version = new \stdClass;
+        // $upstream_version->version = '5.1.0';
+        // $upstream_version->php_error = TRUE;
+        // $upstream_version->local_php_version = '5.6.30';
+        // $upstream_version->php_required_min = '7.3.1';
+
+        $needs_update     = $upstream_version ? version_compare($local_version, $upstream_version->version, '<') : FALSE;
+
+        $vars = [
+            'local'         => $local_version,
+            'upstream'      => $upstream_version->version,
+            'update'        => $needs_update,
+            'php_update'    => FALSE,
+            'php_local'     => NULL,
+            'php_min'       => NULL,
+        ];
+
+        if($needs_update && $upstream_version->php_error) {
+            $vars['php_update'] = TRUE;
+            $vars['php_local'] = $upstream_version->local_php_version;
+            $vars['php_min']   = $upstream_version->php_required_min;
+        }
+
+        return view('admin.update', $vars);
     }
 
     /**
