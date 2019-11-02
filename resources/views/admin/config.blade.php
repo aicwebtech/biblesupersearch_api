@@ -295,12 +295,40 @@
                                     </td>
                                 </tr>
                                 <tr>
+                                    <td class='ralign'>Temporary Space for Rendered Files: </td>
+                                    <td>
+                                        <input name='download__cache__temp_cache_size' size='5' value='{{$configs['download.cache.temp_cache_size']}}'> MB
+                                        <span class='info'>
+                                            <span>i</span>
+                                            <p>
+                                                If not enough space to render files, this space is used temporarily to hold them.  Files will be cleaned up after download.
+                                                Warning:  setting this two low will limit the number of Bibles that can be downloaded at onces. 
+                                                This space is only used if not enough space allocated in Maximum Space for Retained Files
+                                            </p>
+                                        </span>
+                                    </td>
+                                    <!-- <td>&nbsp;</td> -->
+                                </tr>                             
+                                <tr>
+                                    <td class='ralign'>Maximum Space for Retained Files: </td>
+                                    <td>
+                                        <input name='download__cache__cache_size' size='5' value='{{$configs['download.cache.cache_size']}}'> MB
+                                        <span class='info'>
+                                            <span>i</span>
+                                            <p>
+                                                Maximum allowable disk space for retained files.  Set to 0 to disable file retention (not reccommended).
+                                            </p>
+                                        </span>
+                                    </td>
+                                    <!-- <td>&nbsp;</td> -->
+                                </tr>
+                                <tr>
                                     <td class='ralign'>Days to Retain Files: </td>
                                     <td>
                                         <input name='download__cache__days' size='5' value='{{$configs['download.cache.days']}}'>
                                         <span class='info'>
                                             <span>i</span>
-                                            <p>Number of days to retain a Bible file before being deleted.  0 = unlimited days.  </p>
+                                            <p>Number of days to retain a Bible file since it's last download before being deleted.  0 = unlimited days.  </p>
                                         </span>
                                     </td>
                                     <!-- <td>&nbsp;</td> -->
@@ -320,48 +348,37 @@
                                     <!-- <td>&nbsp;</td> -->
                                 </tr>                                
                                 <tr>
-                                    <td class='ralign'>Maximum Space for Retained Files: </td>
+                                    <td class='ralign'>Minimum Rendering Time: </td>
                                     <td>
-                                        <input name='download__cache__max_filesize' size='5' value='{{$configs['download.cache.max_filesize']}}'> MB
+                                        <input name='download__cache__min_render_time' size='5' value='{{$configs['download.cache.min_render_time']}}'> Seconds
                                         <span class='info'>
                                             <span>i</span>
                                             <p>
-                                                Maximum allowable disk space for retained files. 
+                                                Files that take LESS time than this to render will never be retained. 0 = no restriction
                                             </p>
                                         </span>
                                     </td>
                                     <!-- <td>&nbsp;</td> -->
                                 </tr>                                
                                 <tr>
-                                    <td class='ralign'>Temporary Space for Rendered Files: </td>
+                                    <td class='ralign'>Minimum Hits: </td>
                                     <td>
-                                        <input name='download__cache__max_filesize' size='5' value='{{$configs['download.cache.max_filesize']}}'> MB
+                                        <input name='download__cache__min_hits' size='5' value='{{$configs['download.cache.min_hits']}}'> 
                                         <span class='info'>
                                             <span>i</span>
                                             <p>
-                                                If not enough space to render files, this space is used temporarily to hold them.  Files will be cleaned up after download.
-                                            </p>
-                                        </span>
-                                    </td>
-                                    <!-- <td>&nbsp;</td> -->
-                                </tr>                             
-                                <tr>
-                                    <td class='ralign'>Minimum Rendering Time: </td>
-                                    <td>
-                                        <input name='download__cache__max_filesize' size='5' value='{{$configs['download.cache.max_filesize']}}'> Seconds
-                                        <span class='info'>
-                                            <span>i</span>
-                                            <p>
-                                                Rendered files that take LESS time than this will never be retained.
+                                                Rendered files that have been requested less than this amount will never been retained. 0 = no restriction
                                             </p>
                                         </span>
                                     </td>
                                     <!-- <td>&nbsp;</td> -->
                                 </tr>
                                 <tr><td colspan="2">&nbsp;</td></tr>
+                                <tr><th colspan="2">Copyright Settings</th></tr>
+                                <tr><td colspan="2">All Bible files include a copyright statement, even if the text is in the public domain.</td></tr>
                                 <tr><th colspan="2">Derivative Copyright Notice</th></tr>
                                 <tr><td colspan="2">If provided, will be appended to the copyright notice on each Bible file.</td></tr>
-                                <tr><td colspan="2">HTML is allowed.  YYYY will be replaced by the current year.</td></tr>
+                                <tr><td colspan="2">HTML is allowed, but may be stripped out depending on the format selected.  YYYY will be replaced by the current year.</td></tr>
                                 <tr>
                                     <td colspan="2">
                                         <textarea style='width: 100%; height: 100px'
@@ -374,12 +391,12 @@
                                         <label for='app_link_enable_1'>Yes</label>
                                         <input
                                             type='radio' name='download__app_link_enable' value='1' id='app_link_enable_1'
-                                            @if($configs['download.enable'] == 1)checked='checked'@endif
+                                            @if($configs['download.app_link_enable'] == 1)checked='checked'@endif
                                          />
                                         <label for='app_link_enable_0'>No</label>
                                         <input
                                             type='radio' name='download__app_link_enable' value='0' id='app_link_enable_0'
-                                            @if($configs['download.enable'] == 0)checked='checked'@endif
+                                            @if($configs['download.app_link_enable'] == 0)checked='checked'@endif
                                             />
                                         <span class='info'>
                                             <span>i</span>
@@ -395,12 +412,12 @@
                                         <label for='bss_link_enable_1'>Yes</label>
                                         <input
                                             type='radio' name='download__bss_link_enable' value='1' id='bss_link_enable_1'
-                                            @if($configs['download.enable'] == 1)checked='checked'@endif
+                                            @if($configs['download.bss_link_enable'] == 1)checked='checked'@endif
                                          />
                                         <label for='bss_link_enable_0'>No</label>
                                         <input
                                             type='radio' name='download__bss_link_enable' value='0' id='bss_link_enable_0'
-                                            @if($configs['download.enable'] == 0)checked='checked'@endif
+                                            @if($configs['download.bss_link_enable'] == 0)checked='checked'@endif
                                             />
                                         <span class='info'>
                                             <span>i</span>

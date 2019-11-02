@@ -41,7 +41,7 @@ class RenderManagerTest extends TestCase {
     }
 
     public function testManagerRender() {
-        // return;
+        return;
 
         if($this->skip_render_tests) {
             $this->markTestSkipped('Rendering tests skipped to save time');
@@ -60,5 +60,10 @@ class RenderManagerTest extends TestCase {
 
         $this->assertTrue($success);
         $this->assertFalse($Manager->hasErrors());
+    }
+
+    public function testFileCleanUp() {
+        RenderManager::cleanUpTempFiles(TRUE);
+        $this->assertTrue(TRUE);
     }
 }

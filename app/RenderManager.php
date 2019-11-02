@@ -283,6 +283,8 @@ class RenderManager {
      * Deletes files as needed to make room for the current batch
      */
     public function cleanUpFiles() {
+        static::cleanUpTempFiles();
+
         $CLASS = $this->getRenderClass();
         $RendererId = $CLASS::getRendererId();
         $modules_has_file = $modules_no_file = [];
@@ -338,6 +340,78 @@ class RenderManager {
         }
 
         return TRUE;
+    }
+
+    public static function cleanUpTempFiles($dry_run = FALSE) {
+        $Rendering = Rendering::whereNotNull('rendered_at') -> get();
+        $min_render_time    = config('download.cache.min_render_time') ?: FALSE;
+        $min_hits           = config('download.cache.min_hits') ?: FALSE;
+        $cache_size         = config('download.cache.cache_size') ?: FALSE;
+        $temp_cache_size    = config('download.cache.temp_cache_size') ?: FALSE;
+        $days               = config('download.cache.days') ?: FALSE;
+        $max_filesize       = config('download.cache.max_filesize') ?: FALSE;
+
+        $comp_date = NULL;
+
+        if($days) {
+            $comp_date = strtotime('23:59:59 -' . $days . ' days');
+        }
+
+        if($dry_run) {
+            print date('Y-m-d H:i:s', $comp_date) . "\n\n";
+        }
+
+        foreach($Rendering as $R) {
+            if($min_render_time && $R->rendered_duration < $min_render_time) {
+                if($dry_run) {
+                    static::_cleanUpDryRunMessage($R, 'min_render_time');
+                }
+                else {
+                    $R->deleteRenderedFile();
+                }
+
+                continue;
+            }           
+
+            if($min_hits && $R->hits < $min_hits) {
+                if($dry_run) {
+                    static::_cleanUpDryRunMessage($R, 'min_hits');
+                }
+                else {
+                    $R->deleteRenderedFile();
+                }
+            }
+
+            if($max_filesize && $R->file_size > $max_filesize) {
+                if($dry_run) {
+                    static::_cleanUpDryRunMessage($R, 'max_filesize');
+                }
+                else {
+                    $R->deleteRenderedFile();
+                }
+            }
+
+            if($days) {
+                $date = $R->downloaded_at ?: $R->rendered_at;
+                $date_ts = strtotime($date);
+
+                if($date_ts < $comp_date) {
+                    if($dry_run) {
+                        static::_cleanUpDryRunMessage($R, 'days');
+                    }
+                    else {
+                        $R->deleteRenderedFile();
+                    }
+                }
+
+            }
+
+
+        }
+    }
+
+    protected static function _cleanUpDryRunMessage($Rendering, $config) {
+        print "Deleting {$Rendering->renderer}/{$Rendering->file_name} -> {$config} \n\n";
     }
 
     private function _cleanUpFilesHelper() {

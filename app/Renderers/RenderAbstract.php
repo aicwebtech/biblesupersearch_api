@@ -232,6 +232,15 @@ abstract class RenderAbstract {
             $cr_statement .= '<br /><br />' . $dr_statement;
         }
 
+        if(config('download.app_link_enable')) {
+            $app_url = config('app.url');
+            $cr_statement .= "<br /><br /><a href='{$app_url}'>{$app_url}</a>";
+        }        
+
+        if(config('download.bss_link_enable')) {
+            $cr_statement .= "<br /><br /><a href='https://www.biblesupersearch.com'>www.BibleSuperSearch.com</a>";
+        }
+
         return ($plain_text) ? $this->_htmlToPlainText($cr_statement) : $cr_statement;
     }
 
@@ -272,6 +281,7 @@ abstract class RenderAbstract {
     public function incrementHitCounter() {
         $Rendering = $this->_getRenderingRecord();
         $Rendering->hits ++;
+        $Rendering->downloaded_at = date('Y-m-d H:i:s');
         $Rendering->save();
     }
 

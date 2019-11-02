@@ -5,4 +5,3 @@
     $BibleSuperSearchDownloadFormats = $formats;
 
     include $_SERVER['DOCUMENT_ROOT'] . '/widgets/download/download.php';
-
