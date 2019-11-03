@@ -270,7 +270,6 @@ class RenderManager {
         return $this->needs_process;
     }
 
-
     public static function deleteAllFiles() {
         $DeletableRenderings = Rendering::whereNotNull('rendered_at')->get();
 
@@ -282,9 +281,7 @@ class RenderManager {
     /**
      * Deletes files as needed to make room for the current batch
      */
-    public function cleanUpFiles() {
-        static::cleanUpTempFiles();
-
+    public function cleanUpFiles($dry_run = FALSE) {
         $CLASS = $this->getRenderClass();
         $RendererId = $CLASS::getRendererId();
         $modules_has_file = $modules_no_file = [];
@@ -304,19 +301,22 @@ class RenderManager {
 
         $cur_space = static::getUsedSpace();
         $est_space = $this->getEstimatedSpace( count($modules_no_file) );
-        $max_space = config('download.cache.max_disk_space');
+        $est_space_all = $this->getEstimatedSpace( count($modules) );
+        $max_space = config('download.cache.cache_size') + config('download.cache.temp_cache_size');
 
+        if($est_space_all > $max_space) {
+            return $this->addError('Not enough space allocated to render all of the selected Bibles.  Please reduce the amount of Bibles selected.');
+        }
+        
         $total_space = $cur_space + $ext_space;
 
         if($total_space <= $max_space) {
-            return TRUE;
+            // return TRUE; // don't exit yet, we still need to clean up temp files!
+            $needed_space = 0; // Because this operation doesn't need any space freed up
         }
-
-        $needed_space = $total_space - $max_space;
-        // Todo - what if needed space is more than allowed space????
-
-
-
+        else {
+            $needed_space = $total_space - $max_space;
+        }
 
         // 'WHERE rendered_at IS NOT NULL AND (renderer != :renderer OR module NOT IN () )'; // WHERE needs to be in this form!
         $DeletableQuery = Rendering::whereNotNull('rendered_at') -> where( function($Query) use ($RendererId, $modules) {
@@ -324,34 +324,59 @@ class RenderManager {
                     -> orWhereNotIn('module', $modules);
         });
 
-        // Todo: Add order conditions to query based on configs
+        static::_deletableQueryAddSort($DeletableQuery);
 
         $DeletableRenderings = $DeletableQuery->get();
 
-        $freed_space = 0;
+        $success = static::_cleanUpFilesHelper($DeletableRenderings, $needed_space, $dry_run);
 
-        foreach ($DeletableRenderings as $DR) {
-            $DR->deleteRenderedFile();
-            $freed_space += $DR->file_size;
-
-            if($freed_space >= $space_needed) {
-                break;
-            }
+        if(!$success) {
+            return $this->addError('Unknown error while cleaning up files, please contact system administrator');
         }
 
         return TRUE;
     }
 
     public static function cleanUpTempFiles($dry_run = FALSE) {
-        $Rendering = Rendering::whereNotNull('rendered_at') -> get();
+        $DeletableQuery = Rendering::whereNotNull('rendered_at');
+        static::_deletableQueryAddSort($DeletableQuery);
+        $Renderings = $DeletableQuery->get();
+        static::_cleanUpFilesHelper($Renderings, 0, $dry_run);
+    }
+
+    private static function _deletableQueryAddSort(&$DeletableQuery) {
+        // Todo: Add order conditions to query based on configs
+
+    }
+
+    private static function _cleanUpFilesHelper($DeletableRenderings, $space_needed_render = 0, $dry_run = FALSE) {
         $min_render_time    = config('download.cache.min_render_time') ?: FALSE;
         $min_hits           = config('download.cache.min_hits') ?: FALSE;
         $cache_size         = config('download.cache.cache_size') ?: FALSE;
         $temp_cache_size    = config('download.cache.temp_cache_size') ?: FALSE;
         $days               = config('download.cache.days') ?: FALSE;
         $max_filesize       = config('download.cache.max_filesize') ?: FALSE;
+        $cur_space          = static::getUsedSpace();
+        $comp_date          = NULL;
+        $space_needed_cache = $space_needed_overall = $freed_space = 0;
+        $cache_size_max     = (int) $cache_size + (int) $temp_cache_size;
 
-        $comp_date = NULL;
+        if($dry_run) {
+            $space_needed_render = 130;
+        }
+
+        if($cur_space > $cache_size) {
+            $space_needed_cache = $cur_space - $cache_size;
+            $space_over_max     = $cur_space - $cache_size_max;
+            $space_needed_overall = max($space_needed_render, $space_needed_cache);
+
+            if($space_needed_render > $temp_cache_size) {
+
+            }
+        }
+        else {
+            $space_needed_overall = $space_needed_render;
+        }
 
         if($days) {
             $comp_date = strtotime('23:59:59 -' . $days . ' days');
@@ -361,34 +386,22 @@ class RenderManager {
             print date('Y-m-d H:i:s', $comp_date) . "\n\n";
         }
 
-        foreach($Rendering as $R) {
-            if($min_render_time && $R->rendered_duration < $min_render_time) {
-                if($dry_run) {
-                    static::_cleanUpDryRunMessage($R, 'min_render_time');
-                }
-                else {
-                    $R->deleteRenderedFile();
-                }
+        foreach($DeletableRenderings as $key => $R) {
+            $delete = FALSE;
 
-                continue;
+            if($min_render_time && $R->rendered_duration < $min_render_time) {
+                static::_cleanUpDryRunMessage($dry_run, $R, 'min_render_time');
+                $delete = TRUE;
             }           
 
             if($min_hits && $R->hits < $min_hits) {
-                if($dry_run) {
-                    static::_cleanUpDryRunMessage($R, 'min_hits');
-                }
-                else {
-                    $R->deleteRenderedFile();
-                }
+                static::_cleanUpDryRunMessage($dry_run, $R, 'min_hits');
+                $delete = TRUE;
             }
 
             if($max_filesize && $R->file_size > $max_filesize) {
-                if($dry_run) {
-                    static::_cleanUpDryRunMessage($R, 'max_filesize');
-                }
-                else {
-                    $R->deleteRenderedFile();
-                }
+                static::_cleanUpDryRunMessage($dry_run, $R, 'max_filesize');
+                $delete = TRUE;
             }
 
             if($days) {
@@ -396,26 +409,51 @@ class RenderManager {
                 $date_ts = strtotime($date);
 
                 if($date_ts < $comp_date) {
-                    if($dry_run) {
-                        static::_cleanUpDryRunMessage($R, 'days');
-                    }
-                    else {
-                        $R->deleteRenderedFile();
-                    }
+                    $delete = TRUE;
+                    static::_cleanUpDryRunMessage($dry_run, $R, 'days');
                 }
-
             }
 
+            if($delete) {
+                $freed_space += $R->file_size;
 
+                if(!$dry_run) {
+                    $R->deleteRenderedFile();
+                }
+
+                unset($DeletableRenderings[$key]);
+            }
         }
+
+        if($space_needed_overall > $freed_space) {
+            foreach($DeletableRenderings as $R) {
+                $freed_space += $R->file_size;
+                static::_cleanUpDryRunMessage($dry_run, $R, 'more_space_needed');
+                
+                if(!$dry_run) {
+                    $R->deleteRenderedFile();
+                }
+
+                if($freed_space >= $space_needed_overall) {
+                    break;
+                }
+            }
+        }
+
+        if($dry_run) {
+            print "space in use: {$cur_space}\n\n";
+            print "cache size max: {$cache_size_max}\n\n";
+            print "space needed overall: {$space_needed_overall}\n\n";
+            print "space freed: {$freed_space}\n\n";
+        }
+
+        return ($space_needed_overall > $freed_space) ? FALSE : TRUE;
     }
 
-    protected static function _cleanUpDryRunMessage($Rendering, $config) {
-        print "Deleting {$Rendering->renderer}/{$Rendering->file_name} -> {$config} \n\n";
-    }
-
-    private function _cleanUpFilesHelper() {
-
+    private static function _cleanUpDryRunMessage($dry_run, $Rendering, $config) {
+        if($dry_run) {
+            print "Deleting {$Rendering->renderer}/{$Rendering->file_name} -> {$config} \n\n";
+        }
     }
 
     public static function getUsedSpace() {
