@@ -17,7 +17,7 @@
             However, you need to update your website's PHP before you can download and install it.<br /><br /><br />
 
             <table>
-                <!-- <tr><td>Local PHP Version:</td><td>{{$php_local}}</td></tr> -->
+                <tr><td>Local PHP Version:</td><td>{{$php_local}}</td></tr>
                 <tr><td>Minimum PHP Version Needed:</td><td>{{$php_min}}</td></tr>
             </table>
             @else

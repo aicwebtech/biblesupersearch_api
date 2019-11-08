@@ -25,10 +25,10 @@ class ConfigController extends Controller
         $Bibles = \App\Models\Bible::where('enabled', 1)->where('installed', 1)->get();
 
         return view('admin.config', [
-            'configs' => $config_values,
-            'bibles'  => $Bibles,
-            'hl_tags' => ['b', 'em', 'strong'],
-            'rendered_space' => \App\RenderManager::getUsedSpace(),
+            'configs'           => $config_values,
+            'bibles'            => $Bibles,
+            'hl_tags'           => ['b', 'em', 'strong'],
+            'rendered_space'    => \App\RenderManager::getUsedSpace(),
         ]);
     }
 

@@ -63,7 +63,13 @@ class RenderManagerTest extends TestCase {
     }
 
     public function testFileCleanUp() {
-        RenderManager::cleanUpTempFiles(TRUE);
+        // RenderManager::_testCleanUpFiles(130);
+
+        RenderManager::_testCleanUpFiles(120, [
+            'cache_size' => 200,
+            'temp_cache_size' => 100,
+        ]);
+        
         $this->assertTrue(TRUE);
     }
 }

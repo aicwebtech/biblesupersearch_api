@@ -38,12 +38,6 @@ class AdminController extends Controller
         $local_version    = \App\Engine::getHardcodedVersion();
         $upstream_version = \App\Engine::getUpstreamVersion(TRUE);
 
-        // $upstream_version = new \stdClass;
-        // $upstream_version->version = '5.1.0';
-        // $upstream_version->php_error = TRUE;
-        // $upstream_version->local_php_version = '5.6.30';
-        // $upstream_version->php_required_min = '7.3.1';
-
         $needs_update     = $upstream_version ? version_compare($local_version, $upstream_version->version, '<') : FALSE;
 
         $vars = [
