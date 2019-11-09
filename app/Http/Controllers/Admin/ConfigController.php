@@ -6,6 +6,7 @@ use Illuminate\Http\Request;
 use App\Http\Controllers\Controller;
 use App\ConfigManager;
 use Illuminate\Support\Facades\Artisan;
+use App\Http\Responses\Response;
 
 class ConfigController extends Controller
 {
@@ -59,5 +60,22 @@ class ConfigController extends Controller
      */
     public function destroy() {
         // to do
+    }
+
+    public function cleanUpDownloadFiles() {
+        App\RenderManager::cleanUpTempFiles(TRUE);
+        $resp = new \stdClass();
+        $resp->success = TRUE;
+        $resp->space_used = App\RenderManager::getUsedSpace();
+        return new Response($resp, 200);
+    }
+
+    public function deleteAllDownloadFiles() {
+        die('here');
+        App\RenderManager::deleteAllFiles();
+        $resp = new \stdClass();
+        $resp->success = TRUE;
+        $resp->space_used = App\RenderManager::getUsedSpace();
+        return new Response($resp, 200);
     }
 }

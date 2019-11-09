@@ -193,6 +193,7 @@
                                                 <td>&nbsp;</td>
                                                 <td style='text-align: right'>
                                                     <small>Space used: <span id='rendered_space_used'>{{$rendered_space}}</span>MB</small>
+                                                    <button id='button_clean_up_rendered' class='button-small ui-button ui-corner-all ui-widget'>Clean Up</button>
                                                     <button id='button_clear_all_rendered' class='button-small ui-button ui-corner-all ui-widget'>Delete All</button>
                                                 </td>
                                             </tr>
