@@ -2,6 +2,8 @@
 var Dialogs = null;
 
 $( function() {
+    $( "#tabs" ).tabs();
+
     $('input[name=download__enable]').click(function(e) {
         if( $(this).val() == '1' ) {
             $('#download_addl_settings').show();

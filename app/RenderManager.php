@@ -157,6 +157,11 @@ class RenderManager {
         }
 
         set_time_limit(0);
+        
+        if(!$this->cleanUpTempFiles()) {
+            return FALSE;
+        }
+
         $error_reporting_cache = error_reporting();
         error_reporting(E_ERROR | E_WARNING | E_PARSE);
         $this->needs_process = FALSE;
@@ -311,7 +316,6 @@ class RenderManager {
         $total_space = $cur_space + $ext_space;
 
         if($total_space <= $max_space) {
-            // return TRUE; // don't exit yet, we still need to clean up temp files!
             $needed_space = 0; // Because this operation doesn't need any space freed up
         }
         else {
@@ -349,6 +353,7 @@ class RenderManager {
         $DeletableQuery->orderBy('rendered_duration', 'desc');
         $DeletableQuery->orderBy('hits', 'asc');
         $DeletableQuery->orderBy('file_size', 'desc');
+        $DeletableQuery->orderBy('custom', 'desc');
         $DeletableQuery->oldest('downloaded_at');
     }
 
@@ -378,22 +383,34 @@ class RenderManager {
             }
         }
 
-        $space_needed_cache = $space_needed_overall = $freed_space = 0;
+        $space_needed_render = ($space_needed_render < 0 ) ? 0 : $space_needed_render;
+        $space_needed_cache = $space_needed_overall = $freed_space = $space_needed_extra = 0;
         $cache_size_max     = (int) $cache_size + (int) $temp_cache_size;
 
-        // todo - finlalize $space_needed_overall calcs!!!!
+        if($space_needed_render > $cache_size_max) {
+            return FALSE;
+        }
+
+        // todo - finlalized?? $space_needed_overall calcs
         if($cur_space > $cache_size) {
             $space_needed_cache = $cur_space - $cache_size;
-            $space_over_max     = $cur_space - $cache_size_max;
-            $space_needed_overall = max($space_needed_render, $space_needed_cache);
 
             if($space_needed_render > $temp_cache_size) {
-                $sp = $space_needed_render - $temp_cache_size; // ????
-                $space_needed_overall += $sp;
+                $space_needed_extra = $space_needed_render - $temp_cache_size;
+                $space_needed_overall = $space_needed_cache + $space_needed_extra;
+            }
+            else {
+                $space_needed_overall = $space_needed_cache;
             }
         }
         else {
-            $space_needed_overall = $space_needed_render + $cur_space - $cache_size_max;
+            if($space_needed_render + $cur_space > $cache_size_max) {
+                $space_needed_extra = $space_needed_render + $cur_space - $cache_size_max;
+                $space_needed_overall = $space_needed_extra + $space_needed_render;
+            }
+            else {
+                $space_needed_overall = $space_needed_render;
+            }
         }
 
         if($days) {

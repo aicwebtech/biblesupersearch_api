@@ -72,7 +72,7 @@ body {
     background-color: #b3c8f9;
     padding: 10px;
     border-radius: 10px;
-    width: 600px;
+    /*width: 600px;*/
     margin: 0 auto 20px;
     /*float: left;*/
     /*display: inline-block;*/
@@ -82,6 +82,16 @@ body {
 
 input[readonly='readonly'] {
     background-color: #d1d1d1;
+}
+
+.config_tab {
+    height: 60vh;
+    overflow-y: auto;
+}
+
+.config_tab .container {
+    margin-left: auto;
+    margin-right: auto;
 }
 
 .config_block h1 {
