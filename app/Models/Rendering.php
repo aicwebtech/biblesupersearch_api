@@ -10,7 +10,7 @@ class Rendering extends Model
 
     public function deleteRenderedFile() {
         $filepath = $this->getRenderedFilePath();
-        unlink($filepath);
+        is_file($filepath) && unlink($filepath);
         $this->rendered_at = NULL;
         $this->save();
     }

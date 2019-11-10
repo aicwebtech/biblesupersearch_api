@@ -4,5 +4,6 @@ enyo.depends(
     'Loading.js',
     'Alert.js',
     'Confirm.js',
+    'TextConfirm.js',
     'EmbeddedApp.js'
 );

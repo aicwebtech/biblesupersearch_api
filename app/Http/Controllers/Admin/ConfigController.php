@@ -63,19 +63,18 @@ class ConfigController extends Controller
     }
 
     public function cleanUpDownloadFiles() {
-        App\RenderManager::cleanUpTempFiles(TRUE);
+        \App\RenderManager::cleanUpTempFiles();
         $resp = new \stdClass();
         $resp->success = TRUE;
-        $resp->space_used = App\RenderManager::getUsedSpace();
+        $resp->space_used = \App\RenderManager::getUsedSpace();
         return new Response($resp, 200);
     }
 
     public function deleteAllDownloadFiles() {
-        die('here');
-        App\RenderManager::deleteAllFiles();
+        \App\RenderManager::deleteAllFiles(TRUE);
         $resp = new \stdClass();
         $resp->success = TRUE;
-        $resp->space_used = App\RenderManager::getUsedSpace();
+        $resp->space_used = \App\RenderManager::getUsedSpace();
         return new Response($resp, 200);
     }
 }

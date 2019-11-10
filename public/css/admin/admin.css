@@ -149,3 +149,8 @@ title.h1 {
 .info.narrow:hover p {
     width: 200px;
 }
+
+.red_alert {
+    color: red;
+}
+

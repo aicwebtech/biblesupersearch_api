@@ -126,7 +126,7 @@ abstract class PdfAbstract extends RenderAbstract {
 
     protected function _renderSingleVerse($verse) {
         if($verse->id > 2000) {
-            return;
+            // return;
         }
 
         if($this->pdf_verses_paragraph === 'auto') {

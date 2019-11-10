@@ -158,7 +158,7 @@ class RenderManager {
 
         set_time_limit(0);
         
-        if(!$this->cleanUpTempFiles()) {
+        if(count($this->modules) > 1 && !$this->cleanUpTempFiles()) {
             return FALSE;
         }
 
@@ -308,7 +308,6 @@ class RenderManager {
                 $modules_no_file[] = $Bible->module;
             }
         }
-        
 
         $cur_space = static::getUsedSpace();
         $est_space = $this->getEstimatedSpace( count($modules_no_file) );
@@ -355,12 +354,14 @@ class RenderManager {
     }
 
     private static function _deletableQueryAddSort(&$DeletableQuery) {
-        // Todo: Finalize ordering!
+        // Todo: Make this ordering a config?
+        // This will need continued tweaking
         $DeletableQuery->orderBy('rendered_duration', 'desc');
         $DeletableQuery->orderBy('hits', 'asc');
         $DeletableQuery->orderBy('file_size', 'desc');
         $DeletableQuery->orderBy('custom', 'desc');
         $DeletableQuery->oldest('downloaded_at');
+        // $DeletableQuery->oldest('rendered_at');
     }
 
     public static function _testCleanUpFiles($space_needed_render = 0, $verbose = FALSE, $debug_overrides = []) {
@@ -400,7 +401,6 @@ class RenderManager {
             return FALSE;
         }
 
-        // todo - finlalized?? $space_needed_overall calcs
         if($cur_space > $cache_size) {
             $space_needed_cache = $cur_space - $cache_size;
 
@@ -625,7 +625,6 @@ class RenderManager {
 
     static public function getRenderFilepath($format, $module) {
         $basedir = Renderers\RenderAbstract::getRenderBasePath();
-
         $CLASS = static::$register[$format];
 
         if(!$format || !$CLASS) {
@@ -636,6 +635,5 @@ class RenderManager {
         $basename = array_pop($cc);
 
         return $basedir . $basename . '/' . $module;
-
     }
 }

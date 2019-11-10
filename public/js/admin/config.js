@@ -2,6 +2,12 @@
 var Dialogs = null;
 
 $( function() {
+    $.ajaxSetup({
+        headers: {
+            'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
+        }
+    });
+
     $( "#tabs" ).tabs();
 
     $('input[name=download__enable]').click(function(e) {
@@ -14,25 +20,23 @@ $( function() {
     });
 
     $('#button_clear_all_rendered').click(function() {
-        Dialogs.confirm('Are you sure? \nThis will delete ALL retained rendered Bibles.', function(thing) {
+        Dialogs.textConfirm('Are you sure? \nThis will delete ALL retained rendered Bibles.', 'DELETE', function(confirm) {
             
-            if(thing) {
-                // Dialogs.set('loadingShowing', true);
-
+            if(confirm) {
+                Dialogs.set('loadingShowing', true);
+                
                 $.ajax({
                     url: '/admin/config/download/delete',
                     type: 'POST',
                     dataType: 'json',
 
                     success: function(data, statux, xhr) {
-                        // Dialogs.set('loadingShowing', false);
-                        console.log(data);
-                        $('#rendered_space_used').htmo(data.space_used);
-
+                        Dialogs.set('loadingShowing', false);
+                        $('#rendered_space_used').html(data.space_used);
                     },
                     error: function(xhr, status, error) {
-                        // Dialogs.set('loadingShowing', false);
-
+                        Dialogs.set('loadingShowing', false);
+                        alert('An error has occurred');
                     }
                 });
             }
@@ -42,11 +46,26 @@ $( function() {
     });    
 
     $('#button_clean_up_rendered').click(function() {
-        Dialogs.confirm('Are you sure? \nThis will clean up temporary rendered Bibles.', function(thing) {
-            console.log('wat', thing);
+        Dialogs.confirm('Are you sure? \nThis will clean up temporary rendered Bibles.', function(confirm) {
+            console.log('wat', confirm);
 
-            if(thing) {
-                alert('clean up not implemented????');
+            if(confirm) {
+                Dialogs.set('loadingShowing', true);
+
+                $.ajax({
+                    url: '/admin/config/download/cleanup',
+                    type: 'POST',
+                    dataType: 'json',
+
+                    success: function(data, statux, xhr) {
+                        Dialogs.set('loadingShowing', false);
+                        $('#rendered_space_used').html(data.space_used);
+                    },
+                    error: function(xhr, status, error) {
+                        Dialogs.set('loadingShowing', false);
+                        alert('An error has occurred');
+                    }
+                });
             }
         });
 
