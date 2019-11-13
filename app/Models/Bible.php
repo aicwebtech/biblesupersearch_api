@@ -27,6 +27,7 @@ class Bible extends Model {
         'copyright',
         'copyright_id',
         'copyright_statement',
+        'url',
         'italics',
         'strongs',
         'red_letter',
@@ -237,7 +238,7 @@ class Bible extends Model {
         }
 
         if($this->copyright_id) {
-            return $this->copyrightInfo->default_copyright_statement;
+            return $this->copyrightInfo->getProcessedCopyrightStatement();
         }
 
         return $this->description;
@@ -326,7 +327,7 @@ class Bible extends Model {
     }
 
     public function getModuleFilePathShort() {
-        return $this->_getModulePath(TRUE);
+        return $this->getModulePath(TRUE);
     }
 
     public function getModuleFileName() {
@@ -397,6 +398,31 @@ class Bible extends Model {
         }
 
         return FALSE;
+    }    
+
+    public static function updateFromModuleFile($module, $fields = []) {
+        $Bible = static::findByModule($module);
+        $Zip   = static::openModuleFileByModule($module);
+
+        if(!$Bible) {
+            return static::createFromModuleFile($module);
+        }
+
+        if($Zip) {
+            $json  = $Zip->getFromName('info.json');
+            $attr  = json_decode($json, TRUE);
+
+            if(is_array($attr) && !empty($attr)) {
+                $attr = Arr::only($attr, $fields);
+            }
+
+            $Bible->fill($attr);
+            $Bible->save();
+            $Zip->close();
+            return $Bible;
+        }
+
+        return FALSE;
     }
 
     public static function getListOfModuleFiles() {
@@ -437,6 +463,15 @@ class Bible extends Model {
         foreach($list as $file) {
             $module = substr($file, 0, strlen($file) - 4);
             $Bible  = static::createFromModuleFile($module);
+        }
+    }
+
+    public static function updateBibleTable($fields = []) {
+        $list = static::getListOfModuleFiles();
+
+        foreach($list as $file) {
+            $module = substr($file, 0, strlen($file) - 4);
+            $Bible  = static::updateFromModuleFile($module, $fields);
         }
     }
 
