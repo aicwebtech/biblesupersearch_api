@@ -9,4 +9,5 @@ $( function() {
     });
 
     $('.button').button();
+    $('button').button();
 });

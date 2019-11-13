@@ -32,13 +32,13 @@ class CreateCopyrightTable extends Migration
             $table->tinyInteger('non_commercial')->default(0)->unsigned()->comment('Whether permission is required for commercial use.'); // NEW
             $table->tinyInteger('no_derivatives')->default(0)->unsigned()->comment('Only original copies can be copied and distributed. (Requires special permission to use in Bible SuperSearch'); // NEW
             $table->integer('rank')->default(9999)->unsigned();
-            $table->unique('cr_name'); // NEW
+            $table->unique('cr_name', 'idxcr'); // NEW
             $table->timestamps();
         });
 
         Schema::table('bibles', function (Blueprint $table) {
             $table->text('copyright_statement')->after('copyright_id');
-            $table->string('url')->after('copyright_statement')->nullable()->comment('URL to website for this translation, if it exists');
+            $table->string('url', 255)->after('copyright_statement')->nullable()->comment('URL to website for this translation, if it exists');
         });
 
         DatabaseSeeder::importSqlFile('copyrights.sql');
@@ -57,6 +57,7 @@ class CreateCopyrightTable extends Migration
 
         Schema::table('bibles', function (Blueprint $table) {
             $table->dropColumn('copyright_statement');
+            $table->dropColumn('url');
         });
     }
 }

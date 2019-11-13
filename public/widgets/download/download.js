@@ -158,7 +158,7 @@ function bibleDownloadProcessNext() {
         var bible = bibleRenderQueue.shift();
         var name = $('label[for="bible_download_' + bible +'"]').html();
         var sep  = '-';
-        var text = '<span class="float_left">Rendering: <i>' + name + '</i> ' + sep.repeat(47 - name.length) + '</span>';
+        var text = '<span class="float_left">Rendering: <i>' + name + '</i> ' + sep.repeat(44 - name.length) + '</span>';
 
         $('#bible_download_dialog_content').append(text);
 

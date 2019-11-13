@@ -14,7 +14,8 @@ tr.download_disabled {
 .format_group_box h2.name {
     margin-top: 0;
     margin-bottom: 0px;
-    font-size: 1em;
+    /*font-size: 1em;*/
+    font-weight: bold;
 }
 
 .format_group_box div.desc {
@@ -26,7 +27,7 @@ tr.download_disabled {
 }
 
 .format_box {
-    background-color: #ccc;
+    background-color: #bbb;
     border-radius: 10px;
     padding: 8px;
     margin-top: 20px;
@@ -55,14 +56,21 @@ tr.download_disabled {
 .pseudo_dialog_container {
     margin-left: auto;
     margin-right: auto;
-    background-color: white; 
+    /*background-color: white; */
     opacity: 1;
     margin-top: calc(40vh);
     padding: 15px;
+    border: 2px solid #666;
+    border-radius: 10px;
+    background-color: #aaa;
 }
 
 .pseudo_dialog_contents {
     overflow-y: auto;
+    border-radius: 8px;
+    background-color: white;
+    padding: 10px;
+    border: 1px solid #666;
 }
 
 .pseudo_dialog_contents span.float_left {
@@ -77,7 +85,12 @@ tr.download_disabled {
     font-family: Courier, Monospace;
 }
 
+.pseudo_dialog_buttons {
+    margin-top: 10px;
+}
+
 .centered_div {
     margin-left: auto;
     margin-right: auto;
 }
+

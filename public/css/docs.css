@@ -13,7 +13,7 @@
 }
 
 #container {
-    margin:40px 80px;
+    margin: 40px 80px;
     border-radius: 30px;
     padding: 20px;
     background-color: #EEEEEE;
@@ -39,6 +39,14 @@ pre code {
     display: inline-block;
     background-color: #EBC19B;
     padding: 10px;
+    white-space: pre-wrap;
+    width: 99%;
+}
+
+div.code {
+    background-color: #EBC19B;
+    font-family: monospace;
+    white-space: pre-wrap;
 }
 
 .parameters tr th, .parameters tr td {
@@ -129,6 +137,16 @@ tr.download_disabled {
     font-size: 14px;
 }
 
+.pseudo_dialog_container {
+    border: 2px solid #666;
+    border-radius: 10px;
+    background-color: #3c729b;
+}
+
+.pseudo_dialog_contents {
+    border: 1px solid #666;
+}
+
 @media print {
     #container {
         margin: 0px;
@@ -136,3 +154,20 @@ tr.download_disabled {
     }
 }
 
+@media only screen and (max-width: 1200px) {
+    .col_research, .col_shortname {
+        display: none;
+    }
+}
+
+@media only screen and (max-width: 1000px) {
+    .col_copyright, .col_downloadable {
+        display: none;
+    }
+
+    #container {
+        margin: 20px 40px;
+        border-radius: 30px;
+        padding: 10px;
+    }
+}

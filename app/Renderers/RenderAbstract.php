@@ -116,19 +116,22 @@ abstract class RenderAbstract {
         $Rendering->version             = static::$render_version;
         $Rendering->file_size           = $file_size_mb;
         $Rendering->file_name           = basename($file_path);
-        $Rendering->save();
+        
+        if(!$Rendering->save()) {
+            return FALSE;
+        }
 
-        return $success;
+        return $success ? TRUE : FALSE;
     }
 
-    public function isRenderNeeded() {
+    public function isRenderNeeded($ignore_cache = FALSE) {
         $file_path = $this->getRenderFilePath();
 
         if(!is_file($file_path)) {
             return TRUE;
         }
 
-        $Rendering = $this->_getRenderingRecord();
+        $Rendering = $this->_getRenderingRecord($ignore_cache);
 
         if(static::$render_version != floatval($Rendering->version) || !$Rendering->rendered_at) {
             return TRUE;
@@ -142,11 +145,15 @@ abstract class RenderAbstract {
     }
 
     /**
-     * If render file does not exist, generates the output file and saves it to disk
+     * If render file does not exist or output has changed, generates the output file and saves it to disk
      * @return boolean
      */
     public function renderIfNeeded() {
-        return $this->render(FALSE, TRUE);
+        if($this->isRenderNeeded()) {
+            return $this->render(TRUE, TRUE);
+        }
+
+        return TRUE;
     }
 
     public function deleteRenderFile() {
@@ -217,7 +224,7 @@ abstract class RenderAbstract {
 
     }
 
-    protected function _getMetaString($plain_text = FALSE) {
+    public function _getMetaString($plain_text = FALSE) {
         $meta_string = $this->Bible->name;
         $meta_string .= ' ' . $this->_getCopyrightStatement($plain_text);
 
@@ -244,8 +251,8 @@ abstract class RenderAbstract {
         return ($plain_text) ? $this->_htmlToPlainText($cr_statement) : $cr_statement;
     }
 
-    protected function _getRenderingRecord() {
-        if(!$this->Rendering) {
+    public function _getRenderingRecord($ignore_cache = FALSE) {
+        if(!$this->Rendering || $ignore_cache) {
             $renderer = static::getRendererId();
             $this->Rendering = Rendering::firstOrCreate(['renderer' => $renderer, 'module' => $this->Bible->module]);
         }
