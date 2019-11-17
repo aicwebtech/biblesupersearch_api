@@ -33,18 +33,20 @@ class TCPDFBible extends TCPDF {
         $this->SetY(0);
         $this->SetFontSize(8);
         
-        if($this->prev_book) {
+        if($this->start_book && $this->prev_book) {
             $st = $this->start_book   . ' ' . $this->start_chapter;
-            $en = $this->prev_book . ' ' . $this->prev_chapter;
+            $en = $this->prev_book    . ' ' . $this->prev_chapter;
 
             $index = ($st == $en) ? $st : $st . ' - ' . $en;
 
             $page_width = $this->getPageWidth();
             $margins    = $this->getMargins();
             $page_width -= $margins['left'] + $margins['right'];
-            $cell_width = $page_width / 3;
+            $cell_width = floor($page_width / 3);
 
             $pg = $this->getAliasNumPage();
+
+            // Cell($w, $h=0, $txt='', $border=0, $ln=0, $align='', $fill=false, $link='', $stretch=0, $ignore_min_height=false, $calign='T', $valign='M') {
 
             $this->Cell($cell_width, 10, $st, 0, FALSE, 'L', 0, '', 0, FALSE, 'T', 'M');
             $this->Cell($cell_width, 10, $pg, 0, FALSE, 'C', 0, '', 0, FALSE, 'T', 'M');

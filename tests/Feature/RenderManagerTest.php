@@ -8,7 +8,7 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use App\RenderManager;
 
 class RenderManagerTest extends TestCase {
-    private $skip_render_tests = TRUE;
+    private $skip_render_tests = FALSE;
 
     public function testList() {
         $list = RenderManager::getRendererList();
@@ -86,6 +86,8 @@ class RenderManagerTest extends TestCase {
         if($this->skip_render_tests) {
             // $this->markTestSkipped('Rendering tests skipped to save time');
         }
+
+        return;
         
         $TextRender = new \App\Renderers\PlainText('kjv');
         $Rendering0 = $TextRender->_getRenderingRecord();
@@ -162,8 +164,9 @@ class RenderManagerTest extends TestCase {
             // $this->markTestSkipped('Rendering tests skipped to save time');
         }
 
-        return;
-        $Manager = new RenderManager(['kjv'], 'pdf');
+        // return;
+        // $Manager = new RenderManager(['kjv'], 'pdf');
+        $Manager = new RenderManager(['kjv', 'rvg'], 'pdf');
         // $Manager = new RenderManager(['chinese_union'], 'pdf');
         // $Manager = new RenderManager(['kjv', 'rvg'], 'pdf');
         // $Manager = new RenderManager(['kjv', 'rvg', 'svd', 'thaikjv', 'synodal', 'tr', 'wlc','bkr', 'stve', 'cornilescu', 'chinese_union'], 'pdf');

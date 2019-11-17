@@ -12,7 +12,6 @@ abstract class PdfAbstract extends RenderAbstract {
     /* PDF-specific settings */
     protected static $pdf_page_format   = 'LETTER';  // For options, see TCPDF_STATIC::$page_formats
     protected static $pdf_red_word_tag  = 'red';     // HTML tag for words of Christ.  'red' colors them with traditional red
-    // protected $tcpdf_class           = \TCPDF::class;
     protected $tcpdf_class              = TCPDFBible::class;
     protected $pdf_orientation          = 'P';
     protected $pdf_unit                 = 'mm';
@@ -26,7 +25,10 @@ abstract class PdfAbstract extends RenderAbstract {
     protected $pdf_top_margin           = 10;        // Top margin size, in $this->pdf_unit units
     protected $pdf_font_family          = 'freeserif'; // Unicode-friendly serif font
     protected $pdf_text_size            = 9; // Compact: 9? or less, Regular: 12, Large: 14?
-    protected $pdf_title_size           = 16;
+    protected $pdf_title_size           = 36;
+    protected $pdf_bible_version_size   = 20;
+    protected $pdf_toc_title_size       = 16;
+    protected $pdf_toc_size             = 12;
     protected $pdf_header_size          = 8;
     protected $pdf_header_style         = 'B';    
     protected $pdf_book_size            = 12;
@@ -56,6 +58,9 @@ abstract class PdfAbstract extends RenderAbstract {
 
     protected $last_render_book    = NULL;
     protected $last_render_chapter = NULL;
+
+    protected $toc_page = 5;
+    protected $in_psalms = FALSE;
 
     public function __construct($module) {
         parent::__construct($module);
@@ -98,8 +103,10 @@ abstract class PdfAbstract extends RenderAbstract {
         // // todo - translate this!
         // // $this->TCPDF->MultiCell(0, $title_height, 'The Holy Bible',   0, 'C', FALSE, 1, '', '4');
         // // $this->TCPDF->MultiCell(0, $title_height, $this->Bible->name, 0, 'C', FALSE, 1, '', '7');        
-        $this->TCPDF->Cell(0, $title_height, strtoupper('The Holy Bible'),   0, 1, 'C');
-        $this->TCPDF->Cell(0, $title_height, strtoupper($this->Bible->name), 0, 1, 'C');
+        // $this->TCPDF->Cell(0, $title_height, strtoupper('The Holy Bible'),   0, 1, 'C');
+        $this->TCPDF->Cell(0, $title_height, strtoupper(__('basic.holy_bible')),   0, 1, 'C');
+        $this->TCPDF->setFontSize($this->pdf_bible_version_size);
+        $this->TCPDF->MultiCell(0, $title_height, strtoupper($this->Bible->name), 0, 'C');
         $this->TCPDF->ln();
         $this->TCPDF->addPage();
         $this->TCPDF->addPage();
@@ -109,23 +116,32 @@ abstract class PdfAbstract extends RenderAbstract {
         $this->TCPDF->Cell(0, 20, $this->Bible->name, 0, 1, 'L');
         // $this->TCPDF->ln();
         $this->TCPDF->writeHTMLCell(0, 40, $this->pdf_margin_inside, $this->TCPDF->getY(), $this->_getCopyrightStatement() );
+
+        $page = $this->TCPDF->getBiblePageCount();
+
+        if($page >= $this->toc_page) {
+            $inc = ($page % 2 == 1) ? 2 : 1;
+            $this->toc_page = $page + $inc;
+
+            if($page % 2 == 1) {
+                // If the copyright info ends on an odd numbered page, add an extra page to insure TOC is on odd-numbered page as well
+                $this->TCPDF->addPage();
+            } 
+        }
+
         $this->TCPDF->addPage();
         $this->TCPDF->addPage(); // TOC
         $this->TCPDF->addPage(); 
-        // $this->TCPDF->addPage();
 
         $this->_enableColumns();
 
-        // $style = '<style> p { text-indent:30px; } .id {width: 30px; display: inline-block}</style>';
-        // $this->TCPDF->WriteHTML($style);
-        
         $this->TCPDF->setFontSize($this->pdf_text_size);
 
         return TRUE;
     }
 
     protected function _renderSingleVerse($verse) {
-        if($verse->id > 2000) {
+        if($verse->id > 500) {
             // return;
         }
 
@@ -262,14 +278,21 @@ abstract class PdfAbstract extends RenderAbstract {
         $this->TCPDF->addTOCPage();
 
         // write the TOC title
-        $this->TCPDF->SetFont($this->pdf_font_family, '', $this->pdf_title_size);
-        $this->TCPDF->MultiCell(0, 0, 'Table Of Contents', 0, 'C', 0, 1, '', '', true, 0);
+        $page_width = $this->TCPDF->getPageWidth();
+        $margins    = $this->TCPDF->getMargins();
+        $page_width -= $margins['left'] + $margins['right'];
+
+        $table_of_contents = __('basic.table_of_contents');
+
+        $this->TCPDF->SetFont($this->pdf_font_family, '', $this->pdf_toc_title_size);
+        $this->TCPDF->MultiCell($page_width, 0, $table_of_contents, 0, 'C', 0, 1, '', '', true, 0);
+        // $this->TCPDF->Cell($page_width, 0, $table_of_contents,0,0,'C');
         $this->TCPDF->Ln();
 
-        $this->TCPDF->setEqualColumns(3);
-        $this->TCPDF->SetFont($this->pdf_font_family, '', $this->pdf_title_size);
+        $this->TCPDF->setEqualColumns(2);
+        $this->TCPDF->SetFont($this->pdf_font_family, '', $this->pdf_toc_size);
 
-        $this->TCPDF->addTOC(5, 'courier', '.', 'Table of Contents', '');
+        $this->TCPDF->addTOC($this->toc_page, 'courier', '.', $table_of_contents, '');
 
         $this->TCPDF->setEqualColumns(0);
         // end of TOC page
@@ -297,12 +320,15 @@ abstract class PdfAbstract extends RenderAbstract {
         // }
 
         if($book == 1) {
-            $this->_renderTestamentHeader('Old Testament');
+            $this->_renderTestamentHeader(__('basic.old_testament'));
         }
 
         if($book == 40) {
-            $this->_renderTestamentHeader('New Testament');
+            $this->_renderTestamentHeader(__('basic.new_testament'));
         }
+
+
+        $this->in_psalms = ($book == 19) ? TRUE : FALSE;
 
         $this->TCPDF->setFont($this->pdf_font_family, $this->pdf_book_style, $this->pdf_book_size);
         $this->TCPDF->Ln();
@@ -338,7 +364,11 @@ abstract class PdfAbstract extends RenderAbstract {
         $this->_writeText(NULL, '<br />');
 
         // todo - translate this!
-        $chapter_name = 'Chapter ' . $chapter;
+        // $chapter_name = 'Chapter ' . $chapter;
+
+        $ch_param = ($this->in_psalms) ? 'basic.psalm_n' : 'basic.chapter_n';
+
+        $chapter_name = __($ch_param, ['n' => $chapter]);
         $this->TCPDF->setFont($this->pdf_font_family, $this->pdf_chapter_style, $this->pdf_chapter_size);
         $this->TCPDF->Ln();
 

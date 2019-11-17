@@ -5,6 +5,7 @@ namespace App\Renderers;
 use App\Models\Bible;
 use App\Models\Rendering;
 use DB;
+use App;
 
 abstract class RenderAbstract {
     use \App\Traits\Error;
@@ -70,6 +71,10 @@ abstract class RenderAbstract {
 
         $start_time = time();
 
+        $locale_cache = App::getLocale();
+
+        App::setLocale($this->Bible->lang_short);
+
         $success = $this->_renderStart();
 
         if(!$success) {
@@ -101,6 +106,8 @@ abstract class RenderAbstract {
         $Query->orderBy($table . '.id')->chunk($this->chunk_size, $closure);
         $this->_afterVerseRender();
         $success = $this->_renderFinish();
+
+        App::setLocale($locale_cache);
 
         if(posix_getuid() == fileowner($file_path)) {
             chmod($file_path, 0775);
@@ -236,6 +243,7 @@ abstract class RenderAbstract {
 
         if(config('download.derivative_copyright_statement')) {
             $dr_statement = str_replace('YYYY', date('Y'), config('download.derivative_copyright_statement'));
+            $dr_statement = nl2br($dr_statement);
             $cr_statement .= '<br /><br />' . $dr_statement;
         }
 

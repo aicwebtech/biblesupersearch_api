@@ -37,6 +37,4 @@ class Csv extends RenderAbstract {
         fclose($this->handle);
         return TRUE;
     }
-
-
 }
