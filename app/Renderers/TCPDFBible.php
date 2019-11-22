@@ -44,13 +44,12 @@ class TCPDFBible extends TCPDF {
             $page_width -= $margins['left'] + $margins['right'];
             $cell_width = floor($page_width / 3);
 
-            $pg = $this->getAliasNumPage();
+            // $pg = trim($this->getAliasNumPage());
+            $pg = $this->bible_page_count;
 
-            // Cell($w, $h=0, $txt='', $border=0, $ln=0, $align='', $fill=false, $link='', $stretch=0, $ignore_min_height=false, $calign='T', $valign='M') {
-
-            $this->Cell($cell_width, 10, $st, 0, FALSE, 'L', 0, '', 0, FALSE, 'T', 'M');
-            $this->Cell($cell_width, 10, $pg, 0, FALSE, 'C', 0, '', 0, FALSE, 'T', 'M');
-            $this->Cell($cell_width, 10, $en, 0, FALSE, 'R', 0, '', 0, FALSE, 'T', 'M');
+            $this->Cell($cell_width, 10, $st, 0, 0, 'L', FALSE, '', 0, FALSE, 'T', 'M');
+            $this->Cell($cell_width, 10, $pg, 0, 0, 'C', FALSE, '', 0, FALSE, 'T', 'M');
+            $this->Cell($cell_width, 10, $en, 0, 0, 'R', FALSE, '', 0, FALSE, 'T', 'M');
         }
 
         $this->start_book = '';

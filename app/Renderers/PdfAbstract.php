@@ -141,7 +141,7 @@ abstract class PdfAbstract extends RenderAbstract {
     }
 
     protected function _renderSingleVerse($verse) {
-        if($verse->id > 500) {
+        if($verse->id > 4000) {
             // return;
         }
 
@@ -269,10 +269,12 @@ abstract class PdfAbstract extends RenderAbstract {
     protected function _renderFinish() {
         $this->_writeText();
 
-        $this->TCPDF->endPage();
         $this->TCPDF->setEqualColumns(0);
-        $this->TCPDF->current_book    = NULL;
-        $this->TCPDF->current_chapter = NULL;
+        $this->TCPDF->endPage();
+        $this->TCPDF->setCurrentVerse(NULL);
+
+        // Fix huge margins by re-iniitalizing them.
+        $this->TCPDF->SetMargins($this->pdf_margin_inside, $this->pdf_top_margin, $this->pdf_margin_outside);
 
         // add a new page for TOC
         $this->TCPDF->addTOCPage();
@@ -285,7 +287,8 @@ abstract class PdfAbstract extends RenderAbstract {
         $table_of_contents = __('basic.table_of_contents');
 
         $this->TCPDF->SetFont($this->pdf_font_family, '', $this->pdf_toc_title_size);
-        $this->TCPDF->MultiCell($page_width, 0, $table_of_contents, 0, 'C', 0, 1, '', '', true, 0);
+        // $this->TCPDF->Write(0, $table_of_contents, '', TRUE, 'C', TRUE);
+        $this->TCPDF->MultiCell(0, 0, $table_of_contents, 0, 'C', 0, 1, '', '', true, 0);
         // $this->TCPDF->Cell($page_width, 0, $table_of_contents,0,0,'C');
         $this->TCPDF->Ln();
 
@@ -341,14 +344,14 @@ abstract class PdfAbstract extends RenderAbstract {
         // }
         
         // Add page or switch column, if needed
-        $height_pixel = $this->pdf_book_size * 3;
+        // $height_pixel = $this->pdf_book_size * 3;
+        $height_pixel = $this->pdf_book_size * 2 + $this->pdf_chapter_size * 3 + $this->pdf_text_size;
         $height_units = $this->TCPDF->pixelsToUnits($height_pixel);
         $this->TCPDF->checkPageBreak($height_units);
 
         $this->TCPDF->Bookmark($book_name, 1);
         $this->TCPDF->Write(0, strtoupper($book_name), '', FALSE, $this->pdf_book_align);
         $this->TCPDF->Ln();
-        // $this->TCPDF->Ln();
         $this->_renderNewChapter($chapter);
     }
 
@@ -362,10 +365,6 @@ abstract class PdfAbstract extends RenderAbstract {
         }
 
         $this->_writeText(NULL, '<br />');
-
-        // todo - translate this!
-        // $chapter_name = 'Chapter ' . $chapter;
-
         $ch_param = ($this->in_psalms) ? 'basic.psalm_n' : 'basic.chapter_n';
 
         $chapter_name = __($ch_param, ['n' => $chapter]);
@@ -378,7 +377,7 @@ abstract class PdfAbstract extends RenderAbstract {
         // }
 
         // Add page or switch column, if needed
-        $height_pixel = $this->pdf_chapter_size * 3;
+        $height_pixel = $this->pdf_chapter_size * 3 + $this->pdf_text_size;
         $height_units = $this->TCPDF->pixelsToUnits($height_pixel);
         $this->TCPDF->checkPageBreak($height_units);
 
