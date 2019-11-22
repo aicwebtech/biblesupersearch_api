@@ -642,7 +642,9 @@ class RenderManager {
 
     static public function isRenderWritable($format = NULL, $module = NULL) {
         if($format && $module) {
-            $dir = static::getRenderFilepath($format, $module);
+            $pcs = explode('/', static::getRenderFilepath($format, $module));
+            $file = array_pop($pcs);
+            $dir = implode('/', $pcs);
         }
         else {
             $dir = Renderers\RenderAbstract::getRenderBasePath();
