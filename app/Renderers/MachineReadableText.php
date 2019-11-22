@@ -3,8 +3,8 @@
 namespace App\Renderers;
 
 class MachineReadableText extends RenderAbstract {
-    static public $name = 'Machine readable Plain Text';
-    static public $description = 'Machine readable plain text format';
+    static public $name = 'Machine-readable Plain Text';
+    static public $description = '';
 
     // Maximum number of Bibles to render with the given format before detatched process is required.   Set to TRUE to never require detatched process.
     static protected $render_bibles_limit = TRUE; 

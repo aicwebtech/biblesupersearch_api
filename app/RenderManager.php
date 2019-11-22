@@ -25,11 +25,11 @@ class RenderManager {
             'desc'      => 'Opens in MS Excel or other spreadsheet software.  Both human and machine readable.',
             'formats'   => ['csv'],
         ],
-        'database' => [
-            'name'      => 'Databases',
-            'desc'      => 'Databases and database dumps.  Ready to import into your own software',
-            'formats'   => ['csv', 'pdf'],
-        ],
+        // 'database' => [
+        //     'name'      => 'Databases',
+        //     'desc'      => 'Databases and database dumps.  Ready to import into your own software',
+        //     'formats'   => ['csv', 'pdf'],
+        // ],
     ];
 
     static public $register = [

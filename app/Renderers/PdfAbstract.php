@@ -83,9 +83,6 @@ abstract class PdfAbstract extends RenderAbstract {
 
     protected function _renderStart() {
         // todo: Set RTL based on Bible language
-        if(Language::isRtl($this->Bible->lang_short)) {
-            $this->TCPDF->setRTL(TRUE);
-        }
 
         $this->TCPDF->setTitle($this->Bible->name);
         $this->TCPDF->addPage();
@@ -132,6 +129,8 @@ abstract class PdfAbstract extends RenderAbstract {
         $this->TCPDF->addPage();
         $this->TCPDF->addPage(); // TOC
         $this->TCPDF->addPage(); 
+
+        $this->_setRtlByLanguage(TRUE);
 
         $this->_enableColumns();
 
@@ -273,6 +272,8 @@ abstract class PdfAbstract extends RenderAbstract {
         $this->TCPDF->endPage();
         $this->TCPDF->setCurrentVerse(NULL);
 
+        // $this->_setRtlByLanguage(FALSE); // TOC page should follow language, but since we don't have book lists for Hebrew or Arabic, we force it to LTR for now.
+
         // Fix huge margins by re-iniitalizing them.
         $this->TCPDF->SetMargins($this->pdf_margin_inside, $this->pdf_top_margin, $this->pdf_margin_outside);
 
@@ -403,6 +404,15 @@ abstract class PdfAbstract extends RenderAbstract {
             foreach($this->pdf_language_overrides[ $this->Bible->lang_short ] as $key => $value) {
                 $this->$key = $value;
             }
+        }
+    }
+
+    protected function _setRtlByLanguage($enable = TRUE) {
+        if($enable && Language::isRtl($this->Bible->lang_short)) {
+            $this->TCPDF->setRTL(TRUE);
+        }
+        else {
+            $this->TCPDF->setRTL(FALSE);
         }
     }
 
