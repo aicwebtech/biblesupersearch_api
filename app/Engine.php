@@ -896,6 +896,7 @@ class Engine {
         $app_configs = include(base_path('config/app.php'));
         return $app_configs['version'];
     }
+    
     /**
      * Get's the version number of the production version of this API
      * Used for checking for updates

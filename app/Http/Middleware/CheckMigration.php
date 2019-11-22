@@ -16,12 +16,14 @@ class CheckMigration {
      */
     public function handle($request, Closure $next) {
         $using_cache = config('app.config_cache');
+        // todo this needs to check for any update then perform any needed tasks
 
         if($using_cache) {
             $soft_version = config('app.version');
             $hard_version = \App\Engine::getHardcodedVersion();
 
             if($soft_version != $hard_version) {
+                Artisan::call('view:clear'); // Force cached view templates to clear out because HTML may have changed
                 $this->_migrateIfNeeded();
                 Artisan::call('config:cache');
             }
@@ -40,6 +42,7 @@ class CheckMigration {
     }
 
     private function _migrate($pretend = FALSE) {
+        Artisan::call('view:clear'); // Force cached view templates to clear out because HTML may have changed
         return Artisan::call('migrate', ['--seed' => TRUE, '--force' => TRUE, '--pretend' => $pretend]);
     }
 

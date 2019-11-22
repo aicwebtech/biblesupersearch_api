@@ -412,7 +412,7 @@ class Bible extends Model {
             $json  = $Zip->getFromName('info.json');
             $attr  = json_decode($json, TRUE);
 
-            if(is_array($attr) && !empty($attr)) {
+            if(is_array($fields) && !empty($fields)) {
                 $attr = Arr::only($attr, $fields);
             }
 
