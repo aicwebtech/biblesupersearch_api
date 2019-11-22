@@ -46,7 +46,7 @@ class PlainText extends RenderAbstract {
         }
 
         if($verse->chapter != $this->current_chapter) {
-            $ch_param = ($verse->chapter == 19) ? 'basic.psalm_n' : 'basic.chapter_n';
+            $ch_param = ($verse->book == 19) ? 'basic.psalm_n' : 'basic.chapter_n';
             $chapter_name = __($ch_param, ['n' => $verse->chapter]);
             fwrite($this->handle, PHP_EOL . $chapter_name . PHP_EOL . PHP_EOL);
         }
