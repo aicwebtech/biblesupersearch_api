@@ -175,11 +175,13 @@
                                                     <input
                                                         type='radio' name='download__enable' value='1' id='download_enable_1'
                                                         @if($configs['download.enable'] == 1)checked='checked'@endif
+                                                        @if(!$render_writeable)disabled='disabled'@endif
                                                      />
                                                     <label for='download_enable_0'>No</label>
                                                     <input
                                                         type='radio' name='download__enable' value='0' id='download_enable_0'
                                                         @if($configs['download.enable'] == 0)checked='checked'@endif
+                                                        @if(!$render_writeable)disabled='disabled'@endif
                                                         />
                                                     <span class='info'>
                                                         <span>i</span>
@@ -189,6 +191,20 @@
                                                     </span>
                                                 </td>
                                             </tr>
+                                            @if(!$render_writeable)
+
+                                            <tr>
+                                                <td colspan="2" class='error'>
+                                                    Notice: Cannot write to render directory:  <br />
+
+                                                    <pre>{{$render_dir}}</pre>
+
+                                                    Please make it writable to the web process before you enable the download feature.
+                                                </td>
+                                            </tr>
+
+                                            @else
+
                                             <tr>
                                                 <td>&nbsp;</td>
                                                 <td style='text-align: right'>
@@ -197,6 +213,8 @@
                                                     <button id='button_clear_all_rendered' class='button-small ui-button ui-corner-all ui-widget'>Delete All</button>
                                                 </td>
                                             </tr>
+                                            
+                                            @endif
                                         </tbody>
                                         <tbody id='download_addl_settings' @if($configs['download.enable'] == 0)style='display:none'@endif>
                                             <tr><td colspan='3'>&nbsp;</td></tr>

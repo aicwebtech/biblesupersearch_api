@@ -168,7 +168,6 @@ class RenderManager {
 
         foreach($this->format as $format) {
             $CLASS = static::$register[$format];
-
             $Bibles_Needing_Render = $this->getBiblesNeedingRender($format, $overwrite, $bypass_render_limit);
 
             if($Bibles_Needing_Render === FALSE) {
@@ -176,6 +175,10 @@ class RenderManager {
             }
             
             foreach($Bibles_Needing_Render as $Bible) {
+                if(!static::isRenderWritable($format, $Bible->module)) {
+                    $this->addError('Unable to render ' . $Bible->name . ', could not write to file.  Please contact system administrator');
+                }
+
                 $Renderer = new $CLASS($Bible);
 
                 // if(!$Renderer->render($overwrite, $suppress_overwrite_error)) {
@@ -635,5 +638,16 @@ class RenderManager {
         $basename = array_pop($cc);
 
         return $basedir . $basename . '/' . $module;
+    }
+
+    static public function isRenderWritable($format = NULL, $module = NULL) {
+        if($format && $module) {
+            $dir = static::getRenderFilepath($format, $module);
+        }
+        else {
+            $dir = Renderers\RenderAbstract::getRenderBasePath();
+        }
+
+        return is_writable($dir);
     }
 }

@@ -7,7 +7,6 @@ use App\ConfigManager;
 
 class AddDownloadConfigs3 extends Migration
 {
-    // NOT finalized as of 10.28.19 - may need to revert migration!
 
     private $config_items = [
         [
@@ -34,21 +33,21 @@ class AddDownloadConfigs3 extends Migration
         [
             'key'       => 'download.cache.cache_size',
             'descr'     => 'Download Retained File Cache Size (MB)',
-            'default'   => 50,
+            'default'   => 450,
             'global'    => 1,
             'type'      => 'int',
         ],        
         [
             'key'       => 'download.cache.min_render_time',
             'descr'     => 'Download Retained File Minimum Render Time (seconds)',
-            'default'   => 60,
+            'default'   => 0,
             'global'    => 1,
             'type'      => 'int',
         ],        
         [
             'key'       => 'download.cache.min_hits',
             'descr'     => 'Download Retained File Minimum Hits (downloads)',
-            'default'   => 60,
+            'default'   => 0,
             'global'    => 1,
             'type'      => 'int',
         ],

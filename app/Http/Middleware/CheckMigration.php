@@ -5,6 +5,8 @@ namespace App\Http\Middleware;
 use Closure;
 use Artisan;
 
+use \App\ConfigManager;
+
 class CheckMigration {
 
     /**
@@ -15,6 +17,29 @@ class CheckMigration {
      * @return mixed
      */
     public function handle($request, Closure $next) {
+        $using_cache = config('app.config_cache');
+        // todo this needs to check for any update then perform any needed tasks
+
+        $cur_version  = \App\Engine::getHardcodedVersion();
+        $prev_version = config('app.version_cache');
+
+        if($cur_version != $prev_version) {
+            Artisan::call('view:clear'); // Force cached view templates to clear out because HTML may have changed
+            $this->_migrateIfNeeded();
+            ConfigManager::setConfig('app.version_cache', $cur_version);
+
+            if($using_cache) {
+                Artisan::call('config:cache');
+            }
+        }
+        else {
+            $this->_migrateIfNeeded(); // Showuld we continue to migrate even if version # hasn't changed?
+        }
+
+        return $next($request);
+    }    
+
+    public function _handle($request, Closure $next) {
         $using_cache = config('app.config_cache');
         // todo this needs to check for any update then perform any needed tasks
 

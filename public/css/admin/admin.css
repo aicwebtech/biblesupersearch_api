@@ -154,3 +154,10 @@ title.h1 {
     color: red;
 }
 
+.error {
+    color: #f25a0f;
+    background-color: #f5f5ae;
+    font-weight: bold;
+    padding: 10px;
+    margin: 10px;
+}
