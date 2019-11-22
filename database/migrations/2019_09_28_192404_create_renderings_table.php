@@ -15,7 +15,7 @@ class CreateRenderingsTable extends Migration
     {
         Schema::create('renderings', function (Blueprint $table) {
             $table->bigIncrements('id');
-            $table->string('renderer', 100)->comment('Simple class name of render class');
+            $table->string('renderer', 70)->comment('Simple class name of render class');
             $table->string('module')->comment('Bible module');
             $table->tinyInteger('custom')->default(0);
             $table->string('file_name');
