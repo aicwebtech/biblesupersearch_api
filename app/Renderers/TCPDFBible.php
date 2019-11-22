@@ -32,6 +32,10 @@ class TCPDFBible extends TCPDF {
         // Position 'footer' at TOP of page 
         $this->SetY(0);
         $this->SetFontSize(8);
+        $rtl = $this->getRtl();
+
+        $this->setRtl(FALSE);
+
         
         if($this->start_book && $this->prev_book) {
             $st = $this->start_book   . ' ' . $this->start_chapter;
@@ -47,10 +51,19 @@ class TCPDFBible extends TCPDF {
             // $pg = trim($this->getAliasNumPage());
             $pg = $this->bible_page_count;
 
-            $this->Cell($cell_width, 10, $st, 0, 0, 'L', FALSE, '', 0, FALSE, 'T', 'M');
-            $this->Cell($cell_width, 10, $pg, 0, 0, 'C', FALSE, '', 0, FALSE, 'T', 'M');
-            $this->Cell($cell_width, 10, $en, 0, 0, 'R', FALSE, '', 0, FALSE, 'T', 'M');
+            if($rtl) {
+                $this->Cell($cell_width, 10, $en, 0, 0, 'L', FALSE, '', 0, FALSE, 'T', 'M');
+                $this->Cell($cell_width, 10, $pg, 0, 0, 'C', FALSE, '', 0, FALSE, 'T', 'M');
+                $this->Cell($cell_width, 10, $st, 0, 0, 'R', FALSE, '', 0, FALSE, 'T', 'M');
+            }
+            else {
+                $this->Cell($cell_width, 10, $st, 0, 0, 'L', FALSE, '', 0, FALSE, 'T', 'M');
+                $this->Cell($cell_width, 10, $pg, 0, 0, 'C', FALSE, '', 0, FALSE, 'T', 'M');
+                $this->Cell($cell_width, 10, $en, 0, 0, 'R', FALSE, '', 0, FALSE, 'T', 'M');                
+            }
         }
+
+        $this->setRtl($rtl);
 
         $this->start_book = '';
         $this->start_chapter = '';

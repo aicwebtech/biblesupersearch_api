@@ -7,6 +7,8 @@ use Illuminate\Foundation\Testing\WithFaker;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use App\RenderManager;
 
+// php ./vendor/phpunit/phpunit/phpunit --filter=RenderManagerTest
+
 class RenderManagerTest extends TestCase {
     private $skip_render_tests = TRUE;
 
@@ -148,6 +150,7 @@ class RenderManagerTest extends TestCase {
         }
 
         return;
+
         $TextRender = new \App\Renderers\PlainText('kjv');
         $success = $TextRender->render(TRUE);        
         $TextRender = new \App\Renderers\MachineReadableText('kjv');
@@ -165,9 +168,10 @@ class RenderManagerTest extends TestCase {
         }
 
         // return;
+
         // $Manager = new RenderManager(['kjv'], 'pdf');
         // $Manager = new RenderManager(['kjv', 'rvg'], 'pdf');
-        $Manager = new RenderManager(['wlc'], 'pdf');
+        $Manager = new RenderManager(['svd','wlc'], 'pdf');
         // $Manager = new RenderManager(['chinese_union'], 'pdf');
         // $Manager = new RenderManager(['kjv', 'rvg'], 'pdf');
         // $Manager = new RenderManager(['kjv', 'rvg', 'svd', 'thaikjv', 'synodal', 'tr', 'wlc','bkr', 'stve', 'cornilescu', 'chinese_union'], 'pdf');

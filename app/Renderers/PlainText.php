@@ -23,8 +23,9 @@ class PlainText extends RenderAbstract {
 
 
     protected $text = '';
-
     protected $handle;
+
+
 
     /**
      * This initializes the file, and does other pre-rendering work
@@ -38,8 +39,22 @@ class PlainText extends RenderAbstract {
     }
 
     protected function _renderSingleVerse($verse) {
-        $text = $verse->book_name . ' ' . $verse->chapter . ':' . $verse->verse . ' '  . $verse->text . PHP_EOL;
+        if($verse->book != $this->current_book) {
+            $line_above = ($this->current_book) ? PHP_EOL . PHP_EOL : '';
+            fwrite($this->handle, $line_above . $this->_wordwrap($verse->book_name) . PHP_EOL);
+            $this->current_chapter = NULL;
+        }
+
+        if($verse->chapter != $this->current_chapter) {
+            $ch_param = ($verse->chapter == 19) ? 'basic.psalm_n' : 'basic.chapter_n';
+            $chapter_name = __($ch_param, ['n' => $verse->chapter]);
+            fwrite($this->handle, PHP_EOL . $chapter_name . PHP_EOL . PHP_EOL);
+        }
+
+        $text = $verse->verse . ' '  . $verse->text . PHP_EOL;
         fwrite($this->handle, $this->_wordwrap($text) );
+        $this->current_book    = $verse->book;
+        $this->current_chapter = $verse->chapter;
     }
 
     protected function _renderFinish() {

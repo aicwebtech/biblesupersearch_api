@@ -25,12 +25,12 @@ class Csv extends RenderAbstract {
         fwrite($this->handle, PHP_EOL . PHP_EOL);
         fwrite($this->handle, $this->_getCopyrightStatement(TRUE));
         fwrite($this->handle, PHP_EOL . PHP_EOL);
-        fputcsv($this->handle, ['Book Name', 'Book Number', 'Chapter', 'Verse', 'Text']);
+        fputcsv($this->handle, ['Verse ID','Book Name', 'Book Number', 'Chapter', 'Verse', 'Text']);
         return TRUE;
     }
 
     protected function _renderSingleVerse($verse) {
-        fputcsv($this->handle, [$verse->book_name, $verse->book, $verse->chapter, $verse->verse, $verse->text]);
+        fputcsv($this->handle, [$verse->id, $verse->book_name, $verse->book, $verse->chapter, $verse->verse, $verse->text]);
     }
 
     protected function _renderFinish() {

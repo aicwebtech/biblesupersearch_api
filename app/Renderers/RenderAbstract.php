@@ -36,6 +36,9 @@ abstract class RenderAbstract {
     protected $book_name_field = 'name';
     protected $include_special = FALSE;  // Include italics / strongs fields (that may not be used anymore)
 
+    protected $current_book    = NULL;
+    protected $current_chapter = NULL;
+
     protected $Rendering = NULL;
 
     public function __construct($module) {
@@ -270,6 +273,8 @@ abstract class RenderAbstract {
 
     protected function _htmlToPlainText($html) {
         $text = str_replace(['<br />', '<br>'], PHP_EOL, $html);
+        $text = str_replace('&nbsp;', ' ', $text);
+        $text = html_entity_decode($text, ENT_QUOTES | ENT_HTML5);
         $text = strip_tags($text);
         return $text;
     }

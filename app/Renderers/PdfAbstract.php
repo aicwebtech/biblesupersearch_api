@@ -140,7 +140,7 @@ abstract class PdfAbstract extends RenderAbstract {
     }
 
     protected function _renderSingleVerse($verse) {
-        if($verse->id > 4000) {
+        if($verse->id > 1000) {
             // return;
         }
 
