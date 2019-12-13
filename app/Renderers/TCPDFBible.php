@@ -103,7 +103,7 @@ class TCPDFBible extends TCPDF {
 
     // Making this public
     public function checkPageBreak($h=0, $y='', $addpage=true) {
-        parent::checkPageBreak($h, $y, $addpage);
+        return parent::checkPageBreak($h, $y, $addpage);
     }
 
     /**

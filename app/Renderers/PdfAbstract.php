@@ -105,10 +105,6 @@ abstract class PdfAbstract extends RenderAbstract {
 
         $this->TCPDF->setFontSize($this->pdf_title_size);
         $this->TCPDF->setY($title_pos);
-        // // todo - translate this!
-        // // $this->TCPDF->MultiCell(0, $title_height, 'The Holy Bible',   0, 'C', FALSE, 1, '', '4');
-        // // $this->TCPDF->MultiCell(0, $title_height, $this->Bible->name, 0, 'C', FALSE, 1, '', '7');        
-        // $this->TCPDF->Cell(0, $title_height, strtoupper('The Holy Bible'),   0, 1, 'C');
         $this->TCPDF->Cell(0, $title_height, strtoupper(__('basic.holy_bible')),   0, 1, 'C');
         $this->TCPDF->setFontSize($this->pdf_bible_version_size);
         $this->TCPDF->MultiCell(0, $title_height, strtoupper($this->Bible->name), 0, 'C');
@@ -117,9 +113,7 @@ abstract class PdfAbstract extends RenderAbstract {
         $this->TCPDF->addPage();
         $this->TCPDF->setY(0);
         $this->TCPDF->setFontSize($this->pdf_text_size);
-        // $this->TCPDF->writeHTML( $this->_getCopyrightStatement() );
         $this->TCPDF->Cell(0, 20, $this->Bible->name, 0, 1, 'L');
-        // $this->TCPDF->ln();
         $this->TCPDF->writeHTMLCell(0, 40, $this->pdf_margin_inside, $this->TCPDF->getY(), $this->_getCopyrightStatement() );
 
         $page = $this->TCPDF->getBiblePageCount();
@@ -179,10 +173,6 @@ abstract class PdfAbstract extends RenderAbstract {
                 $this->_writeText();
             }
 
-            if(!$this->text_pending) {
-                // $this->text_pending .= '<span style="padding-left:300px; display:inline-block;background-color:green">&nbsp;</span>';
-            }
-
             $this->text_pending .= $text . '  ';
         }
 
@@ -196,7 +186,7 @@ abstract class PdfAbstract extends RenderAbstract {
                 return;
             }
 
-            // $text = $this->text_pending;
+            // Add paragraph indent - currently $this->text_pending is only used for paragraph rendering
             $text = '<div style="text-indent:20px">' . $this->text_pending . $text_pending_addl . '</div>';
             $this->text_pending = '';
         }
@@ -245,6 +235,8 @@ abstract class PdfAbstract extends RenderAbstract {
         
         return;
 
+        // TEST CODE - RETAINING FOR NOW
+
         // Retaining the below test code for reference
         $mod = ($text_test{0} == '[') ? 0 : 1;
         $pieces = preg_split("/\[|]/", $text); // split text into pieces by [ and ]
@@ -268,8 +260,6 @@ abstract class PdfAbstract extends RenderAbstract {
             // $this->TCPDF->MultiCell(0, 0, $t, 0, $this->pdf_text_align);  // doesn't work
         }
 
-        // die();
-        
         $this->TCPDF->Ln(); 
     }
 
@@ -323,14 +313,6 @@ abstract class PdfAbstract extends RenderAbstract {
  
         $this->_writeText(NULL, '<br /><br />');
 
-        // if($book == 1) {
-        //     $this->TCPDF->addPage();
-
-        //     if($this->pdf_columns > 1) {
-        //         $this->TCPDF->setEqualColumns($this->pdf_columns);
-        //     }
-        // }
-
         if($book == 1) {
             $this->_renderTestamentHeader(__('basic.old_testament'));
         }
@@ -339,18 +321,10 @@ abstract class PdfAbstract extends RenderAbstract {
             $this->_renderTestamentHeader(__('basic.new_testament'));
         }
 
-
         $this->in_psalms = ($book == 19) ? TRUE : FALSE;
-
         $this->TCPDF->setFont($this->pdf_font_family, $this->pdf_book_style, $this->pdf_book_size);
         $this->TCPDF->Ln();
         $this->TCPDF->Ln();
-        // $this->TCPDF->Ln();
-
-        // if($this->pdf_verses_paragraph) {
-        //     $this->TCPDF->Ln();
-        //     $this->TCPDF->Ln();
-        // }
         
         // Add page or switch column, if needed
         // $height_pixel = $this->pdf_book_size * 3;
@@ -379,11 +353,6 @@ abstract class PdfAbstract extends RenderAbstract {
         $chapter_name = __($ch_param, ['n' => $chapter]);
         $this->TCPDF->setFont($this->pdf_font_family, $this->pdf_chapter_style, $this->pdf_chapter_size);
         $this->TCPDF->Ln();
-
-        // if($this->pdf_verses_paragraph) {
-        //     $this->TCPDF->Ln();
-        //     $this->TCPDF->Ln();
-        // }
 
         // Add page or switch column, if needed
         $height_pixel = $this->pdf_chapter_size * 3 + $this->pdf_text_size;

@@ -386,11 +386,19 @@ class Bible extends Model {
     }
 
     public static function createFromModuleFile($module) {
+        if(!$module) {
+            return FALSE;
+        }
+
         $Bible = static::findByModule($module);
         $Zip   = static::openModuleFileByModule($module);
 
         if($Bible) {
             return FALSE;
+        }
+
+        if($Zip === TRUE) {
+            throw new \Exception('Could not open zip file for ' . $module);
         }
 
         if($Zip) {
