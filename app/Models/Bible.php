@@ -174,7 +174,7 @@ class Bible extends Model {
         $eol  = PHP_EOL; //'\n';
 
         if(!$data) {
-            return FALSE;
+            return $this->addError('No Data');
         }
 
         // Add headers - # makes it a comment
@@ -207,6 +207,10 @@ class Bible extends Model {
             $Zip->addFromString('verses.txt', $data_str);
             $Zip->addFromString('info.json', $info);
             $Zip->close();
+        }
+
+        if($res !== TRUE) {
+            $this->addError('Could not open ZIP file ' . $res);
         }
 
         return ($res === TRUE) ? TRUE : FALSE;
