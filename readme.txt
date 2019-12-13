@@ -43,7 +43,7 @@ This does NOT include:
 
 We reccommend our pre-built user interface, which is available both as a stand-alone application and as a WordPress plugin.
 These can be downloaded here: http://www.biblesupersearch.com/downloads
-You also have the option to build  your own.
+You also have the option to build your own.
 
 
 Server Requirements:
@@ -77,6 +77,7 @@ Installation:
     * bootstrap/cache
     * bibles/modules        (all files need to be writable)
     * bibles/unofficial     (all files need to be writable)
+    * bibles/rendered       (all files need to be writable)
 
 * Now, point a subdomain (Something like https://biblesupersearch-api.your-domain.com) to path/to/biblesupersearch_api/public
 

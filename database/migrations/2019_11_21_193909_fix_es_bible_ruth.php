@@ -15,8 +15,11 @@ class FixEsBibleRuth extends Migration
     public function up()
     {
         $Book = Books::find(8);
-        $Book->name = 'Rut';
-        $Book->save();
+
+        if($Book) {        
+            $Book->name = 'Rut';
+            $Book->save();
+        }
     }   
 
     /**
@@ -27,7 +30,10 @@ class FixEsBibleRuth extends Migration
     public function down()
     {
         $Book = Books::find(8);
-        $Book->name = 'Ruth';
-        $Book->save();
+
+        if($Book) {        
+            $Book->name = 'Ruth';
+            $Book->save();
+        }
     }
 }
