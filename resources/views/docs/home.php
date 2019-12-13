@@ -38,7 +38,7 @@
                     <li><a href='#tab_list'><?php echo trans('api.bible_list') ?></a></li>
                     <li><a href='#tab_actions'><?php echo trans('api.usage') ?></a></li>
 
-                    <?php if(config('download.enable')): ?>
+                    <?php if(config('download.enable') && config('download.tab_enable')): ?>
                         <li><a href='#tab_downloads'><?php echo trans('api.free_download')?></a></li>
                     <?php endif; ?>
 
@@ -55,7 +55,7 @@
                     <?php include(dirname(__FILE__) . '/actions.php'); ?>
                 </div>
 
-                <?php if(config('download.enable')): ?>
+                <?php if(config('download.enable') && config('download.tab_enable')): ?>
                     <div id='tab_downloads'>
                         <?php include(dirname(__FILE__) . '/download.php'); ?>
                     </div>
