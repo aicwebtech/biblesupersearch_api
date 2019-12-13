@@ -19,7 +19,7 @@
                 <div id='tabs'>
                     <ul>
                         <li><a href='#tab_basic'>General Settings</a></li>
-                        <li><a href='#tab_download'>Bible and File Downloads</a></li>
+                        <li><a href='#tab_download'>Bible Downloads</a></li>
                         <li><a href='#tab_advanced'>Advanced</a></li>
                     </ul>
 
@@ -169,7 +169,12 @@
                                     <table border='0'>
                                         <tbody>
                                             <tr>
-                                                <td class='ralign' style='width:320px'>Enable Downloads: </td>
+                                                <th colspan='2'>
+                                                    Please help us share God's Word around the world by enabling this feature!
+                                                </th>
+                                            </tr>
+                                            <tr>
+                                                <td class='ralign' style='width:320px'>Enable Bible Downloads: </td>
                                                 <td>
                                                     <label for='download_enable_1'>Yes</label>
                                                     <input
