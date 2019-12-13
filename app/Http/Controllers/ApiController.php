@@ -12,6 +12,13 @@ class ApiController extends Controller {
 
     public function genericAction($action = 'query', Request $Request) {
         $allowed_actions = ['query', 'bibles', 'books', 'statics', 'version', 'readcache', 'strongs'];
+
+        if(config('download.enable')) {
+            $allowed_actions[] = 'render';
+            $allowed_actions[] = 'render_needed';
+            $allowed_actions[] = 'download';
+        }
+
         $debug_input = FALSE;
         $_SESSION['debug'] = array();
 
@@ -20,8 +27,9 @@ class ApiController extends Controller {
         }
 
         $input = $Request->input();
+        $pretty_print = (array_key_exists('pretty_print', $input) && $input['pretty_print']) ? TRUE : FALSE;
         $Engine = new Engine();
-        $actionMethod = 'action' . ucfirst($action);
+        $actionMethod = 'action' . \Illuminate\Support\Str::studly($action);
 
         if($debug_input) {
             header("Access-Control-Allow-Origin: *"); // Enable for debugging
@@ -50,8 +58,20 @@ class ApiController extends Controller {
             return response()->jsonp($input['callback'], $response);
         }
 
+        if($Engine->hasErrors() && $pretty_print) {
+            return $this->_prettyPrintErrors($input, $response);
+        }
+
         return (new Response(json_encode($response), $code))
             -> header('Content-Type', 'application/json; charset=utf-8')
             -> header('Access-Control-Allow-Origin', '*');
+    }
+
+    private function _prettyPrintErrors($input, $response) {
+        // return view('errors.pretty_print', compact($input, $response));
+        return view('errors.pretty_print', [
+            'input'    => $input,
+            'response' => $response,
+        ]);
     }
 }

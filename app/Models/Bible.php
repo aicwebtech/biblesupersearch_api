@@ -25,6 +25,9 @@ class Bible extends Model {
         'year',
         'description',
         'copyright',
+        'copyright_id',
+        'copyright_statement',
+        'url',
         'italics',
         'strongs',
         'red_letter',
@@ -44,6 +47,9 @@ class Bible extends Model {
         'import_file',
     );
 
+    protected $attributes = [
+        'copyright_id' => NULL,
+    ];
 
     // List of fields to NOT export when creating modules
     protected $do_not_export = array('id', 'created_at', 'updated_at', 'enabled', 'installed');
@@ -168,7 +174,7 @@ class Bible extends Model {
         $eol  = PHP_EOL; //'\n';
 
         if(!$data) {
-            return FALSE;
+            return $this->addError('No Data');
         }
 
         // Add headers - # makes it a comment
@@ -203,6 +209,10 @@ class Bible extends Model {
             $Zip->close();
         }
 
+        if($res !== TRUE) {
+            $this->addError('Could not open ZIP file ' . $res);
+        }
+
         return ($res === TRUE) ? TRUE : FALSE;
     }
 
@@ -212,6 +222,34 @@ class Bible extends Model {
         $info['fields']    = static::getExportFields();
         $info = json_encode($info);
         return $info;
+    }
+
+    public function isDownloadable() {
+        if($this->restrict || !$this->copyright_id) {
+            return FALSE;
+        }
+
+        if(!$this->copyrightInfo || !$this->copyrightInfo->download) {
+            return FALSE;
+        }
+
+        return TRUE;
+    }
+
+    public function getCopyrightStatement() {
+        if($this->copyright_statement) {
+            return $this->copyright_statement;
+        }
+
+        if($this->copyright_id) {
+            return $this->copyrightInfo->getProcessedCopyrightStatement();
+        }
+
+        return $this->description;
+    }
+
+    public function copyrightInfo() {
+        return $this->hasOne('App\Models\Copyright', 'id', 'copyright_id');
     }
 
     public function updateMetaInfo($create_if_needed = FALSE) {
@@ -285,7 +323,6 @@ class Bible extends Model {
             $this->migrate_code = 3; // no module files
             return TRUE;
         }
-
     }
 
     public function getModuleFilePath($short = FALSE) {
@@ -294,7 +331,7 @@ class Bible extends Model {
     }
 
     public function getModuleFilePathShort() {
-        return $this->_getModulePath(TRUE);
+        return $this->getModulePath(TRUE);
     }
 
     public function getModuleFileName() {
@@ -349,6 +386,10 @@ class Bible extends Model {
     }
 
     public static function createFromModuleFile($module) {
+        if(!$module) {
+            return FALSE;
+        }
+
         $Bible = static::findByModule($module);
         $Zip   = static::openModuleFileByModule($module);
 
@@ -356,10 +397,39 @@ class Bible extends Model {
             return FALSE;
         }
 
+        if($Zip === TRUE) {
+            throw new \Exception('Could not open zip file for ' . $module);
+        }
+
         if($Zip) {
             $json  = $Zip->getFromName('info.json');
             $attr  = json_decode($json, TRUE);
             $Bible = static::create($attr);
+            $Zip->close();
+            return $Bible;
+        }
+
+        return FALSE;
+    }    
+
+    public static function updateFromModuleFile($module, $fields = []) {
+        $Bible = static::findByModule($module);
+        $Zip   = static::openModuleFileByModule($module);
+
+        if(!$Bible) {
+            return static::createFromModuleFile($module);
+        }
+
+        if($Zip) {
+            $json  = $Zip->getFromName('info.json');
+            $attr  = json_decode($json, TRUE);
+
+            if(is_array($fields) && !empty($fields)) {
+                $attr = Arr::only($attr, $fields);
+            }
+
+            $Bible->fill($attr);
+            $Bible->save();
             $Zip->close();
             return $Bible;
         }
@@ -405,6 +475,15 @@ class Bible extends Model {
         foreach($list as $file) {
             $module = substr($file, 0, strlen($file) - 4);
             $Bible  = static::createFromModuleFile($module);
+        }
+    }
+
+    public static function updateBibleTable($fields = []) {
+        $list = static::getListOfModuleFiles();
+
+        foreach($list as $file) {
+            $module = substr($file, 0, strlen($file) - 4);
+            $Bible  = static::updateFromModuleFile($module, $fields);
         }
     }
 

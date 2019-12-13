@@ -121,6 +121,10 @@ class ConfigManager {
         }
     }
 
+    static function setConfig($config_name, $config_value, $user_id = 0) {
+        static::setConfigs([$config_name => $config_value], $user_id);
+    }
+
     static public function getValueAttribute($value, $type) {
         switch($type) {
             case 'int':

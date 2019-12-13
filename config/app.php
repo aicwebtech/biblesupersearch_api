@@ -20,7 +20,22 @@ return [
     |
     */
 
-    'version' => '4.0.2',
+    'version' => '4.1.0',
+
+    /*
+    |--------------------------------------------------------------------------
+    | Application Version Cache
+    |
+    | Soft config holding the last known application version.  
+    |
+    | When this dooes NOT equal the application version, an update is triggered 
+    |
+    |--------------------------------------------------------------------------
+    |
+    |
+    */
+
+    'version_cache' => '4.0.0', // DO NOT CHANGE
 
     /*
     |--------------------------------------------------------------------------

@@ -20,7 +20,7 @@ Route::get('/', 'DocumentationController')->name('docs');
 Route::get('/documentation', 'DocumentationController');
 
 
-/* EVERYTHING BELOW IS EXPERIMENTAL, NON-PRODUCTION CODE */
+/* EVERYTHING BELOW PERTAINS TO BACKEND ADMINSRATION */
 
 
 /* Routes for (administrative) backend */
@@ -84,6 +84,9 @@ Route::resource('/admin/bibles', 'Admin\BibleController', ['as' => 'admin']);
 Route::get('/admin/config', 'Admin\ConfigController@index')->name('admin.configs');
 Route::post('/admin/config', 'Admin\ConfigController@store')->name('admin.configs.store');
 Route::delete('/admin/config', 'Admin\ConfigController@destroy')->name('admin.configs.destroy');
+Route::post('/admin/config/download/cleanup', 'Admin\ConfigController@cleanUpDownloadFiles');
+Route::post('/admin/config/download/delete', 'Admin\ConfigController@deleteAllDownloadFiles');
+// Route::post('/admin/config/download_delete', 'Admin\ConfigController@index');
 
 //Route::controller('admin', 'AdminController');
 
