@@ -1,5 +1,15 @@
 Bible SuperSearch API Changelog
 
+= 4.1.0 / Dec 21, 2019
+* Ability to download Bibles via the API in multiple formats.
+* Download tab as part of API Documentation page.
+* Ability to download multiple files at once, as a ZIP file.
+* Ability to cache files for quick download later.  No need to render the files for every download.
+* Easy control over how long files are cached and how much disk space is used.
+* Rearranging embedded API documentation into nestled tabs
+* Rearranging API configuration page into tabs
+* Misc bug fixes
+
 = 4.0.2 / Aug 3, 2019
 * Bugfix: RVG Module was missing language information
 * Bugfix: Better disambiguation when using foreign language Bibles

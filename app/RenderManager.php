@@ -532,6 +532,7 @@ class RenderManager {
         return static::$register[$format];
     }
 
+    // Not currently used.  Retaining for later
     protected function _createDetatchedProcess($format, $Bibles_Needing_Render, $overwrite = FALSE) {
         $Pending = Process::where('status', 'pending')->where('form_action', 'download')->get()->all();
 
