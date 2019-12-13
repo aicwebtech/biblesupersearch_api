@@ -4,14 +4,11 @@ namespace App\Renderers;
 
 class Csv extends RenderAbstract {
     static public $name = 'CSV';
-    static public $description = 'Comma separated values.';
+    static public $description = 'Comma separated values.  UTF-8 encoding.';
 
     protected $file_extension = 'csv';
     protected $include_book_name = TRUE;
-
-
     protected $text = '';
-
     protected $handle;
 
     /**

@@ -56,7 +56,6 @@ tr.download_disabled {
 .pseudo_dialog_container {
     margin-left: auto;
     margin-right: auto;
-    /*background-color: white; */
     opacity: 1;
     margin-top: calc(40vh);
     padding: 15px;
@@ -92,5 +91,10 @@ tr.download_disabled {
 .centered_div {
     margin-left: auto;
     margin-right: auto;
+}
+
+.pseudo_dialog .loading {
+    font-weight: bold;
+    font-size: 2em;
 }
 

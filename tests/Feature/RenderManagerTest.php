@@ -171,7 +171,8 @@ class RenderManagerTest extends TestCase {
 
         // $Manager = new RenderManager(['kjv'], 'pdf');
         // $Manager = new RenderManager(['kjv', 'rvg'], 'pdf');
-        $Manager = new RenderManager(['svd','wlc'], 'pdf');
+        // $Manager = new RenderManager(['svd','wlc'], 'pdf');
+        $Manager = new RenderManager(['thaikjv'], 'text');
         // $Manager = new RenderManager(['chinese_union'], 'pdf');
         // $Manager = new RenderManager(['kjv', 'rvg'], 'pdf');
         // $Manager = new RenderManager(['kjv', 'rvg', 'svd', 'thaikjv', 'synodal', 'tr', 'wlc','bkr', 'stve', 'cornilescu', 'chinese_union'], 'pdf');

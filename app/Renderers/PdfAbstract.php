@@ -8,11 +8,12 @@ use App\Models\Language;
 abstract class PdfAbstract extends RenderAbstract {
     protected $file_extension = 'pdf';
     protected $include_book_name = TRUE;
+    protected $tcpdf_class              = TCPDFBible::class;
 
     /* PDF-specific settings */
     protected static $pdf_page_format   = 'LETTER';  // For options, see TCPDF_STATIC::$page_formats
     protected static $pdf_red_word_tag  = 'red';     // HTML tag for words of Christ.  'red' colors them with traditional red
-    protected $tcpdf_class              = TCPDFBible::class;
+    
     protected $pdf_orientation          = 'P';
     protected $pdf_unit                 = 'mm';
     protected $pdf_width                = 8.5;      // Width, in $this->pdf_unit units.  Ignored if static::$pdf_format is specified
@@ -48,7 +49,14 @@ abstract class PdfAbstract extends RenderAbstract {
         ],
         'zh' => [
             'pdf_font_family' => 'msungstdlight',
-        ]
+        ],
+        'th' => [
+            // 'pdf_columns' => 3,
+            // 'pdf_column_width' => 65,            
+            'pdf_columns' => 2,
+            'pdf_column_width' => 95,
+            'pdf_text_align' => 'L',
+        ],
     ];
 
     /* END PDF-specific settings */

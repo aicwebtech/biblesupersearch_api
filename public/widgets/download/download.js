@@ -65,12 +65,15 @@ $( function() {
             $('#bible_download_pretty_print').val('0');
         }
 
+        bibleDownloadLoading();
+
         $.ajax({
             url: BibleSuperSearchAPIURL + '/api/render_needed',
             data: $('#bible_download_form').serialize(),
             dataType: 'json',
             success: function(data, status, xhr) {
                 console.log('success', data);
+                $('#bible_download_dialog').hide();
 
                 if(data.results.success) {
                     bibleDownloadDirectSubmit = true;
@@ -86,6 +89,8 @@ $( function() {
                 }
             },
             error: function(xhr, status, error) {
+                $('#bible_download_dialog').hide();
+
                 try {
                     var response = JSON.parse(xhr.responseText);
                 }
@@ -133,6 +138,10 @@ function bibleDownloadError(text) {
 function bibleDownloadAlert(text) {
     $('#bible_download_dialog_content').html(text);
     $('#bible_download_dialog').show();
+}
+
+function bibleDownloadLoading() {
+    bibleDownloadAlert("<br /><br /><span class='loading'><b>Loading, please wait ...</b></span>");
 }
 
 function bibleDownloadInitProcess() {

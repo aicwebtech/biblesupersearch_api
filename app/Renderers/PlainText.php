@@ -63,6 +63,12 @@ class PlainText extends RenderAbstract {
     }
 
     protected function _wordwrap($text) {
-        return wordwrap($text, 80);
+        $wrap_chars = 80;
+
+        if($this->Bible->lang_short == 'th') {
+            $wrap_chars = 320;
+        }
+
+        return wordwrap($text, $wrap_chars);
     }
 }
