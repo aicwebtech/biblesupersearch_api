@@ -6,6 +6,7 @@ use Illuminate\Http\Request;
 use App\Http\Controllers\Controller;
 use App\ConfigManager;
 use Illuminate\Support\Facades\Artisan;
+use App\Http\Responses\Response;
 
 class ConfigController extends Controller
 {
@@ -23,11 +24,21 @@ class ConfigController extends Controller
     public function index() {
         $config_values = ConfigManager::getGlobalConfigs();
         $Bibles = \App\Models\Bible::where('enabled', 1)->where('installed', 1)->get();
+        $render_writeable = \App\RenderManager::isRenderWritable();
+        $render_dir = base_path('bibles/rendered');
+
+        if(!$render_writeable) {
+            ConfigManager::setConfig('download.enable', FALSE);
+            $config_values['download.enable'] = FALSE;
+        }
 
         return view('admin.config', [
-            'configs' => $config_values,
-            'bibles'  => $Bibles,
-            'hl_tags' => ['b', 'em', 'strong'],
+            'configs'           => $config_values,
+            'bibles'            => $Bibles,
+            'hl_tags'           => ['b', 'em', 'strong'],
+            'rendered_space'    => \App\RenderManager::getUsedSpace(),
+            'render_writeable'  => $render_writeable,
+            'render_dir'        => $render_dir,
         ]);
     }
 
@@ -58,5 +69,21 @@ class ConfigController extends Controller
      */
     public function destroy() {
         // to do
+    }
+
+    public function cleanUpDownloadFiles() {
+        \App\RenderManager::cleanUpTempFiles();
+        $resp = new \stdClass();
+        $resp->success = TRUE;
+        $resp->space_used = \App\RenderManager::getUsedSpace();
+        return new Response($resp, 200);
+    }
+
+    public function deleteAllDownloadFiles() {
+        \App\RenderManager::deleteAllFiles(TRUE);
+        $resp = new \stdClass();
+        $resp->success = TRUE;
+        $resp->space_used = \App\RenderManager::getUsedSpace();
+        return new Response($resp, 200);
     }
 }

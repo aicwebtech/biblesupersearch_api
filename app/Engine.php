@@ -36,12 +36,7 @@ class Engine {
         $this->primary_language = NULL;
         $this->multi_bibles = FALSE;
 
-        if(is_string($modules)) {
-            $decoded = json_decode($modules);
-            $modules = (json_last_error() == JSON_ERROR_NONE) ? $decoded : $modules;
-        }
-
-        $modules = (is_array($modules)) ? $modules : array($modules);
+        $modules = $this->_parseInputArray($modules);
         $Bibles = Bible::whereIn('module', $modules)->get();
         $primary = NULL;
 
@@ -56,6 +51,16 @@ class Engine {
 
         $this->setPrimaryBible($primary);
         $this->primary_language = $this->primary_language ?: config('bss.defaults.language_short');
+    }
+
+    protected function _parseInputArray($input) {
+        if(is_string($input)) {
+            $decoded = json_decode($input);
+            $input = (json_last_error() == JSON_ERROR_NONE) ? $decoded : $input;
+        }
+
+        $input = (is_array($input)) ? $input : array($input);
+        return $input;
     }
 
     public function setPrimaryBible($module) {
@@ -378,7 +383,9 @@ class Engine {
      */
     public function actionBibles($input) {
         $include_desc = FALSE;
-        $Bibles = Bible::select('bibles.name','shortname','module','year','languages.name AS lang','lang_short','copyright','italics','strongs','red_letter','paragraph','rank','research');
+        $Bibles = Bible::select('bibles.name','shortname','module','year','languages.name AS lang','lang_short','copyright','italics','strongs','red_letter',
+                'paragraph','rank','research','copyright_id','copyright_statement');
+
         $Bibles->leftJoin('languages', 'bibles.lang_short', 'languages.code');
         $bibles = array(); // Array of associative arrays
 
@@ -393,7 +400,7 @@ class Engine {
             $Bibles -> orderBy('rank', 'ASC');
         }
 
-        $Bibles = $Bibles -> where('enabled', 1) -> get() -> all();
+        $Bibles = $Bibles -> where('enabled', 1) -> with('copyrightInfo') -> get() -> all();
 
         if(empty($Bibles)) {
             $this->addError(trans('errors.no_bible_enabled'));
@@ -402,9 +409,153 @@ class Engine {
 
         foreach($Bibles as $Bible) {
             $bibles[$Bible->module] = $Bible->getAttributes();
+            $bibles[$Bible->module]['downloadable'] = $Bible->isDownloadable();
+//            $bibles[$Bible->module]['copyright_statement'] = $Bible->isDownloadable();
         }
 
         return $bibles;
+    }
+
+    /**
+     * API action for rendering of a Bible
+     * @param array $input
+     */
+    public function actionRender($input) {    
+        return $this->_renderDownloadHelper($input, 'render');
+    }
+    
+    /**
+     * API action for checking if rendering is needed of a Bible
+     * @param array $input
+     */
+    public function actionRenderNeeded($input) {    
+        return $this->_renderDownloadHelper($input, 'render_needed');
+    }
+
+    /**
+     * API action for downloading a rendering of a Bible
+     * This action, when successful, returns a file, and not a standard JSON output
+     * @param array $input
+     */
+    public function actionDownload($input) {
+        return $this->_renderDownloadHelper($input, 'download');
+    }
+
+    protected function _renderDownloadHelper($input, $action = 'render') {
+        $download = ($action == 'download') ? TRUE : FALSE;
+
+        if(empty($input['bible'])) {
+            $this->addError('Bible is required', 4);
+        }
+
+        if(empty($input['format'])) {
+            $this->addError('Format is required', 4);
+        }
+
+        if($this->hasErrors()) {
+            return FALSE;
+        }
+
+        if($input['bible'] == 'ALL') {
+            $modules = 'ALL';
+        }
+        else {
+            $this->setBibles($input['bible']);
+            $modules = array_keys($this->Bibles);
+        }
+
+        if($input['format'] == 'ALL') {
+            $format = 'ALL';
+        }
+        else {
+            $format = $this->_parseInputArray($input['format']);
+        }
+
+        if(array_key_exists('zip', $input)) {
+            $zip = ($input['zip']) ? TRUE : FALSE;
+        }
+        else {
+            $zip = FALSE;
+        }
+
+        $bypass_limit = (array_key_exists('bypass_limit', $input) && $input['bypass_limit']) ? TRUE : FALSE;
+
+        $sanitized = [
+            'format'    => $format,
+            'modules'   => $modules,
+            'zip'       => $zip,
+            'email'     => array_key_exists('email', $input) ? $input['email'] : NULL,
+            'contents'  => array_key_exists('contents', $input) ? $input['contents'] : NULL,
+        ];
+
+        $Manager = new \App\RenderManager($modules, $format, $zip);
+
+        if($action == 'render_needed') {
+            $bibles_needing_render = $Manager->getBiblesNeedingRender(NULL, FALSE, FALSE, 0);
+            $success = ($bibles_needing_render === FALSE || count($bibles_needing_render) > 0) ? FALSE : TRUE;
+            $Manager->cleanUpTempFiles();
+        }
+        else {
+            // if($bypass_limit) {
+            //     $success = $Manager->render(FALSE, TRUE, TRUE);
+            //     $success = ($download) ? $Manager->download() : $success;
+            // }
+            // else {
+                $success = ($download) ? $Manager->download($bypass_limit) : $Manager->render(FALSE, TRUE, $bypass_limit);
+                // $success = ($download) ? $Manager->download() :  $Manager->getBiblesNeedingRender();
+            // }
+
+        }
+
+        $response = new \stdClass;
+
+        if(!$success) {
+            // if($Manager->needsProcess()) {
+            //     $HasJobs = Models\Job::where('queue', 'default')->count();
+
+            //     var_dump($HasJobs);
+
+            //     \App\Jobs\ProcessRender::dispatch($sanitized);
+
+            //     if(!$HasJobs) {
+            //         // $this->_startQueueProcess();
+            //     }
+            // }
+
+            $this->addErrors( $Manager->getErrors(), $Manager->getErrorLevel());
+            $response->success = FALSE;
+            $response->separate_process_supported = $Manager->separateProcessSupported();
+            // return FALSE;
+        }
+        elseif(!$download) {
+            $response->success = TRUE;
+        }
+        
+        return $response;
+    }
+
+    protected function _startQueueProcess($queue = 'default') {
+        $cmd = 'php ' . $_SERVER['DOCUMENT_ROOT'] . '../artisan queue:work --stop-when-empty'; 
+
+        // $cmd .= ' > /dev/null 2>&1';
+        // $cmd .= ' > /dev/null & ';
+        $cmd .= ' > /dev/null ';
+
+        // Use Laravel queues???
+
+        // See these options on php artisan queue:work
+        //  --once
+        //  --stop-when-empty
+
+        var_dump($cmd);
+        // die($cmd);
+
+        exec($cmd);
+        return TRUE;
+    }
+
+    public function actionDownloadlist($input) {
+        return \App\RenderManager::getRendererList();
     }
 
     /**
@@ -442,13 +593,15 @@ class Engine {
 
     public function actionStatics($input) {
         $response = new \stdClass;
-        $response->bibles       = $this->actionBibles($input);
-        $response->books        = $this->actionBooks($input);
-        $response->shortcuts    = $this->actionShortcuts($input);
-        $response->search_types = config('bss.search_types');
-        $response->name         = config('app.name');
-        $response->version      = config('app.version');
-        $response->environment  = config('app.env');
+        $response->bibles           = $this->actionBibles($input);
+        $response->books            = $this->actionBooks($input);
+        $response->shortcuts        = $this->actionShortcuts($input);
+        $response->download_enabled = config('download.enable') ? TRUE : FALSE;
+        $response->download_formats = $response->download_enabled ? array_values(RenderManager::getGroupedRendererList()) : [];
+        $response->search_types     = config('bss.search_types');
+        $response->name             = config('app.name');
+        $response->version          = config('app.version');
+        $response->environment      = config('app.env');
         return $response;
     }
 
@@ -470,6 +623,21 @@ class Engine {
         $response->name         = config('app.name');
         $response->version      = config('app.version');
         $response->environment  = config('app.env');
+
+        // pher - unpublished property 'php version' checks against current required PHP version
+        if(array_key_exists('pher', $input) && $input['pher']) {
+            $composer_txt = file_get_contents(base_path() . '/composer.json');
+            $composer     = json_decode($composer_txt);
+
+            $php_version = substr($composer->require->php, 2);
+            $php_success = (version_compare($input['pher'], $php_version, '>=') == -1) ? TRUE : FALSE;
+            // var_dump($php_version);
+            // var_dump($input['pher']);
+
+            $response->php_required_min = $php_success ? NULL : $php_version;
+            $response->php_error = !$php_success;
+        }
+
         return $response;
     }
 
@@ -727,14 +895,21 @@ class Engine {
         $app_configs = include(base_path('config/app.php'));
         return $app_configs['version'];
     }
+    
     /**
      * Get's the version number of the production version of this API
      * Used for checking for updates
      * @return type
      */
-    public static function getUpstreamVersion() {
+    public static function getUpstreamVersion($verbose = FALSE) {
         $json = NULL;
         $url  = 'https://api.biblesupersearch.com/api/version';
+
+        if($verbose) {
+            $ver = explode('.', PHP_VERSION);
+            $php_version = (int) $ver[0] . '.' . (int) $ver[1] . '.' . (int) $ver[2];
+            $url .= '?pher='. $php_version;
+        }
 
         if(ini_get('allow_url_fopen') == 1) {
             $json = file_get_contents($url);
@@ -756,7 +931,12 @@ class Engine {
         }
 
         $results = json_decode($json);
-        return $results->results->version;
+
+        if($verbose) {
+            $results->results->local_php_version = $php_version;
+        }
+
+        return $verbose ? $results->results : $results->results->version;
     }
 
     public static function isBibleEnabled($module) {

@@ -165,7 +165,7 @@ class InstallManager {
         $checklist[] = ['type' => 'hr'];
         $checklist[] = ['type' => 'header', 'label' => 'Directories that need to be Writable'];
 
-        $dir = ['storage/app', 'storage/framework', 'storage/logs', 'bootstrap/cache', 'bibles/modules', 'bibles/unofficial'];
+        $dir = ['storage/app', 'storage/framework', 'storage/logs', 'bootstrap/cache', 'bibles/modules', 'bibles/unofficial', 'bibles/rendered'];
 
         foreach($dir as $d) {
            $checklist[] = ['type' => 'item', 'label' => 'Is Writable: ' . $d, 'success' => is_writable(base_path($d))];

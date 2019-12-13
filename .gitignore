@@ -17,4 +17,5 @@ composer-temp.phar
 /bibles/misc/*.zip
 /bibles/misc/*.gz
 /bibles/misc/*.txt
+/bibles/rendered/*
 

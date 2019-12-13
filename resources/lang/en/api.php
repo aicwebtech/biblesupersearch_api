@@ -4,6 +4,7 @@
 
 return array(
     'action' => 'Action',
+    'usage' => 'Usage',
     'see' => 'See',
     'results' => 'Results',
     'description' => 'Description',
@@ -20,6 +21,8 @@ return array(
     'bibles_avail' => 'Bibles Available via API',
     'tos' => 'Terms of Service',
     'privacy' => 'Privacy Policy',
+    'download' => 'Download',
+    'free_download' => 'Free Downloads',
 
     'bible_fields' => array(
         'module' => 'Module',
@@ -34,6 +37,7 @@ return array(
         'rank_desc' => 'Default sorting order.',
         'italics_desc' => '(Future use) Supports Italicised words ',
         'strongs_desc' => '(Future use) Embedded strongs numbers',
+        'downloadable' => 'Downloadable',
         'research' => 'Research',
         'research_desc' => 'Indicates a Bible text that does not nessessarily adhere to the traditional Textus Receptus Greek and Masoretic Hebrew.'
         . ' These texts are intended for research purposes only.',
@@ -107,6 +111,33 @@ return array(
             'def' => 'Definition record, "tvm" will be empty.'
         ]
     ),
+    'download' => array(
+        'name' => 'Bible File Download',
+        'description' => 'Returns the given Bible module(s) as a file download, rendered into the selected format',
+        'params' => array(
+            'bible' => array(
+                'type' => 'String - multiple',
+                'name' => 'Bibles',
+                'default' => '(none)',
+                'description' => '(required) MODULE of the Bible(s) to download. Can be a string, array or JSON-encoded array. &nbsp;'
+                . 'Set to ALL to get all downloadable Bibles'
+            ),
+            'format' => array(
+                'type' => 'String - multiple',
+                'name' => 'Format',
+                'default' => '(none)',
+                'description' => '(required) Format of the Bibles to download. Can be a string, array or JSON-encoded array. &nbsp;'
+                . 'See list of options below.'
+            ),
+            'zip' => array(
+                'type' => 'Boolean',
+                'name' => 'ZIP',
+                'default' => 'FALSE',
+                'description' => 'If specified, forces a ZIP file download when one Bible or format is selected. &nbsp;'
+                . 'Note: Selecting multiple Bibles or formats<br />automatially returns a ZIP file, and this parameter is ignored'
+            ),
+        ),
+    ),
     'statics' => array(
         'name' => 'Statics',
         'description' => 'Single API action to retrieve basic information needed to use the API. <br/><br />'
@@ -115,6 +146,7 @@ return array(
         . '<li>A list of Bible books in the specified language</li>'
         . '<li>A list of shortcuts in the specified language</li>'
         . '<li>A list of search types</li>'
+        . '<li>A list of download formats</li>'
         . '<li>The API name</li>'
         . '<li>The API version</li>'
         . '<li>The API environment (production/beta/development)</li>'
