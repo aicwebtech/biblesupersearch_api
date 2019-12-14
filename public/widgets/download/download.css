@@ -98,3 +98,29 @@ tr.download_disabled {
     font-size: 2em;
 }
 
+#bible_download_form {
+    
+}
+
+#bible_download_form {
+    position: relative;
+}
+
+#bible_download_form .container {
+    width: 45%;
+}
+
+#bible_download_form .bible_container {
+    float: left;
+}
+
+#bible_download_form .format_container {
+    float: right;
+}
+
+@media only screen and (max-width: 1200px) {
+    #bible_download_form .container {
+        float: initial;
+        width: 98%;
+    }
+}
