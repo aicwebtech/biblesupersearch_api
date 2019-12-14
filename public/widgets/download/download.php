@@ -5,7 +5,8 @@
 <form action='<?php echo $BibleSuperSearchAPIURL ?>/api/download' method='POST' id='bible_download_form'>
     <input type='hidden' name='pretty_print' id='bible_download_pretty_print' value='1' />
     <input type='hidden' name='bypass_limit' id='bible_download_bypass_limit' value='1' /> <!-- will be set to 0 if JavaScript is enabled -->
-    <div style='float:left; width: 40%'>
+
+    <div class='container bible_container'>
         <h2>Select Bible(s)</h2>
         Some Bibles may not be available due to copyright restrictions. <br /><br />
 
@@ -39,7 +40,7 @@
 
         </table>
     </div>
-    <div style='float:left; width: 40%; margin-left: 100px'>
+    <div class='container format_container'>
         <h2>Select a Format</h2>
 
         <?php foreach($BibleSuperSearchDownloadFormats as $kind => $info) : ?>
@@ -64,8 +65,9 @@
     <br /><br />
 
     <div class='centered_div' style='width: 100px'>
-        <input id='bible_download_submit' type='submit' value='Download' class='button' />
+        <input id='bible_download_submit' type='submit' value='Download' class='button bible_download_submit' />
     </div>
+
 </form>
 
 <div class='pseudo_dialog' id='bible_download_dialog'>
