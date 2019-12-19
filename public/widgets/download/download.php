@@ -71,7 +71,7 @@
 </form>
 
 <div class='pseudo_dialog' id='bible_download_dialog'>
-    <div class='pseudo_dialog_container' style='width:600px'>
+    <div class='pseudo_dialog_container' style='width: 80%; max-width:600px'>
         <div class='pseudo_dialog_contents' id='bible_download_dialog_content' style='height:200px'>
             
         </div>

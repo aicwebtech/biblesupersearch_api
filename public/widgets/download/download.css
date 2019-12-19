@@ -70,6 +70,7 @@ tr.download_disabled {
     background-color: white;
     padding: 10px;
     border: 1px solid #666;
+    font-size: 14px;
 }
 
 .pseudo_dialog_contents span.float_left {
