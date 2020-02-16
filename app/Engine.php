@@ -7,11 +7,13 @@ use App\Models\Bible;
 use App\Passage;
 use App\Search;
 use App\CacheManager;
+use App\Helpers;
 use Illuminate\Pagination\LengthAwarePaginator as Paginator;
 
 class Engine {
     use Traits\Error;
     use Traits\Input;
+    use Traits\Singleton;
 
     protected $Bibles = array(); // Array of Bible objects
     protected $Bible_Primary = NULL; // Primary Bible version

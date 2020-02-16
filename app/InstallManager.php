@@ -75,12 +75,14 @@ class InstallManager {
         $installed_php_parts = explode('.', PHP_VERSION);
         $installed_php = $installed_php_parts[0] . '.' . $installed_php_parts[1] . '.' . intval($installed_php_parts[2]);
 
+        // TODO - MAKE SURE SENDMAIL IS INSTALLED!
+
         $checklist[] = ['type' => 'header', 'label' => 'Software'];
         $env = (is_file(base_path('.env')) && is_writable(base_path('.env'))) ? TRUE : FALSE;
         $checklist[] = ['type' => 'item', 'label' => '.env config file exists and is writable', 'success' => $env];
         $checklist[] = ['type' => 'item', 'label' => 'PHP Version >= ' . $php_version . ' (' . $installed_php . ')', 'success' => $php_success];
 
-        $extensions = ['OpenSSL', 'PDO', 'Mbstring', 'Tokenizer', 'XML', 'Zip', 'Ctype', 'JSON', 'BCMath'];
+        $extensions = ['OpenSSL', 'PDO', 'Mbstring', 'Tokenizer', 'XML', 'Zip', 'Ctype', 'JSON', 'BCMath', 'gd'];
         $rec_extensions = [];
 
         if($sqlite_required) {
@@ -165,7 +167,7 @@ class InstallManager {
         $checklist[] = ['type' => 'hr'];
         $checklist[] = ['type' => 'header', 'label' => 'Directories that need to be Writable'];
 
-        $dir = ['storage/app', 'storage/framework', 'storage/logs', 'bootstrap/cache', 'bibles/modules', 'bibles/unofficial', 'bibles/rendered'];
+        $dir = ['storage/app', 'storage/framework', 'storage/logs', 'storage/logs/laravel.log', 'bootstrap/cache', 'bibles/modules', 'bibles/unofficial', 'bibles/rendered'];
 
         foreach($dir as $d) {
            $checklist[] = ['type' => 'item', 'label' => 'Is Writable: ' . $d, 'success' => is_writable(base_path($d))];

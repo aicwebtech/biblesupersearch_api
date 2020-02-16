@@ -39,6 +39,37 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Application Premium Cache
+    |
+    | Caches the output of App\Helpers::isPremium() and is automatically set
+    |
+    | Forcing this value to TRUE will not magically grant you premium 
+    | features, but may instead cause breakage. 
+    |
+    |--------------------------------------------------------------------------
+    |
+    |
+    */
+
+    'premium' => FALSE,
+
+    /*
+    |--------------------------------------------------------------------------
+    | Application Premium Disable
+    |
+    | Force disable all premium features even if the code is present.
+    |
+    | Intended for debugging, must be FALSE in production
+    |
+    |--------------------------------------------------------------------------
+    |
+    |
+    */
+
+    'premium_disabled' => FALSE,
+
+    /*
+    |--------------------------------------------------------------------------
     | Application Debug Mode
     |--------------------------------------------------------------------------
     |
