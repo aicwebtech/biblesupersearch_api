@@ -70,8 +70,9 @@ enyo.kind({
                     requireDevTools: true
                 },
             ]},
-            {name: 'SortOptions', style: 'float: right', components: [
+            {name: 'Options', style: 'float: right', components: [
                 // {tag: 'button', classes: 'button bulk', content: 'Auto Sort'},
+                {kind: 'BibleManager.Components.Elements.Button', isPrem: true, classes: 'button bulk', content: 'Import Bible', ontap: 'tapImportBible'},
             ]},
             {style: 'clear: both'},
         ]},
@@ -82,6 +83,7 @@ enyo.kind({
             {name: 'Loading', kind: 'AICWEBTECH.Enyo.jQuery.Loading'},
             {name: 'Install', kind: 'BibleManager.Components.Dialogs.Install'},
             {name: 'Export', kind: 'BibleManager.Components.Dialogs.Export'},
+            {name: 'Import', kind: 'BibleManager.Components.Dialogs.Import'},
             {name: 'Edit', kind: 'BibleManager.Components.Dialogs.Edit'},
             {name: 'Description', kind: 'BibleManager.Components.Dialogs.Description'},
             {name: 'MultiConfirm', kind: 'BibleManager.Components.Dialogs.MultiConfirm'},
@@ -335,5 +337,8 @@ enyo.kind({
     },
     handleError: function(inSender, inResponse) {
         this.$.Alert.alert('An unknown error has occurred');
+    },
+    tapImportBible: function(inSender, inResponse) {
+        this.log();
     }
 });

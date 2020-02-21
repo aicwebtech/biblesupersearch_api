@@ -18,6 +18,16 @@ enyo.kind({
     },
     refreshGrid: function() {
         this.view.$.GridContainer.refreshGrid();
+    },
+    alertPrem: function() {
+        var msg = [
+            'This is a premium feature.',
+            "Buy your premium license at",
+            "",
+            "<a href='https://www.biblesupersearch/premium'>www.biblesupersearch/premium</a>"
+        ];
+
+        this.alert( msg.join('<br />') );
     }
 
 });

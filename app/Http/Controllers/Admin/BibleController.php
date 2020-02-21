@@ -7,6 +7,7 @@ use Illuminate\Http\Request;
 use App\Http\Responses\Response;
 use App\Http\Controllers\Controller;
 use App\Models\Bible;
+use App\Helpers;
 use Validator;
 
 class BibleController extends Controller
@@ -29,6 +30,7 @@ class BibleController extends Controller
 
         $bootstrap = new \stdClass;
         $bootstrap->devToolsEnabled = config('bss.dev_tools') ? TRUE : FALSE;
+        $bootstrap->premToolsEnabled = config('app.premium');
         $bootstrap = json_encode($bootstrap);
 
         return view('admin.bibles', ['bootstrap' => $bootstrap]);
@@ -152,6 +154,11 @@ class BibleController extends Controller
             'year'      => 'nullable',
             'rank'      => 'required|int',
         ];
+
+        if(config('app.premium')) {
+            $rules['description'] = 'nullable';
+            $rules['module'] = 'required';
+        }
 
         $data = $request->only(array_keys($rules));
 

@@ -1,0 +1,3 @@
+enyo.depends(
+    'Editor.js'
+);
