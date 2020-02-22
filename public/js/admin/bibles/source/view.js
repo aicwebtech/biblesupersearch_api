@@ -184,7 +184,8 @@ enyo.kind({
     viewDescription: function(inSender, inEvent) {
         var ajax = new enyo.Ajax({
             url: '/admin/bibles/' + inEvent.id,
-            method: 'GET'
+            method: 'GET',
+            headers: this.app.defaultAjaxHeaders
         });
 
         ajax.response(this, function(inSender, inResponse) {
@@ -206,7 +207,8 @@ enyo.kind({
         var ajax = new enyo.Ajax({
             url: url,
             method: 'POST',
-            postBody: postData
+            postBody: postData,
+            headers: this.app.defaultAjaxHeaders
         });
 
         ajax.response(this, function(inSender, inResponse) {
@@ -219,14 +221,18 @@ enyo.kind({
             this.app.refreshGrid();
         });
 
-        ajax.error(this, function(inSender, inResponse) {
-            console.log('ERROR', inSender, inResponse);
-            var response = JSON.parse(inSender.xhrResponse.body);
-            var errors = response.errors || ['Unknown Error'];
-            this.app.set('ajaxLoading', false);
-            var msg = 'An Error has occurred: <br /><ul><li>' + errors.join('</li><li>') + '</li></ul>';
-            this.app.alert(msg);
-        });
+        ajax.error(this, 'handleError');
+
+        // ajax.error(this, function(inSender, inResponse) {
+        //     console.log('ERROR', inSender, inResponse);
+        //     var response = JSON.parse(inSender.xhrResponse.body);
+        //     this.app.set('ajaxLoading', false);
+        //     this.app._handleError(inSender, response);
+
+        //     // var errors = response.errors || ['Unknown Error'];
+        //     // var msg = 'An Error has occurred: <br /><ul><li>' + errors.join('</li><li>') + '</li></ul>';
+        //     // this.app.alert(msg);
+        // });
 
         ajax.go();
     },
@@ -364,7 +370,13 @@ enyo.kind({
         this.$.BulkActions.set('showing', inEvent.length ? true : false);
     },
     handleError: function(inSender, inResponse) {
-        this.$.Alert.alert('An unknown error has occurred');
+        console.log('ERROR', inSender, inResponse);
+        var response = JSON.parse(inSender.xhrResponse.body);
+        this.app.set('ajaxLoading', false);
+
+        this.app._errorHandler(inSender, response);
+
+        // this.$.Alert.alert('An unknown error has occurred');
     },
     tapImportBible: function(inSender, inResponse) {
         this.log();

@@ -12,13 +12,10 @@ enyo.kind({
 
         if(this.isPrem && !bootstrap.premToolsEnabled) {
             this.addClass('prem');
-            // this.setContent( this.getContent() + ' (Premium)' );
-
             this.createComponent({tag: 'label', content: this.getContent()});
             this.createComponent({tag: 'span', content: '(Premium)'});
         }
     },
-
     handleTap: function(inSender, inEvent) {
         if(this.isPrem && !bootstrap.premToolsEnabled) {
             this.app.alertPrem();

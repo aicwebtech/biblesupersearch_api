@@ -31,7 +31,15 @@ class BibleController extends Controller
         $bootstrap = new \stdClass;
         $bootstrap->devToolsEnabled = config('bss.dev_tools') ? TRUE : FALSE;
         $bootstrap->premToolsEnabled = config('app.premium');
-        $bootstrap->copyrights = \App\Models\Copyright::all();
+        $bootstrap->languages  = \App\Models\Language::orderBy('name', 'asc')->get();
+        $bootstrap->copyrights = [];
+
+        foreacH(\App\Models\Copyright::all() as $Copyright) {
+            $data = $Copyright->getAttributes();
+            $data['copyright_statement_processed'] = $Copyright->getProcessedCopyrightStatement();
+            $bootstrap->copyrights[] = $data;
+        }
+
         $bootstrap = json_encode($bootstrap);
 
         return view('admin.bibles', ['bootstrap' => $bootstrap]);

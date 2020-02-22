@@ -19,3 +19,5 @@ composer-temp.phar
 /bibles/misc/*.txt
 /bibles/rendered/*
 /app/Premium
+
+.~lock*

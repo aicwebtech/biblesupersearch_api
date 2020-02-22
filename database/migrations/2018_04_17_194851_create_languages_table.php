@@ -7,6 +7,8 @@ use App\Importers\Database as DatabaseImport;
 
 class CreateLanguagesTable extends Migration
 {
+    // The languages table created here has been replaced by 2020_02_22_135407_rebuild_languages_table.php
+
     /**
      * Run the migrations.
      *
@@ -14,11 +16,11 @@ class CreateLanguagesTable extends Migration
      */
     public function up()
     {
-        Schema::create('languages', function (Blueprint $table) {
-            $table->increments('id');
-            $table->string('name', 100);
-            $table->string('code', 2)->unique();
-        });
+        // Schema::create('languages', function (Blueprint $table) {
+        //     $table->increments('id');
+        //     $table->string('name', 100);
+        //     $table->string('code', 2)->unique();
+        // });
 
         DatabaseImport::importSqlFile('languages.sql');
     }
@@ -30,6 +32,6 @@ class CreateLanguagesTable extends Migration
      */
     public function down()
     {
-        Schema::drop('languages');
+        // Schema::drop('languages');
     }
 }

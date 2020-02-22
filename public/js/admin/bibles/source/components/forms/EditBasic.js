@@ -80,6 +80,7 @@ enyo.kind({
         var ajax = new enyo.Ajax({
             url: '/admin/bibles/' + this.pk,
             method: 'GET',
+            headers: this.app.defaultAjaxHeaders
         });
 
         ajax.response(this, function(inSender, inResponse) {
@@ -100,8 +101,8 @@ enyo.kind({
         ajax.error(this, function(inSender, inResponse) {
             console.log('ERROR', inSender, inResponse);
             this.app.set('ajaxLoading', false);
-            var msg = 'An Error has occurred';
-            this.app.alert(msg);
+            var response = JSON.parse(inSender.xhrResponse.body);
+            this.app._errorHandler(inSender, response);
             this.close();
         });
 
@@ -117,7 +118,8 @@ enyo.kind({
         var ajax = new enyo.Ajax({
             url: '/admin/bibles/' + this.pk,
             method: 'PUT',
-            postBody: postData
+            postBody: postData,
+            headers: this.app.defaultAjaxHeaders
         });
 
         ajax.response(this, function(inSender, inResponse) {
@@ -135,7 +137,7 @@ enyo.kind({
             console.log('ERROR', inSender, inResponse);
             this.app.set('ajaxLoading', false);
             var response = JSON.parse(inSender.xhrResponse.body);
-            this._errorHandler(inSender, response);
+            this.app._errorHandler(inSender, response);
         });
 
         ajax.go();
@@ -148,7 +150,7 @@ enyo.kind({
         this.doOpen();
     },
     _errorHandler: function(inSender, inResponse) {
-        var msg = 'An Error has occurred';
+        var msg = inResponse.message || 'An Error has occurred';
 
         if(inResponse.errors) {
             msg += '<br /><br />';

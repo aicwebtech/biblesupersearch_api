@@ -9,21 +9,29 @@ enyo.kind({
     $description: null,
 
     components: [
-        {tag: 'table', components: [
+        {tag: 'table', attributes: {border: '1'}, components: [
             {tag: 'tr', components: [
-                {tag: 'td', classes: 'form_label right', content: 'Display Name: '},
+                {tag: 'td', classes: 'form_label right', content: 'Full Display Name: '},
                 {tag: 'td', attributes: {colspan: 3}, classes: 'form_label right', components: [
                     {kind: 'enyo.Input', name: 'name', classes: 'wide'}
                 ]}
             ]},
             {tag: 'tr', components: [
-                {tag: 'td', classes: 'form_label right', content: 'Module: '},
-                {tag: 'td', classes: 'form_label right', components: [
-                    {kind: 'enyo.Input', name: 'module'}
-                ]},
                 {tag: 'td', classes: 'form_label right', content: 'Short Display Name: '},
                 {tag: 'td', classes: 'form_label right', components: [
                     {kind: 'enyo.Input', name: 'shortname'}
+                ]}
+            ]},            
+            {tag: 'tr', components: [
+                {tag: 'td', classes: 'form_label right', content: 'Module: '},
+                {tag: 'td', classes: 'form_label right', components: [
+                    {kind: 'enyo.Input', name: 'module'}
+                ]}
+            ]},
+            {tag: 'tr', components: [
+                {tag: 'td', classes: 'form_label right', content: 'Publication Year: '},
+                {tag: 'td', classes: 'form_label right', components: [
+                    {kind: 'enyo.Input', name: 'year'}
                 ]}
             ]},
             {tag: 'tr', components: [
@@ -40,7 +48,7 @@ enyo.kind({
                 ]}
             ]},            
             {tag: 'tr', components: [
-                {tag: 'td', classes: 'form_label right', content: 'Research: '},
+                {tag: 'td', classes: 'form_label right', content: 'Research Only: '},
                 {tag: 'td', classes: 'form_label right', components: [
                     {kind: 'enyo.Checkbox', name: 'research'},
                 ]}, 
@@ -53,9 +61,30 @@ enyo.kind({
                 ]}
             ]},
             {tag: 'tr', components: [
+                {tag: 'td', classes: 'form_label right', content: 'Restrict: '},
+                {tag: 'td', classes: 'form_label right', components: [
+                    {kind: 'enyo.Checkbox', name: 'restrict'},
+                ]}, 
+                {tag: 'td', attributes: {colspan: 2}, components: [
+                    {
+                        tag: 'span', 
+                        classes: 'sublabel', 
+                        content: 'Restrict access to only local domains. No outside API Access.'
+                    }
+                ]}
+            ]},
+            {tag: 'tr', components: [
                 {tag: 'td', classes: 'form_label right', content: 'Sort Order: '},
                 {tag: 'td', classes: 'form_label right', components: [
                     {kind: 'enyo.Input', name: 'rank'}
+                ]}
+            ]},            
+            {tag: 'tr', components: [
+                {tag: 'td', classes: 'form_label right', content: 'Language: '},
+                {tag: 'td', classes: 'form_label right', components: [
+                    {kind: 'AICWEBTECH.Enyo.Select', name: 'lang_short', components: [
+                        {value: null, content: 'Select One ...'}
+                    ]}
                 ]}
             ]},
         ]},
@@ -67,9 +96,29 @@ enyo.kind({
                         {value: null, content: 'Select One ...'}
                     ]}
                 ]},
-                {tag: 'td', classes: 'form_label right', content: 'Publication Year: '},
+            ]},            
+            {tag: 'tr', components: [
+                {tag: 'td', classes: 'form_label right', content: 'Copyright Owner: '},
                 {tag: 'td', classes: 'form_label right', components: [
-                    {kind: 'enyo.Input', name: 'year'}
+                    {kind: 'enyo.Input', name: 'owner'}
+                ]},
+            ]},            
+            {tag: 'tr', components: [
+                {tag: 'td', classes: 'form_label right', content: 'Publisher Name: '},
+                {tag: 'td', classes: 'form_label right', components: [
+                    {kind: 'enyo.Input', name: 'publisher'}
+                ]},
+            ]},
+            {tag: 'tr', components: [
+                {tag: 'td', attributes: {colspan: 2}, content: 'Copyright Statement' },
+                {tag: 'td', attributes: {colspan: 2}, content: 'Default Copyright Statement' }
+            ]},            
+            {tag: 'tr', components: [
+                {tag: 'td', attributes: {colspan: 2}, components: [
+                    {name: 'copyright_statement', kind: 'enyo.TextArea', classes: 'copyright_statement'}
+                ]},
+                {tag: 'td', attributes: {colspan: 2}, components: [
+                    {name: 'copyright_statement_default', kind: 'enyo.TextArea', disabled: true, classes: 'copyright_statement'}
                 ]}
             ]},
         ]},
@@ -136,6 +185,16 @@ enyo.kind({
             else {
                 return value ? 1 : 0;
             }
+        }},        
+        {from: 'formData.restrict', to: '$.restrict.checked', oneWay: false, transform: function(value, dir) {
+            this.log('restrict', value, dir);
+
+            if(dir == 1) {
+                return (value) ? true : false;
+            }
+            else {
+                return value ? 1 : 0;
+            }
         }},
         {from: 'formData.copyright_id', to: '$.copyright_id.value', oneWay: false, transform: function(value, dir) {
             this.log('copyright_id', value, dir);
@@ -154,6 +213,10 @@ enyo.kind({
             else {
                 return value ? 1 : 0;
             }
+        }},
+        {from: 'formData.lang_short', to: '$.lang_short.value', oneWay: false, transform: function(value, dir) {
+            this.log('lang_short', value, dir);
+            return (value && value != '0') ? value : null;
         }}
     ],
 
@@ -164,6 +227,15 @@ enyo.kind({
             this.$.copyright_id.createComponent({
                 value: item.id,
                 content: item.name
+            });
+        }, this);        
+
+        bootstrap.languages.forEach(function(item) {
+            var displayName = item.name + ' (' + item.code.toUpperCase() + ')';
+
+            this.$.lang_short.createComponent({
+                value: item.code,
+                content: displayName
             });
         }, this);
     },

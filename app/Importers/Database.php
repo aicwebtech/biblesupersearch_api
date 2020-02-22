@@ -47,6 +47,44 @@ class Database {
         }
     }
 
+    static public function importCSV($file, $map, $model_class, $id_field = 'id', $dir = NULL) {
+        $default_dir = ($dir) ? FALSE : TRUE;
+        $dir = ($dir) ? $dir : dirname(__FILE__) . '/../../database/dumps';
+        $path = $dir . '/' . $file;
+        $display_path = ($default_dir) ? '<app_dir>/database/dumps/' . $file : $path;
+
+        if(!is_file($path)) {
+            echo 'Warning: CSV import file not found: ' . $display_path . PHP_EOL;
+            return;
+        }
+
+        $contents = array_values(file($path, FILE_SKIP_EMPTY_LINES));
+
+        foreach($contents as $key => $line) {
+            if($key == 0) {
+                continue;
+            }
+
+            try {
+                $mapped = [];
+                $raw = array_values(str_getcsv($line));
+
+                foreach($map as $mkey => $l) {
+                    $mapped[$l] = $raw[$mkey];
+                }
+
+                $find = [];
+                $find[$id_field] = $mapped[$id_field];
+
+                $Model = $model_class::firstOrCreate($find, $mapped);
+            }
+            catch (\Exception $ex) {
+                echo $ex->getMessage() . PHP_EOL . PHP_EOL;
+                die();
+            }
+        }
+    }
+
     static public function setCreatedUpdated($db_table) {
         $sql_date = date('Y-m-d H:i:s');
 

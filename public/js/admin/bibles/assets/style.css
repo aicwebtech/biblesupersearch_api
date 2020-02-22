@@ -78,3 +78,7 @@ td.good {
 input.wide {
     width: 100%;
 }
+
+textarea.copyright_statement {
+    height: 100px;
+}

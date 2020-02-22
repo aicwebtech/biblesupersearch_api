@@ -65,7 +65,8 @@ enyo.kind({
                 rowList: [10, 15, 20, 30, 50, 100],
                 onSelectRow: enyo.bind(this, this._selectRow),
                 onSelectAll: enyo.bind(this, this._selectRow),
-                loadComplete: enyo.bind(this, this._loadComplete)
+                loadComplete: enyo.bind(this, this._loadComplete),
+                loadError: enyo.bind(this, this._loadError)
             });
 
             this.gridHandle.navGrid(pagerId, {search: false, edit: false, view: false, del: false, add: false, refresh: true, nav: {
@@ -81,6 +82,12 @@ enyo.kind({
     },
     _loadComplete: function() {
         this.doSelectionsChanged({length: 0});
+    },
+    _loadError: function(xhr, status, error) {
+        console.log('loadError', xhr, status, error);
+
+        // var response = JSON.parse(xhr.xhrResponse.body);
+        this.app._errorHandler(xhr, xhr.responseJSON);
     },
     getRowByPk: function(pk) {
         var id = this.idPrefix + pk.toString();
