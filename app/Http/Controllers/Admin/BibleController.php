@@ -31,6 +31,7 @@ class BibleController extends Controller
         $bootstrap = new \stdClass;
         $bootstrap->devToolsEnabled = config('bss.dev_tools') ? TRUE : FALSE;
         $bootstrap->premToolsEnabled = config('app.premium');
+        $bootstrap->copyrights = \App\Models\Copyright::all();
         $bootstrap = json_encode($bootstrap);
 
         return view('admin.bibles', ['bootstrap' => $bootstrap]);
@@ -141,6 +142,8 @@ class BibleController extends Controller
     protected function _save(Request $request, $id = NULL) {
         $resp = new \stdClass();
 
+        $BibleClass = Helpers::find('\App\Models\Bible');
+
         if($id) {
             $Bible = Bible::findOrFail($id);
         }
@@ -159,6 +162,10 @@ class BibleController extends Controller
             $rules['description'] = 'nullable';
             $rules['module'] = 'required';
         }
+
+        $rules = $BibleClass::getUpdateRules();
+
+        // print_r($rules);
 
         $data = $request->only(array_keys($rules));
 
@@ -316,6 +323,38 @@ class BibleController extends Controller
         $data   = $request->toArray();
         $create = (array_key_exists('create_new', $data) && $data['create_new']) ? TRUE : FALSE;
         $Bible->updateMetaInfo($create);
+
+        $resp = new \stdClass();
+        $resp->success = TRUE;
+
+        if($Bible->hasErrors()) {
+            $resp->success = FALSE;
+            $resp->errors  = $Bible->getErrors();
+        }
+
+        return new Response($resp, 200);
+    }
+
+    public function research(Request $request, $id) {
+        $Bible  = Bible::findOrFail($id);
+        $Bible->research = 1;
+        $Bible->save();
+
+        $resp = new \stdClass();
+        $resp->success = TRUE;
+
+        if($Bible->hasErrors()) {
+            $resp->success = FALSE;
+            $resp->errors  = $Bible->getErrors();
+        }
+
+        return new Response($resp, 200);
+    }   
+
+     public function unresearch(Request $request, $id) {
+        $Bible  = Bible::findOrFail($id);
+        $Bible->research = 0;
+        $Bible->save();
 
         $resp = new \stdClass();
         $resp->success = TRUE;

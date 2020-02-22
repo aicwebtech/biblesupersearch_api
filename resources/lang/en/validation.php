@@ -107,6 +107,7 @@ return [
 
     'attributes' => [
         'shortname' => 'short name',
+        'copyright_id' => 'copyright',
     ],
 
 ];

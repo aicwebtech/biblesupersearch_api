@@ -13,6 +13,15 @@ use App\Traits\Error;
 class Bible extends Model {
     use Error;
 
+    static public function getUpdateRules() {
+        return array(
+            'name'      => 'required|max:255',
+            'shortname' => 'required|max:255',
+            'year'      => 'nullable',
+            'rank'      => 'required|int',
+        );    
+    }
+
     protected $Verses; // Verses model instance
     protected $verses_class_name; // Name of verses class
     //protected $guarded = array('id'); // BAD idea!
@@ -583,5 +592,16 @@ class Bible extends Model {
 
     public function getRandomReference($random_mode) {
         return $this->verses()->getRandomReference($random_mode);
+    }
+
+    /**
+     * Get custom attributes for validator errors.
+     *
+     * @return array
+     */
+    public function attributes() {
+        return [
+            'copyright_id' => 'copyright',
+        ];
     }
 }

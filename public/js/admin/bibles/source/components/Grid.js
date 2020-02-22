@@ -28,7 +28,7 @@ enyo.kind({
                 idPrefix: this.idPrefix,
                 colModel: [
                     {name: 'name', index: 'name', label: 'Name', width:'200', editable: true},
-                    {name: 'shortname', index: 'shortname', label: 'Short Name', width:'150', editable: true},
+                    {name: 'shortname', index: 'shortname', label: 'Short Name', width:'100', editable: true},
                     {name: 'module', index: 'module', label: 'Module', width:'150'},
                     {
                         name: 'has_module_file', 
@@ -45,6 +45,7 @@ enyo.kind({
                     {name: 'installed', index: 'installed', label: 'Installed', width:'80', title: false, formatter: enyo.bind(this, this._formatInstalled)},
                     {name: 'enabled', index: 'enabled', label: 'Enabled', width:'80', title: false, formatter: enyo.bind(this, this._formatEnabled)},
                     {name: 'official', index: 'official', label: 'Official', width:'60', title: false, formatter: enyo.bind(this, this._formatSinpleBoolean)},
+                    {name: 'research', index: 'research', title: 'for Research ONly', label: 'Research Only', width:'110', title: false, formatter: enyo.bind(this, this._formatResearch)},
                     {name: 'rank', index: 'rank', label: 'Rank', width:'100'},
                     {name: 'actions', index: 'actions', label: '&nbsp', width:'120', title: false, formatter: enyo.bind(this, this._formatActions)},
                     {name: 'id', index: 'id', hidden: true}
@@ -155,6 +156,26 @@ enyo.kind({
 
         return fmt;
     },
+     _formatResearch: function(cellvalue, options, rowObject) {
+        var fmt = (cellvalue == '1') ? 'Yes' : 'No&nbsp;';
+        options.colModel.classes = (cellvalue == '1') ? 'research on' : 'research off';
+        return fmt;
+        
+        var action = (cellvalue == '1') ? 'Unflag' : 'Flag';
+        var signal = (cellvalue == '1') ? 'onConfirmAction' : 'onConfirmAction';
+        // var props  = (cellvalue == '1') ? {id: options.rowId, action: 'unresearch', displayAction: 'unflag'} : {id: options.rowId, action: 'research', displayAction: 'flag'};
+
+        var props = {
+            id: options.rowId,
+            action: (cellvalue == '1') ? 'unresearch' : 'research',
+            displayAction: (cellvalue == '1') ? 'unflag' : 'flag',
+            title: (cellvalue == '1') ? 'Unflag as "For Research Only"' : 'Flag as "For Research Only"'
+        };
+
+        var url = this.__makeSignalUrl(signal, props);
+        fmt += " &nbsp; &nbsp;<a href='javascript:" + url + "'>" + action + "</a>";
+        return fmt;
+    },     
     _formatActions: function(cellvalue, options, rowObject) {
         var props = {id: options.rowId};
         var html = '';

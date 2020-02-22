@@ -37,4 +37,26 @@ class Helpers {
         return TRUE;
     }
 
+    public static function make($class_name) {
+        $new_class_name = static::find($class_name);
+        return new $new_class_name();
+    }
+
+    public static function find($class_name) {
+        $new_class_name = static::transformClassName($class_name);
+
+        if(class_exists($new_class_name)) {
+            return $new_class_name;
+        }
+        else if(class_exists($class_name)) {
+            return $class_name;
+        }
+
+        return FALSE;
+    }
+
+    public static function transformClassName($class_name) {
+        return config('app.premium') ? str_replace("App\\", "App\Premium\\", $class_name) : $class_name;
+    }
+
 }

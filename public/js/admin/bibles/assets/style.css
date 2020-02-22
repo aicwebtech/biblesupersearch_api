@@ -27,6 +27,14 @@ td.on {
     background-color: #76f785;
 }
 
+td.research.off {
+    background-color: #39e3cf;
+}
+
+td.research.on {
+    background-color: #e0e84f;
+}
+
 td.good {
     background-color: green;
     color: white;
@@ -51,7 +59,22 @@ td.good {
     color: red;
 }
 
+.edit_form span.sublabel {
+    margin-left: 10px;
+    font-size: .8em;
+}
+
+.edit_form table {
+    width: 100%;
+    border: 1px solid #ddd;
+    margin-bottom: 20px;
+}
+
 .edit_form textarea {
     width: 100%;
     height: 400px;
+}
+
+input.wide {
+    width: 100%;
 }

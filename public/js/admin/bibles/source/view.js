@@ -50,6 +50,22 @@ enyo.kind({
                     ontap: 'multiTest',
                     action: 'test',
                     actioning: 'Testing'
+                },                
+                {
+                    tag: 'button',
+                    classes: 'button bulk',
+                    content: 'Flag As For Research Only',
+                    ontap: 'multiFlagResearch',
+                    action: 'research',
+                    actioning: 'Flagging'
+                },                
+                {
+                    tag: 'button',
+                    classes: 'button bulk',
+                    content: 'Unflag As For Research Only',
+                    ontap: 'multiUnflagResearch',
+                    action: 'unresearch',
+                    actioning: 'Unflagging'
                 },
                 {
                     tag: 'button',
@@ -146,7 +162,12 @@ enyo.kind({
         var id = inEvent.id;
         var action = inEvent.action;
         var rowData = this.$.GridContainer.getRowByPk(inEvent.id);
-        var text = "Are you sure that you want to <b>" + inEvent.action + "</b><br /><br />'" + rowData.name + "'?";
+        var title = inEvent.title || null;
+        var displayAction = inEvent.displayAction || inEvent.action;
+
+        this.$.Confirm.set('title', title);
+
+        var text = "Are you sure that you want to <b>" + displayAction + "</b><br /><br />'" + rowData.name + "'?";
         this.log('confirming', text);
 
         this.$.Confirm.confirm(text, enyo.bind(this, function(confirmed) {
@@ -219,6 +240,12 @@ enyo.kind({
     multiUninstall: function(inSender, inEvent) {
         this._confirmMultiAction('uninstall', 'Uninstalling');
     },
+    multiFlagResearch: function(inSender, inEvent) {
+        this._confirmMultiAction('research', 'Flag as "For Research Only"', 'flag');
+    },    
+    multiUnflagResearch: function(inSender, inEvent) {
+        this._confirmMultiAction('unresearch', 'Unflagging as "For Research Only"', 'unflag');
+    },
     multiInstall: function(inSender, inEvent) {
         this._processSelections();
 
@@ -281,10 +308,11 @@ enyo.kind({
         this.$.MultiExport.set('items', enyo.clone(this.selections));
         this._multiActionHelper(action, actioning, {}, closeWhenFinished);
     },
-    _confirmMultiAction: function(action, actioning) {
+    _confirmMultiAction: function(action, actioning, displayAction) {
         this._processSelections();
         var actioning = (typeof actioning == 'undefined') ? 'Processing' : actioning;
         var action    = (typeof action == 'undefined') ? 'process' : action;
+        var displayAction = (typeof displayAction == 'undefined') ? action : displayAction;
 
         if(this.selections.length == 0) {
             this.$.Alert.alert('Nothing selected');
@@ -292,7 +320,7 @@ enyo.kind({
         }
 
         this.$.MultiConfirm.set('items', enyo.clone(this.selections));
-        this.$.MultiConfirm.set('action', action);
+        this.$.MultiConfirm.set('action', displayAction);
         this.$.MultiConfirm.set('title', actioning);
 
         this.$.MultiConfirm.confirm(enyo.bind(this, function(confirmed) {

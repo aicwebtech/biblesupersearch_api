@@ -25,7 +25,7 @@ trait Singleton {
 
         if(config('app.premium')) {
             $called_class  = get_called_class();
-            $premium_class = str_replace("App\\", "App\Premium\\", $called_class);
+            $premium_class = Helpers::transformClassName($called_class);
 
             // var_dump($called_class);
             // var_dump($premium_class);
