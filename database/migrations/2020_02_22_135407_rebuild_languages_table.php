@@ -3,7 +3,7 @@
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Database\Migrations\Migration;
-use App\Importers\Database as DatabaseImport;
+use App\Models\Language as Model;
 
 class RebuildLanguagesTable extends Migration
 {
@@ -34,15 +34,7 @@ class RebuildLanguagesTable extends Migration
             $table->text('notes')->nullable()->comment('Comments');
         });
 
-        $map = [
-            'name', 'iso_name', 'code', 'native_name', 'rtl', 'family', 'iso_639_1', 'iso_639_2', 'iso_639_2_b', 'iso_639_3_raw', 'notes'
-        ];
-
-        // $mig =  'set'.Illuminate\Support\Str::studly('iso_639_3_raw').'Attribute';
-        // var_dump($mig);
-        // die();
-
-        DatabaseImport::importCSV('languages.csv', $map, '\App\Models\Language', 'code');
+        Model::migrateFromCsv();
     }
 
     /**

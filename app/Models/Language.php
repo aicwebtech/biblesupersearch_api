@@ -22,6 +22,12 @@ class Language extends Model {
         $this->attributes['rtl'] = ($value && $lv != 'false' && $lv != 'no') ? 1 : 0;
     }
 
+    public function setIso6393RawAttribute($value) {
+        $value = trim($value);
+        $this->attributes['iso_639_3_raw'] = $value;
+        $this->attributes['iso_639_3']     = substr($value, 0, 3);
+    }
+    
     public function _setIso6391Attribute($value) {
         $value = trim($value);    
         $this->attributes['iso_639_1'] = $value;
@@ -34,14 +40,21 @@ class Language extends Model {
         }
     }
 
-    public function setIso6393RawAttribute($value) {
-        $value = trim($value);
-        $this->attributes['iso_639_3_raw'] = $value;
-        $this->attributes['iso_639_3']     = substr($value, 0, 3);
+    public static function migrateFromCsv() {
+        $map = [
+            'name', 'iso_name', 'code', 'native_name', 'rtl', 'family', 'iso_639_1', 'iso_639_2', 'iso_639_2_b', 'iso_639_3_raw', 'notes'
+        ];
+
+        \App\Importers\Database::importCSV('languages.csv', $map, '\\' . get_called_class(), 'code');
     }
 
-    // DO NOT USE!
     public static function isRtl($lang) {
-        return ($lang == 'he' || $lang == 'ar') ? TRUE : FALSE;
+        $Language = static::where('code', $lang)->first();
+
+        if(!$Language) {
+            return FALSE;
+        }
+
+        return ($Language->rtl) ? TRUE : FALSE;
     }
 }

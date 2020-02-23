@@ -6,31 +6,35 @@ enyo.kind({
 
     pk: null,
     formData: {},
+    copyrightData: {},
     $description: null,
 
     components: [
-        {tag: 'table', attributes: {border: '1'}, components: [
+        {tag: 'table', attributes: {border: '0'}, components: [
             {tag: 'tr', components: [
-                {tag: 'td', classes: 'form_label right', content: 'Full Display Name: '},
+                {tag: 'td', classes: 'form_label right', style: 'width: 180px', content: 'Full Display Name: '},
                 {tag: 'td', attributes: {colspan: 3}, classes: 'form_label right', components: [
-                    {kind: 'enyo.Input', name: 'name', classes: 'wide'}
+                    {kind: 'enyo.Input', name: 'name', classes: 'wide'},
+                    {tag: 'span', classes: 'required', content: '* unique'}
                 ]}
             ]},
             {tag: 'tr', components: [
                 {tag: 'td', classes: 'form_label right', content: 'Short Display Name: '},
-                {tag: 'td', classes: 'form_label right', components: [
-                    {kind: 'enyo.Input', name: 'shortname'}
+                {tag: 'td', attributes: {colspan: 2}, classes: 'form_label right', components: [
+                    {kind: 'enyo.Input', name: 'shortname'},
+                    {tag: 'span', classes: 'required', content: '* unique'}
                 ]}
             ]},            
             {tag: 'tr', components: [
                 {tag: 'td', classes: 'form_label right', content: 'Module: '},
-                {tag: 'td', classes: 'form_label right', components: [
-                    {kind: 'enyo.Input', name: 'module'}
+                {tag: 'td', attributes: {colspan: 2}, classes: 'form_label right', components: [
+                    {kind: 'enyo.Input', name: 'module'},
+                    {tag: 'span', classes: 'required', content: '* unique'}
                 ]}
             ]},
             {tag: 'tr', components: [
                 {tag: 'td', classes: 'form_label right', content: 'Publication Year: '},
-                {tag: 'td', classes: 'form_label right', components: [
+                {tag: 'td', attributes: {colspan: 2}, classes: 'form_label right', components: [
                     {kind: 'enyo.Input', name: 'year'}
                 ]}
             ]},
@@ -39,10 +43,10 @@ enyo.kind({
                 {tag: 'td', classes: 'form_label right', components: [
                     {kind: 'enyo.Checkbox', name: 'enabled'}, 
                 ]},
-                {tag: 'td', attributes: {colspan: 2}, components: [
+                {tag: 'td', classes: 'sublabel', attributes: {colspan: 2}, components: [
                     {
                         tag: 'span', 
-                        classes: 'sublabel', 
+                        // classes: 'sublabel', 
                         content: 'Whether or not the Bible is enabled for use via the API'
                     }
                 ]}
@@ -52,10 +56,10 @@ enyo.kind({
                 {tag: 'td', classes: 'form_label right', components: [
                     {kind: 'enyo.Checkbox', name: 'research'},
                 ]}, 
-                {tag: 'td', attributes: {colspan: 2}, components: [
+                {tag: 'td', classes: 'sublabel', attributes: {colspan: 2}, components: [
                     {
                         tag: 'span', 
-                        classes: 'sublabel', 
+                        // classes: 'sublabel', 
                         content: 'If a Bible translation isn\'t up to the highest standards, or for other reasons you don\'t reccommend it, you can mark it as "For Research Only."'
                     }
                 ]}
@@ -65,36 +69,38 @@ enyo.kind({
                 {tag: 'td', classes: 'form_label right', components: [
                     {kind: 'enyo.Checkbox', name: 'restrict'},
                 ]}, 
-                {tag: 'td', attributes: {colspan: 2}, components: [
+                {tag: 'td', classes: 'sublabel', attributes: {colspan: 2}, components: [
                     {
                         tag: 'span', 
-                        classes: 'sublabel', 
+                        // classes: 'sublabel', 
                         content: 'Restrict access to only local domains. No outside API Access.'
                     }
                 ]}
             ]},
             {tag: 'tr', components: [
                 {tag: 'td', classes: 'form_label right', content: 'Sort Order: '},
-                {tag: 'td', classes: 'form_label right', components: [
+                {tag: 'td', attributes: {colspan: 2}, classes: 'form_label right', components: [
                     {kind: 'enyo.Input', name: 'rank'}
                 ]}
             ]},            
             {tag: 'tr', components: [
                 {tag: 'td', classes: 'form_label right', content: 'Language: '},
-                {tag: 'td', classes: 'form_label right', components: [
-                    {kind: 'AICWEBTECH.Enyo.Select', name: 'lang_short', components: [
+                {tag: 'td', attributes: {colspan: 2}, classes: 'form_label right', components: [
+                    {kind: 'AICWEBTECH.Enyo.Select', classes: 'wide', name: 'lang_short', components: [
                         {value: null, content: 'Select One ...'}
-                    ]}
+                    ]},
+                    {tag: 'span', classes: 'required', content: '*'}
                 ]}
             ]},
         ]},
         {tag: 'table', components: [        
             {tag: 'tr', components: [
-                {tag: 'td', classes: 'form_label right', content: 'Copyright: '},
-                {tag: 'td', classes: 'form_label right', components: [
-                    {kind: 'AICWEBTECH.Enyo.Select', name: 'copyright_id', components: [
+                {tag: 'td', classes: 'form_label right', style: 'width: 180px', content: 'Copyright: '},
+                {tag: 'td', attributes: {colspan: 3}, classes: 'form_label right', style: 'width: 618px', components: [
+                    {kind: 'AICWEBTECH.Enyo.Select', name: 'copyright_id', classes: 'wide', components: [
                         {value: null, content: 'Select One ...'}
-                    ]}
+                    ]},
+                    {tag: 'span', classes: 'required', content: '*'}
                 ]},
             ]},            
             {tag: 'tr', components: [
@@ -110,15 +116,22 @@ enyo.kind({
                 ]},
             ]},
             {tag: 'tr', components: [
-                {tag: 'td', attributes: {colspan: 2}, content: 'Copyright Statement' },
-                {tag: 'td', attributes: {colspan: 2}, content: 'Default Copyright Statement' }
+                {tag: 'td', attributes: {colspan: 2}, _style: 'width: 49%', content: 'Copyright Statement' },
+                {tag: 'td', attributes: {colspan: 2}, _style: 'width: 49%', content: 'Default Copyright Statement' }
             ]},            
             {tag: 'tr', components: [
                 {tag: 'td', attributes: {colspan: 2}, components: [
-                    {name: 'copyright_statement', kind: 'enyo.TextArea', classes: 'copyright_statement'}
+                    {
+                        name: 'copyright_statement', 
+                        kind: 'AICWEBTECH.Enyo.CKEDITOR.Editor', 
+                        editorSettings: {
+                            height: 300,
+                            width: 400,
+                        }
+                    }
                 ]},
                 {tag: 'td', attributes: {colspan: 2}, components: [
-                    {name: 'copyright_statement_default', kind: 'enyo.TextArea', disabled: true, classes: 'copyright_statement'}
+                    {name: 'copyright_statement_default', _kind: 'enyo.TextArea', allowHtml: true, disabled: true, classes: 'copyright_statement'}
                 ]}
             ]},
         ]},
@@ -139,14 +152,29 @@ enyo.kind({
     bindings: [
         {from: 'formData.name', to: '$.name.value', oneWay: false, transform: function(value, dir) {
             this.log('name', value, dir);
+
+            if(dir == 2) {
+                this._checkUnique('name', value, 'Full Display Name');
+            }
+
             return value || '';
         }},
         {from: 'formData.shortname', to: '$.shortname.value', oneWay: false, transform: function(value, dir) {
             this.log('shortname', value, dir);
+
+            if(dir == 2) {
+                this._checkUnique('shortname', value, 'Short Display Name');
+            }
+
             return value || '';
         }},       
         {from: 'formData.module', to: '$.module.value', oneWay: false, transform: function(value, dir) {
             this.log('module', value, dir);
+
+            if(dir == 2) {
+                this._checkUnique('module', value, 'Module');
+            }
+            
             return value || '';
         }},
         {from: 'formData.year', to: '$.year.value', oneWay: false, transform: function(value, dir) {
@@ -199,25 +227,23 @@ enyo.kind({
         {from: 'formData.copyright_id', to: '$.copyright_id.value', oneWay: false, transform: function(value, dir) {
             this.log('copyright_id', value, dir);
 
-            // if(dir == 1) {
-            //     this.$.copyright_id.setSelectedByValue(value);
-            //     return value || null;
-            // }
-
-            return (value && value != '0') ? value : null;
-
-
-            if(dir == 1) {
-                return (value) ? true : false;
-            }
-            else {
-                return value ? 1 : 0;
-            }
+            value = (value && value != '0') ? value : null;
+            this._populateCopyrightInfo(value);
+            return value;
         }},
         {from: 'formData.lang_short', to: '$.lang_short.value', oneWay: false, transform: function(value, dir) {
             this.log('lang_short', value, dir);
             return (value && value != '0') ? value : null;
-        }}
+        }},        
+
+
+        // Copyright data bindings
+        {from: 'copyrightData.copyright_statement_processed', to: '$.copyright_statement_default.content', oneWay: true, transform: function(value, dir) {
+            this.log('copyright_statement_default', value, dir);
+            return value || null;
+        }},
+
+
     ],
 
     create: function() {
@@ -251,11 +277,63 @@ enyo.kind({
     rendered: function() {
         this.$description = CKEDITOR.replace('description', {
             height: 300,
-            width: 1200,
+            width: 750,
         });
 
         this.$description.on('change', enyo.bind(this, function() {
             this.$.description.set('value', this.$description.getData());
         }));
+    }, 
+
+    _checkUnique: function(field, value, label) {
+        var postData = {
+            id: this.pk,
+            field: field,
+            value: value
+        };
+
+        var ajax = new enyo.Ajax({
+            url: '/admin/bibles/unique',
+            method: 'GET',
+            headers: this.app.defaultAjaxHeaders
+        });
+
+        ajax.response(this, function(inSender, inResponse) {
+            this.app.set('ajaxLoading', false);
+
+            if(!inResponse.success) {
+                var msg = 'An Error has occurred';
+                this.app.alert(msg);
+                this.close();
+                return;
+            }
+
+            this.open();
+            this.set('formData', enyo.clone(inResponse.Bible));
+            this.parent.set('title', 'Editing: ' + inResponse.Bible.name);
+        });
+
+        ajax.error(this, function(inSender, inResponse) {
+            console.log('ERROR', inSender, inResponse);
+            this.app.set('ajaxLoading', false);
+            var response = JSON.parse(inSender.xhrResponse.body);
+            this.app._errorHandler(inSender, response);
+            this.close();
+        });
+
+        ajax.go();
+    },
+
+    _populateCopyrightInfo: function(copyrightId) {
+        var cr = bootstrap.copyrights.find(element => element.id == copyrightId);
+
+        this.log(cr);
+
+        if(cr) {
+            this.set('copyrightData', enyo.clone(cr));
+        }
+        else {
+            this.set('copyrightData', {});
+        }
     }
 });

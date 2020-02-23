@@ -59,26 +59,33 @@ td.good {
     color: red;
 }
 
-.edit_form span.sublabel {
-    margin-left: 10px;
+.edit_form td.sublabel {
+    padding-left: 10px;
     font-size: .8em;
+    vertical-align: top;
 }
 
 .edit_form table {
-    width: 100%;
+    width: 800px;
     border: 1px solid #ddd;
     margin-bottom: 20px;
 }
 
 .edit_form textarea {
-    width: 100%;
-    height: 400px;
+/*    width: 100%;
+    height: 400px;*/
 }
 
-input.wide {
-    width: 100%;
+input.wide, select.wide {
+    width: 400px;
 }
 
 textarea.copyright_statement {
     height: 100px;
+}
+
+span.required {
+    margin-left: 5px;
+    color: red;
+    font-weight: bold;
 }

@@ -79,8 +79,8 @@ class Database {
                 $Model = $model_class::firstOrCreate($find, $mapped);
             }
             catch (\Exception $ex) {
-                echo $ex->getMessage() . PHP_EOL . PHP_EOL;
-                die();
+                // Ignore db errors?
+                // echo $ex->getMessage() . PHP_EOL . PHP_EOL;
             }
         }
     }
