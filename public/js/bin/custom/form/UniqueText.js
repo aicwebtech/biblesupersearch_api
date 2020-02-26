@@ -7,6 +7,7 @@ enyo.kind({
     apiUrl: null,
     fieldName: null,
     ignorePk: null,
+    classes: 'unique_text',
 
     handlers: {
         // onchange: 'handleChange',
@@ -14,7 +15,7 @@ enyo.kind({
         onViewForm: 'handleView'
     },
 
-    components: [ {name: 'Input', kind: 'enyo.Input', onfocus: 'handleFocus', onchange: 'handleChange', style: 'width: 100%'} ],
+    components: [ {name: 'Input', kind: 'enyo.Input', onfocus: 'handleFocus', onchange: 'handleChange'} ],
 
     bindings: [
         {from: 'value', to: '$.Input.value', oneWay: false, transform: function(value, dir) {

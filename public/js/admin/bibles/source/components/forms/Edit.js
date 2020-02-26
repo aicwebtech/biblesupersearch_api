@@ -1,13 +1,13 @@
 enyo.kind({
     name: 'BibleManager.Components.Forms.Edit',
     kind: 'BibleManager.Components.Forms.EditBasic',
-
-    classes: 'edit_form',
+    classes: 'edit_form edit_form_full',
 
     pk: null,
     formData: {},
     copyrightData: {},
     $description: null,
+    // debugBindings: true,
 
     components: [
         {tag: 'table', attributes: {border: '0'}, components: [
@@ -152,7 +152,7 @@ enyo.kind({
 
     bindings: [
         {from: 'formData.name', to: '$.name.value', oneWay: false, transform: function(value, dir) {
-            this.log('name', value, dir);
+            this.debugBindings && this.log('name', value, dir);
 
             if(dir == 2) {
                 // this._checkUnique('name', value, 'Full Display Name');
@@ -161,7 +161,7 @@ enyo.kind({
             return value || '';
         }},
         {from: 'formData.shortname', to: '$.shortname.value', oneWay: false, transform: function(value, dir) {
-            this.log('shortname', value, dir);
+            this.debugBindings && this.log('shortname', value, dir);
 
             if(dir == 2) {
                 // this._checkUnique('shortname', value, 'Short Display Name');
@@ -170,7 +170,7 @@ enyo.kind({
             return value || '';
         }},       
         {from: 'formData.module', to: '$.module.value', oneWay: false, transform: function(value, dir) {
-            this.log('module', value, dir);
+            this.debugBindings && this.log('module', value, dir);
 
             if(dir == 2) {
                 // this._checkUnique('module', value, 'Module');
@@ -179,11 +179,11 @@ enyo.kind({
             return value || '';
         }},
         {from: 'formData.year', to: '$.year.value', oneWay: false, transform: function(value, dir) {
-            this.log('year', value, dir);
+            this.debugBindings && this.log('year', value, dir);
             return value || '';
         }},        
         {from: 'formData.description', to: '$.description.value', oneWay: false, transform: function(value, dir) {
-            this.log('description', value, dir);
+            this.debugBindings && this.log('description', value, dir);
             
             if(dir == 1 && this.$description) {
                 this.$description.setData(value); // feed it to the CKEDITOR
@@ -192,11 +192,11 @@ enyo.kind({
             return value || '';
         }},
         {from: 'formData.rank', to: '$.rank.value', oneWay: false, transform: function(value, dir) {
-            this.log('rank', value, dir);
+            this.debugBindings && this.log('rank', value, dir);
             return (value || value === 0) ? value : null;
         }},        
         {from: 'formData.research', to: '$.research.checked', oneWay: false, transform: function(value, dir) {
-            this.log('research', value, dir);
+            this.debugBindings && this.log('research', value, dir);
 
             if(dir == 1) {
                 return (value) ? true : false;
@@ -206,7 +206,7 @@ enyo.kind({
             }
         }},
         {from: 'formData.enabled', to: '$.enabled.checked', oneWay: false, transform: function(value, dir) {
-            this.log('enabled', value, dir);
+            this.debugBindings && this.log('enabled', value, dir);
 
             if(dir == 1) {
                 return (value) ? true : false;
@@ -216,7 +216,7 @@ enyo.kind({
             }
         }},        
         {from: 'formData.restrict', to: '$.restrict.checked', oneWay: false, transform: function(value, dir) {
-            this.log('restrict', value, dir);
+            this.debugBindings && this.log('restrict', value, dir);
 
             if(dir == 1) {
                 return (value) ? true : false;
@@ -226,21 +226,21 @@ enyo.kind({
             }
         }},
         {from: 'formData.copyright_id', to: '$.copyright_id.value', oneWay: false, transform: function(value, dir) {
-            this.log('copyright_id', value, dir);
+            this.debugBindings && this.log('copyright_id', value, dir);
 
             value = (value && value != '0') ? value : null;
             this._populateCopyrightInfo(value);
             return value;
         }},
         {from: 'formData.lang_short', to: '$.lang_short.value', oneWay: false, transform: function(value, dir) {
-            this.log('lang_short', value, dir);
+            this.debugBindings && this.log('lang_short', value, dir);
             return (value && value != '0') ? value : null;
         }},        
 
 
         // Copyright data bindings
         {from: 'copyrightData.copyright_statement_processed', to: '$.copyright_statement_default.content', oneWay: true, transform: function(value, dir) {
-            this.log('copyright_statement_default', value, dir);
+            this.debugBindings && this.log('copyright_statement_default', value, dir);
             return value || null;
         }},
 

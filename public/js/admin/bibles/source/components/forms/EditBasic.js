@@ -4,6 +4,9 @@ enyo.kind({
     pk: null,
     formData: {},
 
+    debugBindings: false,
+    classes: 'edit_form edit_form_basic',
+
     events: {
         onClose: '',
         onOpen: ''
@@ -40,19 +43,19 @@ enyo.kind({
 
     bindings: [
         {from: 'formData.name', to: '$.name.value', oneWay: false, transform: function(value, dir) {
-            this.log('name', value, dir);
+            this.debugBindings && this.log('name', value, dir);
             return value || '';
         }},
         {from: 'formData.shortname', to: '$.shortname.value', oneWay: false, transform: function(value, dir) {
-            this.log('shortname', value, dir);
+            this.debugBindings &&this.log('shortname', value, dir);
             return value || '';
         }},
         {from: 'formData.year', to: '$.year.value', oneWay: false, transform: function(value, dir) {
-            this.log('year', value, dir);
+            this.debugBindings &&this.log('year', value, dir);
             return value || '';
         }},
         {from: 'formData.rank', to: '$.rank.value', oneWay: false, transform: function(value, dir) {
-            this.log('rank', value, dir);
+            this.debugBindings &&this.log('rank', value, dir);
             return (value || value === 0) ? value : null;
         }},
         // {from: 'props.enable', to: '$.enable.checked', oneWay: false, transform: function(value, dir) {
