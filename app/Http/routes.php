@@ -71,6 +71,8 @@ Route::post('/admin/bibles/unresearch/{id}', 'Admin\BibleController@unresearch')
 Route::post('/admin/bibles/export/{id}', 'Admin\BibleController@export');
 Route::post('/admin/bibles/meta/{id}', 'Admin\BibleController@meta');
 Route::post('/admin/bibles/test/{id}', 'Admin\BibleController@test');
+Route::post('/admin/bibles/unique', 'Admin\BibleController@uniqueCheck');
+Route::get('/admin/bibles/unique', 'Admin\BibleController@uniqueCheck');
 
 Route::get('/admin/tos', 'Admin\PostConfigController@tos')->name('admin.tos');
 Route::post('/admin/tos', 'Admin\PostConfigController@saveTos');

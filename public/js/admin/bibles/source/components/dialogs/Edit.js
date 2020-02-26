@@ -20,7 +20,7 @@ enyo.kind({
 
         var kind = bootstrap.premToolsEnabled ? 'BibleManager.Components.Forms.Edit' : 'BibleManager.Components.Forms.EditBasic';
 
-        this.createComponent({name: 'Form', kind: kind});
+        this.createComponent({name: 'Form', kind: kind}).render();
 
         this.setDialogOptions({
             height: 'auto',
@@ -40,6 +40,12 @@ enyo.kind({
                 },
             ]
         });
+    },
+
+    render: function() {
+        this.inherited(arguments);
+        this.log();
+        this.$.Form.render();
     },
 
     openLoad: function() {

@@ -24,7 +24,7 @@ enyo.kind({
     create: function() {
         this.inherited(arguments);
         this.log();
-        this.render();
+        // this.render();
     },
 
     render: function() {

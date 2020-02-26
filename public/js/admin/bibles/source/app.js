@@ -33,6 +33,8 @@ enyo.kind({
         this.alert( msg.join('<br />') );
     },
     _errorHandler: function(inSender, inResponse) {
+        this.log(inSender, inResponse);
+
         // Treat 405 (method not allowed) as a session time out
         if(inSender && inSender.xhrResponse && inSender.xhrResponse.status == 405) {
             inResponse = {
@@ -48,9 +50,14 @@ enyo.kind({
             for(field in inResponse.errors) {
                 var err = inResponse.errors[field];
 
-                err.forEach(function(e) {
-                    msg += e + '<br />';
-                });
+                if(Array.isArray(err)) {
+                    err.forEach(function(e) {
+                        msg += e + '<br />';
+                    });
+                }
+                else {
+                    msg += err + '<br />';
+                }
             }
         }
 

@@ -14,7 +14,8 @@ enyo.kind({
             {tag: 'tr', components: [
                 {tag: 'td', classes: 'form_label right', style: 'width: 180px', content: 'Full Display Name: '},
                 {tag: 'td', attributes: {colspan: 3}, classes: 'form_label right', components: [
-                    {kind: 'enyo.Input', name: 'name', classes: 'wide'},
+                    {kind: 'AICWEBTECH.Enyo.UniqueText', name: 'name', classes: 'wide', apiUrl: '/admin/bibles/unique'},
+                    // {kind: 'enyo.Input', name: 'name', classes: 'wide', onfocus: 'handleNameFocus',  onchange: 'handleNameChange'},
                     {tag: 'span', classes: 'required', content: '* unique'}
                 ]}
             ]},
@@ -154,7 +155,7 @@ enyo.kind({
             this.log('name', value, dir);
 
             if(dir == 2) {
-                this._checkUnique('name', value, 'Full Display Name');
+                // this._checkUnique('name', value, 'Full Display Name');
             }
 
             return value || '';
@@ -163,7 +164,7 @@ enyo.kind({
             this.log('shortname', value, dir);
 
             if(dir == 2) {
-                this._checkUnique('shortname', value, 'Short Display Name');
+                // this._checkUnique('shortname', value, 'Short Display Name');
             }
 
             return value || '';
@@ -172,7 +173,7 @@ enyo.kind({
             this.log('module', value, dir);
 
             if(dir == 2) {
-                this._checkUnique('module', value, 'Module');
+                // this._checkUnique('module', value, 'Module');
             }
             
             return value || '';
@@ -335,5 +336,12 @@ enyo.kind({
         else {
             this.set('copyrightData', {});
         }
+    },
+    handleNameChange: function(inSender, inEvent) {
+        this.log();
+    },
+    handleNameFocus: function(inSender, inEvent) {
+        this.log();
+
     }
 });

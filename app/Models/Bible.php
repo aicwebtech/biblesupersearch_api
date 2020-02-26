@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Validation\Rule;
 use App\Models\Verses\VerseStandard As StandardVerses;
 use App\Passage;
 use App\Search;
@@ -13,13 +14,32 @@ use App\Traits\Error;
 class Bible extends Model {
     use Error;
 
-    static public function getUpdateRules() {
-        return array(
-            'name'      => 'required|max:255',
-            'shortname' => 'required|max:255',
+    static public function getUpdateRules($bible_id = NULL) {
+        $bible_id = (int) $bible_id;
+
+        $rules = array(
+            'name'      => [
+                'required',
+                'max:255',
+                Rule::unique('bibles')->ignore($bible_id),
+            ],
+            'shortname' => [
+                'required',
+                'max:255',
+                Rule::unique('bibles')->ignore($bible_id),
+            ],
             'year'      => 'nullable',
-            'rank'      => 'required|int',
+            'rank'      => 'sometimes|required|int',
+            'module'        => [
+                'required',
+                Rule::unique('bibles')->ignore($bible_id),
+                'alpha_dash',
+                'max:100'
+            ],
+            'lang_short'    => 'required|alpha|min:2|max:3',
         );    
+
+        return $rules;
     }
 
     protected $Verses; // Verses model instance
@@ -584,10 +604,11 @@ class Bible extends Model {
      * Module mutator
      * @param string $value
      */
-    public function _setModuleAttribute($value) {
-        $matched = preg_match('/^[a-zA-Z_\x7f-\xff][a-zA-Z0-9_\x7f-\xff]*$/', $value, $matches);
+    public function setModuleAttribute($value) {
+        // $matched = preg_match('/^[a-zA-Z_\x7f-\xff][a-zA-Z0-9_\x7f-\xff]*$/', $value, $matches);
+        $value = strtolower($value);
         $this->attributes['module'] = $value;
-        self::where('1','1')->get();
+        // self::where('1','1')->get();
     }
 
     public function getRandomReference($random_mode) {

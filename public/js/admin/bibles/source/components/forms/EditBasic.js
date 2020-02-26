@@ -77,6 +77,8 @@ enyo.kind({
         this.app.set('ajaxLoading', true);
         this.log('pk', this.pk);
 
+        this.waterfall('onViewForm', {pk: this.pk});
+
         var ajax = new enyo.Ajax({
             url: '/admin/bibles/' + this.pk,
             method: 'GET',
@@ -126,7 +128,7 @@ enyo.kind({
             this.app.set('ajaxLoading', false);
 
             if(!inResponse.success) {
-                return this._errorHandler(inSender, inResponse)
+                return this.app._errorHandler(inSender, inResponse)
             }
 
             this.app.refreshGrid();

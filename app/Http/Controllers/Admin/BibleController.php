@@ -159,21 +159,12 @@ class BibleController extends Controller
             $Bible = new Bible();
         }
 
-        $rules = [
-            'name'      => 'required|max:255',
-            'shortname' => 'required|max:255',
-            'year'      => 'nullable',
-            'rank'      => 'required|int',
-        ];
-
         if(config('app.premium')) {
             $rules['description'] = 'nullable';
             $rules['module'] = 'required';
         }
 
-        $rules = $BibleClass::getUpdateRules();
-
-        // print_r($rules);
+        $rules = $BibleClass::getUpdateRules($id);
 
         $data = $request->only(array_keys($rules));
 
@@ -373,5 +364,42 @@ class BibleController extends Controller
         }
 
         return new Response($resp, 200);
+    }
+
+    public function uniqueCheck(Request $request) {
+        $data  = $request->toArray();
+
+        $valid_fields = ['name', 'shortname', 'module'];
+        $resp = new \stdClass();
+        $resp->success = TRUE;
+        $resp->errors = [];
+
+
+        if(!array_key_exists('field_name', $data) || !in_array($data['field_name'], $valid_fields)) {
+            $resp->success = FALSE;
+            $resp->errors[] = 'Invalid or missing \'field_name\' attribute';
+        } 
+        else {
+
+            $Query = Bible::where($data['field_name'], $data['value'])->where('id', '!=', (int) $data['id']);
+
+
+
+            // var_dump($Query->toSql());
+
+            $Bible = $Query->first();
+
+            if($Bible) {
+                $resp->success = FALSE;
+                $resp->errors[] = 'Duplicate found';
+            }
+        }
+
+
+
+
+        // print_r($data);
+
+        return new Response($resp, $resp->success ? 200 : 401);
     }
 }

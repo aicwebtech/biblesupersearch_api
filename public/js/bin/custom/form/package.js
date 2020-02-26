@@ -1,4 +1,5 @@
 enyo.depends(
     'Editor.js',
-    'Select.js'
+    'Select.js',
+    'UniqueText.js'
 );
