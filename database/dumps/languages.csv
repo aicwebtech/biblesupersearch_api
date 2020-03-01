@@ -1,4 +1,4 @@
-Name,ISO language name,639-1,Native name (endonym),RTL,Language family,639-1,639-2/T,639-2/B,639-3,Notes
+Name,ISO language name,Code (639-1),Native name (endonym),RTL,Language family,639-1,639-2/T,639-2/B,639-3,Notes
 Afar,Afar,aa,Afaraf,No,Afro-Asiatic,aa,aar,aar,aar,
 Amharic,Amharic,am,አማርኛ,No,Afro-Asiatic,am,amh,amh,amh,
 Arabic,Arabic,ar,العربية,Yes,Afro-Asiatic,ar,ara,ara,ara + 29,"macrolanguage, Standard Arabic is [arb]"

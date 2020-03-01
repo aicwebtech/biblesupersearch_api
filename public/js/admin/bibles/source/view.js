@@ -66,6 +66,14 @@ enyo.kind({
                     ontap: 'multiUnflagResearch',
                     action: 'unresearch',
                     actioning: 'Unflagging'
+                },                
+                {
+                    tag: 'button',
+                    classes: 'button bulk',
+                    content: 'Revert Changes',
+                    ontap: 'multiRevert',
+                    action: 'revert',
+                    actioning: 'Reverting'
                 },
                 {
                     tag: 'button',
@@ -251,6 +259,9 @@ enyo.kind({
     },    
     multiUnflagResearch: function(inSender, inEvent) {
         this._confirmMultiAction('unresearch', 'Unflagging as "For Research Only"', 'unflag');
+    },    
+    multiRevert: function(inSender, inEvent) {
+        this._confirmMultiAction('revert', 'Reverting Changes to Bible Properties', 'revert changes to');
     },
     multiInstall: function(inSender, inEvent) {
         this._processSelections();

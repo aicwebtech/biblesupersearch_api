@@ -6,13 +6,33 @@ namespace App\Importers;
  */
 
 class Database {
+    public static $use_queue = FALSE;
+    protected static $queue = [];
+    protected static $processing_queue = FALSE;
+
+    static public function processQueue() {
+        static::$processing_queue = TRUE;
+
+        foreach (static::$queue as $call) {
+            $callable = 'static::' . $call[0];
+            call_user_func_array($callable, $call[1]);
+        }
+        
+        static::$processing_queue = FALSE;
+    }
 
     static public function importSqlFile($file, $dir = NULL) {
         $default_dir = ($dir) ? FALSE : TRUE;
         $dir = ($dir) ? $dir : dirname(__FILE__) . '/../../database/dumps';
-        $prefix = config('database.prefix');
         $path = $dir . '/' . $file;
+        $prefix = config('database.prefix');
         $display_path = ($default_dir) ? '<app_dir>/database/dumps/' . $file : $path;
+
+        if(static::$use_queue && !static::$processing_queue) {
+            static::$queue[$path] = [ 'importSqlFile', func_get_args() ];
+            return;
+        }
+
         //var_dump($file);
 
         if(!is_file($path)) {
@@ -52,6 +72,11 @@ class Database {
         $dir = ($dir) ? $dir : dirname(__FILE__) . '/../../database/dumps';
         $path = $dir . '/' . $file;
         $display_path = ($default_dir) ? '<app_dir>/database/dumps/' . $file : $path;
+
+        if(static::$use_queue && !static::$processing_queue) {
+            static::$queue[$path] = [ 'importCSV', func_get_args() ];
+            return;
+        }
 
         if(!is_file($path)) {
             echo 'Warning: CSV import file not found: ' . $display_path . PHP_EOL;

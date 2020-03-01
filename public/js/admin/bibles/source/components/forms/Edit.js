@@ -7,6 +7,7 @@ enyo.kind({
     formData: {},
     copyrightData: {},
     $description: null,
+    formPk: null, // binding use only
     // debugBindings: true,
 
     components: [
@@ -30,7 +31,8 @@ enyo.kind({
                 {tag: 'td', classes: 'form_label right', content: 'Module: '},
                 {tag: 'td', attributes: {colspan: 2}, classes: 'form_label right', components: [
                     {kind: 'enyo.Input', name: 'module'},
-                    {tag: 'span', classes: 'required', content: '* unique'}
+                    {name: 'ModuleRequired', tag: 'span', classes: 'required', content: '* unique'},
+                    {name: 'ModuleDisabled', tag: 'span', classes: '', content: ' (Module cannot be changed once the module file exists)'}
                 ]}
             ]},
             {tag: 'tr', components: [
@@ -235,6 +237,20 @@ enyo.kind({
         {from: 'formData.lang_short', to: '$.lang_short.value', oneWay: false, transform: function(value, dir) {
             this.debugBindings && this.log('lang_short', value, dir);
             return (value && value != '0') ? value : null;
+        }},           
+        {from: 'formData.id', to: 'formPk', oneWay: false, transform: function(value, dir) {
+            this.debugBindings && this.log('formPk', value, dir);
+            value = (value && value != '0') ? value : null;
+
+            var disableModule = (value && this.formData.has_module_file == '1') ? true : false;
+
+            if(dir == 1) {
+                this.$.module.set('disabled', disableModule);
+                this.$.ModuleRequired.set('showing', !disableModule);
+                this.$.ModuleDisabled.set('showing', disableModule);
+            }
+
+            return value
         }},        
 
 

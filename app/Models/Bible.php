@@ -314,6 +314,32 @@ class Bible extends Model {
         }
 
         return ($res === TRUE) ? TRUE : FALSE;
+    }    
+
+    public function revertMetaInfo() {
+        $path = $this->getModuleFilePath();
+
+        if(!is_file($path)) {
+            return $this->addError('Cannot revert info, file does not exist', 4);
+        }
+
+        if(!is_readable($path)) {
+            return $this->addError('Cannot read file: ' . $this->getModuleFilePathShort() . ' as user ' . exec('whoami'), 4);
+        }
+
+        $Zip  = new ZipArchive();
+        $res  = $Zip->open($path);
+
+        if($res === TRUE) {
+            $json  = $Zip->getFromName('info.json');
+            $attr  = json_decode($json, TRUE);
+
+            $this->fill($attr);
+            $this->save();
+            $Zip->close();
+        }
+
+        return ($res === TRUE) ? TRUE : FALSE;
     }
 
     public function migrateModuleFile($dry_run = FALSE) {

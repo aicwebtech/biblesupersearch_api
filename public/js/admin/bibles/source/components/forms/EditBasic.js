@@ -78,9 +78,18 @@ enyo.kind({
     openLoad: function() {
         this.inherited(arguments);
         this.app.set('ajaxLoading', true);
+        this.pk = this.pk || null;
+
         this.log('pk', this.pk);
 
         this.waterfall('onViewForm', {pk: this.pk});
+
+        if(!this.pk) {
+            this.open();
+            this.set('formData', {});
+            this.parent.set('title', 'Editing: <new Bible>');
+            return;
+        }
 
         var ajax = new enyo.Ajax({
             url: '/admin/bibles/' + this.pk,

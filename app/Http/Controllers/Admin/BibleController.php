@@ -110,6 +110,8 @@ class BibleController extends Controller
         $resp = new \stdClass();
         $resp->success = TRUE;
         $resp->Bible   = $Bible->attributesToArray();
+        $resp->Bible['has_module_file'] = $Bible->hasModuleFile() ? 1 : 0;
+        // $resp->Bible['has_module_file'] =  0; // Debugging
 
         return new Response($resp, 200);
     }
@@ -322,6 +324,22 @@ class BibleController extends Controller
         $data   = $request->toArray();
         $create = (array_key_exists('create_new', $data) && $data['create_new']) ? TRUE : FALSE;
         $Bible->updateMetaInfo($create);
+
+        $resp = new \stdClass();
+        $resp->success = TRUE;
+
+        if($Bible->hasErrors()) {
+            $resp->success = FALSE;
+            $resp->errors  = $Bible->getErrors();
+        }
+
+        return new Response($resp, 200);
+    }    
+
+    public function revert(Request $request, $id) {
+        $Bible  = Bible::findOrFail($id);
+        $data   = $request->toArray();
+        $Bible->revertMetaInfo();
 
         $resp = new \stdClass();
         $resp->success = TRUE;

@@ -70,6 +70,7 @@ Route::post('/admin/bibles/research/{id}', 'Admin\BibleController@research');
 Route::post('/admin/bibles/unresearch/{id}', 'Admin\BibleController@unresearch');
 Route::post('/admin/bibles/export/{id}', 'Admin\BibleController@export');
 Route::post('/admin/bibles/meta/{id}', 'Admin\BibleController@meta');
+Route::post('/admin/bibles/revert/{id}', 'Admin\BibleController@revert');
 Route::post('/admin/bibles/test/{id}', 'Admin\BibleController@test');
 Route::post('/admin/bibles/unique', 'Admin\BibleController@uniqueCheck');
 Route::get('/admin/bibles/unique', 'Admin\BibleController@uniqueCheck');
