@@ -11,142 +11,153 @@ enyo.kind({
     // debugBindings: true,
 
     components: [
-        {tag: 'table', attributes: {border: '0'}, components: [
-            {tag: 'tr', components: [
-                {tag: 'td', classes: 'form_label right', style: 'width: 180px', content: 'Full Display Name: '},
-                {tag: 'td', attributes: {colspan: 3}, classes: 'form_label right', components: [
-                    {kind: 'AICWEBTECH.Enyo.UniqueText', name: 'name', classes: 'wide', apiUrl: '/admin/bibles/unique'},
-                    // {kind: 'enyo.Input', name: 'name', classes: 'wide', onfocus: 'handleNameFocus',  onchange: 'handleNameChange'},
-                    {tag: 'span', classes: 'required', content: '* unique'}
-                ]}
-            ]},
-            {tag: 'tr', components: [
-                {tag: 'td', classes: 'form_label right', content: 'Short Display Name: '},
-                {tag: 'td', attributes: {colspan: 2}, classes: 'form_label right', components: [
-                    {kind: 'enyo.Input', name: 'shortname'},
-                    {tag: 'span', classes: 'required', content: '* unique'}
-                ]}
-            ]},            
-            {tag: 'tr', components: [
-                {tag: 'td', classes: 'form_label right', content: 'Module: '},
-                {tag: 'td', attributes: {colspan: 2}, classes: 'form_label right', components: [
-                    {kind: 'enyo.Input', name: 'module'},
-                    {name: 'ModuleRequired', tag: 'span', classes: 'required', content: '* unique'},
-                    {name: 'ModuleDisabled', tag: 'span', classes: '', content: ' (Module cannot be changed once the module file exists)'}
-                ]}
-            ]},
-            {tag: 'tr', components: [
-                {tag: 'td', classes: 'form_label right', content: 'Publication Year: '},
-                {tag: 'td', attributes: {colspan: 2}, classes: 'form_label right', components: [
-                    {kind: 'enyo.Input', name: 'year'}
-                ]}
-            ]},
-            {tag: 'tr', components: [
-                {tag: 'td', classes: 'form_label right', content: 'Enabled: '},
-                {tag: 'td', classes: 'form_label right', components: [
-                    {kind: 'enyo.Checkbox', name: 'enabled'}, 
+        {classes: 'form_section', components: [
+            {tag: 'table', attributes: {border: '0'}, components: [
+                {tag: 'tr', components: [
+                    {tag: 'td', classes: 'form_label right', style: 'width: 180px', content: 'Full Display Name: '},
+                    {tag: 'td', attributes: {colspan: 3}, classes: 'form_label right', components: [
+                        {kind: 'AICWEBTECH.Enyo.UniqueText', name: 'name', classes: 'wide', apiUrl: '/admin/bibles/unique'},
+                        // {kind: 'enyo.Input', name: 'name', classes: 'wide', onfocus: 'handleNameFocus',  onchange: 'handleNameChange'},
+                        {tag: 'span', classes: 'required', content: '* unique'}
+                    ]}
                 ]},
-                {tag: 'td', classes: 'sublabel', attributes: {colspan: 2}, components: [
-                    {
-                        tag: 'span', 
-                        // classes: 'sublabel', 
-                        content: 'Whether or not the Bible is enabled for use via the API'
-                    }
-                ]}
-            ]},            
-            {tag: 'tr', components: [
-                {tag: 'td', classes: 'form_label right', content: 'Research Only: '},
-                {tag: 'td', classes: 'form_label right', components: [
-                    {kind: 'enyo.Checkbox', name: 'research'},
-                ]}, 
-                {tag: 'td', classes: 'sublabel', attributes: {colspan: 2}, components: [
-                    {
-                        tag: 'span', 
-                        // classes: 'sublabel', 
-                        content: 'If a Bible translation isn\'t up to the highest standards, or for other reasons you don\'t reccommend it, you can mark it as "For Research Only."'
-                    }
-                ]}
-            ]},
-            {tag: 'tr', components: [
-                {tag: 'td', classes: 'form_label right', content: 'Restrict: '},
-                {tag: 'td', classes: 'form_label right', components: [
-                    {kind: 'enyo.Checkbox', name: 'restrict'},
-                ]}, 
-                {tag: 'td', classes: 'sublabel', attributes: {colspan: 2}, components: [
-                    {
-                        tag: 'span', 
-                        // classes: 'sublabel', 
-                        content: 'Restrict access to only local domains. No outside API Access.'
-                    }
-                ]}
-            ]},
-            {tag: 'tr', components: [
-                {tag: 'td', classes: 'form_label right', content: 'Sort Order: '},
-                {tag: 'td', attributes: {colspan: 2}, classes: 'form_label right', components: [
-                    {kind: 'enyo.Input', name: 'rank'}
-                ]}
-            ]},            
-            {tag: 'tr', components: [
-                {tag: 'td', classes: 'form_label right', content: 'Language: '},
-                {tag: 'td', attributes: {colspan: 2}, classes: 'form_label right', components: [
-                    {kind: 'AICWEBTECH.Enyo.Select', classes: 'wide', name: 'lang_short', components: [
-                        {value: null, content: 'Select One ...'}
+                {tag: 'tr', components: [
+                    {tag: 'td', classes: 'form_label right', content: 'Short Display Name: '},
+                    {tag: 'td', attributes: {colspan: 2}, classes: 'form_label right', components: [
+                        {kind: 'enyo.Input', name: 'shortname'},
+                        {tag: 'span', classes: 'required', content: '* unique'}
+                    ]}
+                ]},            
+                {tag: 'tr', components: [
+                    {tag: 'td', classes: 'form_label right', content: 'Module: '},
+                    {tag: 'td', attributes: {colspan: 2}, classes: 'form_label right', components: [
+                        {kind: 'enyo.Input', name: 'module'},
+                        {name: 'ModuleRequired', tag: 'span', classes: 'required', content: '* unique'},
+                        {name: 'ModuleDisabled', tag: 'span', classes: '', content: ' (Module cannot be changed once the module file exists)'}
+                    ]}
+                ]},
+                {tag: 'tr', components: [
+                    {tag: 'td', classes: 'form_label right', content: 'Enabled: '},
+                    {tag: 'td', classes: 'form_label right', components: [
+                        {kind: 'enyo.Checkbox', name: 'enabled'}, 
                     ]},
-                    {tag: 'span', classes: 'required', content: '*'}
-                ]}
-            ]},
-        ]},
-        {tag: 'table', components: [        
-            {tag: 'tr', components: [
-                {tag: 'td', classes: 'form_label right', style: 'width: 180px', content: 'Copyright: '},
-                {tag: 'td', attributes: {colspan: 3}, classes: 'form_label right', style: 'width: 618px', components: [
-                    {kind: 'AICWEBTECH.Enyo.Select', name: 'copyright_id', classes: 'wide', components: [
-                        {value: null, content: 'Select One ...'}
-                    ]},
-                    {tag: 'span', classes: 'required', content: '*'}
-                ]},
-            ]},            
-            {tag: 'tr', components: [
-                {tag: 'td', classes: 'form_label right', content: 'Copyright Owner: '},
-                {tag: 'td', classes: 'form_label right', components: [
-                    {kind: 'enyo.Input', name: 'owner'}
-                ]},
-            ]},            
-            {tag: 'tr', components: [
-                {tag: 'td', classes: 'form_label right', content: 'Publisher Name: '},
-                {tag: 'td', classes: 'form_label right', components: [
-                    {kind: 'enyo.Input', name: 'publisher'}
-                ]},
-            ]},
-            {tag: 'tr', components: [
-                {tag: 'td', attributes: {colspan: 2}, _style: 'width: 49%', content: 'Copyright Statement' },
-                {tag: 'td', attributes: {colspan: 2}, _style: 'width: 49%', content: 'Default Copyright Statement' }
-            ]},            
-            {tag: 'tr', components: [
-                {tag: 'td', attributes: {colspan: 2}, components: [
-                    {
-                        name: 'copyright_statement', 
-                        kind: 'AICWEBTECH.Enyo.CKEDITOR.Editor', 
-                        editorSettings: {
-                            height: 300,
-                            width: 400,
+                    {tag: 'td', classes: 'sublabel', attributes: {colspan: 2}, components: [
+                        {
+                            tag: 'span', 
+                            content: 'Whether the Bible is enabled for use'
                         }
-                    }
+                    ]}
+                ]},            
+                {tag: 'tr', components: [
+                    {tag: 'td', classes: 'form_label right', content: 'Restrict: '},
+                    {tag: 'td', classes: 'form_label right', components: [
+                        {kind: 'enyo.Checkbox', name: 'restrict'},
+                    ]}, 
+                    {tag: 'td', classes: 'sublabel', attributes: {colspan: 2}, components: [
+                        {
+                            tag: 'span', 
+                            content: 'Restrict access to only local domains. No outside API Access.'
+                        }
+                    ]}
                 ]},
-                {tag: 'td', attributes: {colspan: 2}, components: [
-                    {name: 'copyright_statement_default', _kind: 'enyo.TextArea', allowHtml: true, disabled: true, classes: 'copyright_statement'}
+                {tag: 'tr', components: [
+                    {tag: 'td', classes: 'form_label right', content: 'Research Only: '},
+                    {tag: 'td', classes: 'form_label right', components: [
+                        {kind: 'enyo.Checkbox', name: 'research'},
+                    ]}, 
+                    {tag: 'td', classes: 'sublabel', attributes: {colspan: 2}, components: [
+                        {
+                            tag: 'span', 
+                            content: 'Mark Bible as "For Research Only," if you don\'t reccommend the tranlation.'
+                        }
+                    ]}
+                ]},
+                {tag: 'tr', components: [
+                    {tag: 'td', classes: 'form_label right', content: 'Sort Order: '},
+                    {tag: 'td', attributes: {colspan: 2}, classes: 'form_label right', components: [
+                        {kind: 'enyo.Input', name: 'rank'}
+                    ]}
+                ]},            
+                {tag: 'tr', components: [
+                    {tag: 'td', classes: 'form_label right', content: 'Language: '},
+                    {tag: 'td', attributes: {colspan: 2}, classes: 'form_label right', components: [
+                        {kind: 'AICWEBTECH.Enyo.Select', classes: 'wide', name: 'lang_short', components: [
+                            {value: null, content: 'Select One ...'}
+                        ]},
+                        {tag: 'span', classes: 'required', content: '*'}
+                    ]}
                 ]}
+            ]}
+        ]},
+        {classes: 'form_section', components: [
+            {tag: 'table', components: [        
+                {tag: 'tr', components: [
+                    {tag: 'td', classes: 'form_label right', style: 'width: 180px', content: 'Copyright: '},
+                    {tag: 'td', attributes: {colspan: 3}, classes: 'form_label right', style: 'width: 618px', components: [
+                        {kind: 'AICWEBTECH.Enyo.Select', name: 'copyright_id', classes: 'wide', components: [
+                            {value: null, content: 'Select One ...'}
+                        ]},
+                        {tag: 'span', classes: 'required', content: '*'}
+                    ]},
+                ]},            
+                {tag: 'tr', components: [
+                    {tag: 'td', classes: 'form_label right', content: 'Copyright Owner: '},
+                    {tag: 'td', classes: 'form_label right', components: [
+                        {kind: 'enyo.Input', name: 'owner'}
+                    ]},
+                ]},            
+                {tag: 'tr', components: [
+                    {tag: 'td', classes: 'form_label right', content: 'Publisher Name: '},
+                    {tag: 'td', classes: 'form_label right', components: [
+                        {kind: 'enyo.Input', name: 'publisher'}
+                    ]},
+                ]},
+                {tag: 'tr', components: [
+                    {tag: 'td', classes: 'form_label right', content: 'Publication Year: '},
+                    {tag: 'td', attributes: {colspan: 2}, classes: 'form_label right', components: [
+                        {kind: 'enyo.Input', name: 'year'}
+                    ]}
+                ]},
+            ]},
+            {tag: 'table', components: [
+                {tag: 'tr', components: [
+                    {tag: 'td', attributes: {colspan: 2}, style: 'width: 49%', components: [
+                        {content: 'Copyright Statement' },
+                        {tag:'small', classes: 'sublabel', content: 'Will be displayed with Bible on search results page.' }
+                    ]},
+                    {tag: 'td', attributes: {colspan: 2}, style: 'width: 49%', components: [
+                        {content: 'Default Copyright Statement' },
+                        {tag:'small', classes: 'sublabel', content: 'Will be used if copyright statment is left blank.' }
+                    ]}
+                ]},            
+                {tag: 'tr', components: [
+                    {tag: 'td', attributes: {colspan: 2}, components: [
+                        {
+                            name: 'copyright_statement', 
+                            kind: 'AICWEBTECH.Enyo.CKEDITOR.Editor', 
+                            editorSettings: {
+                                height: 300,
+                                width: 400,
+                            }
+                        }
+                    ]},
+                    {tag: 'td', attributes: {colspan: 2}, components: [
+                        {name: 'copyright_statement_default', allowHtml: true, classes: 'copyright_statement_default pseudo_input'}
+                    ]}
+                ]},
             ]},
         ]},
-        {tag: 'table', components: [
-            {tag: 'tr', ontap: 'toggleDescription', components: [
-                {tag: 'th', content: '&nbsp', allowHtml: true},
-                {tag: 'th', attributes: {colspan: 4}, content: 'Description'},
-                {tag: 'th', name: 'descriptionPointer', content: '&#x25bc;', allowHtml: true, style: 'text-align: right'}
-            ]},            
-            {tag: 'tr', name: 'DescriptionContainer', showing: false, components: [
-                {tag: 'td', attributes: {colspan: 4}, components: [
-                    {kind: 'enyo.TextArea', name: 'description', id:'description'}
+        {classes: 'form_section', components: [
+            {tag: 'table', components: [
+                {tag: 'tr', ontap: 'toggleDescription', components: [
+                    {tag: 'th', content: '&nbsp', allowHtml: true},
+                    {tag: 'th', attributes: {colspan: 4}, content: 'Description'},
+                    {tag: 'th', name: 'descriptionPointer', content: '&#x25bc;', allowHtml: true, style: 'text-align: right'}
+                ]},            
+                {tag: 'tr', name: 'DescriptionContainer', showing: false, components: [
+                    {tag: 'td', attributes: {colspan: 4}, components: [
+                        {kind: 'enyo.TextArea', name: 'description', id:'description'}
+                    ]}
                 ]}
             ]}
         ]}

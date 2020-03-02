@@ -3,15 +3,6 @@ enyo.kind({
     kind: 'enyo.Select',
     autoSetSelectedByValue: true,
 
-    create: function() {
-        this.inherited(arguments);
-
-        if(typeof this.setSelectedByValue != 'function') {
-            this.setSelectedByValue = enyo.bind(this, function(value) {
-
-            })
-        }
-    }, 
     valueChanged: function() {
         this.inherited(arguments);
 
