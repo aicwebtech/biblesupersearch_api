@@ -303,6 +303,8 @@ enyo.kind({
     },
 
     rendered: function() {
+        this.inherited(arguments);
+
         this.$description = CKEDITOR.replace('description', {
             height: 300,
             width: 750,

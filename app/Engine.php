@@ -11,7 +11,10 @@ use App\Helpers;
 use Illuminate\Pagination\LengthAwarePaginator as Paginator;
 
 class Engine {
-    use Traits\Error;
+    use Traits\Error {
+        resetErrors as traitResetErrors;
+    }
+    
     use Traits\Input;
     use Traits\Singleton;
 
@@ -118,6 +121,11 @@ class Engine {
 
     protected function setMetadata($data) {
         $this->metadata = (object) $data;
+    }
+
+    public function resetErrors() {
+        $this->traitResetErrors();
+        $this->metadata = new \stdClass;
     }
 
     /**
