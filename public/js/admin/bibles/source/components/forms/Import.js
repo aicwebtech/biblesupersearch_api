@@ -7,49 +7,39 @@ enyo.kind({
     components: [
         {tag: 'table', components: [
             {tag: 'tr', components: [
-                {tag: 'td', classes: 'form_label right', content: 'Name: '},
+                {tag: 'td', classes: 'form_label right', content: 'Importer: '},
                 {tag: 'td', classes: 'form_label right', components: [
-                    {kind: 'enyo.Input', name: 'name'}
+                    {kind: 'AICWEBTECH.Enyo.Select', name: 'type', components: [
+                        {value: 0, content: 'Select One ...'}
+                    ]}
                 ]}
             ]},
             {tag: 'tr', components: [
-                {tag: 'td', classes: 'form_label right', content: 'Short Name: '},
+                {tag: 'td', classes: 'form_label right', content: 'File: '},
                 {tag: 'td', classes: 'form_label right', components: [
-                    {kind: 'enyo.Input', name: 'shortname'}
-                ]}
-            ]},
-            {tag: 'tr', components: [
-                {tag: 'td', classes: 'form_label right', content: 'Year: '},
-                {tag: 'td', classes: 'form_label right', components: [
-                    {kind: 'enyo.Input', name: 'year'}
-                ]}
-            ]},
-            {tag: 'tr', components: [
-                {tag: 'td', classes: 'form_label right', content: 'Rank: '},
-                {tag: 'td', classes: 'form_label right', components: [
-                    {kind: 'enyo.Input', name: 'rank'}
+                    {kind: 'enyo.Input', type: 'file', name: 'file'}
                 ]}
             ]}
         ]}
     ],
 
     bindings: [
-        {from: 'formData.name', to: '$.name.value', oneWay: false, transform: function(value, dir) {
-            this.log('name', value, dir);
-            return value || '';
-        }},
-        {from: 'formData.shortname', to: '$.shortname.value', oneWay: false, transform: function(value, dir) {
-            this.log('shortname', value, dir);
-            return value || '';
-        }},
-        {from: 'formData.year', to: '$.year.value', oneWay: false, transform: function(value, dir) {
-            this.log('year', value, dir);
-            return value || '';
-        }},
-        {from: 'formData.rank', to: '$.rank.value', oneWay: false, transform: function(value, dir) {
-            this.log('rank', value, dir);
-            return (value || value === 0) ? value : null;
-        }},
+        // {from: 'formData.name', to: '$.name.value', oneWay: false, transform: function(value, dir) {
+        //     this.log('name', value, dir);
+        //     return value || '';
+        // }},
+        // {from: 'formData.shortname', to: '$.shortname.value', oneWay: false, transform: function(value, dir) {
+        //     this.log('shortname', value, dir);
+        //     return value || '';
+        // }},
+        // {from: 'formData.year', to: '$.year.value', oneWay: false, transform: function(value, dir) {
+        //     this.log('year', value, dir);
+        //     return value || '';
+        // }},
+        // {from: 'formData.rank', to: '$.rank.value', oneWay: false, transform: function(value, dir) {
+        //     this.log('rank', value, dir);
+        //     return (value || value === 0) ? value : null;
+        // }},
         // {from: 'props.enable', to: '$.enable.checked', oneWay: false, transform: function(value, dir) {
         //     this.log('enable', value, dir);
 
@@ -83,6 +73,13 @@ enyo.kind({
                 },
             ]
         });
+
+        bootstrap.importers.forEach(function(item) {
+            this.$.type.createComponent({
+                value: item.type,
+                content: item.name
+            });
+        }, this);
     },
 
     openLoad: function() {

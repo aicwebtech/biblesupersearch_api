@@ -53,6 +53,14 @@ abstract class ImporterAbstract {
 
     abstract public function import();
 
+    abstract public function checkUploadedFile($file_name, $file_tmp_name);
+
+    public function acceptUploadedFile($file_name, $file_tmp_name) {
+        $file_name = basename($file_name);
+        $dest_path = $this->default_dir . '/' . $file_name;
+        return move_uploaded_file($file_tmp_name, $dest_path);
+    }
+
     public function setBibleAttributes($att) {
         $this->bible_attributes = $att;
     }

@@ -27,12 +27,14 @@ class BibleController extends Controller
      */
     public function index() {
         Bible::populateBibleTable();
+        $ImportManagerClass = Helpers::find('\App\ImportManager');
 
         $bootstrap = new \stdClass;
-        $bootstrap->devToolsEnabled = config('bss.dev_tools') ? TRUE : FALSE;
+        $bootstrap->devToolsEnabled  = config('bss.dev_tools') ? TRUE : FALSE;
         $bootstrap->premToolsEnabled = config('app.premium');
         $bootstrap->languages  = \App\Models\Language::orderBy('name', 'asc')->get();
         $bootstrap->copyrights = [];
+        $bootstrap->importers  = $ImportManagerClass::getImportersList();
 
         foreacH(\App\Models\Copyright::all() as $Copyright) {
             $data = $Copyright->getAttributes();
@@ -392,7 +394,6 @@ class BibleController extends Controller
         $resp->success = TRUE;
         $resp->errors = [];
 
-
         if(!array_key_exists('field_name', $data) || !in_array($data['field_name'], $valid_fields)) {
             $resp->success = FALSE;
             $resp->errors[] = 'Invalid or missing \'field_name\' attribute';
@@ -400,10 +401,6 @@ class BibleController extends Controller
         else {
 
             $Query = Bible::where($data['field_name'], $data['value'])->where('id', '!=', (int) $data['id']);
-
-
-
-            // var_dump($Query->toSql());
 
             $Bible = $Query->first();
 
@@ -413,11 +410,22 @@ class BibleController extends Controller
             }
         }
 
-
-
-
-        // print_r($data);
-
         return new Response($resp, $resp->success ? 200 : 401);
+    }
+
+    public function importCheck(Request $request) {
+        if(!config('app.premium')) {
+            return new Response(NULL, 501);
+        }        
+
+        $Manager = Helpers::make('\App\ImportManager');
+    }
+
+    public function import(Request $request) {
+        if(!config('app.premium')) {
+            return new Response(NULL, 501);
+        }
+
+        $Manager = Helpers::make('\App\ImportManager');
     }
 }

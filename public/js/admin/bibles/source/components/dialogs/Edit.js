@@ -3,13 +3,13 @@ enyo.kind({
     kind: 'AICWEBTECH.Enyo.jQuery.Dialog',
     pk: null,
     formData: {},
+    classes: 'edit_dialog',
+    components: [],
 
     handlers: {
         onOpen: 'open',
         onClose: 'close'
     },
-
-    components: [],
 
     bindings: [
         {from: 'pk', to: '$.Form.pk'},
@@ -17,13 +17,11 @@ enyo.kind({
 
     create: function() {
         this.inherited(arguments);
-
         var kind = bootstrap.premToolsEnabled ? 'BibleManager.Components.Forms.Edit' : 'BibleManager.Components.Forms.EditBasic';
-
         this.createComponent({name: 'Form', kind: kind}).render();
 
         this.setDialogOptions({
-            height: 'auto',
+            height: bootstrap.premToolsEnabled ? '750' : 'auto',
             width: 'auto',
             modal: true,
             autoOpen: false,
@@ -47,11 +45,9 @@ enyo.kind({
         this.log();
         this.$.Form.render();
     },
-
     openLoad: function() {
         this.$.Form.openLoad();
     },
-
     save: function() {
         this.$.Form.save();
     }

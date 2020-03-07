@@ -8,7 +8,8 @@ enyo.kind({
     copyrightData: {},
     $description: null,
     formPk: null, // binding use only
-    // debugBindings: true,
+    debugBindings: true,
+    copyrightConfirmed: false,
 
     components: [
         {classes: 'form_section', components: [
@@ -119,6 +120,7 @@ enyo.kind({
                     ]}
                 ]},
             ]},
+            {tag: 'hr'},
             {tag: 'table', components: [
                 {tag: 'tr', components: [
                     {tag: 'td', attributes: {colspan: 2}, style: 'width: 49%', components: [
@@ -127,7 +129,7 @@ enyo.kind({
                     ]},
                     {tag: 'td', attributes: {colspan: 2}, style: 'width: 49%', components: [
                         {content: 'Default Copyright Statement' },
-                        {tag:'small', classes: 'sublabel', content: 'Will be used if copyright statment is left blank.' }
+                        {tag:'small', classes: 'sublabel', content: 'Will be used if copyright statement is left blank.' }
                     ]}
                 ]},            
                 {tag: 'tr', components: [
@@ -136,12 +138,12 @@ enyo.kind({
                             name: 'copyright_statement', 
                             kind: 'AICWEBTECH.Enyo.CKEDITOR.Editor', 
                             editorSettings: {
-                                height: 300,
+                                height: 100,
                                 width: 400,
                             }
                         }
                     ]},
-                    {tag: 'td', attributes: {colspan: 2}, components: [
+                    {tag: 'td', classes: 'align_top', attributes: {colspan: 2}, components: [
                         {name: 'copyright_statement_default', allowHtml: true, classes: 'copyright_statement_default pseudo_input'}
                     ]}
                 ]},
@@ -242,13 +244,27 @@ enyo.kind({
             this.debugBindings && this.log('copyright_id', value, dir);
 
             value = (value && value != '0') ? value : null;
+
+            if(dir == 2) {
+                var oldValue = this.formData.copyright_id;
+                this._confirmCopyright(value, oldValue);
+            }
+            else if(value == null) {
+                this.set('copyrightConfirmed', false);
+            }
+
             this._populateCopyrightInfo(value);
             return value;
         }},
         {from: 'formData.lang_short', to: '$.lang_short.value', oneWay: false, transform: function(value, dir) {
             this.debugBindings && this.log('lang_short', value, dir);
             return (value && value != '0') ? value : null;
-        }},           
+        }},    
+        {from: 'formData.copyright_statement', to: '$.copyright_statement.value', oneWay: false, transform: function(value, dir) {
+            this.debugBindings && this.log('copyright_statement', value, dir);
+            
+            return value || '';
+        }},       
         {from: 'formData.id', to: 'formPk', oneWay: false, transform: function(value, dir) {
             this.debugBindings && this.log('formPk', value, dir);
             value = (value && value != '0') ? value : null;
@@ -354,6 +370,15 @@ enyo.kind({
         ajax.go();
     },
 
+    save: function() {
+        if(!this.get('copyrightConfirmed')) {
+            this._confirmCopyright(this.formData.copyright_id, null);
+            return;
+        }
+
+        this.inherited(arguments);
+    },
+
     _populateCopyrightInfo: function(copyrightId) {
         var cr = bootstrap.copyrights.find(element => element.id == copyrightId);
 
@@ -365,6 +390,39 @@ enyo.kind({
         else {
             this.set('copyrightData', {});
         }
+    },
+    _confirmCopyright: function(copyrightId, oldCopyrightId) {
+        this.log(copyrightId, oldCopyrightId);
+        
+        if(copyrightId == oldCopyrightId) {
+            this.log('same copyright, returning');
+            return;
+        }
+
+        var cr = bootstrap.copyrights.find(element => element.id == copyrightId);
+        var old = oldCopyrightId;
+
+        if(!cr) {
+            this.log('no copyright found, returning');
+            return;
+        }
+
+        var msg = 'Please verify that this is the correct copyright for this Bible: <br /><br /><b>' + cr.name + '</b>';
+            msg += '<br /><br /><span class="warning">Warning: Selecting the wrong copyright may put you at risk of civil or criminal penalties.</span>';
+
+        this.app.confirm(msg, enyo.bind(this, function(confirmed) {
+            this.set('copyrightConfirmed', confirmed);
+            this.log('copyright confirmed', confirmed);
+
+            // if(!confirmed) {
+            //     this.$.copyright_id.set('value', old);
+            //     this.log('reverting copyright', old);
+            //     // this.formData.copyright_id = oldCopyrightId;
+            // }
+            // else {
+            //     this.log('retaining copyright');
+            // }
+        }));
     },
     handleNameChange: function(inSender, inEvent) {
         this.log();

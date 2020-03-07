@@ -2,54 +2,67 @@ enyo.kind({
     name: 'BibleManager.Components.Dialogs.Import',
     kind: 'AICWEBTECH.Enyo.jQuery.Dialog',
     pk: null,
+    fileValidated: null,
     formData: {},
+    importerData: {},
 
     components: [
-        {tag: 'table', components: [
+        {tag: 'table', classes: 'import_form', components: [
             {tag: 'tr', components: [
-                {tag: 'td', classes: 'form_label right', content: 'Name: '},
+                {tag: 'td', classes: 'form_label right', content: 'Importer: '},
                 {tag: 'td', classes: 'form_label right', components: [
-                    {kind: 'enyo.Input', name: 'name'}
+                    {kind: 'AICWEBTECH.Enyo.Select', name: 'type', components: [
+                        {value: 0, content: 'Select One ...'}
+                    ]}
+                ]},
+                {tag: 'td', classes: 'required', content: '*'}
+            ]},            
+            {tag: 'tr', components: [
+                {tag: 'td', classes: 'form_label right', content: 'Details: '},
+                {tag: 'td', classes: 'form_label right', attributes: {colspan: 2}, components: [
+                    {name: 'ImportDesc', allowHtml: true}, 
+                    {kind: 'enyo.Anchor', name: 'ImportUrl', attributes: {target: '_NEW'}}
                 ]}
             ]},
             {tag: 'tr', components: [
-                {tag: 'td', classes: 'form_label right', content: 'Short Name: '},
+                {tag: 'td', classes: 'form_label right', content: 'File: '},
                 {tag: 'td', classes: 'form_label right', components: [
-                    {kind: 'enyo.Input', name: 'shortname'}
-                ]}
-            ]},
-            {tag: 'tr', components: [
-                {tag: 'td', classes: 'form_label right', content: 'Year: '},
-                {tag: 'td', classes: 'form_label right', components: [
-                    {kind: 'enyo.Input', name: 'year'}
-                ]}
-            ]},
-            {tag: 'tr', components: [
-                {tag: 'td', classes: 'form_label right', content: 'Rank: '},
-                {tag: 'td', classes: 'form_label right', components: [
-                    {kind: 'enyo.Input', name: 'rank'}
-                ]}
+                    {kind: 'enyo.Input', type: 'file', name: 'file'}
+                ]},
+                {tag: 'td', classes: 'required', content: '*'}
             ]}
-        ]}
+        ]},
+
+        {name: 'FormContainer', kind: 'enyo.ViewController'}
     ],
 
     bindings: [
-        {from: 'formData.name', to: '$.name.value', oneWay: false, transform: function(value, dir) {
-            this.log('name', value, dir);
+        {from: 'formData.type', to: '$.type.value', oneWay: false, transform: function(value, dir) {
+            this.log('type', value, dir);
+            value = (value && value != '0') ? value : null;
+            this._populateImportInfo(value);
+            return value;
+        }},
+        {from: 'importerData.desc', to: '$.ImportDesc.content', oneWay: true, transform: function(value, dir) {
+            this.log('import desc', value, dir);
+            return value || '';
+        }},        
+        {from: 'importerData.url', to: '$.ImportUrl.content', oneWay: true, transform: function(value, dir) {
+            this.log('import url content', value, dir);
+            return value || '';
+        }},        
+        {from: 'importerData.url', to: '$.ImportUrl.href', oneWay: true, transform: function(value, dir) {
+            this.log('import url link', value, dir);
             return value || '';
         }},
-        {from: 'formData.shortname', to: '$.shortname.value', oneWay: false, transform: function(value, dir) {
-            this.log('shortname', value, dir);
-            return value || '';
-        }},
-        {from: 'formData.year', to: '$.year.value', oneWay: false, transform: function(value, dir) {
-            this.log('year', value, dir);
-            return value || '';
-        }},
-        {from: 'formData.rank', to: '$.rank.value', oneWay: false, transform: function(value, dir) {
-            this.log('rank', value, dir);
-            return (value || value === 0) ? value : null;
-        }},
+        // {from: 'formData.year', to: '$.year.value', oneWay: false, transform: function(value, dir) {
+        //     this.log('year', value, dir);
+        //     return value || '';
+        // }},
+        // {from: 'formData.rank', to: '$.rank.value', oneWay: false, transform: function(value, dir) {
+        //     this.log('rank', value, dir);
+        //     return (value || value === 0) ? value : null;
+        // }},
         // {from: 'props.enable', to: '$.enable.checked', oneWay: false, transform: function(value, dir) {
         //     this.log('enable', value, dir);
 
@@ -64,65 +77,65 @@ enyo.kind({
 
     create: function() {
         this.inherited(arguments);
+        this.set('fileValidated', false);
 
-        this.setDialogOptions({
+        bootstrap.importers.forEach(function(item) {
+            this.$.type.createComponent({
+                value: item.type,
+                content: item.name + ' (' + item.ext + ')'
+            });
+        }, this);
+    },
+
+    fileValidatedChanged: function(was, is) {
+        var dialogOptions = {
             height: 'auto',
             width: 'auto',
             modal: true,
             autoOpen: false,
             buttons: [
                 {
-                    text: 'Save',
-                    icon: 'ui-icon-check',
-                    click: enyo.bind(this, this.save)
-                },
-                {
                     text: 'Cancel',
                     icon: 'ui-icon-cancel',
                     click: enyo.bind(this, this.close)
                 },
             ]
-        });
+        };
+
+        if(is) {
+            dialogOptions.buttons.unshift({
+                text: 'Import File',
+                icon: 'ui-icon-check',
+                click: enyo.bind(this, this.save)
+            });
+
+            var title = 'Bible Importer: Import File';
+        }
+        else {
+            dialogOptions.buttons.unshift({
+                text: 'Check File',
+                icon: 'ui-icon-check',
+                click: enyo.bind(this, this.validate)
+            });
+            
+            var title = 'Bible Importer: Select File';
+        }
+
+        this.setDialogOptions(dialogOptions);
+        this.set('title', title);
     },
 
-    openLoad: function() {
-        this.inherited(arguments);
-        this.app.set('ajaxLoading', true);
-        this.log('pk', this.pk);
-
-        var ajax = new enyo.Ajax({
-            url: '/admin/bibles/' + this.pk,
-            method: 'GET',
-        });
-
-        ajax.response(this, function(inSender, inResponse) {
-            this.app.set('ajaxLoading', false);
-
-            if(!inResponse.success) {
-                var msg = 'An Error has occurred';
-                this.app.alert(msg);
-                this.close();
-                return;
-            }
-
-            this.open();
-            this.set('formData', enyo.clone(inResponse.Bible));
-            this.set('title', 'Editing: ' + inResponse.Bible.name);
-        });
-
-        ajax.error(this, function(inSender, inResponse) {
-            console.log('ERROR', inSender, inResponse);
-            this.app.set('ajaxLoading', false);
-            var msg = 'An Error has occurred';
-            this.app.alert(msg);
-            this.close();
-        });
-
-        ajax.go();
+    validate: function() {
+        this.set('fileValidated', true);
+        var postData = enyo.clone(this.formData);
     },
 
     save: function() {
+        this.set('fileValidated', false);
         var postData = enyo.clone(this.formData);
+    },
+
+    _saveHelper: function(action, postData) {
         postData._token = laravelCsrfToken;
 
         this.log(postData);
@@ -137,7 +150,7 @@ enyo.kind({
             this.app.set('ajaxLoading', false);
 
             if(!inResponse.success) {
-                return this._errorHandler(inSender, inResponse)
+                return this.app._errorHandler(inSender, inResponse)
             }
 
             this.app.refreshGrid();
@@ -148,7 +161,7 @@ enyo.kind({
             console.log('ERROR', inSender, inResponse);
             this.app.set('ajaxLoading', false);
             var response = JSON.parse(inSender.xhrResponse.body);
-            this._errorHandler(inSender, response);
+            this.app._errorHandler(inSender, response);
         });
 
         ajax.go();
@@ -170,5 +183,21 @@ enyo.kind({
         }
 
         this.app.alert(msg);
-    }
+    }, 
+    openLoad: function() {
+        this.set('fileValidated', false);
+        this.set('showing', true);
+    },
+    _populateImportInfo: function(type) {
+        var cr = bootstrap.importers.find(element => element.type == type);
+
+        this.log(cr);
+
+        if(cr) {
+            this.set('importerData', enyo.clone(cr));
+        }
+        else {
+            this.set('importerData', {});
+        }
+    },
 });

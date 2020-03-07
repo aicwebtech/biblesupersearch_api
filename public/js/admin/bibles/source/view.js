@@ -391,5 +391,6 @@ enyo.kind({
     },
     tapImportBible: function(inSender, inResponse) {
         this.log();
+        this.$.Import.openLoad();
     }
 });

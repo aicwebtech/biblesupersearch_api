@@ -20,7 +20,7 @@ Route::get('/', 'DocumentationController')->name('docs');
 Route::get('/documentation', 'DocumentationController');
 
 
-/* EVERYTHING BELOW PERTAINS TO BACKEND ADMINSRATION */
+/* EVERYTHING BELOW PERTAINS TO BACKEND ADMINISTRATION */
 
 
 /* Routes for (administrative) backend */
@@ -74,6 +74,8 @@ Route::post('/admin/bibles/revert/{id}', 'Admin\BibleController@revert');
 Route::post('/admin/bibles/test/{id}', 'Admin\BibleController@test');
 Route::post('/admin/bibles/unique', 'Admin\BibleController@uniqueCheck');
 Route::get('/admin/bibles/unique', 'Admin\BibleController@uniqueCheck');
+Route::post('/admin/bibles/importcheck', 'Admin\BibleController@importCheck');
+Route::post('/admin/bibles/import', 'Admin\BibleController@import');
 
 Route::get('/admin/tos', 'Admin\PostConfigController@tos')->name('admin.tos');
 Route::post('/admin/tos', 'Admin\PostConfigController@saveTos');

@@ -89,8 +89,10 @@ input:disabled, .pseudo_input.disabled {
 }
 
 .copyright_statement_default {
-    width: 99%;
-    height: 100px;
+    width: calc(99% - 20px);
+    height: 80px;
+    margin-top: 75px;
+    padding: 10px;
     background-color: rgb(235, 235, 228);
     color: rgb(45, 45, 45);
     overflow-y: auto;
@@ -114,12 +116,36 @@ textarea.copyright_statement {
     height: 100px;
 }
 
-span.required {
+.required {
     margin-left: 5px;
+    color: red;
+    font-weight: bold;
+}
+
+span.warning {
+    background-color: yellow;
     color: red;
     font-weight: bold;
 }
 
 .edit_form {
     font-size: 0.8em;
+}
+
+.align_top {
+    vertical-align: top;
+}
+
+.edit_dialog {
+    max-height: 800px;
+    overflow-y: auto;
+}
+
+.import_form {
+    width: 600px;
+    overflow-x: hidden;
+}
+
+.import_form select, .import_form input {
+    width: 300px;
 }
