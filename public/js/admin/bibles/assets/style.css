@@ -142,10 +142,22 @@ span.warning {
 }
 
 .import_form {
-    width: 600px;
+    width: 800px;
     overflow-x: hidden;
 }
 
 .import_form select, .import_form input {
     width: 300px;
 }
+
+.import_desc_container {
+    padding: 5px 0;
+    height: 44px;
+    overflow: auto;
+}
+
+/*.import_desc_container:hover {
+    position: relative;
+    height: initial;
+}
+*/

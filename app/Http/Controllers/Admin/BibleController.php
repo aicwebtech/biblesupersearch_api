@@ -418,7 +418,20 @@ class BibleController extends Controller
             return new Response(NULL, 501);
         }        
 
+
         $Manager = Helpers::make('\App\ImportManager');
+
+        $data  = $request->all();
+
+        print_r($_POST);
+        print_r($_FILES);
+
+        print_r($data);
+
+        $file = $request->file('file');
+
+        var_dump($file);
+        die('wonky');
     }
 
     public function import(Request $request) {

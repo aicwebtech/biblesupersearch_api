@@ -7,29 +7,29 @@ enyo.kind({
     importerData: {},
 
     components: [
-        {tag: 'table', classes: 'import_form', components: [
+        {tag: 'table', classes: 'import_form', _attributes: {border: 1}, components: [
             {tag: 'tr', components: [
-                {tag: 'td', classes: 'form_label right', content: 'Importer: '},
+                {tag: 'td', classes: 'form_label right', content: 'Importer: ', style: 'width: 100px'},
                 {tag: 'td', classes: 'form_label right', components: [
                     {kind: 'AICWEBTECH.Enyo.Select', name: 'type', components: [
                         {value: 0, content: 'Select One ...'}
-                    ]}
+                    ]},
+                    {tag: 'span', classes: 'required', content: '*'}
                 ]},
-                {tag: 'td', classes: 'required', content: '*'}
             ]},            
             {tag: 'tr', components: [
                 {tag: 'td', classes: 'form_label right', content: 'Details: '},
-                {tag: 'td', classes: 'form_label right', attributes: {colspan: 2}, components: [
-                    {name: 'ImportDesc', allowHtml: true}, 
+                {tag: 'td', classes: 'form_label right import_desc_container', components: [
+                    {name: 'ImportDesc', allowHtml: true, content: '(Please select an importer.)'}, 
                     {kind: 'enyo.Anchor', name: 'ImportUrl', attributes: {target: '_NEW'}}
                 ]}
             ]},
             {tag: 'tr', components: [
                 {tag: 'td', classes: 'form_label right', content: 'File: '},
                 {tag: 'td', classes: 'form_label right', components: [
-                    {kind: 'enyo.Input', type: 'file', name: 'file'}
+                    {kind: 'enyo.Input', type: 'file', name: 'file'},
+                    {tag: 'span', classes: 'required', content: '*'}
                 ]},
-                {tag: 'td', classes: 'required', content: '*'}
             ]}
         ]},
 
@@ -54,25 +54,7 @@ enyo.kind({
         {from: 'importerData.url', to: '$.ImportUrl.href', oneWay: true, transform: function(value, dir) {
             this.log('import url link', value, dir);
             return value || '';
-        }},
-        // {from: 'formData.year', to: '$.year.value', oneWay: false, transform: function(value, dir) {
-        //     this.log('year', value, dir);
-        //     return value || '';
-        // }},
-        // {from: 'formData.rank', to: '$.rank.value', oneWay: false, transform: function(value, dir) {
-        //     this.log('rank', value, dir);
-        //     return (value || value === 0) ? value : null;
-        // }},
-        // {from: 'props.enable', to: '$.enable.checked', oneWay: false, transform: function(value, dir) {
-        //     this.log('enable', value, dir);
-
-        //     if(dir == 1) {
-        //         return (value) ? true : false;
-        //     }
-        //     else {
-        //         return value ? 1 : 0;
-        //     }
-        // }}
+        }}
     ],
 
     create: function() {
@@ -126,23 +108,70 @@ enyo.kind({
     },
 
     validate: function() {
-        this.set('fileValidated', true);
+        // this.set('fileValidated', true);
         var postData = enyo.clone(this.formData);
+
+        this.log('files', this.$.file.hasNode().files);
+
+        var file = this.$.file.hasNode().files[0];
+
+        // var formData = new FormData();
+        var formData = new enyo.FormData();
+        formData.append('importer', postData.type);
+        formData.append('_token', laravelCsrfToken);
+        formData.append('file', file, file.name);
+
+        for(var pair of formData.entries()) {
+           this.log(pair[0] , pair[1]); 
+        }
+
+        var ajax = new enyo.Ajax({
+            url: '/admin/bibles/importcheck',
+            method: 'POST',
+            contentType: 'multipart/form-data',
+            headers: this.app.defaultAjaxHeaders,
+            cacheBust: false,
+            postBody: formData
+        });
+
+        ajax.response(this, function(inSender, inResponse) {
+            this.app.set('ajaxLoading', false);
+
+            if(!inResponse.success) {
+                return this.app._errorHandler(inSender, inResponse)
+            }
+
+            this.close();
+        });
+
+        ajax.error(this, function(inSender, inResponse) {
+            console.log('ERROR', inSender, inResponse);
+            this.app.set('ajaxLoading', false);
+            var response = JSON.parse(inSender.xhrResponse.body);
+            this.app._errorHandler(inSender, response);
+        });
+
+        ajax.go();
+
+        // this._saveHelper('importcheck', formData);
     },
 
     save: function() {
         this.set('fileValidated', false);
         var postData = enyo.clone(this.formData);
+        postData._token = laravelCsrfToken;
+
+        // this._saveHelper('import', postData);
     },
 
     _saveHelper: function(action, postData) {
-        postData._token = laravelCsrfToken;
 
         this.log(postData);
 
         var ajax = new enyo.Ajax({
-            url: '/admin/bibles/' + this.pk,
-            method: 'PUT',
+            url: '/admin/bibles/' + action,
+            method: 'POST',
+            contentType: 'multipart/form-data',
             postBody: postData
         });
 
@@ -153,7 +182,6 @@ enyo.kind({
                 return this.app._errorHandler(inSender, inResponse)
             }
 
-            this.app.refreshGrid();
             this.close();
         });
 
@@ -197,7 +225,7 @@ enyo.kind({
             this.set('importerData', enyo.clone(cr));
         }
         else {
-            this.set('importerData', {});
+            this.set('importerData', {desc: '(Please select an importer.)'});
         }
     },
 });

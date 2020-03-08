@@ -10,6 +10,10 @@ enyo.kind({
         'X-Requested-With' : 'XMLHttpRequest'
     },
 
+    create: function() {
+        this.inherited(arguments);
+        this.defaultAjaxHeaders['X-CSRF-TOKEN'] = laravelCsrfToken;
+    },
     ajaxLoadingChanged: function(was, is) {
 
     },
