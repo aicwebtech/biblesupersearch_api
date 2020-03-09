@@ -430,7 +430,13 @@ class BibleController extends Controller
 
         $file = $request->file('file');
 
-        var_dump($file);
+        $tmp_upload_dir = ini_get('upload_tmp_dir') ? ini_get('upload_tmp_dir') : sys_get_temp_dir();
+
+        var_dump($tmp_upload_dir);
+
+        // var_dump($file);
+        // var_dump(sys_get_temp_dir());
+        var_dump(sys_get_temp_dir());
         die('wonky');
     }
 
@@ -438,6 +444,7 @@ class BibleController extends Controller
         if(!config('app.premium')) {
             return new Response(NULL, 501);
         }
+
 
         $Manager = Helpers::make('\App\ImportManager');
     }

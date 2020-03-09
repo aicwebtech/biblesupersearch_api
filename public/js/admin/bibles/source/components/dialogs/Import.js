@@ -110,20 +110,37 @@ enyo.kind({
     validate: function() {
         // this.set('fileValidated', true);
         var postData = enyo.clone(this.formData);
+        var errors = [];
 
-        this.log('files', this.$.file.hasNode().files);
+        // this.log('files', this.$.file.hasNode().files);
 
         var file = this.$.file.hasNode().files[0];
 
-        // var formData = new FormData();
-        var formData = new enyo.FormData();
+        if(!postData.type) {
+            errors.push('Importer is required');
+        }
+
+        if(!file) {
+            errors.push('File is required');
+        }
+
+        if(errors.length > 0) {
+            this.app.alert(errors.join('<br />'));
+            return;
+        }
+
+        var formData = new FormData();
+        // var formData = new enyo.FormData();
+        // file && formData.append('file', file, file.name); // Rest of request works when file append is commented out!
+
+        // Possibly an issue with tmp dir on backend??
+
         formData.append('importer', postData.type);
         formData.append('_token', laravelCsrfToken);
-        formData.append('file', file, file.name);
 
-        for(var pair of formData.entries()) {
-           this.log(pair[0] , pair[1]); 
-        }
+        // for(var pair of formData.entries()) {
+        //    this.log(pair[0] , pair[1]); 
+        // }
 
         var ajax = new enyo.Ajax({
             url: '/admin/bibles/importcheck',
@@ -214,7 +231,19 @@ enyo.kind({
     }, 
     openLoad: function() {
         this.set('fileValidated', false);
+        this._resetFormData();
+        this._resetBibleData();
         this.set('showing', true);
+    },
+    _resetFormData: function() {
+        this.set('formData', {});
+        
+        if(this.$.file.hasNode()) {
+            this.$.file.hasNode().value = '';
+        }
+    },
+    _resetBibleData: function() {
+
     },
     _populateImportInfo: function(type) {
         var cr = bootstrap.importers.find(element => element.type == type);
@@ -227,5 +256,5 @@ enyo.kind({
         else {
             this.set('importerData', {desc: '(Please select an importer.)'});
         }
-    },
+    }
 });
