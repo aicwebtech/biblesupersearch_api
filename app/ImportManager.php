@@ -2,8 +2,9 @@
 
 namespace App;
 
+use Illuminate\Http\Request;
+
 class ImportManager {
-    // not yet implemented
     use Traits\Error;
 
     protected static $type_map = [];
@@ -18,5 +19,13 @@ class ImportManager {
         }
 
         return $importers;
+    }
+
+    public function checkImportFile($data) {
+        return $this->addErrorByHttpStatus(501); // not implemented
+    }
+
+    public function importFile($data) {
+        return $this->addErrorByHttpStatus(501); // not implemented
     }
 }

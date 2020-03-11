@@ -41,10 +41,11 @@ return [
     |--------------------------------------------------------------------------
     | Application Premium Cache
     |
-    | Caches the output of App\Helpers::isPremium() and is automatically set
+    | When a request is made, we check to see if we have the 'Premium' plugin
+    | code and cache the results here.  
     |
-    | Forcing this value to TRUE will not magically grant you premium 
-    | features, but may instead cause breakage. 
+    | Note: This value is automatically set.  Forcing this value to TRUE will 
+    | not magically grant you premium features, but may instead cause breakage.
     |
     |--------------------------------------------------------------------------
     |
@@ -66,7 +67,7 @@ return [
     |
     */
 
-    'premium_disabled' => FALSE,
+    'premium_disabled' => env('PREMIUM_DISABLED', FALSE),
 
     /*
     |--------------------------------------------------------------------------

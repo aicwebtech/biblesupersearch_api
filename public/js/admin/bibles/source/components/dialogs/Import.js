@@ -131,7 +131,7 @@ enyo.kind({
 
         var formData = new FormData();
         // var formData = new enyo.FormData();
-        // file && formData.append('file', file, file.name); // Rest of request works when file append is commented out!
+        file && formData.append('file', file, file.name); // Rest of request works when file append is commented out!
 
         // Possibly an issue with tmp dir on backend??
 

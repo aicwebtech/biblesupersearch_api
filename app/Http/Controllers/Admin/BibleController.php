@@ -414,36 +414,33 @@ class BibleController extends Controller
     }
 
     public function importCheck(Request $request) {
-        if(!config('app.premium')) {
-            return new Response(NULL, 501);
-        }        
-
+        $resp = new \stdClass();
+        $resp->success = TRUE;
+        $resp->errors = [];
 
         $Manager = Helpers::make('\App\ImportManager');
-
         $data  = $request->all();
 
-        print_r($_POST);
-        print_r($_FILES);
+        // var_dump($data);
 
-        print_r($data);
-
-        $file = $request->file('file');
-
-        $tmp_upload_dir = ini_get('upload_tmp_dir') ? ini_get('upload_tmp_dir') : sys_get_temp_dir();
-
-        var_dump($tmp_upload_dir);
+        // $file = $request->file('file');
 
         // var_dump($file);
-        // var_dump(sys_get_temp_dir());
-        var_dump(sys_get_temp_dir());
-        die('wonky');
+
+        // die('wonky');
+
+        if($Manager->checkImportFile($data)) {
+
+        }
+        else {
+            $resp->success = FALSE;
+            $resp->errors = $Manager->getErrors();
+        }
+
+        return new Response($resp, $Manager->getHttpStatus());
     }
 
     public function import(Request $request) {
-        if(!config('app.premium')) {
-            return new Response(NULL, 501);
-        }
 
 
         $Manager = Helpers::make('\App\ImportManager');

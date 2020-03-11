@@ -146,4 +146,8 @@ class Analyzer extends ImporterAbstract {
         $text    = $this->_postFormatText($text);
         return $text;
     }
+
+    public function checkUploadedFile($file_name, $file_tmp_name) {
+        
+    }
 }
