@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Renderers;
+namespace aicwebtech\BibleSuperSearch\Renderers;
 
 class MachineReadableText extends RenderAbstract {
     static public $name = 'Machine-readable Plain Text';

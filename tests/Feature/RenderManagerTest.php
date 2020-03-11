@@ -5,7 +5,7 @@
 //use Tests\TestCase;
 use Illuminate\Foundation\Testing\WithFaker;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use App\RenderManager;
+use aicwebtech\BibleSuperSearch\RenderManager;
 
 // php ./vendor/phpunit/phpunit/phpunit --filter=RenderManagerTest
 
@@ -93,7 +93,7 @@ class RenderManagerTest extends TestCase {
 
         return;
         
-        $TextRender = new \App\Renderers\PlainText('kjv');
+        $TextRender = new \aicwebtech\BibleSuperSearch\Renderers\PlainText('kjv');
         $Rendering0 = $TextRender->_getRenderingRecord();
         $success = $TextRender->renderIfNeeded();        
         $this->assertTrue($success);
@@ -151,9 +151,9 @@ class RenderManagerTest extends TestCase {
 
         return;
 
-        $TextRender = new \App\Renderers\PlainText('kjv');
+        $TextRender = new \aicwebtech\BibleSuperSearch\Renderers\PlainText('kjv');
         $success = $TextRender->render(TRUE);        
-        $TextRender = new \App\Renderers\MachineReadableText('kjv');
+        $TextRender = new \aicwebtech\BibleSuperSearch\Renderers\MachineReadableText('kjv');
         $success = $TextRender->render(TRUE);
 
         $this->assertTrue($success);

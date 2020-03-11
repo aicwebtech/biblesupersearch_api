@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Renderers;
+namespace aicwebtech\BibleSuperSearch\Renderers;
 
 class Csv extends RenderAbstract {
     static public $name = 'CSV';

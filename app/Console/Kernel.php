@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Console;
+namespace aicwebtech\BibleSuperSearch\Console;
 
 use Illuminate\Console\Scheduling\Schedule;
 use Illuminate\Foundation\Console\Kernel as ConsoleKernel;
@@ -48,13 +48,13 @@ class Kernel extends ConsoleKernel
                  ->hourly();
 
         $schedule->call(function() {
-            $CM = new \App\CacheManager();
+            $CM = new \aicwebtech\BibleSuperSearch\CacheManager();
             $CM->cleanUpCache();
         })->weekly();
     }
 
     public function __construct(\Illuminate\Contracts\Foundation\Application $app, \Illuminate\Contracts\Events\Dispatcher $events) {
-        $this->bootstrappers[] = \App\Http\Bootstrap\LoadSoftConfiguration::class;
+        $this->bootstrappers[] = \aicwebtech\BibleSuperSearch\Http\Bootstrap\LoadSoftConfiguration::class;
 
         parent::__construct($app, $events);
     }

@@ -1,8 +1,8 @@
 <?php
 
-namespace App;
+namespace aicwebtech\BibleSuperSearch;
 
-use App\Models\Cache;
+use aicwebtech\BibleSuperSearch\Models\Cache;
 
 class CacheManager {
     protected $hash_size = 10;

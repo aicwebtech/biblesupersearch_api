@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Models;
+namespace aicwebtech\BibleSuperSearch\Models;
 
 use Illuminate\Database\Eloquent\Model;
 
@@ -16,7 +16,7 @@ class Rendering extends Model
     }
 
     public function getRenderedFilePath() {
-        $render_base_path = \App\Renderers\RenderAbstract::getRenderBasePath();
+        $render_base_path = \aicwebtech\BibleSuperSearch\Renderers\RenderAbstract::getRenderBasePath();
         return $render_base_path . '' . $this->renderer . '/' . $this->file_name;
     }
 }

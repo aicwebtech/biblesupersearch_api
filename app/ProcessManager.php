@@ -1,8 +1,8 @@
 <?php
 
-namespace App;
+namespace aicwebtech\BibleSuperSearch;
 
-use App\Models\Process;
+use aicwebtech\BibleSuperSearch\Models\Process;
 
 class ProcessManager {
     protected $hash_size = 10;

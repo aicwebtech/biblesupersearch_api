@@ -6,10 +6,10 @@
  * and open the template in the editor.
  */
 
-namespace App\Formatters;
+namespace aicwebtech\BibleSuperSearch\Formatters;
 
-use App\Passage;
-use App\Search;
+use aicwebtech\BibleSuperSearch\Passage;
+use aicwebtech\BibleSuperSearch\Search;
 /**
  * The formatters format the retured data structure before it is sent to the client
  *

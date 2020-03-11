@@ -1,10 +1,10 @@
 <?php
 
-namespace App\Console\Commands;
+namespace aicwebtech\BibleSuperSearch\Console\Commands;
 
 use Illuminate\Console\Command;
-use App\Models\Bible;
-use App\Models\Language;
+use aicwebtech\BibleSuperSearch\Models\Bible;
+use aicwebtech\BibleSuperSearch\Models\Language;
 
 abstract class ImportBible extends Command {
     /**

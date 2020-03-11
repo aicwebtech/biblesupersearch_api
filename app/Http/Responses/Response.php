@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Http\Responses;
+namespace aicwebtech\BibleSuperSearch\Http\Responses;
 
 use Illuminate\Http\Response as ParentResponse;
 

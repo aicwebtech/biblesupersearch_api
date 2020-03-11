@@ -10,7 +10,7 @@
  * NOTE: The Bible SuperSearch API is a Laravel application, and including it into another Laravel application is not reccommended at this time.
  **/
 
-namespace App;
+namespace aicwebtech\BibleSuperSearch;
 
 class BibleSuperSearch {
 
@@ -19,7 +19,7 @@ class BibleSuperSearch {
 
     public function __construct() {
         $this->_makeApp();
-        $this->Engine = \App\Engine::getInstance();
+        $this->Engine = \aicwebtech\BibleSuperSearch\Engine::getInstance();
     }
 
     /**

@@ -1,12 +1,12 @@
 <?php
 
-namespace App\Http\Controllers\Admin;
+namespace aicwebtech\BibleSuperSearch\Http\Controllers\Admin;
 
 use Illuminate\Http\Request;
-use App\Http\Controllers\Controller;
-use App\ConfigManager;
+use aicwebtech\BibleSuperSearch\Http\Controllers\Controller;
+use aicwebtech\BibleSuperSearch\ConfigManager;
 use Illuminate\Support\Facades\Artisan;
-use App\Http\Responses\Response;
+use aicwebtech\BibleSuperSearch\Http\Responses\Response;
 
 class ConfigController extends Controller
 {
@@ -23,8 +23,8 @@ class ConfigController extends Controller
      */
     public function index() {
         $config_values = ConfigManager::getGlobalConfigs();
-        $Bibles = \App\Models\Bible::where('enabled', 1)->where('installed', 1)->get();
-        $render_writeable = \App\RenderManager::isRenderWritable();
+        $Bibles = \aicwebtech\BibleSuperSearch\Models\Bible::where('enabled', 1)->where('installed', 1)->get();
+        $render_writeable = \aicwebtech\BibleSuperSearch\RenderManager::isRenderWritable();
         $render_dir = base_path('bibles/rendered');
 
         if(!$render_writeable) {
@@ -36,7 +36,7 @@ class ConfigController extends Controller
             'configs'           => $config_values,
             'bibles'            => $Bibles,
             'hl_tags'           => ['b', 'em', 'strong'],
-            'rendered_space'    => \App\RenderManager::getUsedSpace(),
+            'rendered_space'    => \aicwebtech\BibleSuperSearch\RenderManager::getUsedSpace(),
             'render_writeable'  => $render_writeable,
             'render_dir'        => $render_dir,
         ]);
@@ -72,18 +72,18 @@ class ConfigController extends Controller
     }
 
     public function cleanUpDownloadFiles() {
-        \App\RenderManager::cleanUpTempFiles();
+        \aicwebtech\BibleSuperSearch\RenderManager::cleanUpTempFiles();
         $resp = new \stdClass();
         $resp->success = TRUE;
-        $resp->space_used = \App\RenderManager::getUsedSpace();
+        $resp->space_used = \aicwebtech\BibleSuperSearch\RenderManager::getUsedSpace();
         return new Response($resp, 200);
     }
 
     public function deleteAllDownloadFiles() {
-        \App\RenderManager::deleteAllFiles(TRUE);
+        \aicwebtech\BibleSuperSearch\RenderManager::deleteAllFiles(TRUE);
         $resp = new \stdClass();
         $resp->success = TRUE;
-        $resp->space_used = \App\RenderManager::getUsedSpace();
+        $resp->space_used = \aicwebtech\BibleSuperSearch\RenderManager::getUsedSpace();
         return new Response($resp, 200);
     }
 }

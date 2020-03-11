@@ -5,7 +5,7 @@
 // use Tests\TestCase;
 use Illuminate\Foundation\Testing\WithFaker;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use App\Engine;
+use aicwebtech\BibleSuperSearch\Engine;
 
 class AppTest extends TestCase {
 

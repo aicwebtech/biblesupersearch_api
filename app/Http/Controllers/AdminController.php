@@ -1,11 +1,11 @@
 <?php
 
-namespace App\Http\Controllers;
+namespace aicwebtech\BibleSuperSearch\Http\Controllers;
 
 use Illuminate\Http\Request;
 
-use App\Http\Requests;
-use App\Http\Controllers\Controller;
+use aicwebtech\BibleSuperSearch\Http\Requests;
+use aicwebtech\BibleSuperSearch\Http\Controllers\Controller;
 
 // Controller for views only accessible by Administrative users (access_level >= 100)
 
@@ -35,8 +35,8 @@ class AdminController extends Controller
     }
 
     public function softwareUpdate() {
-        $local_version    = \App\Engine::getHardcodedVersion();
-        $upstream_version = \App\Engine::getUpstreamVersion(TRUE);
+        $local_version    = \aicwebtech\BibleSuperSearch\Engine::getHardcodedVersion();
+        $upstream_version = \aicwebtech\BibleSuperSearch\Engine::getUpstreamVersion(TRUE);
 
         $needs_update     = $upstream_version ? version_compare($local_version, $upstream_version->version, '<') : FALSE;
 

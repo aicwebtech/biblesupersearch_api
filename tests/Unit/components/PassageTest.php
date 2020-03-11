@@ -4,13 +4,13 @@ use Illuminate\Foundation\Testing\WithoutMiddleware;
 use Illuminate\Foundation\Testing\DatabaseMigrations;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 
-use App\Passage;
+use aicwebtech\BibleSuperSearch\Passage;
 
 class PassageTest extends TestCase
 {
     public function testInstantiation() {
         $Passage = new Passage();
-        $this->assertInstanceOf('App\Passage', $Passage);
+        $this->assertInstanceOf('aicwebtech\BibleSuperSearch\Passage', $Passage);
     }
 
     public function testEmptyReference() {
@@ -27,7 +27,7 @@ class PassageTest extends TestCase
         $reference = 'Romans 1:1; Acts 2:38; 1 John 2:5; Song of Solomon 2:3';
         $Passages = Passage::parseReferences($reference, ['en']);
         $this->assertCount(4, $Passages);
-        $this->assertContainsOnlyInstancesOf('App\Passage', $Passages);
+        $this->assertContainsOnlyInstancesOf('aicwebtech\BibleSuperSearch\Passage', $Passages);
         // Test Books
         $this->assertEquals('Romans', $Passages[0]->Book->name);
         $this->assertEquals('Acts', $Passages[1]->Book->name);
@@ -60,7 +60,7 @@ class PassageTest extends TestCase
         $reference = 'Romans 1; Acts 3 - 4, John 2,5';
         $Passages = Passage::parseReferences($reference, ['en']);
         $this->assertCount(3, $Passages);
-        $this->assertContainsOnlyInstancesOf('App\Passage', $Passages);
+        $this->assertContainsOnlyInstancesOf('aicwebtech\BibleSuperSearch\Passage', $Passages);
         // Test Books
         $this->assertEquals('Romans', $Passages[0]->Book->name);
         $this->assertEquals('Acts', $Passages[1]->Book->name);
@@ -97,7 +97,7 @@ class PassageTest extends TestCase
         $reference = 'Romans; Acts, John';
         $Passages = Passage::parseReferences($reference, ['en'], TRUE);
         $this->assertCount(3, $Passages);
-        $this->assertContainsOnlyInstancesOf('App\Passage', $Passages);
+        $this->assertContainsOnlyInstancesOf('aicwebtech\BibleSuperSearch\Passage', $Passages);
         // Test Books
         $this->assertEquals('Romans', $Passages[0]->Book->name);
         $this->assertEquals('Acts', $Passages[1]->Book->name);
@@ -130,7 +130,7 @@ class PassageTest extends TestCase
         $reference = 'Jas. 1, 4-5, 1 Cor 2, 5-7, 9, 12';
         $Passages = Passage::parseReferences($reference, ['en']);
         $this->assertCount(2, $Passages);
-        $this->assertContainsOnlyInstancesOf('App\Passage', $Passages);
+        $this->assertContainsOnlyInstancesOf('aicwebtech\BibleSuperSearch\Passage', $Passages);
         // Test Books
         $this->assertEquals('James', $Passages[0]->Book->name);
         $this->assertEquals('1 Corinthians', $Passages[1]->Book->name);
@@ -164,7 +164,7 @@ class PassageTest extends TestCase
         $reference = 'Hab 1-4-5,,7, Gen , 5-7-11';
         $Passages = Passage::parseReferences($reference, ['en']);
         $this->assertCount(2, $Passages);
-        $this->assertContainsOnlyInstancesOf('App\Passage', $Passages);
+        $this->assertContainsOnlyInstancesOf('aicwebtech\BibleSuperSearch\Passage', $Passages);
         // Test Books
         $this->assertEquals('Habakkuk', $Passages[0]->Book->name);
         $this->assertEquals('Genesis', $Passages[1]->Book->name);
@@ -195,7 +195,7 @@ class PassageTest extends TestCase
         $reference = ' Gen 1:5;2:3,   2 Cor 4:13; 3Jn. 1:5,    ';
         $Passages = Passage::parseReferences($reference, ['en']);
         $this->assertCount(3, $Passages);
-        $this->assertContainsOnlyInstancesOf('App\Passage', $Passages);
+        $this->assertContainsOnlyInstancesOf('aicwebtech\BibleSuperSearch\Passage', $Passages);
         // Test Books
         $this->assertEquals('Genesis', $Passages[0]->Book->name);
         $this->assertEquals('2 Corinthians', $Passages[1]->Book->name);
@@ -249,7 +249,7 @@ class PassageTest extends TestCase
         $reference = '  Rm 1:16 ;  1Thes 4:5- 6:3, 8:2-3, Tit 1:4, Rev 3:1-3;  4:  , Rom 3:23, 6:23; 5:8, 10:8  - 14    ';
         $Passages = Passage::parseReferences($reference, ['en']);
         $this->assertCount(5, $Passages);
-        $this->assertContainsOnlyInstancesOf('App\Passage', $Passages);
+        $this->assertContainsOnlyInstancesOf('aicwebtech\BibleSuperSearch\Passage', $Passages);
         // Test Books
         $this->assertEquals('Romans', $Passages[0]->Book->name);
         $this->assertEquals('1 Thessalonians', $Passages[1]->Book->name);
@@ -314,7 +314,7 @@ class PassageTest extends TestCase
         $reference = 'Rev 3:1-3;  4:;1:5-2:  ; Rom 3:23, 6:23; 5:8, 10: - 14';
         $Passages = Passage::parseReferences($reference, ['en']);
         $this->assertCount(2, $Passages);
-        $this->assertContainsOnlyInstancesOf('App\Passage', $Passages);
+        $this->assertContainsOnlyInstancesOf('aicwebtech\BibleSuperSearch\Passage', $Passages);
         $this->assertEquals(1,  $Passages[0]->chapter_min);
         $this->assertEquals(4,  $Passages[0]->chapter_max);
         $this->assertEquals(3,  $Passages[1]->chapter_min);
@@ -555,7 +555,7 @@ class PassageTest extends TestCase
         $reference = '  Habrews 4:8; 1 Tom 3:1-5, 9 ';
         $Passages  = Passage::parseReferences($reference, ['en']);
         $this->assertCount(2, $Passages);
-        $this->assertContainsOnlyInstancesOf('App\Passage', $Passages);
+        $this->assertContainsOnlyInstancesOf('aicwebtech\BibleSuperSearch\Passage', $Passages);
         $this->assertFalse($Passages[0]->is_valid);
         $this->assertFalse($Passages[1]->is_valid);
         $this->assertTrue($Passages[0]->hasErrors());
@@ -580,7 +580,7 @@ class PassageTest extends TestCase
         $reference = 'Matthew - Revelation';
         $Passages = Passage::parseReferences($reference, ['en'], TRUE);
         $this->assertCount(1, $Passages);
-        $this->assertContainsOnlyInstancesOf('App\Passage', $Passages);
+        $this->assertContainsOnlyInstancesOf('aicwebtech\BibleSuperSearch\Passage', $Passages);
         $this->assertTrue($Passages[0]->is_valid);
         $this->assertTrue($Passages[0]->is_book_range);
         $this->assertTrue($Passages[0]->is_search);
@@ -593,7 +593,7 @@ class PassageTest extends TestCase
         $reference = 'Matthew - Revelation';
         $Passages = Passage::parseReferences($reference, ['en'], FALSE);
         $this->assertCount(1, $Passages);
-        $this->assertContainsOnlyInstancesOf('App\Passage', $Passages);
+        $this->assertContainsOnlyInstancesOf('aicwebtech\BibleSuperSearch\Passage', $Passages);
         $this->assertFalse($Passages[0]->is_search);
         $this->assertFalse($Passages[0]->is_valid);
         $this->assertNull($Passages[0]->Book);
@@ -611,7 +611,7 @@ class PassageTest extends TestCase
         foreach($nt_references as $reference) {
             $Passages = Passage::parseReferences($reference, ['en'], $is_search);
             $this->assertCount(1, $Passages);
-            $this->assertContainsOnlyInstancesOf('App\Passage', $Passages);
+            $this->assertContainsOnlyInstancesOf('aicwebtech\BibleSuperSearch\Passage', $Passages);
             $this->assertTrue($Passages[0]->is_valid);
             $this->assertTrue($Passages[0]->is_book_range);
             $this->assertTrue($Passages[0]->is_search);
@@ -644,7 +644,7 @@ class PassageTest extends TestCase
 
         $Passages = Passage::parseReferences('NT;Psalms', ['en'], $is_search);
         $this->assertCount(2, $Passages);
-        $this->assertContainsOnlyInstancesOf('App\Passage', $Passages);
+        $this->assertContainsOnlyInstancesOf('aicwebtech\BibleSuperSearch\Passage', $Passages);
         $this->assertTrue($Passages[0]->is_valid);
         $this->assertTrue($Passages[0]->is_book_range);
         $this->assertTrue($Passages[0]->is_search);
@@ -679,7 +679,7 @@ class PassageTest extends TestCase
         foreach($end_times_references as $reference) {
             $Passages = Passage::parseReferences($reference, ['en'], $is_search);
             $this->assertCount(3, $Passages);
-            $this->assertContainsOnlyInstancesOf('App\Passage', $Passages);
+            $this->assertContainsOnlyInstancesOf('aicwebtech\BibleSuperSearch\Passage', $Passages);
             // Revelation
             $this->assertFalse($Passages[0]->is_search);
             $this->assertTrue($Passages[0]->is_valid);
@@ -693,7 +693,7 @@ class PassageTest extends TestCase
 
         $Passages = Passage::parseReferences('NT;Psalms', ['en'], $is_search);
         $this->assertCount(2, $Passages);
-        $this->assertContainsOnlyInstancesOf('App\Passage', $Passages);
+        $this->assertContainsOnlyInstancesOf('aicwebtech\BibleSuperSearch\Passage', $Passages);
         $this->assertFalse($Passages[0]->is_search);
         $this->assertFalse($Passages[0]->is_valid);
         $this->assertNull($Passages[0]->Book);
@@ -717,6 +717,6 @@ class PassageTest extends TestCase
         $Passages = Passage::parseReferences($ref, ['en'], $is_search);
 
         $this->assertCount(4, $Passages);
-        $this->assertContainsOnlyInstancesOf('App\Passage', $Passages);
+        $this->assertContainsOnlyInstancesOf('aicwebtech\BibleSuperSearch\Passage', $Passages);
     }
 }

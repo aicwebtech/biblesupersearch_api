@@ -4,33 +4,33 @@ use Illuminate\Foundation\Testing\WithoutMiddleware;
 use Illuminate\Foundation\Testing\DatabaseMigrations;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 
-use App\Models\Shortcuts\En as ShortcutEn;
-use App\Models\Shortcuts\ShortcutAbstract as ShortcutAbs;
+use aicwebtech\BibleSuperSearch\Models\Shortcuts\En as ShortcutEn;
+use aicwebtech\BibleSuperSearch\Models\Shortcuts\ShortcutAbstract as ShortcutAbs;
 
 class ShortcutTest extends TestCase
 {
     public function testFindByEnteredName() {
         $class_name = ShortcutAbs::getClassNameByLanguage('en');
-        $this->assertEquals('App\Models\Shortcuts\En', $class_name);
+        $this->assertEquals('aicwebtech\BibleSuperSearch\Models\Shortcuts\En', $class_name);
         
         // Name
         $SC = $class_name::findByEnteredName('New Testament');
-        $this->assertInstanceOf('App\Models\Shortcuts\En', $SC);
+        $this->assertInstanceOf('aicwebtech\BibleSuperSearch\Models\Shortcuts\En', $SC);
         $this->assertEquals('Matthew - Revelation', $SC->reference);
         
         // Short1
         $SC = $class_name::findByEnteredName('History');
-        $this->assertInstanceOf('App\Models\Shortcuts\En', $SC);
+        $this->assertInstanceOf('aicwebtech\BibleSuperSearch\Models\Shortcuts\En', $SC);
         $this->assertEquals('Joshua - Esther', $SC->reference);
 
         // Short2
         $SC = $class_name::findByEnteredName('NT');
-        $this->assertInstanceOf('App\Models\Shortcuts\En', $SC);
+        $this->assertInstanceOf('aicwebtech\BibleSuperSearch\Models\Shortcuts\En', $SC);
         $this->assertEquals('Matthew - Revelation', $SC->reference);
         
         // Short3
         $SC = $class_name::findByEnteredName('Old');
-        $this->assertInstanceOf('App\Models\Shortcuts\En', $SC);
+        $this->assertInstanceOf('aicwebtech\BibleSuperSearch\Models\Shortcuts\En', $SC);
         $this->assertEquals('Genesis - Malachi', $SC->reference);
     }
     

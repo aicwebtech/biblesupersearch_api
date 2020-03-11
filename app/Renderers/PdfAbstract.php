@@ -1,9 +1,9 @@
 <?php
 
-namespace App\Renderers;
+namespace aicwebtech\BibleSuperSearch\Renderers;
 
-use App\Models\Bible;
-use App\Models\Language;
+use aicwebtech\BibleSuperSearch\Models\Bible;
+use aicwebtech\BibleSuperSearch\Models\Language;
 
 abstract class PdfAbstract extends RenderAbstract {
     protected $file_extension = 'pdf';

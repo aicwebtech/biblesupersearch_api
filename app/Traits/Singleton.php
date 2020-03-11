@@ -1,8 +1,8 @@
 <?php
 
-namespace App\Traits;
+namespace aicwebtech\BibleSuperSearch\Traits;
 
-use App\Helpers;
+use aicwebtech\BibleSuperSearch\Helpers;
 
 /**
  * Description of Singleton

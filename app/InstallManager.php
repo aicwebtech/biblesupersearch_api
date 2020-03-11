@@ -1,10 +1,10 @@
 <?php
 
-namespace App;
+namespace aicwebtech\BibleSuperSearch;
 use Illuminate\Http\Request;
-use App\Models\Bible;
+use aicwebtech\BibleSuperSearch\Models\Bible;
 use Artisan;
-use App\ConfigManager;
+use aicwebtech\BibleSuperSearch\ConfigManager;
 
 /**
  * Description of InstallManager

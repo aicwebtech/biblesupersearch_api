@@ -1,14 +1,14 @@
 <?php
 
-namespace App\Renderers;
+namespace aicwebtech\BibleSuperSearch\Renderers;
 
-use App\Models\Bible;
-use App\Models\Rendering;
+use aicwebtech\BibleSuperSearch\Models\Bible;
+use aicwebtech\BibleSuperSearch\Models\Rendering;
 use DB;
-use App;
+use aicwebtech\BibleSuperSearch;
 
 abstract class RenderAbstract {
-    use \App\Traits\Error;
+    use \aicwebtech\BibleSuperSearch\Traits\Error;
 
     static public $name;
     static public $description = '';
@@ -217,13 +217,13 @@ abstract class RenderAbstract {
             return 'books_' . $this->book_name_language_force;
         }
 
-        if (\App\Models\Books\BookAbstract::isSupportedLanguage($this->Bible->lang_short)) {
+        if (\aicwebtech\BibleSuperSearch\Models\Books\BookAbstract::isSupportedLanguage($this->Bible->lang_short)) {
             return 'books_' . $this->Bible->lang_short;
         }
 
         $lang = config('bss.defaults.language_short');
 
-        if (\App\Models\Books\BookAbstract::isSupportedLanguage($lang)) {
+        if (\aicwebtech\BibleSuperSearch\Models\Books\BookAbstract::isSupportedLanguage($lang)) {
             return 'books_' . $lang;
         }
 

@@ -4,7 +4,7 @@ use Illuminate\Support\Facades\Schema;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Database\Migrations\Migration;
 
-use App\Models\Bible;
+use aicwebtech\BibleSuperSearch\Models\Bible;
 
 class Verses extends Migration
 {
@@ -17,7 +17,7 @@ class Verses extends Migration
         $Bibles = Bible::all();
 
         foreach($Bibles as $Bible) {
-            if(!($Bible->verses() instanceof App\Models\Verses\VerseStandard)) {
+            if(!($Bible->verses() instanceof aicwebtech\BibleSuperSearch\Models\Verses\VerseStandard)) {
                 continue;
             }
 
@@ -41,7 +41,7 @@ class Verses extends Migration
         $Bibles = Bible::all();
 
         foreach($Bibles as $Bible) {
-            if(!($Bible->verses() instanceof App\Models\Verses\VerseStandard)) {
+            if(!($Bible->verses() instanceof aicwebtech\BibleSuperSearch\Models\Verses\VerseStandard)) {
                 continue;
             }
 

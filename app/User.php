@@ -1,6 +1,6 @@
 <?php
 
-namespace App;
+namespace aicwebtech\BibleSuperSearch;
 
 use Illuminate\Auth\Authenticatable;
 use Illuminate\Database\Eloquent\Model;
@@ -11,7 +11,7 @@ use Illuminate\Contracts\Auth\Authenticatable as AuthenticatableContract;
 use Illuminate\Contracts\Auth\Access\Authorizable as AuthorizableContract;
 use Illuminate\Contracts\Auth\CanResetPassword as CanResetPasswordContract;
 use Illuminate\Database\Eloquent\SoftDeletes;
-use App\Notifications\CustomPasswordReset;
+use aicwebtech\BibleSuperSearch\Notifications\CustomPasswordReset;
 
 class User extends Model implements AuthenticatableContract,
                                     AuthorizableContract,

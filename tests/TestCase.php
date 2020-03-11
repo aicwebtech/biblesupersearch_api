@@ -21,6 +21,6 @@ class TestCase extends Illuminate\Foundation\Testing\TestCase
 
         $app->make(Illuminate\Contracts\Console\Kernel::class)->bootstrap();
         $this->use_named_bindings = config('app.query_use_named_placeholders');
-        return $app;
+        return $aicwebtech\BibleSuperSearch;
     }
 }

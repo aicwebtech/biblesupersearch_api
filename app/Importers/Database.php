@@ -1,5 +1,5 @@
 <?php
-namespace App\Importers;
+namespace aicwebtech\BibleSuperSearch\Importers;
 
 /*
  * Generic importer for importing database dumps

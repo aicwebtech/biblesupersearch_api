@@ -3,7 +3,7 @@
 use Illuminate\Foundation\Testing\WithoutMiddleware;
 use Illuminate\Foundation\Testing\DatabaseMigrations;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
-use App\Models\Bible;
+use aicwebtech\BibleSuperSearch\Models\Bible;
 
 class BibleTest extends TestCase {
 
@@ -12,7 +12,7 @@ class BibleTest extends TestCase {
         $Verses = $kjv->verses();
         // The verses class exists for this one
         $this->assertTrue($Verses->classFileExists());
-        $this->assertEquals('App\Models\Verses\Kjv', get_class($Verses));
+        $this->assertEquals('aicwebtech\BibleSuperSearch\Models\Verses\Kjv', get_class($Verses));
     }
 
     public function testNonExistantBible() {
@@ -32,7 +32,7 @@ class BibleTest extends TestCase {
         $Bible->module = 'niv'; // Change the module.  Warning - do not save
         $Verses = $Bible->verses(TRUE); // Reload the verses instance
         $this->assertFalse($Verses->classFileExists()); // Make sure the class file exists flag is FALSE
-        $this->assertInstanceOf('App\Models\Verses\Niv', $Verses);
+        $this->assertInstanceOf('aicwebtech\BibleSuperSearch\Models\Verses\Niv', $Verses);
          *
          */
     }
@@ -73,7 +73,7 @@ class BibleTest extends TestCase {
         $this->assertEquals(1, $Bible->enabled);
 
         $class_name = $Bible->getVerseClassName();
-        $this->assertEquals('App\Models\Verses\BobsTestBible', $class_name);
+        $this->assertEquals('aicwebtech\BibleSuperSearch\Models\Verses\BobsTestBible', $class_name);
 
         $this->assertTrue(Schema::hasTable('verses_' . $module));
 
@@ -89,20 +89,20 @@ class BibleTest extends TestCase {
     public function testMethodGetVerseClassNameByModule() {
         // We don't test if the module value would make a valid class
         $class_name = Bible::getVerseClassNameByModule('kjv');
-        $this->assertEquals('App\Models\Verses\Kjv', $class_name);
+        $this->assertEquals('aicwebtech\BibleSuperSearch\Models\Verses\Kjv', $class_name);
     }
 
     public function testMethodGetVerseClassName() {
         $kjv = Bible::findByModule('kjv');
         $class_name = $kjv->getVerseClassName();
-        $this->assertEquals('App\Models\Verses\Kjv', $class_name);
+        $this->assertEquals('aicwebtech\BibleSuperSearch\Models\Verses\Kjv', $class_name);
 
         $Bible = Bible::where('module', '<>', 'kjv')->where('installed', '=', 1)->first();
 
         if($Bible) {
             $class_name = $Bible->getVerseClassName();
             $module = $Bible->module;
-            $this->assertEquals('App\Models\Verses\\' . studly_case($module), $class_name);
+            $this->assertEquals('aicwebtech\BibleSuperSearch\Models\Verses\\' . studly_case($module), $class_name);
         }
     }
 
@@ -120,7 +120,7 @@ class BibleTest extends TestCase {
 
         // Bible model query builder - no prefix needed
         $Bible = Bible::first();
-        $this->assertInstanceOf('App\Models\Bible', $Bible);
+        $this->assertInstanceOf('aicwebtech\BibleSuperSearch\Models\Bible', $Bible);
     }
 
     public function testBibleMigrate() {

@@ -1,13 +1,13 @@
 <?php
 
-namespace App;
+namespace aicwebtech\BibleSuperSearch;
 
-use App\User;
-use App\Models\Bible;
-use App\Passage;
-use App\Search;
-use App\CacheManager;
-use App\Helpers;
+use aicwebtech\BibleSuperSearch\User;
+use aicwebtech\BibleSuperSearch\Models\Bible;
+use aicwebtech\BibleSuperSearch\Passage;
+use aicwebtech\BibleSuperSearch\Search;
+use aicwebtech\BibleSuperSearch\CacheManager;
+use aicwebtech\BibleSuperSearch\Helpers;
 use Illuminate\Pagination\LengthAwarePaginator as Paginator;
 
 class Engine {
@@ -289,7 +289,7 @@ class Engine {
             $strongs = Search::parseStrongs($keywords);
 
             if(!empty($strongs)) {
-                $Strongs = \App\Models\StrongsDefinition::whereIn('number', $strongs)
+                $Strongs = \aicwebtech\BibleSuperSearch\Models\StrongsDefinition::whereIn('number', $strongs)
                     ->orderBy('number', 'asc')
                     ->get();
 
@@ -499,7 +499,7 @@ class Engine {
             'contents'  => array_key_exists('contents', $input) ? $input['contents'] : NULL,
         ];
 
-        $Manager = new \App\RenderManager($modules, $format, $zip);
+        $Manager = new \aicwebtech\BibleSuperSearch\RenderManager($modules, $format, $zip);
 
         if($action == 'render_needed') {
             $bibles_needing_render = $Manager->getBiblesNeedingRender(NULL, FALSE, FALSE, 0);
@@ -526,7 +526,7 @@ class Engine {
 
             //     var_dump($HasJobs);
 
-            //     \App\Jobs\ProcessRender::dispatch($sanitized);
+            //     \aicwebtech\BibleSuperSearch\Jobs\ProcessRender::dispatch($sanitized);
 
             //     if(!$HasJobs) {
             //         // $this->_startQueueProcess();
@@ -566,7 +566,7 @@ class Engine {
     }
 
     public function actionDownloadlist($input) {
-        return \App\RenderManager::getRendererList();
+        return \aicwebtech\BibleSuperSearch\RenderManager::getRendererList();
     }
 
     /**
@@ -577,21 +577,21 @@ class Engine {
         $language = (!empty($input['language'])) ? $input['language'] : config('bss.defaults.language_short');
 
         if($language == 'ALL') {
-            $list = \App\Models\Books\BookAbstract::getSupportedLanguages();
+            $list = \aicwebtech\BibleSuperSearch\Models\Books\BookAbstract::getSupportedLanguages();
             $books_by_lang = [];
 
             foreach($list as $lang) {
-                $namespaced_class = 'App\Models\Books\\' . ucfirst($lang);
+                $namespaced_class = 'aicwebtech\BibleSuperSearch\Models\Books\\' . ucfirst($lang);
                 $books_by_lang[$lang] = $namespaced_class::select('id', 'name', 'shortname')->orderBy('id', 'ASC') -> get() -> all();
             }
 
             return $books_by_lang;
         }
 
-        $namespaced_class = 'App\Models\Books\\' . ucfirst($language);
+        $namespaced_class = 'aicwebtech\BibleSuperSearch\Models\Books\\' . ucfirst($language);
 
         if(!class_exists($namespaced_class)) {
-            $namespaced_class = 'App\Models\Books\\' . config('bss.defaults.language_short');
+            $namespaced_class = 'aicwebtech\BibleSuperSearch\Models\Books\\' . config('bss.defaults.language_short');
         }
 
         $Books = $namespaced_class::select('id', 'name', 'shortname')->orderBy('id', 'ASC') -> get() -> all();
@@ -599,7 +599,7 @@ class Engine {
     }
 
     public function languageHasBookSupport($lang) {
-        return in_array($lang, \App\Models\Books\BookAbstract::getSupportedLanguages());
+        return in_array($lang, \aicwebtech\BibleSuperSearch\Models\Books\BookAbstract::getSupportedLanguages());
     }
 
     public function actionStatics($input) {
@@ -619,10 +619,10 @@ class Engine {
     public function actionShortcuts($input) {
         // Todo - multi language support
         $language = (!empty($input['language'])) ? $input['language'] : config('bss.defaults.language_short');
-        $namespaced_class = 'App\Models\Shortcuts\\' . ucfirst($language);
+        $namespaced_class = 'aicwebtech\BibleSuperSearch\Models\Shortcuts\\' . ucfirst($language);
 
         if(!class_exists($namespaced_class)) {
-            $namespaced_class = 'App\Models\Shortcuts\\' . config('bss.defaults.language_short');
+            $namespaced_class = 'aicwebtech\BibleSuperSearch\Models\Shortcuts\\' . config('bss.defaults.language_short');
         }
 
         $Shortcuts = $namespaced_class::select('id', 'name', 'reference')->orderBy('id', 'ASC') ->where('display', 1) -> get() -> all();
@@ -658,7 +658,7 @@ class Engine {
 
         if(preg_match_all('/[GHgh][0-9]+/', $strongs, $matches)) {
             foreach($matches[0] as $clean) {
-                $Def = \App\Models\StrongsDefinition::where('number', $clean)->first();
+                $Def = \aicwebtech\BibleSuperSearch\Models\StrongsDefinition::where('number', $clean)->first();
 
                 if(!$Def) {
                     $this->addError('Strong\s Number ' . $clean . ' not found');
@@ -685,7 +685,7 @@ class Engine {
             return;
         }
 
-        $Cache = \App\Models\Cache::where('hash', $input['hash'])->first();
+        $Cache = \aicwebtech\BibleSuperSearch\Models\Cache::where('hash', $input['hash'])->first();
 
         if(!$Cache) {
             $this->addError('Cache not found', 4);
@@ -710,7 +710,7 @@ class Engine {
         );
 
         $format_type  = (array_key_exists($format_type, $format_map)) ? $format_map[$format_type] : 'passage';
-        $format_class = '\App\Formatters\\' . ucfirst($format_type);
+        $format_class = '\aicwebtech\BibleSuperSearch\Formatters\\' . ucfirst($format_type);
 
         // This doesn't work right!
         if($input['multi_bibles']) {

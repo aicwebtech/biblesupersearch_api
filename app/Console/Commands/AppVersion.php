@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Console\Commands;
+namespace aicwebtech\BibleSuperSearch\Console\Commands;
 
 use Illuminate\Console\Command;
 
@@ -37,6 +37,6 @@ class AppVersion extends Command
      */
     public function handle()
     {
-        echo \App\Engine::getHardcodedVersion() . PHP_EOL;
+        echo \aicwebtech\BibleSuperSearch\Engine::getHardcodedVersion() . PHP_EOL;
     }
 }

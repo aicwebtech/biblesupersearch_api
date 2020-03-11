@@ -1,13 +1,13 @@
 <?php
 
-namespace App\Http\Controllers\Admin;
+namespace aicwebtech\BibleSuperSearch\Http\Controllers\Admin;
 
 use Illuminate\Http\Request;
 //use Illuminate\Http\Response;
-use App\Http\Responses\Response;
-use App\Http\Controllers\Controller;
-use App\Models\Bible;
-use App\Helpers;
+use aicwebtech\BibleSuperSearch\Http\Responses\Response;
+use aicwebtech\BibleSuperSearch\Http\Controllers\Controller;
+use aicwebtech\BibleSuperSearch\Models\Bible;
+use aicwebtech\BibleSuperSearch\Helpers;
 use Validator;
 
 class BibleController extends Controller
@@ -27,16 +27,16 @@ class BibleController extends Controller
      */
     public function index() {
         Bible::populateBibleTable();
-        $ImportManagerClass = Helpers::find('\App\ImportManager');
+        $ImportManagerClass = Helpers::find('\aicwebtech\BibleSuperSearch\ImportManager');
 
         $bootstrap = new \stdClass;
         $bootstrap->devToolsEnabled  = config('bss.dev_tools') ? TRUE : FALSE;
         $bootstrap->premToolsEnabled = config('app.premium');
-        $bootstrap->languages  = \App\Models\Language::orderBy('name', 'asc')->get();
+        $bootstrap->languages  = \aicwebtech\BibleSuperSearch\Models\Language::orderBy('name', 'asc')->get();
         $bootstrap->copyrights = [];
         $bootstrap->importers  = $ImportManagerClass::getImportersList();
 
-        foreacH(\App\Models\Copyright::all() as $Copyright) {
+        foreacH(\aicwebtech\BibleSuperSearch\Models\Copyright::all() as $Copyright) {
             $data = $Copyright->getAttributes();
             $data['copyright_statement_processed'] = $Copyright->getProcessedCopyrightStatement();
             $bootstrap->copyrights[] = $data;
@@ -154,7 +154,7 @@ class BibleController extends Controller
     protected function _save(Request $request, $id = NULL) {
         $resp = new \stdClass();
 
-        $BibleClass = Helpers::find('\App\Models\Bible');
+        $BibleClass = Helpers::find('\aicwebtech\BibleSuperSearch\Models\Bible');
 
         if($id) {
             $Bible = Bible::findOrFail($id);
@@ -253,7 +253,7 @@ class BibleController extends Controller
 
     public function test(Request $request, $id) {
         $Bible = Bible::findOrFail($id);
-        $Engine = new \App\Engine;
+        $Engine = new \aicwebtech\BibleSuperSearch\Engine;
         $resp = new \stdClass();
         $resp->success  = FALSE;
 
@@ -418,7 +418,7 @@ class BibleController extends Controller
         $resp->success = TRUE;
         $resp->errors = [];
 
-        $Manager = Helpers::make('\App\ImportManager');
+        $Manager = Helpers::make('\aicwebtech\BibleSuperSearch\ImportManager');
         $data  = $request->all();
 
         // var_dump($data);
@@ -443,6 +443,6 @@ class BibleController extends Controller
     public function import(Request $request) {
 
 
-        $Manager = Helpers::make('\App\ImportManager');
+        $Manager = Helpers::make('\aicwebtech\BibleSuperSearch\ImportManager');
     }
 }

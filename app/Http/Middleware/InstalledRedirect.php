@@ -1,9 +1,9 @@
 <?php
 
-namespace App\Http\Middleware;
+namespace aicwebtech\BibleSuperSearch\Http\Middleware;
 
 use Closure;
-use App\InstallManager;
+use aicwebtech\BibleSuperSearch\InstallManager;
 
 class InstalledRedirect
 {

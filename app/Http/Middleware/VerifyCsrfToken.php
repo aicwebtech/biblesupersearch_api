@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Http\Middleware;
+namespace aicwebtech\BibleSuperSearch\Http\Middleware;
 
 use Illuminate\Foundation\Http\Middleware\VerifyCsrfToken as BaseVerifier;
 

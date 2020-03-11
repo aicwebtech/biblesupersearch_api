@@ -3,7 +3,7 @@
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Database\Migrations\Migration;
-use App\Importers\Database as DatabaseImport;
+use aicwebtech\BibleSuperSearch\Importers\Database as DatabaseImport;
 
 class CreateStrongsTable extends Migration
 {

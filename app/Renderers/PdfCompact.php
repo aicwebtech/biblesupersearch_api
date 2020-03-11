@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Renderers;
+namespace aicwebtech\BibleSuperSearch\Renderers;
 
 class PdfCompact extends PdfAbstract {
     static public $name = 'Compact';

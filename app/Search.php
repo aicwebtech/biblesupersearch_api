@@ -1,7 +1,7 @@
 <?php
 
-namespace App;
-use App\SqlSearch;
+namespace aicwebtech\BibleSuperSearch;
+use aicwebtech\BibleSuperSearch\SqlSearch;
 
 /**
  * Class for Bible database searches using a given set of keywords

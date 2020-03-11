@@ -29,7 +29,7 @@
             "database"
         ],
         "psr-4": {
-            "App\\": "app/"
+            "aicwebtech\\BibleSuperSearch\\": "app/"
         }
     },
     "autoload-dev": {

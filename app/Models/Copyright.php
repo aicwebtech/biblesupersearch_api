@@ -1,13 +1,13 @@
 <?php
 
-namespace App\Models;
+namespace aicwebtech\BibleSuperSearch\Models;
 
 use Illuminate\Database\Eloquent\Model;
 
 class Copyright extends Model {
 
     public function bible() {
-        return $this->belongsTo('App\Models\Bible');
+        return $this->belongsTo('aicwebtech\BibleSuperSearch\Models\Bible');
     }
 
     public function getProcessedCopyrightStatement() {

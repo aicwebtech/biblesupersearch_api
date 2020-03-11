@@ -4,7 +4,7 @@ use Illuminate\Foundation\Testing\WithoutMiddleware;
 use Illuminate\Foundation\Testing\DatabaseMigrations;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 
-use App\SqlSearch;
+use aicwebtech\BibleSuperSearch\SqlSearch;
 
 class SqlSearchTest extends TestCase
 {
@@ -122,7 +122,7 @@ class SqlSearchTest extends TestCase
     public function testAdvancedQuery() {
         // All Words
         $Search = SqlSearch::parseSearch(NULL, ['search_all' => 'faith hope love']);
-        $this->assertInstanceOf('App\SqlSearch', $Search);
+        $this->assertInstanceOf('aicwebtech\BibleSuperSearch\SqlSearch', $Search);
         $this->assertEquals('and', $Search->search_type);
         list($sql, $binddata) = $Search->generateQuery();
         $this->assertEquals('(`text` LIKE :bd1) AND (`text` LIKE :bd2) AND (`text` LIKE :bd3)', $sql);
@@ -130,7 +130,7 @@ class SqlSearchTest extends TestCase
 
         // Any Word
         $Search = SqlSearch::parseSearch(NULL, ['search_any' => 'faith hope love']);
-        $this->assertInstanceOf('App\SqlSearch', $Search);
+        $this->assertInstanceOf('aicwebtech\BibleSuperSearch\SqlSearch', $Search);
         // Will be AND even though we are doing an OR search - search type only applies to the standard search
         $this->assertEquals('and', $Search->search_type);
         list($sql, $binddata) = $Search->generateQuery();
@@ -139,21 +139,21 @@ class SqlSearchTest extends TestCase
 
         // One Word (XOR)
         $Search = SqlSearch::parseSearch(NULL, ['search_one' => 'faith hope love']);
-        $this->assertInstanceOf('App\SqlSearch', $Search);
+        $this->assertInstanceOf('aicwebtech\BibleSuperSearch\SqlSearch', $Search);
         list($sql, $binddata) = $Search->generateQuery();
         $this->assertEquals('(`text` LIKE :bd1) XOR (`text` LIKE :bd2) XOR (`text` LIKE :bd3)', $sql);
         $this->assertEquals(array(':bd1' => '%faith%', ':bd2' => '%hope%', ':bd3' => '%love%'), $binddata);
 
         // None of the words (NOT)
         $Search = SqlSearch::parseSearch(NULL, ['search_none' => 'faith hope love']);
-        $this->assertInstanceOf('App\SqlSearch', $Search);
+        $this->assertInstanceOf('aicwebtech\BibleSuperSearch\SqlSearch', $Search);
         list($sql, $binddata) = $Search->generateQuery();
         $this->assertEquals('NOT ((`text` LIKE :bd1) AND (`text` LIKE :bd2) AND (`text` LIKE :bd3))', $sql);
         $this->assertEquals(array(':bd1' => '%faith%', ':bd2' => '%hope%', ':bd3' => '%love%'), $binddata);
 
         // Exact Phrase
         $Search = SqlSearch::parseSearch(NULL, ['search_phrase' => 'faith hope love']);
-        $this->assertInstanceOf('App\SqlSearch', $Search);
+        $this->assertInstanceOf('aicwebtech\BibleSuperSearch\SqlSearch', $Search);
         list($sql, $binddata) = $Search->generateQuery();
         $this->assertEquals('(`text` LIKE :bd1 AND `text` REGEXP :bd2)', $sql);
         // OLD $this->assertEquals(array(':bd1' => '%faith hope love%', ':bd2' => 'faith hope love'), $binddata);

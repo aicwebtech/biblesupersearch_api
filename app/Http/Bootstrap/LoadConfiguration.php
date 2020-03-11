@@ -2,7 +2,7 @@
 
 // Experimental file, not actually used
 
-namespace App\Http\Bootstrap;
+namespace aicwebtech\BibleSuperSearch\Http\Bootstrap;
 
 use Exception;
 use SplFileInfo;
@@ -10,7 +10,7 @@ use Illuminate\Config\Repository;
 use Symfony\Component\Finder\Finder;
 use Illuminate\Contracts\Foundation\Application;
 use Illuminate\Contracts\Config\Repository as RepositoryContract;
-use App\Models\Bible;
+use aicwebtech\BibleSuperSearch\Models\Bible;
 use \DB;
 
 class LoadConfiguration

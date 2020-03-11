@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Models\Verses;
+namespace aicwebtech\BibleSuperSearch\Models\Verses;
 
 // Copyright restricted standard-format Bibles MUST extend this class!
 

@@ -1,9 +1,9 @@
 <?php
 
-namespace App\Console\Commands;
+namespace aicwebtech\BibleSuperSearch\Console\Commands;
 
 use Illuminate\Console\Command;
-use App\Importers\Unbound;
+use aicwebtech\BibleSuperSearch\Importers\Unbound;
 
 // Note: Comment out in Kernel when not actively using.
 // Not intended for the public's use
@@ -37,7 +37,7 @@ class ImportBibleCustom extends ImportBible {
      */
     public function handle() {
         $importer = $this->argument('importer');
-        $class_name = 'App\Importers\\' . ucfirst($importer);
+        $class_name = 'aicwebtech\BibleSuperSearch\Importers\\' . ucfirst($importer);
 
         if(!in_array($importer, $this->valid)) {
             throw new \Exception('Not a valid importer: ' . $importer);

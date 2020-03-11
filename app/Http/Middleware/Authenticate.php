@@ -1,10 +1,10 @@
 <?php
 
-namespace App\Http\Middleware;
+namespace aicwebtech\BibleSuperSearch\Http\Middleware;
 
 use Closure;
 use Illuminate\Contracts\Auth\Guard;
-use App\Http\Responses\Response;
+use aicwebtech\BibleSuperSearch\Http\Responses\Response;
 
 class Authenticate
 {

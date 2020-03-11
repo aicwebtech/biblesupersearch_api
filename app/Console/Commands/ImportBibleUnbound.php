@@ -1,9 +1,9 @@
 <?php
 
-namespace App\Console\Commands;
+namespace aicwebtech\BibleSuperSearch\Console\Commands;
 
 use Illuminate\Console\Command;
-use App\Importers\Unbound;
+use aicwebtech\BibleSuperSearch\Importers\Unbound;
 
 class ImportBibleUnbound extends ImportBible {
     /**

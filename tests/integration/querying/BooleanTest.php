@@ -4,7 +4,7 @@ use Illuminate\Foundation\Testing\WithoutMiddleware;
 use Illuminate\Foundation\Testing\DatabaseMigrations;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 
-use App\Engine;
+use aicwebtech\BibleSuperSearch\Engine;
 
 class BooleanTest extends TestCase
 {

@@ -1,6 +1,6 @@
 <?php
 
-namespace App;
+namespace aicwebtech\BibleSuperSearch;
 
 use Illuminate\Http\Request;
 

@@ -3,7 +3,7 @@
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Database\Migrations\Migration;
-use App\Models\Books\Es as Books;
+use aicwebtech\BibleSuperSearch\Models\Books\Es as Books;
 
 class FixEsBibleRuth extends Migration
 {

@@ -1,8 +1,8 @@
 <?php
 
-namespace App\Http\Controllers\Auth;
+namespace aicwebtech\BibleSuperSearch\Http\Controllers\Auth;
 
-use App\Http\Controllers\Controller;
+use aicwebtech\BibleSuperSearch\Http\Controllers\Controller;
 use Illuminate\Foundation\Auth\ResetsPasswords;
 use Illuminate\Foundation\Auth\SendsPasswordResetEmails;
 use Illuminate\Http\Request;

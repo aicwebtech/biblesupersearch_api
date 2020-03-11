@@ -1,7 +1,7 @@
 <?php
 
 use Illuminate\Database\Seeder;
-use App\Models\Shortcuts\ShortcutAbstract as Shortcut;
+use aicwebtech\BibleSuperSearch\Models\Shortcuts\ShortcutAbstract as Shortcut;
 
 class ShortcutsSeeder extends Seeder
 {

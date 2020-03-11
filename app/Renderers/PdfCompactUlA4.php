@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Renderers;
+namespace aicwebtech\BibleSuperSearch\Renderers;
 
 class PdfCompactUlA4 extends PdfCompact {
     protected static $pdf_page_format = 'A4';

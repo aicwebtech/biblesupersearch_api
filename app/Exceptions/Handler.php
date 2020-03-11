@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Exceptions;
+namespace aicwebtech\BibleSuperSearch\Exceptions;
 
 use Exception;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
@@ -9,7 +9,7 @@ use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 use Illuminate\Foundation\Exceptions\Handler as ExceptionHandler;
 use Illuminate\Auth\AuthenticationException;
 use Illuminate\Session\TokenMismatchException;
-use App\InstallManager;
+use aicwebtech\BibleSuperSearch\InstallManager;
 
 class Handler extends ExceptionHandler
 {
@@ -78,7 +78,7 @@ class Handler extends ExceptionHandler
    }
 }
 
-  // Declaration of App\Exceptions\Handler::unauthenticated($request, App\Except  
+  // Declaration of aicwebtech\BibleSuperSearch\Exceptions\Handler::unauthenticated($request, aicwebtech\BibleSuperSearch\Except  
   // ions\AuthenticationException $exception) should be compatible with Illumina  
   // te\Foundation\Exceptions\Handler::unauthenticated($request, Illuminate\Auth  
   // \AuthenticationException $exception)      

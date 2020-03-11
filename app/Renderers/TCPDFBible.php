@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Renderers;
+namespace aicwebtech\BibleSuperSearch\Renderers;
 
 use \TCPDF;
 use \TCPDF_STATIC;

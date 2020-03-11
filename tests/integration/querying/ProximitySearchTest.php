@@ -4,8 +4,8 @@ use Illuminate\Foundation\Testing\WithoutMiddleware;
 use Illuminate\Foundation\Testing\DatabaseMigrations;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 
-use App\Engine;
-use App\Models\Verses\VerseStandard;
+use aicwebtech\BibleSuperSearch\Engine;
+use aicwebtech\BibleSuperSearch\Models\Verses\VerseStandard;
 
 class ProximitySearchTest extends TestCase {
     public function testParenthensesMismatch() {

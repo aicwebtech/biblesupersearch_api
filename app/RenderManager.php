@@ -1,10 +1,10 @@
 <?php
 
-namespace App;
-use App\Models\Bible;
-use App\Models\Process;
-use App\Models\Rendering;
-use App\ProcessManager;
+namespace aicwebtech\BibleSuperSearch;
+use aicwebtech\BibleSuperSearch\Models\Bible;
+use aicwebtech\BibleSuperSearch\Models\Process;
+use aicwebtech\BibleSuperSearch\Models\Rendering;
+use aicwebtech\BibleSuperSearch\ProcessManager;
 
 class RenderManager {
     use Traits\Error;
@@ -33,14 +33,14 @@ class RenderManager {
     ];
 
     static public $register = [
-        'pdf'               => \App\Renderers\PdfCompact::class,
-        'pdf_cpt_let'       => \App\Renderers\PdfCompact::class,
-        'pdf_cpt_a4'        => \App\Renderers\PdfCompactA4::class,  
-        'pdf_cpt_let_ul'    => \App\Renderers\PdfCompactUl::class,
-        'pdf_cpt_a4_ul'     => \App\Renderers\PdfCompactUlA4::class,        
-        'text'              => \App\Renderers\PlainText::class,
-        'mr_text'           => \App\Renderers\MachineReadableText::class,
-        'csv'               => \App\Renderers\Csv::class,
+        'pdf'               => \aicwebtech\BibleSuperSearch\Renderers\PdfCompact::class,
+        'pdf_cpt_let'       => \aicwebtech\BibleSuperSearch\Renderers\PdfCompact::class,
+        'pdf_cpt_a4'        => \aicwebtech\BibleSuperSearch\Renderers\PdfCompactA4::class,  
+        'pdf_cpt_let_ul'    => \aicwebtech\BibleSuperSearch\Renderers\PdfCompactUl::class,
+        'pdf_cpt_a4_ul'     => \aicwebtech\BibleSuperSearch\Renderers\PdfCompactUlA4::class,        
+        'text'              => \aicwebtech\BibleSuperSearch\Renderers\PlainText::class,
+        'mr_text'           => \aicwebtech\BibleSuperSearch\Renderers\MachineReadableText::class,
+        'csv'               => \aicwebtech\BibleSuperSearch\Renderers\Csv::class,
     ];
 
     protected $Bibles = [];

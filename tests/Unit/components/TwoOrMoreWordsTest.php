@@ -5,7 +5,7 @@
 //use Tests\TestCase;
 use Illuminate\Foundation\Testing\DatabaseMigrations;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
-use App\SqlSearch;
+use aicwebtech\BibleSuperSearch\SqlSearch;
 
 class TwoOrMoreWordsTest extends TestCase {
 

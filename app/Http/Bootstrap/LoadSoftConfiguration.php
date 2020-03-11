@@ -1,15 +1,15 @@
 <?php
 
-namespace App\Http\Bootstrap;
+namespace aicwebtech\BibleSuperSearch\Http\Bootstrap;
 
 use Exception;
 use Illuminate\Config\Repository;
 use Symfony\Component\Finder\Finder;
 use Illuminate\Contracts\Foundation\Application;
 use Illuminate\Contracts\Config\Repository as RepositoryContract;
-use App\Models\Config;
-use App\ConfigManager;
-use App\Helpers;
+use aicwebtech\BibleSuperSearch\Models\Config;
+use aicwebtech\BibleSuperSearch\ConfigManager;
+use aicwebtech\BibleSuperSearch\Helpers;
 use DB;
 
 class LoadSoftConfiguration {

@@ -1,10 +1,10 @@
 <?php
 
-namespace App\Console\Commands;
+namespace aicwebtech\BibleSuperSearch\Console\Commands;
 
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Mail;
-use App\Mail\TestEmail as Mailer;
+use aicwebtech\BibleSuperSearch\Mail\TestEmail as Mailer;
 
 class TestEmail extends Command
 {

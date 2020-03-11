@@ -1,9 +1,9 @@
 <?php
 
-namespace App\Console\Commands;
+namespace aicwebtech\BibleSuperSearch\Console\Commands;
 
 use Illuminate\Console\Command;
-use App\Importers\Analyzer as Importer;
+use aicwebtech\BibleSuperSearch\Importers\Analyzer as Importer;
 
 class ImportBibleAnalyzer extends ImportBible {
     /**

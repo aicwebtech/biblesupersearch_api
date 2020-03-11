@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Models;
+namespace aicwebtech\BibleSuperSearch\Models;
 
 use Illuminate\Database\Eloquent\Model;
 
@@ -45,7 +45,7 @@ class Language extends Model {
             'name', 'iso_name', 'code', 'native_name', 'rtl', 'family', 'iso_639_1', 'iso_639_2', 'iso_639_2_b', 'iso_639_3_raw', 'notes'
         ];
 
-        \App\Importers\Database::importCSV('languages.csv', $map, '\\' . get_called_class(), 'code');
+        \aicwebtech\BibleSuperSearch\Importers\Database::importCSV('languages.csv', $map, '\\' . get_called_class(), 'code');
     }
 
     public static function isRtl($lang) {

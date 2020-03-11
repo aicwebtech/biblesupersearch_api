@@ -4,9 +4,9 @@ use Illuminate\Foundation\Testing\WithoutMiddleware;
 use Illuminate\Foundation\Testing\DatabaseMigrations;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 
-use App\Models\Bible;
-use App\Passage;
-use App\Search;
+use aicwebtech\BibleSuperSearch\Models\Bible;
+use aicwebtech\BibleSuperSearch\Passage;
+use aicwebtech\BibleSuperSearch\Search;
 
 class VersesTest extends TestCase
 {
@@ -20,7 +20,7 @@ class VersesTest extends TestCase
         //$Verses = $Verses_Collection->all();
 
         $this->assertCount(10, $Verses);
-        //$this->assertContainsOnlyInstancesOf('App\Models\Verses\Kjv', $Verses);
+        //$this->assertContainsOnlyInstancesOf('aicwebtech\BibleSuperSearch\Models\Verses\Kjv', $Verses);
 
         $this->assertEquals(45, $Verses[0]->book);
         $this->assertEquals(1, $Verses[0]->chapter);
@@ -161,7 +161,7 @@ class VersesTest extends TestCase
             $Verses = $Bible->verses();
             $verses_class_static = Bible::getVerseClassNameByModule($Bible->module);
             $verses_class = $Bible->getVerseClassName();
-            $this->assertInstanceOf('App\Models\Bible', $Bible);
+            $this->assertInstanceOf('aicwebtech\BibleSuperSearch\Models\Bible', $Bible);
             $this->assertEquals($verses_class_static, $verses_class, 'Static and dynamic verses classes do not match.');
 
             // Grab a few verses from the database

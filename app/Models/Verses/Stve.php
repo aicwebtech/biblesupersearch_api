@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Models\Verses;
+namespace aicwebtech\BibleSuperSearch\Models\Verses;
 
 use Illuminate\Database\Eloquent\Model;
 

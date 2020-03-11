@@ -1,12 +1,12 @@
 <?php
 
-namespace App\Http\Controllers;
+namespace aicwebtech\BibleSuperSearch\Http\Controllers;
 
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
-use App\Http\Requests;
-use App\Http\Controllers\Controller;
-use App\Engine;
+use aicwebtech\BibleSuperSearch\Http\Requests;
+use aicwebtech\BibleSuperSearch\Http\Controllers\Controller;
+use aicwebtech\BibleSuperSearch\Engine;
 
 class ApiController extends Controller {
 

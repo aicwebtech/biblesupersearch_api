@@ -1,10 +1,10 @@
 <?php
 
-namespace App\Http\Controllers\Admin;
+namespace aicwebtech\BibleSuperSearch\Http\Controllers\Admin;
 
 use Illuminate\Http\Request;
-use App\Http\Controllers\Controller;
-use App\Models\Post;
+use aicwebtech\BibleSuperSearch\Http\Controllers\Controller;
+use aicwebtech\BibleSuperSearch\Models\Post;
 
 class PostConfigController extends Controller
 {

@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Jobs;
+namespace aicwebtech\BibleSuperSearch\Jobs;
 
 use Illuminate\Bus\Queueable;
 use Illuminate\Queue\SerializesModels;
@@ -8,7 +8,7 @@ use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
 
-use App\RenderManager;
+use aicwebtech\BibleSuperSearch\RenderManager;
 
 class ProcessRender implements ShouldQueue
 {

@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Events;
+namespace aicwebtech\BibleSuperSearch\Events;
 
 abstract class Event
 {

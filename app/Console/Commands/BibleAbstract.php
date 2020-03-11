@@ -1,9 +1,9 @@
 <?php
 
-namespace App\Console\Commands;
+namespace aicwebtech\BibleSuperSearch\Console\Commands;
 
 use Illuminate\Console\Command;
-use App\Models\Bible;
+use aicwebtech\BibleSuperSearch\Models\Bible;
 
 abstract class BibleAbstract extends Command {
     protected $signature   = '';

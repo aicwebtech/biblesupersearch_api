@@ -1,7 +1,7 @@
 <?php
 
 use Illuminate\Database\Seeder;
-use App\Models\Bible;
+use aicwebtech\BibleSuperSearch\Models\Bible;
 
 class Bibles extends Seeder
 {

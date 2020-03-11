@@ -1,15 +1,15 @@
 <?php
 
-namespace App\Models;
+namespace aicwebtech\BibleSuperSearch\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Validation\Rule;
-use App\Models\Verses\VerseStandard As StandardVerses;
-use App\Passage;
-use App\Search;
+use aicwebtech\BibleSuperSearch\Models\Verses\VerseStandard As StandardVerses;
+use aicwebtech\BibleSuperSearch\Passage;
+use aicwebtech\BibleSuperSearch\Search;
 use Illuminate\Support\Arr;
 use ZipArchive;
-use App\Traits\Error;
+use aicwebtech\BibleSuperSearch\Traits\Error;
 
 class Bible extends Model {
     use Error;
@@ -96,7 +96,7 @@ class Bible extends Model {
     }
 
     public function language() {
-        return $this->hasOne('App\Models\Language', 'code', 'lang_short');
+        return $this->hasOne('aicwebtech\BibleSuperSearch\Models\Language', 'code', 'lang_short');
     }
 
     /**
@@ -278,7 +278,7 @@ class Bible extends Model {
     }
 
     public function copyrightInfo() {
-        return $this->hasOne('App\Models\Copyright', 'id', 'copyright_id');
+        return $this->hasOne('aicwebtech\BibleSuperSearch\Models\Copyright', 'id', 'copyright_id');
     }
 
     public function updateMetaInfo($create_if_needed = FALSE) {

@@ -1,6 +1,6 @@
 <?php
 
-namespace App;
+namespace aicwebtech\BibleSuperSearch;
 
 class Helpers {
 
@@ -27,7 +27,7 @@ class Helpers {
         ];
 
         foreach($classes as $basename) {
-            $class_name = 'App\Premium\\' . $basename;
+            $class_name = 'aicwebtech\BibleSuperSearch\Premium\\' . $basename;
 
             if(!class_exists($class_name)) {
                 return FALSE;
@@ -56,7 +56,7 @@ class Helpers {
     }
 
     public static function transformClassName($class_name) {
-        return config('app.premium') ? str_replace("App\\", "App\Premium\\", $class_name) : $class_name;
+        return config('app.premium') ? str_replace("aicwebtech\BibleSuperSearch\\", "aicwebtech\BibleSuperSearch\Premium\\", $class_name) : $class_name;
     }
 
 }

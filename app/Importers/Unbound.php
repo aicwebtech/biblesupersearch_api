@@ -6,8 +6,8 @@
  * and open the template in the editor.
  */
 
-namespace App\Importers;
-use App\Models\Bible;
+namespace aicwebtech\BibleSuperSearch\Importers;
+use aicwebtech\BibleSuperSearch\Models\Bible;
 use ZipArchive;
 use \DB; //Todo - something is wrong with namespaces here, shouldn't this be automatically avaliable??
 

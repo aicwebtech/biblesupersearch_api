@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Traits;
+namespace aicwebtech\BibleSuperSearch\Traits;
 
 /**
  * Trait for common input handling

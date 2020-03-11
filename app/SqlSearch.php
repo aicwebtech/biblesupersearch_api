@@ -1,6 +1,6 @@
 <?php
 
-namespace App;
+namespace aicwebtech\BibleSuperSearch;
 
 /**
  * Class for searching SQL database given a string of keywords
@@ -91,10 +91,10 @@ class SqlSearch {
     }
 
     /**
-     * Create a new App\Search instance or returns FALSE if no search provided
+     * Create a new aicwebtech\BibleSuperSearch\Search instance or returns FALSE if no search provided
      * @param string $search
      * @param array $options
-     * @return App\Search|boolean
+     * @return aicwebtech\BibleSuperSearch\Search|boolean
      */
     static public function parseSearch($search = NULL, $options = array()) {
         if (empty($search)) {

@@ -3,7 +3,7 @@
 //namespace Tests\Feature\integration\querying;
 
 //use Tests\TestCase;
-use App\Engine;
+use aicwebtech\BibleSuperSearch\Engine;
 use Illuminate\Foundation\Testing\WithoutMiddleware;
 use Illuminate\Foundation\Testing\DatabaseMigrations;
 use Illuminate\Foundation\Testing\DatabaseTransactions;

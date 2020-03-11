@@ -1,9 +1,9 @@
 <?php
 
-namespace App\Http\Middleware;
+namespace aicwebtech\BibleSuperSearch\Http\Middleware;
 
 use Closure;
-use App\Models\IpAccess;
+use aicwebtech\BibleSuperSearch\Models\IpAccess;
 use Illuminate\Http\Response;
 
 /*

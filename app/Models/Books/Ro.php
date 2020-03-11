@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Models\Books;
+namespace aicwebtech\BibleSuperSearch\Models\Books;
 
 use Illuminate\Database\Eloquent\Model;
 

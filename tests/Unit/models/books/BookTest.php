@@ -3,7 +3,7 @@
 use Illuminate\Foundation\Testing\WithoutMiddleware;
 use Illuminate\Foundation\Testing\DatabaseMigrations;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
-use App\Models\Books\BookAbstract As Book;
+use aicwebtech\BibleSuperSearch\Models\Books\BookAbstract As Book;
 
 class BookTest extends TestCase
 {
@@ -12,19 +12,19 @@ class BookTest extends TestCase
 
         foreach($queries as $q) {
             $Book = Book::findByEnteredName($q);
-            $this->assertInstanceOf('App\Models\Books\En', $Book);
+            $this->assertInstanceOf('aicwebtech\BibleSuperSearch\Models\Books\En', $Book);
         }
     }
 
     public function testBookFindClassName() {
         $Book = Book::findByEnteredName('Rom', 'en'); // Specified language
-        $this->assertInstanceOf('App\Models\Books\En', $Book);
+        $this->assertInstanceOf('aicwebtech\BibleSuperSearch\Models\Books\En', $Book);
         $Book = Book::findByEnteredName('Rom');       // Default language
-        $this->assertInstanceOf('App\Models\Books\En', $Book);
+        $this->assertInstanceOf('aicwebtech\BibleSuperSearch\Models\Books\En', $Book);
 
         $es_class = Book::getClassNameByLanguage('es');
         $Book = $es_class::findByEnteredName('Rom'); // Language based on class // Romanos (Romans in Spanish)
-        $this->assertInstanceOf('App\Models\Books\Es', $Book);
+        $this->assertInstanceOf('aicwebtech\BibleSuperSearch\Models\Books\Es', $Book);
     }
 
     public function testMethodFindByEnteredName() {
@@ -72,7 +72,7 @@ class BookTest extends TestCase
     }
 
     public function testModelQuery() {
-        $class = 'App\Models\Books\En';
+        $class = 'aicwebtech\BibleSuperSearch\Models\Books\En';
         // Get multiple models
         $multiple = [1,2,3,4,5]; // Genesis, Exodus, Leviticus, Numbers, Deuteronomy
         $alpha = [5,2,1,3,4];    // Aphabetical: Deuteronomy, Exodus, Genesis, Leviticus, Numbers

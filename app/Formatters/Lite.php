@@ -6,7 +6,7 @@
  * and open the template in the editor.
  */
 
-namespace App\Formatters;
+namespace aicwebtech\BibleSuperSearch\Formatters;
 
 /**
  * Lite passage format

@@ -1,9 +1,9 @@
 <?php
 
-namespace App\Console\Commands;
+namespace aicwebtech\BibleSuperSearch\Console\Commands;
 
 use Illuminate\Console\Command;
-use App\Models\StrongsDefinition as Def;
+use aicwebtech\BibleSuperSearch\Models\StrongsDefinition as Def;
 use \DB;
 
 class TempMigrateStrongs extends Command

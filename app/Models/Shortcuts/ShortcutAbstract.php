@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Models\Shortcuts;
+namespace aicwebtech\BibleSuperSearch\Models\Shortcuts;
 
 use Illuminate\Database\Eloquent\Model;
 

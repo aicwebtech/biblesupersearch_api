@@ -212,10 +212,10 @@ return [
         /*
          * Application Service Providers...
          */
-        App\Providers\AppServiceProvider::class,
-        App\Providers\AuthServiceProvider::class,
-        App\Providers\EventServiceProvider::class,
-        App\Providers\RouteServiceProvider::class,
+        aicwebtech\BibleSuperSearch\Providers\AppServiceProvider::class,
+        aicwebtech\BibleSuperSearch\Providers\AuthServiceProvider::class,
+        aicwebtech\BibleSuperSearch\Providers\EventServiceProvider::class,
+        aicwebtech\BibleSuperSearch\Providers\RouteServiceProvider::class,
 
     ],
 

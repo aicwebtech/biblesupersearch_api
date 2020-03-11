@@ -3,14 +3,14 @@
 use Illuminate\Foundation\Testing\WithoutMiddleware;
 use Illuminate\Foundation\Testing\DatabaseMigrations;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
-use App\Engine;
-use App\Models\Bible;
+use aicwebtech\BibleSuperSearch\Engine;
+use aicwebtech\BibleSuperSearch\Models\Bible;
 
 class EngineTest extends TestCase
 {
     public function testInstance() {
         $engine = new Engine();
-        $this->assertInstanceOf('App\Engine', $engine);
+        $this->assertInstanceOf('aicwebtech\BibleSuperSearch\Engine', $engine);
     }
 
     /**
@@ -20,7 +20,7 @@ class EngineTest extends TestCase
         $engine = new Engine();
         $Bibles = $engine->getBibles();
         $this->assertCount(1, $Bibles);
-        $this->assertContainsOnlyInstancesOf('App\Models\Bible', $Bibles);
+        $this->assertContainsOnlyInstancesOf('aicwebtech\BibleSuperSearch\Models\Bible', $Bibles);
     }
 
     public function testMethodAddBible() {
@@ -28,7 +28,7 @@ class EngineTest extends TestCase
         $engine->addBible('kjv');
         $this->assertFalse($engine->hasErrors());
         $Bibles = $engine->getBibles();
-        $this->assertInstanceOf('App\Models\Bible', $Bibles['kjv']);
+        $this->assertInstanceOf('aicwebtech\BibleSuperSearch\Models\Bible', $Bibles['kjv']);
     }
 
     public function testMethodSetBibles() {
@@ -179,7 +179,7 @@ class EngineTest extends TestCase
 
     public function testSingleton() {
         $Engine = Engine::getInstance();
-        $this->assertInstanceOf('App\Engine', $Engine);
+        $this->assertInstanceOf('aicwebtech\BibleSuperSearch\Engine', $Engine);
 
         $Engine->setDefaultDataType('raw');
         $Engine->setDefaultPageAll(TRUE);

@@ -1,11 +1,11 @@
 <?php
 
-namespace App\Http\Middleware;
+namespace aicwebtech\BibleSuperSearch\Http\Middleware;
 
 use Closure;
 use Artisan;
 
-use \App\ConfigManager;
+use \aicwebtech\BibleSuperSearch\ConfigManager;
 
 class CheckMigration {
 
@@ -20,7 +20,7 @@ class CheckMigration {
         $using_cache = config('app.config_cache');
         // todo this needs to check for any update then perform any needed tasks
 
-        $cur_version  = \App\Engine::getHardcodedVersion();
+        $cur_version  = \aicwebtech\BibleSuperSearch\Engine::getHardcodedVersion();
         $prev_version = config('app.version_cache');
 
         if($cur_version != $prev_version) {
@@ -45,7 +45,7 @@ class CheckMigration {
 
         if($using_cache) {
             $soft_version = config('app.version');
-            $hard_version = \App\Engine::getHardcodedVersion();
+            $hard_version = \aicwebtech\BibleSuperSearch\Engine::getHardcodedVersion();
 
             if($soft_version != $hard_version) {
                 Artisan::call('view:clear'); // Force cached view templates to clear out because HTML may have changed

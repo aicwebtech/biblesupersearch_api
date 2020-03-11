@@ -2,7 +2,7 @@
 
 use Illuminate\Database\Seeder;
 use Illuminate\Database\Eloquent\Model;
-use App\User;
+use aicwebtech\BibleSuperSearch\User;
 
 /**
  * UserTableSeeder

@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Renderers;
+namespace aicwebtech\BibleSuperSearch\Renderers;
 
 class PlainText extends RenderAbstract {
     static public $name = 'Plain Text';

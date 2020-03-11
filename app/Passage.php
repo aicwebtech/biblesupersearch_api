@@ -1,9 +1,9 @@
 <?php
 
-namespace App;
+namespace aicwebtech\BibleSuperSearch;
 
-use App\Models\Books\BookAbstract as Book;
-use App\Models\Shortcuts\ShortcutAbstract as Shortcut;
+use aicwebtech\BibleSuperSearch\Models\Books\BookAbstract as Book;
+use aicwebtech\BibleSuperSearch\Models\Shortcuts\ShortcutAbstract as Shortcut;
 
 /**
  * Class for parsing and handling of Bible passage references
@@ -1026,7 +1026,7 @@ class Passage {
      * Parses out the string for a single passage reference
      * @param string $book - string reppresenting the book of the passage reference
      * @param string $chapter_verse - string representing the chapter and verse references
-     * @return \App\Passage
+     * @return \aicwebtech\BibleSuperSearch\Passage
      */
     public static function parseSingleReference($book, $chapter_verse, $languages = array(), $is_search = FALSE, $Bibles = array(), $parameters = array()) {
         $Passage = new static;
@@ -1044,7 +1044,7 @@ class Passage {
      * Creates a single-verse passage from a verse
      *
      * @param type $verse
-     * @return \App\Passage
+     * @return \aicwebtech\BibleSuperSearch\Passage
      */
     public static function createFromVerse($verse, $languages = array(), $is_search = FALSE) {
         $Passage = new static;

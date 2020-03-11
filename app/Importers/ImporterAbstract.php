@@ -1,8 +1,8 @@
 <?php
 
-namespace App\Importers;
+namespace aicwebtech\BibleSuperSearch\Importers;
 
-use App\Models\Bible;
+use aicwebtech\BibleSuperSearch\Models\Bible;
 use PhpSpec\Exception\Exception;
 use \DB;
 
@@ -18,7 +18,7 @@ use \DB;
  *  «,» - Chapter titles in Psalms
  */
 abstract class ImporterAbstract {
-    use \App\Traits\Error;
+    use \aicwebtech\BibleSuperSearch\Traits\Error;
 
     protected $bible_attributes = array();
     protected $default_dir;

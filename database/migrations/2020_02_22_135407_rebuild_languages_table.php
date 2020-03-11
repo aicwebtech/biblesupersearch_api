@@ -3,7 +3,7 @@
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Database\Migrations\Migration;
-use App\Models\Language as Model;
+use aicwebtech\BibleSuperSearch\Models\Language as Model;
 
 class RebuildLanguagesTable extends Migration
 {

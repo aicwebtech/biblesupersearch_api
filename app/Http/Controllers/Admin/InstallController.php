@@ -1,10 +1,10 @@
 <?php
 
-namespace App\Http\Controllers\Admin;
+namespace aicwebtech\BibleSuperSearch\Http\Controllers\Admin;
 
 use Illuminate\Http\Request;
-use App\Http\Controllers\Controller;
-use App\InstallManager as Installer;
+use aicwebtech\BibleSuperSearch\Http\Controllers\Controller;
+use aicwebtech\BibleSuperSearch\InstallManager as Installer;
 use Validator;
 
 class InstallController extends Controller {

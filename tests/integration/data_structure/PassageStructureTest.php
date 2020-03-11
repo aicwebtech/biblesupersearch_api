@@ -4,9 +4,9 @@ use Illuminate\Foundation\Testing\WithoutMiddleware;
 use Illuminate\Foundation\Testing\DatabaseMigrations;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 
-use App\Engine;
-use App\Models\Verses\VerseStandard;
-use App\Models\Bible;
+use aicwebtech\BibleSuperSearch\Engine;
+use aicwebtech\BibleSuperSearch\Models\Verses\VerseStandard;
+use aicwebtech\BibleSuperSearch\Models\Bible;
 
 /**
  * Tests for the 'Passage' Structure type

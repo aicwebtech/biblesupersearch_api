@@ -1,7 +1,7 @@
 <?php
 
 use Illuminate\Database\Seeder;
-use App\Models\Books\BookAbstract as Book;
+use aicwebtech\BibleSuperSearch\Models\Books\BookAbstract as Book;
 
 class BookListSeeder extends Seeder
 {

@@ -1,11 +1,11 @@
 <?php
 
-namespace App\Http\Controllers;
+namespace aicwebtech\BibleSuperSearch\Http\Controllers;
 
 use Illuminate\Http\Request;
-use App\Engine;
-use App\Models\Post;
-use App\RenderManager;
+use aicwebtech\BibleSuperSearch\Engine;
+use aicwebtech\BibleSuperSearch\Models\Post;
+use aicwebtech\BibleSuperSearch\RenderManager;
 
 class DocumentationController extends Controller {
     public function __construct() {

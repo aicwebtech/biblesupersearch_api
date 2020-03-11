@@ -4,8 +4,8 @@ use Illuminate\Foundation\Testing\WithoutMiddleware;
 use Illuminate\Foundation\Testing\DatabaseMigrations;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 
-use App\Engine;
-use App\Models\Bible;
+use aicwebtech\BibleSuperSearch\Engine;
+use aicwebtech\BibleSuperSearch\Models\Bible;
 
 class ErrorTest extends TestCase {
     public function testNoQuery() {

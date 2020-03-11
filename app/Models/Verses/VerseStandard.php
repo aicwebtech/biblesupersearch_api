@@ -1,12 +1,12 @@
 <?php
 
-namespace App\Models\Verses;
+namespace aicwebtech\BibleSuperSearch\Models\Verses;
 
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
-use App\Models\Bible;
-use App\Passage;
-use App\Search;
+use aicwebtech\BibleSuperSearch\Models\Bible;
+use aicwebtech\BibleSuperSearch\Passage;
+use aicwebtech\BibleSuperSearch\Search;
 use DB;
 
 /**

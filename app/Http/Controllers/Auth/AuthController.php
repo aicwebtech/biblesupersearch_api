@@ -1,11 +1,11 @@
 <?php
 
-namespace App\Http\Controllers\Auth;
+namespace aicwebtech\BibleSuperSearch\Http\Controllers\Auth;
 
-use App\User;
+use aicwebtech\BibleSuperSearch\User;
 use Validator;
 use Auth;
-use App\Http\Controllers\Controller;
+use aicwebtech\BibleSuperSearch\Http\Controllers\Controller;
 use Illuminate\Foundation\Auth\ThrottlesLogins;
 use Illuminate\Foundation\Auth\AuthenticatesUsers;
 use Illuminate\Foundation\Auth\RegistersUsers;

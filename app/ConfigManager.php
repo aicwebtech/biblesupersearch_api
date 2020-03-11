@@ -1,9 +1,9 @@
 <?php
 
-namespace App;
+namespace aicwebtech\BibleSuperSearch;
 
-use App\Models\Config;
-use App\Models\ConfigValue;
+use aicwebtech\BibleSuperSearch\Models\Config;
+use aicwebtech\BibleSuperSearch\Models\ConfigValue;
 use Illuminate\Contracts\Auth\Guard;
 
 /**

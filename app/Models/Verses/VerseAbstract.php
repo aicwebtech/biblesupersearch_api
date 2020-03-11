@@ -1,9 +1,9 @@
 <?php
 
-namespace App\Models\Verses;
+namespace aicwebtech\BibleSuperSearch\Models\Verses;
 
 use Illuminate\Database\Eloquent\Model;
-use App\Models\Bible;
+use aicwebtech\BibleSuperSearch\Models\Bible;
 
 /**
  * Class VerseAbstract

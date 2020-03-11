@@ -4,7 +4,7 @@ use Illuminate\Foundation\Testing\WithoutMiddleware;
 use Illuminate\Foundation\Testing\DatabaseMigrations;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 //use Faker\Generator;
-use App\Models\IpAccess;
+use aicwebtech\BibleSuperSearch\Models\IpAccess;
 
 class IpAccessTest extends TestCase {
     protected $default_limit;
