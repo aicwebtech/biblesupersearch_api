@@ -5,6 +5,7 @@ namespace App\Importers;
 use App\Models\Bible;
 use PhpSpec\Exception\Exception;
 use \DB;
+use Illuminate\Http\UploadedFile;
 
 /**
  * Abstract class for importing Bible text from third party sources
@@ -28,6 +29,8 @@ abstract class ImporterAbstract {
     protected $save_bible = TRUE;
     protected $_existing = FALSE;
     protected $_table = NULL;
+    protected $path_short = 'misc';  // Path (inside /bibles) to where import files are located
+    protected $file_extensions = []; // White list of allowable file extensions
 
     protected $required = ['module', 'lang_short']; // Array of required fields (for specific importer type);
 
@@ -53,7 +56,11 @@ abstract class ImporterAbstract {
 
     abstract public function import();
 
-    abstract public function checkUploadedFile($file_name, $file_tmp_name);
+    abstract public function checkUploadedFile(UploadedFile $File);
+
+    public function getImportDir() {
+        return dirname(__FILE__) . '/../../bibles/' . $this->path_short . '/';
+    }
 
     public function acceptUploadedFile($file_name, $file_tmp_name) {
         $file_name = basename($file_name);
@@ -150,7 +157,6 @@ abstract class ImporterAbstract {
             return $text;
         }
 
-//        var_dump($text);
         $find = [$this->strongs_st, $this->strongs_en];
         $rep  = ['{', '}'];
         $text = $this->_replaceTagsIfNeeded($find, $rep, $text);
@@ -160,10 +166,6 @@ abstract class ImporterAbstract {
 
         $text = preg_replace_callback('/\{[^\}]+\}/', function($matches) use ($subpattern, $parentheses, $text) {
             $st_numbers = [];
-
-            //var_dump($text);
-            //var_dump($matches);
-            //die();
 
             preg_match_all($subpattern, $matches[0], $submatches);
 
@@ -180,8 +182,6 @@ abstract class ImporterAbstract {
             return (count($st_numbers)) ? implode(' ', $st_numbers) : $matches[0];
         }, $text);
 
-//        var_dump($text);
-//        die();
         return $text;
     }
 

@@ -11,6 +11,7 @@ use App\Models\Bible;
 use ZipArchive;
 use SQLite3;
 use \DB; //Todo - something is wrong with namespaces here, shouldn't this be automatically avaliable??
+use Illuminate\Http\UploadedFile;
 
 /**
  * Imports Bibles in the eveningdew format
@@ -30,12 +31,15 @@ class Evening extends ImporterAbstract {
     protected $strongs_st   = '{';
     protected $strongs_en   = '}';
     protected $paragraph    = NULL;
+    protected $path_short   = 'evening';
+    protected $file_extensions = ['.dat'];
 
     public function import() {
         ini_set("memory_limit", "50M");
 
         // Script settings
-        $dir    = dirname(__FILE__) . '/../../bibles/evening/'; // directory of Bible files
+        // $dir    = dirname(__FILE__) . '/../../bibles/evening/'; // directory of Bible files
+        $dir = $this->getImportDir();
         $file   = $this->file;   // File name, minus extension
         $module = $this->module; // Module and db name
 
@@ -130,6 +134,7 @@ class Evening extends ImporterAbstract {
             }
 
             $this->_insertVerses();
+            return TRUE;
         }
     }
 

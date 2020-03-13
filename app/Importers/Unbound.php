@@ -10,6 +10,7 @@ namespace App\Importers;
 use App\Models\Bible;
 use ZipArchive;
 use \DB; //Todo - something is wrong with namespaces here, shouldn't this be automatically avaliable??
+use Illuminate\Http\UploadedFile;
 
 /**
  * Imports Bibles in the Unbound Bible format
@@ -43,12 +44,15 @@ class Unbound extends ImporterAbstract {
     protected $strongs_st   = NULL;
     protected $strongs_en   = NULL;
     protected $paragraph    = '¶ ';
+    protected $path_short   = 'unbound';
+    protected $file_extensions = ['.bib'];
 
     public function import() {
         ini_set("memory_limit", "50M");
 
         // Script settings
-        $dir  = dirname(__FILE__) . '/../../bibles/unbound/'; // directory of Bible files
+        // $dir  = dirname(__FILE__) . '/../../bibles/unbound/'; // directory of Bible files
+        $dir = $this->getImportDir();
         $file   = $this->file;   // File name, minus extension
         $module = $this->module; // Module and db name
 
@@ -178,6 +182,7 @@ class Unbound extends ImporterAbstract {
 
             $this->_insertVerses();
             $Bible->enable();
+            return TRUE;
         }
     }
 }

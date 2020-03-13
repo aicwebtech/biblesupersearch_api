@@ -11,6 +11,7 @@ use App\Models\Bible;
 use ZipArchive;
 use SQLite3;
 use \DB; //Todo - something is wrong with namespaces here, shouldn't this be automatically avaliable??
+use Illuminate\Http\UploadedFile;
 
 /**
  * Imports Bibles in the Bible Analyzer .bib (SQLite) format
@@ -33,12 +34,14 @@ class Analyzer extends ImporterAbstract {
     protected $strongs_en   = ']';
     protected $paragraph    = '¶ ';
     protected $unused_tags  = ['fn'];
+    protected $path_short   = 'analyzer';
 
     public function import() {
         ini_set("memory_limit", "50M");
 
         // Script settings
-        $dir  = dirname(__FILE__) . '/../../bibles/analyzer/'; // directory of Bible files
+        // $dir  = dirname(__FILE__) . '/../../bibles/analyzer/'; // directory of Bible files
+        $dir = $this->getImportDir();
         $file   = $this->file;   // File name, minus extension
         $module = $this->module; // Module and db name
 
@@ -134,6 +137,7 @@ class Analyzer extends ImporterAbstract {
 
         $this->_insertVerses();
         $Bible->enable();
+        return TRUE;
     }
 
     protected function _formatText($text) {
@@ -147,7 +151,47 @@ class Analyzer extends ImporterAbstract {
         return $text;
     }
 
-    public function checkUploadedFile($file_name, $file_tmp_name) {
-        
+    public function checkUploadedFile(UploadedFile $File) {
+        // $path = $file_tmp_name ?: $file_name;
+        $path = $File->getPathname();
+
+        try {
+            $SQLITE = new SQLite3($path);
+            $res_desc = $SQLITE->query('SELECT * FROM title');
+            $info = $res_desc->fetchArray(SQLITE3_ASSOC);
+            $desc = $info['info'];
+
+            $res_bib = $SQLITE->query('SELECT * FROM bible ORDER BY id ASC LIMIT 10');
+            $verse_found = FALSE;
+            $book = 0;
+            $last_book_name = NULL;
+
+            while($row = $res_bib->fetchArray(SQLITE3_ASSOC)) {
+                $ref_arr = explode(' ', $row['ref']);
+
+                if($ref_arr[0] != $last_book_name) {
+                    $book ++;
+                    $last_book_name = $ref_arr[0];
+                }
+
+                list($chapter, $verse) = explode(':', $ref_arr[1]);
+
+                $chapter = intval($chapter);
+                $verse   = intval($verse);
+                $text    = trim($row['verse']);
+
+                if(!$book || !$chapter || !$verse || !$text) {
+                    continue;
+                }
+
+                $verse_found = TRUE;
+                break;
+            }
+        }
+        catch(\Exception $e) {
+            return $this->addError('Could not open Bible Analyzer file: ' . $e->getMessage());
+        }
+
+        return TRUE;
     }
 }
