@@ -158,7 +158,7 @@ enyo.kind({
                 return this.app._errorHandler(inSender, inResponse)
             }
 
-            this.close();
+            // this.close();
         });
 
         ajax.error(this, function(inSender, inResponse) {

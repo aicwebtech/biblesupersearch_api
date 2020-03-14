@@ -98,7 +98,7 @@ class Evening extends ImporterAbstract {
     }
 
     private function _installHelper($dir, $test, $sub) {
-        $bnum  = (($sub == "newTest")||($sub == "NewTest")) ? 39 : 0;
+        $bnum  = (($sub == "newTest") || ($sub == "NewTest")) ? 39 : 0;
         $debug = FALSE;
 
         foreach($test as $book) {
@@ -111,10 +111,10 @@ class Evening extends ImporterAbstract {
             $chap  = 0;
 
             foreach($file as $line) {
-                if(substr($line,0,7) == "Chapter"){
+                if(substr($line,0,7) == "Chapter") {
                     $chap += 1;
                 }
-                else{
+                else {
                     $sp = strpos($line, " ");
 
                     if ($sp !== FALSE){
@@ -126,9 +126,9 @@ class Evening extends ImporterAbstract {
                     }
                 }
 
-                $index++;
+                $index ++;
 
-                if(($debug) && ($index > $stop)){
+                if(($debug) && ($index > $stop)) {
                     break;
                 }
             }
@@ -138,4 +138,7 @@ class Evening extends ImporterAbstract {
         }
     }
 
+    public function checkUploadedFile(UploadedFile $File) {
+        return TRUE;
+    }
 }

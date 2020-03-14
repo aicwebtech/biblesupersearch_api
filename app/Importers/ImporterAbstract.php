@@ -6,6 +6,7 @@ use App\Models\Bible;
 use PhpSpec\Exception\Exception;
 use \DB;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Storage;
 
 /**
  * Abstract class for importing Bible text from third party sources
@@ -56,20 +57,46 @@ abstract class ImporterAbstract {
 
     abstract public function import();
 
+    /**
+     *   Checks the uploaded file to make sure it works with the specific importer.
+     *   Also, must parse any and all Bible metadata from the file and map them to Bible model attributes 
+     *   @param Illuminate\Http\UploadedFile $File - the file to import
+     *   @return bool $success
+     */
     abstract public function checkUploadedFile(UploadedFile $File);
 
     public function getImportDir() {
         return dirname(__FILE__) . '/../../bibles/' . $this->path_short . '/';
     }
 
-    public function acceptUploadedFile($file_name, $file_tmp_name) {
-        $file_name = basename($file_name);
-        $dest_path = $this->default_dir . '/' . $file_name;
-        return move_uploaded_file($file_tmp_name, $dest_path);
+    public function acceptUploadedFile(UploadedFile $File) {
+        if(!$this->checkUploadedFile($File)) {
+            return FALSE;
+        }
+
+        try {
+            $file_name = trim( $File->getClientOriginalName() );
+            $file_name = mb_ereg_replace("([^\w\s\d\-_~,;\[\]\(\).])", '', $file_name);
+            $file_name = mb_ereg_replace("([\.]{2,})", '', $file_name);
+            $dest_path = $this->getImportDir() . $file_name;
+
+            // if(!file_exists($dest_path)) {
+                $npath = $File->storeAs($this->path_short, $file_name, 'bibles');
+            // }
+        }
+        catch(\Exception $e) {
+            return $this->addError('Could not save import file: ' . $e->getMessage());
+        }
+
+        return TRUE;
     }
 
     public function setBibleAttributes($att) {
         $this->bible_attributes = $att;
+    }    
+
+    public function getBibleAttributes() {
+        return $this->bible_attributes;
     }
 
     public function setFile($file) {
@@ -250,5 +277,23 @@ abstract class ImporterAbstract {
         if(in_array($name, $gettable)) {
             return $this->$name;
         }
+    }
+
+    public static function generateUniqueModuleName($shortname) {
+        $module = trim( strtolower($shortname) );
+        $module = preg_replace("/\s+/", ' ', $module);
+        $module = str_replace(' ', '_', $module);
+        $Bible  = Bible::findByModule($module);
+
+        if(!$Bible) {
+            return $module;
+        }
+
+        for($i = 1; $Bible; $i++) {
+            $module_suggestion = $module . '_' . $i;
+            $Bible = Bible::findByModule($module_suggestion);
+        }
+
+        return $module_suggestion;
     }
 }

@@ -36,6 +36,9 @@ class Analyzer extends ImporterAbstract {
     protected $unused_tags  = ['fn'];
     protected $path_short   = 'analyzer';
 
+    // Where did you get this Bible?
+    protected $source = "This Bible imported from Bible Analyzer <a href='http://www.bibleanalyzer.com/download.htm'>http://www.bibleanalyzer.com/download.htm</a>";
+
     public function import() {
         ini_set("memory_limit", "50M");
 
@@ -45,8 +48,7 @@ class Analyzer extends ImporterAbstract {
         $file   = $this->file;   // File name, minus extension
         $module = $this->module; // Module and db name
 
-        // Where did you get this Bible?
-        $source = "This Bible imported from Bible Analyzer <a href='http://www.bibleanalyzer.com/download.htm'>http://www.bibleanalyzer.com/download.htm</a>";
+        $source = $this->source; 
 
         // Advanced options (Hardcoded for now)
         $testaments = 'both';
@@ -159,12 +161,22 @@ class Analyzer extends ImporterAbstract {
             $SQLITE = new SQLite3($path);
             $res_desc = $SQLITE->query('SELECT * FROM title');
             $info = $res_desc->fetchArray(SQLITE3_ASSOC);
-            $desc = $info['info'];
 
             $res_bib = $SQLITE->query('SELECT * FROM bible ORDER BY id ASC LIMIT 10');
             $verse_found = FALSE;
             $book = 0;
             $last_book_name = NULL;
+            $desc = iconv("UTF-8","UTF-8//IGNORE", $info['info']);
+
+            $name_parts = explode(',', $info['desc']);
+
+            $this->bible_attributes = [
+                'name'          => $info['desc'],
+                'shortname'     => $info['abbr'],
+                'module'        => static::generateUniqueModuleName($info['abbr']),
+                'description'   => $info['info'] . '<br /><br />' . $this->source,
+                'year'          => intval($name_parts[1]) ?: NULL,
+            ];
 
             while($row = $res_bib->fetchArray(SQLITE3_ASSOC)) {
                 $ref_arr = explode(' ', $row['ref']);

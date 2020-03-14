@@ -45,13 +45,12 @@ class Unbound extends ImporterAbstract {
     protected $strongs_en   = NULL;
     protected $paragraph    = '¶ ';
     protected $path_short   = 'unbound';
-    protected $file_extensions = ['.bib'];
+    protected $file_extensions = ['.zip'];
 
     public function import() {
         ini_set("memory_limit", "50M");
 
         // Script settings
-        // $dir  = dirname(__FILE__) . '/../../bibles/unbound/'; // directory of Bible files
         $dir = $this->getImportDir();
         $file   = $this->file;   // File name, minus extension
         $module = $this->module; // Module and db name
@@ -184,5 +183,11 @@ class Unbound extends ImporterAbstract {
             $Bible->enable();
             return TRUE;
         }
+    }
+
+    public function checkUploadedFile(UploadedFile $File) {
+        
+
+        return TRUE;
     }
 }

@@ -416,22 +416,13 @@ class BibleController extends Controller
     public function importCheck(Request $request) {
         $resp = new \stdClass();
         $resp->success = TRUE;
-        $resp->errors = [];
+        $resp->errors  = [];
 
         $Manager = Helpers::make('\App\ImportManager');
-        $data  = $request->all();
-
-        // var_dump($data);
-
-        // $file = $request->file('file');
-
-        // var_dump($file);
-
-        // die('wonky');
+        $data    = $request->all();
 
         if($Manager->checkImportFile($data)) {
-
-        }
+            $resp->bible = $Manager->parsed_attributes ?: [];
         else {
             $resp->success = FALSE;
             $resp->errors = $Manager->getErrors();

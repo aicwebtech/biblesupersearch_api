@@ -137,8 +137,7 @@ enyo.kind({
                 return this._errorHandler(inSender, inResponse)
             }
 
-            this.app.refreshGrid();
-            this.close();
+            // this.close();
         });
 
         ajax.error(this, function(inSender, inResponse) {
