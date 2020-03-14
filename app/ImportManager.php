@@ -3,11 +3,13 @@
 namespace App;
 
 use Illuminate\Http\Request;
+use App\Helpers;
 
 class ImportManager {
     use Traits\Error;
 
     protected static $type_map = [];
+    protected static $import_rules = [];
 
     public static function getImportersList() {
         $importers = [];
@@ -19,6 +21,18 @@ class ImportManager {
         }
 
         return $importers;
+    }
+
+    public static function getImportRules() {
+        $BibleClass = Helpers::find('\App\Models\Bible');
+
+        $rules = $BibleClass::getUpdateRules(NULL);
+
+        foreach(static::$import_rules as $key => $rule) {
+            $rules[$key] = $rule;
+        }
+
+        return $rules;
     }
 
     public function checkImportFile($data) {

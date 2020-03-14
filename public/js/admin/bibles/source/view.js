@@ -74,6 +74,14 @@ enyo.kind({
                     ontap: 'multiRevert',
                     action: 'revert',
                     actioning: 'Reverting'
+                },               
+                {
+                    tag: 'button',
+                    classes: 'button bulk',
+                    content: 'Delete',
+                    ontap: 'multiDelete',
+                    action: 'revert',
+                    actioning: 'Reverting'
                 },
                 {
                     tag: 'button',
@@ -262,6 +270,9 @@ enyo.kind({
     },    
     multiRevert: function(inSender, inEvent) {
         this._confirmMultiAction('revert', 'Reverting Changes to Bible Properties', 'revert changes to');
+    },    
+    multiDelete: function(inSender, inEvent) {
+        this._confirmMultiAction('delete', 'Deleting Bible(s)', 'delete');
     },
     multiInstall: function(inSender, inEvent) {
         this._processSelections();

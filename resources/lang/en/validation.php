@@ -106,8 +106,9 @@ return [
     */
 
     'attributes' => [
-        'shortname' => 'short name',
-        'copyright_id' => 'copyright',
+        'shortname'     => 'short name',
+        'copyright_id'  => 'copyright',
+        'lang_short'    => 'language',
     ],
 
 ];

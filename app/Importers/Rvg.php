@@ -67,7 +67,7 @@ class Rvg extends ImporterAbstract {
             return $this->addError('Doesnt have 31102 lines');
         }
 
-        if($insert_into_bible_table) {
+        if($this->insert_into_bible_table) {
             $attr = $this->bible_attributes;
 //            $attr['description'] = $desc . '<br /><br />' . $source;
             $Bible->fill($attr);

@@ -8,7 +8,7 @@ enyo.kind({
     copyrightData: {},
     $description: null,
     formPk: null, // binding use only
-    debugBindings: true,
+    debugBindings: false,
     copyrightConfirmed: false,
 
     components: [
@@ -280,13 +280,11 @@ enyo.kind({
             return value
         }},        
 
-
         // Copyright data bindings
         {from: 'copyrightData.copyright_statement_processed', to: '$.copyright_statement_default.content', oneWay: true, transform: function(value, dir) {
             this.debugBindings && this.log('copyright_statement_default', value, dir);
-            return value || null;
+            return value || '';
         }},
-
 
     ],
 

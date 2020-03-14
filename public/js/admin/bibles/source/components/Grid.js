@@ -3,7 +3,12 @@ enyo.kind({
 
     components: [
         {name: 'Grid', tag: 'table'},
-        {name: 'GridFooter'}
+        {name: 'GridFooter'},
+        {name: 'Legend', style: 'text-align: center; font-size: 0.8em', components: [
+            {tag: 'span', content: '* Bible is officially supported.'},
+            {tag: 'span', content: '&nbsp; &nbsp;', allowHtml: true},
+            {tag: 'span', content: '** Bible is marked as for research purposes only'}
+        ]}
     ],
 
     events: {
@@ -42,11 +47,11 @@ enyo.kind({
                     }, 
                     {name: 'lang', index: 'lang', label: 'Language', width:'100'},
                     {name: 'year', index: 'year', label: 'Year', width:'100'},
-                    {name: 'installed', index: 'installed', label: 'Installed', width:'80', title: false, formatter: enyo.bind(this, this._formatInstalled)},
-                    {name: 'enabled', index: 'enabled', label: 'Enabled', width:'80', title: false, formatter: enyo.bind(this, this._formatEnabled)},
-                    {name: 'official', index: 'official', label: 'Official', width:'60', title: false, formatter: enyo.bind(this, this._formatSinpleBoolean)},
-                    {name: 'research', index: 'research', title: 'for Research ONly', label: 'Research Only', width:'110', title: false, formatter: enyo.bind(this, this._formatResearch)},
-                    {name: 'rank', index: 'rank', label: 'Rank', width:'100'},
+                    {name: 'installed', index: 'installed', align: 'center', label: 'Installed', width:'80', title: false, formatter: enyo.bind(this, this._formatInstalled)},
+                    {name: 'enabled', index: 'enabled', align: 'center', label: 'Enabled', width:'80', title: false, formatter: enyo.bind(this, this._formatEnabled)},
+                    {name: 'official', index: 'official', align: 'center', label: 'Official *', width:'60', title: false, formatter: enyo.bind(this, this._formatSinpleBoolean)},
+                    {name: 'research', index: 'research', align: 'center', label: 'Research **', width:'80', title: false, formatter: enyo.bind(this, this._formatResearch)},
+                    {name: 'rank', index: 'rank', label: 'Sort Order', width:'100'},
                     {name: 'actions', index: 'actions', label: '&nbsp', width:'120', title: false, formatter: enyo.bind(this, this._formatActions)},
                     {name: 'id', index: 'id', hidden: true}
                 ],
@@ -186,6 +191,12 @@ enyo.kind({
     _formatActions: function(cellvalue, options, rowObject) {
         var props = {id: options.rowId};
         var html = '';
+
+        // if(rowObject.has_module_file == 0 && rowObject.official == 0) {
+        //     html += this.__makeSignalLink('Delete', 'onDelete', props);
+        //     html += ' &nbsp; ';
+        // }
+
         html += this.__makeSignalLink('View Description', 'onViewDescription', props);
         html += ' &nbsp; ';
         html += this.__makeSignalLink('Edit', 'onEdit', props);

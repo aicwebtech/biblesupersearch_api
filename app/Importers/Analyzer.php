@@ -24,7 +24,7 @@ use Illuminate\Http\UploadedFile;
  */
 
 class Analyzer extends ImporterAbstract {
-    protected $required = ['module', 'lang', 'lang_short']; // Array of required fields
+    // protected $required = ['module', 'lang', 'lang_short']; // Array of required fields
 
     protected $italics_st   = '<i>';
     protected $italics_en   = '</i>';
@@ -43,7 +43,6 @@ class Analyzer extends ImporterAbstract {
         ini_set("memory_limit", "50M");
 
         // Script settings
-        // $dir  = dirname(__FILE__) . '/../../bibles/analyzer/'; // directory of Bible files
         $dir = $this->getImportDir();
         $file   = $this->file;   // File name, minus extension
         $module = $this->module; // Module and db name
@@ -52,18 +51,15 @@ class Analyzer extends ImporterAbstract {
 
         // Advanced options (Hardcoded for now)
         $testaments = 'both';
-        $insert_into_bible_table    = TRUE; // Inserts (or updates) the record in the Bible versions table
-        $overwrite_existing         = $this->overwrite;
 
         $Bible    = $this->_getBible($module);
-        $existing = $this->_existing;
         $filepath = $dir . $file;
 
-        if(!$overwrite_existing && $existing) {
+        if(!$this->overwrite && $this->_existing && $this->insert_into_bible_table) {
             return $this->addError('Module already exists: \'' . $module . '\' Use --overwrite to overwrite it.', 4);
         }
 
-        if($existing) {
+        if($this->_existing) {
             $Bible->uninstall();
         }
 
@@ -77,7 +73,7 @@ class Analyzer extends ImporterAbstract {
         $info = $res_desc->fetchArray(SQLITE3_ASSOC);
         $desc = $info['info'];
 
-        if($insert_into_bible_table) {
+        if($this->insert_into_bible_table) {
             $attr = $this->bible_attributes;
             $attr['description'] = $desc . '<br /><br />' . $source;
 

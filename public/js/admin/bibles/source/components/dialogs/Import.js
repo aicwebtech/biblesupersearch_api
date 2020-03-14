@@ -5,6 +5,7 @@ enyo.kind({
     fileValidated: null,
     formData: {},
     importerData: {},
+    fileSanitized: null,
 
     components: [
         {tag: 'table', classes: 'import_form', _attributes: {border: 1}, components: [
@@ -27,13 +28,18 @@ enyo.kind({
             {tag: 'tr', components: [
                 {tag: 'td', classes: 'form_label right', content: 'File: '},
                 {tag: 'td', classes: 'form_label right', components: [
-                    {kind: 'enyo.Input', type: 'file', name: 'file'},
+                    {kind: 'enyo.Input', type: 'file', name: 'file', onChange: 'formChanged'},
                     {tag: 'span', classes: 'required', content: '*'}
                 ]},
             ]}
         ]},
 
-        {name: 'FormContainer', kind: 'enyo.ViewController'}
+        {name: 'ConfigContainer', components: [
+            {name: 'ConfigView', kind: 'enyo.ViewController'},
+        ]},
+        {name: 'EditContainer', showing: false, components: [
+            {name: 'EditView', kind: 'enyo.ViewController'}
+        ]}
     ],
 
     bindings: [
@@ -41,8 +47,22 @@ enyo.kind({
             this.log('type', value, dir);
             value = (value && value != '0') ? value : null;
             this._populateImportInfo(value);
+            
+            if(dir == 2) {
+                this.set('fileValidated', false);
+            }
+            
             return value;
         }},
+        {from: 'formData.file', to: '$.file.value', oneWay: true, transform: function(value, dir) {
+            this.log('file', value, dir);
+            
+            if(dir == 2) {
+                this.set('fileValidated', false);
+            }
+
+            return value || '';
+        }},          
         {from: 'importerData.desc', to: '$.ImportDesc.content', oneWay: true, transform: function(value, dir) {
             this.log('import desc', value, dir);
             return value || '';
@@ -64,7 +84,7 @@ enyo.kind({
         bootstrap.importers.forEach(function(item) {
             this.$.type.createComponent({
                 value: item.type,
-                content: item.name + ' (' + item.ext + ')'
+                content: item.name + ' (.' + item.ext.join(', .') + ')'
             });
         }, this);
     },
@@ -84,6 +104,8 @@ enyo.kind({
             ]
         };
 
+        this.$.EditView.set('view', null);
+
         if(is) {
             dialogOptions.buttons.unshift({
                 text: 'Import File',
@@ -92,6 +114,11 @@ enyo.kind({
             });
 
             var title = 'Bible Importer: Import File';
+            var cr = this.get('importerData');
+
+            if(BibleManager.Components.Forms.Import.Edit[cr.kind]) {
+                this.$.EditView.set('view', BibleManager.Components.Forms.Import.Edit[cr.kind]).render();
+            }
         }
         else {
             dialogOptions.buttons.unshift({
@@ -101,18 +128,20 @@ enyo.kind({
             });
             
             var title = 'Bible Importer: Select File';
+            this.set('fileSanitized', null);
         }
 
+        this.$.file.set('disabled', is);
+        this.$.type.setAttribute('disabled', is);
+
+        this.$.EditContainer.set('showing', is);
         this.setDialogOptions(dialogOptions);
         this.set('title', title);
     },
 
     validate: function() {
-        // this.set('fileValidated', true);
         var postData = enyo.clone(this.formData);
         var errors = [];
-
-        // this.log('files', this.$.file.hasNode().files);
 
         var file = this.$.file.hasNode().files[0];
 
@@ -131,16 +160,10 @@ enyo.kind({
 
         var formData = new FormData();
         // var formData = new enyo.FormData();
-        file && formData.append('file', file, file.name); // Rest of request works when file append is commented out!
-
-        // Possibly an issue with tmp dir on backend??
+        file && formData.append('file', file, file.name); 
 
         formData.append('importer', postData.type);
         formData.append('_token', laravelCsrfToken);
-
-        // for(var pair of formData.entries()) {
-        //    this.log(pair[0] , pair[1]); 
-        // }
 
         var ajax = new enyo.Ajax({
             url: '/admin/bibles/importcheck',
@@ -158,7 +181,10 @@ enyo.kind({
                 return this.app._errorHandler(inSender, inResponse)
             }
 
-            // this.close();
+            this.set('fileValidated', true);
+
+            this.$.EditView.get('view') && this.$.EditView.get('view').set('formData', inResponse.bible);
+            this.set('fileSanitized', inResponse.file);
         });
 
         ajax.error(this, function(inSender, inResponse) {
@@ -174,21 +200,26 @@ enyo.kind({
     },
 
     save: function() {
-        this.set('fileValidated', false);
-        var postData = enyo.clone(this.formData);
+        if(!this.$.EditView.get('view')) {
+            return;
+        }
+
+        var postData = enyo.clone( this.$.EditView.get('view').get('formData') );
         postData._token = laravelCsrfToken;
-
-        // this._saveHelper('import', postData);
-    },
-
-    _saveHelper: function(action, postData) {
+        postData._file = this.get('fileSanitized');
+        postData._importer = this.$.type.get('value');
 
         this.log(postData);
 
+        // return;
+        
+        this.app.set('ajaxLoading', true);
+
         var ajax = new enyo.Ajax({
-            url: '/admin/bibles/' + action,
+            url: '/admin/bibles/import',
             method: 'POST',
-            contentType: 'multipart/form-data',
+            // contentType: 'multipart/form-data',
+            headers: this.app.defaultAjaxHeaders,
             postBody: postData
         });
 
@@ -199,6 +230,7 @@ enyo.kind({
                 return this.app._errorHandler(inSender, inResponse)
             }
 
+            this.app.refreshGrid();
             this.close();
         });
 
@@ -249,12 +281,21 @@ enyo.kind({
         var cr = bootstrap.importers.find(element => element.type == type);
 
         this.log(cr);
+        this.$.ConfigView.set('view', null);
 
         if(cr) {
             this.set('importerData', enyo.clone(cr));
+            
+            if(BibleManager.Components.Forms.Import.Config[cr.kind]) {
+                this.$.ConfigView.set('view', BibleManager.Components.Forms.Import.Config[cr.kind]).render();
+            }
         }
         else {
             this.set('importerData', {desc: '(Please select an importer.)'});
         }
+    }, 
+    formChanged: function() {
+        this.log();
+        this.set('fileValidated', false);
     }
 });

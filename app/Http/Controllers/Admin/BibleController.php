@@ -163,11 +163,6 @@ class BibleController extends Controller
             $Bible = new Bible();
         }
 
-        if(config('app.premium')) {
-            $rules['description'] = 'nullable';
-            $rules['module'] = 'required';
-        }
-
         $rules = $BibleClass::getUpdateRules($id);
 
         $data = $request->only(array_keys($rules));
@@ -215,6 +210,28 @@ class BibleController extends Controller
         $resp = [
             'success' => TRUE,
         ];
+
+        return new Response($resp, 200);
+    }
+
+    public function delete(Request $request, $id) {
+        $Bible = Bible::findOrFail($id);
+        $resp = new \stdClass();
+        $resp->success = TRUE;
+        
+        if($Bible->hasModuleFile() || $Bible->official) {
+            $resp->success = FALSE;
+            $resp->errors = ['Cannot delete an official Bible or a Bible that has a module file'];
+            return new Response($resp, 401);
+        }
+
+        $Bible->uninstall();
+        $Bible->delete();
+
+        if($Bible->hasErrors()) {
+            $resp->success = FALSE;
+            $resp->errors  = $Bible->getErrors();
+        }
 
         return new Response($resp, 200);
     }
@@ -370,7 +387,7 @@ class BibleController extends Controller
         return new Response($resp, 200);
     }   
 
-     public function unresearch(Request $request, $id) {
+    public function unresearch(Request $request, $id) {
         $Bible  = Bible::findOrFail($id);
         $Bible->research = 0;
         $Bible->save();
@@ -423,6 +440,8 @@ class BibleController extends Controller
 
         if($Manager->checkImportFile($data)) {
             $resp->bible = $Manager->parsed_attributes ?: [];
+            $resp->file  = $Manager->sanitized_filename;
+        }
         else {
             $resp->success = FALSE;
             $resp->errors = $Manager->getErrors();
@@ -432,8 +451,31 @@ class BibleController extends Controller
     }
 
     public function import(Request $request) {
+        $resp = new \stdClass();
+        $resp->success = TRUE;
 
+        $ManagerClass   = Helpers::find('\App\ImportManager');
+        $Manager        = new $ManagerClass();
 
-        $Manager = Helpers::make('\App\ImportManager');
+        $rules = $ManagerClass::getImportRules();
+        $data  = $request->only(array_keys($rules));
+
+        $v = Validator::make($data, $rules);
+
+        if($v->fails()) {
+            $resp->success = FALSE;
+            $resp->errors = $v->errors();
+            return new Response($resp, 422);
+        }
+
+        if($Manager->importFile($data)) {
+            $resp->bible = $Manager->parsed_attributes ?: [];
+        }
+        else {
+            $resp->success = FALSE;
+            $resp->errors = $Manager->getErrors();
+        }
+
+        return new Response($resp, $Manager->getHttpStatus());
     }
 }

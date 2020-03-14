@@ -3,6 +3,7 @@
 namespace App\Importers;
 
 use App\Models\Bible;
+use App\Models\Language;
 use PhpSpec\Exception\Exception;
 use \DB;
 use Illuminate\Http\UploadedFile;
@@ -24,10 +25,11 @@ abstract class ImporterAbstract {
 
     protected $bible_attributes = array();
     protected $default_dir;
-    protected $file;
+    protected $file; // File name (no dir)
     protected $module;
     protected $overwrite = FALSE;
     protected $save_bible = TRUE;
+    protected $insert_into_bible_table = TRUE; // Whether to insert / update record in Bibles table
     protected $_existing = FALSE;
     protected $_table = NULL;
     protected $path_short = 'misc';  // Path (inside /bibles) to where import files are located
@@ -75,13 +77,11 @@ abstract class ImporterAbstract {
         }
 
         try {
-            $file_name = trim( $File->getClientOriginalName() );
-            $file_name = mb_ereg_replace("([^\w\s\d\-_~,;\[\]\(\).])", '', $file_name);
-            $file_name = mb_ereg_replace("([\.]{2,})", '', $file_name);
-            $dest_path = $this->getImportDir() . $file_name;
+            $this->file = static::sanitizeFileName( $File->getClientOriginalName() );
+            $dest_path = $this->getImportDir() . $this->file;
 
             // if(!file_exists($dest_path)) {
-                $npath = $File->storeAs($this->path_short, $file_name, 'bibles');
+                $npath = $File->storeAs($this->path_short, $this->file, 'bibles');
             // }
         }
         catch(\Exception $e) {
@@ -272,10 +272,23 @@ abstract class ImporterAbstract {
     }
 
     public function __get($name) {
-        $gettable = ['required'];
+        $gettable = ['required', 'save_bible', 'overwrite', 'module', 'file', 'insert_into_bible_table'];
 
         if(in_array($name, $gettable)) {
             return $this->$name;
+        }
+    }    
+
+    public function __set($name, $value) {
+        $bool = ['required', 'save_bible', 'overwrite', 'insert_into_bible_table'];
+        $str = ['module', 'file'];
+
+        if(in_array($name, $bool)) {
+            $this->$name = $value ? TRUE : FALSE;
+        }        
+
+        if(in_array($name, $str)) {
+            $this->$name = $value;
         }
     }
 
@@ -283,6 +296,7 @@ abstract class ImporterAbstract {
         $module = trim( strtolower($shortname) );
         $module = preg_replace("/\s+/", ' ', $module);
         $module = str_replace(' ', '_', $module);
+        $module = substr($module, 0, 250);
         $Bible  = Bible::findByModule($module);
 
         if(!$Bible) {
@@ -295,5 +309,30 @@ abstract class ImporterAbstract {
         }
 
         return $module_suggestion;
+    }
+
+    public static function sanitizeFileName($file_name) {
+        $file_name = trim($file_name);
+        $file_name = mb_ereg_replace("([^\w\s\d\-_~,;\[\]\(\).])", '', $file_name);
+        $file_name = mb_ereg_replace("([\.]{2,})", '', $file_name);
+        return $file_name;
+    }
+
+    public static function getLanguageCode($language) {
+        if(!$language) {
+            return NULL;
+        }
+
+        $match_attr = ['name', 'iso_name', 'native_name'];
+        $Lang = NULL;
+
+        while(!$Lang && $match_attr) {
+            $attr = array_shift($match_attr);
+            $Lang = Language::where($attr, $language)->first();
+        }
+
+        // var_dump($Lang->getAttributes());
+
+        return ($Lang) ? $Lang->code : NULL;
     }
 }
