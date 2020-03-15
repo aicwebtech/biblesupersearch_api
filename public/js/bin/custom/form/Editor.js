@@ -11,15 +11,15 @@ enyo.kind({
 
     editorToolbarGroups: [
         {
-          name: 'editing',
-          groups: ['basicstyles', 'links']
+            name: 'editing',
+            groups: ['basicstyles', 'links']
         },
         {
-          name: 'undo'
+            name: 'undo'
         },
         {
-          name: 'clipboard',
-          groups: ['selection', 'clipboard']
+            name: 'clipboard',
+            groups: ['selection', 'clipboard']
         }
     ],
 
@@ -29,7 +29,7 @@ enyo.kind({
 
     bindings: [
         {from: 'value', to: '$.Editor.value', oneWay: false, transform: function(value, dir) {
-            this.log('EDITOR', value, dir);
+            // this.log('EDITOR', value, dir);
             
             if(dir == 1 && this.ckeditor) {
                 this.ckeditor.setData(value); // feed it to the CKEDITOR
@@ -39,25 +39,9 @@ enyo.kind({
         }},
     ],
 
-    create: function() {
-        this.inherited(arguments);
-        this.log();
-        // this.render();
-    },
-
-    render: function() {
-        this.inherited(arguments);
-        this.log();
-        // this.rendered();
-    },
-
     rendered: function() {
         this.inherited(arguments);
-        this.log();
-
         var id = this.$.Editor.get('id');
-
-        this.log('EDITRENDER', id);
 
         // var element = document.getElementById(id);
         // element.setAttribute('contenteditable', true);

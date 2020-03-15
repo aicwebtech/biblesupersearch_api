@@ -63,6 +63,7 @@ class Bible extends Model {
         'rank',
         'official',
         'research',
+        'restict',
         'publisher',
         'hebrew_text_id',
         'greek_text_id',
@@ -77,7 +78,8 @@ class Bible extends Model {
     );
 
     protected $attributes = [
-        'copyright_id' => NULL,
+        'copyright_id'  => NULL,
+        'rank'          => 1000,
     ];
 
     // List of fields to NOT export when creating modules

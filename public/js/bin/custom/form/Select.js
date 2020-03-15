@@ -4,7 +4,7 @@ enyo.kind({
     autoSetSelectedByValue: true,
 
     valueChanged: function() {
-        this.inherited(arguments);
+        // this.inherited(arguments);
 
         if(this.autoSetSelectedByValue) {
             this.selectByValue();

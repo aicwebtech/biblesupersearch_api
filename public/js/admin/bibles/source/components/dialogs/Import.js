@@ -6,6 +6,7 @@ enyo.kind({
     formData: {},
     importerData: {},
     fileSanitized: null,
+    debugBindings: false,
 
     components: [
         {tag: 'table', classes: 'import_form', _attributes: {border: 1}, components: [
@@ -44,7 +45,7 @@ enyo.kind({
 
     bindings: [
         {from: 'formData.type', to: '$.type.value', oneWay: false, transform: function(value, dir) {
-            this.log('type', value, dir);
+            this.debugBindings && this.log('type', value, dir);
             value = (value && value != '0') ? value : null;
             this._populateImportInfo(value);
             
@@ -55,7 +56,7 @@ enyo.kind({
             return value;
         }},
         {from: 'formData.file', to: '$.file.value', oneWay: true, transform: function(value, dir) {
-            this.log('file', value, dir);
+            this.debugBindings && this.log('file', value, dir);
             
             if(dir == 2) {
                 this.set('fileValidated', false);
@@ -64,15 +65,15 @@ enyo.kind({
             return value || '';
         }},          
         {from: 'importerData.desc', to: '$.ImportDesc.content', oneWay: true, transform: function(value, dir) {
-            this.log('import desc', value, dir);
+            this.debugBindings && this.log('import desc', value, dir);
             return value || '';
         }},        
         {from: 'importerData.url', to: '$.ImportUrl.content', oneWay: true, transform: function(value, dir) {
-            this.log('import url content', value, dir);
+            this.debugBindings && this.log('import url content', value, dir);
             return value || '';
         }},        
         {from: 'importerData.url', to: '$.ImportUrl.href', oneWay: true, transform: function(value, dir) {
-            this.log('import url link', value, dir);
+            this.debugBindings && this.log('import url link', value, dir);
             return value || '';
         }}
     ],
@@ -142,15 +143,29 @@ enyo.kind({
     validate: function() {
         var postData = enyo.clone(this.formData);
         var errors = [];
-
         var file = this.$.file.hasNode().files[0];
+        var importer = this.get('importerData');
 
+        // Frontend validation
         if(!postData.type) {
             errors.push('Importer is required');
         }
 
         if(!file) {
             errors.push('File is required');
+        }
+        else {
+            var fnParts = file.name.split('.');
+                ext = fnParts.pop();
+
+            if(!importer.ext.includes(ext)) {
+                if(importer.ext.length == 1) {
+                    errors.push('Invalid file extension .' + ext + '; Extension must be one of the following: .' + importer.ext.join(', .'));
+                }
+                else {
+                    errors.push('Invalid file extension .' + ext + '; Extension must be: .' + importer.ext[0]);
+                }
+            }
         }
 
         if(errors.length > 0) {
@@ -161,6 +176,7 @@ enyo.kind({
         var formData = new FormData();
         // var formData = new enyo.FormData();
         file && formData.append('file', file, file.name); 
+
 
         formData.append('importer', postData.type);
         formData.append('_token', laravelCsrfToken);
@@ -279,8 +295,6 @@ enyo.kind({
     },
     _populateImportInfo: function(type) {
         var cr = bootstrap.importers.find(element => element.type == type);
-
-        this.log(cr);
         this.$.ConfigView.set('view', null);
 
         if(cr) {

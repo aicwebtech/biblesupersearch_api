@@ -149,6 +149,25 @@ class BibleController extends Controller
      */
     public function destroy($id) {
         $Bible = Bible::findOrFail($id);
+
+        $resp = new \stdClass();
+        $resp->success = TRUE;
+        
+        if($Bible->hasModuleFile() || $Bible->official) {
+            $resp->success = FALSE;
+            $resp->errors = ['Cannot delete an official Bible or a Bible that has a module file'];
+            return new Response($resp, 401);
+        }
+
+        $Bible->uninstall();
+        $Bible->delete();
+
+        // if($Bible->hasErrors()) {
+        //     $resp->success = FALSE;
+        //     $resp->errors  = $Bible->getErrors();
+        // }
+
+        return new Response($resp, 200);
     }
 
     protected function _save(Request $request, $id = NULL) {
@@ -210,28 +229,6 @@ class BibleController extends Controller
         $resp = [
             'success' => TRUE,
         ];
-
-        return new Response($resp, 200);
-    }
-
-    public function delete(Request $request, $id) {
-        $Bible = Bible::findOrFail($id);
-        $resp = new \stdClass();
-        $resp->success = TRUE;
-        
-        if($Bible->hasModuleFile() || $Bible->official) {
-            $resp->success = FALSE;
-            $resp->errors = ['Cannot delete an official Bible or a Bible that has a module file'];
-            return new Response($resp, 401);
-        }
-
-        $Bible->uninstall();
-        $Bible->delete();
-
-        if($Bible->hasErrors()) {
-            $resp->success = FALSE;
-            $resp->errors  = $Bible->getErrors();
-        }
 
         return new Response($resp, 200);
     }

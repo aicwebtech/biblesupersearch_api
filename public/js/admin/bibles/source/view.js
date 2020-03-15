@@ -401,7 +401,6 @@ enyo.kind({
         // this.$.Alert.alert('An unknown error has occurred');
     },
     tapImportBible: function(inSender, inResponse) {
-        this.log();
         this.$.Import.openLoad();
     }
 });

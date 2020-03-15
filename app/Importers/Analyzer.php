@@ -43,11 +43,9 @@ class Analyzer extends ImporterAbstract {
         ini_set("memory_limit", "50M");
 
         // Script settings
-        $dir = $this->getImportDir();
+        $dir    = $this->getImportDir();
         $file   = $this->file;   // File name, minus extension
         $module = $this->module; // Module and db name
-
-        $source = $this->source; 
 
         // Advanced options (Hardcoded for now)
         $testaments = 'both';
@@ -75,7 +73,7 @@ class Analyzer extends ImporterAbstract {
 
         if($this->insert_into_bible_table) {
             $attr = $this->bible_attributes;
-            $attr['description'] = $desc . '<br /><br />' . $source;
+            $attr['description'] = $desc . '<br /><br />' . $this->source;
 
             // These retentions should be removed once V2 tables fully imported
             $retain = ['lang', 'lang_short', 'shortname', 'name'];
@@ -129,7 +127,7 @@ class Analyzer extends ImporterAbstract {
             $i++;
 
             if($i > 100) {
-//                break;
+               // break;
             }
         }
 

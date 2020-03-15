@@ -19,7 +19,7 @@ enyo.kind({
 
     bindings: [
         {from: 'value', to: '$.Input.value', oneWay: false, transform: function(value, dir) {
-            this.log('UniqueText', value, dir);
+            // this.log('UniqueText', value, dir);
 
             if(dir == 1) {
                 this.set('valueCached', value);
@@ -29,56 +29,12 @@ enyo.kind({
         }},
     ],
 
-    create: function() {
-        this.inherited(arguments);
-        this.log();       
-        // this.render(); 
-    },
-
-    /*
-    render: function() {
-        this.inherited(arguments);
-        this.log();
-        this._rendered();
-    },
-
-    _rendered: function() {
-        this.inherited(arguments);
-        this.log();
-
-        if(this.hasNode()) {
-            this.log('creating focus');
-
-            $(this.hasNode()).focus(function() {
-                console.log('focused');
-            });
-        }
-        else {
-            this.log('NO DOM NODE!');
-        }
-    },
-
-    rendered: enyo.inherit(function (sup) {
-        return function() {
-            sup.apply(this, arguments);
-
-            this.log('rendered');
-
-            alert('rendered');
-        };
-    }),
-    */
-
     handleView: function(inSender, inEvent) {
-        this.log(inEvent);
         this.set('ignorePk', inEvent.pk);
     },
 
     handleChange: function(inSender, inEvent) {
-        this.log();
-
         var fieldName = this.get('fieldName') || this.get('name');
-
         // this.log(fieldName);
 
         var postData = {
@@ -119,11 +75,6 @@ enyo.kind({
         });
 
         ajax.go();
-    }, 
-
-    valueChanged: function(was, is) {
-        // this.inherited(arguments);
-        this.log(was, is);
     }
 });
 

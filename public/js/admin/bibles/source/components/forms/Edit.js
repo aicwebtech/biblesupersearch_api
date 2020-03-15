@@ -52,7 +52,7 @@ enyo.kind({
                 {tag: 'tr', components: [
                     {tag: 'td', classes: 'form_label right', content: 'Restrict: '},
                     {tag: 'td', classes: 'form_label right', components: [
-                        {kind: 'enyo.Checkbox', name: 'restrict'},
+                        {kind: 'enyo.Checkbox', name: 'restict'},
                     ]}, 
                     {tag: 'td', classes: 'sublabel', attributes: {colspan: 2}, components: [
                         {
@@ -199,12 +199,13 @@ enyo.kind({
         }},        
         {from: 'formData.description', to: '$.description.value', oneWay: false, transform: function(value, dir) {
             this.debugBindings && this.log('description', value, dir);
+            value = value || '';
             
             if(dir == 1 && this.$description) {
                 this.$description.setData(value); // feed it to the CKEDITOR
             }
             
-            return value || '';
+            return value;
         }},
         {from: 'formData.rank', to: '$.rank.value', oneWay: false, transform: function(value, dir) {
             this.debugBindings && this.log('rank', value, dir);
@@ -230,8 +231,8 @@ enyo.kind({
                 return value ? 1 : 0;
             }
         }},        
-        {from: 'formData.restrict', to: '$.restrict.checked', oneWay: false, transform: function(value, dir) {
-            this.debugBindings && this.log('restrict', value, dir);
+        {from: 'formData.restict', to: '$.restict.checked', oneWay: false, transform: function(value, dir) {
+            this.debugBindings && this.log('restict', value, dir);
 
             if(dir == 1) {
                 return (value) ? true : false;
@@ -250,7 +251,7 @@ enyo.kind({
                 this._confirmCopyright(value, oldValue);
             }
             else if(value == null) {
-                this.set('copyrightConfirmed', false);
+                this.set('copyrightConfirmed', true);
             }
 
             this._populateCopyrightInfo(value);
@@ -380,8 +381,6 @@ enyo.kind({
     _populateCopyrightInfo: function(copyrightId) {
         var cr = bootstrap.copyrights.find(element => element.id == copyrightId);
 
-        this.log(cr);
-
         if(cr) {
             this.set('copyrightData', enyo.clone(cr));
         }
@@ -390,10 +389,7 @@ enyo.kind({
         }
     },
     _confirmCopyright: function(copyrightId, oldCopyrightId) {
-        this.log(copyrightId, oldCopyrightId);
-        
         if(copyrightId == oldCopyrightId) {
-            this.log('same copyright, returning');
             return;
         }
 
@@ -401,7 +397,6 @@ enyo.kind({
         var old = oldCopyrightId;
 
         if(!cr) {
-            this.log('no copyright found, returning');
             return;
         }
 
@@ -410,7 +405,7 @@ enyo.kind({
 
         this.app.confirm(msg, enyo.bind(this, function(confirmed) {
             this.set('copyrightConfirmed', confirmed);
-            this.log('copyright confirmed', confirmed);
+            // this.log('copyright confirmed', confirmed);
 
             // if(!confirmed) {
             //     this.$.copyright_id.set('value', old);
