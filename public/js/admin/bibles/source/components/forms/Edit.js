@@ -300,7 +300,7 @@ enyo.kind({
         }, this);        
 
         bootstrap.languages.forEach(function(item) {
-            var displayName = item.name + ' (' + item.code.toUpperCase() + ')';
+            var displayName = item.name + ' - ' + item.native_name + ' (' + item.code.toUpperCase() + ')';
 
             this.$.lang_short.createComponent({
                 value: item.code,

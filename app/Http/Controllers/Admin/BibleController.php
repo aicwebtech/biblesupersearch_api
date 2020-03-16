@@ -286,6 +286,8 @@ class BibleController extends Controller
         $tests = [
             ['label' => 'First Verse', 'ref' => 'Genesis 1:1'],
             ['label' => 'Chapter', 'ref' => 'Psalm 23'],
+            ['label' => 'Last verse of OT', 'ref' => 'Malachi 4:6'],
+            ['label' => 'First verse of NT', 'ref' => 'Matthew 1:1'],
             ['label' => 'Book', 'ref' => '2 John'],
             ['label' => 'Last Verse', 'ref' => 'Revelation 22:21'],
         ];

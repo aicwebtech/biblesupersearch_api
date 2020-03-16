@@ -160,10 +160,10 @@ enyo.kind({
 
             if(!importer.ext.includes(ext)) {
                 if(importer.ext.length == 1) {
-                    errors.push('Invalid file extension .' + ext + '; Extension must be one of the following: .' + importer.ext.join(', .'));
+                    errors.push('Invalid file extension .' + ext + '; File must have .' + importer.ext[0] + ' extension');
                 }
                 else {
-                    errors.push('Invalid file extension .' + ext + '; Extension must be: .' + importer.ext[0]);
+                    errors.push('Invalid file extension .' + ext + '; Extension must be one of the following: .' + importer.ext.join(', .'));
                 }
             }
         }
