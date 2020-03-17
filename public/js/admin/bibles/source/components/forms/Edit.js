@@ -37,7 +37,7 @@ enyo.kind({
                         {name: 'ModuleDisabled', tag: 'span', classes: '', content: ' (Module cannot be changed once the module file exists)'}
                     ]}
                 ]},
-                {tag: 'tr', components: [
+                {tag: 'tr', name: 'EnabledContainer', components: [
                     {tag: 'td', classes: 'form_label right', content: 'Enabled: '},
                     {tag: 'td', classes: 'form_label right', components: [
                         {kind: 'enyo.Checkbox', name: 'enabled'}, 

@@ -27,6 +27,7 @@ abstract class ImporterAbstract {
     protected $default_dir;
     protected $file; // File name (no dir)
     protected $module;
+    protected $enable = TRUE; // Whether to enable the Bible for use after it has been imported
     protected $overwrite = FALSE;
     protected $save_bible = TRUE;
     protected $insert_into_bible_table = TRUE; // Whether to insert / update record in Bibles table
@@ -272,7 +273,7 @@ abstract class ImporterAbstract {
     }
 
     public function __get($name) {
-        $gettable = ['required', 'save_bible', 'overwrite', 'module', 'file', 'insert_into_bible_table'];
+        $gettable = ['required', 'save_bible', 'overwrite', 'module', 'file', 'insert_into_bible_table', 'enable'];
 
         if(in_array($name, $gettable)) {
             return $this->$name;
@@ -280,7 +281,7 @@ abstract class ImporterAbstract {
     }    
 
     public function __set($name, $value) {
-        $bool = ['required', 'save_bible', 'overwrite', 'insert_into_bible_table'];
+        $bool = ['required', 'save_bible', 'overwrite', 'insert_into_bible_table', 'enable'];
         $str = ['module', 'file'];
 
         if(in_array($name, $bool)) {

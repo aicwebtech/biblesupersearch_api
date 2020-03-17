@@ -173,13 +173,24 @@ enyo.kind({
             return;
         }
 
+        if(!this.$.ConfigView.view.validate()) {
+            return;
+        }
+
         var formData = new FormData();
         // var formData = new enyo.FormData();
         file && formData.append('file', file, file.name); 
 
-
         formData.append('importer', postData.type);
         formData.append('_token', laravelCsrfToken);
+
+        var configProps = this.$.ConfigView.view.get('configProps');
+
+        this.log('configProps', configProps);
+
+        for(var i in configProps) {
+            formData.append(i, configProps[i]);
+        }
 
         var ajax = new enyo.Ajax({
             url: '/admin/bibles/importcheck',
