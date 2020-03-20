@@ -34,8 +34,13 @@ enyo.kind({
         }
 
         this.colNum ++;
+
+
         var charCode = this.colNum + 64,
-            letter = String.fromCharCode(charCode);
+            letter = String.fromCharCode(charCode),
+            letterLC = letter.toLowerCase();
+            
+        this.configProps['col_' + letterLC] = null;
 
         var comp = this.$.ColSettings.createComponent({
             tag: 'tr',
@@ -43,16 +48,16 @@ enyo.kind({
             components: [
                 {tag: 'td', content: letter + ': '},
                 {tag: 'td', components: [
-                    {kind: 'enyo.Select', _kind: 'AICWEBTECH.Enyo.Select', name: 'sp_col_' + letter, _letter: letter, onchange: 'colSettingChanged', components: [
+                    {kind: 'enyo.Select', _kind: 'AICWEBTECH.Enyo.Select', _letter: letterLC, onchange: 'colSettingChanged', components: [
                         {value: 'none', content: '-- None --'},
                         {value: 'bn', content: 'Book Name'},
                         {value: 'b', content: 'Book Number'},
-                        {value: 'bn c:v ', content: 'Book Name Chapter:Verse'},
-                        {value: 'b c:v ', content: 'Book Number Chapter:Verse'},
                         {value: 'c', content: 'Chapter'},
                         {value: 'v', content: 'Verse'},
-                        {value: 'c:v', content: 'Chapter:Verse'},
-                        {value: 't', content: 'Text'}
+                        {value: 't', content: 'Text'},
+                        {value: 'bn c:v ', content: 'Book Name Chapter:Verse'},
+                        {value: 'b c:v ', content: 'Book Number Chapter:Verse'},
+                        {value: 'c:v', content: 'Chapter:Verse'}
                     ]}
                 ]}
             ]
@@ -71,11 +76,11 @@ enyo.kind({
             val = (val == 'none') ? null : val,
             prop = 'col_' + inSender._letter;
 
-        if(!val) {
-            delete this.configProps[prop];
-        }
-        else {
+        // if(!val) {
+        //     delete this.configProps[prop];
+        // }
+        // else {
             this.configProps[prop] = val;
-        }
+        // }
     }
 });

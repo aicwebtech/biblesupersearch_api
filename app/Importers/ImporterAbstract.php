@@ -36,6 +36,8 @@ abstract class ImporterAbstract {
     protected $path_short = 'misc';  // Path (inside /bibles) to where import files are located
     protected $file_extensions = []; // White list of allowable file extensions
 
+    protected $settings = []; // User-selectible settings, specific to each importer
+
     protected $required = ['module', 'lang_short']; // Array of required fields (for specific importer type);
 
     protected $_insertable = [];
@@ -104,6 +106,32 @@ abstract class ImporterAbstract {
         $this->file = $file;
     }
 
+    /**
+     * Sets the user specified settings.  These are specific to each importer and some won't use this.
+     * 
+     * @param array $settings
+     * @param bool $map_to_internal_properties - todo - pull internal properties (file, module, overwrite) from the settings array
+     * @return bool TRUE if successful, FALSE if not
+     */
+    public function setSettings($settings, $map_to_internal_properties = FALSE) {
+        $this->settings = $settings;
+
+        return $this->_setSettingsHelper();
+    }
+
+    /** 
+     * Hook for post-processing and validating custom settings
+     * 
+     * @return bool TRUE if valid, FALSE if not
+     */
+    protected function _setSettingsHelper() {
+        return TRUE;
+    }
+
+    /*
+     * Used by the CLI importers
+     * Not intended to be used by anything else
+     */
     public function setProperties($file, $module, $overwrite, $attributes, $autopopulate) {
         $this->file      = $file;
         $this->module    = $module;
@@ -273,7 +301,7 @@ abstract class ImporterAbstract {
     }
 
     public function __get($name) {
-        $gettable = ['required', 'save_bible', 'overwrite', 'module', 'file', 'insert_into_bible_table', 'enable'];
+        $gettable = ['required', 'save_bible', 'overwrite', 'module', 'file', 'insert_into_bible_table', 'enable', 'settings'];
 
         if(in_array($name, $gettable)) {
             return $this->$name;

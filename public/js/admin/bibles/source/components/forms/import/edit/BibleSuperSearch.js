@@ -4,10 +4,6 @@ enyo.kind({
 
     rendered: function() {
         this.inherited(arguments);
-
-        // this.createComponent({content: 'Unbound'});
-
-        // this.$.module.set('disabled', true);
         this.$.module.setDisabled(true);
     }
 });
