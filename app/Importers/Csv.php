@@ -6,7 +6,6 @@
 
 namespace App\Importers;
 use App\Models\Bible;
-use ZipArchive;
 use \DB; //Todo - something is wrong with namespaces here, shouldn't this be automatically avaliable??
 use Illuminate\Http\UploadedFile;
 
@@ -14,11 +13,15 @@ class Csv extends SpreadsheetAbstract {
     
     public function checkUploadedFile(UploadedFile $File) {
         $file_data = file($File->getPathname());
+
+        if(!$file_data) {
+            return $this->addError('Could not open file');
+        }
+
         $tmp_data  = [];
 
         foreach($file_data as $key => $csv_row) {
-            if($key < $this->settings['first_row_data']) {
-                $tmp_data[] = [];
+            if($key < $this->first_row_data) {
                 continue;
             }
             
@@ -27,9 +30,29 @@ class Csv extends SpreadsheetAbstract {
             if($key > 200) {
                 break;
             }
-
         }
 
         return $this->_checkParsedFile($tmp_data);
+    }
+
+    protected function _importFromSpreadsheet($file_path) {
+        $file_data = file($file_path);
+
+        if(!$file_data) {
+            return $this->addError('Could not open file');
+        }
+
+        foreach($file_data as $key => $row) {
+            if($key < $this->first_row_data) {
+                continue;
+            }
+            
+            $row = str_getcsv($row); 
+            $m = $this->_mapSpreadsheetRow($row);
+            $this->_addVerse($m['book'], $m['chapter'], $m['verse'], $m['text']);
+        }
+
+        $this->_insertVerses();
+        return TRUE;
     }
 }

@@ -1,14 +1,14 @@
 enyo.kind({
     name: 'BibleManager.Components.Forms.Edit',
     kind: 'BibleManager.Components.Forms.EditBasic',
-    classes: 'edit_form edit_form_full',
+    classes: 'dialog_form edit_form edit_form_full',
 
     pk: null,
     formData: {},
     copyrightData: {},
     $description: null,
     formPk: null, // binding use only
-    debugBindings: false,
+    debugBindings: true,
     copyrightConfirmed: false,
 
     components: [
@@ -17,7 +17,8 @@ enyo.kind({
                 {tag: 'tr', components: [
                     {tag: 'td', classes: 'form_label right', style: 'width: 180px', content: 'Full Display Name: '},
                     {tag: 'td', attributes: {colspan: 3}, classes: 'form_label right', components: [
-                        {kind: 'AICWEBTECH.Enyo.UniqueText', name: 'name', classes: 'wide', apiUrl: '/admin/bibles/unique'},
+                        {kind: 'enyo.Input', name: 'name', classes: 'wide'},
+                        // {kind: 'AICWEBTECH.Enyo.UniqueText', name: 'name', classes: 'wide', apiUrl: '/admin/bibles/unique'},
                         // {kind: 'enyo.Input', name: 'name', classes: 'wide', onfocus: 'handleNameFocus',  onchange: 'handleNameChange'},
                         {tag: 'span', classes: 'required', content: '* unique'}
                     ]}

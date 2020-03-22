@@ -1,6 +1,7 @@
 enyo.kind({
     name: 'BibleManager.Components.Dialogs.Import',
     kind: 'AICWEBTECH.Enyo.jQuery.Dialog',
+    classes: 'dialog_form',
     pk: null,
     fileValidated: null,
     formData: {},
@@ -11,7 +12,7 @@ enyo.kind({
     components: [
         {tag: 'table', classes: 'import_form', _attributes: {border: 1}, components: [
             {tag: 'tr', components: [
-                {tag: 'td', classes: 'form_label right', content: 'Importer: ', style: 'width: 100px'},
+                {tag: 'td', classes: 'form_label right', content: 'Importer: ', style: 'width: 70px'},
                 {tag: 'td', classes: 'form_label right', components: [
                     {kind: 'AICWEBTECH.Enyo.Select', name: 'type', components: [
                         {value: 0, content: 'Select One ...'}
@@ -191,6 +192,8 @@ enyo.kind({
         for(var i in configProps) {
             formData.append(i, configProps[i]);
         }
+        
+        this.app.set('ajaxLoading', true);
 
         var ajax = new enyo.Ajax({
             url: '/admin/bibles/importcheck',
@@ -232,20 +235,20 @@ enyo.kind({
         }
 
         var postData = enyo.clone( this.$.EditView.get('view').get('formData') );
+        var configProps = this.$.ConfigView.view.get('configProps');
+        
         postData._token = laravelCsrfToken;
         postData._file = this.get('fileSanitized');
         postData._importer = this.$.type.get('value');
+        postData._settings = JSON.stringify(configProps);
 
-        this.log(postData);
-
-        // return;
+        this.log('postData', postData);
         
         this.app.set('ajaxLoading', true);
 
         var ajax = new enyo.Ajax({
             url: '/admin/bibles/import',
             method: 'POST',
-            // contentType: 'multipart/form-data',
             headers: this.app.defaultAjaxHeaders,
             postBody: postData
         });

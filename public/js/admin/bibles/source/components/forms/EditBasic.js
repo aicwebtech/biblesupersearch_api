@@ -5,7 +5,7 @@ enyo.kind({
     formData: {},
 
     debugBindings: false,
-    classes: 'edit_form edit_form_basic',
+    classes: 'dialog_form edit_form edit_form_basic',
 
     events: {
         onClose: '',

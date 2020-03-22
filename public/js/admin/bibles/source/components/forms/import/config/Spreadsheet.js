@@ -5,36 +5,42 @@ enyo.kind({
     colNum: 0,
 
     components: [
+        {tag: 'hr'},
+        {   components: [
+            {tag: 'label', content: 'First Row of Verse Data: '},
+            {kind: 'enyo.Input', name: 'first_row_data', value: '2', style: 'width: 50px'}
+        ]},
         {tag: 'br'},
         {content: 'Please select the role of each column: '},
-        {tag: 'table', name: 'ColSettings', _classes: 'import_form', components: [
+        {tag: 'table', name: 'ColSettings', components: [
             {tag: 'tr', components: [
                 {tag: 'th', content: 'Column'},
                 {tag: 'th', content: 'Role'}
             ]}
         ]}, 
-        {tag: 'button', content: 'Add Column', ontap: 'addColumnTab'}
+        {tag: 'button', content: 'Add Column', ontap: 'addColumnTap', name: 'AddColumn'}
     ],
 
-    // handlers: {
-    //     colSettingChanged: 'colSettingChanged'
-    // },
+    bindings: [
+        {from: 'configProps.first_row_data', to: '$.first_row_data.value', oneWay: false, transform: function(value, dir) {
+            return value || '';
+        }}
+    ],
 
     create: function() {
         this.inherited(arguments);
+        this.configProps.first_row_data = '2';
 
         for(var i = 1; i <= 6; i ++) {
             this._addColumn();
         }
     },
-
     _addColumn: function() {
         if(this.colNum == 26) {
             return;
         }
 
         this.colNum ++;
-
 
         var charCode = this.colNum + 64,
             letter = String.fromCharCode(charCode),
@@ -46,7 +52,7 @@ enyo.kind({
             tag: 'tr',
             owner: this,
             components: [
-                {tag: 'td', content: letter + ': '},
+                {tag: 'td', classes: 'right-align', content: letter + ': '},
                 {tag: 'td', components: [
                     {kind: 'enyo.Select', _kind: 'AICWEBTECH.Enyo.Select', _letter: letterLC, onchange: 'colSettingChanged', components: [
                         {value: 'none', content: '-- None --'},
@@ -63,24 +69,22 @@ enyo.kind({
             ]
         });
 
+        if(this.colNum == 26) {
+            this.$.AddColumn.set('showing', false);
+        }
+
         return comp;
     },
-    addColumnTab: function(inSender, inEvent) {
-        this.log(inSender, inEvent);
+    addColumnTap: function(inSender, inEvent) {
         this._addColumn().render();
     },
     colSettingChanged: function(inSender, inEvent) {
         this.log(inSender, inEvent);
 
         var val = inSender.getValue();
-            val = (val == 'none') ? null : val,
+            val = (!val || val == 'none') ? null : val,
             prop = 'col_' + inSender._letter;
 
-        // if(!val) {
-        //     delete this.configProps[prop];
-        // }
-        // else {
-            this.configProps[prop] = val;
-        // }
+        this.configProps[prop] = val;
     }
 });

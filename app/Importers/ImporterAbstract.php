@@ -57,7 +57,7 @@ abstract class ImporterAbstract {
     protected $strongs_parentheses = 'retain';
 
     public function __construct() {
-
+        $this->resetBibleAttributes();
     }
 
     abstract public function import();
@@ -96,7 +96,17 @@ abstract class ImporterAbstract {
 
     public function setBibleAttributes($att) {
         $this->bible_attributes = $att;
-    }    
+    }   
+
+    public function resetBibleAttributes() {
+        $this->bible_attributes = [
+            'name'          => NULL,
+            'shortname'     => NULL,
+            'module'        => NULL,
+            'description'   => NULL,
+            'year'          => NULL,
+        ];
+    } 
 
     public function getBibleAttributes() {
         return $this->bible_attributes;
@@ -294,6 +304,10 @@ abstract class ImporterAbstract {
         $Verses = $Bible->verses();
         $this->_table = $Verses->getTable();
         return $Bible;
+    }
+
+    protected function _saveBible() {
+
     }
 
     protected function _processBibleAttributes($attr) {

@@ -3,7 +3,8 @@ enyo.depends(
     '/js/bin/custom/form',
     '/js/bin/custom/dialog',
     'source',
-    'assets/style.css'
+    'assets/style.css',
+    'assets/dialogs.css'
 );
 
 $( function() {

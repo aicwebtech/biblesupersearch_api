@@ -4,7 +4,5 @@ enyo.kind({
 
     create: function() {
         this.inherited(arguments);
-
-        // this.createComponent({content: 'Analyzer'});
     }
 });

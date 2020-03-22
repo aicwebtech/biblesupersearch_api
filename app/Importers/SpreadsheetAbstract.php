@@ -3,9 +3,9 @@
 /**
  * Common code for importing from Excel, OpenDocument and CSV files
  */
-
 namespace App\Importers;
 use App\Models\Bible;
+use App\Models\Books\En as BookEn;
 use App\Rules\NonNumericString;
 use \DB; //Todo - something is wrong with namespaces here, shouldn't this be automatically avaliable??
 use Illuminate\Http\UploadedFile;
@@ -22,24 +22,28 @@ abstract class SpreadsheetAbstract extends ImporterAbstract {
     protected $strongs_en   = NULL;
     protected $paragraph    = '¶ ';
     protected $path_short   = 'misc';
-    protected $file_extensions = ['.zip'];
+    protected $file_extensions = []; // Define on child classes
     protected $source = ""; // Where did you get this Bible?
+    
     protected $_last_book_name = NULL;
     protected $_last_book_num  = 0;
 
     protected $column_map = [];
+    protected $first_row_data = 1; // modified from user entry, assumes 0-based index
 
+    protected $first_book = 1;
+    protected $first_chapter = 1;
+    protected $first_verse = 1;
 
     public function import() {
-        ini_set("memory_limit", "50M");
+        ini_set("memory_limit", "150M"); // TODO - need to test this with LARGE UNICODE BIBLES to make sure it doesn't break!
+            // Confirmed working with thaikjv .xls AND .csv (10 + MB file)
 
-        // Script settings
-        $file   = $this->file;   // File name, minus extension
-        $module = $this->module; // Module and db name
-        $Bible  = $this->_getBible($module);
+        $Bible     = $this->_getBible($this->module);
+        $file_path = $this->getImportDir() . $this->file;
 
         if(!$this->overwrite && $this->_existing && $this->insert_into_bible_table) {
-            // return $this->addError('Module already exists: \'' . $module . '\' Use --overwrite to overwrite it.', 4);
+            // return $this->addError('Module already exists: \'' . $this->module . '\' Use --overwrite to overwrite it.', 4);
         }
 
         if($this->_existing) {
@@ -47,7 +51,21 @@ abstract class SpreadsheetAbstract extends ImporterAbstract {
         }
 
         if($this->insert_into_bible_table) {
-            // Do something!
+            $attr = $this->bible_attributes;
+            
+            if($this->source) {
+                $attr['description'] .= ($attr['description']) ? '<br /><br />' : '';
+                $attr['description'] .= $this->source;
+            }
+
+            $Bible->fill($attr);
+            $Bible->save();
+        }
+
+        $Bible->install(TRUE);
+
+        if(!$this->_importFromSpreadsheet($file_path)) {
+            return FALSE;
         }
 
         if($this->enable) {
@@ -57,10 +75,10 @@ abstract class SpreadsheetAbstract extends ImporterAbstract {
         return TRUE;
     }
 
+    abstract protected function _importFromSpreadsheet($file_path);
+
     protected function _mapSpreadsheetRow($row) {
         $row = array_values($row);
-
-        // print_r($row);
         
         $mapped = [
             'book_name' => NULL,
@@ -81,40 +99,40 @@ abstract class SpreadsheetAbstract extends ImporterAbstract {
 
             switch($map) {
                 case 't':
-                    $mapped['text'] = $value;
+                    $mapped['text']      = $mapped['text']      ?: $value;
                     break;                
                 case 'v':
-                    $mapped['verse'] = (int) $value;
+                    $mapped['verse']     = $mapped['verse']     ?: (int) $value;
                     break;
                 case 'c':
-                    $mapped['chapter'] = (int) $value;
+                    $mapped['chapter']   = $mapped['chapter']   ?: (int) $value;
                     break;                
                 case 'b':
-                    $mapped['book'] = (int) $value;
+                    $mapped['book']      = $mapped['book']      ?: (int) $value;
                     break;                
                 case 'bn':
-                    $mapped['book_name'] = $value;
+                    $mapped['book_name'] = $mapped['book_name'] ?: $value;
                     break;                
                 case 'c:v':
                     $parts = explode(':', $value);
-                    $mapped['chapter']   = $parts[0];
-                    $mapped['verse']     = $parts[1];
+                    $mapped['chapter']   = $mapped['chapter']   ?: (int) $parts[0];
+                    $mapped['verse']     = $mapped['verse']     ?: (int) $parts[1];
                     break;                  
                 case 'bn c:v':
                     $pts1 = explode(' ', $value);
                     $pts2 = explode(':', $pts1[1]);
 
-                    $mapped['book_name'] = $pts1[0];
-                    $mapped['chapter']   = $pts2[0];
-                    $mapped['verse']     = $pts2[1];
+                    $mapped['book_name'] = $mapped['book_name'] ?: $pts1[0];
+                    $mapped['chapter']   = $mapped['chapter']   ?: (int) $pts2[0];
+                    $mapped['verse']     = $mapped['verse']     ?: (int) $pts2[1];
                     break;                
                 case 'b c:v':
                     $pts1 = explode(' ', $value);
                     $pts2 = explode(':', $pts1[1]);
 
-                    $mapped['book']      = $pts1[0];
-                    $mapped['chapter']   = $pts2[0];
-                    $mapped['verse']     = $pts2[1];
+                    $mapped['book']      = $mapped['book']      ?: (int) $pts1[0];
+                    $mapped['chapter']   = $mapped['chapter']   ?: (int) $pts2[0];
+                    $mapped['verse']     = $mapped['verse']     ?: (int) $pts2[1];
                     break;
                 case 'none':
                 default:
@@ -131,20 +149,11 @@ abstract class SpreadsheetAbstract extends ImporterAbstract {
             $mapped['book'] = $this->_last_book_num;
         }
 
-        print_r($this->column_map);
-        print_r($row);
-        print_r($mapped);
+        // print_r($this->column_map);
+        // print_r($row);
+        // print_r($mapped);
 
         return $mapped;
-    }
-
-    public function checkUploadedFile(UploadedFile $File) {
-        $zipfile    = $File->getPathname();
-        $file       = static::sanitizeFileName( $File->getClientOriginalName() );
-
-
-
-        return TRUE;
     }
 
     protected function _checkParsedFile($rowdata) {
@@ -152,10 +161,10 @@ abstract class SpreadsheetAbstract extends ImporterAbstract {
             'book'      => 'Either book number or book name',
             'chapter'   => 'Chapter number',
             'verse'     => 'Verse number',
-            'text'      => 'text',
+            'text'      => 'Text',
         ];
 
-        $msg_ext = ' is required but cannot be found with the given column settings.';
+        $msg_ext = ' is required but cannot be found with the given column role settings.';
 
         // Validation rules, sans requirement
         $rules = [
@@ -167,23 +176,44 @@ abstract class SpreadsheetAbstract extends ImporterAbstract {
         ];
 
         $count = 0;
-        $limit = 100;
+        $limit = 100; // How many verses to check before bailing
 
         foreach($rowdata as $key => $row) {
-            if($key < $this->settings['first_row_data']) {
-                continue;
-            }
+            // if($key < $this->first_row_data) {
+            //     continue;
+            // }
 
-            $count ++;
-
+            $count  ++;
             $mapped = $this->_mapSpreadsheetRow($row);
-
-            // print_r($mapped);
+            $ov     = FALSE; // one valid
 
             foreach($required as $key => $msg) {
                 if(empty($mapped[$key])) {
                     $this->addError($msg . $msg_ext, 4);
                 }
+                else {
+                    $ov = TRUE;
+                }
+            }
+
+            // if($count == 1 && $ov) {
+            if($count == 1 && !$this->hasErrors()) {
+                if($mapped['book'] != $this->first_book || $mapped['chapter'] != $this->first_chapter || $mapped['verse'] != $this->first_verse) {
+                    $Book = BookEn::find($this->first_book);
+                    $fv = $Book->name . ' ' . $this->first_chapter . ':' . $this->first_verse;
+                    $this->addError('First verse found is not '. $fv . '; please adjust \'First Row of Verse Data\' accordingly.');
+                }
+            }
+            else if(!$ov) {
+                $this->resetErrors();
+                $this->addError('No valid Bible verse fields found; please make sure that \'First Row of Verse Data\' is correct.');
+            }
+            else if($this->hasErrors()) {
+                $this->addError('If the columm roles are correct, please make sure that \'First Row of Verse Data\' is correct.');
+            }
+
+            if($this->hasErrors()) {
+                return FALSE;
             }
 
             $validator = Validator::make($mapped, $rules);
@@ -195,7 +225,6 @@ abstract class SpreadsheetAbstract extends ImporterAbstract {
             if($this->hasErrors() || $count > $limit) {
                 break;
             }
-
         }
 
         return $this->hasErrors() ? FALSE : TRUE;
@@ -208,23 +237,31 @@ abstract class SpreadsheetAbstract extends ImporterAbstract {
      */
     protected function _setSettingsHelper() {
         $set = $this->settings;
-        $cols = [];
-
+        $this->column_map = [];
         ksort($set);
+        $col_map_count = 0;
 
         foreach($set as $key => $value) {
             if(substr($key, 0, 3) == 'col') {
-                $value = $value ?: NULL;
-                $cols[] = $value;
+                $value = ($value && $value != 'null') ? $value : NULL;
+                $this->column_map[] = $value;
+                $col_map_count += ($value) ? 1 : 0;
             }
         }
 
+        if($col_map_count < 2) {
+            return $this->addError('Column roles are missing or incomplete');
+        }
 
-        $this->column_map = $cols;
+        if(array_key_exists('first_row_data', $set)) {
+            $frd = (int) $set['first_row_data'];
 
-        $this->settings['first_row_data'] = (array_key_exists('first_row_data', $set)) ? (int) $set['first_row_data'] -1 : 0;
+            if($frd < 1) {
+                return $this->addError('First Row of Verse Data must be a positive integer', 4);
+            }
 
-        $this->settings['first_row_data'] = 6;
+            $this->first_row_data = $frd - 1;
+        }
 
         return TRUE;
     }

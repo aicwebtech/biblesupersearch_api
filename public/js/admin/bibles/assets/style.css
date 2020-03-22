@@ -14,6 +14,7 @@ button.bulk {
     padding: 5px;
 }
 
+/* Grid Columns */
 td.alert {
     background-color: #f24141;
     color: white;
@@ -51,6 +52,7 @@ td.good {
     text-align: center; 
 }
 
+/* Premimum Flags */
 .prem label {
     margin-right: 10px;
 }
@@ -59,105 +61,7 @@ td.good {
     color: red;
 }
 
-.edit_form td.sublabel {
-    padding-left: 6px;
-    font-size: .8em;
-    vertical-align: middle;
-}
 
-.edit_form .form_section {
-    width: 800px;
-    border: 1px solid #ddd;
-    margin-bottom: 20px;
+.right-align {
+    text-align: right;
 }
-
-.edit_form table {
-    width: 100%;
-}
-
-.edit_form textarea {
-/*    width: 100%;
-    height: 400px;*/
-}
-
-input, .pseudo_input {
-    border: 1px solid rgb(169, 169, 169);
-}
-
-input:disabled, .pseudo_input.disabled {
-    background-color: -internal-light-dark-color(rgb(235, 235, 228), rgb(45, 45, 45));
-}
-
-.copyright_statement_default {
-    width: calc(99% - 20px);
-    height: 80px;
-    margin-top: 75px;
-    padding: 10px;
-    background-color: rgb(235, 235, 228);
-    color: rgb(45, 45, 45);
-    overflow-y: auto;
-}
-
-input.wide, select.wide, .unique_text.wide {
-    width: 400px;
-}
-
-.unique_text {
-    display: inline-block;
-    padding: 0;
-    margin: 0;
-}
-
-.unique_text input {
-    width: 99%;
-}
-
-textarea.copyright_statement {
-    height: 100px;
-}
-
-.required {
-    margin-left: 5px;
-    color: red;
-    font-weight: bold;
-}
-
-span.warning {
-    background-color: yellow;
-    color: red;
-    font-weight: bold;
-}
-
-.edit_form {
-    font-size: 0.8em;
-}
-
-.align_top {
-    vertical-align: top;
-}
-
-.edit_dialog {
-    max-height: 800px;
-    overflow-y: auto;
-}
-
-.import_form {
-    width: 800px;
-    overflow-x: hidden;
-}
-
-.import_form select, .import_form input {
-    width: 300px;
-}
-
-.import_desc_container {
-    padding: 5px 0;
-    height: 44px;
-    overflow: auto;
-}
-
-/*.import_desc_container:hover {
-    position: relative;
-    height: initial;
-}
-*/
