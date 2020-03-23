@@ -61,7 +61,11 @@ td.good {
     color: red;
 }
 
+/* Misc standard styles */
+.right-align { text-align: right; }
+.center-align { text-align: center; }
 
-.right-align {
-    text-align: right;
+.center-element {
+    margin-left: auto;
+    margin-right: auto;
 }

@@ -15,14 +15,14 @@ enyo.kind({
                 {tag: 'td', classes: 'form_label right', content: 'Importer: ', style: 'width: 70px'},
                 {tag: 'td', classes: 'form_label right', components: [
                     {kind: 'AICWEBTECH.Enyo.Select', name: 'type', components: [
-                        {value: 0, content: 'Select One ...'}
+                        {value: null, content: 'Select One ...'}
                     ]},
                     {tag: 'span', classes: 'required', content: '*'}
                 ]},
             ]},            
             {tag: 'tr', components: [
-                {tag: 'td', classes: 'form_label right', content: 'Details: '},
-                {tag: 'td', classes: 'form_label right import_desc_container', components: [
+                // {tag: 'td', classes: 'form_label right', content: 'Details: '},
+                {tag: 'td', classes: 'form_label right import_desc_container', attributes: {colspan: 2}, components: [
                     {name: 'ImportDesc', allowHtml: true, content: '(Please select an importer.)'}, 
                     {kind: 'enyo.Anchor', name: 'ImportUrl', attributes: {target: '_NEW'}}
                 ]}
@@ -83,6 +83,8 @@ enyo.kind({
         this.inherited(arguments);
         this.set('fileValidated', false);
 
+        // this.$.type.createComponent({value: null, content: 'Select One ...'});
+
         bootstrap.importers.forEach(function(item) {
             this.$.type.createComponent({
                 value: item.type,
@@ -117,6 +119,8 @@ enyo.kind({
 
             var title = 'Bible Importer: Import File';
             var cr = this.get('importerData');
+            // this.setStyle('width', '800px');
+            dialogOptions.width = 820;
 
             if(BibleManager.Components.Forms.Import.Edit[cr.kind]) {
                 this.$.EditView.set('view', BibleManager.Components.Forms.Import.Edit[cr.kind]).render();
@@ -129,6 +133,8 @@ enyo.kind({
                 click: enyo.bind(this, this.validate)
             });
             
+            dialogOptions.width = 480;
+            // this.setStyle('width', '400px');
             var title = 'Bible Importer: Select File';
             this.set('fileSanitized', null);
         }
@@ -139,6 +145,7 @@ enyo.kind({
         this.$.EditContainer.set('showing', is);
         this.setDialogOptions(dialogOptions);
         this.set('title', title);
+        // this.render();
     },
 
     validate: function() {
@@ -298,7 +305,7 @@ enyo.kind({
         this.set('showing', true);
     },
     _resetFormData: function() {
-        this.set('formData', {});
+        this.set('formData', {type: 0});
         
         if(this.$.file.hasNode()) {
             this.$.file.hasNode().value = '';
@@ -319,7 +326,8 @@ enyo.kind({
             }
         }
         else {
-            this.set('importerData', {desc: '(Please select an importer.)'});
+            this.set('importerData', {desc: '(Please select an importer to see it\'s description.)'});
+            this.$.type.set('selected', 0);
         }
     }, 
     formChanged: function() {

@@ -1,7 +1,7 @@
 enyo.kind({
     name: 'BibleManager.Components.Forms.Import.Edit.Base',
     kind: 'BibleManager.Components.Forms.Edit',
-    classes: 'import_form',
+    // classes: 'import_form',
     disabledElements: [],
     readOnlyElements: [],
 

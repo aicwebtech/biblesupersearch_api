@@ -6,19 +6,25 @@ enyo.kind({
 
     components: [
         {tag: 'hr'},
-        {   components: [
-            {tag: 'label', content: 'First Row of Verse Data: '},
-            {kind: 'enyo.Input', name: 'first_row_data', value: '2', style: 'width: 50px'}
-        ]},
-        {tag: 'br'},
-        {content: 'Please select the role of each column: '},
-        {tag: 'table', name: 'ColSettings', components: [
-            {tag: 'tr', components: [
-                {tag: 'th', content: 'Column'},
-                {tag: 'th', content: 'Role'}
+        {style: 'width: 250px', classes: 'center-element', components: [
+            {   components: [
+                {tag: 'label', content: 'First Row of Verse Data: '},
+                {kind: 'enyo.Input', name: 'first_row_data', value: '2', style: 'width: 50px'},
+                {tag: 'span', classes: 'required', content: '*'}
+            ]},
+            {tag: 'br'},
+            {content: 'Please select the role of each column: ', classes: 'center-align'},
+            {tag: 'br'},
+            {tag: 'table', name: 'ColSettings', components: [
+                {tag: 'tr', components: [
+                    {tag: 'th', content: 'Column'},
+                    {tag: 'th', content: 'Role'}
+                ]}
+            ]}, 
+            {classes: 'center-align', components: [
+                {tag: 'button', content: 'Add Column', ontap: 'addColumnTap', name: 'AddColumn'}
             ]}
-        ]}, 
-        {tag: 'button', content: 'Add Column', ontap: 'addColumnTap', name: 'AddColumn'}
+        ]}
     ],
 
     bindings: [

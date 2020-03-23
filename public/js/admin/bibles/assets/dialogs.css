@@ -84,7 +84,7 @@ span.warning {
 */
 
 .import_form {
-    width: 800px;
+    /*width: 400px;*/
     overflow-x: hidden;
 }
 
@@ -94,6 +94,6 @@ span.warning {
 
 .import_desc_container {
     padding: 5px 0;
-    height: 44px;
+    height: 30px;
     overflow: auto;
 }
