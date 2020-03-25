@@ -130,6 +130,7 @@ enyo.kind({
             onBibleExport: 'bibleExport',
             onConfirmAction: 'confirmAction',
             onDoAction: 'doAction',
+            onBibleTest: 'bibleTest',
             onViewDescription: 'viewDescription',
             onEdit: 'openEdit'
         }
@@ -173,6 +174,9 @@ enyo.kind({
                 this._singleActionHelper('export', id, props);
             }
         }));
+    },
+    bibleTest: function(inSender, inEvent) {
+        this._multiActionManual(inEvent.selections, 'test', 'Testing', {}, false);
     },
     confirmAction: function(inSender, inEvent) {
         var id = inEvent.id;
@@ -334,6 +338,17 @@ enyo.kind({
         }
 
         this.$.MultiExport.set('items', enyo.clone(this.selections));
+        this._multiActionHelper(action, actioning, {}, closeWhenFinished);
+    },    
+    _multiActionManual: function(selections, action, actioning, postData, closeWhenFinished) {
+        this.log(selections);
+
+        if(!selections || selections.length == 0) {
+            this.$.Alert.alert('Nothing selected');
+            return;
+        }
+
+        this.$.MultiQueue.set('items', enyo.clone(selections));
         this._multiActionHelper(action, actioning, {}, closeWhenFinished);
     },
     _confirmMultiAction: function(action, actioning, displayAction) {

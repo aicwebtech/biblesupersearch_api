@@ -60,7 +60,7 @@ enyo.kind({
             components: [
                 {tag: 'td', classes: 'right-align', content: letter + ': '},
                 {tag: 'td', components: [
-                    {kind: 'enyo.Select', _kind: 'AICWEBTECH.Enyo.Select', _letter: letterLC, onchange: 'colSettingChanged', components: [
+                    {kind: 'enyo.Select', _kind: 'AICWEBTECH.Enyo.Select', name:'col_' + letterLC, _letter: letterLC, onchange: 'colSettingChanged', components: [
                         {value: 'none', content: '-- None --'},
                         {value: 'bn', content: 'Book Name'},
                         {value: 'b', content: 'Book Number'},
@@ -85,12 +85,27 @@ enyo.kind({
         this._addColumn().render();
     },
     colSettingChanged: function(inSender, inEvent) {
-        this.log(inSender, inEvent);
-
         var val = inSender.getValue();
             val = (!val || val == 'none') ? null : val,
             prop = 'col_' + inSender._letter;
 
         this.configProps[prop] = val;
+    },
+    disabledChanged: function(was, is) {
+        this.inherited(arguments);
+        this.log();
+
+        var addColumnShowing = (!is && this.colNum < 26) ? true : false;
+        this.$.AddColumn.set('showing', (!is && this.colNum < 26));
+
+        this.$.first_row_data.set('disabled', is);
+
+        for(var i = 1; i <= this.colNum; i ++) {
+            var charCode = i + 96,
+                letter = String.fromCharCode(charCode);
+                elemName = 'col_' + letter;
+
+            this.$[elemName] && this.$[elemName].setAttribute('disabled', true);
+        }
     }
 });

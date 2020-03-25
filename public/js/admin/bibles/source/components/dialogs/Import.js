@@ -139,6 +139,8 @@ enyo.kind({
             this.set('fileSanitized', null);
         }
 
+        this.$.ConfigView.get('view') && this.$.ConfigView.get('view').set('disabled', is);
+
         this.$.file.set('disabled', is);
         this.$.type.setAttribute('disabled', is);
 
@@ -222,6 +224,8 @@ enyo.kind({
 
             this.$.EditView.get('view') && this.$.EditView.get('view').set('formData', inResponse.bible);
             this.set('fileSanitized', inResponse.file);
+
+            this.app.alert('This file is ready to import. &nbsp;Please fill out the rest of<br />the information for this Bible, then click \'Import File\'');
         });
 
         ajax.error(this, function(inSender, inResponse) {
@@ -269,6 +273,17 @@ enyo.kind({
 
             this.app.refreshGrid();
             this.close();
+
+            this.app.confirm('This Bible has imported successfully.  Would you like to test it?', function(confirm) {
+                var inev = {selections: [ { id: inResponse.bible.id, name: inResponse.bible.name } ] };
+
+                this.log('test signal inEvent', inev);
+
+                if(confirm) {
+                    enyo.Signals.send('onBibleTest', inev);
+                }
+            }, this);
+
         });
 
         ajax.error(this, function(inSender, inResponse) {

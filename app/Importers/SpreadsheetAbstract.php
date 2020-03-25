@@ -35,6 +35,11 @@ abstract class SpreadsheetAbstract extends ImporterAbstract {
     protected $first_chapter = 1;
     protected $first_verse = 1;
 
+    protected $first_unique_book = 1;
+    protected $first_unique_chapter = 2;
+    protected $first_unique_verse = 3;
+    protected $first_unique_id = 34;
+
     public function import() {
         ini_set("memory_limit", "150M"); // TODO - need to test this with LARGE UNICODE BIBLES to make sure it doesn't break!
             // Confirmed working with thaikjv .xls AND .csv (10 + MB file)
@@ -179,10 +184,6 @@ abstract class SpreadsheetAbstract extends ImporterAbstract {
         $limit = 100; // How many verses to check before bailing
 
         foreach($rowdata as $key => $row) {
-            // if($key < $this->first_row_data) {
-            //     continue;
-            // }
-
             $count  ++;
             $mapped = $this->_mapSpreadsheetRow($row);
             $ov     = FALSE; // one valid
@@ -202,6 +203,20 @@ abstract class SpreadsheetAbstract extends ImporterAbstract {
                     $Book = BookEn::find($this->first_book);
                     $fv = $Book->name . ' ' . $this->first_chapter . ':' . $this->first_verse;
                     $this->addError('First verse found is not '. $fv . '; please adjust \'First Row of Verse Data\' accordingly.');
+                }
+            }            
+            elseif($count == $this->first_unique_id && !$this->hasErrors()) {
+                if($mapped['book'] != $this->first_unique_book || $mapped['chapter'] != $this->first_unique_chapter || $mapped['verse'] != $this->first_unique_verse) {
+                    $Book = BookEn::find($this->first_unique_book);
+                    $fv = $Book->name . ' ' . $this->first_unique_chapter . ':' . $this->first_unique_verse;
+                    $msg = \App\Helpers::ordinal($this->first_unique_id) . ' verse found is not ' . $fv . '; ';
+
+                    if(is_integer($mapped['book']) && is_integer($mapped['chapter']) && is_integer($mapped['book'])) {
+                        $this->addError($msg . ' your column selections for book, chapter and verse may be incorrect.  Please adjust them accordingly.');
+                    }
+                    else {
+                        $this->addError($msg . ' please adjust \'First Row of Verse Data\' accordingly.  If it is correct, then this importer may not be able to import this file.');
+                    }
                 }
             }
             else if(!$ov) {

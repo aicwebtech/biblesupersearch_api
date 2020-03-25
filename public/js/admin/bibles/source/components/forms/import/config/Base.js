@@ -1,7 +1,8 @@
 enyo.kind({
     name: 'BibleManager.Components.Forms.Import.Config.Base',
-    classes: 'input_config',
+    classes: 'import_config',
     configProps: {},
+    disabled: false,
 
     components: [
         {tag: 'hr'}
@@ -9,5 +10,8 @@ enyo.kind({
 
     validate: function() {
         return true;
+    },
+    disabledChanged: function(was, is) {
+        // disable all form elements here!
     }
 });

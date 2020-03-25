@@ -97,3 +97,7 @@ span.warning {
     height: 30px;
     overflow: auto;
 }
+
+.import_config {
+    width: 400px;
+}
