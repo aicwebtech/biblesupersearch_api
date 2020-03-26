@@ -57,11 +57,11 @@ if(isset($include_enyo) && $include_enyo) {
         <script>
             var laravelCsrfToken = '{{ csrf_token() }}';
         </script>
-        <title>{{ config('app.name', 'Laravel') }} - Manager</title>
+        <title>{{ config('app.name', 'Bible SuperSearch API') }} - Manager</title>
     </head>
     <body>
         <div id='header'>
-            <h1>Bible SuperSearch API Installation Manager</h1>
+            <h1>{{ config('app.name', 'Bible SuperSearch API') }} Manager</h1>
             <div id='top_menu'>
                 @foreach ($buttons as $button)
                     <a href='{{ route($button['route']) }}'

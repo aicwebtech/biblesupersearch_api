@@ -331,6 +331,7 @@ enyo.kind({
     },
     _multiAction: function(action, actioning, postData, closeWhenFinished) {
         this._processSelections();
+        this.log(JSON.stringify(this.selections));
 
         if(this.selections.length == 0) {
             this.$.Alert.alert('Nothing selected');
@@ -341,15 +342,13 @@ enyo.kind({
         this._multiActionHelper(action, actioning, {}, closeWhenFinished);
     },    
     _multiActionManual: function(selections, action, actioning, postData, closeWhenFinished) {
-        this.log(selections);
-
         if(!selections || selections.length == 0) {
             this.$.Alert.alert('Nothing selected');
             return;
         }
 
         this.$.MultiQueue.set('items', enyo.clone(selections));
-        this._multiActionHelper(action, actioning, {}, closeWhenFinished);
+        this._multiActionHelper(action, actioning, postData, closeWhenFinished, selections);
     },
     _confirmMultiAction: function(action, actioning, displayAction) {
         this._processSelections();
@@ -373,11 +372,12 @@ enyo.kind({
         }));
     },
 
-    _multiActionHelper: function(action, actioning, postData, closeWhenFinished) {
+    _multiActionHelper: function(action, actioning, postData, closeWhenFinished, selections) {
         var closeWhenFinished = (typeof closeWhenFinished == 'undefined') ? true : closeWhenFinished;
         this.log(action, actioning, postData, closeWhenFinished);
 
         var actionLabel = action;
+        var sel = selections && Array.isArray(selections) ? selections : this.selections;
 
         if(action == 'meta') {
             actionLabel = 'update info on';
@@ -390,7 +390,7 @@ enyo.kind({
         this.$.MultiQueue.set('actioning', actioning);
         this.$.MultiQueue.set('closeWhenFinished', closeWhenFinished);
         this.$.MultiQueue.set('postData', enyo.clone(postData));
-        this.$.MultiQueue.set('queue', enyo.clone(this.selections));
+        this.$.MultiQueue.set('queue', enyo.clone(sel));
         this.$.MultiQueue.open();
     },
 
