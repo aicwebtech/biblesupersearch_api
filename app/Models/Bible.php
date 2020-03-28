@@ -267,6 +267,10 @@ class Bible extends Model {
         return TRUE;
     }
 
+    public function setCopyrightStatementAttribute($value) {
+        $this->attributes['copyright_statement'] = trim($value);
+    }
+
     public function getCopyrightStatement() {
         if($this->copyright_statement) {
             return $this->copyright_statement;

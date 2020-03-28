@@ -1,6 +1,9 @@
 <?php
 namespace App\Importers;
 
+use Illuminate\Support\Facades\Schema;
+use \DB;
+
 /*
  * Generic importer for importing database dumps
  */
@@ -9,6 +12,8 @@ class Database {
     public static $use_queue = FALSE;
     protected static $queue = [];
     protected static $processing_queue = FALSE;
+
+    protected static $processed_files = [];
 
     static public function processQueue() {
         static::$processing_queue = TRUE;
@@ -21,7 +26,7 @@ class Database {
         static::$processing_queue = FALSE;
     }
 
-    static public function importSqlFile($file, $dir = NULL) {
+    static public function importSqlFile($file, $dir = NULL, $db_table = NULL) {
         $default_dir = ($dir) ? FALSE : TRUE;
         $dir = ($dir) ? $dir : dirname(__FILE__) . '/../../database/dumps';
         $path = $dir . '/' . $file;
@@ -31,6 +36,16 @@ class Database {
         if(static::$use_queue && !static::$processing_queue) {
             static::$queue[$path] = [ 'importSqlFile', func_get_args() ];
             return;
+        }
+
+        if(array_key_exists($path, static::$processed_files)) {
+            return; // Already processed, exiting
+        }
+
+        static::$processed_files[$path] = TRUE;
+
+        if($db_table && Schema::hasTable($db_table)) {
+            DB::table($db_table)->truncate();
         }
 
         //var_dump($file);
@@ -78,6 +93,12 @@ class Database {
             return;
         }
 
+        if(array_key_exists($path, static::$processed_files)) {
+            return; // Already processed, exiting
+        }
+
+        static::$processed_files[$path] = TRUE;
+
         if(!is_file($path)) {
             echo 'Warning: CSV import file not found: ' . $display_path . PHP_EOL;
             return;
@@ -95,7 +116,13 @@ class Database {
                 $raw = array_values(str_getcsv($line));
 
                 foreach($map as $mkey => $l) {
-                    $mapped[$l] = $raw[$mkey];
+                    if(array_key_exists($mkey, $raw)) {
+                        $mapped[$l] = $raw[$mkey];
+                    }
+                }
+
+                if(empty($mapped[$id_field])) {
+                    continue;
                 }
 
                 $find = [];

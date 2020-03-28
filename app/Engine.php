@@ -421,7 +421,7 @@ class Engine {
         foreach($Bibles as $Bible) {
             $bibles[$Bible->module] = $Bible->getAttributes();
             $bibles[$Bible->module]['downloadable'] = $Bible->isDownloadable();
-//            $bibles[$Bible->module]['copyright_statement'] = $Bible->isDownloadable();
+            $bibles[$Bible->module]['copyright_statement'] = $Bible->getCopyrightStatement();
         }
 
         return $bibles;
