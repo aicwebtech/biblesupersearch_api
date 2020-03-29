@@ -31,7 +31,7 @@ class Rvg extends ImporterAbstract {
     protected $strongs_en   = NULL;
     protected $paragraph    = NULL;
 
-    public function import() {
+    protected function _importHelper(Bible &$Bible) {
         ini_set("memory_limit", "500M");
 
         // Script settings
@@ -97,6 +97,5 @@ class Rvg extends ImporterAbstract {
         }
 
         $this->_insertVerses();
-        $Bible->enable();
     }
 }

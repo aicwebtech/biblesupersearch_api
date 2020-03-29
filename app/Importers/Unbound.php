@@ -9,7 +9,7 @@
 namespace App\Importers;
 use App\Models\Bible;
 use ZipArchive;
-use \DB; //Todo - something is wrong with namespaces here, shouldn't this be automatically avaliable??
+use \DB; 
 use Illuminate\Http\UploadedFile;
 
 /**
@@ -48,8 +48,9 @@ class Unbound extends ImporterAbstract {
     protected $file_extensions = ['.zip'];
     protected $source = "This Bible imported from The Unbound Bible <a href='http://unbound.biola.edu/'>http://unbound.biola.edu/</a>"; // Where did you get this Bible?
 
+    protected $has_gui = TRUE;
 
-    public function import() {
+    protected function _importHelper(Bible &$Bible) {
         ini_set("memory_limit", "50M");
 
         // Script settings
@@ -61,7 +62,6 @@ class Unbound extends ImporterAbstract {
         $testaments = "both";
 
         // To do - move this logic!
-        $Bible    = $this->_getBible($module);
         $zipfile  = $dir . $file;
         $Zip      = new ZipArchive();
 
@@ -153,7 +153,6 @@ class Unbound extends ImporterAbstract {
         }
 
         $this->_insertVerses();
-        $Bible->enable();
         return TRUE;
     }
 
@@ -174,6 +173,7 @@ class Unbound extends ImporterAbstract {
             }
 
             $attr['name'] = (empty($attr['name'])) ? $name : $attr['name'];
+            $attr['shortname'] = $attr['name'];
         }
 
         $attr['description'] = $desc . '<br /><br />' . $this->source;

@@ -24,21 +24,14 @@ class BibleSuperSearch extends ImporterAbstract {
     protected $file_extensions = ['.zip'];
     protected $source = ""; // Where did you get this Bible?
 
-
+    // Completely replaces parent 
     public function import() {
         ini_set("memory_limit", "50M");
 
-        // Script settings
-        $file   = $this->file;   // File name, minus extension
-        $module = $this->module; // Module and db name
-        $Bible  = Bible::createFromModuleFile($module);
+        $Bible = Bible::createFromModuleFile($this->module);
 
         if(!$Bible) {
-            $Bible    = $this->_getBible($module);
-        }
-
-        if(!$this->overwrite && $this->_existing && $this->insert_into_bible_table) {
-            // return $this->addError('Module already exists: \'' . $module . '\' Use --overwrite to overwrite it.', 4);
+            $Bible = $this->_getBible($module);
         }
 
         if($this->_existing) {
@@ -50,9 +43,15 @@ class BibleSuperSearch extends ImporterAbstract {
         }
 
         $Bible->install();
-        $Bible->enable();
+
+        if($this->enable) {
+            $Bible->enable();
+        }
+
         return TRUE;
     }
+
+    protected function _importHelper(Bible &$Bible) { return TRUE; } // not used
 
     public function checkUploadedFile(UploadedFile $File) {
         $zipfile    = $File->getPathname();

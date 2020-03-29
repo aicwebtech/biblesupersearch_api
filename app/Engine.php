@@ -27,6 +27,7 @@ class Engine {
     protected $metadata = NULL;
     protected $multi_bibles = FALSE;
     public $debug = FALSE;
+    public $allow_disabled_bibles = FALSE;
 
     public function __construct() {
         // Set the default Bible
@@ -85,7 +86,7 @@ class Engine {
     public function addBible($module) {
         $Bible = Bible::findByModule($module);
 
-        if($Bible && $Bible->enabled) {
+        if($Bible && ($Bible->enabled || $this->allow_disabled_bibles)) {
             $this->Bibles[$module] = $Bible;
 
             if(!in_array($Bible->lang_short, $this->languages)) {

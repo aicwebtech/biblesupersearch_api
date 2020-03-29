@@ -23,7 +23,7 @@ use Illuminate\Support\Facades\Storage;
 abstract class ImporterAbstract {
     use \App\Traits\Error;
 
-    protected $bible_attributes = array();
+    protected $bible_attributes = [];
     protected $default_dir;
     protected $file; // File name (no dir)
     protected $module;
@@ -33,6 +33,8 @@ abstract class ImporterAbstract {
     protected $insert_into_bible_table = TRUE; // Whether to insert / update record in Bibles table
     protected $_existing = FALSE;
     protected $_table = NULL;
+    protected $has_cli = TRUE; // Whether there is a command-line interface access to this importer
+    protected $has_gui = FALSE; // Whether there is a user interface access (via the Bible manager) to this importer
     protected $path_short = 'misc';  // Path (inside /bibles) to where import files are located
     protected $file_extensions = []; // White list of allowable file extensions
 
@@ -60,7 +62,33 @@ abstract class ImporterAbstract {
         $this->resetBibleAttributes();
     }
 
-    abstract public function import();
+    /**
+     *   Imports the Bible based on the current set of settings
+     *   @return bool $success
+     */
+    public function import() {
+        $Bible = $this->_getBible($this->module);
+
+        if(!$this->overwrite && $this->_existing && $this->insert_into_bible_table) {
+            // return $this->addError('Module already exists: \'' . $module . '\' Use --overwrite to overwrite it.', 4);
+        }
+
+        if(!$this->_importHelper($Bible)) {
+            return FALSE;
+        }
+
+        if($this->enable) {
+            $Bible->enable();
+        }
+
+        return TRUE;
+    }
+
+    /**
+     *   Helper method that does the actual import work
+     *   @return bool $success
+     */
+    abstract protected function _importHelper(Bible &$Bible);
 
     /**
      *   Checks the uploaded file to make sure it works with the specific importer.
@@ -315,7 +343,7 @@ abstract class ImporterAbstract {
     }
 
     public function __get($name) {
-        $gettable = ['required', 'save_bible', 'overwrite', 'module', 'file', 'insert_into_bible_table', 'enable', 'settings'];
+        $gettable = ['required', 'save_bible', 'overwrite', 'module', 'file', 'insert_into_bible_table', 'enable', 'settings', 'has_gui', 'has_cli'];
 
         if(in_array($name, $gettable)) {
             return $this->$name;

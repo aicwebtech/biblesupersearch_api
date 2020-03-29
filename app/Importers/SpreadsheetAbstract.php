@@ -7,7 +7,7 @@ namespace App\Importers;
 use App\Models\Bible;
 use App\Models\Books\En as BookEn;
 use App\Rules\NonNumericString;
-use \DB; //Todo - something is wrong with namespaces here, shouldn't this be automatically avaliable??
+use \DB; 
 use Illuminate\Http\UploadedFile;
 use Validator;
 
@@ -24,6 +24,9 @@ abstract class SpreadsheetAbstract extends ImporterAbstract {
     protected $path_short   = 'misc';
     protected $file_extensions = []; // Define on child classes
     protected $source = ""; // Where did you get this Bible?
+
+    protected $has_cli = FALSE;
+    protected $has_gui = TRUE;
     
     protected $_last_book_name = NULL;
     protected $_last_book_num  = 0;
@@ -40,11 +43,11 @@ abstract class SpreadsheetAbstract extends ImporterAbstract {
     protected $first_unique_verse = 3;
     protected $first_unique_id = 34;
 
-    public function import() {
+    protected function _importHelper(Bible &$Bible) {
         ini_set("memory_limit", "150M"); // TODO - need to test this with LARGE UNICODE BIBLES to make sure it doesn't break!
-            // Confirmed working with thaikjv .xls AND .csv (10 + MB file)
+            // Confirmed working with thaikjv .xls AND .csv (10+ MB files)
 
-        $Bible     = $this->_getBible($this->module);
+        // $Bible     = $this->_getBible($this->module);
         $file_path = $this->getImportDir() . $this->file;
 
         if(!$this->overwrite && $this->_existing && $this->insert_into_bible_table) {
@@ -73,10 +76,6 @@ abstract class SpreadsheetAbstract extends ImporterAbstract {
             return FALSE;
         }
 
-        if($this->enable) {
-            $Bible->enable();
-        }
-        
         return TRUE;
     }
 

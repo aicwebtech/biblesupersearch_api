@@ -268,6 +268,7 @@ class BibleController extends Controller
     public function test(Request $request, $id) {
         $Bible = Bible::findOrFail($id);
         $Engine = new \App\Engine;
+        $Engine->allow_disabled_bibles = TRUE;
         $resp = new \stdClass();
         $resp->success  = FALSE;
 
@@ -276,10 +277,10 @@ class BibleController extends Controller
             return new Response($resp, 200);
         }
 
-        if(!$Bible->enabled) {
-            $resp->errors = ['Not enabled, so can\'t test!'];
-            return new Response($resp, 200);
-        }
+        // if(!$Bible->enabled) {
+        //     $resp->errors = ['Not enabled, so can\'t test!'];
+        //     return new Response($resp, 200);
+        // }
 
         // Tests a Bible to make sure it has data
         // Only ONE test has to pass for it to be successful

@@ -34,7 +34,7 @@ class Evening extends ImporterAbstract {
     protected $path_short   = 'evening';
     protected $file_extensions = ['.dat'];
 
-    public function import() {
+    protected function _importHelper(Bible &$Bible) {
         ini_set("memory_limit", "50M");
 
         // Script settings
@@ -51,7 +51,7 @@ class Evening extends ImporterAbstract {
         $insert_into_bible_table    = TRUE; // Inserts (or updates) the record in the Bible versions table
         $overwrite_existing         = $this->overwrite;
 
-        $Bible   = $this->_getBible($module);
+        // $Bible   = $this->_getBible($module);
         $dirpath = $dir . $file;
 
         if(!$overwrite_existing && $this->_existing) {
@@ -95,6 +95,7 @@ class Evening extends ImporterAbstract {
 
         $this->_installHelper($dirpath, $ot, 'OldTest');
         $this->_installHelper($dirpath, $nt, 'NewTest');
+        return TRUE;
     }
 
     private function _installHelper($dir, $test, $sub) {
