@@ -3,5 +3,6 @@ enyo.depends(
     'BibleSuperSearch.js',
     'Spreadsheet.js',
     'Unbound.js',
-    'Analyzer.js'
+    'Analyzer.js',
+    'MySword.js'
 );

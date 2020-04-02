@@ -13,6 +13,7 @@ composer-temp.phar
 /bibles/unofficial/*.zip
 /bibles/analyzer/*.bib
 /bibles/evening/*
+/bibles/mysword/*
 /bibles/misc/*
 /bibles/rendered/*
 /app/Premium

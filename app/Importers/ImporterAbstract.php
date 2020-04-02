@@ -36,6 +36,7 @@ abstract class ImporterAbstract {
     protected $has_cli = TRUE; // Whether there is a command-line interface access to this importer
     protected $has_gui = FALSE; // Whether there is a user interface access (via the Bible manager) to this importer
     protected $path_short = 'misc';  // Path (inside /bibles) to where import files are located
+    protected $has_dedicated_dir = NULL; // Whether or not $path_short is dedicated to this specific importer.  Defaults to TRUE if $path_short is 'misc' and FALSE otherwise
     protected $file_extensions = []; // White list of allowable file extensions
 
     protected $settings = []; // User-selectible settings, specific to each importer
@@ -60,6 +61,10 @@ abstract class ImporterAbstract {
 
     public function __construct() {
         $this->resetBibleAttributes();
+        
+        if($this->has_dedicated_dir === NULL) {
+            $this->has_dedicated_dir = ($this->path_short == 'misc') ? FALSE : TRUE;
+        }
     }
 
     /**
@@ -394,15 +399,19 @@ abstract class ImporterAbstract {
             return NULL;
         }
 
-        $match_attr = ['name', 'iso_name', 'native_name'];
+        if(strlen($language) == 3) {
+            $match_attr = ['iso_639_2'];
+        }
+        else {
+            $match_attr = ['name', 'iso_name', 'native_name'];
+        }
+
         $Lang = NULL;
 
         while(!$Lang && $match_attr) {
             $attr = array_shift($match_attr);
             $Lang = Language::where($attr, $language)->first();
         }
-
-        // var_dump($Lang->getAttributes());
 
         return ($Lang) ? $Lang->code : NULL;
     }
