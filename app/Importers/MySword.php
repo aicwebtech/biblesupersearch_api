@@ -24,9 +24,8 @@ class MySword extends ImporterAbstract {
     protected $italics_en   = '<Fi>';
     protected $redletter_st = '<FR>';
     protected $redletter_en = '<Fr>';
-    protected $strongs_st   = '[';
-    protected $strongs_en   = ']';
-    protected $paragraph    = '¶ ';
+    protected $paragraph    = '<CM>'; // TODO - properly handle paragraphs!
+    protected $paragraph_at_verse_end = TRUE;
     protected $unused_tags  = ['RF', 'RX']; // These tags, along with text enclosed betwween them, will be removed. RF = Translators' notes, RX = Cross references
     protected $path_short   = 'mysword';
 

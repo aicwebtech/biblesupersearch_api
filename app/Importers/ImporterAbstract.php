@@ -55,6 +55,8 @@ abstract class ImporterAbstract {
     protected $strongs_st   = '{';
     protected $strongs_en   = '}';
     protected $unused_tags  = [];
+    protected $paragraph_at_verse_end = FALSE; // Whether the paragraph flag is at the end of the verse (it's usually at the beginning)
+    protected $_paragraph_next_verse = FALSE;
 
     // What do do whith Strongs numbers in parentheses: retain, trim, discard
     protected $strongs_parentheses = 'retain';
@@ -206,6 +208,11 @@ abstract class ImporterAbstract {
         $book    = intval($book);
         $chapter = intval($chapter);
         $verse   = intval($verse);
+        
+        if($this->paragraph_at_verse_end && $chapter == 1 && $verse == 1) {
+            $this->_paragraph_next_verse = TRUE;
+        }
+       
         $text    = $this->_formatText($text);
 
         $this->_insertable[] = array(
@@ -305,6 +312,18 @@ abstract class ImporterAbstract {
     }
 
     protected function _formatParagraph($text) {
+        if($this->paragraph_at_verse_end && $this->paragraph) {
+            if($this->_paragraph_next_verse) {
+                $text = '¶ ' . $text;
+                $this->_paragraph_next_verse = FALSE;
+            }
+            elseif (strpos($text, $this->paragraph) !== FALSE) {
+                $this->_paragraph_next_verse = TRUE;
+            }
+
+            return $text;
+        }
+
         if($this->paragraph && $this->paragraph != '¶ ') {
             return str_replace($this->paragraph, '¶ ', $text);
         }
