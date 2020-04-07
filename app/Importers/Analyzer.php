@@ -143,7 +143,6 @@ class Analyzer extends ImporterAbstract {
     }
 
     public function checkUploadedFile(UploadedFile $File) {
-        // $path = $file_tmp_name ?: $file_name;
         $path = $File->getPathname();
 
         try {
@@ -164,7 +163,7 @@ class Analyzer extends ImporterAbstract {
                 'shortname'     => $info['abbr'],
                 'module'        => static::generateUniqueModuleName($info['abbr']),
                 'description'   => $info['info'] . '<br /><br />' . $this->source,
-                'year'          => intval($name_parts[1]) ? trim($name_parts[1]) : NULL,
+                'year'          => count($name_parts) > 1 && intval($name_parts[1]) ? trim($name_parts[1]) : NULL,
             ];
 
             while($row = $res_bib->fetchArray(SQLITE3_ASSOC)) {

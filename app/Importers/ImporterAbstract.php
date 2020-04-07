@@ -41,6 +41,8 @@ abstract class ImporterAbstract {
 
     protected $settings = []; // User-selectible settings, specific to each importer
 
+    protected $attribute_map = [];
+
     protected $required = ['module', 'lang_short']; // Array of required fields (for specific importer type);
 
     protected $_insertable = [];
@@ -127,6 +129,49 @@ abstract class ImporterAbstract {
         }
 
         return TRUE;
+    }
+
+    public function mapMetaToAttributes($meta, $preserve_attributes = FALSE, $map = NULL) {
+        $map = (!$map || !is_array($map)) ? $this->attribute_map : $map;
+        $attr = $old_attr = [];
+
+        if($preserve_attributes) {
+            $attr = $old_attr = $this->bible_attributes;
+        }
+
+        foreach($map as $key => $meta_key) {
+            if(array_key_exists($meta_key, $meta)) {
+                $equal_old_value = (array_key_exists($key, $old_attr) && $old_attr[$key] == $meta[$meta_key]) ? TRUE : FALSE;
+
+                if(!$equal_old_value) {
+
+                    switch($key) {
+                        case 'description':
+                            if($meta[$meta_key] && $this->source) {
+                                $attr[$key] = $meta[$meta_key] . '<br /><br />' . $this->source;
+                            }
+                            else if($this->source) {
+                                $attr[$key] = $this->source;
+                            }
+                            else {
+                                $attr[$key] = $meta[$meta_key];
+                            }
+
+                            break;
+                        case 'lang_short':
+                            $attr[$key] = static::getLanguageCode($meta[$meta_key]);
+                            break;
+                        case 'module':
+                            $attr[$key] = static::generateUniqueModuleName($meta[$meta_key]);
+                            break;
+                        default:
+                            $attr[$key] = $meta[$meta_key];
+                    }
+                }
+            }
+        }
+
+        $this->bible_attributes = $attr;
     }
 
     public function setBibleAttributes($att) {
@@ -418,7 +463,10 @@ abstract class ImporterAbstract {
             return NULL;
         }
 
-        if(strlen($language) == 3) {
+        if(strlen($language) == 2) {
+            $match_attr = ['code'];
+        }
+        elseif(strlen($language) == 3) {
             $match_attr = ['iso_639_2'];
         }
         else {

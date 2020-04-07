@@ -32,6 +32,24 @@ class MySword extends ImporterAbstract {
     protected $has_gui      = TRUE;
     protected $has_cli      = FALSE;
 
+    protected $attribute_map = [
+            'name'          => 'Description',
+            'shortname'     => 'Abbreviation',
+            'module'        => 'Abbreviation',
+            'description'   => 'Comments',
+            'year'          => 'PublishDate',
+            'lang_short'    => 'Language',
+    ];    
+
+    protected $attribute_map_alt = [
+            'name'          => 'description',
+            'shortname'     => 'abbreviation',
+            'module'        => 'abbreviation',
+            'description'   => 'Comments',
+            'year'          => 'publishdate',
+            'lang_short'    => 'language',
+    ];
+
     // Where did you get this Bible?
     protected $source = "This Bible imported from MySword <a href='https://mysword.info/download-mysword/bibles'>https://mysword.info/download-mysword/bibles</a>";
 
@@ -81,12 +99,15 @@ class MySword extends ImporterAbstract {
             echo('Installing: ' . $module . PHP_EOL);
         }
 
-        $res_bib = $SQLITE->query('SELECT * FROM Bible ORDER BY Book ASC, Chapter ASC, Verse ASC');
+        $res_bib = $SQLITE->query('SELECT Book, Chapter, Verse, Scripture FROM Bible ORDER BY Book ASC, Chapter ASC, Verse ASC');
         
         $i = 0;
 
-        while($row = $res_bib->fetchArray(SQLITE3_ASSOC)) {
-            $this->_addVerse($row['Book'], $row['Chapter'], $row['Verse'], $row['Scripture']);
+        while($row = $res_bib->fetchArray(SQLITE3_NUM)) {
+            // $this->_addVerse($row['Book'], $row['Chapter'], $row['Verse'], $row['Scripture']);
+            // $text = iconv("UTF-8","UTF-8//IGNORE", $row[3]);
+
+            $this->_addVerse($row[0], $row[1], $row[2], $row[3]);
             $i++;
 
             if($i > 100) {
@@ -110,10 +131,6 @@ class MySword extends ImporterAbstract {
     }
 
     protected function _formatStrongs($text) {
-        // if(!$this->strongs_st || !$this->strongs_en) {
-        //     return $text;
-        // }
-
         $parentheses = $this->strongs_parentheses;
         $subpattern  = ($parentheses == 'trim') ? '/[GHgh][0-9]+/' : '/\(?[GHgh][0-9]+\)?/';
 
@@ -158,26 +175,37 @@ class MySword extends ImporterAbstract {
             $res_desc = $SQLITE->query('SELECT * FROM Details');
             $info = $res_desc->fetchArray(SQLITE3_ASSOC);
 
+            // var_dump($info);
+
+            $map = (array_key_exists('description', $info)) ? $this->attribute_map_alt : $this->attribute_map;
+
             $res_bib = $SQLITE->query('SELECT * FROM Bible ORDER BY Book ASC, Chapter ASC, Verse ASC LIMIT 10');
             $verse_found = FALSE;
             $book = 0;
             $last_book_name = NULL;
-            $desc = iconv("UTF-8","UTF-8//IGNORE", $info['Comments']);
+            // $desc = iconv("UTF-8","UTF-8//IGNORE", $info['Comments']);
 
-            $this->bible_attributes = [
-                'name'          => $info['Description'],
-                'shortname'     => $info['Abbreviation'],
-                'module'        => static::generateUniqueModuleName($info['Abbreviation']),
-                'description'   => $info['Comments'] . '<br /><br />' . $this->source,
-                'year'          => $info['PublishDate'],
-                'lang_short'    => static::getLanguageCode($info['Language']),
-            ];
+            $this->mapMetaToAttributes($info, FALSE, $map);
 
-            while($row = $res_bib->fetchArray(SQLITE3_ASSOC)) {
-                $book    = intval($row['Book']);
-                $chapter = intval($row['Chapter']);
-                $verse   = intval($row['Verse']);
-                $text    = trim($row['Scripture']);
+            // $this->bible_attributes = [
+            //     'name'          => $info['Description'],
+            //     'shortname'     => $info['Abbreviation'],
+            //     'module'        => static::generateUniqueModuleName($info['Abbreviation']),
+            //     'description'   => array_key_exists('Comments', $info) ?  $info['Comments'] . '<br /><br />' . $this->source : $this->source,
+            //     'year'          => $info['PublishDate'],
+            //     'lang_short'    => array_key_exists('Language', $info) ? static::getLanguageCode($info['Language']) : NULL,
+            // ];
+
+            while($row = $res_bib->fetchArray(SQLITE3_NUM)) {
+                // $book    = intval($row['Book']);
+                // $chapter = intval($row['Chapter']);
+                // $verse   = intval($row['Verse']);
+                // $text    = trim($row['Scripture']);
+
+                $book       = (int) $row[0];
+                $chapter    = (int) $row[1];
+                $verse      = (int) $row[2];
+                $text       = trim($row[3]);
 
                 if(!$book || !$chapter || !$verse || !$text) {
                     continue;
