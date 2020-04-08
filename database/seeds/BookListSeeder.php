@@ -13,9 +13,9 @@ class BookListSeeder extends Seeder
     public function run() {
         $languages = Config::get('bss_table_languages.books');
 
-        if(config('bss.import_from_v2')) {
-            return $this->_importFromV2($languages);
-        }
+        // if(config('bss.import_from_v2')) {
+        //     return $this->_importFromV2($languages);
+        // }
 
         // import book lists from files
         foreach($languages as $lang) {
