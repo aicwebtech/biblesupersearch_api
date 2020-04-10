@@ -2,7 +2,7 @@ Name,ISO language name,Code (639-1),Native name (endonym),RTL,Language family,63
 Afar,Afar,aa,Afaraf,No,Afro-Asiatic,aa,aar,aar,aar,
 Amharic,Amharic,am,አማርኛ,No,Afro-Asiatic,am,amh,amh,amh,
 Arabic,Arabic,ar,العربية,Yes,Afro-Asiatic,ar,ara,ara,ara + 29,"macrolanguage, Standard Arabic is [arb]"
-Hausa,Hausa,ha,(Hausa) هَوُسَ,No,Afro-Asiatic,ha,hau,hau,hau,
+Hausa,Hausa,ha,(Hausa) هَوُسَ,No,Afro-Asiatic,ha,hau,hau,hau,"Has used Latin-based alphabet since 1930, left-to-right.  Used an Arabic alphabet previously"
 Hebrew,Hebrew,he,עברית,Yes,Afro-Asiatic,he,heb,heb,heb,"Modern Hebrew. Code changed in 1989 from original ISO 639:1988, iw.[1]"
 Maltese,Maltese,mt,Malti,No,Afro-Asiatic,mt,mlt,mlt,mlt,
 Oromo,Oromo,om,Afaan Oromoo,No,Afro-Asiatic,om,orm,orm,orm + 4,macrolanguage
@@ -76,7 +76,7 @@ Irish,Irish,ga,Gaeilge,No,Indo-European,ga,gle,gle,gle,
 Icelandic,Icelandic,is,Íslenska,No,Indo-European,is,isl,ice,isl,
 Italian,Italian,it,Italiano,No,Indo-European,it,ita,ita,ita,
 Kashmiri,Kashmiri,ks,"कश्मीरी, كشميري‎",No,Indo-European,ks,kas,kas,kas,
-Kurdish,Kurdish,ku,"Kurdî, کوردی‎",No,Indo-European,ku,kur,kur,kur + 3,macrolanguage
+Kurdish,Kurdish,ku,"Kurdî, کوردی‎",Yes,Indo-European,ku,kur,kur,kur + 3,macrolanguage
 Latin,Latin,la,"latine, lingua latina",No,Indo-European,la,lat,lat,lat,ancient
 "Luxembourgish, Letzeburgesch","Luxembourgish, Letzeburgesch",lb,Lëtzebuergesch,No,Indo-European,lb,ltz,ltz,ltz,
 "Limburgan, Limburger, Limburgish","Limburgan, Limburger, Limburgish",li,Limburgs,No,Indo-European,li,lim,lim,lim,
