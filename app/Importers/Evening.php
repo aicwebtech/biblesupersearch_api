@@ -75,13 +75,13 @@ class Evening extends ImporterAbstract {
             $attr['description'] = $source;
 
             // These retentions should be removed once V2 tables fully imported
-            $retain = ['lang', 'lang_short', 'shortname', 'name'];
+            // $retain = ['lang', 'lang_short', 'shortname', 'name'];
 
-            foreach($retain as $item) {
-                if(!empty($Bible->$item)) {
-                    unset($attr[$item]);
-                }
-            }
+            // foreach($retain as $item) {
+            //     if(!empty($Bible->$item)) {
+            //         unset($attr[$item]);
+            //     }
+            // }
 
             $Bible->fill($attr);
             $Bible->save();

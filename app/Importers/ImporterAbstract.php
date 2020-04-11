@@ -56,7 +56,7 @@ abstract class ImporterAbstract {
     protected $paragraph    = '¶ ';
     protected $strongs_st   = '{';
     protected $strongs_en   = '}';
-    protected $unused_tags  = [];
+    protected $unused_tags  = []; // These tags. plus EVERYTHING enclosed by them, will be removed from the text
     protected $paragraph_at_verse_end = FALSE; // Whether the paragraph flag is at the end of the verse (it's usually at the beginning)
     protected $_paragraph_next_verse = FALSE;
 
@@ -245,6 +245,7 @@ abstract class ImporterAbstract {
             }
         }
 
+
         $this->bible_attributes = $attributes;
         return ($this->has_errors) ? FALSE : TRUE;
     }
@@ -344,14 +345,15 @@ abstract class ImporterAbstract {
 
     protected function _formatRedLetter($text) {
         $find = [$this->redletter_st, $this->redletter_en];
-        // $rep  = ['<', '>'];
         $rep = ['‹','›'];  // NOT <>!, U+2039, U+203A
         $text = $this->_replaceTagsIfNeeded($find, $rep, $text);
 
-        if($find[0] && $find[1]) {
-            $text = str_replace('› [', ' [', $text);
-            $text = str_replace('] ‹', '] ', $text);
-        }
+        // This was a failed attempt to mark italicized words as red letter.
+        // It resulted, in some instances, the remainder of the verse text being made red.
+        // if($find[0] && $find[1]) {
+        //     $text = str_replace('› [', ' [', $text);
+        //     $text = str_replace('] ‹', '] ', $text);
+        // }
 
         return $text;
     }

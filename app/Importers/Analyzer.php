@@ -27,7 +27,7 @@ class Analyzer extends ImporterAbstract {
     protected $strongs_st   = '[';
     protected $strongs_en   = ']';
     protected $paragraph    = '¶ ';
-    protected $unused_tags  = ['fn'];
+    protected $unused_tags  = ['fn', 'a'];
     protected $path_short   = 'analyzer';
 
     protected $has_gui      = TRUE;
@@ -70,15 +70,6 @@ class Analyzer extends ImporterAbstract {
         if($this->insert_into_bible_table) {
             $attr = $this->bible_attributes;
             $attr['description'] = $desc . '<br /><br />' . $this->source;
-
-            // These retentions should be removed once V2 tables fully imported
-            $retain = ['lang', 'lang_short', 'shortname', 'name'];
-
-            foreach($retain as $item) {
-                if(!empty($Bible->$item)) {
-                    unset($attr[$item]);
-                }
-            }
 
             $Bible->fill($attr);
             $Bible->save();

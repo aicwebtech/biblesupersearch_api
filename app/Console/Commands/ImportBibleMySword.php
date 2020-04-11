@@ -3,25 +3,26 @@
 namespace App\Console\Commands;
 
 use Illuminate\Console\Command;
-use App\Importers\Unbound;
+use App\Importers\MySword as Importer;
 
-class ImportBibleUnbound extends ImportBible {
+class ImportBibleMySword extends ImportBible {
     /**
      * The name and signature of the console command.
      * @var string
      */
-    protected $name = 'Unbound Bible';
-    protected $signature = 'bible:import-unbound';
-    protected $import_dir = 'unbound';
-    protected $file_extension = 'zip';
+    protected $name = 'MySword';
+    protected $signature = 'bible:import-mysword';
+    protected $import_dir = 'mysword';
+    protected $file_extension = 'mybible';
 
     /**
      * The console command description.
      * @var string
      */
-    protected $description = 'Import a Bible in the (zipped) Unbound Bible Format
+    protected $description = 'Import a Bible in the MySword .bible format
+                              NOTE: You must extract from the .gz or .zip first!
                               These can be downloaded at
-                              https://unbound.biola.edu/index.cfm?method=downloads.showDownloadMain';
+                              https://mysword.info/download-mysword/bibles';
 
     /**
      * Create a new command instance.
@@ -36,7 +37,7 @@ class ImportBibleUnbound extends ImportBible {
      * @return mixed
      */
     public function handle() {
-        $Importer = new Unbound();
+        $Importer = new Importer();
         $this->_handleHelper($Importer);
     }
 }

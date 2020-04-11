@@ -92,16 +92,6 @@ class Unbound extends ImporterAbstract {
 
         if($this->insert_into_bible_table) {
             $attr = $this->_parseAttributes($desc);
-
-            // These retentions should be removed once V2 tables fully imported
-            $retain = ['lang', 'lang_short', 'shortname', 'name'];
-
-            foreach($retain as $item) {
-                if(!empty($Bible->$item)) {
-                    unset($attr[$item]);
-                }
-            }
-
             $Bible->fill($attr);
             $Bible->save();
         }
@@ -177,7 +167,10 @@ class Unbound extends ImporterAbstract {
         }
 
         $attr['description'] = $desc . '<br /><br />' . $this->source;
-        $attr['lang_short']  = static::getLanguageCode($lang);
+        
+        if(!array_key_exists('lang_short', $attr)) {
+            $attr['lang_short']  = static::getLanguageCode($lang);
+        }
 
         $this->bible_attributes = $attr;
         return $attr;

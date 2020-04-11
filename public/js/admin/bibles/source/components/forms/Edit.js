@@ -197,6 +197,14 @@ enyo.kind({
         {from: 'formData.year', to: '$.year.value', oneWay: false, transform: function(value, dir) {
             this.debugBindings && this.log('year', value, dir);
             return value || '';
+        }},           
+        {from: 'formData.publisher', to: '$.publisher.value', oneWay: false, transform: function(value, dir) {
+            this.debugBindings && this.log('publisher', value, dir);
+            return value || '';
+        }},          
+        {from: 'formData.owner', to: '$.owner.value', oneWay: false, transform: function(value, dir) {
+            this.debugBindings && this.log('owner', value, dir);
+            return value || '';
         }},        
         {from: 'formData.description', to: '$.description.value', oneWay: false, transform: function(value, dir) {
             this.debugBindings && this.log('description', value, dir);
