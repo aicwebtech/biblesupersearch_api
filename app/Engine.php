@@ -396,20 +396,41 @@ class Engine {
     public function actionBibles($input) {
         $include_desc = FALSE;
         $Bibles = Bible::select('bibles.name','shortname','module','year','languages.name AS lang','lang_short','copyright','italics','strongs','red_letter',
-                'paragraph','rank','research','copyright_id','copyright_statement', 'languages.rtl');
+                'paragraph','rank','research','copyright_id','copyright_statement', 'languages.rtl', 'languages.native_name AS lang_native');
 
         $Bibles->leftJoin('languages', 'bibles.lang_short', 'languages.code');
         $bibles = array(); // Array of associative arrays
+
+        $order_by_default = 'lang_native_name|rank';
+        $order_by = array_key_exists('bible_order_by', $input) ? $input['bible_order_by'] : $order_by_default;
+        $group_by = array_key_exists('bible_group_by', $input) ? $input['bible_group_by'] : NULL;
 
         if($include_desc) {
             $Bibles -> addSelect('description');
         }
 
+        // Legacy order by flag - still supported for now
         if(array_key_exists('order_by_lang_name', $input) && !empty($input['order_by_lang_name'])) {
             $Bibles -> orderBy('lang', 'ASC') -> orderBy('name', 'ASC');
         }
         else {
-            $Bibles -> orderBy('rank', 'ASC');
+            foreach(explode('|', $order_by) as $ob) {
+                switch($ob) {
+                    case 'lang_native_name':
+                        $Bibles -> orderBy('lang_native', 'ASC');      
+                        break;
+
+                    case 'lang_name':
+                        $Bibles -> orderBy('lang', 'ASC');
+                        break;         
+
+                    case 'rank':
+                    case 'name':
+                    case 'shortname':
+                        $Bibles -> orderBy($ob, 'ASC');
+                        break; 
+                }
+            }
         }
 
         $Bibles = $Bibles -> where('enabled', 1) -> with('copyrightInfo') -> get() -> all();
