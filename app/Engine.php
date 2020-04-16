@@ -405,6 +405,8 @@ class Engine {
         $order_by = array_key_exists('bible_order_by', $input) ? $input['bible_order_by'] : $order_by_default;
         $group_by = array_key_exists('bible_group_by', $input) ? $input['bible_group_by'] : NULL;
 
+        // var_dump($order_by);
+
         if($include_desc) {
             $Bibles -> addSelect('description');
         }
