@@ -9,7 +9,7 @@ class Language extends Model {
     public $timestamps = FALSE;
 
     protected $fillable = [
-        'name', 'iso_name', 'code', 'native_name', 'rtl', 'family', 'iso_639_1', 'iso_639_2', 'iso_639_2_b', 'iso_639_3', 'iso_639_3_raw', 'notes'
+        'name', 'iso_name', 'code', 'native_name', 'iso_endonym', 'rtl', 'family', 'iso_639_1', 'iso_639_2', 'iso_639_2_b', 'iso_639_3', 'iso_639_3_raw', 'notes'
     ];
 
     public function rtl() {
@@ -42,7 +42,7 @@ class Language extends Model {
 
     public static function migrateFromCsv() {
         $map = [
-            'name', 'iso_name', 'code', 'native_name', 'rtl', 'family', 'iso_639_1', 'iso_639_2', 'iso_639_2_b', 'iso_639_3_raw', 'notes'
+            'name', 'native_name', 'iso_name', 'code', 'iso_endonym', 'rtl', 'family', 'iso_639_1', 'iso_639_2', 'iso_639_2_b', 'iso_639_3_raw', 'notes'
         ];
 
         \App\Importers\Database::importCSV('languages.csv', $map, '\\' . get_called_class(), 'code');

@@ -21,8 +21,9 @@ class RebuildLanguagesTable extends Migration
         Schema::create('languages', function (Blueprint $table) {
             $table->increments('id');
             $table->string('name', 255)->comment('Display name (English)');
-            $table->string('iso_name', 255)->comment('ISO Language Name');
+            $table->string('iso_name', 255)->comment('ISO Language Name - Raw');
             $table->string('native_name', 255)->comment('Endonym');
+            $table->string('iso_endonymn', 255)->comment('ISO Endonym - Raw');
             $table->string('family', 255)->comment('Language Family');
             $table->string('code', 3)->unique()->comment('2 or 3 character unique code.  Either ISO-369-1 or ISO-369-2');
             $table->tinyInteger('rtl')->default(0)->unsigned()->comment('Right to left');

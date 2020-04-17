@@ -75,7 +75,7 @@ enyo.kind({
                     ]}
                 ]},
                 {tag: 'tr', components: [
-                    {tag: 'td', classes: 'form_label right', content: 'Sort Order: '},
+                    {tag: 'td', classes: 'form_label right', content: 'Rank: '},
                     {tag: 'td', attributes: {colspan: 2}, classes: 'form_label right', components: [
                         {kind: 'enyo.Input', name: 'rank'}
                     ]}

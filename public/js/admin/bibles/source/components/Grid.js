@@ -51,7 +51,7 @@ enyo.kind({
                     {name: 'enabled', index: 'enabled', align: 'center', label: 'Enabled', width:'80', title: false, formatter: enyo.bind(this, this._formatEnabled)},
                     {name: 'official', index: 'official', align: 'center', label: 'Official *', width:'60', title: false, formatter: enyo.bind(this, this._formatSinpleBoolean)},
                     {name: 'research', index: 'research', align: 'center', label: 'Research **', width:'80', title: false, formatter: enyo.bind(this, this._formatResearch)},
-                    {name: 'rank', index: 'rank', label: 'Sort Order', width:'100'},
+                    {name: 'rank', index: 'rank', label: 'Rank', width:'60'},
                     {name: 'actions', index: 'actions', label: '&nbsp', width:'120', title: false, formatter: enyo.bind(this, this._formatActions)},
                     {name: 'id', index: 'id', hidden: true}
                 ],
@@ -60,7 +60,7 @@ enyo.kind({
                     id: 'id'
                 },
                 pager: pagerId,
-                sortname: 'rank',
+                sortname: 'lang',
                 sortorder: 'asc',
                 viewrecords: true,
                 height: 'auto',

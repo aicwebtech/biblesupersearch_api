@@ -418,17 +418,18 @@ class Engine {
         else {
             foreach(explode('|', $order_by) as $ob) {
                 switch($ob) {
-                    case 'lang_native_name':
+                    case 'lang_name':
                         $Bibles -> orderBy('lang_native', 'ASC');      
                         break;
 
-                    case 'lang_name':
+                    case 'lang_name_english':
                         $Bibles -> orderBy('lang', 'ASC');
                         break;         
 
                     case 'rank':
                     case 'name':
                     case 'shortname':
+                    case 'lang_short':
                         $Bibles -> orderBy($ob, 'ASC');
                         break; 
                 }
