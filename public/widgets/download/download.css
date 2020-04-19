@@ -76,13 +76,21 @@ tr.download_disabled {
 .pseudo_dialog_contents span.float_left {
     display: inline-block;
     float: left;
-    font-family: Courier, Monospace;
+    /*font-family: Courier, Monospace;*/
+}
+
+.pseudo_dialog_contents span.rendering_name {
+    width: 70%;
+    overflow-x: hidden;
+    text-align: left;
+    text-indent: -80px;
+    padding-left: 80px;
 }
 
 .pseudo_dialog_contents span.float_right {
     display: inline-block;
     float: right;
-    font-family: Courier, Monospace;
+    /*font-family: Courier, Monospace;*/
 }
 
 .pseudo_dialog_buttons {

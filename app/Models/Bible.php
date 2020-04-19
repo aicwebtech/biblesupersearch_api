@@ -154,6 +154,7 @@ class Bible extends Model {
             }
             else {
                 $this->installed = 1;
+                $this->installed_at = date('Y-m-d H:i:s');
 
                 if($enable) {
                     $this->enabled = 1;
@@ -172,6 +173,7 @@ class Bible extends Model {
             $this->verses()->uninstall();
             $this->installed = 0;
             $this->enabled = 0;
+            $this->installed_at = NULL;
             $this->save();
         }
         else {
@@ -244,6 +246,8 @@ class Bible extends Model {
             $this->addError('Could not open ZIP file ' . $res);
         }
 
+        $this->installed_at = date('Y-m-d H:i:s');
+        $this->save();
         return ($res === TRUE) ? TRUE : FALSE;
     }
 
@@ -319,6 +323,8 @@ class Bible extends Model {
             $Zip->close();
         }
 
+        $this->installed_at = date('Y-m-d H:i:s');
+        $this->save();
         return ($res === TRUE) ? TRUE : FALSE;
     }    
 
@@ -401,6 +407,27 @@ class Bible extends Model {
 
     public function hasModuleFile() {
         return is_file($this->getModuleFilePath());
+    }
+
+    public function needsUpdate() {
+        return FALSE;
+
+        if(!$this->hasModuleFile()) {
+            return FALSE;
+        }
+
+        $install_ts = strtotime($this->installed_at);
+        $update_ts  = filemtime($this->getModuleFilePath());
+
+        if(!$install_ts || !$update_ts) {
+            return FALSE;
+        }
+
+        if($update_ts > $install_ts) {
+            return TRUE;
+        }
+
+        return FALSE;
     }
 
     public static function getExportFields() {

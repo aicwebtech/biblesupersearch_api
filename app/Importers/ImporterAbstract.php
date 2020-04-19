@@ -245,15 +245,22 @@ abstract class ImporterAbstract {
             }
         }
 
-
         $this->bible_attributes = $attributes;
         return ($this->has_errors) ? FALSE : TRUE;
     }
 
-    protected function _addVerse($book, $chapter, $verse, $text) {
+    protected function _addVerse($book, $chapter, $verse, $text, $format_text = FALSE) {
         $book    = intval($book);
         $chapter = intval($chapter);
         $verse   = intval($verse);
+
+        if(!$book || !$chapter || !$verse || empty($text)) {
+            return;
+        }
+
+        if($format_text) {
+            $text = $this->_formatText($text);
+        }
         
         if($this->paragraph_at_verse_end && $chapter == 1 && $verse == 1) {
             $this->_paragraph_next_verse = TRUE;
@@ -301,7 +308,9 @@ abstract class ImporterAbstract {
     }
 
     protected function _postFormatText($text) {
-        return preg_replace('/\s+/', ' ', $text);
+        $text = strip_tags($text);
+        $text = preg_replace('/\s+/', ' ', $text);
+        return $text;
     }
 
     protected function _formatStrongs($text) {

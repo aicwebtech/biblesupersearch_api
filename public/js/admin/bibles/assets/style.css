@@ -20,6 +20,10 @@ td.alert {
     color: white;
 }
 
+td.alert a, td.alert a:hover {
+    color: white;
+}
+
 td.off {
     background-color: #ffa8a8;
 }

@@ -34,7 +34,7 @@ enyo.kind({
                 colModel: [
                     {name: 'name', index: 'name', label: 'Name', width:'200', editable: true},
                     {name: 'shortname', index: 'shortname', label: 'Short Name', width:'100', editable: true},
-                    {name: 'module', index: 'module', label: 'Module', width:'150'},
+                    {name: 'module', index: 'module', label: 'Module', width:'100'},
                     {
                         name: 'has_module_file', 
                         index: 'has_module_file', 
@@ -51,6 +51,16 @@ enyo.kind({
                     {name: 'enabled', index: 'enabled', align: 'center', label: 'Enabled', width:'80', title: false, formatter: enyo.bind(this, this._formatEnabled)},
                     {name: 'official', index: 'official', align: 'center', label: 'Official *', width:'60', title: false, formatter: enyo.bind(this, this._formatSinpleBoolean)},
                     {name: 'research', index: 'research', align: 'center', label: 'Research **', width:'80', title: false, formatter: enyo.bind(this, this._formatResearch)},
+                    {
+                        name: 'updated_at', 
+                        index: 'updated_at', 
+                        align: 'center', 
+                        label: 'Updated', 
+                        width:'100', 
+                        title: false, 
+                        formatter: 'date', 
+                        formatoptions: {srcformat: 'Y-m-d H:i:s', newformat: 'd M Y, H:i'}
+                    },
                     {name: 'rank', index: 'rank', label: 'Rank', width:'60'},
                     {name: 'actions', index: 'actions', label: '&nbsp', width:'120', title: false, formatter: enyo.bind(this, this._formatActions)},
                     {name: 'id', index: 'id', hidden: true}
@@ -128,7 +138,7 @@ enyo.kind({
     _formatInstalled: function(cellvalue, options, rowObject) {
         var fmt = (cellvalue == '1') ? 'Yes' : 'No&nbsp;';
         options.colModel.classes = (cellvalue == '1') ? 'on' : 'off';
-        
+
         if(cellvalue == '1' || rowObject.has_module_file == '1') {        
             var action = (cellvalue == '1') ? 'Uninstall' : 'Install';
             var signal = (cellvalue == '1') ? 'onConfirmAction' : 'onBibleInstall';
@@ -156,11 +166,20 @@ enyo.kind({
     _formatEnabled: function(cellvalue, options, rowObject) {
         var fmt = (cellvalue == '1') ? 'Yes' : 'No&nbsp;';
         options.colModel.classes = (cellvalue == '1') ? 'on' : 'off';
+        
+        if(rowObject.installed == '1') {     
+            if(rowObject.needs_update == '1') {
+                var action = 'update';
+                var text = 'Update';
+                var signal = 'onBibleUpdate';
+                options.colModel.classes = 'alert';
+            }
+            else {
+                var text = (cellvalue == '1') ? 'Disable' : 'Enable';
+                var action = (cellvalue == '1') ? 'disable' : 'enable';
+                var signal = (cellvalue == '1') ? 'onBibleDisable' : 'onBibleEnable';
+            }
 
-        if(rowObject.installed == '1') {        
-            var text = (cellvalue == '1') ? 'Disable' : 'Enable';
-            var action = (cellvalue == '1') ? 'disable' : 'enable';
-            var signal = (cellvalue == '1') ? 'onBibleDisable' : 'onBibleEnable';
             var props = {id: options.rowId, action: action};
             var url = this.__makeSignalUrl('onConfirmAction', props);
             fmt += " &nbsp; &nbsp;<a href='javascript:" + url + "'>" + text + "</a>";

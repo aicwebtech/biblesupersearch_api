@@ -78,6 +78,7 @@ Route::post('/admin/bibles/unique', 'Admin\BibleController@uniqueCheck');
 Route::get('/admin/bibles/unique', 'Admin\BibleController@uniqueCheck');
 Route::post('/admin/bibles/importcheck', 'Admin\BibleController@importCheck');
 Route::post('/admin/bibles/import', 'Admin\BibleController@import');
+Route::post('/admin/bibles/update', 'Admin\BibleController@updateModule');
 
 Route::get('/admin/tos', 'Admin\PostConfigController@tos')->name('admin.tos');
 Route::post('/admin/tos', 'Admin\PostConfigController@saveTos');

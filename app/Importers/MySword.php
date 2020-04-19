@@ -104,9 +104,7 @@ class MySword extends ImporterAbstract {
         $i = 0;
 
         while($row = $res_bib->fetchArray(SQLITE3_NUM)) {
-            // $this->_addVerse($row['Book'], $row['Chapter'], $row['Verse'], $row['Scripture']);
             // $text = iconv("UTF-8","UTF-8//IGNORE", $row[3]);
-
             $this->_addVerse($row[0], $row[1], $row[2], $row[3]);
             $i++;
 
@@ -160,12 +158,6 @@ class MySword extends ImporterAbstract {
         return $text;
     }
 
-    protected function _postFormatText($text) {
-        $text = parent::_postFormatText($text);
-        $text = strip_tags($text);
-        return $text;
-    }
-
     public function checkUploadedFile(UploadedFile $File) {
         // $path = $file_tmp_name ?: $file_name;
         $path = $File->getPathname();
@@ -187,21 +179,7 @@ class MySword extends ImporterAbstract {
 
             $this->mapMetaToAttributes($info, FALSE, $map);
 
-            // $this->bible_attributes = [
-            //     'name'          => $info['Description'],
-            //     'shortname'     => $info['Abbreviation'],
-            //     'module'        => static::generateUniqueModuleName($info['Abbreviation']),
-            //     'description'   => array_key_exists('Comments', $info) ?  $info['Comments'] . '<br /><br />' . $this->source : $this->source,
-            //     'year'          => $info['PublishDate'],
-            //     'lang_short'    => array_key_exists('Language', $info) ? static::getLanguageCode($info['Language']) : NULL,
-            // ];
-
             while($row = $res_bib->fetchArray(SQLITE3_NUM)) {
-                // $book    = intval($row['Book']);
-                // $chapter = intval($row['Chapter']);
-                // $verse   = intval($row['Verse']);
-                // $text    = trim($row['Scripture']);
-
                 $book       = (int) $row[0];
                 $chapter    = (int) $row[1];
                 $verse      = (int) $row[2];

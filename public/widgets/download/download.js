@@ -166,8 +166,8 @@ function bibleDownloadProcessNext() {
     if(bibleRenderQueueProcess) {
         var bible = bibleRenderQueue.shift();
         var name = $('label[for="bible_download_' + bible +'"]').html();
-        var sep  = '-';
-        var text = '<span class="float_left">Rendering: <i>' + name + '</i> ' + sep.repeat(44 - name.length) + '</span>';
+        var msg = '<i>' + name + '</i> ';
+        var text = '<span class="float_left rendering_name">Rendering: ' + msg + '</span>';
 
         $('#bible_download_dialog_content').append(text);
 
@@ -190,13 +190,13 @@ function bibleDownloadProcessNext() {
                 console.log('error', response);
 
                 if(!response) {
-                     bibleDownloadAlert('An unknown error has occurred');
+                    bibleDownloadAlert('An unknown error has occurred');
                 }
                 else if(response.results.success) {
                     _bibleDownloadItemDone();
                 }
                 else {
-                    $('#bible_download_dialog_content').append('<span class="float_left"> ERROR</span><br>');
+                    $('#bible_download_dialog_content').append('<span class="float_right">-- ERROR</span><br>');
                     $('#bible_download_dialog_content').append('    ' + response.errors.join('<br>') );
                     bibleRenderQueueProcess = false;
                     return;
@@ -207,7 +207,7 @@ function bibleDownloadProcessNext() {
 }
 
 function _bibleDownloadItemDone() {
-    $('#bible_download_dialog_content').append('<span class="float_left">- Done</span><br>');
+    $('#bible_download_dialog_content').append('<span class="float_right">-- Done</span><br>');
 
     if(bibleRenderQueue.length == 0) {
         bibleDownloadProcessFinal();
@@ -218,7 +218,7 @@ function _bibleDownloadItemDone() {
 }
 
 function bibleDownloadProcessFinal() {
-    // return;
+    // return; // debugging
 
     $('#bible_download_dialog').hide();
     bibleDownloadDirectSubmit = true;

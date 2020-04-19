@@ -68,6 +68,7 @@ class BibleController extends Controller
             $row = $Bible->getAttributes();
             unset($row['description']);
             $row['has_module_file'] = $Bible->hasModuleFile() ? 1 : 0;
+            $row['needs_update']    = $Bible->needsUpdate() ? 1 : 0;
             $rows[] = $row;
         }
 
@@ -237,6 +238,23 @@ class BibleController extends Controller
         $Bible = Bible::findOrFail($id);
         $data  = $request->toArray();
         $enable = (array_key_exists('enable', $data) && $data['enable']) ? TRUE : FALSE;
+        $Bible->install(FALSE, $enable);
+
+        $resp = new \stdClass();
+        $resp->success = TRUE;
+
+        if($Bible->hasErrors()) {
+            $resp->success = FALSE;
+            $resp->errors  = $Bible->getErrors();
+        }
+
+        return new Response($resp, 200);
+    }    
+
+    public function updateModule(Request $request, $id) {
+        $Bible = Bible::findOrFail($id);
+        $enable = $Bible->enable;
+        $Bible->uninstall();
         $Bible->install(FALSE, $enable);
 
         $resp = new \stdClass();

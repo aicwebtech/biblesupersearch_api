@@ -133,7 +133,7 @@ class Unbound extends ImporterAbstract {
                 continue;
             }
 
-            $this->_addVerse($book, $chapter, $verse, $text);
+            $this->_addVerse($book, $chapter, $verse, $text, TRUE);
 
             $i++;
 
@@ -144,6 +144,13 @@ class Unbound extends ImporterAbstract {
 
         $this->_insertVerses();
         return TRUE;
+    }
+
+    protected function _preFormatText($text) {
+        $text = parent::_preFormatText($text);
+        $text = str_replace(['‹‹', '››'], '"', $text);
+        $text = str_replace(['‹', '›'], '\'', $text);
+        return $text;
     }
 
     private function _parseAttributes($desc, $clear_existing = FALSE) {
