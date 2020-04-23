@@ -22,7 +22,7 @@ class CreateLanguagesTable extends Migration
         //     $table->string('code', 2)->unique();
         // });
 
-        DatabaseImport::importSqlFile('languages.sql');
+        // DatabaseImport::importSqlFile('languages.sql');
     }
 
     /**

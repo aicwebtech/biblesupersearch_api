@@ -15,6 +15,10 @@ class Database {
 
     protected static $processed_files = [];
 
+    protected static $insertable = [];
+    protected static $insert_count = 0;
+    protected static $insert_model = NULL;
+
     static public function processQueue() {
         static::$processing_queue = TRUE;
 
@@ -51,7 +55,7 @@ class Database {
         //var_dump($file);
 
         if(!is_file($path)) {
-            echo 'Warning: Sql import file not found: ' . $display_path . PHP_EOL;
+            throw new \Exception('Warning: Sql import file not found: ' . $display_path);
             return;
         }
 
@@ -82,7 +86,7 @@ class Database {
         }
     }
 
-    static public function importCSV($file, $map, $model_class, $id_field = 'id', $dir = NULL) {
+    static public function importCSV($file, $map, $model_class, $id_field = 'id', $dir = NULL, $direct_insert_threshold = 0) {
         $default_dir = ($dir) ? FALSE : TRUE;
         $dir = ($dir) ? $dir : dirname(__FILE__) . '/../../database/dumps';
         $path = $dir . '/' . $file;
@@ -100,11 +104,12 @@ class Database {
         static::$processed_files[$path] = TRUE;
 
         if(!is_file($path)) {
-            echo 'Warning: CSV import file not found: ' . $display_path . PHP_EOL;
+            throw new \Exception('Warning: CSV import file not found: ' . $display_path);
             return;
         }
 
         $contents = array_values(file($path, FILE_SKIP_EMPTY_LINES));
+        $force_null = ($direct_insert_threshold) ? TRUE : FALSE; 
 
         foreach($contents as $key => $line) {
             if($key == 0) {
@@ -119,9 +124,17 @@ class Database {
                     if(array_key_exists($mkey, $raw)) {
                         $mapped[$l] = $raw[$mkey];
                     }
+                    else if($force_null) {
+                        $mapped[$l] = NULL;
+                    }
                 }
 
                 if(empty($mapped[$id_field])) {
+                    continue;
+                }
+
+                if($direct_insert_threshold) {
+                    static::_directInsert($model_class, $mapped, $direct_insert_threshold);
                     continue;
                 }
 
@@ -133,9 +146,33 @@ class Database {
             catch (\Exception $ex) {
                 // Ignore db errors?
                 // echo $ex->getMessage() . PHP_EOL . PHP_EOL;
+                throw new \Exception($ex->getMessage());
             }
         }
+
+        static::_directInsertPush();
     }
+
+    static protected function _directInsert($model_class, $mapped, $insert_threshold) {
+        static::$insertable[] = $mapped;
+        static::$insert_count ++;
+        static::$insert_model = $model_class;
+
+        if(static::$insert_count >= $insert_threshold) {
+            static::_directInsertPush();
+        }
+    }
+
+    static protected function _directInsertPush() {
+        if(static::$insert_model) {
+            $model_class = static::$insert_model;
+            $model_class::insertOrIgnore(static::$insertable);
+        }
+
+        static::$insertable   = [];
+        static::$insert_count = 0;
+        static::$insert_model = NULL;
+    }   
 
     static public function setCreatedUpdated($db_table) {
         $sql_date = date('Y-m-d H:i:s');
