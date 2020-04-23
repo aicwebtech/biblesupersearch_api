@@ -71,7 +71,8 @@ enyo.kind({
     close: function() {
         this.inherited(arguments);
 
-        if(typeof this.callback == 'function') {
+        if(typeof this.callback == 'function' && !this.debounce) {
+            this.debounce = window.setTimeout( enyo.bind(this, this._clearDebounce), 100);
             this.callback(this.confirmed, enyo.clone(this.props));
         }
     },
@@ -87,5 +88,8 @@ enyo.kind({
     },
     _resetProps: function() {
         this.set('props', {enable: 1});
+    },
+    _clearDebounce: function() {
+        this.debounce = null;
     }
 });

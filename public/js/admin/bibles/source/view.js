@@ -219,8 +219,9 @@ enyo.kind({
     },
     _singleActionHelper: function(action, id, postData) {
         var url = '/admin/bibles/' + action + '/' + id;
-        this.log('about to load', url);
-        this.log('postData', postData);
+        // this.log(action, id);
+        // this.log('about to load', url);
+        // this.log('postData', postData);
         this.app.set('ajaxLoading', true);
         postData._token = laravelCsrfToken;
 
