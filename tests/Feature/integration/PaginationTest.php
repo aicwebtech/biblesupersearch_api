@@ -35,7 +35,7 @@ class PaginationTest extends TestCase {
         $Engine = new Engine();
 
         if(!Bible::isEnabled('tyndale')) {
-            return;
+            $this->markTestSkipped('Bible tyndale not installed or enabled');
         }
 
         $results = $Engine->actionQuery(['bible' => ['kjv','tyndale'], 'search' => 'faith', 'whole_words' => TRUE, 'page' => 1]);

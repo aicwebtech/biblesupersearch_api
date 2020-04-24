@@ -16,7 +16,7 @@ class ParallelTest extends TestCase {
         $Engine->setDefaultDataType('raw');
 
         if(!Bible::isEnabled('tyndale')) {
-            return;
+            $this->markTestSkipped('Bible tyndale not installed or enabled');
         }
 
         // KJV and Tyndales
@@ -26,6 +26,15 @@ class ParallelTest extends TestCase {
         // 341 unique verses across both Bibles.
         $this->assertCount(341, $results['kjv']);
         $this->assertCount(286, $results['tyndale']); // However, Tyndale Bible is missing MOST of the OT: 286 vetted.
+    }    
+
+    public function testParallelSearch2() {
+        $Engine = new Engine();
+        $Engine->setDefaultDataType('raw');
+
+        if(!Bible::isEnabled('bishops')) {
+            $this->markTestSkipped('Bible bishops not installed or enabled');
+        }
 
         // KJV and Bishops
         $results = $Engine->actionQuery(['bible' => ['kjv','bishops'], 'search' => 'faith', 'whole_words' => FALSE, 'page_all' => TRUE]);
@@ -38,7 +47,7 @@ class ParallelTest extends TestCase {
 
     public function testMaxResults() {
         if(!Bible::isEnabled('bishops')) {
-            return;
+            $this->markTestSkipped('Bible bishops not installed or enabled');
         }
 
         $Engine = new Engine();
@@ -49,7 +58,7 @@ class ParallelTest extends TestCase {
 
     public function testPagination() {
         if(!Bible::isEnabled('bishops')) {
-            return;
+            $this->markTestSkipped('Bible bishops not installed or enabled');
         }
 
         $Engine = new Engine();
