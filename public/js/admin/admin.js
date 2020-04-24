@@ -15,8 +15,6 @@ $( function() {
         // AICWEBTECH.Custom.Overrides.alert(msg);
 
         AICWEBTECH.Custom.Overrides.confirm(msg, function(confirmed) {
-            console.log('CONFIRMEING');
-
             if(confirmed) {                
                 $(field).prop('readonly', false);
                 $(button).hide();
@@ -27,7 +25,28 @@ $( function() {
         // };
 
         return false;
+    });
+
+    $('#top_menu a').click(function() {
+        // alert('heree');
     })
+
+    $('#page_loading_dialog').dialog({
+        modal: true,
+        title: 'Loading ...',
+        autoOpen: false,
+        height: 'auto',
+        width: 'auto',
+        closeOnEscape: false
+    });
+
+});
+
+window.addEventListener('beforeunload', function(event) {
+    window.setTimeout(function() {
+        window.console && console.log('unload');
+        $('#page_loading_dialog').dialog('open');
+    }, 1000);
 });
 
 function confirmEnableField() {

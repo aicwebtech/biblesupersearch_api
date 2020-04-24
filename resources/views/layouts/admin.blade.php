@@ -78,6 +78,10 @@ if(isset($include_enyo) && $include_enyo) {
             @yield('content')
         </div>
 
+        <div id='page_loading_dialog'>
+            Updating database, please wait ...
+        </div>
+
         <div id='footer'>
             Bible SuperSearch API Version {{ config('app.version') }}.  Copyright &copy; 2006 - {{ date('Y') }} &nbsp;
             <a href='https://biblesupersearch.com'target="_NEW">BibleSuperSearch.com</a> &nbsp;

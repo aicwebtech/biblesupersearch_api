@@ -22,6 +22,8 @@ class InstallManager {
     }
 
     static function install(Request $request) {
+        $start_time = time();
+
         // Generate application key
         Artisan::call('key:generate');
 
@@ -30,10 +32,6 @@ class InstallManager {
 
         // Populate the Bible table
         Bible::populateBibleTable();
-
-        // Install default Bible (usally KJV)
-        $Bible = Bible::findByModule( config('bss.defaults.bible') );
-        $Bible->install(FALSE, TRUE);
 
         // Add admin user
         $User = User::create([
@@ -56,6 +54,14 @@ class InstallManager {
 
         // Set Application Email (System Mail Address)
         ConfigManager::setConfigs(['mail.from.address' => $request->get('email')]);
+
+        $elapsed_time = time() - $start_time;
+
+        if($elapsed_time < 90) {
+            // Install default Bible (usally KJV)
+            $Bible = Bible::findByModule( config('bss.defaults.bible') );
+            $Bible->install(FALSE, TRUE);
+        }
 
         return TRUE;
     }

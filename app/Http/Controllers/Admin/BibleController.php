@@ -14,6 +14,7 @@ class BibleController extends Controller
 {
     public function __construct() {
         parent::__construct();
+        $this->middleware('install');
         $this->middleware('auth:100');
         $this->middleware('migrate')->only('index');
         $this->middleware('dev_tools')->only('export', 'meta');
