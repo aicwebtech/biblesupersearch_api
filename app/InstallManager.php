@@ -173,6 +173,8 @@ class InstallManager {
         $checklist[] = ['type' => 'hr'];
         $checklist[] = ['type' => 'header', 'label' => 'Directories that need to be Writable'];
 
+        @touch( base_path('storage/logs/laravel.log') ); // Create the log file if it doesn't exist.
+
         $dir = [
             'storage/app', 
             'storage/framework', 
