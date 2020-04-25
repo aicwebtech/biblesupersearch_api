@@ -24,6 +24,10 @@ class InstallManager {
     static function install(Request $request) {
         $start_time = time();
 
+        $ep = error_reporting();
+
+        error_reporting(E_ERROR | E_PARSE); // Workaround for deprecation warning
+
         // Generate application key
         Artisan::call('key:generate');
 
@@ -62,6 +66,8 @@ class InstallManager {
             $Bible = Bible::findByModule( config('bss.defaults.bible') );
             $Bible->install(FALSE, TRUE);
         }
+
+        error_reporting($ep);
 
         return TRUE;
     }
