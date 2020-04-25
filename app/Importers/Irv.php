@@ -67,16 +67,12 @@ class Irv extends ImporterAbstract {
         }
 
         if($Zip->open($zipfile) === TRUE) {
-            // $txt_file  = $file_raw . "_utf8.txt";
-            // $desc_file = $file_raw . ".html";
-            // $bib  = $Zip->getFromName($txt_file);
-            // $desc = $Zip->getFromName($desc_file);
 
             // Not importing any metadata at this time!
 
             if($this->insert_into_bible_table) {
                 $attr = $this->bible_attributes;
-        //            $attr['description'] = $desc . '<br /><br />' . $source;
+                // $attr['description'] = $desc . '<br /><br />' . $source;
                 $Bible->fill($attr);
                 $Bible->save();
             }
@@ -118,10 +114,6 @@ class Irv extends ImporterAbstract {
         $bib = preg_split("/\\r\\n|\\r|\\n/", $bib);
 
         foreach($bib as $line) {
-            // var_dump($line);
-
-
-            // die();
 
             if(strpos($line, '\c') === 0) {
                 preg_match('/([0-9]+)/', $line, $matches);
@@ -141,11 +133,6 @@ class Irv extends ImporterAbstract {
             $verse = (int) $matches[1];
             $text  = $matches[2];
 
-            // var_dump($matches);
-
-            // var_dump( intval($matches[2]));
-
-
             if(preg_match('/[0-9]+:[0-9]+/', $text)) {
                 $lpp = strrpos($text, '(');
                 $text = substr($text, 0, $lpp);
@@ -155,9 +142,8 @@ class Irv extends ImporterAbstract {
                 $text = '¶ ' . $text;
                 $next_line_para = FALSE;
             }
-            // var_dump($book, $chapter, $verse, $text);
-            // die();
 
+            $text = str_replace('*', '', $text);
             $this->_addVerse($book, $chapter, $verse, $text, TRUE);
         }
 
