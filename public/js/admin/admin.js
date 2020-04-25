@@ -21,15 +21,8 @@ $( function() {
             }
         })
 
-        // if(window.confirm(msg)) {
-        // };
-
         return false;
     });
-
-    $('#top_menu a').click(function() {
-        // alert('heree');
-    })
 
     $('#page_loading_dialog').dialog({
         modal: true,
@@ -46,7 +39,7 @@ window.addEventListener('beforeunload', function(event) {
     window.setTimeout(function() {
         window.console && console.log('unload');
         $('#page_loading_dialog').dialog('open');
-    }, 1000);
+    }, 3000);
 });
 
 function confirmEnableField() {

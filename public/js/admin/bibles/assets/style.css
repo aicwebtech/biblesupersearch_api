@@ -8,6 +8,10 @@
     height: 40px;
 }
 
+.filters_container {
+    height: 40px;
+}
+
 button.bulk {
     margin-left: 10px;
     font-size: 0.8em;
@@ -63,6 +67,15 @@ td.good {
 
 .prem span {
     color: red;
+}
+
+/* Dev Tool Flags */
+.dev label {
+    margin-right: 10px;
+}
+
+.dev span {
+    color: #d4b504;
 }
 
 /* Misc standard styles */

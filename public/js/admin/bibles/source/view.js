@@ -8,6 +8,13 @@ enyo.kind({
     },
 
     components: [
+        {name: 'FiltersContainer', classes: 'filters_container', components: [
+            {name: 'Options', style: 'float: right', components: [
+                // {tag: 'button', classes: 'button bulk', content: 'Auto Sort'},
+                {kind: 'BibleManager.Components.Elements.Button', isPrem: true, classes: 'button bulk', content: 'Import Bible', ontap: 'tapImportBible'},
+            ]},
+            {style: 'clear: both'}
+        ]},
         {name: 'BulkActionsContainer', classes: 'buik_actions_container', components: [
             {name: 'BulkActions', style: 'float: left', showing: false, components: [
                 {tag: 'span', content: 'With Selected: '},
@@ -54,18 +61,18 @@ enyo.kind({
                 {
                     tag: 'button',
                     classes: 'button bulk',
-                    content: 'Flag As For Research Only',
+                    content: 'Mark as "Research"',
                     ontap: 'multiFlagResearch',
                     action: 'research',
-                    actioning: 'Flagging'
+                    actioning: 'Marking'
                 },                
                 {
                     tag: 'button',
                     classes: 'button bulk',
-                    content: 'Unflag As For Research Only',
+                    content: 'Unmark as "Research"',
                     ontap: 'multiUnflagResearch',
                     action: 'unresearch',
-                    actioning: 'Unflagging'
+                    actioning: 'Unmarking'
                 },                
                 {
                     tag: 'button',
@@ -84,7 +91,8 @@ enyo.kind({
                     actioning: 'Reverting'
                 },
                 {
-                    tag: 'button',
+                    kind: 'BibleManager.Components.Elements.Button',
+                    // tag: 'button',
                     classes: 'button bulk',
                     content: 'Export Module File',
                     ontap: 'multiExport',
@@ -93,7 +101,8 @@ enyo.kind({
                     requireDevTools: true
                 },
                 {
-                    tag: 'button',
+                    kind: 'BibleManager.Components.Elements.Button',
+                    // tag: 'button',
                     classes: 'button bulk',
                     content: 'Update Module File',
                     ontap: 'multiUpdate',
@@ -102,11 +111,7 @@ enyo.kind({
                     requireDevTools: true
                 },
             ]},
-            {name: 'Options', style: 'float: right', components: [
-                // {tag: 'button', classes: 'button bulk', content: 'Auto Sort'},
-                {kind: 'BibleManager.Components.Elements.Button', isPrem: true, classes: 'button bulk', content: 'Import Bible', ontap: 'tapImportBible'},
-            ]},
-            {style: 'clear: both'},
+            {style: 'clear: both'}
         ]},
         {name: 'GridContainer', kind: 'BibleManager.Components.Grid'},
         {name: 'Dialogs', components: [
@@ -145,11 +150,11 @@ enyo.kind({
 
         var multiTools = this.$.BulkActions.getClientControls();
 
-        multiTools.forEach(function(tool) {
-            if(tool.requireDevTools && tool.requireDevTools == true && !bootstrap.devToolsEnabled) {
-                tool.destroy();
-            }
-        }, this);
+        // multiTools.forEach(function(tool) {
+        //     if(tool.requireDevTools && tool.requireDevTools == true && !bootstrap.devToolsEnabled) {
+        //         tool.destroy();
+        //     }
+        // }, this);
     },
 
     bibleInstall: function(inSender, inEvent) {
@@ -268,10 +273,10 @@ enyo.kind({
         this._confirmMultiAction('uninstall', 'Uninstalling');
     },
     multiFlagResearch: function(inSender, inEvent) {
-        this._confirmMultiAction('research', 'Flag as "For Research Only"', 'flag');
+        this._confirmMultiAction('research', 'Mark as "For Research Only"', 'mark');
     },    
     multiUnflagResearch: function(inSender, inEvent) {
-        this._confirmMultiAction('unresearch', 'Unflagging as "For Research Only"', 'unflag');
+        this._confirmMultiAction('unresearch', 'Unmark as "For Research Only"', 'unmark');
     },    
     multiRevert: function(inSender, inEvent) {
         this._confirmMultiAction('revert', 'Reverting Changes to Bible Properties', 'revert changes to');

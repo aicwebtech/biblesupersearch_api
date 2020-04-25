@@ -190,17 +190,17 @@ enyo.kind({
      _formatResearch: function(cellvalue, options, rowObject) {
         var fmt = (cellvalue == '1') ? 'Yes' : 'No&nbsp;';
         options.colModel.classes = (cellvalue == '1') ? 'research on' : 'research off';
-        return fmt;
+        // return fmt;
         
-        var action = (cellvalue == '1') ? 'Unflag' : 'Flag';
+        var action = (cellvalue == '1') ? 'Unmark' : 'Mark';
         var signal = (cellvalue == '1') ? 'onConfirmAction' : 'onConfirmAction';
         // var props  = (cellvalue == '1') ? {id: options.rowId, action: 'unresearch', displayAction: 'unflag'} : {id: options.rowId, action: 'research', displayAction: 'flag'};
 
         var props = {
             id: options.rowId,
             action: (cellvalue == '1') ? 'unresearch' : 'research',
-            displayAction: (cellvalue == '1') ? 'unflag' : 'flag',
-            title: (cellvalue == '1') ? 'Unflag as "For Research Only"' : 'Flag as "For Research Only"'
+            displayAction: (cellvalue == '1') ? 'unmark this Bible as "research":' : 'mark this Bible as "research":',
+            title: (cellvalue == '1') ? 'Unmark as "For Research Only"' : 'Mark as "For Research Only"'
         };
 
         var url = this.__makeSignalUrl(signal, props);
