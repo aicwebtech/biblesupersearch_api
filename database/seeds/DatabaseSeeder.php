@@ -32,7 +32,7 @@ class DatabaseSeeder extends Seeder
         Model::reguard();
     }
 
-    static public function importSqlFile($file, $dir = NULL) {
+    static public function importSqlFile($file, $dir = NULL, $threshold = 100) {
         $default_dir = ($dir) ? FALSE : TRUE;
         $dir = ($dir) ? $dir : dirname(__FILE__) . '/../dumps';
         $prefix = Config::get('database.prefix');
@@ -57,13 +57,13 @@ class DatabaseSeeder extends Seeder
             try {
                 $line = sprintf($line, $prefix);
             }
-            catch (ErrorException $ex) {
+            catch (\ErrorException $ex) {
                 $line = str_replace('`%s', '`' . $prefix, $line);
             }
             //echo $line . PHP_EOL;
 
             try {
-                DB::insert($line);
+                \DB::insert($line);
             }
             catch (Illuminate\Database\QueryException $ex) {
                 // Ignore db errors?

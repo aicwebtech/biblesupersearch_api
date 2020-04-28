@@ -7,12 +7,14 @@ use Illuminate\Http\Request;
 use App\Http\Responses\Response;
 use App\Http\Controllers\Controller;
 use App\Models\Bible;
+use App\Helpers;
 use Validator;
 
 class BibleController extends Controller
 {
     public function __construct() {
         parent::__construct();
+        $this->middleware('install');
         $this->middleware('auth:100');
         $this->middleware('migrate')->only('index');
         $this->middleware('dev_tools')->only('export', 'meta');
@@ -26,9 +28,21 @@ class BibleController extends Controller
      */
     public function index() {
         Bible::populateBibleTable();
+        $ImportManagerClass = Helpers::find('\App\ImportManager');
 
         $bootstrap = new \stdClass;
-        $bootstrap->devToolsEnabled = config('bss.dev_tools') ? TRUE : FALSE;
+        $bootstrap->devToolsEnabled  = config('bss.dev_tools') ? TRUE : FALSE;
+        $bootstrap->premToolsEnabled = config('app.premium');
+        $bootstrap->languages  = \App\Models\Language::orderBy('name', 'asc')->get();
+        $bootstrap->copyrights = [];
+        $bootstrap->importers  = $ImportManagerClass::getImportersList();
+
+        foreacH(\App\Models\Copyright::all() as $Copyright) {
+            $data = $Copyright->getAttributes();
+            $data['copyright_statement_processed'] = $Copyright->getProcessedCopyrightStatement();
+            $bootstrap->copyrights[] = $data;
+        }
+
         $bootstrap = json_encode($bootstrap);
 
         return view('admin.bibles', ['bootstrap' => $bootstrap]);
@@ -55,6 +69,7 @@ class BibleController extends Controller
             $row = $Bible->getAttributes();
             unset($row['description']);
             $row['has_module_file'] = $Bible->hasModuleFile() ? 1 : 0;
+            $row['needs_update']    = $Bible->needsUpdate() ? 1 : 0;
             $rows[] = $row;
         }
 
@@ -99,6 +114,8 @@ class BibleController extends Controller
         $resp = new \stdClass();
         $resp->success = TRUE;
         $resp->Bible   = $Bible->attributesToArray();
+        $resp->Bible['has_module_file'] = $Bible->hasModuleFile() ? 1 : 0;
+        // $resp->Bible['has_module_file'] =  0; // Debugging
 
         return new Response($resp, 200);
     }
@@ -134,10 +151,31 @@ class BibleController extends Controller
      */
     public function destroy($id) {
         $Bible = Bible::findOrFail($id);
+
+        $resp = new \stdClass();
+        $resp->success = TRUE;
+        
+        if($Bible->hasModuleFile() || $Bible->official) {
+            $resp->success = FALSE;
+            $resp->errors = ['Cannot delete an official Bible or a Bible that has a module file'];
+            return new Response($resp, 401);
+        }
+
+        $Bible->uninstall();
+        $Bible->delete();
+
+        // if($Bible->hasErrors()) {
+        //     $resp->success = FALSE;
+        //     $resp->errors  = $Bible->getErrors();
+        // }
+
+        return new Response($resp, 200);
     }
 
     protected function _save(Request $request, $id = NULL) {
         $resp = new \stdClass();
+
+        $BibleClass = Helpers::find('\App\Models\Bible');
 
         if($id) {
             $Bible = Bible::findOrFail($id);
@@ -146,12 +184,7 @@ class BibleController extends Controller
             $Bible = new Bible();
         }
 
-        $rules = [
-            'name'      => 'required|max:255',
-            'shortname' => 'required|max:255',
-            'year'      => 'nullable',
-            'rank'      => 'required|int',
-        ];
+        $rules = $BibleClass::getUpdateRules($id);
 
         $data = $request->only(array_keys($rules));
 
@@ -217,6 +250,23 @@ class BibleController extends Controller
         }
 
         return new Response($resp, 200);
+    }    
+
+    public function updateModule(Request $request, $id) {
+        $Bible = Bible::findOrFail($id);
+        $enable = $Bible->enable;
+        $Bible->uninstall();
+        $Bible->install(FALSE, $enable);
+
+        $resp = new \stdClass();
+        $resp->success = TRUE;
+
+        if($Bible->hasErrors()) {
+            $resp->success = FALSE;
+            $resp->errors  = $Bible->getErrors();
+        }
+
+        return new Response($resp, 200);
     }
 
     public function uninstall(Request $request, $id) {
@@ -237,6 +287,7 @@ class BibleController extends Controller
     public function test(Request $request, $id) {
         $Bible = Bible::findOrFail($id);
         $Engine = new \App\Engine;
+        $Engine->allow_disabled_bibles = TRUE;
         $resp = new \stdClass();
         $resp->success  = FALSE;
 
@@ -245,16 +296,18 @@ class BibleController extends Controller
             return new Response($resp, 200);
         }
 
-        if(!$Bible->enabled) {
-            $resp->errors = ['Not enabled, so can\'t test!'];
-            return new Response($resp, 200);
-        }
+        // if(!$Bible->enabled) {
+        //     $resp->errors = ['Not enabled, so can\'t test!'];
+        //     return new Response($resp, 200);
+        // }
 
         // Tests a Bible to make sure it has data
         // Only ONE test has to pass for it to be successful
         $tests = [
             ['label' => 'First Verse', 'ref' => 'Genesis 1:1'],
             ['label' => 'Chapter', 'ref' => 'Psalm 23'],
+            ['label' => 'Last verse of OT', 'ref' => 'Malachi 4:6'],
+            ['label' => 'First verse of NT', 'ref' => 'Matthew 1:1'],
             ['label' => 'Book', 'ref' => '2 John'],
             ['label' => 'Last Verse', 'ref' => 'Revelation 22:21'],
         ];
@@ -319,5 +372,129 @@ class BibleController extends Controller
         }
 
         return new Response($resp, 200);
+    }    
+
+    public function revert(Request $request, $id) {
+        $Bible  = Bible::findOrFail($id);
+        $data   = $request->toArray();
+        $Bible->revertMetaInfo();
+
+        $resp = new \stdClass();
+        $resp->success = TRUE;
+
+        if($Bible->hasErrors()) {
+            $resp->success = FALSE;
+            $resp->errors  = $Bible->getErrors();
+        }
+
+        return new Response($resp, 200);
+    }
+
+    public function research(Request $request, $id) {
+        $Bible  = Bible::findOrFail($id);
+        $Bible->research = 1;
+        $Bible->save();
+
+        $resp = new \stdClass();
+        $resp->success = TRUE;
+
+        if($Bible->hasErrors()) {
+            $resp->success = FALSE;
+            $resp->errors  = $Bible->getErrors();
+        }
+
+        return new Response($resp, 200);
+    }   
+
+    public function unresearch(Request $request, $id) {
+        $Bible  = Bible::findOrFail($id);
+        $Bible->research = 0;
+        $Bible->save();
+
+        $resp = new \stdClass();
+        $resp->success = TRUE;
+
+        if($Bible->hasErrors()) {
+            $resp->success = FALSE;
+            $resp->errors  = $Bible->getErrors();
+        }
+
+        return new Response($resp, 200);
+    }
+
+    public function uniqueCheck(Request $request) {
+        $data  = $request->toArray();
+
+        $valid_fields = ['name', 'shortname', 'module'];
+        $resp = new \stdClass();
+        $resp->success = TRUE;
+        $resp->errors = [];
+
+        if(!array_key_exists('field_name', $data) || !in_array($data['field_name'], $valid_fields)) {
+            $resp->success = FALSE;
+            $resp->errors[] = 'Invalid or missing \'field_name\' attribute';
+        } 
+        else {
+
+            $Query = Bible::where($data['field_name'], $data['value'])->where('id', '!=', (int) $data['id']);
+
+            $Bible = $Query->first();
+
+            if($Bible) {
+                $resp->success = FALSE;
+                $resp->errors[] = 'Duplicate found';
+            }
+        }
+
+        return new Response($resp, $resp->success ? 200 : 401);
+    }
+
+    public function importCheck(Request $request) {
+        $resp = new \stdClass();
+        $resp->success = TRUE;
+        $resp->errors  = [];
+
+        $Manager = Helpers::make('\App\ImportManager');
+        $data    = $request->all();
+
+        if($Manager->checkImportFile($data)) {
+            $resp->bible = $Manager->parsed_attributes ?: [];
+            $resp->file  = $Manager->sanitized_filename;
+        }
+        else {
+            $resp->success = FALSE;
+            $resp->errors = $Manager->getErrors();
+        }
+
+        return new Response($resp, $Manager->getHttpStatus());
+    }
+
+    public function import(Request $request) {
+        $resp = new \stdClass();
+        $resp->success = TRUE;
+
+        $ManagerClass   = Helpers::find('\App\ImportManager');
+        $Manager        = new $ManagerClass();
+
+        $rules = $ManagerClass::getImportRules();
+        $data  = $request->only(array_keys($rules));
+
+        $v = Validator::make($data, $rules);
+
+        if($v->fails()) {
+            $resp->success = FALSE;
+            $resp->errors = $v->errors();
+            return new Response($resp, 422);
+        }
+
+        if($Manager->importFile($data)) {
+            $resp->bible = $Manager->parsed_attributes ?: [];
+        }
+        else {
+            $resp->success = FALSE;
+            $resp->errors = $Manager->getErrors();
+        }
+
+        return new Response($resp, $Manager->getHttpStatus());
     }
 }

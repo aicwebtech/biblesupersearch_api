@@ -11,6 +11,7 @@ use App\Models\Bible;
 use ZipArchive;
 use SQLite3;
 use \DB; //Todo - something is wrong with namespaces here, shouldn't this be automatically avaliable??
+use Illuminate\Http\UploadedFile;
 
 /**
  * Imports Bibles in the eveningdew format
@@ -30,12 +31,15 @@ class Evening extends ImporterAbstract {
     protected $strongs_st   = '{';
     protected $strongs_en   = '}';
     protected $paragraph    = NULL;
+    protected $path_short   = 'evening';
+    protected $file_extensions = ['.dat'];
 
-    public function import() {
+    protected function _importHelper(Bible &$Bible) {
         ini_set("memory_limit", "50M");
 
         // Script settings
-        $dir    = dirname(__FILE__) . '/../../bibles/evening/'; // directory of Bible files
+        // $dir    = dirname(__FILE__) . '/../../bibles/evening/'; // directory of Bible files
+        $dir = $this->getImportDir();
         $file   = $this->file;   // File name, minus extension
         $module = $this->module; // Module and db name
 
@@ -47,7 +51,7 @@ class Evening extends ImporterAbstract {
         $insert_into_bible_table    = TRUE; // Inserts (or updates) the record in the Bible versions table
         $overwrite_existing         = $this->overwrite;
 
-        $Bible   = $this->_getBible($module);
+        // $Bible   = $this->_getBible($module);
         $dirpath = $dir . $file;
 
         if(!$overwrite_existing && $this->_existing) {
@@ -71,13 +75,13 @@ class Evening extends ImporterAbstract {
             $attr['description'] = $source;
 
             // These retentions should be removed once V2 tables fully imported
-            $retain = ['lang', 'lang_short', 'shortname', 'name'];
+            // $retain = ['lang', 'lang_short', 'shortname', 'name'];
 
-            foreach($retain as $item) {
-                if(!empty($Bible->$item)) {
-                    unset($attr[$item]);
-                }
-            }
+            // foreach($retain as $item) {
+            //     if(!empty($Bible->$item)) {
+            //         unset($attr[$item]);
+            //     }
+            // }
 
             $Bible->fill($attr);
             $Bible->save();
@@ -91,10 +95,11 @@ class Evening extends ImporterAbstract {
 
         $this->_installHelper($dirpath, $ot, 'OldTest');
         $this->_installHelper($dirpath, $nt, 'NewTest');
+        return TRUE;
     }
 
     private function _installHelper($dir, $test, $sub) {
-        $bnum  = (($sub == "newTest")||($sub == "NewTest")) ? 39 : 0;
+        $bnum  = (($sub == "newTest") || ($sub == "NewTest")) ? 39 : 0;
         $debug = FALSE;
 
         foreach($test as $book) {
@@ -107,10 +112,10 @@ class Evening extends ImporterAbstract {
             $chap  = 0;
 
             foreach($file as $line) {
-                if(substr($line,0,7) == "Chapter"){
+                if(substr($line,0,7) == "Chapter") {
                     $chap += 1;
                 }
-                else{
+                else {
                     $sp = strpos($line, " ");
 
                     if ($sp !== FALSE){
@@ -122,15 +127,19 @@ class Evening extends ImporterAbstract {
                     }
                 }
 
-                $index++;
+                $index ++;
 
-                if(($debug) && ($index > $stop)){
+                if(($debug) && ($index > $stop)) {
                     break;
                 }
             }
 
             $this->_insertVerses();
+            return TRUE;
         }
     }
 
+    public function checkUploadedFile(UploadedFile $File) {
+        return TRUE;
+    }
 }

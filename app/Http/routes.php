@@ -20,7 +20,7 @@ Route::get('/', 'DocumentationController')->name('docs');
 Route::get('/documentation', 'DocumentationController');
 
 
-/* EVERYTHING BELOW PERTAINS TO BACKEND ADMINSRATION */
+/* EVERYTHING BELOW PERTAINS TO BACKEND ADMINISTRATION */
 
 
 /* Routes for (administrative) backend */
@@ -66,9 +66,19 @@ Route::post('/admin/bibles/enable/{id}', 'Admin\BibleController@enable');
 Route::post('/admin/bibles/disable/{id}', 'Admin\BibleController@disable');
 Route::post('/admin/bibles/install/{id}', 'Admin\BibleController@install');
 Route::post('/admin/bibles/uninstall/{id}', 'Admin\BibleController@uninstall');
+Route::post('/admin/bibles/research/{id}', 'Admin\BibleController@research');
+Route::post('/admin/bibles/unresearch/{id}', 'Admin\BibleController@unresearch');
 Route::post('/admin/bibles/export/{id}', 'Admin\BibleController@export');
 Route::post('/admin/bibles/meta/{id}', 'Admin\BibleController@meta');
+Route::post('/admin/bibles/revert/{id}', 'Admin\BibleController@revert');
 Route::post('/admin/bibles/test/{id}', 'Admin\BibleController@test');
+// Route::post('/admin/bibles/delete/{id}', 'Admin\BibleController@delete');
+Route::post('/admin/bibles/delete/{id}', 'Admin\BibleController@destroy');
+Route::post('/admin/bibles/unique', 'Admin\BibleController@uniqueCheck');
+Route::get('/admin/bibles/unique', 'Admin\BibleController@uniqueCheck');
+Route::post('/admin/bibles/importcheck', 'Admin\BibleController@importCheck');
+Route::post('/admin/bibles/import', 'Admin\BibleController@import');
+Route::post('/admin/bibles/update', 'Admin\BibleController@updateModule');
 
 Route::get('/admin/tos', 'Admin\PostConfigController@tos')->name('admin.tos');
 Route::post('/admin/tos', 'Admin\PostConfigController@saveTos');

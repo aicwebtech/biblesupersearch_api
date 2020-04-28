@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Validation\Rule;
 use App\Models\Verses\VerseStandard As StandardVerses;
 use App\Passage;
 use App\Search;
@@ -12,6 +13,34 @@ use App\Traits\Error;
 
 class Bible extends Model {
     use Error;
+
+    static public function getUpdateRules($bible_id = NULL) {
+        $bible_id = (int) $bible_id;
+
+        $rules = array(
+            'name'      => [
+                'required',
+                'max:255',
+                Rule::unique('bibles')->ignore($bible_id),
+            ],
+            'shortname' => [
+                'required',
+                'max:255',
+                Rule::unique('bibles')->ignore($bible_id),
+            ],
+            'year'      => 'nullable',
+            'rank'      => 'sometimes|required|int',
+            'module'        => [
+                'required',
+                Rule::unique('bibles')->ignore($bible_id),
+                'alpha_dash',
+                'max:100'
+            ],
+            'lang_short'    => 'required|alpha|min:2|max:3',
+        );    
+
+        return $rules;
+    }
 
     protected $Verses; // Verses model instance
     protected $verses_class_name; // Name of verses class
@@ -34,6 +63,7 @@ class Bible extends Model {
         'rank',
         'official',
         'research',
+        'restict',
         'publisher',
         'hebrew_text_id',
         'greek_text_id',
@@ -48,7 +78,8 @@ class Bible extends Model {
     );
 
     protected $attributes = [
-        'copyright_id' => NULL,
+        'copyright_id'  => NULL,
+        'rank'          => 1000,
     ];
 
     // List of fields to NOT export when creating modules
@@ -123,6 +154,7 @@ class Bible extends Model {
             }
             else {
                 $this->installed = 1;
+                $this->installed_at = date('Y-m-d H:i:s');
 
                 if($enable) {
                     $this->enabled = 1;
@@ -141,6 +173,7 @@ class Bible extends Model {
             $this->verses()->uninstall();
             $this->installed = 0;
             $this->enabled = 0;
+            $this->installed_at = NULL;
             $this->save();
         }
         else {
@@ -213,6 +246,8 @@ class Bible extends Model {
             $this->addError('Could not open ZIP file ' . $res);
         }
 
+        $this->installed_at = date('Y-m-d H:i:s');
+        $this->save();
         return ($res === TRUE) ? TRUE : FALSE;
     }
 
@@ -234,6 +269,10 @@ class Bible extends Model {
         }
 
         return TRUE;
+    }
+
+    public function setCopyrightStatementAttribute($value) {
+        $this->attributes['copyright_statement'] = trim($value);
     }
 
     public function getCopyrightStatement() {
@@ -281,6 +320,34 @@ class Bible extends Model {
                 $this->addError('no changed needed');
             }
 
+            $Zip->close();
+        }
+
+        $this->installed_at = date('Y-m-d H:i:s');
+        $this->save();
+        return ($res === TRUE) ? TRUE : FALSE;
+    }    
+
+    public function revertMetaInfo() {
+        $path = $this->getModuleFilePath();
+
+        if(!is_file($path)) {
+            return $this->addError('Cannot revert info, file does not exist', 4);
+        }
+
+        if(!is_readable($path)) {
+            return $this->addError('Cannot read file: ' . $this->getModuleFilePathShort() . ' as user ' . exec('whoami'), 4);
+        }
+
+        $Zip  = new ZipArchive();
+        $res  = $Zip->open($path);
+
+        if($res === TRUE) {
+            $json  = $Zip->getFromName('info.json');
+            $attr  = json_decode($json, TRUE);
+
+            $this->fill($attr);
+            $this->save();
             $Zip->close();
         }
 
@@ -340,6 +407,27 @@ class Bible extends Model {
 
     public function hasModuleFile() {
         return is_file($this->getModuleFilePath());
+    }
+
+    public function needsUpdate() {
+        return FALSE;
+
+        if(!$this->hasModuleFile()) {
+            return FALSE;
+        }
+
+        $install_ts = strtotime($this->installed_at);
+        $update_ts  = filemtime($this->getModuleFilePath());
+
+        if(!$install_ts || !$update_ts) {
+            return FALSE;
+        }
+
+        if($update_ts > $install_ts) {
+            return TRUE;
+        }
+
+        return FALSE;
     }
 
     public static function getExportFields() {
@@ -575,13 +663,25 @@ class Bible extends Model {
      * Module mutator
      * @param string $value
      */
-    public function _setModuleAttribute($value) {
-        $matched = preg_match('/^[a-zA-Z_\x7f-\xff][a-zA-Z0-9_\x7f-\xff]*$/', $value, $matches);
+    public function setModuleAttribute($value) {
+        // $matched = preg_match('/^[a-zA-Z_\x7f-\xff][a-zA-Z0-9_\x7f-\xff]*$/', $value, $matches);
+        $value = strtolower($value);
         $this->attributes['module'] = $value;
-        self::where('1','1')->get();
+        // self::where('1','1')->get();
     }
 
     public function getRandomReference($random_mode) {
         return $this->verses()->getRandomReference($random_mode);
+    }
+
+    /**
+     * Get custom attributes for validator errors.
+     *
+     * @return array
+     */
+    public function attributes() {
+        return [
+            'copyright_id' => 'copyright',
+        ];
     }
 }

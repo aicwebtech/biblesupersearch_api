@@ -31,7 +31,7 @@ class ErrorTest extends TestCase {
         $Engine->setDefaultDataType('raw');
 
         if(!Bible::isEnabled('tr') || !Bible::isEnabled('tyndale')) {
-            return;
+            $this->markTestSkipped('Bible tr or Bible tyndale not installed or enabled');
         }
 
         // Neither Textus Receptus nor the Tyndale Bible have Isaiah

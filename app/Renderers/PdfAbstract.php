@@ -49,6 +49,13 @@ abstract class PdfAbstract extends RenderAbstract {
         ],
         'zh' => [
             'pdf_font_family' => 'msungstdlight',
+        ],        
+        'ja' => [
+            'pdf_font_family' => 'cid0jp',
+        ],        
+        'ko' => [
+            'pdf_font_family' => 'cid0kr',
+            // 'pdf_font_family' => 'cid0jp',
         ],
         'th' => [
             // 'pdf_columns' => 3,

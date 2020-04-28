@@ -1,5 +1,26 @@
 Bible SuperSearch API Changelog
 
+= 4.2.0 / May 2, 2020
+
+NOTE New System Requirements:
+    - Minimum PHP version: 7.2.5
+    - New PHP Extension Required: Fileinfo
+
+* Rebuilt language table
+* Added Bibles in the following languages:
+    - Hindi
+    - Portuguese
+    - Japanese
+    - Swahili
+    - Vietnamese
+    - Korean
+    - Tagalog
+    - Polish
+    - Persian
+    - Turkish
+    - Albanian
+* Misc bug fixes
+
 = 4.1.0 / Dec 21, 2019
 * Ability to download Bibles via the API in multiple formats.
 * Download tab as part of API Documentation page.

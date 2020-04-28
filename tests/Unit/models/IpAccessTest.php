@@ -14,8 +14,16 @@ class IpAccessTest extends TestCase {
 //        $default_limit = env('DAILY_ACCESS_LIMIT', 1000);
 //    }
 
+    // THIS TEST TAKES OVER 1 MINUTES LOCALLY!
+    // NEED TO SPEED IT UP SOMEHOW!
     public function testDefaultLimit() {
+        // Failed attempt to speed up by manually setting the hit limit to 100
+        // $default_limit = 100;
+        // $limit_cache = config('bss.daily_access_limit');
+        // config('bss.daily_access_limit', $default_limit);
+
         $default_limit = config('bss.daily_access_limit');
+
         $ip = $this->_fakeIp();
         $IP = IpAccess::findOrCreateByIpOrDomain($ip);
 
@@ -34,6 +42,7 @@ class IpAccessTest extends TestCase {
         $IP->incrementDailyHits();
         $this->assertTrue($IP->isLimitReached());
         $IP->delete();
+        // config('bss.daily_access_limit', $limit_cache);
     }
 
     public function testCustomLimit() {

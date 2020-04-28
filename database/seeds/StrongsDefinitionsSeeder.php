@@ -11,6 +11,7 @@ class StrongsDefinitionsSeeder extends Seeder
      */
     public function run()
     {
+        return; // Obsolete
 //        if(config('bss.import_from_v2')) {
 //            return $this->_importFromV2();
 //        }

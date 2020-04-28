@@ -127,7 +127,8 @@ enyo.kind({
         var ajax = new enyo.Ajax({
             url: url,
             method: 'POST',
-            postBody: this.postData
+            postBody: this.postData,
+            headers: this.app.defaultAjaxHeaders
         });
 
         ajax.response(this, function(inSender, inResponse) {

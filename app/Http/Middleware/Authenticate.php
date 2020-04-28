@@ -4,6 +4,7 @@ namespace App\Http\Middleware;
 
 use Closure;
 use Illuminate\Contracts\Auth\Guard;
+use App\Http\Responses\Response;
 
 class Authenticate
 {
@@ -34,8 +35,12 @@ class Authenticate
      */
     public function handle($request, Closure $next, $access_level = 1) {
         if ($this->auth->guest()) {
+
             if ($request->ajax()) {
-                return response('Unauthorized.', 401);
+                $resp = new \stdClass;
+                $resp->success = FALSE;
+                $resp->message = 'Your session has timed out, please log in again.';
+                return new Response($resp, 401);
             }
             else {
                 return redirect()->guest('login');
@@ -49,7 +54,7 @@ class Authenticate
             }
             else {
                 die('access denied');
-                // Send authenticated users without the appropiate access leve back to the landing page
+                // Send authenticated users without the appropiate access level back to the landing page
                 return redirect('/landing');
             }
         }

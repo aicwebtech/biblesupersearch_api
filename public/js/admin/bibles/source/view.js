@@ -8,6 +8,13 @@ enyo.kind({
     },
 
     components: [
+        {name: 'FiltersContainer', classes: 'filters_container', components: [
+            {name: 'Options', style: 'float: right', components: [
+                // {tag: 'button', classes: 'button bulk', content: 'Auto Sort'},
+                {kind: 'BibleManager.Components.Elements.Button', isPrem: true, classes: 'button bulk', content: 'Import Bible', ontap: 'tapImportBible'},
+            ]},
+            {style: 'clear: both'}
+        ]},
         {name: 'BulkActionsContainer', classes: 'buik_actions_container', components: [
             {name: 'BulkActions', style: 'float: left', showing: false, components: [
                 {tag: 'span', content: 'With Selected: '},
@@ -50,9 +57,42 @@ enyo.kind({
                     ontap: 'multiTest',
                     action: 'test',
                     actioning: 'Testing'
-                },
+                },                
                 {
                     tag: 'button',
+                    classes: 'button bulk',
+                    content: 'Mark as "Research"',
+                    ontap: 'multiFlagResearch',
+                    action: 'research',
+                    actioning: 'Marking'
+                },                
+                {
+                    tag: 'button',
+                    classes: 'button bulk',
+                    content: 'Unmark as "Research"',
+                    ontap: 'multiUnflagResearch',
+                    action: 'unresearch',
+                    actioning: 'Unmarking'
+                },                
+                {
+                    tag: 'button',
+                    classes: 'button bulk',
+                    content: 'Revert Changes',
+                    ontap: 'multiRevert',
+                    action: 'revert',
+                    actioning: 'Reverting'
+                },               
+                {
+                    tag: 'button',
+                    classes: 'button bulk',
+                    content: 'Delete',
+                    ontap: 'multiDelete',
+                    action: 'revert',
+                    actioning: 'Reverting'
+                },
+                {
+                    kind: 'BibleManager.Components.Elements.Button',
+                    // tag: 'button',
                     classes: 'button bulk',
                     content: 'Export Module File',
                     ontap: 'multiExport',
@@ -61,7 +101,8 @@ enyo.kind({
                     requireDevTools: true
                 },
                 {
-                    tag: 'button',
+                    kind: 'BibleManager.Components.Elements.Button',
+                    // tag: 'button',
                     classes: 'button bulk',
                     content: 'Update Module File',
                     ontap: 'multiUpdate',
@@ -70,10 +111,7 @@ enyo.kind({
                     requireDevTools: true
                 },
             ]},
-            {name: 'SortOptions', style: 'float: right', components: [
-                // {tag: 'button', classes: 'button bulk', content: 'Auto Sort'},
-            ]},
-            {style: 'clear: both'},
+            {style: 'clear: both'}
         ]},
         {name: 'GridContainer', kind: 'BibleManager.Components.Grid'},
         {name: 'Dialogs', components: [
@@ -82,6 +120,7 @@ enyo.kind({
             {name: 'Loading', kind: 'AICWEBTECH.Enyo.jQuery.Loading'},
             {name: 'Install', kind: 'BibleManager.Components.Dialogs.Install'},
             {name: 'Export', kind: 'BibleManager.Components.Dialogs.Export'},
+            {name: 'Import', kind: 'BibleManager.Components.Dialogs.Import'},
             {name: 'Edit', kind: 'BibleManager.Components.Dialogs.Edit'},
             {name: 'Description', kind: 'BibleManager.Components.Dialogs.Description'},
             {name: 'MultiConfirm', kind: 'BibleManager.Components.Dialogs.MultiConfirm'},
@@ -96,6 +135,7 @@ enyo.kind({
             onBibleExport: 'bibleExport',
             onConfirmAction: 'confirmAction',
             onDoAction: 'doAction',
+            onBibleTest: 'bibleTest',
             onViewDescription: 'viewDescription',
             onEdit: 'openEdit'
         }
@@ -110,11 +150,11 @@ enyo.kind({
 
         var multiTools = this.$.BulkActions.getClientControls();
 
-        multiTools.forEach(function(tool) {
-            if(tool.requireDevTools && tool.requireDevTools == true && !bootstrap.devToolsEnabled) {
-                tool.destroy();
-            }
-        }, this);
+        // multiTools.forEach(function(tool) {
+        //     if(tool.requireDevTools && tool.requireDevTools == true && !bootstrap.devToolsEnabled) {
+        //         tool.destroy();
+        //     }
+        // }, this);
     },
 
     bibleInstall: function(inSender, inEvent) {
@@ -140,11 +180,19 @@ enyo.kind({
             }
         }));
     },
+    bibleTest: function(inSender, inEvent) {
+        this._multiActionManual(inEvent.selections, 'test', 'Testing', {}, false);
+    },
     confirmAction: function(inSender, inEvent) {
         var id = inEvent.id;
         var action = inEvent.action;
         var rowData = this.$.GridContainer.getRowByPk(inEvent.id);
-        var text = "Are you sure that you want to <b>" + inEvent.action + "</b><br /><br />'" + rowData.name + "'?";
+        var title = inEvent.title || null;
+        var displayAction = inEvent.displayAction || inEvent.action;
+
+        this.$.Confirm.set('title', title);
+
+        var text = "Are you sure that you want to <b>" + displayAction + "</b><br /><br />'" + rowData.name + "'?";
         this.log('confirming', text);
 
         this.$.Confirm.confirm(text, enyo.bind(this, function(confirmed) {
@@ -161,7 +209,8 @@ enyo.kind({
     viewDescription: function(inSender, inEvent) {
         var ajax = new enyo.Ajax({
             url: '/admin/bibles/' + inEvent.id,
-            method: 'GET'
+            method: 'GET',
+            headers: this.app.defaultAjaxHeaders
         });
 
         ajax.response(this, function(inSender, inResponse) {
@@ -175,15 +224,17 @@ enyo.kind({
     },
     _singleActionHelper: function(action, id, postData) {
         var url = '/admin/bibles/' + action + '/' + id;
-        this.log('about to load', url);
-        this.log('postData', postData);
+        // this.log(action, id);
+        // this.log('about to load', url);
+        // this.log('postData', postData);
         this.app.set('ajaxLoading', true);
         postData._token = laravelCsrfToken;
 
         var ajax = new enyo.Ajax({
             url: url,
             method: 'POST',
-            postBody: postData
+            postBody: postData,
+            headers: this.app.defaultAjaxHeaders
         });
 
         ajax.response(this, function(inSender, inResponse) {
@@ -196,14 +247,18 @@ enyo.kind({
             this.app.refreshGrid();
         });
 
-        ajax.error(this, function(inSender, inResponse) {
-            console.log('ERROR', inSender, inResponse);
-            var response = JSON.parse(inSender.xhrResponse.body);
-            var errors = response.errors || ['Unknown Error'];
-            this.app.set('ajaxLoading', false);
-            var msg = 'An Error has occurred: <br /><ul><li>' + errors.join('</li><li>') + '</li></ul>';
-            this.app.alert(msg);
-        });
+        ajax.error(this, 'handleError');
+
+        // ajax.error(this, function(inSender, inResponse) {
+        //     console.log('ERROR', inSender, inResponse);
+        //     var response = JSON.parse(inSender.xhrResponse.body);
+        //     this.app.set('ajaxLoading', false);
+        //     this.app._handleError(inSender, response);
+
+        //     // var errors = response.errors || ['Unknown Error'];
+        //     // var msg = 'An Error has occurred: <br /><ul><li>' + errors.join('</li><li>') + '</li></ul>';
+        //     // this.app.alert(msg);
+        // });
 
         ajax.go();
     },
@@ -216,6 +271,18 @@ enyo.kind({
     },
     multiUninstall: function(inSender, inEvent) {
         this._confirmMultiAction('uninstall', 'Uninstalling');
+    },
+    multiFlagResearch: function(inSender, inEvent) {
+        this._confirmMultiAction('research', 'Mark as "For Research Only"', 'mark');
+    },    
+    multiUnflagResearch: function(inSender, inEvent) {
+        this._confirmMultiAction('unresearch', 'Unmark as "For Research Only"', 'unmark');
+    },    
+    multiRevert: function(inSender, inEvent) {
+        this._confirmMultiAction('revert', 'Reverting Changes to Bible Properties', 'revert changes to');
+    },    
+    multiDelete: function(inSender, inEvent) {
+        this._confirmMultiAction('delete', 'Deleting Bible(s)', 'delete');
     },
     multiInstall: function(inSender, inEvent) {
         this._processSelections();
@@ -270,6 +337,7 @@ enyo.kind({
     },
     _multiAction: function(action, actioning, postData, closeWhenFinished) {
         this._processSelections();
+        this.log(JSON.stringify(this.selections));
 
         if(this.selections.length == 0) {
             this.$.Alert.alert('Nothing selected');
@@ -278,11 +346,21 @@ enyo.kind({
 
         this.$.MultiExport.set('items', enyo.clone(this.selections));
         this._multiActionHelper(action, actioning, {}, closeWhenFinished);
+    },    
+    _multiActionManual: function(selections, action, actioning, postData, closeWhenFinished) {
+        if(!selections || selections.length == 0) {
+            this.$.Alert.alert('Nothing selected');
+            return;
+        }
+
+        this.$.MultiQueue.set('items', enyo.clone(selections));
+        this._multiActionHelper(action, actioning, postData, closeWhenFinished, selections);
     },
-    _confirmMultiAction: function(action, actioning) {
+    _confirmMultiAction: function(action, actioning, displayAction) {
         this._processSelections();
         var actioning = (typeof actioning == 'undefined') ? 'Processing' : actioning;
         var action    = (typeof action == 'undefined') ? 'process' : action;
+        var displayAction = (typeof displayAction == 'undefined') ? action : displayAction;
 
         if(this.selections.length == 0) {
             this.$.Alert.alert('Nothing selected');
@@ -290,7 +368,7 @@ enyo.kind({
         }
 
         this.$.MultiConfirm.set('items', enyo.clone(this.selections));
-        this.$.MultiConfirm.set('action', action);
+        this.$.MultiConfirm.set('action', displayAction);
         this.$.MultiConfirm.set('title', actioning);
 
         this.$.MultiConfirm.confirm(enyo.bind(this, function(confirmed) {
@@ -300,11 +378,12 @@ enyo.kind({
         }));
     },
 
-    _multiActionHelper: function(action, actioning, postData, closeWhenFinished) {
+    _multiActionHelper: function(action, actioning, postData, closeWhenFinished, selections) {
         var closeWhenFinished = (typeof closeWhenFinished == 'undefined') ? true : closeWhenFinished;
         this.log(action, actioning, postData, closeWhenFinished);
 
         var actionLabel = action;
+        var sel = selections && Array.isArray(selections) ? selections : this.selections;
 
         if(action == 'meta') {
             actionLabel = 'update info on';
@@ -317,7 +396,7 @@ enyo.kind({
         this.$.MultiQueue.set('actioning', actioning);
         this.$.MultiQueue.set('closeWhenFinished', closeWhenFinished);
         this.$.MultiQueue.set('postData', enyo.clone(postData));
-        this.$.MultiQueue.set('queue', enyo.clone(this.selections));
+        this.$.MultiQueue.set('queue', enyo.clone(sel));
         this.$.MultiQueue.open();
     },
 
@@ -334,6 +413,15 @@ enyo.kind({
         this.$.BulkActions.set('showing', inEvent.length ? true : false);
     },
     handleError: function(inSender, inResponse) {
-        this.$.Alert.alert('An unknown error has occurred');
+        console.log('ERROR', inSender, inResponse);
+        var response = JSON.parse(inSender.xhrResponse.body);
+        this.app.set('ajaxLoading', false);
+
+        this.app._errorHandler(inSender, response);
+
+        // this.$.Alert.alert('An unknown error has occurred');
+    },
+    tapImportBible: function(inSender, inResponse) {
+        this.$.Import.openLoad();
     }
 });

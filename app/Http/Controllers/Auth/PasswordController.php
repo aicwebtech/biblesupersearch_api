@@ -26,6 +26,7 @@ class PasswordController extends Controller
 
     use ResetsPasswords, SendsPasswordResetEmails {
         ResetsPasswords::broker insteadof SendsPasswordResetEmails;
+        ResetsPasswords::credentials insteadof SendsPasswordResetEmails;
     }
 
     /**

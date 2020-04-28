@@ -177,6 +177,25 @@ class EngineTest extends TestCase
         $this->assertCount(66, $Books);
     }
 
+    public function testSingleton() {
+        $Engine = Engine::getInstance();
+        $this->assertInstanceOf('App\Engine', $Engine);
+
+        $Engine->setDefaultDataType('raw');
+        $Engine->setDefaultPageAll(TRUE);
+
+        $results = $Engine->actionQuery(['bible' => 'kjv', 'search' => 'faith']);
+        $this->assertCount(338, $results['kjv']);
+        $this->assertEquals(4,  $results['kjv'][0]->book);
+        $this->assertEquals(12, $results['kjv'][0]->chapter);
+        $this->assertEquals(7,  $results['kjv'][0]->verse);
+        $this->assertEquals('My servant Moses is not so, who is faithful in all mine house.',  $this->_tp($results['kjv'][0]->text));
+        $this->assertEquals(51, $results['kjv'][201]->book);
+        $this->assertEquals(1,  $results['kjv'][201]->chapter);
+        $this->assertEquals(4,  $results['kjv'][201]->verse);
+        $this->assertEquals('Since we heard of your faith in Christ Jesus, and of the love which ye have to all the saints,',  $this->_tp($results['kjv'][201]->text));
+    }
+
     private function _tp($text) {
         return trim($text, '¶ ');
     }

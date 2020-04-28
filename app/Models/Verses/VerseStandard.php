@@ -238,11 +238,11 @@ class VerseStandard extends VerseAbstract {
 
     // Todo - prevent installation if already installed!
     public function install($structure_only = FALSE) {
+        $in_console = (strpos(php_sapi_name(), 'cli') !== FALSE) ? TRUE : FALSE;
+
         if (Schema::hasTable($this->table)) {
             return TRUE;
         }
-
-        $in_console = (strpos(php_sapi_name(), 'cli') !== FALSE) ? TRUE : FALSE;
 
         Schema::create($this->table, function (Blueprint $table) {
             //$table->charset('utf8mb4');
@@ -269,10 +269,6 @@ class VerseStandard extends VerseAbstract {
             return TRUE;
         }
 
-        //if($this->_importFromV2()) {
-        //    return TRUE;
-        //}
-
         $Zip = $this->Bible->openModuleFile();
 
         if(!$Zip) {
@@ -289,6 +285,7 @@ class VerseStandard extends VerseAbstract {
         $verses = preg_split("/\\r\\n|\\r|\\n/", $verses);
         $table = $this->getTable();
         $insertable = array();
+        $ins_count = 0;
 
         foreach($verses as $verse) {
             if(empty($verse) || $verse{0} == '#') {
@@ -304,11 +301,14 @@ class VerseStandard extends VerseAbstract {
 
             $map['chapter_verse'] = $map['chapter'] * 1000 + $map['verse'];
             $insertable[] = $map;
+            $ins_count ++;
 
             // Chunk size of 100 has proven to be the most efficient
-            if(count($insertable) >= 100) {
+            // if(count($insertable) >= 100) {
+            if($ins_count >= 100) {
                 DB::table($table)->insert($insertable);
                 $insertable = [];
+                $ins_count = 0;
             }
         }
 

@@ -6,11 +6,17 @@ use App\User;
 use App\Models\Bible;
 use App\Passage;
 use App\Search;
+use App\CacheManager;
+use App\Helpers;
 use Illuminate\Pagination\LengthAwarePaginator as Paginator;
 
 class Engine {
-    use Traits\Error;
+    use Traits\Error {
+        resetErrors as traitResetErrors;
+    }
+    
     use Traits\Input;
+    use Traits\Singleton;
 
     protected $Bibles = array(); // Array of Bible objects
     protected $Bible_Primary = NULL; // Primary Bible version
@@ -21,6 +27,7 @@ class Engine {
     protected $metadata = NULL;
     protected $multi_bibles = FALSE;
     public $debug = FALSE;
+    public $allow_disabled_bibles = FALSE;
 
     public function __construct() {
         // Set the default Bible
@@ -79,7 +86,7 @@ class Engine {
     public function addBible($module) {
         $Bible = Bible::findByModule($module);
 
-        if($Bible && $Bible->enabled) {
+        if($Bible && ($Bible->enabled || $this->allow_disabled_bibles)) {
             $this->Bibles[$module] = $Bible;
 
             if(!in_array($Bible->lang_short, $this->languages)) {
@@ -115,6 +122,11 @@ class Engine {
 
     protected function setMetadata($data) {
         $this->metadata = (object) $data;
+    }
+
+    public function resetErrors() {
+        $this->traitResetErrors();
+        $this->metadata = new \stdClass;
     }
 
     /**
@@ -384,20 +396,44 @@ class Engine {
     public function actionBibles($input) {
         $include_desc = FALSE;
         $Bibles = Bible::select('bibles.name','shortname','module','year','languages.name AS lang','lang_short','copyright','italics','strongs','red_letter',
-                'paragraph','rank','research','copyright_id','copyright_statement');
+                'paragraph','rank','research','copyright_id','copyright_statement', 'languages.rtl', 'languages.native_name AS lang_native');
 
         $Bibles->leftJoin('languages', 'bibles.lang_short', 'languages.code');
         $bibles = array(); // Array of associative arrays
+
+        $order_by_default = 'lang_native_name|rank';
+        $order_by = array_key_exists('bible_order_by', $input) ? $input['bible_order_by'] : $order_by_default;
+        $group_by = array_key_exists('bible_group_by', $input) ? $input['bible_group_by'] : NULL;
+
+        // var_dump($order_by);
 
         if($include_desc) {
             $Bibles -> addSelect('description');
         }
 
+        // Legacy order by flag - still supported for now
         if(array_key_exists('order_by_lang_name', $input) && !empty($input['order_by_lang_name'])) {
             $Bibles -> orderBy('lang', 'ASC') -> orderBy('name', 'ASC');
         }
         else {
-            $Bibles -> orderBy('rank', 'ASC');
+            foreach(explode('|', $order_by) as $ob) {
+                switch($ob) {
+                    case 'lang_name':
+                        $Bibles -> orderBy('lang_native', 'ASC');      
+                        break;
+
+                    case 'lang_name_english':
+                        $Bibles -> orderBy('lang', 'ASC');
+                        break;         
+
+                    case 'rank':
+                    case 'name':
+                    case 'shortname':
+                    case 'lang_short':
+                        $Bibles -> orderBy($ob, 'ASC');
+                        break; 
+                }
+            }
         }
 
         $Bibles = $Bibles -> where('enabled', 1) -> with('copyrightInfo') -> get() -> all();
@@ -410,7 +446,7 @@ class Engine {
         foreach($Bibles as $Bible) {
             $bibles[$Bible->module] = $Bible->getAttributes();
             $bibles[$Bible->module]['downloadable'] = $Bible->isDownloadable();
-//            $bibles[$Bible->module]['copyright_statement'] = $Bible->isDownloadable();
+            $bibles[$Bible->module]['copyright_statement'] = $Bible->getCopyrightStatement();
         }
 
         return $bibles;

@@ -48,7 +48,6 @@ enyo.kind({
         this.$.Alert.set('content', is);
         return this;
     },
-
     open: function() {
         this.inherited(arguments);
         this.confirmed = false;
