@@ -94,7 +94,7 @@ class InstallManager {
         $checklist[] = ['type' => 'item', 'label' => '.env config file exists and is writable', 'success' => $env];
         $checklist[] = ['type' => 'item', 'label' => 'PHP Version >= ' . $php_version . ' (' . $installed_php . ')', 'success' => $php_success];
 
-        $extensions = ['OpenSSL', 'PDO', 'Mbstring', 'Tokenizer', 'XML', 'Zip', 'Ctype', 'JSON', 'BCMath', 'gd'];
+        $extensions = ['OpenSSL', 'PDO', 'Mbstring', 'Tokenizer', 'XML', 'Zip', 'Ctype', 'JSON', 'BCMath', 'gd', 'Fileinfo'];
         $rec_extensions = [];
 
         if($sqlite_required) {
@@ -104,12 +104,15 @@ class InstallManager {
             $rec_extensions[] = 'SQLite3';
         }
 
+        sort($extensions);
+        sort($rec_extensions);
+
         foreach($extensions as $ext) {
             $checklist[] = ['type' => 'item', 'label' => 'PHP Extension: ' . $ext, 'success' => extension_loaded($ext)];
         }
 
         foreach($rec_extensions as $ext) {
-            $checklist[] = ['type' => 'item', 'label' => 'PHP Extension: ' . $ext, 'success' => extension_loaded($ext) ?: NULL];
+            $checklist[] = ['type' => 'item', 'label' => 'PHP Extension: ' . $ext . ' (recommended)', 'success' => extension_loaded($ext) ?: NULL];
         }
 
         $checklist[] = ['type' => 'hr'];
@@ -177,7 +180,7 @@ class InstallManager {
         $checklist[] = ['type' => 'item', 'label' => 'Able to Connect', 'success' => $able_to_connect];
 
         $checklist[] = ['type' => 'hr'];
-        $checklist[] = ['type' => 'header', 'label' => 'Directories that need to be Writable'];
+        $checklist[] = ['type' => 'header', 'label' => 'Directories and Files that need to be Writable'];
 
         @touch( base_path('storage/logs/laravel.log') ); // Create the log file if it doesn't exist.
 

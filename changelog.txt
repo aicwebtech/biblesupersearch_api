@@ -1,6 +1,11 @@
 Bible SuperSearch API Changelog
 
 = 4.2.0 / May 2, 2020
+
+NOTE New System Requirements:
+    - Minimum PHP version: 7.2.5
+    - New PHP Extension Required: Fileinfo
+
 * Rebuilt language table
 * Added Bibles in the following languages:
     - Hindi
