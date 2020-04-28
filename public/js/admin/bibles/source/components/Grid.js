@@ -3,7 +3,12 @@ enyo.kind({
 
     components: [
         {name: 'Grid', tag: 'table'},
-        {name: 'GridFooter'}
+        {name: 'GridFooter'},
+        {name: 'Legend', style: 'text-align: center; font-size: 0.8em', components: [
+            {tag: 'span', content: '* Bible is officially supported.'},
+            {tag: 'span', content: '&nbsp; &nbsp;', allowHtml: true},
+            {tag: 'span', content: '** Bible is marked as for research purposes only'}
+        ]}
     ],
 
     events: {
@@ -28,8 +33,8 @@ enyo.kind({
                 idPrefix: this.idPrefix,
                 colModel: [
                     {name: 'name', index: 'name', label: 'Name', width:'200', editable: true},
-                    {name: 'shortname', index: 'shortname', label: 'Short Name', width:'150', editable: true},
-                    {name: 'module', index: 'module', label: 'Module', width:'150'},
+                    {name: 'shortname', index: 'shortname', label: 'Short Name', width:'100', editable: true},
+                    {name: 'module', index: 'module', label: 'Module', width:'100'},
                     {
                         name: 'has_module_file', 
                         index: 'has_module_file', 
@@ -42,10 +47,21 @@ enyo.kind({
                     }, 
                     {name: 'lang', index: 'lang', label: 'Language', width:'100'},
                     {name: 'year', index: 'year', label: 'Year', width:'100'},
-                    {name: 'installed', index: 'installed', label: 'Installed', width:'80', title: false, formatter: enyo.bind(this, this._formatInstalled)},
-                    {name: 'enabled', index: 'enabled', label: 'Enabled', width:'80', title: false, formatter: enyo.bind(this, this._formatEnabled)},
-                    {name: 'official', index: 'official', label: 'Official', width:'60', title: false, formatter: enyo.bind(this, this._formatSinpleBoolean)},
-                    {name: 'rank', index: 'rank', label: 'Rank', width:'100'},
+                    {name: 'installed', index: 'installed', align: 'center', label: 'Installed', width:'80', title: false, formatter: enyo.bind(this, this._formatInstalled)},
+                    {name: 'enabled', index: 'enabled', align: 'center', label: 'Enabled', width:'80', title: false, formatter: enyo.bind(this, this._formatEnabled)},
+                    {name: 'official', index: 'official', align: 'center', label: 'Official *', width:'60', title: false, formatter: enyo.bind(this, this._formatSinpleBoolean)},
+                    {name: 'research', index: 'research', align: 'center', label: 'Research **', width:'80', title: false, formatter: enyo.bind(this, this._formatResearch)},
+                    {
+                        name: 'updated_at', 
+                        index: 'updated_at', 
+                        align: 'center', 
+                        label: 'Updated', 
+                        width:'100', 
+                        title: false, 
+                        formatter: 'date', 
+                        formatoptions: {srcformat: 'Y-m-d H:i:s', newformat: 'd M Y, H:i'}
+                    },
+                    {name: 'rank', index: 'rank', label: 'Rank', width:'60'},
                     {name: 'actions', index: 'actions', label: '&nbsp', width:'120', title: false, formatter: enyo.bind(this, this._formatActions)},
                     {name: 'id', index: 'id', hidden: true}
                 ],
@@ -54,7 +70,7 @@ enyo.kind({
                     id: 'id'
                 },
                 pager: pagerId,
-                sortname: 'rank',
+                sortname: 'lang',
                 sortorder: 'asc',
                 viewrecords: true,
                 height: 'auto',
@@ -64,7 +80,8 @@ enyo.kind({
                 rowList: [10, 15, 20, 30, 50, 100],
                 onSelectRow: enyo.bind(this, this._selectRow),
                 onSelectAll: enyo.bind(this, this._selectRow),
-                loadComplete: enyo.bind(this, this._loadComplete)
+                loadComplete: enyo.bind(this, this._loadComplete),
+                loadError: enyo.bind(this, this._loadError)
             });
 
             this.gridHandle.navGrid(pagerId, {search: false, edit: false, view: false, del: false, add: false, refresh: true, nav: {
@@ -80,6 +97,12 @@ enyo.kind({
     },
     _loadComplete: function() {
         this.doSelectionsChanged({length: 0});
+    },
+    _loadError: function(xhr, status, error) {
+        console.log('loadError', xhr, status, error);
+
+        // var response = JSON.parse(xhr.xhrResponse.body);
+        this.app._errorHandler(xhr, xhr.responseJSON);
     },
     getRowByPk: function(pk) {
         var id = this.idPrefix + pk.toString();
@@ -115,7 +138,7 @@ enyo.kind({
     _formatInstalled: function(cellvalue, options, rowObject) {
         var fmt = (cellvalue == '1') ? 'Yes' : 'No&nbsp;';
         options.colModel.classes = (cellvalue == '1') ? 'on' : 'off';
-        
+
         if(cellvalue == '1' || rowObject.has_module_file == '1') {        
             var action = (cellvalue == '1') ? 'Uninstall' : 'Install';
             var signal = (cellvalue == '1') ? 'onConfirmAction' : 'onBibleInstall';
@@ -143,11 +166,20 @@ enyo.kind({
     _formatEnabled: function(cellvalue, options, rowObject) {
         var fmt = (cellvalue == '1') ? 'Yes' : 'No&nbsp;';
         options.colModel.classes = (cellvalue == '1') ? 'on' : 'off';
+        
+        if(rowObject.installed == '1') {     
+            if(rowObject.needs_update == '1') {
+                var action = 'update';
+                var text = 'Update';
+                var signal = 'onBibleUpdate';
+                options.colModel.classes = 'alert';
+            }
+            else {
+                var text = (cellvalue == '1') ? 'Disable' : 'Enable';
+                var action = (cellvalue == '1') ? 'disable' : 'enable';
+                var signal = (cellvalue == '1') ? 'onBibleDisable' : 'onBibleEnable';
+            }
 
-        if(rowObject.installed == '1') {        
-            var text = (cellvalue == '1') ? 'Disable' : 'Enable';
-            var action = (cellvalue == '1') ? 'disable' : 'enable';
-            var signal = (cellvalue == '1') ? 'onBibleDisable' : 'onBibleEnable';
             var props = {id: options.rowId, action: action};
             var url = this.__makeSignalUrl('onConfirmAction', props);
             fmt += " &nbsp; &nbsp;<a href='javascript:" + url + "'>" + text + "</a>";
@@ -155,9 +187,35 @@ enyo.kind({
 
         return fmt;
     },
+     _formatResearch: function(cellvalue, options, rowObject) {
+        var fmt = (cellvalue == '1') ? 'Yes' : 'No&nbsp;';
+        options.colModel.classes = (cellvalue == '1') ? 'research on' : 'research off';
+        // return fmt;
+        
+        var action = (cellvalue == '1') ? 'Unmark' : 'Mark';
+        var signal = (cellvalue == '1') ? 'onConfirmAction' : 'onConfirmAction';
+        // var props  = (cellvalue == '1') ? {id: options.rowId, action: 'unresearch', displayAction: 'unflag'} : {id: options.rowId, action: 'research', displayAction: 'flag'};
+
+        var props = {
+            id: options.rowId,
+            action: (cellvalue == '1') ? 'unresearch' : 'research',
+            displayAction: (cellvalue == '1') ? 'unmark this Bible as "research":' : 'mark this Bible as "research":',
+            title: (cellvalue == '1') ? 'Unmark as "For Research Only"' : 'Mark as "For Research Only"'
+        };
+
+        var url = this.__makeSignalUrl(signal, props);
+        fmt += " &nbsp; &nbsp;<a href='javascript:" + url + "'>" + action + "</a>";
+        return fmt;
+    },     
     _formatActions: function(cellvalue, options, rowObject) {
         var props = {id: options.rowId};
         var html = '';
+
+        // if(rowObject.has_module_file == 0 && rowObject.official == 0) {
+        //     html += this.__makeSignalLink('Delete', 'onDelete', props);
+        //     html += ' &nbsp; ';
+        // }
+
         html += this.__makeSignalLink('View Description', 'onViewDescription', props);
         html += ' &nbsp; ';
         html += this.__makeSignalLink('Edit', 'onEdit', props);

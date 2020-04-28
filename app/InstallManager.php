@@ -22,6 +22,12 @@ class InstallManager {
     }
 
     static function install(Request $request) {
+        $start_time = time();
+
+        $ep = error_reporting();
+
+        error_reporting(E_ERROR | E_PARSE); // Workaround for deprecation warning
+
         // Generate application key
         Artisan::call('key:generate');
 
@@ -30,10 +36,6 @@ class InstallManager {
 
         // Populate the Bible table
         Bible::populateBibleTable();
-
-        // Install default Bible (usally KJV)
-        $Bible = Bible::findByModule( config('bss.defaults.bible') );
-        $Bible->install(FALSE, TRUE);
 
         // Add admin user
         $User = User::create([
@@ -57,6 +59,16 @@ class InstallManager {
         // Set Application Email (System Mail Address)
         ConfigManager::setConfigs(['mail.from.address' => $request->get('email')]);
 
+        $elapsed_time = time() - $start_time;
+
+        if($elapsed_time < 90) {
+            // Install default Bible (usally KJV)
+            $Bible = Bible::findByModule( config('bss.defaults.bible') );
+            $Bible->install(FALSE, TRUE);
+        }
+
+        error_reporting($ep);
+
         return TRUE;
     }
 
@@ -75,12 +87,14 @@ class InstallManager {
         $installed_php_parts = explode('.', PHP_VERSION);
         $installed_php = $installed_php_parts[0] . '.' . $installed_php_parts[1] . '.' . intval($installed_php_parts[2]);
 
+        // TODO - MAKE SURE SENDMAIL IS INSTALLED!
+
         $checklist[] = ['type' => 'header', 'label' => 'Software'];
         $env = (is_file(base_path('.env')) && is_writable(base_path('.env'))) ? TRUE : FALSE;
         $checklist[] = ['type' => 'item', 'label' => '.env config file exists and is writable', 'success' => $env];
         $checklist[] = ['type' => 'item', 'label' => 'PHP Version >= ' . $php_version . ' (' . $installed_php . ')', 'success' => $php_success];
 
-        $extensions = ['OpenSSL', 'PDO', 'Mbstring', 'Tokenizer', 'XML', 'Zip', 'Ctype', 'JSON', 'BCMath'];
+        $extensions = ['OpenSSL', 'PDO', 'Mbstring', 'Tokenizer', 'XML', 'Zip', 'Ctype', 'JSON', 'BCMath', 'gd', 'Fileinfo'];
         $rec_extensions = [];
 
         if($sqlite_required) {
@@ -90,12 +104,15 @@ class InstallManager {
             $rec_extensions[] = 'SQLite3';
         }
 
+        sort($extensions);
+        sort($rec_extensions);
+
         foreach($extensions as $ext) {
             $checklist[] = ['type' => 'item', 'label' => 'PHP Extension: ' . $ext, 'success' => extension_loaded($ext)];
         }
 
         foreach($rec_extensions as $ext) {
-            $checklist[] = ['type' => 'item', 'label' => 'PHP Extension: ' . $ext, 'success' => extension_loaded($ext) ?: NULL];
+            $checklist[] = ['type' => 'item', 'label' => 'PHP Extension: ' . $ext . ' (recommended)', 'success' => extension_loaded($ext) ?: NULL];
         }
 
         $checklist[] = ['type' => 'hr'];
@@ -163,9 +180,22 @@ class InstallManager {
         $checklist[] = ['type' => 'item', 'label' => 'Able to Connect', 'success' => $able_to_connect];
 
         $checklist[] = ['type' => 'hr'];
-        $checklist[] = ['type' => 'header', 'label' => 'Directories that need to be Writable'];
+        $checklist[] = ['type' => 'header', 'label' => 'Directories and Files that need to be Writable'];
 
-        $dir = ['storage/app', 'storage/framework', 'storage/logs', 'bootstrap/cache', 'bibles/modules', 'bibles/unofficial', 'bibles/rendered'];
+        @touch( base_path('storage/logs/laravel.log') ); // Create the log file if it doesn't exist.
+
+        $dir = [
+            'storage/app', 
+            'storage/framework', 
+            'storage/logs', 
+            'storage/logs/laravel.log', 
+            'bootstrap/cache', 
+            'bibles', 
+            'bibles/modules', 
+            'bibles/unofficial', 
+            'bibles/rendered', 
+            'bibles/misc',
+        ];
 
         foreach($dir as $d) {
            $checklist[] = ['type' => 'item', 'label' => 'Is Writable: ' . $d, 'success' => is_writable(base_path($d))];

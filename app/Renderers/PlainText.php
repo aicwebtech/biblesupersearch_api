@@ -21,11 +21,8 @@ class PlainText extends RenderAbstract {
     protected $file_extension = 'txt';
     protected $include_book_name = TRUE;
 
-
     protected $text = '';
     protected $handle;
-
-
 
     /**
      * This initializes the file, and does other pre-rendering work

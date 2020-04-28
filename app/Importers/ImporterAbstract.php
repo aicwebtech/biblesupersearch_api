@@ -3,8 +3,11 @@
 namespace App\Importers;
 
 use App\Models\Bible;
+use App\Models\Language;
 use PhpSpec\Exception\Exception;
 use \DB;
+use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Storage;
 
 /**
  * Abstract class for importing Bible text from third party sources
@@ -20,14 +23,25 @@ use \DB;
 abstract class ImporterAbstract {
     use \App\Traits\Error;
 
-    protected $bible_attributes = array();
+    protected $bible_attributes = [];
     protected $default_dir;
-    protected $file;
+    protected $file; // File name (no dir)
     protected $module;
+    protected $enable = TRUE; // Whether to enable the Bible for use after it has been imported
     protected $overwrite = FALSE;
     protected $save_bible = TRUE;
+    protected $insert_into_bible_table = TRUE; // Whether to insert / update record in Bibles table
     protected $_existing = FALSE;
     protected $_table = NULL;
+    protected $has_cli = TRUE; // Whether there is a command-line interface access to this importer
+    protected $has_gui = FALSE; // Whether there is a user interface access (via the Bible manager) to this importer
+    protected $path_short = 'misc';  // Path (inside /bibles) to where import files are located
+    protected $has_dedicated_dir = NULL; // Whether or not $path_short is dedicated to this specific importer.  Defaults to TRUE if $path_short is 'misc' and FALSE otherwise
+    protected $file_extensions = []; // White list of allowable file extensions
+
+    protected $settings = []; // User-selectible settings, specific to each importer
+
+    protected $attribute_map = [];
 
     protected $required = ['module', 'lang_short']; // Array of required fields (for specific importer type);
 
@@ -42,25 +56,172 @@ abstract class ImporterAbstract {
     protected $paragraph    = '¶ ';
     protected $strongs_st   = '{';
     protected $strongs_en   = '}';
-    protected $unused_tags  = [];
+    protected $unused_tags  = []; // These tags. plus EVERYTHING enclosed by them, will be removed from the text
+    protected $paragraph_at_verse_end = FALSE; // Whether the paragraph flag is at the end of the verse (it's usually at the beginning)
+    protected $_paragraph_next_verse = FALSE;
 
     // What do do whith Strongs numbers in parentheses: retain, trim, discard
     protected $strongs_parentheses = 'retain';
 
     public function __construct() {
-
+        $this->resetBibleAttributes();
+        
+        if($this->has_dedicated_dir === NULL) {
+            $this->has_dedicated_dir = ($this->path_short == 'misc') ? FALSE : TRUE;
+        }
     }
 
-    abstract public function import();
+    /**
+     *   Imports the Bible based on the current set of settings
+     *   @return bool $success
+     */
+    public function import() {
+        $Bible = $this->_getBible($this->module);
+
+        if(!$this->overwrite && $this->_existing && $this->insert_into_bible_table) {
+            // return $this->addError('Module already exists: \'' . $module . '\' Use --overwrite to overwrite it.', 4);
+        }
+
+        if(!$this->_importHelper($Bible)) {
+            return FALSE;
+        }
+
+        if($this->enable) {
+            $Bible->enable();
+        }
+
+        return TRUE;
+    }
+
+    /**
+     *   Helper method that does the actual import work
+     *   @return bool $success
+     */
+    abstract protected function _importHelper(Bible &$Bible);
+
+    /**
+     *   Checks the uploaded file to make sure it works with the specific importer.
+     *   Also, must parse any and all Bible metadata from the file and map them to Bible model attributes 
+     *   @param Illuminate\Http\UploadedFile $File - the file to import
+     *   @return bool $success
+     */
+    abstract public function checkUploadedFile(UploadedFile $File);
+
+    public function getImportDir() {
+        return dirname(__FILE__) . '/../../bibles/' . $this->path_short . '/';
+    }
+
+    public function acceptUploadedFile(UploadedFile $File) {
+        if(!$this->checkUploadedFile($File)) {
+            return FALSE;
+        }
+
+        try {
+            $this->file = static::sanitizeFileName( $File->getClientOriginalName() );
+            $dest_path = $this->getImportDir() . $this->file;
+
+            // if(!file_exists($dest_path)) {
+                $npath = $File->storeAs($this->path_short, $this->file, 'bibles');
+            // }
+        }
+        catch(\Exception $e) {
+            return $this->addError('Could not save import file: ' . $e->getMessage());
+        }
+
+        return TRUE;
+    }
+
+    public function mapMetaToAttributes($meta, $preserve_attributes = FALSE, $map = NULL) {
+        $map = (!$map || !is_array($map)) ? $this->attribute_map : $map;
+        $attr = $old_attr = [];
+
+        if($preserve_attributes) {
+            $attr = $old_attr = $this->bible_attributes;
+        }
+
+        foreach($map as $key => $meta_key) {
+            if(array_key_exists($meta_key, $meta)) {
+                $equal_old_value = (array_key_exists($key, $old_attr) && $old_attr[$key] == $meta[$meta_key]) ? TRUE : FALSE;
+
+                if(!$equal_old_value) {
+
+                    switch($key) {
+                        case 'description':
+                            if($meta[$meta_key] && $this->source) {
+                                $attr[$key] = $meta[$meta_key] . '<br /><br />' . $this->source;
+                            }
+                            else if($this->source) {
+                                $attr[$key] = $this->source;
+                            }
+                            else {
+                                $attr[$key] = $meta[$meta_key];
+                            }
+
+                            break;
+                        case 'lang_short':
+                            $attr[$key] = static::getLanguageCode($meta[$meta_key]);
+                            break;
+                        case 'module':
+                            $attr[$key] = static::generateUniqueModuleName($meta[$meta_key]);
+                            break;
+                        default:
+                            $attr[$key] = $meta[$meta_key];
+                    }
+                }
+            }
+        }
+
+        $this->bible_attributes = $attr;
+    }
 
     public function setBibleAttributes($att) {
         $this->bible_attributes = $att;
+    }   
+
+    public function resetBibleAttributes() {
+        $this->bible_attributes = [
+            'name'          => NULL,
+            'shortname'     => NULL,
+            'module'        => NULL,
+            'description'   => NULL,
+            'year'          => NULL,
+        ];
+    } 
+
+    public function getBibleAttributes() {
+        return $this->bible_attributes;
     }
 
     public function setFile($file) {
         $this->file = $file;
     }
 
+    /**
+     * Sets the user specified settings.  These are specific to each importer and some won't use this.
+     * 
+     * @param array $settings
+     * @param bool $map_to_internal_properties - todo - pull internal properties (file, module, overwrite) from the settings array
+     * @return bool TRUE if successful, FALSE if not
+     */
+    public function setSettings($settings, $map_to_internal_properties = FALSE) {
+        $this->settings = $settings;
+
+        return $this->_setSettingsHelper();
+    }
+
+    /** 
+     * Hook for post-processing and validating custom settings
+     * 
+     * @return bool TRUE if valid, FALSE if not
+     */
+    protected function _setSettingsHelper() {
+        return TRUE;
+    }
+
+    /*
+     * Used by the CLI importers
+     * Not intended to be used by anything else
+     */
     public function setProperties($file, $module, $overwrite, $attributes, $autopopulate) {
         $this->file      = $file;
         $this->module    = $module;
@@ -88,10 +249,23 @@ abstract class ImporterAbstract {
         return ($this->has_errors) ? FALSE : TRUE;
     }
 
-    protected function _addVerse($book, $chapter, $verse, $text) {
+    protected function _addVerse($book, $chapter, $verse, $text, $format_text = FALSE) {
         $book    = intval($book);
         $chapter = intval($chapter);
         $verse   = intval($verse);
+
+        if(!$book || !$chapter || !$verse || empty($text)) {
+            return;
+        }
+
+        if($format_text) {
+            $text = $this->_formatText($text);
+        }
+        
+        if($this->paragraph_at_verse_end && $chapter == 1 && $verse == 1) {
+            $this->_paragraph_next_verse = TRUE;
+        }
+       
         $text    = $this->_formatText($text);
 
         $this->_insertable[] = array(
@@ -134,7 +308,9 @@ abstract class ImporterAbstract {
     }
 
     protected function _postFormatText($text) {
-        return preg_replace('/\s+/', ' ', $text);
+        $text = strip_tags($text);
+        $text = preg_replace('/\s+/', ' ', $text);
+        return $text;
     }
 
     protected function _formatStrongs($text) {
@@ -142,7 +318,6 @@ abstract class ImporterAbstract {
             return $text;
         }
 
-//        var_dump($text);
         $find = [$this->strongs_st, $this->strongs_en];
         $rep  = ['{', '}'];
         $text = $this->_replaceTagsIfNeeded($find, $rep, $text);
@@ -152,10 +327,6 @@ abstract class ImporterAbstract {
 
         $text = preg_replace_callback('/\{[^\}]+\}/', function($matches) use ($subpattern, $parentheses, $text) {
             $st_numbers = [];
-
-            //var_dump($text);
-            //var_dump($matches);
-            //die();
 
             preg_match_all($subpattern, $matches[0], $submatches);
 
@@ -172,8 +343,6 @@ abstract class ImporterAbstract {
             return (count($st_numbers)) ? implode(' ', $st_numbers) : $matches[0];
         }, $text);
 
-//        var_dump($text);
-//        die();
         return $text;
     }
 
@@ -185,19 +354,32 @@ abstract class ImporterAbstract {
 
     protected function _formatRedLetter($text) {
         $find = [$this->redletter_st, $this->redletter_en];
-        // $rep  = ['<', '>'];
         $rep = ['‹','›'];  // NOT <>!, U+2039, U+203A
         $text = $this->_replaceTagsIfNeeded($find, $rep, $text);
 
-        if($find[0] && $find[1]) {
-            $text = str_replace('› [', ' [', $text);
-            $text = str_replace('] ‹', '] ', $text);
-        }
+        // This was a failed attempt to mark italicized words as red letter.
+        // It resulted, in some instances, the remainder of the verse text being made red.
+        // if($find[0] && $find[1]) {
+        //     $text = str_replace('› [', ' [', $text);
+        //     $text = str_replace('] ‹', '] ', $text);
+        // }
 
         return $text;
     }
 
     protected function _formatParagraph($text) {
+        if($this->paragraph_at_verse_end && $this->paragraph) {
+            if($this->_paragraph_next_verse) {
+                $text = '¶ ' . $text;
+                $this->_paragraph_next_verse = FALSE;
+            }
+            elseif (strpos($text, $this->paragraph) !== FALSE) {
+                $this->_paragraph_next_verse = TRUE;
+            }
+
+            return $text;
+        }
+
         if($this->paragraph && $this->paragraph != '¶ ') {
             return str_replace($this->paragraph, '¶ ', $text);
         }
@@ -232,15 +414,83 @@ abstract class ImporterAbstract {
         return $Bible;
     }
 
+    protected function _saveBible() {
+
+    }
+
     protected function _processBibleAttributes($attr) {
 
     }
 
     public function __get($name) {
-        $gettable = ['required'];
+        $gettable = ['required', 'save_bible', 'overwrite', 'module', 'file', 'insert_into_bible_table', 'enable', 'settings', 'has_gui', 'has_cli'];
 
         if(in_array($name, $gettable)) {
             return $this->$name;
         }
+    }    
+
+    public function __set($name, $value) {
+        $bool = ['required', 'save_bible', 'overwrite', 'insert_into_bible_table', 'enable'];
+        $str = ['module', 'file'];
+
+        if(in_array($name, $bool)) {
+            $this->$name = $value ? TRUE : FALSE;
+        }        
+
+        if(in_array($name, $str)) {
+            $this->$name = $value;
+        }
+    }
+
+    public static function generateUniqueModuleName($shortname) {
+        $module = trim( strtolower($shortname) );
+        $module = preg_replace("/\s+/", ' ', $module);
+        $module = str_replace(' ', '_', $module);
+        $module = substr($module, 0, 250);
+        $Bible  = Bible::findByModule($module);
+
+        if(!$Bible) {
+            return $module;
+        }
+
+        for($i = 1; $Bible; $i++) {
+            $module_suggestion = $module . '_' . $i;
+            $Bible = Bible::findByModule($module_suggestion);
+        }
+
+        return $module_suggestion;
+    }
+
+    public static function sanitizeFileName($file_name) {
+        $file_name = trim($file_name);
+        $file_name = mb_ereg_replace("([^\w\s\d\-_~,;\[\]\(\).])", '', $file_name);
+        $file_name = mb_ereg_replace("([\.]{2,})", '', $file_name);
+        return $file_name;
+    }
+
+    public static function getLanguageCode($language) {
+        if(!$language) {
+            return NULL;
+        }
+
+        if(strlen($language) == 2) {
+            $match_attr = ['code'];
+        }
+        elseif(strlen($language) == 3) {
+            $match_attr = ['iso_639_2'];
+        }
+        else {
+            $match_attr = ['name', 'iso_name', 'native_name'];
+        }
+
+        $Lang = NULL;
+
+        while(!$Lang && $match_attr) {
+            $attr = array_shift($match_attr);
+            $Lang = Language::where($attr, $language)->first();
+        }
+
+        return ($Lang) ? $Lang->code : NULL;
     }
 }

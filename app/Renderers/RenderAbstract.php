@@ -72,8 +72,7 @@ abstract class RenderAbstract {
             return $this->addError('File already exists');
         }
 
-        $start_time = time();
-
+        $start_time   = time();
         $locale_cache = App::getLocale();
 
         App::setLocale($this->Bible->lang_short);
@@ -101,12 +100,14 @@ abstract class RenderAbstract {
         }
 
         $closure = function($rows) {
-           foreach($rows as $row) {
-               $this->_renderSingleVerse($row);
-           }
+            foreach($rows as $row) {
+                $this->_renderSingleVerse($row);
+            }
         };
 
-        $Query->orderBy($table . '.id')->chunk($this->chunk_size, $closure);
+        $Query->orderBy($table . '.id');
+        $Query->chunk($this->chunk_size, $closure);
+
         $this->_afterVerseRender();
         $success = $this->_renderFinish();
 

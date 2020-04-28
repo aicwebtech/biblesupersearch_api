@@ -20,7 +20,7 @@ class CreateBibleVersionsTable extends Migration
             $table->string('module')->unique();
             $table->string('year');
             $table->text('description')->nullable();
-            $table->string('lang');
+            $table->string('lang')->comment('obsolete')->nullable();
             $table->string('lang_short');
             $table->tinyInteger('copyright')->default(0)->unsigned();
             $table->tinyInteger('italics')->default(0)->unsigned();

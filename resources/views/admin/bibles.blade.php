@@ -8,7 +8,7 @@
     ];
 
     $stylesheets = [
-       '/js/bin/jqGrid-v4.6.0/css/ui.jqgrid.css'
+       '/js/bin/jqGrid-v4.6.0/css/ui.jqgrid.css',
     ];
 @endphp
 

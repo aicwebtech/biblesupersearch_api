@@ -133,11 +133,11 @@ abstract class ImportBible extends Command {
             $autopopulate = $this->confirm('Use existing Bible attributes? [y|N]');
         }
 
-        foreach($this->options as $option) {
-            $attributes[$option] = $this->option($option);
-        }
-
         if(!$autopopulate) {
+            foreach($this->options as $option) {
+                $attributes[$option] = $this->option($option);
+            }
+            
             foreach($this->ask as $field => $question) {
                 if(empty($attributes[$field])) {
                     if(isset($this->hints[$field])) {

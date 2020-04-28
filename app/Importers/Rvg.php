@@ -31,7 +31,7 @@ class Rvg extends ImporterAbstract {
     protected $strongs_en   = NULL;
     protected $paragraph    = NULL;
 
-    public function import() {
+    protected function _importHelper(Bible &$Bible) {
         ini_set("memory_limit", "500M");
 
         // Script settings
@@ -67,7 +67,7 @@ class Rvg extends ImporterAbstract {
             return $this->addError('Doesnt have 31102 lines');
         }
 
-        if($insert_into_bible_table) {
+        if($this->insert_into_bible_table) {
             $attr = $this->bible_attributes;
 //            $attr['description'] = $desc . '<br /><br />' . $source;
             $Bible->fill($attr);
@@ -97,6 +97,5 @@ class Rvg extends ImporterAbstract {
         }
 
         $this->_insertVerses();
-        $Bible->enable();
     }
 }

@@ -20,7 +20,7 @@ return [
     |
     */
 
-    'version' => '4.1.0',
+    'version' => '4.2.0',
 
     /*
     |--------------------------------------------------------------------------
@@ -36,6 +36,38 @@ return [
     */
 
     'version_cache' => '4.0.0', // DO NOT CHANGE
+
+    /*
+    |--------------------------------------------------------------------------
+    | Application Premium Cache
+    |
+    | When a request is made, we check to see if we have the 'Premium' plugin
+    | code and cache the results here.  
+    |
+    | Note: This value is automatically set.  Forcing this value to TRUE will 
+    | not magically grant you premium features, but may instead cause breakage.
+    |
+    |--------------------------------------------------------------------------
+    |
+    |
+    */
+
+    'premium' => FALSE,
+
+    /*
+    |--------------------------------------------------------------------------
+    | Application Premium Disable
+    |
+    | Force disable all premium features even if the code is present.
+    |
+    | Intended for debugging, must be FALSE in production
+    |
+    |--------------------------------------------------------------------------
+    |
+    |
+    */
+
+    'premium_disabled' => env('PREMIUM_DISABLED', FALSE),
 
     /*
     |--------------------------------------------------------------------------

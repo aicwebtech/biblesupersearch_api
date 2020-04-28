@@ -19,7 +19,7 @@ class ImportBibleUnbound extends ImportBible {
      * The console command description.
      * @var string
      */
-    protected $description = 'Import a Bible from in a (zipped) Unbound Bible Format
+    protected $description = 'Import a Bible in the (zipped) Unbound Bible Format
                               These can be downloaded at
                               https://unbound.biola.edu/index.cfm?method=downloads.showDownloadMain';
 

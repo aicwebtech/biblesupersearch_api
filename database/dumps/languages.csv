@@ -1,0 +1,185 @@
+Name,Native Name (endonym),ISO language name,Code (639-1),ISO endonym,RTL,Language family,639-1,639-2/T,639-2/B,639-3,Notes
+Afar,Afaraf,Afar,aa,Afaraf,No,Afro-Asiatic,aa,aar,aar,aar,
+Amharic,አማርኛ,Amharic,am,አማርኛ,No,Afro-Asiatic,am,amh,amh,amh,
+Arabic,العربية,Arabic,ar,العربية,Yes,Afro-Asiatic,ar,ara,ara,ara + 29,"macrolanguage, Standard Arabic is [arb]"
+Hausa,(Hausa) هَوُسَ,Hausa,ha,(Hausa) هَوُسَ,No,Afro-Asiatic,ha,hau,hau,hau,"Has used Latin-based alphabet since 1930, left-to-right.  Used an Arabic alphabet previously"
+Hebrew,עברית,Hebrew,he,עברית,Yes,Afro-Asiatic,he,heb,heb,heb,"Modern Hebrew. Code changed in 1989 from original ISO 639:1988, iw.[1]"
+Maltese,Malti,Maltese,mt,Malti,No,Afro-Asiatic,mt,mlt,mlt,mlt,
+Oromo,Afaan Oromoo,Oromo,om,Afaan Oromoo,No,Afro-Asiatic,om,orm,orm,orm + 4,macrolanguage
+Somali,"Soomaaliga, af Soomaali",Somali,so,"Soomaaliga, af Soomaali",No,Afro-Asiatic,so,som,som,som,
+Tigrinya,ትግርኛ,Tigrinya,ti,ትግርኛ,No,Afro-Asiatic,ti,tir,tir,tir,
+Cree,ᓀᐦᐃᔭᐍᐏᐣ,Cree,cr,ᓀᐦᐃᔭᐍᐏᐣ,No,Algonquian,cr,cre,cre,cre + 6,macrolanguage
+Ojibwa,ᐊᓂᔑᓈᐯᒧᐎᓐ,Ojibwa,oj,ᐊᓂᔑᓈᐯᒧᐎᓐ,No,Algonquian,oj,oji,oji,oji + 7,"macrolanguage, also known as Ojibwe"
+Central Khmer,"ខ្មែរ, ខេមរភាសា, ភាសាខ្មែរ",Central Khmer,km,"ខ្មែរ, ខេមរភាសា, ភាសាខ្មែរ",No,Austroasiatic,km,khm,khm,khm,also known as Khmer or Cambodian
+Vietnamese,Tiếng Việt,Vietnamese,vi,Tiếng Việt,No,Austroasiatic,vi,vie,vie,vie,
+Chamorro,Chamoru,Chamorro,ch,Chamoru,No,Austronesian,ch,cha,cha,cha,
+Fijian,vosa Vakaviti,Fijian,fj,vosa Vakaviti,No,Austronesian,fj,fij,fij,fij,
+Hiri Motu,Hiri Motu,Hiri Motu,ho,Hiri Motu,No,Austronesian,ho,hmo,hmo,hmo,
+Indonesian,Bahasa Indonesia,Indonesian,id,Bahasa Indonesia,No,Austronesian,id,ind,ind,ind,"Covered by macrolanguage [ms/msa]. Changed in 1989 from original ISO 639:1988, in[1]."
+Javanese,"ꦧꦱꦗꦮ, Basa Jawa",Javanese,jv,"ꦧꦱꦗꦮ, Basa Jawa",No,Austronesian,jv,jav,jav,jav,
+Malagasy,fiteny malagasy,Malagasy,mg,fiteny malagasy,No,Austronesian,mg,mlg,mlg,mlg + 11,macrolanguage
+Malay,"Bahasa Melayu, بهاس ملايو‎",Malay,ms,"Bahasa Melayu, بهاس ملايو‎",No,Austronesian,ms,msa,may,msa + 36,"macrolanguage, Standard Malay is [zsm], Indonesian is [id/ind]"
+Maori,te reo Māori,Maori,mi,te reo Māori,No,Austronesian,mi,mri,mao,mri,also known as Māori
+Marshallese,Kajin M̧ajeļ,Marshallese,mh,Kajin M̧ajeļ,No,Austronesian,mh,mah,mah,mah,
+Nauru,Dorerin Naoero,Nauru,na,Dorerin Naoero,No,Austronesian,na,nau,nau,nau,also known as Nauruan
+Samoan,gagana fa'a Samoa,Samoan,sm,gagana fa'a Samoa,No,Austronesian,sm,smo,smo,smo,
+Sundanese,Basa Sunda,Sundanese,su,Basa Sunda,No,Austronesian,su,sun,sun,sun,
+Tagalog,Wikang Tagalog,Tagalog,tl,Wikang Tagalog,No,Austronesian,tl,tgl,tgl,tgl,Note: Filipino (Pilipino) has the code [fil]
+Tonga (Tonga Islands),Faka Tonga,Tonga (Tonga Islands),to,Faka Tonga,No,Austronesian,to,ton,ton,ton,also known as Tongan
+Tahitian,Reo Tahiti,Tahitian,ty,Reo Tahiti,No,Austronesian,ty,tah,tah,tah,One of the Reo Mā`ohi (languages of French Polynesia)
+Aymara,aymar aru,Aymara,ay,aymar aru,No,Aymaran,ay,aym,aym,aym + 2,macrolanguage
+Esperanto,Esperanto,Esperanto,eo,Esperanto,No,Constructed,eo,epo,epo,epo,"constructed, initiated from L.L. Zamenhof, 1887"
+Interlingua (International Auxiliary Language Association),Interlingua,Interlingua (International Auxiliary Language Association),ia,Interlingua,No,Constructed,ia,ina,ina,ina,constructed by International Auxiliary Language Association
+"Interlingue, Occidental","Interlingue, Occidental","Interlingue, Occidental",ie,"(originally:) Occidental, (after WWII:) Interlingue",No,Constructed,ie,ile,ile,ile,"constructed by Edgar de Wahl, first published in 1922"
+Ido,Ido,Ido,io,Ido,No,Constructed,io,ido,ido,ido,"constructed by De Beaufront, 1907, as variation of Esperanto"
+Volapük,Volapük,Volapük,vo,Volapük,No,Constructed,vo,vol,vol,vol,constructed
+Bislama,Bislama,Bislama,bi,Bislama,No,Creole,bi,bis,bis,bis,"Language formed from English and Ni-Vanuatu, with some French influence."
+"Haitian, Haitian Creole",Kreyòl ayisyen,"Haitian, Haitian Creole",ht,Kreyòl ayisyen,No,Creole,ht,hat,hat,hat,
+Sango,yângâ tî sängö,Sango,sg,yângâ tî sängö,No,Creole,sg,sag,sag,sag,
+"Navajo, Navaho",Diné bizaad,"Navajo, Navaho",nv,Diné bizaad,No,Dené–Yeniseian,nv,nav,nav,nav,
+Kannada,ಕನ್ನಡ,Kannada,kn,ಕನ್ನಡ,No,Dravidian,kn,kan,kan,kan,
+Malayalam,മലയാളം,Malayalam,ml,മലയാളം,No,Dravidian,ml,mal,mal,mal,
+Tamil,தமிழ்,Tamil,ta,தமிழ்,No,Dravidian,ta,tam,tam,tam,
+Telugu,తెలుగు,Telugu,te,తెలుగు,No,Dravidian,te,tel,tel,tel,
+Inupiaq,"Iñupiaq, Iñupiatun",Inupiaq,ik,"Iñupiaq, Iñupiatun",No,Eskimo–Aleut,ik,ipk,ipk,ipk + 2,macrolanguage
+Inuktitut,ᐃᓄᒃᑎᑐᑦ,Inuktitut,iu,ᐃᓄᒃᑎᑐᑦ,No,Eskimo–Aleut,iu,iku,iku,iku + 2,macrolanguage
+"Kalaallisut, Greenlandic","kalaallisut, kalaallit oqaasii","Kalaallisut, Greenlandic",kl,"kalaallisut, kalaallit oqaasii",No,Eskimo–Aleut,kl,kal,kal,kal,
+Afrikaans,Afrikaans,Afrikaans,af,Afrikaans,No,Indo-European,af,afr,afr,afr,
+Albanian,Shqip,Albanian,sq,Shqip,No,Indo-European,sq,sqi,alb,sqi + 4,"macrolanguage, ""Albanian Phylozone"" in 639-6"
+Aragonese,aragonés,Aragonese,an,aragonés,No,Indo-European,an,arg,arg,arg,
+Armenian,Հայերեն,Armenian,hy,Հայերեն,No,Indo-European,hy,hye,arm,hye,"also known as Հայերէն; ISO 639-3 code ""hye"" is for Eastern Armenian, ""hyw"" is for Western Armenian, and ""xcl"" is for Classical Armenian"
+Assamese,অসমীয়া,Assamese,as,অসমীয়া,No,Indo-European,as,asm,asm,asm,
+Avestan,avesta,Avestan,ae,avesta,No,Indo-European,ae,ave,ave,ave,ancient
+Belarusian,беларуская мова,Belarusian,be,беларуская мова,No,Indo-European,be,bel,bel,bel,
+Bengali,বাংলা,Bengali,bn,বাংলা,No,Indo-European,bn,ben,ben,ben,also known as Bangla
+Bihari languages,भोजपुरी,Bihari languages,bh,भोजपुरी,No,Indo-European,bh,bih,bih,,"collective language code for Bhojpuri, Magahi, and Maithili"
+Bosnian,bosanski jezik,Bosnian,bs,bosanski jezik,No,Indo-European,bs,bos,bos,bos,
+Breton,brezhoneg,Breton,br,brezhoneg,No,Indo-European,br,bre,bre,bre,
+Bulgarian,български език,Bulgarian,bg,български език,No,Indo-European,bg,bul,bul,bul,
+"Catalan, Valencian","català, valencià","Catalan, Valencian",ca,"català, valencià",No,Indo-European,ca,cat,cat,cat,
+Cornish,Kernewek,Cornish,kw,Kernewek,No,Indo-European,kw,cor,cor,cor,
+Corsican,"corsu, lingua corsa",Corsican,co,"corsu, lingua corsa",No,Indo-European,co,cos,cos,cos,
+Croatian,hrvatski jezik,Croatian,hr,hrvatski jezik,No,Indo-European,hr,hrv,hrv,hrv,
+Czech,"čeština, český jazyk",Czech,cs,"čeština, český jazyk",No,Indo-European,cs,ces,cze,ces,
+Danish,dansk,Danish,da,dansk,No,Indo-European,da,dan,dan,dan,
+"Divehi, Dhivehi, Maldivian",ދިވެހި,"Divehi, Dhivehi, Maldivian",dv,ދިވެހި,Yes,Indo-European,dv,div,div,div,
+Dutch,Nederlands,"Dutch, Flemish",nl,"Nederlands, Vlaams",No,Indo-European,nl,nld,dut,nld,
+English,English,English,en,English,No,Indo-European,en,eng,eng,eng,
+Faroese,føroyskt,Faroese,fo,føroyskt,No,Indo-European,fo,fao,fao,fao,
+French,Français,French,fr,"français, langue française",No,Indo-European,fr,fra,fre,fra,
+Galician,Galego,Galician,gl,Galego,No,Indo-European,gl,glg,glg,glg,
+German,Deutsch,German,de,Deutsch,No,Indo-European,de,deu,ger,deu,
+Greek,ελληνικά,"Greek, Modern (1453-)",el,ελληνικά,No,Indo-European,el,ell,gre,ell,
+Gujarati,ગુજરાતી,Gujarati,gu,ગુજરાતી,No,Indo-European,gu,guj,guj,guj,
+Hindi,"हिन्दी, हिंदी",Hindi,hi,"हिन्दी, हिंदी",No,Indo-European,hi,hin,hin,hin,
+Irish,Gaeilge,Irish,ga,Gaeilge,No,Indo-European,ga,gle,gle,gle,
+Icelandic,Íslenska,Icelandic,is,Íslenska,No,Indo-European,is,isl,ice,isl,
+Italian,Italiano,Italian,it,Italiano,No,Indo-European,it,ita,ita,ita,
+Kashmiri,"कश्मीरी, كشميري‎",Kashmiri,ks,"कश्मीरी, كشميري‎",No,Indo-European,ks,kas,kas,kas,
+Kurdish,"Kurdî, کوردی‎",Kurdish,ku,"Kurdî, کوردی‎",Yes,Indo-European,ku,kur,kur,kur + 3,macrolanguage
+Latin,"latine, lingua latina",Latin,la,"latine, lingua latina",No,Indo-European,la,lat,lat,lat,ancient
+"Luxembourgish, Letzeburgesch",Lëtzebuergesch,"Luxembourgish, Letzeburgesch",lb,Lëtzebuergesch,No,Indo-European,lb,ltz,ltz,ltz,
+"Limburgan, Limburger, Limburgish",Limburgs,"Limburgan, Limburger, Limburgish",li,Limburgs,No,Indo-European,li,lim,lim,lim,
+Lithuanian,lietuvių kalba,Lithuanian,lt,lietuvių kalba,No,Indo-European,lt,lit,lit,lit,
+Latvian,latviešu valoda,Latvian,lv,latviešu valoda,No,Indo-European,lv,lav,lav,lav + 2,macrolanguage
+Manx,"Gaelg, Gailck",Manx,gv,"Gaelg, Gailck",No,Indo-European,gv,glv,glv,glv,
+Macedonian,македонски јазик,Macedonian,mk,македонски јазик,No,Indo-European,mk,mkd,mac,mkd,
+Marathi,मराठी,Marathi,mr,मराठी,No,Indo-European,mr,mar,mar,mar,also known as Marāṭhī
+Nepali,नेपाली,Nepali,ne,नेपाली,No,Indo-European,ne,nep,nep,nep + 2,macrolanguage
+Norwegian Bokmål,Norsk Bokmål,Norwegian Bokmål,nb,Norsk Bokmål,No,Indo-European,nb,nob,nob,nob,Covered by macrolanguage [no/nor]
+Norwegian Nynorsk,Norsk Nynorsk,Norwegian Nynorsk,nn,Norsk Nynorsk,No,Indo-European,nn,nno,nno,nno,Covered by macrolanguage [no/nor]
+Norwegian,Norsk,Norwegian,no,Norsk,No,Indo-European,no,nor,nor,nor + 2,"macrolanguage, Bokmål is [nb/nob], Nynorsk is [nn/nno]"
+Occitan,"occitan, lenga d'òc",Occitan,oc,"occitan, lenga d'òc",No,Indo-European,oc,oci,oci,oci,
+"Church Slavic, Old Slavonic, Church Slavonic, Old Bulgarian, Old Church Slavonic",ѩзыкъ словѣньскъ,"Church Slavic, Old Slavonic, Church Slavonic, Old Bulgarian, Old Church Slavonic",cu,ѩзыкъ словѣньскъ,No,Indo-European,cu,chu,chu,chu,"ancient, in use by Orthodox Church"
+Oriya,ଓଡ଼ିଆ,Oriya,or,ଓଡ଼ିଆ,No,Indo-European,or,ori,ori,ori + 2,"macrolanguage, also known as Odia"
+"Ossetian, Ossetic",ирон æвзаг,"Ossetian, Ossetic",os,ирон æвзаг,No,Indo-European,os,oss,oss,oss,
+"Punjabi, Panjabi","ਪੰਜਾਬੀ, پنجابی‎","Punjabi, Panjabi",pa,"ਪੰਜਾਬੀ, پنجابی‎",No,Indo-European,pa,pan,pan,pan,
+Pali,"पालि, पाळि",Pali,pi,"पालि, पाळि",No,Indo-European,pi,pli,pli,pli,"ancient, also known as Pāli"
+Persian,فارسی,Persian,fa,فارسی,Yes,Indo-European,fa,fas,per,fas + 2,"macrolanguage, also known as Farsi"
+Polish,Polski,Polish,pl,"język polski, polszczyzna",No,Indo-European,pl,pol,pol,pol,
+"Pashto, Pushto",پښتو,"Pashto, Pushto",ps,پښتو,Yes,Indo-European,ps,pus,pus,pus + 3,macrolanguage
+Portuguese,Português,Portuguese,pt,Português,No,Indo-European,pt,por,por,por,
+Romansh,Rumantsch Grischun,Romansh,rm,Rumantsch Grischun,No,Indo-European,rm,roh,roh,roh,
+Romanian,Română,"Romanian, Moldavian, Moldovan",ro,Română,No,Indo-European,ro,ron,rum,ron,"The identifiers mo and mol are deprecated, leaving ro and ron (639-2/T) and rum (639-2/B) the current language identifiers to be used for the variant of the Romanian language also known as Moldavian and Moldovan in English and moldave in French. The identifiers mo and mol will not be assigned to different items, and recordings using these identifiers will not be invalid."
+Russian,русский,Russian,ru,русский,No,Indo-European,ru,rus,rus,rus,
+Sanskrit,संस्कृतम्,Sanskrit,sa,संस्कृतम्,No,Indo-European,sa,san,san,san,"ancient, still spoken, also known as Saṃskṛta"
+Sardinian,sardu,Sardinian,sc,sardu,No,Indo-European,sc,srd,srd,srd + 4,macrolanguage
+Sindhi,"सिन्धी, سنڌي، سندھی‎",Sindhi,sd,"सिन्धी, سنڌي، سندھی‎",No,Indo-European,sd,snd,snd,snd,
+Serbian,српски језик,Serbian,sr,српски језик,No,Indo-European,sr,srp,srp,srp,The ISO 639-2/T code srp deprecated the ISO 639-2/B code scc[2]
+"Gaelic, Scottish Gaelic",Gàidhlig,"Gaelic, Scottish Gaelic",gd,Gàidhlig,No,Indo-European,gd,gla,gla,gla,
+"Sinhala, Sinhalese",සිංහල,"Sinhala, Sinhalese",si,සිංහල,No,Indo-European,si,sin,sin,sin,
+Slovak,"Slovenčina, Slovenský Jazyk",Slovak,sk,"Slovenčina, Slovenský Jazyk",No,Indo-European,sk,slk,slo,slk,
+Slovenian,"Slovenski Jezik, Slovenščina",Slovenian,sl,"Slovenski Jezik, Slovenščina",No,Indo-European,sl,slv,slv,slv,also known as Slovene
+Spanish,Español,"Spanish, Castilian",es,Español,No,Indo-European,es,spa,spa,spa,
+Swedish,Svenska,Swedish,sv,Svenska,No,Indo-European,sv,swe,swe,swe,
+Tajik,"тоҷикӣ, toçikī, تاجیکی‎",Tajik,tg,"тоҷикӣ, toçikī, تاجیکی‎",No,Indo-European,tg,tgk,tgk,tgk,
+Ukrainian,Українська,Ukrainian,uk,Українська,No,Indo-European,uk,ukr,ukr,ukr,
+Urdu,اردو,Urdu,ur,اردو,Yes,Indo-European,ur,urd,urd,urd,
+Walloon,Walon,Walloon,wa,Walon,No,Indo-European,wa,wln,wln,wln,
+Welsh,Cymraeg,Welsh,cy,Cymraeg,No,Indo-European,cy,cym,wel,cym,
+Western Frisian,Frysk,Western Frisian,fy,Frysk,No,Indo-European,fy,fry,fry,fry,also known as Frisian
+Yiddish,ייִדיש,Yiddish,yi,ייִדיש,Yes,Indo-European,yi,yid,yid,yid + 2,"macrolanguage. Changed in 1989 from original ISO 639:1988, ji.[1]"
+Japanese,日本語 (にほんご),Japanese,ja,日本語 (にほんご),No,Japonic,ja,jpn,jpn,jpn,
+Georgian,ქართული,Georgian,ka,ქართული,No,Kartvelian,ka,kat,geo,kat,
+Korean,한국어,Korean,ko,한국어,No,Koreanic,ko,kor,kor,kor,
+Basque,"euskara, euskera",Basque,eu,"euskara, euskera",No,Language isolate,eu,eus,baq,eus,
+Mongolian,Монгол хэл,Mongolian,mn,Монгол хэл,No,Mongolic,mn,mon,mon,mon + 2,macrolanguage
+Akan,Akan,Akan,ak,Akan,No,Niger–Congo,ak,aka,aka,aka + 2,"macrolanguage, Twi is [tw/twi], Fanti is [fat]"
+Bambara,bamanankan,Bambara,bm,bamanankan,No,Niger–Congo,bm,bam,bam,bam,
+"Chichewa, Chewa, Nyanja","chiCheŵa, chinyanja","Chichewa, Chewa, Nyanja",ny,"chiCheŵa, chinyanja",No,Niger–Congo,ny,nya,nya,nya,
+Ewe,Eʋegbe,Ewe,ee,Eʋegbe,No,Niger–Congo,ee,ewe,ewe,ewe,
+Fulah,"Fulfulde, Pulaar, Pular",Fulah,ff,"Fulfulde, Pulaar, Pular",No,Niger–Congo,ff,ful,ful,ful + 9,"macrolanguage, also known as Fula"
+Herero,Otjiherero,Herero,hz,Otjiherero,No,Niger–Congo,hz,her,her,her,
+Igbo,Asụsụ Igbo,Igbo,ig,Asụsụ Igbo,No,Niger–Congo,ig,ibo,ibo,ibo,
+"Kikuyu, Gikuyu",Gĩkũyũ,"Kikuyu, Gikuyu",ki,Gĩkũyũ,No,Niger–Congo,ki,kik,kik,kik,
+Kinyarwanda,Ikinyarwanda,Kinyarwanda,rw,Ikinyarwanda,No,Niger–Congo,rw,kin,kin,kin,
+Kongo,Kikongo,Kongo,kg,Kikongo,No,Niger–Congo,kg,kon,kon,kon + 3,macrolanguage
+"Kuanyama, Kwanyama",Kuanyama,"Kuanyama, Kwanyama",kj,Kuanyama,No,Niger–Congo,kj,kua,kua,kua,
+Ganda,Luganda,Ganda,lg,Luganda,No,Niger–Congo,lg,lug,lug,lug,
+Lingala,Lingála,Lingala,ln,Lingála,No,Niger–Congo,ln,lin,lin,lin,
+Luba-Katanga,Kiluba,Luba-Katanga,lu,Kiluba,No,Niger–Congo,lu,lub,lub,lub,also known as Luba-Shaba
+North Ndebele,isiNdebele,North Ndebele,nd,isiNdebele,No,Niger–Congo,nd,nde,nde,nde,also known as Northern Ndebele
+Ndonga,Owambo,Ndonga,ng,Owambo,No,Niger–Congo,ng,ndo,ndo,ndo,
+South Ndebele,isiNdebele,South Ndebele,nr,isiNdebele,No,Niger–Congo,nr,nbl,nbl,nbl,also known as Southern Ndebele
+Rundi,Ikirundi,Rundi,rn,Ikirundi,No,Niger–Congo,rn,run,run,run,also known as Kirundi
+Shona,chiShona,Shona,sn,chiShona,No,Niger–Congo,sn,sna,sna,sna,
+Southern Sotho,Sesotho,Southern Sotho,st,Sesotho,No,Niger–Congo,st,sot,sot,sot,
+Swahili,Kiswahili,Swahili,sw,Kiswahili,No,Niger–Congo,sw,swa,swa,swa + 2,macrolanguage
+Swati,SiSwati,Swati,ss,SiSwati,No,Niger–Congo,ss,ssw,ssw,ssw,also known as Swazi
+Tswana,Setswana,Tswana,tn,Setswana,No,Niger–Congo,tn,tsn,tsn,tsn,
+Tsonga,Xitsonga,Tsonga,ts,Xitsonga,No,Niger–Congo,ts,tso,tso,tso,
+Twi,Twi,Twi,tw,Twi,No,Niger–Congo,tw,twi,twi,twi,Covered by macrolanguage [ak/aka]
+Venda,Tshivenḓa,Venda,ve,Tshivenḓa,No,Niger–Congo,ve,ven,ven,ven,
+Wolof,Wollof,Wolof,wo,Wollof,No,Niger–Congo,wo,wol,wol,wol,
+Xhosa,isiXhosa,Xhosa,xh,isiXhosa,No,Niger–Congo,xh,xho,xho,xho,
+Yoruba,Yorùbá,Yoruba,yo,Yorùbá,No,Niger–Congo,yo,yor,yor,yor,
+Zulu,isiZulu,Zulu,zu,isiZulu,No,Niger–Congo,zu,zul,zul,zul,
+Kanuri,Kanuri,Kanuri,kr,Kanuri,No,Nilo-Saharan,kr,kau,kau,kau + 3,macrolanguage
+Avaric,"авар мацӀ, магӀарул мацӀ",Avaric,av,"авар мацӀ, магӀарул мацӀ",No,Northeast Caucasian,av,ava,ava,ava,also known as Avar
+Chechen,нохчийн мотт,Chechen,ce,нохчийн мотт,No,Northeast Caucasian,ce,che,che,che,
+Abkhazian,"аҧсуа бызшәа, аҧсшәа",Abkhazian,ab,"аҧсуа бызшәа, аҧсшәа",No,Northwest Caucasian,ab,abk,abk,abk,also known as Abkhaz
+Quechua,"Runa Simi, Kichwa",Quechua,qu,"Runa Simi, Kichwa",No,Quechuan,qu,que,que,que + 43,macrolanguage
+Burmese,ဗမာစာ,Burmese,my,ဗမာစာ,No,Sino-Tibetan,my,mya,bur,mya,
+Chinese,"中文 (Zhōngwén), 汉语, 漢語",Chinese,zh,"中文 (Zhōngwén), 汉语, 漢語",No,Sino-Tibetan,zh,zho,chi,zho + 16,macrolanguage
+Dzongkha,རྫོང་ཁ,Dzongkha,dz,རྫོང་ཁ,No,Sino-Tibetan,dz,dzo,dzo,dzo,
+"Sichuan Yi, Nuosu",ꆈꌠ꒿ Nuosuhxop,"Sichuan Yi, Nuosu",ii,ꆈꌠ꒿ Nuosuhxop,No,Sino-Tibetan,ii,iii,iii,iii,Standard form of Yi languages
+Tibetan,བོད་ཡིག,Tibetan,bo,བོད་ཡིག,No,Sino-Tibetan,bo,bod,tib,bod,also known as Standard Tibetan
+Lao,ພາສາລາວ,Lao,lo,ພາສາລາວ,No,Tai–Kadai,lo,lao,lao,lao,
+Thai,ไทย,Thai,th,ไทย,No,Tai–Kadai,th,tha,tha,tha,
+"Zhuang, Chuang","Saɯ cueŋƅ, Saw cuengh","Zhuang, Chuang",za,"Saɯ cueŋƅ, Saw cuengh",No,Tai–Kadai,za,zha,zha,zha + 16,macrolanguage
+Guarani,Avañe'ẽ,Guarani,gn,Avañe'ẽ,No,Tupian,gn,grn,grn,grn + 5,macrolanguage
+Azerbaijani,azərbaycan dili,Azerbaijani,az,azərbaycan dili,No,Turkic,az,aze,aze,aze + 2,macrolanguage
+Bashkir,башҡорт теле,Bashkir,ba,башҡорт теле,No,Turkic,ba,bak,bak,bak,
+Chuvash,чӑваш чӗлхи,Chuvash,cv,чӑваш чӗлхи,No,Turkic,cv,chv,chv,chv,
+Kazakh,қазақ тілі,Kazakh,kk,қазақ тілі,No,Turkic,kk,kaz,kaz,kaz,
+"Kirghiz, Kyrgyz","Кыргызча, Кыргыз тили","Kirghiz, Kyrgyz",ky,"Кыргызча, Кыргыз тили",No,Turkic,ky,kir,kir,kir,
+Turkmen,"Türkmen, Түркмен",Turkmen,tk,"Türkmen, Түркмен",No,Turkic,tk,tuk,tuk,tuk,
+Turkish,Türkçe,Turkish,tr,Türkçe,No,Turkic,tr,tur,tur,tur,
+Tatar,"татар теле, tatar tele",Tatar,tt,"татар теле, tatar tele",No,Turkic,tt,tat,tat,tat,
+"Uighur, Uyghur","ئۇيغۇرچە‎, Uyghurche","Uighur, Uyghur",ug,"ئۇيغۇرچە‎, Uyghurche",Yes,Turkic,ug,uig,uig,uig,
+Uzbek,"Oʻzbek, Ўзбек, أۇزبېك‎",Uzbek,uz,"Oʻzbek, Ўзбек, أۇزبېك‎",No,Turkic,uz,uzb,uzb,uzb + 2,macrolanguage
+Estonian,"eesti, eesti keel",Estonian,et,"eesti, eesti keel",No,Uralic,et,est,est,est + 2,macrolanguage
+Finnish,Suomi,Finnish,fi,"suomi, suomen kieli",No,Uralic,fi,fin,fin,fin,
+Hungarian,magyar,Hungarian,hu,magyar,No,Uralic,hu,hun,hun,hun,
+Komi,коми кыв,Komi,kv,коми кыв,No,Uralic,kv,kom,kom,kom + 2,macrolanguage
+Northern Sami,Davvisámegiella,Northern Sami,se,Davvisámegiella,No,Uralic,se,sme,sme,sme,

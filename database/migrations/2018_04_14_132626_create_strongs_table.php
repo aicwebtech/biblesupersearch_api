@@ -4,6 +4,7 @@ use Illuminate\Support\Facades\Schema;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Database\Migrations\Migration;
 use App\Importers\Database as DatabaseImport;
+use App\Models\StrongsDefinition as Model;
 
 class CreateStrongsTable extends Migration
 {
@@ -25,7 +26,8 @@ class CreateStrongsTable extends Migration
 
         DB::table('strongs_definitions')->truncate();
 
-        DatabaseImport::importSqlFile('strongs_definitions_en.sql');
+        // DatabaseImport::importSqlFile('strongs_definitions_en.sql');
+        Model::migrateFromCsv();
     }
 
     /**

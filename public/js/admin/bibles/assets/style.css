@@ -8,14 +8,23 @@
     height: 40px;
 }
 
+.filters_container {
+    height: 40px;
+}
+
 button.bulk {
     margin-left: 10px;
     font-size: 0.8em;
     padding: 5px;
 }
 
+/* Grid Columns */
 td.alert {
     background-color: #f24141;
+    color: white;
+}
+
+td.alert a, td.alert a:hover {
     color: white;
 }
 
@@ -25,6 +34,14 @@ td.off {
 
 td.on {
     background-color: #76f785;
+}
+
+td.research.off {
+    background-color: #39e3cf;
+}
+
+td.research.on {
+    background-color: #e0e84f;
 }
 
 td.good {
@@ -41,4 +58,31 @@ td.good {
     margin-bottom: 20px;
     font-weight: bold;
     text-align: center; 
+}
+
+/* Premimum Flags */
+.prem label {
+    margin-right: 10px;
+}
+
+.prem span {
+    color: red;
+}
+
+/* Dev Tool Flags */
+.dev label {
+    margin-right: 10px;
+}
+
+.dev span {
+    color: #d4b504;
+}
+
+/* Misc standard styles */
+.right-align { text-align: right; }
+.center-align { text-align: center; }
+
+.center-element {
+    margin-left: auto;
+    margin-right: auto;
 }
