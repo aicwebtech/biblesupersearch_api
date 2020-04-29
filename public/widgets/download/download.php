@@ -17,6 +17,7 @@
                 <th>Language</th>
                 <?php if($BibleSuperSearchDownloadVerbose): ?><th>Year</th><?php endif; ?>
                 <?php if($BibleSuperSearchDownloadVerbose): ?><th>Downloadable</th><?php endif; ?>
+                <?php if($BibleSuperSearchDownloadVerbose): ?><th>Research*</th><?php endif; ?>
             </tr>
 
             <?php foreach($BibleSuperSearchBibles as $bible) : ?>
@@ -35,10 +36,18 @@
                     <td><?php echo $bible['lang'] ?></td>
                     <?php if($BibleSuperSearchDownloadVerbose): ?><td><?php echo $bible['year'] ?></td><?php endif; ?>
                     <?php if($BibleSuperSearchDownloadVerbose): ?><td><?php echo $bible['downloadable'] ? 'Yes' : 'No' ?></td><?php endif; ?>
+                    <?php if($BibleSuperSearchDownloadVerbose): ?><td><?php echo $bible['research'] ? 'Yes' : 'No' ?></td><?php endif; ?>
                 </tr>
             <?php endforeach; ?>
 
         </table>
+
+        <?php if($BibleSuperSearchDownloadVerbose): ?>
+            <br /><br />
+            <small>
+                * Bibles marked as 'Research' are provided for research purposes only and are not necessarily reccommended.
+            </small>
+        <?php endif; ?>
     </div>
     <div class='container format_container'>
         <h2>Select a Format</h2>

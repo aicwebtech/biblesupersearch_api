@@ -260,7 +260,7 @@ class Bible extends Model {
     }
 
     public function isDownloadable() {
-        if($this->restrict || !$this->copyright_id) {
+        if($this->restict || !$this->copyright_id) {
             return FALSE;
         }
 
