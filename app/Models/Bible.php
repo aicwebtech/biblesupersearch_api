@@ -280,7 +280,7 @@ class Bible extends Model {
             return $this->copyright_statement;
         }
 
-        if($this->copyright_id) {
+        if($this->copyright_id && $this->copyrightInfo) {
             return $this->copyrightInfo->getProcessedCopyrightStatement();
         }
 
