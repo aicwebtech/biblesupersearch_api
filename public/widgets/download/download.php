@@ -45,7 +45,7 @@
         <?php if($BibleSuperSearchDownloadVerbose): ?>
             <br /><br />
             <small>
-                * Bibles marked as 'Research' are provided for research purposes only and are not necessarily reccommended.
+                * Bibles marked as 'Research' are provided for research purposes only and are not necessarily recommended.
             </small>
         <?php endif; ?>
     </div>
