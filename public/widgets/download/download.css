@@ -3,6 +3,10 @@ tr.download_disabled {
     text-decoration: line-through;
 }
 
+.bible_container th {
+    padding: 0 3px;
+}
+
 .format_group_box {
     /*background-color: #5aa700;*/
     background-color: #ddd;
