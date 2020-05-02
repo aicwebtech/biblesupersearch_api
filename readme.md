@@ -22,7 +22,7 @@ You also have the option to build  your own.
 ## Official Documentation
 
 ### Server Requirements:
-* PHP >= 7.1.3
+* PHP >= 7.2.5
 * MySQL
 * OpenSSL PHP Extension
 * PDO PHP Extension
@@ -32,6 +32,7 @@ You also have the option to build  your own.
 * XML PHP Extension
 * Zip PHP Extension
 * Ctype PHP Extension
+* Fileinfo PHP extension
 * JSON PHP Extension
 * BCMath PHP Extension
 * Composer
