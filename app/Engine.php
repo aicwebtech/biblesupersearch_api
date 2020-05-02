@@ -404,6 +404,22 @@ class Engine {
         $order_by_default = 'lang_native_name|rank';
         $order_by = array_key_exists('bible_order_by', $input) ? $input['bible_order_by'] : $order_by_default;
         $group_by = array_key_exists('bible_group_by', $input) ? $input['bible_group_by'] : NULL;
+        $group_by_mapped = NULL;
+
+        // if($group_by && $group_by != 'none') {
+        //     switch($group_by) {
+        //         case 'language':
+        //             $group_by_mapped = 'lang_name';
+        //             break;            
+        //         case 'language_english':
+        //             $group_by_mapped = 'lang_name_english';
+        //             break;
+        //         default:
+        //             $group_by_mapped = NULL;
+        //     }
+
+        //     $order_by = ($group_by_mapped ?: $group_by) . '|' . $order_by;
+        // }
 
         // var_dump($order_by);
 

@@ -47,7 +47,7 @@ You also have the option to build your own.
 
 
 Server Requirements:
-* PHP >= 7.1.3
+* PHP >= 7.2.5
 * MySQL database
 * OpenSSL PHP Extension
 * PDO PHP Extension
@@ -57,6 +57,7 @@ Server Requirements:
 * XML PHP Extension
 * Zip PHP Extension
 * Ctype PHP Extension
+* Fileinfo PHP extension
 * JSON PHP Extension
 * BCMath PHP Extension
 
