@@ -12,6 +12,7 @@ class Rendering extends Model
         $filepath = $this->getRenderedFilePath();
         is_file($filepath) && unlink($filepath);
         $this->rendered_at = NULL;
+        $this->downloaded_at = NULL;
         $this->save();
     }
 
