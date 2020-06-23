@@ -442,6 +442,10 @@ class RenderManager {
         foreach($DeletableRenderings as $key => $R) {
             $delete = FALSE;
 
+            if(empty($R->downloaded_at)) {
+                continue; // don't delete if it hasn't been downloaded yet
+            }
+
             if($min_render_time && $R->rendered_duration < $min_render_time) {
                 static::_cleanUpDryRunMessage($dry_run_verbose, $R, 'min_render_time');
                 $delete = TRUE;
@@ -480,6 +484,10 @@ class RenderManager {
 
         if($space_needed_overall > $freed_space) {
             foreach($DeletableRenderings as $R) {
+                if(empty($R->downloaded_at)) {
+                    continue; // don't delete if it hasn't been downloaded yet
+                }
+
                 $freed_space += $R->file_size;
                 static::_cleanUpDryRunMessage($dry_run, $R, 'more_space_needed');
                 
