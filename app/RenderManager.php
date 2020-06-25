@@ -442,7 +442,7 @@ class RenderManager {
         foreach($DeletableRenderings as $key => $R) {
             $delete = FALSE;
 
-            if(empty($R->downloaded_at)) {
+            if($R->isPendingDownload()) {
                 continue; // don't delete if it hasn't been downloaded yet
             }
 
@@ -484,7 +484,7 @@ class RenderManager {
 
         if($space_needed_overall > $freed_space) {
             foreach($DeletableRenderings as $R) {
-                if(empty($R->downloaded_at)) {
+                if($R->isPendingDownload()) {
                     continue; // don't delete if it hasn't been downloaded yet
                 }
 

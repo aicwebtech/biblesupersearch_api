@@ -124,6 +124,7 @@ abstract class RenderAbstract {
         $Rendering->rendered_duration   = time() - $start_time;
         $Rendering->meta_hash           = md5($this->_getMetaString());
         $Rendering->rendered_at         = date('Y-m-d H:i:s');
+        $Rendering->downloaded_at       = NULL;
         $Rendering->version             = static::$render_version;
         $Rendering->file_size           = $file_size_mb;
         $Rendering->file_name           = basename($file_path);
