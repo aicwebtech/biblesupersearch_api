@@ -89,11 +89,19 @@ abstract class PdfAbstract extends RenderAbstract {
         $this->TCPDF  = new $this->tcpdf_class($this->pdf_orientation, $this->pdf_unit, $format);
         $this->TCPDF->setHeaderMargin(10);
         $this->TCPDF->setFooterMargin(0);
+        
+        if(static::$load_fonts) {
+            $this->_initiateFonts();
+        }
+        
+        $this->TCPDF->SetAutoPageBreak(TRUE, $this->pdf_margin);
+        $this->TCPDF->SetMargins($this->pdf_margin_inside, $this->pdf_top_margin, $this->pdf_margin_outside);
+    }
+
+    protected function _initiateFonts() {
         $this->TCPDF->setFont($this->pdf_font_family, '', $this->pdf_text_size);
         $this->TCPDF->setHeaderFont([$this->pdf_font_family, $this->pdf_header_style, $this->pdf_header_size]);
         $this->TCPDF->setFooterFont([$this->pdf_font_family, $this->pdf_header_style, $this->pdf_header_size]);
-        $this->TCPDF->SetAutoPageBreak(TRUE, $this->pdf_margin);
-        $this->TCPDF->SetMargins($this->pdf_margin_inside, $this->pdf_top_margin, $this->pdf_margin_outside);
     }
 
     protected function _renderStart() {
