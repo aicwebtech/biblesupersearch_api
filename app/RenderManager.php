@@ -125,6 +125,7 @@ class RenderManager {
         $format = $format ?: $this->format[0];
         $CLASS = static::$register[$format];
         $limit = isset($limit_override) ? $limit_override : $CLASS::getRenderBiblesLimit();
+        $CLASS::$load_fonts = FALSE;
 
         if($overwrite) {
             $Bibles_Needing_Render = $this->Bibles;
@@ -140,6 +141,8 @@ class RenderManager {
                 }
             }
         }
+        
+        $CLASS::$load_fonts = TRUE;
 
         if(!$bypass_render_limit && $limit !== TRUE && count($Bibles_Needing_Render) > $limit) {
             // create detatched process on 'php artisan queue:work --once ONLY' if jobs table is EMPTY
