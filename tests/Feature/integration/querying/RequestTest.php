@@ -84,6 +84,16 @@ class RequestTest extends TestCase {
 //        $results = $Engine->actionQuery(['bible' => 'kjv', 'request' => 'Peter John', 'whole_words' => FALSE, 'page_all' => TRUE]);
 //        $this->assertFalse($Engine->hasErrors());
 //        $this->assertCount(6, $results['kjv']);
+    }    
+
+    public function testAsRegexpSearch() {
+        // NOT WORKING!
+        return;
+
+        $Engine = new Engine();
+        $Engine->setDefaultDataType('raw');
+        $results = $Engine->actionQuery(['bible' => 'kjv', 'request' => 'love.{0,200}joy', 'whole_words' => TRUE, 'page_all' => TRUE]);
+        $this->assertFalse($Engine->hasErrors());
     }
 
     public function testDisambiguation() {
