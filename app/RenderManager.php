@@ -219,25 +219,35 @@ class RenderManager {
             $dir = Renderers\RenderAbstract::getRenderBasePath(); // . 'temp_zip/';
             $delete_file = TRUE;
             $zip_path = $dir . $zip_filename;
-            $Zip = new \ZipArchive;
 
-            if(!$Zip->open($zip_path, \ZipArchive::CREATE)) {
-                return $this->addError('Unable to create ZIP file <tmppath>/' . $zip_filename);
-            }
+            try {
+                $Zip = new \ZipArchive;
 
-            // Copy all appropiate files into Zip file
-            foreach($this->format as $format) {
-                $CLASS = static::$register[$format];
-
-                foreach($this->Bibles as $Bible) {
-                    $Renderer = new $CLASS($Bible);
-                    $filepath = $Renderer->getRenderFilePath();
-                    $Zip->addFile($filepath, basename($filepath));
-                    $Renderer->incrementHitCounter();
+                if(!$Zip->open($zip_path, \ZipArchive::CREATE)) {
+                    return $this->addError('Unable to create ZIP file <tmppath>/' . $zip_filename);
                 }
-            }
 
-            $Zip->close();
+                // Copy all appropiate files into Zip file
+                foreach($this->format as $format) {
+                    $CLASS = static::$register[$format];
+
+                    foreach($this->Bibles as $Bible) {
+                        $Renderer = new $CLASS($Bible);
+                        $filepath = $Renderer->getRenderFilePath();
+
+                        if( !$Zip->addFile($filepath, basename($filepath)) ) {
+                            return $this->addError('Unable to add Bible to ZIP file: ' . $Bible->name);
+                        }
+                        
+                        $Renderer->incrementHitCounter();
+                    }
+                }
+
+                $Zip->close();   
+            }
+            catch (\Exception $e) {
+                return $this->addError($e->getMessage());
+            }
 
             // Send Zip file to browser as download
             $download_file_path = $zip_path;
