@@ -1083,21 +1083,11 @@ class Passage {
 
         if(!empty($request)) {
             if(!$keywords && !$reference) {
-                # $non_passage_chars = preg_match_all('/[^0-9\p{L}\p{M} :,.-]/', $request, $matches);
-
-                $non_passage_chars = preg_match_all('/[`\\~!@#$%\^&*{}_[\]]/', $reference, $matches);
-                # $non_passage_chars = preg_match_all('/[\p{Ps}\p{Pe}\(\)\\\|\+&]/', $reference, $matches); // BookAbstract::findByEnteredName
-
-                // var_dump($request);
-                // var_dump($matches);
-                // var_dump($non_passage_chars);
-
-                // $valid_book = FALSE;
+                $non_passage_chars = static::_containsNonPassageCharacters($request);
 
                 $passages = static::explodeReferences($request, TRUE);
 
-                // var_dump($passages);
-                //$Passages = static::parseReferences($request, $languages, FALSE, $Bibles); // Worst case senariao - lots of overhead
+                // $Passages = static::parseReferences($request, $languages, FALSE, $Bibles); // Worst case senariao - lots of overhead
 
                 // Treats as passage if 
                 // * It's not empty AND 
@@ -1109,9 +1099,8 @@ class Passage {
                 if(
                     !empty($passages) && 
                     !(preg_match('/[GHgh][0-9]+/', $request)) && 
-                    // !$non_passage_chars && 
-                    (
-                        (preg_match('/[0-9]/', $request) && strpos($request, '(') === FALSE) || count($passages) >= 2)
+                    !$non_passage_chars && 
+                    ( (preg_match('/[0-9]/', $request) && strpos($request, '(') === FALSE) || count($passages) >= 2)
                 ) {
                     $reference = $request;
                 }
@@ -1148,5 +1137,20 @@ class Passage {
         }
 
         return array($keywords, $reference, $disambiguation, $has_disambiguation_book);
+    }
+
+    public static function _containsNonPassageCharacters($string) {
+        // echo PHP_EOL;
+        // echo('_containsNonPassageCharacters' . PHP_EOL);
+        // echo($string . PHP_EOL);
+
+        $non_passage_chars = preg_match('/[`\\~!@#$%\^&*{}_[\]()]/', $string, $matches);
+        // $non_passage_chars = preg_match_all('/[\p{Ps}\p{Pe}\(\)\\\|\+&]/', $string, $matches); // BookAbstract::findByEnteredName
+        // $non_passage_chars = preg_match_all('/[^0-9\p{L}\p{M} :,.-]/', $string, $matches);
+        // $non_passage_chars = preg_match_all('/[`\\~!@#$%\^&*{}_[\]]/', $string, $matches);
+
+        // print_r($non_passage_chars);
+
+        return $non_passage_chars ? TRUE : FALSE;
     }
 }

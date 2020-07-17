@@ -28,10 +28,37 @@ class BooleanTest extends TestCase
         // WORKAROUND: put phrases at end of query
 
         $results = $Engine->actionQuery(['bible' => 'kjv', 'search' => '"blessed hope" appearing', 'search_type' => 'boolean', 'whole_words' => FALSE]);
-//        $this->assertFalse($Engine->hasErrors());
-//        $this->assertCount(1, $results['kjv']);
-//        $this->assertEquals(56, $results['kjv'][0]['book']);
-//        $this->assertEquals(2,  $results['kjv'][0]['chapter']);
-//        $this->assertEquals(13, $results['kjv'][0]['verse']);
+        // $this->assertFalse($Engine->hasErrors());
+        // $this->assertCount(1, $results['kjv']);
+        // $this->assertEquals(56, $results['kjv'][0]['book']);
+        // $this->assertEquals(2,  $results['kjv'][0]['chapter']);
+        // $this->assertEquals(13, $results['kjv'][0]['verse']);
+    }
+
+    public function testBooleanNot() {
+        $Engine = new Engine();
+        $Engine->setDefaultDataType('raw');
+
+        $variants = [
+            // 'wine -bottle', 
+            // 'wine - bottle', 
+            'wine NOT bottle', 
+            'wine AND NOT bottle', 
+            'NOT bottle wine',
+            'NOT bottle AND wine',
+            'wine NOT (bottle)', 
+            'NOT (bottle) AND wine',
+            'wine AND NOT (bottle)', 
+            'wine !bottle',
+            '!bottle wine',
+            'wine AND !bottle',
+        ];
+
+        foreach($variants as $query) {        
+            $results = $Engine->actionQuery(['bible' => 'kjv', 'search' => $query, 'search_type' => 'boolean', 'whole_words' => FALSE, 'page_all' => TRUE]);
+            $this->assertFalse($Engine->hasErrors(), 'Could not query "' . $query . '"');
+            $this->assertCount(259, $results['kjv']);
+        }
+
     }
  }

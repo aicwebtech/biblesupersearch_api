@@ -69,13 +69,14 @@ class VerseStandard extends VerseAbstract {
             }
         }
 
-        //echo(PHP_EOL . $Query->toSql() . PHP_EOL);
-        //var_dump($binddata);
+        // echo(PHP_EOL . $Query->toSql() . PHP_EOL);
+        // var_dump($binddata);
+        // die();
         //$verses = $Query->get();
 
         //$verses = DB::select($Query->toSql(), $binddata);
         //print_r($verses);
-        //die();
+        // die();
 
         if($Search && !$parameters['multi_bibles'] && !$parameters['page_all']) {
             $verses = $Query->paginate( config('bss.pagination.limit') );

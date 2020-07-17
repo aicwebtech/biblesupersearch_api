@@ -1,5 +1,9 @@
 Bible SuperSearch API Changelog
 
+= 4.2.x
+* Fixed breakage of regular expression queries when using single 'request' box
+* Fixed total breakage of NOT boolean operator / 'None of the words' advanced search
+
 = 4.2.5 // June 19, 2020
 * Fixed breakage when attempting to render all the Bibles as PDFs
 * Fixed broken flags on Segond 1910 Bible added in 4.2.4

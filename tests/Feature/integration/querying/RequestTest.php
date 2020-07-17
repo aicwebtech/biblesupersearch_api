@@ -4,6 +4,7 @@
 
 //use Tests\TestCase;
 use App\Engine;
+use App\Passage;
 use Illuminate\Foundation\Testing\WithoutMiddleware;
 use Illuminate\Foundation\Testing\DatabaseMigrations;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
@@ -87,12 +88,9 @@ class RequestTest extends TestCase {
     }    
 
     public function testAsRegexpSearch() {
-        // NOT WORKING!
-        return;
-
         $Engine = new Engine();
         $Engine->setDefaultDataType('raw');
-        $results = $Engine->actionQuery(['bible' => 'kjv', 'request' => 'love.{0,200}joy', 'whole_words' => TRUE, 'page_all' => TRUE]);
+        $results = $Engine->actionQuery(['bible' => 'kjv', 'request' => 'love.{0,200}joy', 'whole_words' => TRUE, 'page_all' => TRUE, 'search_type' => 'regexp']);
         $this->assertFalse($Engine->hasErrors());
     }
 
@@ -113,5 +111,14 @@ class RequestTest extends TestCase {
         $this->assertCount(2, $metadata->disambiguation);
         $this->assertEquals('1 Kings', $metadata->disambiguation[0]['simple']);
         $this->assertEquals('2 Kings', $metadata->disambiguation[1]['simple']);
+    }
+
+    public function testNonPassageCharacters() {
+        $this->assertFalse( Passage::_containsNonPassageCharacters('Romans 1') );
+        $this->assertFalse( Passage::_containsNonPassageCharacters('Romanos') );
+        $this->assertFalse( Passage::_containsNonPassageCharacters('Ésaïe 31') );
+        $this->assertTrue( Passage::_containsNonPassageCharacters('love.*joy') );
+        $this->assertTrue( Passage::_containsNonPassageCharacters('love.{0,200}joy') );
+        $this->assertTrue( Passage::_containsNonPassageCharacters('(love OR joy ) hope') );
     }
 }
