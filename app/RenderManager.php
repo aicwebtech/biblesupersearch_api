@@ -169,27 +169,32 @@ class RenderManager {
         error_reporting(E_ERROR | E_WARNING | E_PARSE);
         $this->needs_process = FALSE;
 
-        foreach($this->format as $format) {
-            $CLASS = static::$register[$format];
-            $Bibles_Needing_Render = $this->getBiblesNeedingRender($format, $overwrite, $bypass_render_limit);
+        try {
+            foreach($this->format as $format) {
+                $CLASS = static::$register[$format];
+                $Bibles_Needing_Render = $this->getBiblesNeedingRender($format, $overwrite, $bypass_render_limit);
 
-            if($Bibles_Needing_Render === FALSE) {
-                return FALSE;
-            }
-            
-            foreach($Bibles_Needing_Render as $Bible) {
-                if(!static::isRenderWritable($format, $Bible->module)) {
-                    $this->addError('Unable to render ' . $Bible->name . ', could not write to file.  Please contact system administrator');
-                    continue;
+                if($Bibles_Needing_Render === FALSE) {
+                    return FALSE;
                 }
+                
+                foreach($Bibles_Needing_Render as $Bible) {
+                    if(!static::isRenderWritable($format, $Bible->module)) {
+                        $this->addError('Unable to render ' . $Bible->name . ', could not write to file.  Please contact system administrator');
+                        continue;
+                    }
 
-                $Renderer = new $CLASS($Bible);
+                    $Renderer = new $CLASS($Bible);
 
-                // if(!$Renderer->render($overwrite, $suppress_overwrite_error)) {
-                if(!$Renderer->render(TRUE, $suppress_overwrite_error)) {
-                    $this->addErrors($Renderer->getErrors(), $Renderer->getErrorLevel());
+                    // if(!$Renderer->render($overwrite, $suppress_overwrite_error)) {
+                    if(!$Renderer->render(TRUE, $suppress_overwrite_error)) {
+                        $this->addErrors($Renderer->getErrors(), $Renderer->getErrorLevel());
+                    }
                 }
             }
+        }
+        catch (\Exception $e) {
+            return $this->addError($e->getMessage());
         }
 
         error_reporting($error_reporting_cache);
@@ -275,7 +280,13 @@ class RenderManager {
             header('Pragma: public');
             header('Content-Length: ' . filesize($download_file_path));
 
-            readfile($download_file_path);
+            try {
+                readfile($download_file_path);
+            }
+            catch (\Exception $e) {
+                unlink($download_file_path);
+                return $this->addError($e->getMessage());
+            }
 
             if($delete_file) {
                 unlink($download_file_path);
