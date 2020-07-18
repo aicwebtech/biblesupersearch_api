@@ -1083,13 +1083,25 @@ class Passage {
 
         if(!empty($request)) {
             if(!$keywords && !$reference) {
-                $passages = static::explodeReferences($request);
-                //$Passages = static::parseReferences($request, $languages, FALSE, $Bibles); // Worst case senariao - lots of overhead
+                $non_passage_chars = static::_containsNonPassageCharacters($request);
 
-                // Treats as passage if it's not empty and doesn't contain Strong's Numbers and it
-                // 1) It contains numbers but no (parentheses) or
-                // 2) It resolves to multiple (possible) passages
-                if(!empty($passages) && !(preg_match('/[GHgh][0-9]+/', $request)) && ((preg_match('/[0-9]/', $request) && strpos($request, '(') === FALSE) || count($passages) >= 2)) {
+                $passages = static::explodeReferences($request, TRUE);
+
+                // $Passages = static::parseReferences($request, $languages, FALSE, $Bibles); // Worst case senariao - lots of overhead
+
+                // Treats as passage if 
+                // * It's not empty AND 
+                // * doesn't contain Strong's Numbers AND
+                // * doesn't contain invalid characters for a reference (such as those used for boolean or REGEXP queries) AND 
+                // * either
+                //      1) It contains numbers but no (parentheses) or
+                //      2) It resolves to multiple (possible) passages
+                if(
+                    !empty($passages) && 
+                    !(preg_match('/[GHgh][0-9]+/', $request)) && 
+                    !$non_passage_chars && 
+                    ( (preg_match('/[0-9]/', $request) && strpos($request, '(') === FALSE) || count($passages) >= 2)
+                ) {
                     $reference = $request;
                 }
                 // Otherwise, treats it as search keywords
@@ -1125,5 +1137,20 @@ class Passage {
         }
 
         return array($keywords, $reference, $disambiguation, $has_disambiguation_book);
+    }
+
+    public static function _containsNonPassageCharacters($string) {
+        // echo PHP_EOL;
+        // echo('_containsNonPassageCharacters' . PHP_EOL);
+        // echo($string . PHP_EOL);
+
+        $non_passage_chars = preg_match('/[`\\~!@#$%\^&*{}_[\]()]/', $string, $matches);
+        // $non_passage_chars = preg_match_all('/[\p{Ps}\p{Pe}\(\)\\\|\+&]/', $string, $matches); // BookAbstract::findByEnteredName
+        // $non_passage_chars = preg_match_all('/[^0-9\p{L}\p{M} :,.-]/', $string, $matches);
+        // $non_passage_chars = preg_match_all('/[`\\~!@#$%\^&*{}_[\]]/', $string, $matches);
+
+        // print_r($non_passage_chars);
+
+        return $non_passage_chars ? TRUE : FALSE;
     }
 }

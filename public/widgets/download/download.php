@@ -1,6 +1,19 @@
 <script>
     var BibleSuperSearchAPIURL = '<?php echo $BibleSuperSearchAPIURL; ?>';
+    var BibleSuperSearchDownloadLimit = <?php echo (int) $BibleSuperSearchDownloadLimit; ?>;
 </script>
+
+<?php
+    $downloadable_bibles = 0;
+
+    foreach($BibleSuperSearchBibles as $bible) {
+        if($bible['downloadable']) {
+            $downloadable_bibles ++;
+        }
+    }
+
+    $show_check_all = (!$BibleSuperSearchDownloadLimit || $BibleSuperSearchDownloadLimit >= $downloadable_bibles) ? TRUE : FALSE;
+?>
 
 <form action='<?php echo $BibleSuperSearchAPIURL ?>/api/download' method='POST' id='bible_download_form'>
     <input type='hidden' name='pretty_print' id='bible_download_pretty_print' value='1' />
@@ -12,7 +25,13 @@
 
         <table class='parameters' cellspacing="0">
             <tr>
-                <th><input type='checkbox' id='bible_download_check_all' title='Check All'></th>
+                <th>
+                    <?php if($show_check_all): ?>
+                    <input type='checkbox' id='bible_download_check_all' title='Check All'>
+                    <?php else: ?>
+                    &nbsp;
+                    <?php endif; ?>
+                </th>
                 <th>Name</th>
                 <th>Language</th>
                 <?php if($BibleSuperSearchDownloadVerbose): ?><th>Year</th><?php endif; ?>

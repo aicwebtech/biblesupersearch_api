@@ -247,6 +247,22 @@
                                             </tr>
                                             <tr>
                                                 <td colspan="2">&nbsp;</td>
+                                            </tr>       
+                                            <tr>
+                                                <td class='ralign'>Maximum Bibles Downloadable: </td>
+                                                <td>
+                                                    <input name='download__bible_limit' size='5' value='{{$configs['download.bible_limit']}}'>
+                                                    <span class='info'>
+                                                        <span>i</span>
+                                                        <p>
+                                                            Maximum number of Bibles that can be downloaded at once.  0 = no limit (requires good web hosting).
+                                                        </p>
+                                                    </span>
+                                                </td>
+                                                <!-- <td>&nbsp;</td> -->
+                                            </tr>                                     
+                                            <tr>
+                                                <td colspan="2">&nbsp;</td>
                                             </tr>
                                             <tr><th colspan="2">Rendered Files Settings</th></tr>
                                             <tr>

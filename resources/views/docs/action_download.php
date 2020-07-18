@@ -12,10 +12,17 @@
 
     renderParameters($params, $context);
     renderParameterFooter();
+
+    $download_limit = config('download.bible_limit');
 ?>
 <br />
 
 <div>NOTE: Specifying multiple values or ALL for both 'bible' and 'format' will result in an error.</div>
+
+<?php if($download_limit): ?>
+    <br /><div>NOTE: You may download a <b>maximum</b> of <?php echo $download_limit ?> Bibles from this API at once.</div>
+<?php endif; ?>
+
 <br /><br />
 
 <table class='parameters' cellspacing="0">

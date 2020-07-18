@@ -239,7 +239,12 @@ class SqlSearch {
         $std_bool = static::standardizeBoolean($raw_bool);
         $this->search_parsed = $std_bool;
         $this->terms = $terms = static::parseQueryTerms($std_bool);
-        //$operators = static::parseQueryOperators($std_bool, $terms);
+        $operators = static::parseQueryOperators($std_bool, $terms);
+
+        // var_dump($std_bool);
+        // var_dump($terms);
+        // var_dump($operators);
+
         $sql = $std_bool;
 
         if(static::containsInvalidCharacters($terms)) {
@@ -274,6 +279,8 @@ class SqlSearch {
         $fields    = $this->_termFields($term, $fields, $table_alias);
         $term_fmts = $this->_termFormat($term, $exact_phrase, $whole_words, FALSE);
         $term_ops  = $this->_termOperator($term, $exact_phrase, $whole_words, FALSE);
+
+        // var_dump($term_ops);
 
         foreach($fields as $field) {
             $sql_sub = array();
@@ -531,7 +538,6 @@ class SqlSearch {
         $parsing = preg_replace(static::$term_match_phrase, '', $parsing); // Remove phrase terms once parsed
         $parsing = preg_replace(static::$term_match_regexp, '', $parsing); // Remove regexp terms once parsed
 
-//        preg_match_all('/%?[\p{L}0-9\']+%?/u', $parsing, $matches, PREG_SET_ORDER);
         preg_match_all('/%?[' . static::$term_base_regexp . '\']+%?/u', $parsing, $matches, PREG_SET_ORDER); // Unicode safe??
 
         foreach ($matches as $item) {
@@ -692,26 +698,31 @@ class SqlSearch {
         $query = str_replace($or,  ' | ', $query);
         $query = str_replace($not, ' - ', $query);
         $query = str_replace(array('(', ')'), array(' (', ') '), $query);
+        // $query = str_replace('&  -', '-', $query);
         $query = trim(preg_replace('/\s+/', ' ', $query));
+
+
+        // var_dump($query);
 
         // Insert implied AND
         //$patterns = array('/\) [a-zA-Z0-9"]/', '/[a-zA-Z0-9"] \(/', '/[a-zA-Z0-9"] [a-zA-Z0-9"]/');
         // Note - this will break if we ever have
         $patterns = array(
-            '/\) [\p{L}0-9\'%"]/u',
-            '/[\p{L}0-9\'%"] \(/u',
-            '/[\p{L}0-9\'%"] [\p{L}0-9\'%"]/u',
-            '/[\p{L}]\) \(/u',
+            '/\) [\p{L}0-9\'%"]/u', // ") word"
+            '/[\p{L}0-9\'%"] \(/u', // "word ("
+            '/[\p{L}0-9\'%"] [\p{L}0-9\'%"]/u', // "word1 word2"
+            '/[\p{L}]\) \(/u', // ""
         ); // Pre-unicode-safe
 
         $unicode_safe_base  = '\p{L}\p{M}\p{N}';
         $unicode_safe_base2 = '\p{L}\p{M}';
 
         $patterns = array(
-            '/\) [' . $unicode_safe_base . '\'%"]/u',
-            '/[' . $unicode_safe_base . '\'%"] \(/u',
-            '/[' . $unicode_safe_base . '\'%"] [' . $unicode_safe_base . '\'%"]/u',
-            '/[' . $unicode_safe_base2 . ']\) \(/u',
+            '/\) [' . $unicode_safe_base . '\'%"]/u',                               // ") word"
+            '/[' . $unicode_safe_base . '\'%"] \(/u',                               // "word ("
+            '/[' . $unicode_safe_base . '\'%"] [' . $unicode_safe_base . '\'%"]/u', // "word1 word2"
+            '/[' . $unicode_safe_base . '\'%"] -/u',                                // "word -" ("word NOT")
+            '/[' . $unicode_safe_base2 . ']\) \(/u',                                // "<punctuation> ("
         ); // Unicode safe, passing all unit tests
 
         //$patterns = array('/\) [\p{L}0-9"\']/u', '/[\p{L}0-9"\'] \(/u', '/[\p{L}0-9] [\p{L}0-9]/u', '/["\'] [\p{L}0-9"\']/u');  // OLD??
@@ -724,10 +735,14 @@ class SqlSearch {
         $find  = array('&', '|', '-', '^');
         $repl  = array('AND', 'OR', ' NOT ', 'XOR');
         $query = str_replace($find, $repl, $query);
+        $query = preg_replace('/AND\s*AND/', 'AND', $query); // Replace "AND AND" with "AND"
         $query = str_replace($phrase_placeholders, $phrases, $query);
         $query = str_replace($regexp_placeholders, $regexp, $query);
         //$query = str_replace($underscored, $phrases, $query);
         $query = trim(preg_replace('/\s+/', ' ', $query));
+
+        // var_dump($query);
+        // die();
         return $query;
     }
 
