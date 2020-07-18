@@ -206,6 +206,12 @@ class RenderManager {
             return FALSE;
         }
 
+        $download_limit = config('download.bible_limit');
+
+        if($download_limit && count($this->Bibles) > $download_limit) {
+            return $this->addError('You can download a maximum of ' . $download_limit . ' Bibles at once.');
+        }
+
         $rs = $this->render(FALSE, TRUE, $bypass_render_limit);
 
         if(!$rs) {
@@ -281,6 +287,7 @@ class RenderManager {
             header('Content-Length: ' . filesize($download_file_path));
 
             try {
+                // ini_set('memory_limit','256M');
                 readfile($download_file_path);
             }
             catch (\Exception $e) {
