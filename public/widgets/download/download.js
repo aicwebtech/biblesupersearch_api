@@ -24,11 +24,14 @@ $( function() {
 
         var hasBibles = false,
             hasFormat = false,
+            hasError = false,
+            bibleCount = 0,
             err = '';
 
         $('input[name="bible[]"]').each(function() {
             if( ($(this).prop('checked') )) {
                 hasBibles = true;
+                bibleCount ++;
             }
         });
 
@@ -40,16 +43,22 @@ $( function() {
         });
 
         // console.log(hasBibles, hasFormat);
+        if(BibleSuperSearchDownloadLimit > 0 && bibleCount > BibleSuperSearchDownloadLimit) {
+            err += 'You may download a maximum of ' + BibleSuperSearchDownloadLimit + ' Bibles at once.<br>';
+            hasError = true;
+        }
 
         if(!hasBibles) {
             err += 'Please select at least one Bible. <br>';
+            hasError = true;
         }
 
         if(!hasFormat) {
             err += 'Please select a format.';
+            hasError = true;
         }
 
-        if(!hasBibles || !hasFormat) {
+        if(hasError) {
             bibleDownloadAlert('<br>Please correct the following error(s):<br><br>' + err);
             e.preventDefault();
             return false;
