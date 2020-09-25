@@ -620,6 +620,27 @@ class Bible extends Model {
         $class_name = $namespace . '\\' . $model_class;
 
         if (!class_exists($class_name)) {
+            // die('here');
+
+            // var_dump($module);
+            // Atempt to use Anonymous class here, not working
+            // $AnonClass = new class([], $module) extends StandardVerses {
+            //     protected $hasClass = FALSE;
+
+            //     function __construct($attributes = [], $module = NULL) {
+            //         // var_dump($module);
+            //         // die();
+            //         $this->module = $module;
+            //         $this->table = static::getTableByModule($module);
+            //         // var_dump($this->table);
+            //         parent::__construct($attributes);
+            //         var_dump($this->table);
+            //         die();
+            //     }
+            // };
+
+            // class_alias(get_class($AnonClass), $class_name);
+
             $code = '
                 namespace ' . $namespace . ';
                 class ' . $model_class . ' extends VerseStandard {
