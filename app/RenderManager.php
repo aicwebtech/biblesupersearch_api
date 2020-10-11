@@ -13,7 +13,7 @@ class RenderManager {
         'pdf'       => [
             'name'      => 'PDF',
             'desc'      => 'Ready-to-print PDF files',
-            'formats'   => ['pdf_cpt_let', 'pdf_cpt_a4', 'pdf_cpt_let_ul', 'pdf_cpt_a4_ul', 'pdf_normal'],
+            'formats'   => ['pdf_cpt_let', 'pdf_cpt_a4', 'pdf_cpt_let_ul', 'pdf_cpt_a4_ul'], // 'pdf_normal'],
         ],
         'text'      => [
             'name'      => 'Plain Text',
@@ -25,23 +25,25 @@ class RenderManager {
             'desc'      => 'Opens in MS Excel or other spreadsheet software.  Both human and machine readable.',
             'formats'   => ['csv'],
         ],
-        // 'database' => [
-        //     'name'      => 'Databases',
-        //     'desc'      => 'Databases and database dumps.  Ready to import into your own software',
-        //     'formats'   => ['csv', 'pdf'],
-        // ],
+        'database' => [
+            'name'      => 'Databases',
+            'desc'      => 'Databases and database dumps.  Ready to import into your own software',
+            'formats'   => ['json', 'sqlite3'],
+        ],
     ];
 
     static public $register = [
         'pdf'               => \App\Renderers\PdfCompact::class,
         'pdf_cpt_let'       => \App\Renderers\PdfCompact::class,
         'pdf_cpt_a4'        => \App\Renderers\PdfCompactA4::class,
-        'pdf_normal'        => \App\Renderers\PdfNormal::class,
+        // 'pdf_normal'        => \App\Renderers\PdfNormal::class,
         'pdf_cpt_let_ul'    => \App\Renderers\PdfCompactUl::class,
         'pdf_cpt_a4_ul'     => \App\Renderers\PdfCompactUlA4::class,        
         'text'              => \App\Renderers\PlainText::class,
         'mr_text'           => \App\Renderers\MachineReadableText::class,
         'csv'               => \App\Renderers\Csv::class,
+        'json'              => \App\Renderers\Json::class,
+        'sqlite3'           => \App\Renderers\SQLite3::class,
     ];
 
     protected $Bibles = [];

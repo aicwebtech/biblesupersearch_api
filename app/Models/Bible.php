@@ -259,6 +259,10 @@ class Bible extends Model {
         return $info;
     }
 
+    public function getInfo() {
+        return Arr::except($this->attributes, $this->do_not_export);
+    }
+
     public function isDownloadable() {
         if($this->restict || !$this->copyright_id) {
             return FALSE;
