@@ -83,7 +83,10 @@ class Bible extends Model {
     ];
 
     // List of fields to NOT export when creating modules
-    protected $do_not_export = array('id', 'created_at', 'updated_at', 'enabled', 'installed');
+    protected $do_not_export = ['id', 'created_at', 'updated_at', 'enabled', 'installed', 'installed_at'];
+
+    // List of fileds to not use as metadata (in addition to those contained in $do_not_export)
+    protected $do_not_meta = ['rank', 'module_v2', 'importer', 'import_file', 'copyright_id', 'hebrew_text_id', 'greek_text_id', 'translation_type_id'];
 
     public $migrate_code = 0;  // 0 = no change, 1 = deleted unnessessary file, 2 = moved file, 3 = file does not exist
 
@@ -261,6 +264,11 @@ class Bible extends Model {
 
     public function getInfo() {
         return Arr::except($this->attributes, $this->do_not_export);
+    }
+
+    public function getMeta() {
+        $exclude = array_merge($this->do_not_export, $this->do_not_meta);
+        return Arr::except($this->attributes, $exclude);
     }
 
     public function isDownloadable() {

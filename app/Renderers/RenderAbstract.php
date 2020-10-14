@@ -271,7 +271,7 @@ abstract class RenderAbstract {
         return $meta_string;
     }
 
-    protected function _getCopyrightStatement($plain_text = FALSE) {
+    protected function _getCopyrightStatement($plain_text = FALSE, $line_break_replacement = NULL) {
         $cr_statement = $this->Bible->getCopyrightStatement();
 
         if(config('download.derivative_copyright_statement')) {
@@ -289,7 +289,7 @@ abstract class RenderAbstract {
             $cr_statement .= "<br /><br /><a href='https://www.biblesupersearch.com'>www.BibleSuperSearch.com</a>";
         }
 
-        return ($plain_text) ? $this->_htmlToPlainText($cr_statement) : $cr_statement;
+        return ($plain_text) ? $this->_htmlToPlainText($cr_statement, $line_break_replacement) : $cr_statement;
     }
 
     public function _getRenderingRecord($ignore_cache = FALSE) {
@@ -301,8 +301,9 @@ abstract class RenderAbstract {
         return $this->Rendering;
     }
 
-    protected function _htmlToPlainText($html) {
-        $text = str_replace(['<br />', '<br>'], PHP_EOL, $html);
+    protected function _htmlToPlainText($html, $line_break_replacement = NULL) {
+        $line_break_replacement = $line_break_replacement ?: PHP_EOL;
+        $text = str_replace(['<br />', '<br>'], $line_break_replacement, $html);
         $text = str_replace('&nbsp;', ' ', $text);
         $text = html_entity_decode($text, ENT_QUOTES | ENT_HTML5);
         $text = strip_tags($text);

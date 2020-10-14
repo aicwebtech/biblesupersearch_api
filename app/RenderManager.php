@@ -28,7 +28,7 @@ class RenderManager {
         'database' => [
             'name'      => 'Databases',
             'desc'      => 'Databases and database dumps.  Ready to import into your own software',
-            'formats'   => ['json', 'sqlite3'],
+            'formats'   => ['json', 'sqlite3', 'mysql'],
         ],
     ];
 
@@ -44,6 +44,7 @@ class RenderManager {
         'csv'               => \App\Renderers\Csv::class,
         'json'              => \App\Renderers\Json::class,
         'sqlite3'           => \App\Renderers\SQLite3::class,
+        'mysql'             => \App\Renderers\MySQL::class,
     ];
 
     protected $Bibles = [];

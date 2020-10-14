@@ -43,7 +43,7 @@ class SQLite3 extends RenderAbstract {
         config(['database.connections.render' => [
             'driver'   => 'sqlite',
             'database' => $filepath,
-            'prefix'   => env('DB_PREFIX', ''),
+            'prefix'   => '',
         ]]);
 
         Schema::connection('render')->create('meta', function(Blueprint $table) {
@@ -64,12 +64,7 @@ class SQLite3 extends RenderAbstract {
             $table->index(['book', 'chapter', 'verse'], 'ixbcv'); // Composite index on b, c, v
         });
 
-        $this->data = [
-            'metadata' => $this->Bible->getAttributes(),
-            'verses'   => [],
-        ];
-
-        $info = $this->Bible->getInfo();
+        $info = $this->Bible->getMeta();
         $info['copyright_statement'] = $this->_getCopyrightStatement(TRUE);
         $meta = [];
 
@@ -78,7 +73,6 @@ class SQLite3 extends RenderAbstract {
         }
 
         DB::connection('render')->table('meta')->insert($meta);
-
         return TRUE;
     }
 

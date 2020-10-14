@@ -4,7 +4,7 @@ namespace App\Renderers;
 
 class Json extends RenderAbstract {
     static public $name = 'JSON';
-    static public $description = 'Simple, plain text format';
+    static public $description = 'JavaScript Object Notation';
 
     // Maximum number of Bibles to render with the given format before detatched process is required.   Set to TRUE to never require detatched process.
     static protected $render_bibles_limit = TRUE; 
@@ -30,7 +30,7 @@ class Json extends RenderAbstract {
      */
     protected function _renderStart() {
         $this->data = [
-            'metadata' => $this->Bible->getInfo(),
+            'metadata' => $this->Bible->getMeta(),
             'verses'   => [],
         ];
 
