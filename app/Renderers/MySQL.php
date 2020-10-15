@@ -87,7 +87,7 @@ EOT;
     }
 
     protected function _renderFinish() {
-        frwite($this->handle, "\n\n");
+        fwrite($this->handle, "\n\n");
         fclose($this->handle);
         return TRUE;
     }

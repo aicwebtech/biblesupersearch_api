@@ -225,6 +225,10 @@ class RenderManager {
         $download_file_path = NULL;
         $delete_file = FALSE;
 
+        $mb_str_pad = function($input, $pad_length, $pad_string = ' ', $pad_style = STR_PAD_RIGHT, $encoding="UTF-8") {
+            return str_pad($input, strlen($input) - mb_strlen($input,$encoding) + $pad_length, $pad_string, $pad_style);
+        };
+
         if($this->multi_bibles || $this->multi_format || $this->zip) {
             $date = new \DateTime();
             $zip_filename = 'truth_' . $date->format('Ymd_His_u') . '.zip';
@@ -235,6 +239,8 @@ class RenderManager {
             $delete_file = TRUE;
             $zip_path = $dir . $zip_filename;
 
+            $readme = "Bible SuperSearch Bible Export\n\n";
+
             try {
                 $Zip = new \ZipArchive;
 
@@ -244,11 +250,29 @@ class RenderManager {
 
                 // Copy all appropiate files into Zip file
                 foreach($this->format as $format) {
+                    $readme_cache = [];
                     $CLASS = static::$register[$format];
+
+                    $readme .= strip_tags( $CLASS::getName() ) . "\n";
+                    $readme .= strip_tags( $CLASS::getDescription() ) . "\n\n\n";
+                    $readme .= "Index of Bibles Included: \n\n";
+                    $readme .= 'File' . str_repeat(' ', 30) . 'Bible' . str_repeat(' ', 76) . "Language\n";
+                    $readme .= str_repeat('=', 160) . "\n";
 
                     foreach($this->Bibles as $Bible) {
                         $Renderer = new $CLASS($Bible);
                         $filepath = $Renderer->getRenderFilePath();
+                        $filename = basename($filepath);
+                        $lang = $Bible->language->native_name;
+                        $lang .= ($Bible->language->name != $Bible->language->native_name) ? ' (' . $Bible->language->name . ')' : '';
+                        $display_name = $Bible->name;
+                        $display_name .= ($Bible->year) ? ' (' . $Bible->year . ')' : '';
+
+                        $readme_cache[$filename]  = '';
+                        $readme_cache[$filename] .= '* ' . str_pad($filename . ' ', 30, '-');
+                        $readme_cache[$filename] .= '- ' . $mb_str_pad($display_name . ' ', 80, '-') . ' ';
+                        $readme_cache[$filename] .= $lang;
+                        $readme_cache[$filename] .= "\n";
 
                         if( !$Zip->addFile($filepath, basename($filepath)) ) {
                             return $this->addError('Unable to add Bible to ZIP file: ' . $Bible->name);
@@ -256,12 +280,17 @@ class RenderManager {
                         
                         $Renderer->incrementHitCounter();
                     }
+
+                    ksort($readme_cache);
+                    $readme .= implode('', $readme_cache);
+                    $readme .= "\n\n";
                 }
 
+                $Zip->addFromString('readme.txt', $readme);
                 $Zip->close();   
             }
             catch (\Exception $e) {
-                return $this->addError($e->getMessage());
+                // return $this->addError($e->getMessage());
             }
 
             // Send Zip file to browser as download
