@@ -52,7 +52,7 @@ class SQLite3 extends RenderAbstract {
             $table->primary('field');
         });
 
-        Schema::connection('render')->create('verses', function (Blueprint $table) {
+        Schema::connection('render')->create('verses', function(Blueprint $table) {
             $table->integer('id', TRUE);
             $table->tinyInteger('book')->unsigned();
             $table->tinyInteger('chapter')->unsigned();

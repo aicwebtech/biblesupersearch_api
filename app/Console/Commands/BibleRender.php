@@ -42,7 +42,7 @@ class BibleRender extends Command
         //     posix_setsid();
         // }
 
-        $format     = $this->argument('format');
+        $format     = [ $this->argument('format') ];
         $bible      = $this->argument('bible');
         $overwrite  = $this->option('overwrite');
         $bible      = ($bible == 'ALL') ? $bible : explode(',', $bible);
