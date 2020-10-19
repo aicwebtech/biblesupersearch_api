@@ -25,6 +25,9 @@ abstract class RenderAbstract {
     // Estimated size to render a Bible of the given format, in MB.
     static protected $render_est_size = 6;     
 
+    // Extras rendering class, if any.  Must be child of App\Renderers\Extras\ExtrasAbstract
+    static public $extras_class = NULL; 
+
     static public $load_fonts = TRUE;
 
     protected $file_extension;

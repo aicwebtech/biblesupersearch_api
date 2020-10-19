@@ -22,6 +22,8 @@ class MySQL extends RenderAbstract {
     // Estimated size to render a Bible of the given format, in MB. 
     static protected $render_est_size = 5;      
 
+    static public $extras_class = Extras\MySQL::class;
+
     /**
      * This initializes the file, and does other pre-rendering work
      */

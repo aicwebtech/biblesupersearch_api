@@ -47,6 +47,10 @@ class RenderManager {
         'mysql'             => \App\Renderers\MySQL::class,
     ];
 
+    // static public $extras [
+    //     'mysql'
+    // ];
+
     protected $Bibles = [];
     protected $format = [];
     protected $modules = [];
@@ -203,6 +207,27 @@ class RenderManager {
 
         error_reporting($error_reporting_cache);
         return !$this->hasErrors();
+    }
+
+    public function renderExtras($overwrite = FALSE) {
+        try {
+            foreach($this->format as $format) {
+                $CLASS = static::$register[$format];
+
+                $EXTRAS_CLASS = $CLASS::$extras_class;
+
+                if(!$EXTRAS_CLASS) {
+                    continue;
+                }
+
+                $ExtrasRenderer = new $EXTRAS_CLASS();
+
+                $ExtrasRenderer->render($overwrite);
+            }
+        }
+        catch (\Exception $e) {
+            return $this->addError($e->getMessage());
+        }
     }
 
     public function download($bypass_render_limit = FALSE) {
