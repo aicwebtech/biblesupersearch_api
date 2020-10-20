@@ -13,7 +13,7 @@ class BibleRender extends Command
      *
      * @var string
      */
-    protected $signature = 'bible:render {format : name of format} {bible : single module or comma-separated list} {--overwrite : whether to overwrite existing file}';
+    protected $signature = 'bible:render {format : name of format} {bible : single module or comma-separated list} {--overwrite : whether to overwrite existing file} {--extras : whether to include extra files, such as Bible book lists}';
 
     /**
      * The console command description.
@@ -45,9 +45,11 @@ class BibleRender extends Command
         $format     = [ $this->argument('format') ];
         $bible      = $this->argument('bible');
         $overwrite  = $this->option('overwrite');
+        $extras     = $this->option('extras');
         $bible      = ($bible == 'ALL') ? $bible : explode(',', $bible);
 
         $Manager = new RenderManager($bible, $format, FALSE);
+        $Manager->include_extras = $extras;
         $Manager->render($overwrite, TRUE, TRUE);
 
         if($Manager->hasErrors()) {

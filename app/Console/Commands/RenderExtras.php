@@ -20,7 +20,7 @@ class RenderExtras extends Command
      *
      * @var string
      */
-    protected $description = 'Renders the selected Bibles into the specified format';
+    protected $description = 'Renders extra data (Bible Book Lists, ect) into the specified format.  Not applicable for all formats.';
 
     /**
      * Create a new command instance.
@@ -46,7 +46,7 @@ class RenderExtras extends Command
         $overwrite  = $this->option('overwrite');
 
         $Manager = new RenderManager([], $format, FALSE);
-        $Manager->renderExtras($overwrite, TRUE, TRUE);
+        $Manager->renderExtras($overwrite, TRUE);
 
         if($Manager->hasErrors()) {
             echo('Errors have occurred:' . PHP_EOL);

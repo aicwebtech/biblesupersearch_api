@@ -58,6 +58,7 @@ class RenderManager {
     protected $multi_bibles = FALSE;
     protected $multi_format = FALSE;
     protected $needs_process = FALSE;
+    public $include_extras = TRUE; //FALSE;
 
     public function __construct($modules, $format, $zip = FALSE) {
         $this->multi_bibles = ($modules == 'ALL' || count($modules) > 1) ? TRUE : FALSE;
@@ -209,7 +210,7 @@ class RenderManager {
         return !$this->hasErrors();
     }
 
-    public function renderExtras($overwrite = FALSE) {
+    public function renderExtras($overwrite = FALSE, $error_if_not_applicable = FALSE, $return_file_list = FALSE) {
         try {
             foreach($this->format as $format) {
                 $CLASS = static::$register[$format];
@@ -217,17 +218,22 @@ class RenderManager {
                 $EXTRAS_CLASS = $CLASS::$extras_class;
 
                 if(!$EXTRAS_CLASS) {
+                    if($error_if_not_applicable) {
+                        $this->addError('Renderer does not have any extras: ' . $format, 1);
+                    }
+
                     continue;
                 }
 
                 $ExtrasRenderer = new $EXTRAS_CLASS();
-
                 $ExtrasRenderer->render($overwrite);
             }
         }
         catch (\Exception $e) {
             return $this->addError($e->getMessage());
         }
+
+        return ($return_file_list) ? $ExtrasRenderer->getFileInfo() : TRUE;
     }
 
     public function download($bypass_render_limit = FALSE) {
@@ -309,6 +315,29 @@ class RenderManager {
                     ksort($readme_cache);
                     $readme .= implode('', $readme_cache);
                     $readme .= "\n\n";
+                }
+
+                if($this->include_extras) {
+                    $fileinfo = $this->renderExtras(FALSE, FALSE, TRUE);
+
+                    foreach($fileinfo as $group) {
+                        // var_dump($group);
+                        $readme .= "\n\n";
+                        $readme .= $group['desc'] . "\n\n";
+
+                        foreach($group['items'] as $file) {
+                            // var_dump($file);
+                            if(!$Zip->addFile($file['path'], $file['file']) ) {
+                                return $this->addError('Unable to add file to ZIP file: ' . $file['file']);
+                            }
+
+                            // $readme .= $file['desc'] . "\n"; 
+                            $readme .= $file['file'] . ' ' . $file['desc'] . "\n"; 
+                            // $readme .= str_repeat($file['file'] . ' ', 30, '-') . $file['desc'] . "\n"; 
+                        }
+                    }
+
+                    // die();
                 }
 
                 $Zip->addFromString('readme.txt', $readme);
