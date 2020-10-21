@@ -233,7 +233,7 @@ class RenderManager {
             return $this->addError($e->getMessage());
         }
 
-        return ($return_file_list) ? $ExtrasRenderer->getFileInfo() : TRUE;
+        return ($return_file_list) ? $ExtrasRenderer->getFileList() : TRUE;
     }
 
     public function download($bypass_render_limit = FALSE) {
@@ -318,26 +318,15 @@ class RenderManager {
                 }
 
                 if($this->include_extras) {
-                    $fileinfo = $this->renderExtras(FALSE, FALSE, TRUE);
+                    $file_list = $this->renderExtras(FALSE, FALSE, TRUE);
+                    $Zip->addEmptyDir('extras');
+                    $readme .= "\n\nextras - This folder contains additional helpful items\n\n";
 
-                    foreach($fileinfo as $group) {
-                        // var_dump($group);
-                        $readme .= "\n\n";
-                        $readme .= $group['desc'] . "\n\n";
-
-                        foreach($group['items'] as $file) {
-                            // var_dump($file);
-                            if(!$Zip->addFile($file['path'], $file['file']) ) {
-                                return $this->addError('Unable to add file to ZIP file: ' . $file['file']);
-                            }
-
-                            // $readme .= $file['desc'] . "\n"; 
-                            $readme .= $file['file'] . ' ' . $file['desc'] . "\n"; 
-                            // $readme .= str_repeat($file['file'] . ' ', 30, '-') . $file['desc'] . "\n"; 
+                    foreach($file_list as $file) {
+                        if(!$Zip->addFile($file, 'extras/' . basename($file)) ) {
+                            return $this->addError('Unable to add file to ZIP file: ' . $file['file']);
                         }
                     }
-
-                    // die();
                 }
 
                 $Zip->addFromString('readme.txt', $readme);

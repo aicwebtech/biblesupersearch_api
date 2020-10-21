@@ -28,7 +28,7 @@ class MySQL extends RenderAbstract {
      * This initializes the file, and does other pre-rendering work
      */
     protected function _renderStart() {
-        $this->mysql_table = 'bible_' . $this->Bible->module;
+        $this->mysql_table = 'bible_verses_' . $this->Bible->module;
         $filepath = $this->getRenderFilePath(TRUE);
         $this->handle = fopen($filepath, 'w');
         $copyright_statement = $this->_getCopyrightStatement(TRUE, "\n-- ");
