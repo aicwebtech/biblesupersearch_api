@@ -24,7 +24,7 @@ class ExtrasAbstract {
     public function render($overwrite = FALSE) {
         $this->overwrite = TRUE; //$overwrite;
         $this->_renderBibleBookLists();
-        // $this->_renderLanguages();
+        $this->_renderLanguages();
         $this->_renderBibleShortcuts();
         $this->_renderStrongsDefinitions();
 

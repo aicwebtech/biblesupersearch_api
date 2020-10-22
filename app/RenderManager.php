@@ -47,10 +47,6 @@ class RenderManager {
         'mysql'             => \App\Renderers\MySQL::class,
     ];
 
-    // static public $extras [
-    //     'mysql'
-    // ];
-
     protected $Bibles = [];
     protected $format = [];
     protected $modules = [];
@@ -58,7 +54,7 @@ class RenderManager {
     protected $multi_bibles = FALSE;
     protected $multi_format = FALSE;
     protected $needs_process = FALSE;
-    public $include_extras = TRUE; //FALSE;
+    public $include_extras = FALSE;
 
     public function __construct($modules, $format, $zip = FALSE) {
         $this->multi_bibles = ($modules == 'ALL' || count($modules) > 1) ? TRUE : FALSE;
@@ -211,6 +207,8 @@ class RenderManager {
     }
 
     public function renderExtras($overwrite = FALSE, $error_if_not_applicable = FALSE, $return_file_list = FALSE) {
+        $ExtrasRenderer = NULL;
+
         try {
             foreach($this->format as $format) {
                 $CLASS = static::$register[$format];
@@ -233,7 +231,11 @@ class RenderManager {
             return $this->addError($e->getMessage());
         }
 
-        return ($return_file_list) ? $ExtrasRenderer->getFileList() : TRUE;
+        if($ExtrasRenderer) {
+            return ($return_file_list) ? $ExtrasRenderer->getFileList() : TRUE;
+        }
+
+        return FALSE;
     }
 
     public function download($bypass_render_limit = FALSE) {
@@ -319,12 +321,15 @@ class RenderManager {
 
                 if($this->include_extras) {
                     $file_list = $this->renderExtras(FALSE, FALSE, TRUE);
-                    $Zip->addEmptyDir('extras');
-                    $readme .= "\n\nextras - This folder contains additional helpful items\n\n";
+                    
+                    if(!empty($file_list)) {
+                        $Zip->addEmptyDir('extras');
+                        $readme .= "\n\nextras - This folder contains additional helpful items\n\n";
 
-                    foreach($file_list as $file) {
-                        if(!$Zip->addFile($file, 'extras/' . basename($file)) ) {
-                            return $this->addError('Unable to add file to ZIP file: ' . $file['file']);
+                        foreach($file_list as $file) {
+                            if(!$Zip->addFile($file, 'extras/' . basename($file)) ) {
+                                return $this->addError('Unable to add file to ZIP file: ' . $file['file']);
+                            }
                         }
                     }
                 }

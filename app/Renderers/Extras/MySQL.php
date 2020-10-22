@@ -82,7 +82,51 @@ HEAD;
         return $filepath;
     }
 
+    protected function _renderLanguagesHelper() {
+        $filepath = $this->getRenderFileDir() . 'languages.sql';
+        $this->_dumpMysqlGeneric('languages', 'bible_languages', $filepath);
+        return $filepath;
+    }
+
     private function _dumpMysqlGeneric($db_table, $bk_table, $filepath) {
-        file_put_contents($filepath, 'TODO - mysql dump');
+        $db_table = env('DB_PREFIX') . $db_table;
+        $ignore_fields = ['created_at', 'updated_at'];
+
+        $sql_show = 'SHOW CREATE TABLE ' . $db_table;
+        $results  = \DB::select($sql_show);
+
+        $create = $results[0]->{'Create Table'};
+        $create = preg_replace("/AUTO_INCREMENT=[0-9]+/", '', $create); // Remove auto increment value
+        $create = str_replace($db_table, $bk_table, $create);           // Rename table to backup name
+
+        $contents = "DROP TABLE IF EXISTS `{$bk_table}`; \n\n" . $create . "; \n\n";
+
+        $data   = \DB::select("SELECT * FROM {$db_table}");
+        $fields = array_keys(get_object_vars($data[0]));
+        $insert = 'INSERT INTO `' . $bk_table . '` (`' . implode('`, `', $fields) . '`) VALUES (';
+
+        foreach($data as $key => $row) {
+            foreach($ignore_fields as $f) {
+                if(property_exists($row, $f)) {
+                    $row->$f = NULL;
+                }
+            }
+
+            $values = [];
+
+            foreach($fields as $f) {
+                if($row->$f === NULL) {
+                    $values[] = 'NULL';
+                }
+                else {
+                    $values[] = \DB::connection()->getPdo()->quote($row->$f);
+                }
+            }
+
+            $contents .= $insert . implode(', ', $values) . "); \n";
+        }
+
+        file_put_contents($filepath, $contents);
+        return $filepath;
     }
 }
