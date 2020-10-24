@@ -306,7 +306,11 @@ abstract class RenderAbstract {
 
     protected function _htmlToPlainText($html, $line_break_replacement = NULL) {
         $line_break_replacement = $line_break_replacement ?: PHP_EOL;
-        $text = str_replace(['<br />', '<br>'], $line_break_replacement, $html);
+        $line_break_replacement_double = $line_break_replacement . $line_break_replacement;
+        $text = $html;
+        $text = str_replace(["\r\n", "\n", "\r"], '', $text);
+        $text = str_replace(['<br />', '<br>'], $line_break_replacement, $text);
+        $text = str_replace(['</p>'], $line_break_replacement_double, $text);
         $text = str_replace('&nbsp;', ' ', $text);
         $text = html_entity_decode($text, ENT_QUOTES | ENT_HTML5);
         $text = strip_tags($text);
