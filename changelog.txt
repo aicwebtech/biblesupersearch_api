@@ -1,5 +1,10 @@
 Bible SuperSearch API Changelog
 
+= 4.3.0 // Dec __, 2020
+* New renderings: MySQL, SQLite, JSON
+* Rendering extras - indices and other extra files added to .zip of rendered Bibles
+* Bugfix: fixed issues with copyright statement formatting.
+
 = 4.2.6 // July 18, 2020
 * Fixed breakage of regular expression queries when using single 'request' box
 * Fixed total breakage of NOT boolean operator / 'None of the words' advanced search
