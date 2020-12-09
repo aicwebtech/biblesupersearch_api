@@ -540,12 +540,14 @@ class Engine {
             'contents'  => array_key_exists('contents', $input) ? $input['contents'] : NULL,
         ];
 
+        $response = new \stdClass;
         $Manager = new \App\RenderManager($modules, $format, $zip);
 
         if($action == 'render_needed') {
             $bibles_needing_render = $Manager->getBiblesNeedingRender(NULL, FALSE, FALSE, 0);
             $success = ($bibles_needing_render === FALSE || count($bibles_needing_render) > 0) ? FALSE : TRUE;
             $Manager->cleanUpTempFiles();
+            $response->render_needed = ($success) ? FALSE : TRUE;
         }
         else {
             // if($bypass_limit) {
@@ -558,8 +560,6 @@ class Engine {
             // }
 
         }
-
-        $response = new \stdClass;
 
         if(!$success) {
             // if($Manager->needsProcess()) {
