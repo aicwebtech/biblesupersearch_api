@@ -2,16 +2,15 @@
 
 namespace App\Renderers;
 
-class PdfCompact extends PdfAbstract {
-    static public $name = 'Compact Text';
-    protected static $name_include_format = TRUE; 
+class PdfNormal extends PdfAbstract {
+    static public $name = 'Normal Text';
     // static public $description = 'Ready to print PDF on 5.5 x 8 pages with two columns.';
 
-    protected $pdf_columns              = 4;        // Number of columns of verses
-    protected $pdf_column_width         = 47;       // Width of column, in $this->pdf_unit units.
+    protected $pdf_columns              = 2;        // Number of columns of verses
+    protected $pdf_column_width         = 94;       // Width of column, in $this->pdf_unit units.
     protected $pdf_margin               = 8;        // General margin size, in $this->pdf_unit units
     protected $pdf_top_margin           = 10;       // Top margin size, in $this->pdf_unit units
-    protected $pdf_text_size            = 8;        // Compact: 9? or less
+    protected $pdf_text_size            = 10;        // Compact: 9? or less
     protected $pdf_header_size          = 8;
     protected $pdf_header_style         = 'B';    
     protected $pdf_book_size            = 12;
@@ -22,5 +21,6 @@ class PdfCompact extends PdfAbstract {
     protected $pdf_chapter_align        = 'C';
     protected $pdf_text_align           = 'J';
     protected $pdf_brackets_to_italics  = TRUE;
-    protected $pdf_verses_paragraph     = 'auto';     // Needs to auto-detect
+    protected $pdf_verses_paragraph     = FALSE; 
+    protected $pdf_break_new_testament  = 'page';
 }

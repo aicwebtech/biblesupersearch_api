@@ -236,7 +236,7 @@ class Engine {
         !empty($input['bible']) && $this->setBibles($input['bible']);
         $input = $this->_sanitizeInput($input, $parsing);
         $input['bible'] = array_keys($this->Bibles);
-        $input['multi_bibles'] = (count($input['bible']) > 1) ? TRUE : FALSE;
+        $parallel = $input['multi_bibles'] = (count($input['bible']) > 1) ? TRUE : FALSE;
         $input['data_format'] = (!empty($input['data_format'])) ? $input['data_format'] : $this->default_data_format;
 
         // Secondary search elements are detected automatically by Search class
@@ -309,11 +309,14 @@ class Engine {
         }
 
         if(!$Search || $Search && $search_valid) {
+            $has_search_results = FALSE;
+
             foreach($this->Bibles as $Bible) {
                 $BibleResults = $Bible->getSearch($Passages, $Search, $input); // Laravel Collection
 
                 if(!empty($BibleResults) && !$BibleResults->isEmpty()) {
                     $results[$Bible->module] = $BibleResults->all();
+                    $has_search_results = TRUE;
 
                     if($paginate && !$input['multi_bibles']) {
                         $paging = $this->_getCleanPagingData($BibleResults);
@@ -324,13 +327,15 @@ class Engine {
                     }
                 }
                 else {
-                    $bible_no_results[] = trans('errors.bible_no_results', ['module' => $Bible->module]);
+                    $results[$Bible->module] = [];
+                    $tr = ($parallel) ? 'errors.parallel_bible_no_results' : 'errors.bible_no_results';
+                    $bible_no_results[] = trans($tr, ['module' => $Bible->name]);
                 }
 
                 unset($BibleResults);
             }
 
-            if(empty($results)) {
+            if(!$has_search_results) {
                 if($Search) {
                     if($Search->hasErrors()) {
                         $this->addErrors($Search->getErrors(), $Search->getErrorLevel());
@@ -540,12 +545,14 @@ class Engine {
             'contents'  => array_key_exists('contents', $input) ? $input['contents'] : NULL,
         ];
 
+        $response = new \stdClass;
         $Manager = new \App\RenderManager($modules, $format, $zip);
 
         if($action == 'render_needed') {
             $bibles_needing_render = $Manager->getBiblesNeedingRender(NULL, FALSE, FALSE, 0);
             $success = ($bibles_needing_render === FALSE || count($bibles_needing_render) > 0) ? FALSE : TRUE;
             $Manager->cleanUpTempFiles();
+            $response->render_needed = ($success) ? FALSE : TRUE;
         }
         else {
             // if($bypass_limit) {
@@ -558,8 +565,6 @@ class Engine {
             // }
 
         }
-
-        $response = new \stdClass;
 
         if(!$success) {
             // if($Manager->needsProcess()) {
