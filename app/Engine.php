@@ -327,8 +327,14 @@ class Engine {
                     }
                 }
                 else {
-                    $results[$Bible->module] = [];
-                    $tr = ($parallel) ? 'errors.parallel_bible_no_results' : 'errors.bible_no_results';
+                    if($Search) {
+                        $results[$Bible->module] = [];
+                        $tr = ($parallel) ? 'errors.parallel_bible_no_results' : 'errors.bible_no_results';
+                    }
+                    else {
+                        $tr = 'errors.bible_no_results';
+                    }
+                    
                     $bible_no_results[] = trans($tr, ['module' => $Bible->name]);
                 }
 
