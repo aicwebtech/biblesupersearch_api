@@ -22,7 +22,7 @@ class SQLite3 extends RenderAbstract {
     // Estimated size to render a Bible of the given format, in MB. 
     static protected $render_est_size = 5;      
 
-    protected $file_extension = 'sqllite';
+    protected $file_extension = 'sqlite';
     protected $include_book_name = FALSE;
 
     protected $chuck_size = 300;
