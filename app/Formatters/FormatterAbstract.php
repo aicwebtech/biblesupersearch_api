@@ -66,14 +66,14 @@ abstract class FormatterAbstract {
             }
         }
 
-        foreach($results as $bible => $unclaimed) {
-            if(count($unclaimed) > 0) {
-                echo('some verses not claimed');
-                var_dump($bible);
-                print_r($unclaimed);
-                return FALSE;
-            }
-        }
+        // foreach($results as $bible => $unclaimed) {
+        //     if(count($unclaimed) > 0) {
+        //         echo('some verses not claimed');
+        //         var_dump($bible);
+        //         print_r($unclaimed);
+        //         return FALSE;
+        //     }
+        // }
 
         return TRUE;
     }
