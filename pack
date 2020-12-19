@@ -3,7 +3,7 @@
 version=$(php artisan app:version)
 gitbranch=$(git branch | grep \*)
 filename="biblesupersearch_api_$version.zip"
-filepath="../api_releases/$filename";
+filepath="../releases/api/$filename";
 
 # files to be deleted / excluded from the release 
 delfiles=(
@@ -57,7 +57,7 @@ echo ''
 echo ''
 echo 'Running tests (phpunit)'
 echo ''
-./vendor/phpunit/phpunit/phpunit
+./vendor/phpunit/phpunit/phpunit # comment out ONLY for debugging of this script.
 
 code=$?
 
