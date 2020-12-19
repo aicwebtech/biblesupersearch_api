@@ -1,5 +1,12 @@
 Bible SuperSearch API Changelog
 
+= 4.3.0 // Dec 19, 2020
+* New download formats: MySQL, SQLite, JSON
+* Download readme that includes an index identifying each Bible included in the ZIP file
+* Bugfix: Fixed issues with copyright statement formatting.
+* Bugfix: Parallel search not populating other Bible when results found in one, but none in the other.
+* Bugfix: Unable to request the same verse multiple times in one request.
+
 = 4.2.6 // July 18, 2020
 * Fixed breakage of regular expression queries when using single 'request' box
 * Fixed total breakage of NOT boolean operator / 'None of the words' advanced search

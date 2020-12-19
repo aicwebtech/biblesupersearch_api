@@ -13,6 +13,8 @@ abstract class PdfAbstract extends RenderAbstract {
     /* PDF-specific settings */
     protected static $pdf_page_format   = 'LETTER';  // For options, see TCPDF_STATIC::$page_formats
     protected static $pdf_red_word_tag  = 'red';     // HTML tag for words of Christ.  'red' colors them with traditional red
+
+    protected static $name_include_format = FALSE;  // Temporary? Until I find time to rebuild renderers with user options
     
     protected $pdf_orientation          = 'P';
     protected $pdf_unit                 = 'mm';
@@ -26,6 +28,7 @@ abstract class PdfAbstract extends RenderAbstract {
     protected $pdf_top_margin           = 10;        // Top margin size, in $this->pdf_unit units
     protected $pdf_font_family          = 'freeserif'; // Unicode-friendly serif font
     protected $pdf_text_size            = 9; // Compact: 9? or less, Regular: 12, Large: 14?
+    protected $pdf_testement_size       = 20;
     protected $pdf_title_size           = 36;
     protected $pdf_bible_version_size   = 20;
     protected $pdf_toc_title_size       = 16;
@@ -41,6 +44,8 @@ abstract class PdfAbstract extends RenderAbstract {
     protected $pdf_text_align           = 'J';
     protected $pdf_brackets_to_italics  = TRUE;
     protected $pdf_verses_paragraph     = FALSE;     // TRUE, FALSE or 'auto'  'auto' will set it to true if Bible has Paragraph markings in it's text
+    protected $pdf_break_new_testament  = NULL; // none, column, page
+    protected $pdf_break_new_book       = NULL; // none, column, page
 
     protected $pdf_language_overrides = [
         'ar' => [
@@ -354,7 +359,18 @@ abstract class PdfAbstract extends RenderAbstract {
     }
 
     protected function _renderTestamentHeader($testament) {
-        $this->TCPDF->Bookmark($testament);
+
+        if($this->pdf_break_new_testament == 'page') {
+            $this->_addOddNumberedPage();
+            $this->TCPDF->setFontSize($this->pdf_testement_size);
+            $this->TCPDF->Bookmark($testament);
+            $this->TCPDF->Cell(0, 20, $testament, 0, 1, 'L');
+            $this->TCPDF->addPage();
+            $this->TCPDF->addPage();
+        } 
+        else {
+            $this->TCPDF->Bookmark($testament);
+        }
     }
 
     protected function _renderNewChapter($chapter) {
@@ -408,7 +424,24 @@ abstract class PdfAbstract extends RenderAbstract {
         }
     }
 
+    /**
+     * Adds the next odd-numbered page
+     */
+    protected function _addOddNumberedPage() {
+        $page = $this->TCPDF->getBiblePageCount();
+        $this->TCPDF->addPage();
+
+        if($page % 2 == 0) {
+            // If the current page was odd-numbered, add a second page
+            $this->TCPDF->addPage();
+        } 
+    }
+
     public static function getName() {
+        if(!static::$name_include_format) {
+            return static::$name;
+        }
+
         $woc = '';
 
         switch(static::$pdf_red_word_tag) {
@@ -431,7 +464,7 @@ abstract class PdfAbstract extends RenderAbstract {
             $format = 'Letter';
         }
 
-        return static::$name . ', ' . $format . ' format' . $woc;
+        return static::$name . ', ' . $format . $woc;
     }
 
     public static function getDescription() {

@@ -20,6 +20,7 @@ class Kernel extends ConsoleKernel
         Commands\Inspire::class,
         Commands\AppVersion::class,
         Commands\BibleRender::class,
+        Commands\RenderExtras::class,
         Commands\ImportBibleUnbound::class,
         Commands\ImportBibleAnalyzer::class,
         Commands\ImportBibleEvening::class,

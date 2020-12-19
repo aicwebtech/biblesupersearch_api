@@ -131,6 +131,27 @@ class ReferenceTest extends TestCase {
         $this->assertEquals(21, $last->verse);
     }
 
+    public function testDuplicatePassage() {
+        // Acts 5:29 is requested TWICE in the same request
+
+        // Raw format - should return the 3 unique verses
+        $Engine = Engine::getInstance();
+        $results = $Engine->actionQuery(['bible' => 'kjv', 'reference' => 'Acts 5:29; Acts 5:27-29', 'data_format' => 'raw']);
+        $this->assertFalse($Engine->hasErrors());
+        
+        // Count should be 3 because we only pull it once
+        $this->assertCount(3, $results['kjv']); 
+
+        // Passage format - should return 2 passages, the first containing Acts 5:29, the second containing Acts 5:27-29
+        $results = $Engine->actionQuery(['bible' => 'kjv', 'reference' => 'Acts 5:29; Acts 5:27-29', 'data_format' => 'passage']);
+        $this->assertFalse($Engine->hasErrors());
+        $this->assertCount(2, $results);
+        $this->assertEquals('5:29', $results[0]['chapter_verse']);
+        $this->assertCount(1, $results[0]['verses']['kjv'][5]);
+        $this->assertEquals('5:27 - 29', $results[1]['chapter_verse']);
+        $this->assertCount(3, $results[1]['verses']['kjv'][5]);
+    }
+
     public function testBookNumber() {
         $Engine = new Engine();
         $results = $Engine->actionQuery(['bible' => 'kjv', 'reference' => '19B 91:5-9', 'data_format' => 'passage']);

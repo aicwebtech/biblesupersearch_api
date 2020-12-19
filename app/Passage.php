@@ -746,9 +746,10 @@ class Passage {
                     $this->verses[ $bible ][ $verse->chapter ][ $verse->verse ] = $verse;
                     $count[$bible] ++;
                     $verse_claimed = TRUE;
+                    $results[$bible][$key]->claimed = TRUE; 
 
                     if(!$retain) {
-                        unset($results[$bible][$key]);
+                        // unset($results[$bible][$key]);
                     }
                 }
             }
