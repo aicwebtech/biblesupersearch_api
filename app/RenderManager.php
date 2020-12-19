@@ -13,7 +13,7 @@ class RenderManager {
         'pdf'       => [
             'name'      => 'PDF',
             'desc'      => 'Ready-to-print PDF files',
-            'formats'   => ['pdf_cpt_let', 'pdf_cpt_a4', 'pdf_cpt_let_ul', 'pdf_cpt_a4_ul'],
+            'formats'   => ['pdf_cpt_let', 'pdf_cpt_a4', 'pdf_cpt_let_ul', 'pdf_cpt_a4_ul'], // 'pdf_normal'],
         ],
         'text'      => [
             'name'      => 'Plain Text',
@@ -25,22 +25,26 @@ class RenderManager {
             'desc'      => 'Opens in MS Excel or other spreadsheet software.  Both human and machine readable.',
             'formats'   => ['csv'],
         ],
-        // 'database' => [
-        //     'name'      => 'Databases',
-        //     'desc'      => 'Databases and database dumps.  Ready to import into your own software',
-        //     'formats'   => ['csv', 'pdf'],
-        // ],
+        'database' => [
+            'name'      => 'Databases',
+            'desc'      => 'Databases and database dumps.  Ready to import into your own software',
+            'formats'   => ['json', 'sqlite3', 'mysql'],
+        ],
     ];
 
     static public $register = [
         'pdf'               => \App\Renderers\PdfCompact::class,
         'pdf_cpt_let'       => \App\Renderers\PdfCompact::class,
-        'pdf_cpt_a4'        => \App\Renderers\PdfCompactA4::class,  
+        'pdf_cpt_a4'        => \App\Renderers\PdfCompactA4::class,
+        // 'pdf_normal'        => \App\Renderers\PdfNormal::class,
         'pdf_cpt_let_ul'    => \App\Renderers\PdfCompactUl::class,
         'pdf_cpt_a4_ul'     => \App\Renderers\PdfCompactUlA4::class,        
         'text'              => \App\Renderers\PlainText::class,
         'mr_text'           => \App\Renderers\MachineReadableText::class,
         'csv'               => \App\Renderers\Csv::class,
+        'json'              => \App\Renderers\Json::class,
+        'sqlite3'           => \App\Renderers\SQLite3::class,
+        'mysql'             => \App\Renderers\MySQL::class,
     ];
 
     protected $Bibles = [];
@@ -50,6 +54,7 @@ class RenderManager {
     protected $multi_bibles = FALSE;
     protected $multi_format = FALSE;
     protected $needs_process = FALSE;
+    public $include_extras = FALSE;
 
     public function __construct($modules, $format, $zip = FALSE) {
         $this->multi_bibles = ($modules == 'ALL' || count($modules) > 1) ? TRUE : FALSE;
@@ -125,6 +130,7 @@ class RenderManager {
         $format = $format ?: $this->format[0];
         $CLASS = static::$register[$format];
         $limit = isset($limit_override) ? $limit_override : $CLASS::getRenderBiblesLimit();
+        $CLASS::$load_fonts = FALSE;
 
         if($overwrite) {
             $Bibles_Needing_Render = $this->Bibles;
@@ -140,6 +146,8 @@ class RenderManager {
                 }
             }
         }
+        
+        $CLASS::$load_fonts = TRUE;
 
         if(!$bypass_render_limit && $limit !== TRUE && count($Bibles_Needing_Render) > $limit) {
             // create detatched process on 'php artisan queue:work --once ONLY' if jobs table is EMPTY
@@ -166,36 +174,79 @@ class RenderManager {
         error_reporting(E_ERROR | E_WARNING | E_PARSE);
         $this->needs_process = FALSE;
 
-        foreach($this->format as $format) {
-            $CLASS = static::$register[$format];
-            $Bibles_Needing_Render = $this->getBiblesNeedingRender($format, $overwrite, $bypass_render_limit);
+        try {
+            foreach($this->format as $format) {
+                $CLASS = static::$register[$format];
+                $Bibles_Needing_Render = $this->getBiblesNeedingRender($format, $overwrite, $bypass_render_limit);
 
-            if($Bibles_Needing_Render === FALSE) {
-                return FALSE;
-            }
-            
-            foreach($Bibles_Needing_Render as $Bible) {
-                if(!static::isRenderWritable($format, $Bible->module)) {
-                    $this->addError('Unable to render ' . $Bible->name . ', could not write to file.  Please contact system administrator');
-                    continue;
+                if($Bibles_Needing_Render === FALSE) {
+                    return FALSE;
                 }
+                
+                foreach($Bibles_Needing_Render as $Bible) {
+                    if(!static::isRenderWritable($format, $Bible->module)) {
+                        $this->addError('Unable to render ' . $Bible->name . ', could not write to file.  Please contact system administrator');
+                        continue;
+                    }
 
-                $Renderer = new $CLASS($Bible);
+                    $Renderer = new $CLASS($Bible);
 
-                // if(!$Renderer->render($overwrite, $suppress_overwrite_error)) {
-                if(!$Renderer->render(TRUE, $suppress_overwrite_error)) {
-                    $this->addErrors($Renderer->getErrors(), $Renderer->getErrorLevel());
+                    // if(!$Renderer->render($overwrite, $suppress_overwrite_error)) {
+                    if(!$Renderer->render(TRUE, $suppress_overwrite_error)) {
+                        $this->addErrors($Renderer->getErrors(), $Renderer->getErrorLevel());
+                    }
                 }
             }
+        }
+        catch (\Exception $e) {
+            return $this->addError($e->getMessage());
         }
 
         error_reporting($error_reporting_cache);
         return !$this->hasErrors();
     }
 
+    public function renderExtras($overwrite = FALSE, $error_if_not_applicable = FALSE, $return_file_list = FALSE) {
+        $ExtrasRenderer = NULL;
+
+        try {
+            foreach($this->format as $format) {
+                $CLASS = static::$register[$format];
+
+                $EXTRAS_CLASS = $CLASS::$extras_class;
+
+                if(!$EXTRAS_CLASS) {
+                    if($error_if_not_applicable) {
+                        $this->addError('Renderer does not have any extras: ' . $format, 1);
+                    }
+
+                    continue;
+                }
+
+                $ExtrasRenderer = new $EXTRAS_CLASS();
+                $ExtrasRenderer->render($overwrite);
+            }
+        }
+        catch (\Exception $e) {
+            return $this->addError($e->getMessage());
+        }
+
+        if($ExtrasRenderer) {
+            return ($return_file_list) ? $ExtrasRenderer->getFileList() : TRUE;
+        }
+
+        return FALSE;
+    }
+
     public function download($bypass_render_limit = FALSE) {
         if($this->hasErrors()) {
             return FALSE;
+        }
+
+        $download_limit = config('download.bible_limit');
+
+        if($download_limit && count($this->Bibles) > $download_limit) {
+            return $this->addError('You can download a maximum of ' . $download_limit . ' Bibles at once.');
         }
 
         $rs = $this->render(FALSE, TRUE, $bypass_render_limit);
@@ -207,6 +258,10 @@ class RenderManager {
         $download_file_path = NULL;
         $delete_file = FALSE;
 
+        $mb_str_pad = function($input, $pad_length, $pad_string = ' ', $pad_style = STR_PAD_RIGHT, $encoding="UTF-8") {
+            return str_pad($input, strlen($input) - mb_strlen($input,$encoding) + $pad_length, $pad_string, $pad_style);
+        };
+
         if($this->multi_bibles || $this->multi_format || $this->zip) {
             $date = new \DateTime();
             $zip_filename = 'truth_' . $date->format('Ymd_His_u') . '.zip';
@@ -216,25 +271,75 @@ class RenderManager {
             $dir = Renderers\RenderAbstract::getRenderBasePath(); // . 'temp_zip/';
             $delete_file = TRUE;
             $zip_path = $dir . $zip_filename;
-            $Zip = new \ZipArchive;
 
-            if(!$Zip->open($zip_path, \ZipArchive::CREATE)) {
-                return $this->addError('Unable to create ZIP file <tmppath>/' . $zip_filename);
-            }
+            $readme = "Bible SuperSearch Bible Export\n\n";
 
-            // Copy all appropiate files into Zip file
-            foreach($this->format as $format) {
-                $CLASS = static::$register[$format];
+            try {
+                $Zip = new \ZipArchive;
 
-                foreach($this->Bibles as $Bible) {
-                    $Renderer = new $CLASS($Bible);
-                    $filepath = $Renderer->getRenderFilePath();
-                    $Zip->addFile($filepath, basename($filepath));
-                    $Renderer->incrementHitCounter();
+                if(!$Zip->open($zip_path, \ZipArchive::CREATE)) {
+                    return $this->addError('Unable to create ZIP file <tmppath>/' . $zip_filename);
                 }
-            }
 
-            $Zip->close();
+                // Copy all appropiate files into Zip file
+                foreach($this->format as $format) {
+                    $readme_cache = [];
+                    $CLASS = static::$register[$format];
+
+                    $readme .= strip_tags( $CLASS::getName() ) . "\n";
+                    $readme .= strip_tags( $CLASS::getDescription() ) . "\n\n\n";
+                    $readme .= "Index of Bibles Included: \n\n";
+                    $readme .= 'File' . str_repeat(' ', 30) . 'Bible' . str_repeat(' ', 76) . "Language\n";
+                    $readme .= str_repeat('=', 160) . "\n";
+
+                    foreach($this->Bibles as $Bible) {
+                        $Renderer = new $CLASS($Bible);
+                        $filepath = $Renderer->getRenderFilePath();
+                        $filename = basename($filepath);
+                        $lang = $Bible->language->native_name;
+                        $lang .= ($Bible->language->name != $Bible->language->native_name) ? ' (' . $Bible->language->name . ')' : '';
+                        $display_name = $Bible->name;
+                        $display_name .= ($Bible->year) ? ' (' . $Bible->year . ')' : '';
+
+                        $readme_cache[$filename]  = '';
+                        $readme_cache[$filename] .= '* ' . str_pad($filename . ' ', 30, '-');
+                        $readme_cache[$filename] .= '- ' . $mb_str_pad($display_name . ' ', 80, '-') . ' ';
+                        $readme_cache[$filename] .= $lang;
+                        $readme_cache[$filename] .= "\n";
+
+                        if( !$Zip->addFile($filepath, basename($filepath)) ) {
+                            return $this->addError('Unable to add Bible to ZIP file: ' . $Bible->name);
+                        }
+                        
+                        $Renderer->incrementHitCounter();
+                    }
+
+                    ksort($readme_cache);
+                    $readme .= implode('', $readme_cache);
+                    $readme .= "\n\n";
+                }
+
+                if($this->include_extras) {
+                    $file_list = $this->renderExtras(FALSE, FALSE, TRUE);
+                    
+                    if(!empty($file_list)) {
+                        $Zip->addEmptyDir('extras');
+                        $readme .= "\n\nextras - This folder contains additional helpful items\n\n";
+
+                        foreach($file_list as $file) {
+                            if(!$Zip->addFile($file, 'extras/' . basename($file)) ) {
+                                return $this->addError('Unable to add file to ZIP file: ' . $file['file']);
+                            }
+                        }
+                    }
+                }
+
+                $Zip->addFromString('readme.txt', $readme);
+                $Zip->close();   
+            }
+            catch (\Exception $e) {
+                // return $this->addError($e->getMessage());
+            }
 
             // Send Zip file to browser as download
             $download_file_path = $zip_path;
@@ -262,7 +367,14 @@ class RenderManager {
             header('Pragma: public');
             header('Content-Length: ' . filesize($download_file_path));
 
-            readfile($download_file_path);
+            try {
+                // ini_set('memory_limit','256M');
+                readfile($download_file_path);
+            }
+            catch (\Exception $e) {
+                unlink($download_file_path);
+                return $this->addError($e->getMessage());
+            }
 
             if($delete_file) {
                 unlink($download_file_path);
@@ -442,6 +554,10 @@ class RenderManager {
         foreach($DeletableRenderings as $key => $R) {
             $delete = FALSE;
 
+            if($R->isPendingDownload()) {
+                continue; // don't delete if it hasn't been downloaded yet
+            }
+
             if($min_render_time && $R->rendered_duration < $min_render_time) {
                 static::_cleanUpDryRunMessage($dry_run_verbose, $R, 'min_render_time');
                 $delete = TRUE;
@@ -480,6 +596,10 @@ class RenderManager {
 
         if($space_needed_overall > $freed_space) {
             foreach($DeletableRenderings as $R) {
+                if($R->isPendingDownload()) {
+                    continue; // don't delete if it hasn't been downloaded yet
+                }
+
                 $freed_space += $R->file_size;
                 static::_cleanUpDryRunMessage($dry_run, $R, 'more_space_needed');
                 

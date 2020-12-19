@@ -25,6 +25,11 @@ abstract class RenderAbstract {
     // Estimated size to render a Bible of the given format, in MB.
     static protected $render_est_size = 6;     
 
+    // Extras rendering class, if any.  Must be child of App\Renderers\Extras\ExtrasAbstract
+    static public $extras_class = NULL; 
+
+    static public $load_fonts = TRUE;
+
     protected $file_extension;
 
     protected $Bible;
@@ -38,6 +43,7 @@ abstract class RenderAbstract {
 
     protected $current_book    = NULL;
     protected $current_chapter = NULL;
+    protected $chunk_data = [];
 
     protected $Rendering = NULL;
 
@@ -103,6 +109,9 @@ abstract class RenderAbstract {
             foreach($rows as $row) {
                 $this->_renderSingleVerse($row);
             }
+
+            $this->_renderVerseChunk();
+            $this->chunk_data = [];
         };
 
         $Query->orderBy($table . '.id');
@@ -124,6 +133,7 @@ abstract class RenderAbstract {
         $Rendering->rendered_duration   = time() - $start_time;
         $Rendering->meta_hash           = md5($this->_getMetaString());
         $Rendering->rendered_at         = date('Y-m-d H:i:s');
+        $Rendering->downloaded_at       = NULL;
         $Rendering->version             = static::$render_version;
         $Rendering->file_size           = $file_size_mb;
         $Rendering->file_name           = basename($file_path);
@@ -188,9 +198,31 @@ abstract class RenderAbstract {
     }
 
     /**
-     *
+     * By default, the single verse renderer just inserts the verse data into the chunk data
      */
-    abstract protected function _renderSingleVerse($verse);
+    protected function _renderSingleVerse($verse) {
+        if($this->include_book_name) {
+            $this->chunk_data[] = [
+                'book_name' => $verse->book_name,
+                'book'      => $verse->book,
+                'chapter'   => $verse->chapter,
+                'verse'     => $verse->verse,
+                'text'      => $verse->text,
+            ];
+        }
+        else {
+            $this->chunk_data[] = [
+                'book'      => $verse->book,
+                'chapter'   => $verse->chapter,
+                'verse'     => $verse->verse,
+                'text'      => $verse->text,
+            ];
+        }
+    }
+
+    protected function _renderVerseChunk() {
+
+    }
 
     /**
      * Does any nessessary tasks after rendering is finished, such as closing a file stream
@@ -242,7 +274,7 @@ abstract class RenderAbstract {
         return $meta_string;
     }
 
-    protected function _getCopyrightStatement($plain_text = FALSE) {
+    protected function _getCopyrightStatement($plain_text = FALSE, $line_break_replacement = NULL) {
         $cr_statement = $this->Bible->getCopyrightStatement();
 
         if(config('download.derivative_copyright_statement')) {
@@ -260,7 +292,7 @@ abstract class RenderAbstract {
             $cr_statement .= "<br /><br /><a href='https://www.biblesupersearch.com'>www.BibleSuperSearch.com</a>";
         }
 
-        return ($plain_text) ? $this->_htmlToPlainText($cr_statement) : $cr_statement;
+        return ($plain_text) ? $this->_htmlToPlainText($cr_statement, $line_break_replacement) : $cr_statement;
     }
 
     public function _getRenderingRecord($ignore_cache = FALSE) {
@@ -272,8 +304,13 @@ abstract class RenderAbstract {
         return $this->Rendering;
     }
 
-    protected function _htmlToPlainText($html) {
-        $text = str_replace(['<br />', '<br>'], PHP_EOL, $html);
+    protected function _htmlToPlainText($html, $line_break_replacement = NULL) {
+        $line_break_replacement = $line_break_replacement ?: PHP_EOL;
+        $line_break_replacement_double = $line_break_replacement . $line_break_replacement;
+        $text = $html;
+        $text = str_replace(["\r\n", "\n", "\r"], '', $text);
+        $text = str_replace(['<br />', '<br>'], $line_break_replacement, $text);
+        $text = str_replace(['</p>'], $line_break_replacement_double, $text);
         $text = str_replace('&nbsp;', ' ', $text);
         $text = html_entity_decode($text, ENT_QUOTES | ENT_HTML5);
         $text = strip_tags($text);

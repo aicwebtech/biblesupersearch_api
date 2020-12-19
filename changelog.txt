@@ -1,6 +1,26 @@
 Bible SuperSearch API Changelog
 
-= 4.2.0 / May 2, 2020
+= 4.3.0 // Dec 19, 2020
+* New download formats: MySQL, SQLite, JSON
+* Download readme that includes an index identifying each Bible included in the ZIP file
+* Bugfix: Fixed issues with copyright statement formatting.
+* Bugfix: Parallel search not populating other Bible when results found in one, but none in the other.
+* Bugfix: Unable to request the same verse multiple times in one request.
+
+= 4.2.6 // July 18, 2020
+* Fixed breakage of regular expression queries when using single 'request' box
+* Fixed total breakage of NOT boolean operator / 'None of the words' advanced search
+* Added download Bible limitation as a quick fix to download issues on shared hosting
+
+= 4.2.5 // June 29, 2020
+* Fixed breakage when attempting to render all the Bibles as PDFs
+* Fixed broken flags on Segond 1910 Bible added in 4.2.4
+
+= 4.2.4 // June 25, 2020
+* New Bible - Louis Segond 1910
+* Fixed premature deleting of rendered files when requesting a large batch of PDFs.
+
+= 4.2.0 // May 2, 2020
 
 NOTE New System Requirements:
     - Minimum PHP version: 7.2.5
@@ -21,7 +41,7 @@ NOTE New System Requirements:
     - Albanian
 * Misc bug fixes
 
-= 4.1.0 / Dec 21, 2019
+= 4.1.0 // Dec 21, 2019
 * Ability to download Bibles via the API in multiple formats.
 * Download tab as part of API Documentation page.
 * Ability to download multiple files at once, as a ZIP file.
@@ -31,7 +51,7 @@ NOTE New System Requirements:
 * Rearranging API configuration page into tabs
 * Misc bug fixes
 
-= 4.0.2 / Aug 3, 2019
+= 4.0.2 // Aug 3, 2019
 * Bugfix: RVG Module was missing language information
 * Bugfix: Better disambiguation when using foreign language Bibles
 * Bugfix: Fixed more issues with matching language of book name to selected Bible

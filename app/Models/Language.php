@@ -57,4 +57,9 @@ class Language extends Model {
 
         return ($Language->rtl) ? TRUE : FALSE;
     }
+
+    public static function findByCode($code) {
+        $Language = static::where('code', $code)->first();
+        return $Language ?: NULL;
+    }
 }

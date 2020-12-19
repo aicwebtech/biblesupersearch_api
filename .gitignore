@@ -7,7 +7,9 @@ Homestead.json
 .env
 *.orig
 
+pushall
 composer-temp.phar
+vendor.zip
 
 /bibles/unbound/*.zip
 /bibles/unofficial/*.zip

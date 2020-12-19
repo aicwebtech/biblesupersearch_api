@@ -138,7 +138,7 @@ class Engine {
      * @return array $results search / look up results.
      */
     public function actionQuery($input) {
-
+        
         // To do - add labels
         $parsing = array(
             'reference' => array(
@@ -236,7 +236,7 @@ class Engine {
         !empty($input['bible']) && $this->setBibles($input['bible']);
         $input = $this->_sanitizeInput($input, $parsing);
         $input['bible'] = array_keys($this->Bibles);
-        $input['multi_bibles'] = (count($input['bible']) > 1) ? TRUE : FALSE;
+        $parallel = $input['multi_bibles'] = (count($input['bible']) > 1) ? TRUE : FALSE;
         $input['data_format'] = (!empty($input['data_format'])) ? $input['data_format'] : $this->default_data_format;
 
         // Secondary search elements are detected automatically by Search class
@@ -309,11 +309,14 @@ class Engine {
         }
 
         if(!$Search || $Search && $search_valid) {
+            $has_search_results = FALSE;
+
             foreach($this->Bibles as $Bible) {
                 $BibleResults = $Bible->getSearch($Passages, $Search, $input); // Laravel Collection
 
                 if(!empty($BibleResults) && !$BibleResults->isEmpty()) {
                     $results[$Bible->module] = $BibleResults->all();
+                    $has_search_results = TRUE;
 
                     if($paginate && !$input['multi_bibles']) {
                         $paging = $this->_getCleanPagingData($BibleResults);
@@ -324,13 +327,21 @@ class Engine {
                     }
                 }
                 else {
-                    $bible_no_results[] = trans('errors.bible_no_results', ['module' => $Bible->module]);
+                    if($Search) {
+                        $results[$Bible->module] = [];
+                        $tr = ($parallel) ? 'errors.parallel_bible_no_results' : 'errors.bible_no_results';
+                    }
+                    else {
+                        $tr = 'errors.bible_no_results';
+                    }
+                    
+                    $bible_no_results[] = trans($tr, ['module' => $Bible->name]);
                 }
 
                 unset($BibleResults);
             }
 
-            if(empty($results)) {
+            if(!$has_search_results) {
                 if($Search) {
                     if($Search->hasErrors()) {
                         $this->addErrors($Search->getErrors(), $Search->getErrorLevel());
@@ -404,6 +415,22 @@ class Engine {
         $order_by_default = 'lang_native_name|rank';
         $order_by = array_key_exists('bible_order_by', $input) ? $input['bible_order_by'] : $order_by_default;
         $group_by = array_key_exists('bible_group_by', $input) ? $input['bible_group_by'] : NULL;
+        $group_by_mapped = NULL;
+
+        // if($group_by && $group_by != 'none') {
+        //     switch($group_by) {
+        //         case 'language':
+        //             $group_by_mapped = 'lang_name';
+        //             break;            
+        //         case 'language_english':
+        //             $group_by_mapped = 'lang_name_english';
+        //             break;
+        //         default:
+        //             $group_by_mapped = NULL;
+        //     }
+
+        //     $order_by = ($group_by_mapped ?: $group_by) . '|' . $order_by;
+        // }
 
         // var_dump($order_by);
 
@@ -524,12 +551,14 @@ class Engine {
             'contents'  => array_key_exists('contents', $input) ? $input['contents'] : NULL,
         ];
 
+        $response = new \stdClass;
         $Manager = new \App\RenderManager($modules, $format, $zip);
 
         if($action == 'render_needed') {
             $bibles_needing_render = $Manager->getBiblesNeedingRender(NULL, FALSE, FALSE, 0);
             $success = ($bibles_needing_render === FALSE || count($bibles_needing_render) > 0) ? FALSE : TRUE;
             $Manager->cleanUpTempFiles();
+            $response->render_needed = ($success) ? FALSE : TRUE;
         }
         else {
             // if($bypass_limit) {
@@ -542,8 +571,6 @@ class Engine {
             // }
 
         }
-
-        $response = new \stdClass;
 
         if(!$success) {
             // if($Manager->needsProcess()) {
@@ -633,6 +660,7 @@ class Engine {
         $response->books            = $this->actionBooks($input);
         $response->shortcuts        = $this->actionShortcuts($input);
         $response->download_enabled = config('download.enable') ? TRUE : FALSE;
+        $response->download_limit   = config('download.enable') ? config('download.bible_limit') : FALSE;
         $response->download_formats = $response->download_enabled ? array_values(RenderManager::getGroupedRendererList()) : [];
         $response->search_types     = config('bss.search_types');
         $response->name             = config('app.name');

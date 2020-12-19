@@ -26,7 +26,7 @@ class ErrorTest extends TestCase {
         $this->assertEquals( trans('errors.no_results'), $errors[0]);
     }
 
-    public function testBibleNoResults() {
+    public function testParallelLookupNoResults() {
         $Engine = new Engine();
         $Engine->setDefaultDataType('raw');
 
@@ -39,9 +39,28 @@ class ErrorTest extends TestCase {
         $this->assertTrue($Engine->hasErrors());
         $errors = $Engine->getErrors();
         $this->assertCount(2, $errors);
-        $this->assertEquals( trans('errors.bible_no_results', ['module' => 'tr']), $errors[0]);
-        $this->assertEquals( trans('errors.bible_no_results', ['module' => 'tyndale']), $errors[1]);
+        $this->assertEquals( trans('errors.bible_no_results', ['module' => 'Textus Receptus NT']), $errors[0]);
+        $this->assertEquals( trans('errors.bible_no_results', ['module' => 'Tyndale Bible']), $errors[1]);
         $this->assertCount(1, $results['kjv']);
+        $this->assertArrayNotHasKey('tr', $results);
+        $this->assertArrayNotHasKey('tyndale', $results);
+    }    
+
+    public function testParallelSearchNoResults() {
+        $Engine = new Engine();
+        $Engine->setDefaultDataType('raw');
+
+        if(!Bible::isEnabled('web')) {
+            $this->markTestSkipped('Bible web not installed or enabled');
+        }
+
+        $results = $Engine->actionQuery(['bible' => array('kjv', 'web'), 'search' => 'cometh']);
+        $this->assertTrue($Engine->hasErrors());
+        $errors = $Engine->getErrors();
+        $this->assertCount(1, $errors);
+        $this->assertEquals( trans('errors.parallel_bible_no_results', ['module' => 'World English Bible']), $errors[0]);
+        $this->assertNotEmpty($results['kjv']);
+        $this->assertNotEmpty($results['web']); // Back-populated results that don't include the keyword.
     }
 
     public function testFalseBible() {

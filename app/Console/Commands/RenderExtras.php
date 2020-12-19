@@ -6,21 +6,21 @@ use Illuminate\Console\Command;
 use App\RenderManager;
 use App\ProcessManager;
 
-class BibleRender extends Command
+class RenderExtras extends Command
 {
     /**
      * The name and signature of the console command.
      *
      * @var string
      */
-    protected $signature = 'bible:render {format : name of format} {bible : single module or comma-separated list} {--overwrite : whether to overwrite existing file} {--extras : whether to include extra files, such as Bible book lists}';
+    protected $signature = 'bible:render:extras {format : name of format} {--overwrite : whether to overwrite existing file}';
 
     /**
      * The console command description.
      *
      * @var string
      */
-    protected $description = 'Renders the selected Bibles into the specified format';
+    protected $description = 'Renders extra data (Bible Book Lists, ect) into the specified format.  Not applicable for all formats.';
 
     /**
      * Create a new command instance.
@@ -43,14 +43,10 @@ class BibleRender extends Command
         // }
 
         $format     = [ $this->argument('format') ];
-        $bible      = $this->argument('bible');
         $overwrite  = $this->option('overwrite');
-        $extras     = $this->option('extras');
-        $bible      = ($bible == 'ALL') ? $bible : explode(',', $bible);
 
-        $Manager = new RenderManager($bible, $format, FALSE);
-        $Manager->include_extras = $extras;
-        $Manager->render($overwrite, TRUE, TRUE);
+        $Manager = new RenderManager([], $format, FALSE);
+        $Manager->renderExtras($overwrite, TRUE);
 
         if($Manager->hasErrors()) {
             echo('Errors have occurred:' . PHP_EOL);
