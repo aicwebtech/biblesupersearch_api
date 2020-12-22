@@ -94,7 +94,7 @@ return array(
         'description' => 'Retrieves a list of Bible Books in the specified language',
     ),
     'strongs' => array(
-        'name' => 'Strong\'s Definition',
+        'name' => 'Strong\'s Definitions',
         'description' => 'Retrieves definitions for the given Strong\'s numbers.',
         'params' => array(
             'strongs' => array(
@@ -112,7 +112,7 @@ return array(
         ]
     ),
     'download' => array(
-        'name' => 'Bible File Download',
+        'name' => 'Bible Download',
         'description' => 'Returns the given Bible module(s) as a file download, rendered into the selected format',
         'params' => array(
             'bible' => array(

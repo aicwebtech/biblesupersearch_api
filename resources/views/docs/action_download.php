@@ -24,49 +24,14 @@
 <?php endif; ?>
 
 <br /><br />
-
-<table class='parameters' cellspacing="0">
-    <tr><th colspan="4">Download Format Options</th></tr>
-    <tr>
-        <th>Group</th>
-        <th>Identifier</th>
-        <th>Name</th>
-        <th>Description</th>
-    </tr>
-
-    <?php foreach($formats as $id => $format) : ?>
-        <tr>
-            <td><b><?php echo $format['name']; ?></b></td>
-            <td>&nbsp;</td>
-            <td>&nbsp;</td>
-            <td><?php echo $format['desc']; ?></td>
-        </tr>
-
-        <?php foreach($format['renderers'] as $rid => $r): ?>
-            <tr>
-                <td>&nbsp;</td>
-                <td><?php echo $rid; ?></td>
-                <td><?php echo $r['name']; ?></td>
-                <td><?php echo $r['desc']; ?></td>
-            </tr>
-        <?php endforeach; ?>
-    <?php endforeach; ?>
-</table>
-
-<br /><br />
 <h2>Download Formats</h2>
 
 <?php foreach($formats as $id => $format) : ?>
     <table class='parameters' cellspacing="0">
-<!--         <tr><th colspan='3'><?php echo $format['name']; ?></th></tr>
-        <tr><th colspan='3'><?php echo $format['desc']; ?></th></tr> -->
-
-
         <tr>
-            <th colspan='1'><?php echo $format['name']; ?></th>
-            <th colspan='2'><?php echo $format['desc']; ?></th>
-        </tr>
-
+            <th colspan='1' style='text-align: left'><?php echo $format['name']; ?></th>
+            <th colspan='2' style='text-align: left; border-left: 0'><?php echo $format['desc']; ?></th>
+        </tr>        
         <tr>
             <th>Identifier</th>
             <th>Name</th>

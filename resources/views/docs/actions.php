@@ -1,14 +1,14 @@
 <div id='actions_tabs'>
     <ul>
-        <li><a href='#tab_query'><?php echo trans('api.action') . ': ' . trans('query.name') ?></a></li>
-        <li><a href='#tab_statics'><?php echo trans('api.action') . ': ' . trans('api.statics.name') ?></a></li>
-        <li><a href='#tab_bibles'><?php echo trans('api.action') . ': ' . trans('api.bibles.name') ?></a></li>
-        <li><a href='#tab_books'><?php echo trans('api.action') . ': ' . trans('api.books.name') ?></a></li>
-        <li><a href='#tab_version'><?php echo trans('api.action') . ': ' . trans('api.version.name') ?></a></li>
-        <li><a href='#tab_strongs'><?php echo trans('api.action') . ': ' . trans('api.strongs.name') ?></a></li>
+        <li><a href='#tab_query'><?php echo trans('query.name') ?></a></li>
+        <li><a href='#tab_statics'><?php echo trans('api.statics.name') ?></a></li>
+        <li><a href='#tab_bibles'><?php echo trans('api.bibles.name') ?></a></li>
+        <li><a href='#tab_books'><?php echo trans('api.books.name') ?></a></li>
+        <li><a href='#tab_version'><?php echo trans('api.version.name') ?></a></li>
+        <li><a href='#tab_strongs'><?php echo trans('api.strongs.name') ?></a></li>
 
         <?php if(config('download.enable')): ?>
-            <li><a href='#tab_act_downloads'><?php echo trans('api.action') . ': ' . trans('api.download.name') ?></a></li>
+            <li><a href='#tab_act_downloads'><?php echo trans('api.download.name') ?></a></li>
         <?php endif; ?>
     </ul>
 
