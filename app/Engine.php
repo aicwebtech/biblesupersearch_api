@@ -250,6 +250,10 @@ class Engine {
         }
 
         list($keywords, $references, $this->metadata->disambiguation, $disamb_book) = Passage::mapRequest($input, $this->languages, $this->Bibles);
+        $input['search']    = $keywords ?: NULL;
+        $input['reference'] = $references ?: NULL;
+        unset($input['request']); 
+
         $Search     = Search::parseSearch($keywords, $input);
         $is_search  = ($Search) ? TRUE : FALSE;
         $paginate   = ($is_search && !$input['page_all'] && (!$input['multi_bibles'] || $this->_canPaginate($input['data_format']))) ? TRUE : FALSE;
@@ -431,8 +435,6 @@ class Engine {
 
         //     $order_by = ($group_by_mapped ?: $group_by) . '|' . $order_by;
         // }
-
-        // var_dump($order_by);
 
         if($include_desc) {
             $Bibles -> addSelect('description');

@@ -24,39 +24,53 @@ return array(
     'search_types' => [
         [
             'label' => 'All Words',
-            'value' => 'and'
+            'value' => 'and',
+            'bool'  => FALSE, // Whether to allow boolean / proximity operators on this search type
         ],
         [
             'label' => 'Any Word',
-            'value' => 'or'
+            'value' => 'or',
+            'bool'  => FALSE,
         ],
         [
             'label' => 'Exact Phrase',
-            'value' => 'phrase'
+            'value' => 'phrase',
+            'bool'  => FALSE,
         ],
         [
             'label' => 'Only One Word',
-            'value' => 'xor'
+            'value' => 'xor',
+            'bool'  => FALSE,
         ],
         [
             'label' => 'Two or More Words',
-            'value' => 'two_or_more'
+            'value' => 'two_or_more',
+            'bool'  => FALSE,
         ],
         [
             'label' => 'Words Within 5 Verses',
-            'value' => 'proximity'
+            'value' => 'proximity',
+            'bool'  => FALSE,
         ],
         [
             'label' => 'Words Within Same Chapter',
-            'value' => 'chapter'
+            'value' => 'chapter',
+            'bool'  => FALSE,
+        ],        
+        [
+            'label' => 'Words Within Same Book',
+            'value' => 'book',
+            'bool'  => FALSE,
         ],
         [
             'label' => 'Boolean Expression',
-            'value' => 'boolean'
+            'value' => 'boolean',
+            'bool'  => TRUE,
         ],
         [
             'label' => 'Regular Expression',
-            'value' => 'regexp'
+            'value' => 'regexp',
+            'bool'  => FALSE,
         ],
     ],
     'books_common' => [

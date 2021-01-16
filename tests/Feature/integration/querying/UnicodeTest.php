@@ -23,7 +23,7 @@ class UnicodeTest extends TestCase {
 
     public function testSpanishLookup() {
         if(!Engine::isBibleEnabled('rvg')) {
-            $this->markTestSkipped('Bible martin not installed or enabled');
+            $this->markTestSkipped('Bible rvg not installed or enabled');
         }
 
         $Engine = new Engine();
@@ -43,10 +43,17 @@ class UnicodeTest extends TestCase {
         $Engine = new Engine();
         $Engine->setDefaultDataType('raw');
         $results = $Engine->actionQuery(['bible' => 'diodati', 'request' => 'l’uomo', 'whole_words' => FALSE]);
+        $this->assertFalse($Engine->hasErrors());        
+        $results = $Engine->actionQuery(['bible' => 'diodati', 'search' => 'l’uomo', 'whole_words' => FALSE]);
         $this->assertFalse($Engine->hasErrors());
 
         $results = $Engine->actionQuery(['bible' => 'diodati', 'request' => '(l’uomo) (alla)', 'whole_words' => FALSE]);
-        $this->assertFalse($Engine->hasErrors(), 'Failed on using implied AND');
+        $this->assertFalse($Engine->hasErrors(), 'Failed on using implied AND');        
+        $results = $Engine->actionQuery(['bible' => 'diodati', 'search' => '(l’uomo) (alla)', 'whole_words' => FALSE]);
+        $this->assertFalse($Engine->hasErrors(), 'Failed on using implied AND');       
+
+        $results = $Engine->actionQuery(['bible' => 'diodati', 'search' => '(l’uomo) PROX(5) (alla)', 'whole_words' => FALSE]);
+        $this->assertTrue($Engine->hasErrors(), 'Cannot use prox terms on all_words search');
     }
 
     public function testHebrew() {
@@ -57,6 +64,8 @@ class UnicodeTest extends TestCase {
         $Engine = new Engine();
         $Engine->setDefaultDataType('raw');
         $results = $Engine->actionQuery(['bible' => 'wlc', 'request' => 'בְּרֵאשִׁית', 'whole_words' => FALSE]);
+        $this->assertFalse($Engine->hasErrors());        
+        $results = $Engine->actionQuery(['bible' => 'wlc', 'search' => 'בְּרֵאשִׁית', 'whole_words' => FALSE]);
         $this->assertFalse($Engine->hasErrors());
     }
 
@@ -68,6 +77,8 @@ class UnicodeTest extends TestCase {
         $Engine = new Engine();
         $Engine->setDefaultDataType('raw');
         $results = $Engine->actionQuery(['bible' => 'svd', 'request' => 'المسيح ', 'whole_words' => FALSE]);
+        $this->assertFalse($Engine->hasErrors());        
+        $results = $Engine->actionQuery(['bible' => 'svd', 'search' => 'المسيح ', 'whole_words' => FALSE]);
         $this->assertFalse($Engine->hasErrors());
     }
 
