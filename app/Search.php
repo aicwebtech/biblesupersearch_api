@@ -60,7 +60,7 @@ class Search extends SqlSearch {
         $special_types = ['proximity', 'chapter', 'book']; // strongs??
         $is_special    = (in_array($search_type, $special_types)) ? TRUE : FALSE;
 
-        if(!$is_special && $search_type == 'boolean') {
+        if(!$is_special && ($search_type == 'boolean' || $search_type == 'and')) {
             $is_special = static::containsProximityOperators($search);
         }
 
@@ -138,13 +138,16 @@ class Search extends SqlSearch {
 
         if($search_type != 'regexp' && strpos($search, '"') === FALSE && strpos($search, '`') === FALSE) {
             // Check for invalid characters
-            $invalid_chars = preg_replace('/[\p{L}\(\)|!&^ "\'0-9%]+/u', '', $search);
+            // $invalid_chars = preg_replace('/[\p{L}\(\)|!&^ "\'0-9%]+/u', '', $search); // Original
+
+            $invalid_chars = preg_match('/[^' . static::$term_base_regexp . '|!&^ "\'0-9%()]/u', $search, $matches);
 
             if(!empty($invalid_chars)) {
                 $this->addError( trans('errors.invalid_search.general', ['search' => $search]), 4);
                 return FALSE;
             }
         }
+
 
         switch ($search_type) {
             case 'boolean' :

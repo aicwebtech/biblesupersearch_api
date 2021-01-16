@@ -80,6 +80,10 @@ class IpAccess extends Model {
         return TRUE;
     }
 
+    public function getAccessLog() {
+        return IpAccessLog::firstOrNew(['ip_id' => $this->id, 'date' => date('Y-m-d')]);
+    }
+
     public function getDailyHits($date = NULL) {
         $date = (strtotime($date)) ? date('Y-m-d', strtotime($date)) : date('Y-m-d');
 
