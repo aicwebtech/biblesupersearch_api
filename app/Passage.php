@@ -162,11 +162,6 @@ class Passage {
         $found = FALSE;
         $primary_language = NULL;
 
-        // DISAMBIG LINK NOT SHOWING WHEN SEARCH YIELDS NO RESULTS!  Ie requesting 'Eph' from a Spanish Bible
-
-        // var_dump($book);
-        // var_dump($multiple);
-
         if(is_array($languages)) {
             foreach($languages as $key => $lang) {
                 if($key == 0) {
@@ -184,10 +179,6 @@ class Passage {
 
         if(!$found) {
             $Book = Book::findByEnteredName($book, NULL, $multiple);
-        }
-
-        if(!$multiple) {
-            // var_dump($Book->name);
         }
 
         if(!$multiple && $Book && $Book->getLanguage() != $primary_language && $primary_language != config('bss.defaults.language_short')) {
@@ -1082,8 +1073,11 @@ class Passage {
         $disambiguation = [];
         $has_disambiguation_book = FALSE;
 
+        // var_dump($request);
+
         if(!empty($request)) {
             if(!$keywords && !$reference) {
+                $request_org = $request;
                 $non_passage_chars = static::_containsNonPassageCharacters($request);
 
                 $passages = static::explodeReferences($request, TRUE);
@@ -1103,11 +1097,11 @@ class Passage {
                     !$non_passage_chars && 
                     ( (preg_match('/[0-9]/', $request) && strpos($request, '(') === FALSE) || count($passages) >= 2)
                 ) {
-                    $reference = $request;
+                    $reference = $request_org;
                 }
                 // Otherwise, treats it as search keywords
                 else {
-                    $keywords = $request;
+                    $keywords = $request_org;
 
                     // Check for a single book
                     $Books = static::findBookByNameAndLanguage($request, $languages, TRUE);
@@ -1136,6 +1130,8 @@ class Passage {
                 $keywords = $request;
             }
         }
+
+        // var_dump($keywords);
 
         return array($keywords, $reference, $disambiguation, $has_disambiguation_book);
     }

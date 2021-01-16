@@ -127,7 +127,7 @@ class SqlSearch {
      * Validates the search term(s)
      */
     public function validate() {
-        $valid = TRUE;
+        $valid = $this->_validateHelper($this->search, $this->search_type);
 
         foreach(static::$search_inputs as $input => $settings) {
             if(!empty($this->options[$input])) {
@@ -241,10 +241,6 @@ class SqlSearch {
         $this->terms = $terms = static::parseQueryTerms($std_bool);
         $operators = static::parseQueryOperators($std_bool, $terms);
 
-        // var_dump($std_bool);
-        // var_dump($terms);
-        // var_dump($operators);
-
         $sql = $std_bool;
 
         if(static::containsInvalidCharacters($terms)) {
@@ -280,8 +276,6 @@ class SqlSearch {
         $term_fmts = $this->_termFormat($term, $exact_phrase, $whole_words, FALSE);
         $term_ops  = $this->_termOperator($term, $exact_phrase, $whole_words, FALSE);
 
-        // var_dump($term_ops);
-
         foreach($fields as $field) {
             $sql_sub = array();
 
@@ -313,7 +307,6 @@ class SqlSearch {
     }
 
     protected function _termOperator($term, $exact_phrase = FALSE, $whole_words = FALSE, $primary_only = TRUE) {
-        //$is_special = ($exact_phrase || static::isTermPhrase($term) || static::isTermRegexp($term)) ? TRUE : FALSE;
         $is_regexp   = ($this->_isRegexpSearch($term));
 
         $is_strongs = $this->_isStrongsSearch($term);
@@ -397,8 +390,6 @@ class SqlSearch {
         $post = ($has_en_pct) ? '' : '([[:>:]]|[›])';
         $regexp_term = ($is_phrase) ? str_replace(' ', $phrase_whitespace, $term) : str_replace('%', '.*', trim($term, '%'));
         $regexp_term = $pre . trim($regexp_term, '%') . $post;
-
-        // die($regexp_term);
 
         if($primary_only) {
             return $regexp_term;
@@ -701,9 +692,6 @@ class SqlSearch {
         // $query = str_replace('&  -', '-', $query);
         $query = trim(preg_replace('/\s+/', ' ', $query));
 
-
-        // var_dump($query);
-
         // Insert implied AND
         //$patterns = array('/\) [a-zA-Z0-9"]/', '/[a-zA-Z0-9"] \(/', '/[a-zA-Z0-9"] [a-zA-Z0-9"]/');
         // Note - this will break if we ever have
@@ -741,8 +729,6 @@ class SqlSearch {
         //$query = str_replace($underscored, $phrases, $query);
         $query = trim(preg_replace('/\s+/', ' ', $query));
 
-        // var_dump($query);
-        // die();
         return $query;
     }
 
@@ -769,7 +755,6 @@ class SqlSearch {
     public function highlightResults($results) {
         $whole_word = $this->isTruthy('whole_words', $this->options);
         $exact_case = $this->isTruthy('exact_case',  $this->options);
-        //var_dump($this->options);
 
         $terms = $this->terms;
         $terms_fmt = array();

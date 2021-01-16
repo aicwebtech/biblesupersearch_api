@@ -3,25 +3,12 @@
 use Illuminate\Foundation\Testing\WithoutMiddleware;
 use Illuminate\Foundation\Testing\DatabaseMigrations;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
-//use Faker\Generator;
 use App\Models\IpAccess;
 
 class IpAccessTest extends TestCase {
     protected $default_limit;
 
-//    public function __construct($name = null, array $data = array(), $dataName = '') {
-//        parent::__construct($name, $data, $dataName);
-//        $default_limit = env('DAILY_ACCESS_LIMIT', 1000);
-//    }
-
-    // THIS TEST TAKES OVER 1 MINUTES LOCALLY!
-    // NEED TO SPEED IT UP SOMEHOW!
     public function testDefaultLimit() {
-        // Failed attempt to speed up by manually setting the hit limit to 100
-        // $default_limit = 100;
-        // $limit_cache = config('bss.daily_access_limit');
-        // config('bss.daily_access_limit', $default_limit);
-
         $default_limit = config('bss.daily_access_limit');
 
         $ip = $this->_fakeIp();
@@ -34,7 +21,12 @@ class IpAccessTest extends TestCase {
         $this->assertEquals(1, $IP->getDailyHits());
         $this->assertFalse($IP->isLimitReached());
 
-        for($hits = 2; $hits < $default_limit; $hits ++) {
+        // Speed up this test by setting the current count to limit - 5
+        $Log = $IP->getAccessLog();
+        $Log->count = $default_limit - 5;
+        $Log->save();
+
+        for($i = 1; $i < 5; $i ++) {
             $IP->incrementDailyHits();
         }
 
@@ -42,7 +34,6 @@ class IpAccessTest extends TestCase {
         $IP->incrementDailyHits();
         $this->assertTrue($IP->isLimitReached());
         $IP->delete();
-        // config('bss.daily_access_limit', $limit_cache);
     }
 
     public function testCustomLimit() {

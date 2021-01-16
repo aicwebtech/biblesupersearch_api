@@ -22,7 +22,7 @@ class VerseStandard extends VerseAbstract {
      * Processes and executes the Bible search query
      *
      * @param array $Passages Array of App/Passage instances, represents the passages requested, if any
-     * @param App/Search $Search App/Search instance, reporesenting the search keywords, if any
+     * @param App/Search $Search App/Search instance, representing the search keywords, if any
      * @param array $parameters Search parameters - user input
      * @return array $Verses array of Verses instances (found verses)
      */
@@ -31,7 +31,11 @@ class VerseStandard extends VerseAbstract {
         $table = $Verse->getTable();
         $passage_query = $search_query = NULL;
         $is_special_search = ($Search && $Search->is_special) ? TRUE : FALSE;
-        $Query = DB::table($table . ' AS tb')->select('id','book','chapter','verse','text','italics');
+        $Query = DB::table($table . ' AS tb');
+        
+        // $Query->select(DB::raw('SQL_NO_CACHE id, book, chapter, verse, text'));
+
+        $Query->select('id','book','chapter','verse','text','italics');
         $Query->orderBy('book', 'ASC')->orderBy('chapter', 'ASC')->orderBy('verse', 'ASC');
 
         if($Passages) {
@@ -229,6 +233,8 @@ class VerseStandard extends VerseAbstract {
                 $limit = (empty($parameters['proximity_limit'])) ? 5 : $parameters['proximity_limit'];
             }
 
+            // $ps_chapter = ' AND (' . $alias . '.book != 19 OR '  . $alias . '.chapter = ' . $alias2 . '.chapter )'; 
+            // $join .= (strpos($operator, '~l') === 0) ? ' AND ' . $alias . '.chapter = ' . $alias2 . '.chapter' : $ps_chapter; // Experimental code to to treat Psalms differently
             $join .= (strpos($operator, '~l') === 0) ? ' AND ' . $alias . '.chapter = ' . $alias2 . '.chapter' : ''; // Limit within chapter
             $join .= ' AND ' . $alias . '.id BETWEEN ' . $alias2 . '.id - ' . $limit . ' AND ' . $alias2 . '.id + ' . $limit;
         }

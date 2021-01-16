@@ -155,6 +155,43 @@ class ProximitySearchTest extends TestCase {
         $this->assertLessThan(100, count($results['kjv'])); // Return count not vetted to the number
     }
 
+    // Make sure that non-proximity search types don't attempt to send proximity terms to the SQL query
+    public function testNonBooleanProximitySearchTypes() {
+        $Engine = Engine::getInstance();
+        $params = ['bible' => 'kjv', 'search' => 'escape | hide PROX(5) wrath | indignation', 'search_type' => NULL];
+
+        foreach(config('bss.search_types') as $st) {
+            if($st['bool']) {
+                continue;
+            }
+
+            $params['search_type'] = $st['value'];
+            $msg = 'Should NOT be able to send boolean or proximity operators for search type of ' . $st['value'];
+            $results = $Engine->actionQuery($params);
+            $this->assertTrue($Engine->hasErrors(), $msg);            
+            $results = $Engine->actionQuery($params);
+            $this->assertTrue($Engine->hasErrors(), $msg);
+        }
+    }    
+
+    public function testBooleanProximitySearchTypes() {
+        $Engine = Engine::getInstance();
+        $params = ['bible' => 'kjv', 'search' => 'escape | hide PROX(5) wrath | indignation', 'search_type' => NULL];
+
+        foreach(config('bss.search_types') as $st) {
+            if(!$st['bool']) {
+                continue;
+            }
+
+            $params['search_type'] = $st['value'];
+            $msg = 'Should be able to send boolean or proximity operators for search type of ' . $st['value'];
+            $results = $Engine->actionQuery($params);
+            $this->assertFalse($Engine->hasErrors(), $msg);            
+            $results = $Engine->actionQuery($params);
+            $this->assertFalse($Engine->hasErrors(), $msg);
+        }
+    }
+
     public function _testQueryBinding() {
         // Non-essential test
         return;
