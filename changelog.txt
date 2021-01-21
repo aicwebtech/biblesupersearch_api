@@ -1,7 +1,7 @@
 Bible SuperSearch API Changelog
 
-= 4.3.2 / Jan ??, 2021
-* Bugfix: Boolean / Proximity operators on non-Boolean searches wasn't proberly erroring out, causing DB errors
+= 4.3.2 / Jan 18, 2021
+* Bugfix: Boolean / Proximity operators on non-Boolean searches wasn't properly erroring out, causing DB errors
 * Bugfix: Searches coming via the 'request' input were not being properly validated
 * Bugfix: Search validator was not properly handle Unicode text, and was returning false negatives.
 * Bugfix: IP access log unit test was very slow.
