@@ -12529,7 +12529,10 @@ $.widget( "ui.dialog", {
 
 					if ( !this._allowInteraction( event ) ) {
 						event.preventDefault();
-						this._trackingInstances()[ 0 ]._focusTabbable();
+
+                        if(this._trackingInstances()[ 0 ] && this._trackingInstances()[ 0 ]._focusTabbable()) {
+						    this._trackingInstances()[ 0 ]._focusTabbable();
+                        }
 					}
 				}
 			} );
