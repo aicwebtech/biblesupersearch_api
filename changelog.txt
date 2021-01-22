@@ -1,5 +1,9 @@
 Bible SuperSearch API Changelog
 
+= 4.3.3 / Jan 25, 2021
+* Security Fix: Applied security fix(es) from Composer
+* Bugfix: Fixed Javascript error on administrative Bible manager
+
 = 4.3.2 / Jan 18, 2021
 * Bugfix: Boolean / Proximity operators on non-Boolean searches wasn't properly erroring out, causing DB errors
 * Bugfix: Searches coming via the 'request' input were not being properly validated
