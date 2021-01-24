@@ -1,6 +1,6 @@
 Bible SuperSearch API Changelog
 
-= 4.3.3 / Jan 25, 2021
+= 4.3.3 / Jan 23, 2021
 * Security Fix: Applied security fix(es) from Composer
 * Bugfix: Fixed Javascript error on administrative Bible manager
 
