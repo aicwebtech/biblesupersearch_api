@@ -1,5 +1,9 @@
 Bible SuperSearch API Changelog
 
+= 4.3.4 / Jan 26, 2021
+* Bugfix: Fixed Undefined constant 'STDIN' error seen by some users when installing the API
+* Bugfix: Installer: Clarified message when db credentials are invalid.
+
 = 4.3.3 / Jan 23, 2021
 * Security Fix: Applied security fix(es) from Composer
 * Bugfix: Fixed Javascript error on administrative Bible manager
