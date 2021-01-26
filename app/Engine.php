@@ -138,7 +138,7 @@ class Engine {
      * @return array $results search / look up results.
      */
     public function actionQuery($input) {
-        
+
         // To do - add labels
         $parsing = array(
             'reference' => array(

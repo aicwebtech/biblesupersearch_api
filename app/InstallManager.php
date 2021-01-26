@@ -24,6 +24,11 @@ class InstallManager {
     static function install(Request $request) {
         $start_time = time();
 
+        // Ensures that this installer can run even when not on CLI
+        if(!defined('STDIN')) {
+            define('STDIN', fopen('php://stdin', 'r'));
+        }
+
         $ep = error_reporting();
 
         error_reporting(E_ERROR | E_PARSE); // Workaround for deprecation warning
@@ -144,11 +149,25 @@ class InstallManager {
 
         $checklist[] = ['type' => 'item', 'label' => 'Database PDO Driver: ' . $pdo_driver, 'success' => extension_loaded($pdo_driver)];
 
+        // attempt to connect to db
+        $able_to_connect = TRUE;
+
+        try {
+            \DB::connection()->getPdo();
+
+            if($db_info['driver'] == 'sqlite') {
+                $rows = \DB::select('SELECT * FROM sqlite_master');
+            }
+        }
+        catch (\Exception $e) {
+            $able_to_connect = FALSE;
+        }
+
         if(!$file) {
-            $checklist[] = ['type' => 'item', 'label' => 'DB_HOST ('. $db_info['host'] . ')', 'success' => (!empty($db_info['host']) || $file)];
-            $checklist[] = ['type' => 'item', 'label' => 'DB_DATABASE ('. $db_info['database'] . ')', 'success' => (!empty($db_info['database']) || $file)];
-            $checklist[] = ['type' => 'item', 'label' => 'DB_USERNAME ('. $db_info['username'] . ')', 'success' => (!empty($db_info['username']) || $file)];
-            $checklist[] = ['type' => 'item', 'label' => 'DB_PASSWORD ('. $db_info['password'] . ')', 'success' => (!empty($db_info['password']) || $file)];
+            $checklist[] = ['type' => 'item', 'label' => 'DB_HOST ('. $db_info['host'] . ')', 'success' => (!empty($db_info['host'] && $able_to_connect) || $file)];
+            $checklist[] = ['type' => 'item', 'label' => 'DB_DATABASE ('. $db_info['database'] . ')', 'success' => (!empty($db_info['database'] && $able_to_connect) || $file)];
+            $checklist[] = ['type' => 'item', 'label' => 'DB_USERNAME ('. $db_info['username'] . ')', 'success' => (!empty($db_info['username'] && $able_to_connect) || $file)];
+            $checklist[] = ['type' => 'item', 'label' => 'DB_PASSWORD ('. $db_info['password'] . ')', 'success' => (!empty($db_info['password'] && $able_to_connect) || $file)];
         }
         else {
             $db_file = database_path('database.' . $db_info['driver']);
@@ -161,23 +180,12 @@ class InstallManager {
 
         $checklist[] = ['type' => 'item', 'label' => 'DB_PREFIX ('. $db_info['prefix'] . ')', 'success' => (!empty($db_info['prefix'])) ? TRUE : NULL];
 
-        // attempt to connect to db
-        $able_to_connect = TRUE;
-
-        try {
-            \DB::connection()->getPdo();
-
-            if($db_info['driver'] == 'sqlite') {
-                $rows = \DB::select('SELECT * FROM sqlite_master');
-
-                // print_r($rows);
-            }
-        }
-        catch (\Exception $e) {
-            $able_to_connect = FALSE;
-        }
 
         $checklist[] = ['type' => 'item', 'label' => 'Able to Connect', 'success' => $able_to_connect];
+
+        if(!$able_to_connect) {
+            $checklist[] = ['type' => 'header', 'label' => 'Unable to connect to database; Please check your database credentials'];
+        }
 
         $checklist[] = ['type' => 'hr'];
         $checklist[] = ['type' => 'header', 'label' => 'Directories and Files that need to be Writable'];
