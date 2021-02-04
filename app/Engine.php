@@ -1005,6 +1005,10 @@ class Engine {
         return $verbose ? $results->results : $results->results->version;
     }
 
+    public static function triggerInvalidConfigError() {
+        
+    }
+
     public static function isBibleEnabled($module) {
         $Bible = Bible::findByModule($module);
         return($Bible && $Bible->installed && $Bible->enabled) ? TRUE : FALSE;

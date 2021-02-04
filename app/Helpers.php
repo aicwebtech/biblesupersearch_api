@@ -56,6 +56,13 @@ class Helpers {
     }
 
     public static function transformClassName($class_name) {
+        $imp = \App\InstallManager::getImportableDir()[2];
+        $class_name_imp = str_replace("App\\", "App\\" . $imp . "\\", $class_name);
+        
+        if(class_exists($class_name_imp)) {
+            return $class_name_imp;
+        }
+
         return config('app.premium') ? str_replace("App\\", "App\Premium\\", $class_name) : $class_name;
     }
 

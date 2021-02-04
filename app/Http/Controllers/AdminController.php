@@ -42,7 +42,7 @@ class AdminController extends Controller
 
         $vars = [
             'local'         => $local_version,
-            'upstream'      => $upstream_version->version,
+            'upstream'      => $upstream_version ? $upstream_version->version : '(unknown)',
             'update'        => $needs_update,
             'php_update'    => FALSE,
             'php_local'     => NULL,
