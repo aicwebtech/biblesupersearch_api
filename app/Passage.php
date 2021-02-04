@@ -13,6 +13,9 @@ class Passage {
 
     use Traits\Error;
 
+    // REGEXP pattern to match any passage reference
+    const PASSAGE_REGEXP = '/([0-9] )?[A-Za-z]{2,}/';
+
     public $is_search = FALSE;
     protected $Book;                        // Book instance - Single or Start of range
     protected $Book_En;                     // Book instance - Range end

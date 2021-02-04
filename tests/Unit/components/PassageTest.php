@@ -719,4 +719,67 @@ class PassageTest extends TestCase
         $this->assertCount(4, $Passages);
         $this->assertContainsOnlyInstancesOf('App\Passage', $Passages);
     }
+
+    function testPassageRegexp() {
+        $pattern = Passage::PASSAGE_REGEXP;
+
+
+        $pattern = '/([0-9] )?[A-Za-z]{2,} ?[1-9][0-9]*(:[1-9][0-9]*)?/'; // Works for single verse or single chapter references only
+        $pattern = '/([0-9] )?[A-Za-z]{2,} ?[1-9][0-9]*(:[1-9][0-9]*([\-,;][1-9][0-9])?)?/'; 
+
+        // This should match all valid references.  However, it will match some invalid ones, too
+        // Todo - make unicode safe, attempt to filter out bad references 
+        $pattern = '/([0-9] )?[A-Za-z]{2,} ?[1-9][0-9]*(:[1-9][0-9]*([\-,][1-9][0-9]*([0-9:,\-\s]+[1-9][0-9]*)?)?)?/';
+        $this->assertNotEmpty($pattern);
+
+        $list_true = [
+            [
+                'text'      => '<tag>Mark 16</tag>',
+                'passage'   => ['Mark 16'],
+            ],               
+            [
+                'text'      => '<div>2 Cor 13</div>',
+                'passage'   => ['2 Cor 13'],
+            ],            
+            [
+                'text'      => '<span>Jn 3:16</span><p>Here is the truth</p>',
+                'passage'   => ['Jn 3:16'],
+            ],            
+            [
+                'text'      => '<b>Ommitted</b><tag>1 Jn 5:7</tag>',
+                'passage'   => ['1 Jn 5:7'],
+            ],
+            [
+                'text'      => '<span>Rom 3:9-15</span>',
+                'passage'   => ['Rom 3:9-15'],
+            ],            
+            [
+                'text'      => '<span>Jn 5:2,17</span>',
+                'passage'   => ['Jn 5:2,17'],
+            ],            
+            [
+                'text'      => '<h1>Main Header</h1><h2>Exo 20:1,3,13, 17</h2><div>Big container div</div>',
+                'passage'   => ['Exo 20:1,3,13, 17'],
+            ],
+            [
+                'text'      => '<p>2 Cor 5:1-10, 6:12, 16, 12:2</p>',
+                'passage'   => ['2 Cor 5:1-10, 6:12, 16, 12:2'],
+            ],            
+            [
+                'text'      => '<p>2 Thess 2:8-10, 16, Rev 5:1-11/p>',
+                'passage'   => ['2 Thess 2:8-10, 16', 'Rev 5:1-11'],
+            ],
+        ];
+
+        foreach($list_true as $ref) {
+            // $res = preg_match($pattern, $ref['text'], $matches);
+            $res = preg_match_all($pattern, $ref['text'], $matches, PREG_SET_ORDER);
+            // print_r($matches);
+            $this->assertGreaterThanOrEqual(1, $res);
+
+            foreach ($ref['passage'] as $key => $p) {
+                $this->assertEquals($p, $matches[$key][0]);
+            }
+        }
+    }
 }
