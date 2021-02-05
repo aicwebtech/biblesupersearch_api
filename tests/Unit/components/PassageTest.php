@@ -727,23 +727,48 @@ class PassageTest extends TestCase
         $pattern = '/([0-9] )?[A-Za-z]{2,} ?[1-9][0-9]*(:[1-9][0-9]*)?/'; // Works for single verse or single chapter references only
         $pattern = '/([0-9] )?[A-Za-z]{2,} ?[1-9][0-9]*(:[1-9][0-9]*([\-,;][1-9][0-9])?)?/'; 
 
-        // This should match all valid references.  However, it will match some invalid ones, too
+        // NOT WORKING - This should match all valid references.  However, it will match some invalid ones, too
         // Todo - make unicode safe, attempt to filter out bad references 
-        $pattern = '/([0-9] )?[A-Za-z]{2,} ?[1-9][0-9]*(:[1-9][0-9]*([\-,][1-9][0-9]*([0-9:,\-\s]+[1-9][0-9]*)?)?)?/';
+        $pattern = '/([0-9]\s*)?\p{Lu}\p{L}+(\.|[\p{L} ]{0,30})?\s*[1-9][0-9]*(\s*[:\-,]\s*[1-9][0-9]*(\s*[\-,\s]\s*[1-9][0-9]*([0-9:,\-\s]+[1-9][0-9]*)?)?)?/';
+        
         $this->assertNotEmpty($pattern);
 
         $list_true = [
             [
                 'text'      => '<tag>Mark 16</tag>',
                 'passage'   => ['Mark 16'],
+            ],                    
+            [
+                'text'      => '<tag>MARK 16</tag>',
+                'passage'   => ['MARK 16'],
             ],               
             [
                 'text'      => '<div>2 Cor 13</div>',
                 'passage'   => ['2 Cor 13'],
+            ],                
+            [
+                'text'      => '<div>1Cor 3-5</div>',
+                'passage'   => ['1Cor 3-5'],
+            ],                 
+            [
+                'text'      => '<div>2Cor4-7</div>',
+                'passage'   => ['2Cor4-7'],
+            ],            
+            [
+                'text'      => '<div>1 Cor 3 - 5</div>',
+                'passage'   => ['1 Cor 3 - 5'],
+            ],              
+            [
+                'text'      => '<div>Song of Solomon 2</div>Stuff',
+                'passage'   => ['Song of Solomon 2'],
             ],            
             [
                 'text'      => '<span>Jn 3:16</span><p>Here is the truth</p>',
                 'passage'   => ['Jn 3:16'],
+            ],             
+            [
+                'text'      => '<span>Rev. 3:10</span><p>Test</p>',
+                'passage'   => ['Rev. 3:10'],
             ],            
             [
                 'text'      => '<b>Ommitted</b><tag>1 Jn 5:7</tag>',
@@ -768,14 +793,32 @@ class PassageTest extends TestCase
             [
                 'text'      => '<p>2 Thess 2:8-10, 16, Rev 5:1-11/p>',
                 'passage'   => ['2 Thess 2:8-10, 16', 'Rev 5:1-11'],
+            ],            
+            [
+                'text'      => '<p>  2   Cor 2 : 8 - 10,   19, Rom  5 :  1   - 11/p>',
+                'passage'   => ['2   Cor 2 : 8 - 10,   19', 'Rom  5 :  1   - 11'],
+            ],            
+            [
+                'text'      => '<p>Jas 3:1 - 10, It was so unbearable. Acts  5:1- 11</p> Now think about this: Rom 10:9,10',
+                'passage'   => ['Jas 3:1 - 10', 'Acts  5:1- 11', 'Rom 10:9,10'],
             ],
+            [
+                'text'      => '<span>Gen 50:23-</span>',
+                'passage'   => ['Gen 50:23'],   // Note: does not match
+            ],              
+            [
+                'text'      => '<span>Gen 50:-23</span>',
+                'passage'   => ['Gen 50'],      // Note: does not match
+            ],             
+            [
+                'text'      => '<span>The time was 1:30 PM</span>',
+                'passage'   => ['The time was 1:30'],      // Note: Not a valid reference, but will match anyway
+            ],  
         ];
 
         foreach($list_true as $ref) {
-            // $res = preg_match($pattern, $ref['text'], $matches);
             $res = preg_match_all($pattern, $ref['text'], $matches, PREG_SET_ORDER);
-            // print_r($matches);
-            $this->assertGreaterThanOrEqual(1, $res);
+            $this->assertEquals(count($ref['passage']), $res, $ref['text']);
 
             foreach ($ref['passage'] as $key => $p) {
                 $this->assertEquals($p, $matches[$key][0]);
