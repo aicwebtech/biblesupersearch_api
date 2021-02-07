@@ -14,7 +14,10 @@ class Passage {
     use Traits\Error;
 
     // REGEXP pattern to match any passage reference
-    const PASSAGE_REGEXP = '/([0-9] )?[A-Za-z]{2,}/';
+    // This should match ALL valid references.  However, it will match some invalid ones, too
+    // Attempted to make unicode safe but not working ...
+    // Todo - make unicode safe, attempt to filter out bad references 
+    const PASSAGE_REGEXP = '/(([0-9]\s*)?[\p{Lu}\p{M}][\p{L}\p{M}]+(\.|[\p{L}\p{M} ]{0,30})?)\s*([1-9][0-9]*(\s*[:\-,]\s*[1-9][0-9]*(\s*[\-,\s]\s*[1-9][0-9]*([0-9:,\-\s]+[1-9][0-9]*)?)?)?)/';
 
     public $is_search = FALSE;
     protected $Book;                        // Book instance - Single or Start of range
