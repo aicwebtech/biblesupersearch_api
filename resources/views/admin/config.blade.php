@@ -93,6 +93,27 @@
                                         </tr>
                                     </table>
                                 </div>
+                                @if(config('app.premium'))
+                                    <div class='config_block'>
+                                        <h1>Premium</h1>
+
+                                        <table>
+                                            <tr>
+                                                <td class='ralign'>License Status: </td>
+                                                <td><!-- INSERT STATUS HERE -->{{$configs['lc.confirm']}}</td>
+                                            </tr>                                            
+                                            <tr>
+                                                <td class='ralign'>License Key: </td>
+                                                <td><input name='lc__key' size='50' value='{{$configs['lc.key']}}'></td>
+                                            </tr>
+                                            <tr>
+                                                <td class='ralign'>License Expires: </td>
+                                                <td><!-- INSERT LIC EXPIRE / RENEWAL DATE HERE --></td>
+                                            </tr>
+                                        </table>
+                                    </div>
+                                @endif
+
                                 <div class='config_block'>
                                     <h1>Bible List</h1>
                                     <table>
