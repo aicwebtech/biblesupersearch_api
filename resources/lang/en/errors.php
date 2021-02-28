@@ -9,7 +9,7 @@ return array(
     'bible_no_results' => 'Your search produced no results in \':module\'.',
     'parallel_bible_no_results' => 'Your search produced no results in \':module\'. However, verses from this Bible have been included for comparison.',
     'passage_not_found' => 'Your request for :passage produced no results.',
-    'bible_no_exist' => 'Bible text \':module\' not found.',
+    'bible_no_exist' => 'Bible text not found: \':module\'',
     'no_bible_enabled' => 'No Bibles are enabled. Please contact site adminstrator.',
     'invalid_search' => array(
         'reference' => 'Your search for \':search\' is invalid, and appears to be a passage reference.',
@@ -17,7 +17,7 @@ return array(
     ),
     'book' => array(
         'invalid_in_range' => 'Invalid book in book range: \':range\'.',
-        'not_found' => 'Book \':book\' not found.',
+        'not_found' => 'Book not found: \':book\'',
         'multiple_without_search' => 'Cannot retrieve multiple books at once.',
     ),
     'operator' => array(

@@ -645,7 +645,7 @@ class Engine {
         $namespaced_class = 'App\Models\Books\\' . ucfirst($language);
 
         if(!class_exists($namespaced_class)) {
-            $namespaced_class = 'App\Models\Books\\' . config('bss.defaults.language_short');
+            $namespaced_class = 'App\Models\Books\\' . ucfirst( config('bss.defaults.language_short') );
         }
 
         $Books = $namespaced_class::select('id', 'name', 'shortname')->orderBy('id', 'ASC') -> get() -> all();
@@ -716,7 +716,7 @@ class Engine {
                 $Def = \App\Models\StrongsDefinition::where('number', $clean)->first();
 
                 if(!$Def) {
-                    $this->addError('Strong\s Number ' . $clean . ' not found');
+                    $this->addError('Strong\'s Number not found: ' . $clean);
                 }
                 else {
                     $response[] = $this->_formatStrongs($Def->toArray());
