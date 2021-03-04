@@ -160,12 +160,16 @@ class SqlSearch {
      */
     protected function _validateBoolean($search) {
         $valid = TRUE;
-        $lpar = substr_count($search, '(');
-        $rpar = substr_count($search, ')');
+        $skip_paren_check = (func_num_args() > 1) ? func_get_arg(1) : FALSE;
+        
+        if(!$skip_paren_check) {        
+            $lpar = substr_count($search, '(');
+            $rpar = substr_count($search, ')');
 
-        if($lpar != $rpar) {
-            $this->addError( trans('errors.paren_mismatch'), 4 );
-            $valid = FALSE;
+            if($lpar != $rpar) {
+                $this->addError( trans('errors.paren_mismatch'), 4 );
+                $valid = FALSE;
+            }
         }
 
         $standardized = static::standardizeBoolean($search);

@@ -155,6 +155,23 @@ class ProximitySearchTest extends TestCase {
         $this->assertLessThan(100, count($results['kjv'])); // Return count not vetted to the number
     }
 
+    public function testProxOpEnd() {
+        $Engine = Engine::getInstance();
+        $Engine->setDefaultDataType('raw');
+        
+        $results = $Engine->actionQuery(['bible' => 'kjv', 'search' => 'AND ( book hope) PROX(4) faith', 'search_type' => 'boolean']);
+        $this->assertTrue($Engine->hasErrors());
+
+        $results = $Engine->actionQuery(['bible' => 'kjv', 'search' => '( book hope) PROX(4) faith AND', 'search_type' => 'boolean']);
+        $this->assertTrue($Engine->hasErrors());        
+
+        $results = $Engine->actionQuery(['bible' => 'kjv', 'search' => 'OR ( book hope) PROX(4) faith', 'search_type' => 'boolean']);
+        $this->assertTrue($Engine->hasErrors());
+
+        $results = $Engine->actionQuery(['bible' => 'kjv', 'search' => '( book hope) PROX(4) faith OR', 'search_type' => 'boolean']);
+        $this->assertTrue($Engine->hasErrors());
+    }
+ 
     // Make sure that non-proximity search types don't attempt to send proximity terms to the SQL query
     public function testNonBooleanProximitySearchTypes() {
         $Engine = Engine::getInstance();

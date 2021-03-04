@@ -166,11 +166,16 @@ class Search extends SqlSearch {
     }
 
     protected function _validateBoolean($search) {
+        $valid = TRUE;
+        
         if(!$this->is_special) {
             return parent::_validateBoolean($search);
         }
 
-        $valid = TRUE;
+        if(!parent::_validateBoolean($search, TRUE)) {
+            $valid = FALSE;
+        }
+
         $prox_parsed = $this->parseProximitySearch();
 
         foreach($prox_parsed[0] as $Search) {

@@ -87,6 +87,24 @@ class RequestTest extends TestCase {
 //        $this->assertCount(6, $results['kjv']);
     }    
 
+    // In this case, the request and reference fields are both references.
+    // The code will look at the request field and ignore the reference field.
+    public function testWithTwoReferences() {
+        $Engine = Engine::getInstance();
+        $Engine->setDefaultDataType('raw');
+        $results = $Engine->actionQuery(['bible' => 'kjv', 'request' => 'Revelation 1:1', 'reference' => 'Romans', 'whole_words' => FALSE, 'page_all' => TRUE]);
+        $this->assertFalse($Engine->hasErrors());
+        $this->assertCount(1, $results['kjv']);
+        $this->assertEquals(66, $results['kjv'][0]->book);
+    }
+
+    public function testWithTwoSearches() {
+        $Engine = Engine::getInstance();
+        $Engine->setDefaultDataType('raw');
+        $results = $Engine->actionQuery(['bible' => 'kjv', 'request' => 'faith', 'search' => 'hope', 'whole_words' => FALSE, 'page_all' => TRUE]);
+        $this->assertTrue($Engine->hasErrors());
+    }
+
     public function testAsRegexpSearch() {
         $Engine = new Engine();
         $Engine->setDefaultDataType('raw');

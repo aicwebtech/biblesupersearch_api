@@ -1,5 +1,9 @@
 Bible SuperSearch API Changelog
 
+= 4.4.0 / ??? =
+* Bugfix: Putting a reference in the 'request' field was being treated as a search when Limit Search To was not 'Whole Bible'
+* Bugfix: Fixed query breakage when putting a Boolean operator at beginning or end of query when the query contained proximity operators
+
 = 4.3.4 / Jan 26, 2021
 * Bugfix: Fixed Undefined constant 'STDIN' error seen by some users when installing the API
 * Bugfix: Installer: Clarified message when db credentials are invalid.

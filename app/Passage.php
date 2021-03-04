@@ -1097,7 +1097,9 @@ class Passage {
                 // * either
                 //      1) It contains numbers but no (parentheses) or
                 //      2) It resolves to multiple (possible) passages
+                // Note: This passage-checking logic is specific to this method
                 if(
+                    // static::isPossiblePassage($request)
                     !empty($passages) && 
                     !(preg_match('/[GHgh][0-9]+/', $request)) && 
                     !$non_passage_chars && 
@@ -1133,13 +1135,66 @@ class Passage {
                 $reference = $request;
             }
             elseif($reference && !$keywords) {
-                $keywords = $request;
+                if(static::isPassage($request, $languages)) {
+                    $reference = $request;
+                }
+                else {
+                    $keywords = $request;
+                }
             }
         }
 
         // var_dump($keywords);
 
         return array($keywords, $reference, $disambiguation, $has_disambiguation_book);
+    }
+
+    public static function isPassage($string, $languages) {
+        $passages = static::explodeReferences($string, TRUE);
+
+        if(!static::_isPossiblePassageHelper($string, $passages)) {
+            return FALSE;
+        }
+
+        $has_valid_passage = FALSE;
+        $all_valid_passage = TRUE;
+
+        foreach($passages as $passage) {
+            $Book = static::findBookByNameAndLanguage($passage['book'], $languages);
+            $has_valid_passage = ($Book)  ? TRUE  : $has_valid_passage;
+            $all_valid_passage = (!$Book) ? FALSE : $all_valid_passage;
+        }
+
+        return $has_valid_passage;
+    }
+
+    public static function isPossiblePassage($string) {
+        $passages = static::explodeReferences($string, TRUE);
+        return static::_isPossiblePassageHelper($string, $passages);
+    }
+
+    protected static function _isPossiblePassageHelper($string, $passages) {
+        $non_passage_chars = static::_containsNonPassageCharacters($string);
+
+        // $Passages = static::parseReferences($request, $languages, FALSE, $Bibles); // Worst case senariao - lots of overhead
+
+        // Treats as passage if 
+        // * It's not empty AND 
+        // * doesn't contain Strong's Numbers AND
+        // * doesn't contain invalid characters for a reference (such as those used for boolean or REGEXP queries) 
+        if(empty($passages)) {
+            return FALSE;
+        }
+
+        if(preg_match('/[GHgh][0-9]+/', $string)) {
+            return FALSE; // Contains Strong's #
+        }
+
+        if($non_passage_chars) {
+            return FALSE;
+        }
+
+        return TRUE;
     }
 
     public static function _containsNonPassageCharacters($string) {

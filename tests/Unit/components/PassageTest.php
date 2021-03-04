@@ -720,6 +720,16 @@ class PassageTest extends TestCase
         $this->assertContainsOnlyInstancesOf('App\Passage', $Passages);
     }
 
+    function testIsPassage() {
+        $languages = ['en'];
+        $this->assertTrue(Passage::isPassage('Romans', $languages));
+        $this->assertTrue(Passage::isPassage('Romans 1', $languages));
+        $this->assertTrue(Passage::isPassage('Romans 1:1', $languages));
+        $this->assertFalse(Passage::isPassage('faith', $languages));
+        $this->assertFalse(Passage::isPassage('faith hope', $languages));
+        $this->assertFalse(Passage::isPassage('faith || hope', $languages));
+    }
+
     function testPassageRegexp() {
         $pattern = Passage::PASSAGE_REGEXP;
 

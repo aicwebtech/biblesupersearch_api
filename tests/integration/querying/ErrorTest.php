@@ -68,7 +68,7 @@ class ErrorTest extends TestCase {
         $Engine->addBible('aaaa_9876'); // Fictitious Bible module
         $this->assertTrue($Engine->hasErrors());
         $errors = $Engine->getErrors();
-        $this->assertEquals("Bible text 'aaaa_9876' not found.", $errors[0]);
+        $this->assertEquals("Bible text not found: 'aaaa_9876'", $errors[0]);
     }
 
     public function testPassageInvalidReference() {
