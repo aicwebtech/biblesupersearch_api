@@ -9,7 +9,7 @@ use App\Models\Verses\VerseStandard;
 
 class AdvancedSearchTest extends TestCase {
     public function testAllWords() {
-        $Engine = new Engine();
+        $Engine = Engine::getInstance();
         $Engine->setDefaultDataType('raw');
         $Engine->setDefaultPageAll(TRUE);
 
@@ -24,7 +24,7 @@ class AdvancedSearchTest extends TestCase {
     }
 
     public function testAnyWords() {
-        $Engine = new Engine();
+        $Engine = Engine::getInstance();
         $Engine->setDefaultDataType('raw');
         $Engine->setDefaultPageAll(TRUE);
 
@@ -43,7 +43,7 @@ class AdvancedSearchTest extends TestCase {
     }
 
     public function testOneWord() {
-        $Engine = new Engine();
+        $Engine = Engine::getInstance();
         $Engine->setDefaultDataType('raw');
         $Engine->setDefaultPageAll(TRUE);
 
@@ -63,7 +63,7 @@ class AdvancedSearchTest extends TestCase {
     }
 
     public function testExactPhrase() {
-        $Engine = new Engine();
+        $Engine = Engine::getInstance();
         $Engine->setDefaultDataType('raw');
         $Engine->setDefaultPageAll(TRUE);
 
@@ -81,7 +81,7 @@ class AdvancedSearchTest extends TestCase {
     }
 
     public function testNoneWords() {
-        $Engine = new Engine();
+        $Engine = Engine::getInstance();
         $Engine->setDefaultDataType('raw');
         $Engine->setDefaultPageAll(TRUE);
 
@@ -104,7 +104,7 @@ class AdvancedSearchTest extends TestCase {
                 . ' Titus 3:36; Philemon 3:36; Hebrews 3:36; James 3:36; 1 Peter 3:36; 2 Peter 3:36; 1 John 3:36; 2 John 3:36; 3 John 3:36; Jude 3:36; '
                 . 'Revelation 3:36';
 
-        $Engine = new Engine();
+        $Engine = Engine::getInstance();
         $Engine->setDefaultDataType('raw');
 
         $input = ['bible' => 'kjv', 'reference' => $reference, 'format_structure' => 'raw', 'page_all' => TRUE];
@@ -114,7 +114,7 @@ class AdvancedSearchTest extends TestCase {
     }
 
     public function testProxRange() {
-        $Engine = new Engine();
+        $Engine = Engine::getInstance();
         $Engine->setDefaultDataType('raw');
         $Engine->setDefaultPageAll(TRUE);
 
@@ -127,21 +127,25 @@ class AdvancedSearchTest extends TestCase {
 
             FROM bss_verses_kjv AS bible_1
             INNER JOIN bss_verses_kjv AS bible_2 ON bible_2.book = bible_1.book
-            AND bible_2.id BETWEEN bible_1.id - 10
-            AND bible_1.id + 10
-            AND (
-                    `bible_2`.`text` REGEXP '[[:<:]]joy[[:>:]]'
-            )
+                AND bible_2.id BETWEEN bible_1.id - 10 AND bible_1.id + 10
+                AND (bible_2.book != 19 OR bible_2.chapter = bible_1.chapter)
+                AND (
+                        `bible_2`.`text` REGEXP '[[:<:]]joy[[:>:]]'
+                )
             WHERE
-                    (
-                            `bible_1`.`text` REGEXP '[[:<:]]peace[[:>:]]'
-                    )
+            (
+                    `bible_1`.`text` REGEXP '[[:<:]]peace[[:>:]]'
+            )
         ";
 
-        //var_dump(VerseStandard::proximityQueryTest($query));
+        $query = "SELECT bible_1.id AS id_1, bible_2.id AS id_2 FROM bss_verses_kjv AS bible_1
+                    INNER JOIN bss_verses_kjv AS bible_2 ON bible_2.book = bible_1.book AND (bible_2.book != 19 OR bible_2.chapter = bible_1.chapter ) AND bible_2.id BETWEEN bible_1.id - 10 AND bible_1.id + 10 AND (`bible_2`.`text` LIKE '%joy%' AND `bible_2`.`text` REGEXP '[[:<:]]joy[[:>:]]')
+                    WHERE (`bible_1`.`text` LIKE '%peace%' AND `bible_1`.`text` REGEXP '[[:<:]]peace[[:>:]]')";
+
+        // var_dump(VerseStandard::proximityQueryTest($query));
 
         $this->assertFalse($Engine->hasErrors());
-
-        $this->assertCount(92, $results['kjv']);
+        // $this->assertCount(92, $results['kjv']); // Allows cross-chapter in Psalms
+        $this->assertCount(88, $results['kjv']); 
     }
 }

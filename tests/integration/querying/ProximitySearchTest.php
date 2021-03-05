@@ -9,7 +9,7 @@ use App\Models\Verses\VerseStandard;
 
 class ProximitySearchTest extends TestCase {
     public function testParenthensesMismatch() {
-        $Engine = new Engine();
+        $Engine = Engine::getInstance();
         $Engine->setDefaultDataType('raw');
         $Engine->setDefaultPageAll(TRUE);
 
@@ -27,7 +27,7 @@ class ProximitySearchTest extends TestCase {
     }
 
     public function testNotBoolean() {
-        $Engine = new Engine();
+        $Engine = Engine::getInstance();
         $Engine->setDefaultDataType('raw');
         $Engine->setDefaultPageAll(TRUE);
 
@@ -43,7 +43,7 @@ class ProximitySearchTest extends TestCase {
     }
 
     public function testProximitySearchType() {
-        $Engine = new Engine();
+        $Engine = Engine::getInstance();
         $Engine->setDefaultDataType('raw');
         $Engine->setDefaultPageAll(TRUE);
 
@@ -55,14 +55,14 @@ class ProximitySearchTest extends TestCase {
 
             FROM bss_verses_kjv AS bible_1
             INNER JOIN bss_verses_kjv AS bible_2 ON bible_2.book = bible_1.book
-            AND bible_2.id BETWEEN bible_1.id - 10
-            AND bible_1.id + 10
+            AND bible_2.id BETWEEN bible_1.id - 10 AND bible_1.id + 10
+            AND (bible_2.book != 19 OR bible_2.chapter = bible_1.chapter)
             AND (
                     `bible_2`.`text` LIKE '%joy%'
             )
             INNER JOIN bss_verses_kjv AS bible_3 ON bible_3.book = bible_2.book
-            AND bible_3.id BETWEEN bible_2.id - 10
-            AND bible_2.id + 10
+            AND bible_3.id BETWEEN bible_2.id - 10 AND bible_2.id + 10
+            AND (bible_3.book != 19 OR bible_3.chapter = bible_2.chapter)
             AND (
                     `bible_3`.`text` LIKE '%love%'
             )
@@ -72,12 +72,13 @@ class ProximitySearchTest extends TestCase {
                     )
         ";
 
-        //$test_count = VerseStandard::proximityQueryTest($query);  // returns 99
-        $this->assertCount(99, $results['kjv']);
+        // $test_count = VerseStandard::proximityQueryTest($query);  // returns 96
+        // var_dump($test_count);
+        $this->assertCount(96, $results['kjv']);
     }
 
     public function testMixedProxLimits() {
-        $Engine = new Engine();
+        $Engine = Engine::getInstance();
         $Engine->setDefaultDataType('raw');
         $Engine->setDefaultPageAll(TRUE);
 
@@ -110,7 +111,7 @@ class ProximitySearchTest extends TestCase {
     }
 
     public function testProximitySearchTypeDefaultLimit() {
-        $Engine = new Engine();
+        $Engine = Engine::getInstance();
         $Engine->setDefaultDataType('raw');
         $Engine->setDefaultPageAll(TRUE);
         // Default proximity limit is 5 (hardcoded)
@@ -120,7 +121,7 @@ class ProximitySearchTest extends TestCase {
     }
 
     public function testChapterSearchType() {
-        $Engine = new Engine();
+        $Engine = Engine::getInstance();
         $Engine->setDefaultDataType('raw');
         $Engine->setDefaultPageAll(TRUE);
         $results = $Engine->actionQuery(['bible' => 'kjv', 'search' => 'faith hope', 'search_type' => 'chapter', 'reference' => 'Rom 4']);
@@ -129,7 +130,7 @@ class ProximitySearchTest extends TestCase {
     }
 
     public function testBookSearchType() {
-        $Engine = new Engine();
+        $Engine = Engine::getInstance();
         $Engine->setDefaultDataType('raw');
         $Engine->setDefaultPageAll(TRUE);
         // This essentially asks, which book(s) contain both 'hall' and 'hallowed'?
@@ -139,7 +140,7 @@ class ProximitySearchTest extends TestCase {
     }
 
     public function testAPI118() {
-        $Engine = new Engine();
+        $Engine = Engine::getInstance();
         $Engine->setDefaultDataType('raw');
         $Engine->setDefaultPageAll(TRUE);
         $results = $Engine->actionQuery(['bible' => 'kjv', 'search' => '(refuge) PROX(5) (try | tempt)', 'search_type' => 'boolean', 'reference' => 'Prophets; NT;', 'whole_words' => TRUE]);
@@ -147,7 +148,7 @@ class ProximitySearchTest extends TestCase {
     }
 
     public function testAPI117() {
-        $Engine = new Engine();
+        $Engine = Engine::getInstance();
         $Engine->setDefaultDataType('raw');
         $Engine->setDefaultPageAll(TRUE);
         $results = $Engine->actionQuery(['bible' => 'kjv', 'search' => 'escape | hide PROX(5) wrath | indignation', 'search_type' => 'boolean']);

@@ -187,6 +187,8 @@ class VerseStandard extends VerseAbstract {
             $_SESSION['debug']['prox_query_data'] = (isset($binddata)) ? $binddata : NULL;
         }
 
+        // print($sql);
+        // print_r($binddata);
         $results_raw = DB::select($sql, $binddata);
 
         foreach($results_raw as $a1) {
@@ -201,6 +203,7 @@ class VerseStandard extends VerseAbstract {
 
     static function proximityQueryTest($query) {
         $results_raw = DB::select($query);
+        $results = [];
 
         foreach($results_raw as $a1) {
             foreach($a1 as $val) {
@@ -233,9 +236,8 @@ class VerseStandard extends VerseAbstract {
                 $limit = (empty($parameters['proximity_limit'])) ? 5 : $parameters['proximity_limit'];
             }
 
-            // $ps_chapter = ' AND (' . $alias . '.book != 19 OR '  . $alias . '.chapter = ' . $alias2 . '.chapter )'; 
-            // $join .= (strpos($operator, '~l') === 0) ? ' AND ' . $alias . '.chapter = ' . $alias2 . '.chapter' : $ps_chapter; // Experimental code to to treat Psalms differently
-            $join .= (strpos($operator, '~l') === 0) ? ' AND ' . $alias . '.chapter = ' . $alias2 . '.chapter' : ''; // Limit within chapter
+            $ps_chapter = ' AND (' . $alias . '.book != 19 OR '  . $alias . '.chapter = ' . $alias2 . '.chapter )'; // Always limit within chapter for Psalms
+            $join .= (strpos($operator, '~l') === 0) ? ' AND ' . $alias . '.chapter = ' . $alias2 . '.chapter' : $ps_chapter; // Limit within chapter
             $join .= ' AND ' . $alias . '.id BETWEEN ' . $alias2 . '.id - ' . $limit . ' AND ' . $alias2 . '.id + ' . $limit;
         }
 

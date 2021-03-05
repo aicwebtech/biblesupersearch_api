@@ -1,6 +1,7 @@
 Bible SuperSearch API Changelog
 
 = 4.4.0 / ??? =
+* Proximity searches now always restricted to within the chapter in Psalms.  (Reason: The 'chapter' divisions in Psalms were part of the original, inspired text).
 * Bugfix: Putting a reference in the 'request' field was being treated as a search when Limit Search To was not 'Whole Bible'
 * Bugfix: Fixed query breakage when putting a Boolean operator at beginning or end of query when the query contained proximity operators
 
