@@ -43,6 +43,7 @@ function renderActionHeader($action, $url = NULL) {
     $context = $action;
     $server = getServerUrl();
     $url = ($url === NULL) ? '/' . $action : $url;
+    $full_url = $server . '/api' . $url;
 
     ?>
     <table>
@@ -50,7 +51,8 @@ function renderActionHeader($action, $url = NULL) {
             <td><?php echo trans('api.action') ?>: </td><td><?php echo trans($context . '.name') ?></td>
         </tr>
         <tr>
-            <td>URL: </td><td><?php echo $server ?>/api<?php echo $url; ?></td>
+            <td>URL: </td>
+            <td><a href='<?php echo $full_url ?>' target='_NEW'><?php echo $full_url; ?></a></td>
         </tr>
         <tr>
             <td valign='top'>Description:</td><td><?php echo trans($context . '.description') ?></td>

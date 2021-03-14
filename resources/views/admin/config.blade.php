@@ -90,6 +90,23 @@
                                                     </p>
                                                 </span>
                                             </td>
+                                        </tr>                                        
+                                        <tr>
+                                            <td class='ralign'>Allow Phoning Home: </td>
+                                            <td>
+                                                <label for='phone_home_1'>Yes</label>
+                                                <input type='radio' name='app__phone_home' value='1' id='phone_home_1' @if($configs['app.phone_home'] == 1)checked='checked'@endif />
+                                                <label for='phone_home_2'>No</label>
+                                                <input type='radio' name='app__phone_home' value='0' id='phone_home_2' @if($configs['app.phone_home'] == 0)checked='checked'@endif />
+                                                <span class='info'>
+                                                    <span>i</span>
+                                                    <p>
+                                                        Allows this API to contact the official Bible SuperSearch API on api.biblesupersearch.com
+                                                        This access is used solely for checking for updates.
+                                                        Keep this disabled for more privacy and anonymity.  
+                                                    </p>
+                                                </span>
+                                            </td>
                                         </tr>
                                     </table>
                                 </div>

@@ -30,4 +30,6 @@ return array(
     'hit_limit_reached' => 'Maximum hits has been reached for today for this domain / IP address',
     'access_revoked' => 'Your access to this API has been revoked.  Please contact system administrator.',
     'result_limit_reached' => 'Your search was limited to :maximum results.  Please refine your search if nessessary',
+    'strongs_input_required' => 'Strong\'s Number required',
+    'strongs_not_found' => 'Strong\'s Number not found',
 );

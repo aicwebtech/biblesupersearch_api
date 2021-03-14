@@ -709,6 +709,11 @@ class Engine {
 
     public function actionStrongs($input) {
         $response = [];
+        
+        if(!array_key_exists('strongs', $input) || empty($input['strongs'])) {
+            return $this->addError( __('errors.strongs_input_required') );
+        }
+
         $strongs = strip_tags(trim($input['strongs']));
 
         if(preg_match_all('/[GHgh][0-9]+/', $strongs, $matches)) {
@@ -716,7 +721,7 @@ class Engine {
                 $Def = \App\Models\StrongsDefinition::where('number', $clean)->first();
 
                 if(!$Def) {
-                    $this->addError('Strong\'s Number not found: ' . $clean);
+                    $this->addError( __('errors.strongs_not_found') . ': ' . $clean);
                 }
                 else {
                     $response[] = $this->_formatStrongs($Def->toArray());
@@ -968,6 +973,10 @@ class Engine {
      * @return type
      */
     public static function getUpstreamVersion($verbose = FALSE) {
+        if(!config('app.phone_home')) {
+            return FALSE;
+        }
+
         $json = NULL;
         $url  = 'https://api.biblesupersearch.com/api/version';
 
