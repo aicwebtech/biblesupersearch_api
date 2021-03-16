@@ -90,9 +90,52 @@ class KeywordTest extends TestCase
         $Engine = new Engine();
         $Engine->setDefaultDataType('raw');
         $results = $Engine->actionQuery(['bible' => 'kjv', 'search' => 'faith hope love', 'search_type' => 'two_or_more', 'page_all' => TRUE, 'whole_words' => TRUE]);
+        $this->assertFalse($Engine->hasErrors());
         $this->assertCount(23, $results['kjv']);
         $this->assertEquals(45, $results['kjv'][0]->book);
         $this->assertEquals(5, $results['kjv'][0]->chapter);
         $this->assertEquals(2, $results['kjv'][0]->verse);
+    }
+
+    // Short keyword tests
+
+    // 'a'
+    public function testAAsKeyword() {
+        // $Engine = Engine::getInstance();
+        $Engine = new Engine();
+
+        $subtests = [
+            'light a candle',        // Matt 5:15
+            'a city',                // Matt 5:14
+            'his brother without a', // Matt 5:22
+        ];
+
+        foreach($subtests as $test) {
+            $results = $Engine->actionQuery(['bible' => 'kjv', 'search' => $test, 'whole_words' => TRUE]);
+            $this->assertFalse($Engine->hasErrors(), $test);        
+
+            $results = $Engine->actionQuery(['bible' => 'kjv', 'search' => $test, 'whole_words' => FALSE]);
+            $this->assertFalse($Engine->hasErrors(), $test);
+        }
+    }    
+
+    // 'I'
+    public function testIAsKeyword() {
+        // $Engine = Engine::getInstance();
+        $Engine = new Engine();
+
+        $subtests = [
+            'Think not that I',
+            'I say unto you',
+            'But I say unto you',
+        ];
+
+        foreach($subtests as $test) {
+            $results = $Engine->actionQuery(['bible' => 'kjv', 'search' => $test, 'whole_words' => TRUE]);
+            $this->assertFalse($Engine->hasErrors(), $test);        
+
+            $results = $Engine->actionQuery(['bible' => 'kjv', 'search' => $test, 'whole_words' => FALSE]);
+            $this->assertFalse($Engine->hasErrors(), $test);
+        }
     }
  }

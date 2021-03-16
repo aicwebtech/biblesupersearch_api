@@ -201,14 +201,14 @@ class Search extends SqlSearch {
      * @param string $query standardized, booleanized query
      * @return array $parsed
      */
-    public static function parseQueryTerms($query) {
+    public static function parseQueryTerms($query, $breakdown = FALSE) {
         // Remove operators that otherwise would be interpreted as terms
         $find   = array('CHAPTER', 'CHAP', 'BOOK');
         $parsing = str_replace($find, ' ', $query);
         $parsing = preg_replace('/PROXC\([0-9]+\)/', ' ', $parsing);
         $parsing = preg_replace('/PROX\([0-9]+\)/',  ' ', $parsing);
         $parsing = preg_replace('/PROC\([0-9]+\)/',  ' ', $parsing);
-        return parent::parseQueryTerms($parsing);
+        return parent::parseQueryTerms($parsing, $breakdown);
     }
 
     /**

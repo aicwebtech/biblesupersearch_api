@@ -297,7 +297,7 @@ class VerseStandard extends VerseAbstract {
         $ins_count = 0;
 
         foreach($verses as $verse) {
-            if(empty($verse) || $verse{0} == '#') {
+            if(empty($verse) || $verse[0] == '#') {
                 continue;
             }
 
@@ -323,50 +323,6 @@ class VerseStandard extends VerseAbstract {
 
         DB::table($table)->insert($insertable); // Finish inserting data
         return TRUE;
-    }
-
-    protected function _importFromV2() {
-        return FALSE; // Import from V2 really shouldn't be used at this point
-
-        $in_console = (strpos(php_sapi_name(), 'cli') !== FALSE) ? TRUE : FALSE;
-
-        // If importing from V2, make sure v2 table exists
-        if (config('bss.import_from_v2')) {
-            $v2_table = 'bible_' . $this->Bible->module_v2;
-            $res = DB::select("SHOW TABLES LIKE '" . $v2_table . "'");
-            $v2_table_exists = (count($res)) ? TRUE : FALSE;
-        }
-
-        if (config('bss.import_from_v2') && $v2_table_exists) {
-            if ($in_console) {
-                echo(PHP_EOL . 'Importing Bible from V2: ' . $this->Bible->name . ' (' . $this->module . ')' . PHP_EOL);
-            }
-
-            DB::statement('SET NAMES utf8;');
-            DB::statement('SET CHARACTER SET utf8');
-
-            // we use this to determine what the strongs / italics fileds are
-            $v_test = DB::select("SELECT * FROM {$v2_table} ORDER BY `index` LIMIT 1");
-            $strongs = $italics = 'NULL';
-
-            $strongs = isset($v_test[0]->strongs) ? 'strongs' : $strongs;
-            $italics = isset($v_test[0]->italics) ? 'italics' : $italics;
-            $italics = isset($v_test[0]->map) ? 'map' : $italics;
-
-            $prefix = DB::getTablePrefix();
-            $table = $this->getTable();
-
-            $sql = "
-                INSERT INTO {$prefix}{$table} (id, book, chapter, verse, chapter_verse, text, italics, strongs)
-                SELECT `index`, book, chapter, verse, chapter * 1000 + verse, text, {$italics}, {$strongs}
-                FROM {$v2_table}
-            ";
-
-            DB::insert($sql);
-            return TRUE;
-        }
-
-        return FALSE;
     }
 
     public function uninstall() {

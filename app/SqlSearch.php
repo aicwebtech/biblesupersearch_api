@@ -242,27 +242,44 @@ class SqlSearch {
         $raw_bool = ($count == 1) ? $searches[0] : '(' . implode(') & (', $searches) . ')';
         $std_bool = static::standardizeBoolean($raw_bool);
         $this->search_parsed = $std_bool;
-        $this->terms = $terms = static::parseQueryTerms($std_bool);
+
+        $term_list = static::parseQueryTerms($std_bool, TRUE);
+
+        $this->terms = $terms = $term_list['all'];
         $operators = static::parseQueryOperators($std_bool, $terms);
 
-        $sql = $std_bool;
+        $sql = ' ' . $std_bool . ' ';
 
         if(static::containsInvalidCharacters($terms)) {
             $this->addError( trans('errors.invalid_search.general', ['search' => $search]), 4);
             return FALSE;
         }
 
-        foreach($terms as $term) {
-            list($term_sql, $bind_index) = $this->_termSql($term, $binddata, $fields, $table_alias);
-            //$sql = str_replace($term, $term_sql, $sql);
-            // We only want to replace it ONCE, in case it is used multiple times
-            $term_pos = strpos($sql, $term);
+        // var_dump($sql);
 
-            if($term_pos !== FALSE) {
-                $sql = substr_replace($sql, $term_sql, $term_pos, strlen($term));
+        foreach($term_list as $type => $items) {
+            if($type == 'all') {
+                continue;
+            }
+
+            $last_term_pos = 0;
+
+            // foreach($terms as $term) {
+            foreach($items as $term) {
+                list($term_sql, $bind_index) = $this->_termSql($term, $binddata, $fields, $table_alias);
+
+                // We only want to replace it ONCE, in case it is used multiple times
+                $term_pos = strpos($sql, $term, $last_term_pos);
+
+                if($term_pos !== FALSE) {
+                    $sql = substr_replace($sql, $term_sql, $term_pos, strlen($term));
+                }
+
+                $last_term_pos = $term_pos + strlen($term_sql);
             }
         }
 
+        $sql = trim($sql);
         return array($sql, $binddata);
     }
 
@@ -522,9 +539,10 @@ class SqlSearch {
      * @param string $query standardized, booleanized query
      * @return array $parsed
      */
-    public static function parseQueryTerms($query) {
+    public static function parseQueryTerms($query, $breakdown = FALSE) {
         $parsed = $phrases = $matches = array();
         // Remove operators that otherwise would be interpreted as terms
+        $general = [];
         $find    = array(' AND ', ' XOR ', ' OR ', 'NOT ');
         $parsing = str_replace($find, ' ', $query);
         $phrases = static::parseQueryPhrases($query);
@@ -537,6 +555,7 @@ class SqlSearch {
 
         foreach ($matches as $item) {
             $parsed[] = $item[0];
+            $general[] = $item[0];
         }
 
         // $parsed = static::parseSimpleQueryTerms($parsing);
@@ -547,6 +566,15 @@ class SqlSearch {
 
         foreach($regexp as $item) {
             $parsed[] = $item;
+        }
+
+        if($breakdown) {
+            return [
+                'all'       => $parsed,
+                'general'   => $general,
+                'phrases'   => $phrases,
+                'regexp'    => $regexp,
+            ];
         }
 
         //$parsed = array_unique($parsed); // Causing breakage
@@ -576,11 +604,11 @@ class SqlSearch {
     }
 
     public static function isTermPhrase($term) {
-        return ($term{0} == '"') ? TRUE : FALSE;
+        return ($term[0] == '"') ? TRUE : FALSE;
     }
 
     public static function isTermRegexp($term) {
-        return ($term{0} == '`') ? TRUE : FALSE;
+        return ($term[0] == '`') ? TRUE : FALSE;
     }
 
     public static function isTermStrongs($term) {
@@ -719,10 +747,16 @@ class SqlSearch {
 
         //$patterns = array('/\) [\p{L}0-9"\']/u', '/[\p{L}0-9"\'] \(/u', '/[\p{L}0-9] [\p{L}0-9]/u', '/["\'] [\p{L}0-9"\']/u');  // OLD??
 
+        // Pass 1
+        $query = preg_replace_callback($patterns, function($matches) {
+            return str_replace(' ', ' & ', $matches[0]);
+        }, $query);        
+
+        // Pass 2
         $query = preg_replace_callback($patterns, function($matches) {
             return str_replace(' ', ' & ', $matches[0]);
         }, $query);
-
+        
         // Convert operator place holders into SQL operators
         $find  = array('&', '|', '-', '^');
         $repl  = array('AND', 'OR', ' NOT ', 'XOR');

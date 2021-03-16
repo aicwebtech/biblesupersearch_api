@@ -959,7 +959,7 @@ class Passage {
         $book_end = FALSE;
 
         for($pos = $ref_end; $pos >= 0; $pos --) {
-            $char = $reference{$pos};
+            $char = $reference[$pos];
 
             if(!$book_end && ctype_alpha($char)) {
                 $book_end = $pos;

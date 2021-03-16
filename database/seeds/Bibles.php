@@ -34,44 +34,6 @@ class Bibles extends Seeder
                 //var_dump($e);
             }
         }
-
-        if(config('bss.import_from_v2')) {
-            $this->_importFromV2();
-        }
     }
 
-    public function _importFromV2() {
-        echo('Importing Bibles From V2' . PHP_EOL);
-
-        $bibles_v2 = DB::select('SELECT * FROM bible_versions'); // bible_versions - list of all INSTALLED V2 Bibles
-
-        foreach($bibles_v2 as $v2) {
-            $module = $v2->shortname;
-
-            // workaround for the Reina Valera Bibles
-            if( strpos($module, 'rv') ) {
-                $module = 'rv_' . intval($module);
-            }
-
-            $Bible = Bible::firstOrNew([ 'module' => $module ]);
-
-            $Bible->description = $v2->description;
-            $Bible->module_v2   = $v2->shortname;
-
-            if(!$Bible->exists) {
-                $rank += 10;
-                $Bible->name        = $v2->fullname;
-                $Bible->module      = $module;
-                $Bible->shortname   = ucfirst($v2->shortname);
-                $Bible->lang        = $v2->language;
-                $Bible->lang_short  = $v2->language_short;
-                $Bible->italics     = ($v2->italics == 'yes') ? 1 : 0;
-                $Bible->strongs     = ($v2->strongs == 'yes') ? 1 : 0;
-                $Bible->rank        = $rank;
-            }
-
-            $Bible->save();
-            $Bible->install();
-        }
-    }
 }

@@ -19,6 +19,13 @@ class BooleanTest extends TestCase
         $this->assertEquals(7, $results['kjv'][0]->chapter);
         $this->assertEquals(9, $results['kjv'][0]->verse);
 
+        $results = $Engine->actionQuery(['bible' => 'kjv', 'search' => 'appearing "blessed hope" ', 'search_type' => 'boolean', 'whole_words' => FALSE]);
+        $this->assertFalse($Engine->hasErrors());
+        $this->assertCount(1, $results['kjv']);
+        $this->assertEquals(56, $results['kjv'][0]->book);
+        $this->assertEquals(2,  $results['kjv'][0]->chapter);
+        $this->assertEquals(13, $results['kjv'][0]->verse);
+
         // TODO - THIS IS A BUG - FIX IT!
         // NOT WORKING
         // Manually running the query finds this vers
@@ -30,9 +37,9 @@ class BooleanTest extends TestCase
         $results = $Engine->actionQuery(['bible' => 'kjv', 'search' => '"blessed hope" appearing', 'search_type' => 'boolean', 'whole_words' => FALSE]);
         // $this->assertFalse($Engine->hasErrors());
         // $this->assertCount(1, $results['kjv']);
-        // $this->assertEquals(56, $results['kjv'][0]['book']);
-        // $this->assertEquals(2,  $results['kjv'][0]['chapter']);
-        // $this->assertEquals(13, $results['kjv'][0]['verse']);
+        // $this->assertEquals(56, $results['kjv'][0]->book);
+        // $this->assertEquals(2,  $results['kjv'][0]->chapter);
+        // $this->assertEquals(13, $results['kjv'][0]->verse);
     }
 
     public function testBooleanNot() {
