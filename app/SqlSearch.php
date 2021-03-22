@@ -695,11 +695,13 @@ class SqlSearch {
      */
     public static function standardizeBoolean($query) {
         // Standardise operators and replace them with a placeholder
-        // Handles operator aliases
-        $and = array(' AND ', '*', '&&', '&');
-        $or  = array(' OR ', '+', '||', '|');
-        $not = array('NOT ', '!');
-        $xor = array(' XOR ', '^^', '^');
+        // Handles operator aliases    
+        $and = [' AND ', '&&', '&'];
+        $or  = [' OR ', '||', '|'];
+        $not = ['NOT ', '!'];
+        $xor = [' XOR ', '^^', '^'];
+
+        $wildcard = ['*'];
 
         list($phrases, $underscored) = static::parseQueryPhrases($query, TRUE);  // Underscored stuff doesn't seem to be used.  remove?
         list($regexp, $regexp_uc) = static::parseQueryRegexp($query, TRUE);
@@ -720,6 +722,7 @@ class SqlSearch {
         $query = str_replace($and, ' & ', $query);
         $query = str_replace($or,  ' | ', $query);
         $query = str_replace($not, ' - ', $query);
+        $query = str_replace($wildcard, '%', $query);
         $query = str_replace(array('(', ')'), array(' (', ') '), $query);
         // $query = str_replace('&  -', '-', $query);
         $query = trim(preg_replace('/\s+/', ' ', $query));
@@ -855,5 +858,11 @@ class SqlSearch {
         }
 
         return $big_pieces;
+    }
+
+    // Returns FALSE if is exact phrase or REGEXP search
+    // Returns TRUE otherwise
+    static public function isKeywordSearch($search_type) {
+
     }
 }

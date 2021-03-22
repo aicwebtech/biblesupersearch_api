@@ -4,12 +4,14 @@ Bible SuperSearch API Changelog
 * Added phoning home config to disable contacting main API to check for updates
 * Made API action links clickable on API action descriptions
 * Proximity searches now always restricted to within the chapter in Psalms.  (Reason: The 'chapter' divisions in Psalms were part of the original, inspired text).
+* '*' now acts as infinite wildcard, similar to other search engines
 * Bugfix: Including single letter keywords such as 'I' or 'a' was causing breakage.
 * Bugfix: Putting a reference in the 'request' field was being treated as a search when Limit Search To was not 'Whole Bible'
 * Bugfix: Fixed query breakage when putting a Boolean operator at beginning or end of query when the query contained proximity operators
 * Bugfix: Strong's number API action didn't actually check to see if a Strong's number was provided, causing 500 error
 * Bugfix: Fixed PHP 7.4 compatiblity issues
 * Removed: All 'importFromV2' code as this obsolete.
+* Removed: Officially removed _ as single character wildcard.  (This feature was never implemented in 4.0 and was useless in previous versions.)
 
 = 4.3.4 / Jan 26, 2021
 * Bugfix: Fixed Undefined constant 'STDIN' error seen by some users when installing the API

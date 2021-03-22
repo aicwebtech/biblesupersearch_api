@@ -19,20 +19,49 @@ class KeywordTest extends TestCase
         //$this->assertEquals( trans('errors.no_results'), $errors[0]);;
     }
 
-    public function testWildcard() {
+    // Test % as infinite wildcard
+    public function testInfWildcardPct() {
         $Engine = new Engine();
         $Engine->setDefaultDataType('raw');
 
         $results = $Engine->actionQuery(['bible' => 'kjv', 'search' => 'faith%', 'whole_words' => TRUE, 'page_all' => TRUE]);
+        $this->assertFalse($Engine->hasErrors());
         $this->assertCount(336, $results['kjv']);
 
         $results = $Engine->actionQuery(['bible' => 'kjv', 'search' => 'world tempt%', 'whole_words' => TRUE, 'page_all' => TRUE]);
+        $this->assertFalse($Engine->hasErrors());
         $this->assertCount(1, $results['kjv']);
         $this->assertEquals(66, $results['kjv'][0]->book);
         $this->assertEquals(3,  $results['kjv'][0]->chapter);
         $this->assertEquals(10, $results['kjv'][0]->verse);
 
         $results = $Engine->actionQuery(['bible' => 'kjv', 'search' => 'tempt% world ', 'whole_words' => TRUE, 'page_all' => TRUE]);
+        $this->assertFalse($Engine->hasErrors());
+        $this->assertCount(1, $results['kjv']);
+        $this->assertEquals(66, $results['kjv'][0]->book);
+        $this->assertEquals(3,  $results['kjv'][0]->chapter);
+        $this->assertEquals(10, $results['kjv'][0]->verse);        
+
+    }
+
+    // Test * as infinite wildcard
+    public function testInfWildcardAst() {
+        $Engine = new Engine();
+        $Engine->setDefaultDataType('raw');
+
+        $results = $Engine->actionQuery(['bible' => 'kjv', 'search' => 'faith*', 'whole_words' => TRUE, 'page_all' => TRUE]);
+        $this->assertFalse($Engine->hasErrors());
+        $this->assertCount(336, $results['kjv']);
+
+        $results = $Engine->actionQuery(['bible' => 'kjv', 'search' => 'world tempt*', 'whole_words' => TRUE, 'page_all' => TRUE]);
+        $this->assertFalse($Engine->hasErrors());
+        $this->assertCount(1, $results['kjv']);
+        $this->assertEquals(66, $results['kjv'][0]->book);
+        $this->assertEquals(3,  $results['kjv'][0]->chapter);
+        $this->assertEquals(10, $results['kjv'][0]->verse);
+
+        $results = $Engine->actionQuery(['bible' => 'kjv', 'search' => 'tempt* world ', 'whole_words' => TRUE, 'page_all' => TRUE]);
+        $this->assertFalse($Engine->hasErrors());
         $this->assertCount(1, $results['kjv']);
         $this->assertEquals(66, $results['kjv'][0]->book);
         $this->assertEquals(3,  $results['kjv'][0]->chapter);

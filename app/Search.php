@@ -140,14 +140,13 @@ class Search extends SqlSearch {
             // Check for invalid characters
             // $invalid_chars = preg_replace('/[\p{L}\(\)|!&^ "\'0-9%]+/u', '', $search); // Original
 
-            $invalid_chars = preg_match('/[^' . static::$term_base_regexp . '|!&^ "\'0-9%()]/u', $search, $matches);
+            $invalid_chars = preg_match('/[^' . static::$term_base_regexp . '|!&^ "\'0-9%()*+]/u', $search, $matches);
 
             if(!empty($invalid_chars)) {
                 $this->addError( trans('errors.invalid_search.general', ['search' => $search]), 4);
                 return FALSE;
             }
         }
-
 
         switch ($search_type) {
             case 'boolean' :
