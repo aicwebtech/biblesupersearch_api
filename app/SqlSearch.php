@@ -798,24 +798,50 @@ class SqlSearch {
         $exact_case = $this->isTruthy('exact_case',  $this->options);
 
         $terms = $this->terms;
-        $terms_fmt = array();
-        $pre  = '<' . $this->options['highlight_tag'] . '>';
-        $post = '</' . $this->options['highlight_tag'] . '>';
+        $terms_fmt = [];
+        $pre = '&';     // Regex safe, reused search alias
+        $post = '%';    // Regex safe, reused search wildcard
+        $pre_tag  = '<'  . $this->options['highlight_tag'] . '>';
+        $post_tag = '</' . $this->options['highlight_tag'] . '>';
+        // $pre_pattern  = '/' . $pre . '([^' . $pre . ' ]*)' . $pre .  '/'; // alt pattern
+        // $post_pattern = '/' . $post . '([^' . $post . ' ]*)' .  $post .  '/';    // alt pattern    
+        $pre_pattern  = '/' . $pre . '([^' . $pre . $post . ']*)' . $pre .  '/';
+        $post_pattern = '/' . $post . '([^' . $pre . $post . ']*)' .  $post .  '/';
+        // $pre  = '<'  . $this->options['highlight_tag'] . '>';
+        // $post = '</' . $this->options['highlight_tag'] . '>';
 
         foreach($terms as $key => $term) {
             $terms_fmt[$key] = $this->_termFormatForHighlight($term, $exact_case, $whole_word);
         }
 
+        // print_r($terms_fmt);
+
         foreach($results as $bible => &$verses) {
             foreach($verses as &$verse) {
                 foreach($terms_fmt as $key => $term_fmt) {
                     $term = $terms[$key];
+
                     $verse->text = preg_replace_callback($term_fmt, function($matches) use ($pre, $post) {
                         return $pre . $matches[0] . $post;
                     }, $verse->text);
                 }
+
+                // Clean up
+                $verse->text = preg_replace_callback($pre_pattern, function($matches) use ($pre, $post) {
+                    // var_dump($matches);
+                    return $pre . $matches[1];
+                }, $verse->text);                
+
+                $verse->text = preg_replace_callback($post_pattern, function($matches) use ($pre, $post) {
+                    // var_dump($matches);
+                    return $matches[1] . $post;
+                }, $verse->text);
+
+                $verse->text = str_replace([$pre, $post], [$pre_tag, $post_tag], $verse->text);
             }
         }
+
+
 
         return $results;
     }

@@ -107,4 +107,31 @@ class HighlightTest extends TestCase {
             $this->assertFalse((strpos($verse->text, '<' . $tag . '>') === FALSE), 'No highlight: ' . $verse->text);
         }
     }
+
+    public function testKeywordWithinKeyword() {
+        $Engine = new Engine();
+        $Engine->setDefaultDataType('raw');
+        $tag = config('bss.defaults.highlight_tag');
+        $results = $Engine->actionQuery(['bible' => 'kjv', 'reference' => 'Rom', 'search' => 'think in', 'highlight' => TRUE, 'whole_words' => FALSE]);
+        $this->assertFalse($Engine->hasErrors());
+        $embedded = 'th<' . $tag . '>in</' . $tag . '>k';  
+
+        foreach($results['kjv'] as $key => $verse) {
+            $this->assertFalse((strpos($verse->text, $embedded)), 'Highlight tag within tag: ' . $verse->text);
+        }
+    }    
+
+    // Query error!
+    public function _testKeywordWithinPhrase() {
+        $Engine = new Engine();
+        $Engine->setDefaultDataType('raw');
+        $tag = config('bss.defaults.highlight_tag');
+        $results = $Engine->actionQuery(['bible' => 'kjv', 'reference' => 'Rom', 'search' => '""', 'highlight' => TRUE, 'whole_words' => FALSE, 'search_type' => 'boolean']);
+        $this->assertFalse($Engine->hasErrors());
+        $embedded = 'th<' . $tag . '>in</' . $tag . '>k';  
+
+        foreach($results['kjv'] as $key => $verse) {
+            $this->assertFalse((strpos($verse->text, $embedded)), 'Highlight tag within tag: ' . $verse->text);
+        }
+    }
 }
