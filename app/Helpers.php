@@ -4,10 +4,20 @@ namespace App;
 
 class Helpers {
 
+    /*
+     * Sorts an array of strings by string length
+     */
+    public static function sortStringsByLength(&$array, $dir = 'DESC') {
+        return usort($array, function($a, $b) use ($dir) {
+            $comp = strlen($a) <=> strlen($b);
+            $comp = ($dir == 'DESC') ? $comp * -1 : $comp;
+            return $comp;
+        });
+    }
+
     /* 
      * Check to see if premium code is present and enabled
      */
-
     public static function isPremium() {
         if(config('app.premium_disabled')) {
             return FALSE;

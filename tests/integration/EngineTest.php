@@ -130,10 +130,16 @@ class EngineTest extends TestCase
 
         $results = $Engine->actionQuery(['bible' => 'kjv', 'search' => 'faith joy', 'whole_words' => 'yes']);
         $this->assertCount(5, $results['kjv']);
+        
         $results = $Engine->actionQuery(['bible' => 'kjv', 'search' => 'faith joy', 'whole_words' => 'yes', 'search_type' => 'or']);
         $this->assertCount(381, $results['kjv']);
+        
         $results = $Engine->actionQuery(['bible' => 'kjv', 'search' => 'faith && joy || "free spirit"', 'whole_words' => 'yes', 'search_type' => 'boolean']);
         $this->assertFalse($Engine->hasErrors());
+        
+        // Expected value of 6 is CORRECT.
+        // Search faith joy (All words, whole words checked) => 5 results
+        // Search free spirit (Exact Phrase) => 1 result
         $this->assertCount(6, $results['kjv']);
         $this->assertEquals(19,  $results['kjv'][0]->book);
         $this->assertEquals(51, $results['kjv'][0]->chapter);

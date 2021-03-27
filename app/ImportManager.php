@@ -11,6 +11,10 @@ class ImportManager {
     protected static $type_map = [];
     protected static $import_rules = [];
 
+    public function __construct() {
+        // do something?
+    }
+
     public static function getImportersList() {
         $importers = [];
 

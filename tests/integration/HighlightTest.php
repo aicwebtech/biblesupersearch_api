@@ -122,16 +122,26 @@ class HighlightTest extends TestCase {
     }    
 
     // Query error!
-    public function _testKeywordWithinPhrase() {
+    public function testKeywordWithinPhrase() {
         $Engine = new Engine();
         $Engine->setDefaultDataType('raw');
         $tag = config('bss.defaults.highlight_tag');
-        $results = $Engine->actionQuery(['bible' => 'kjv', 'reference' => 'Rom', 'search' => '""', 'highlight' => TRUE, 'whole_words' => FALSE, 'search_type' => 'boolean']);
-        $this->assertFalse($Engine->hasErrors());
-        $embedded = 'th<' . $tag . '>in</' . $tag . '>k';  
+        
+        $embedded = '<' . $tag . '>me</' . $tag . '>asure';  
+        
+        $results = $Engine->actionQuery(['bible' => 'kjv', 'search' => '"measure of faith" me', 'highlight' => TRUE, 'whole_words' => FALSE, 'search_type' => 'boolean']);
+        $this->assertFalse($Engine->hasErrors());        
 
         foreach($results['kjv'] as $key => $verse) {
+            // var_dump($verse->text);
+
             $this->assertFalse((strpos($verse->text, $embedded)), 'Highlight tag within tag: ' . $verse->text);
         }
+        
+        // Laravel bug again!
+        // $results = $Engine->actionQuery(['bible' => 'kjv', 'search' => 'me "measure of faith"', 'highlight' => TRUE, 'whole_words' => FALSE, 'search_type' => 'boolean']);
+        // $this->assertFalse($Engine->hasErrors());
+        
+
     }
 }

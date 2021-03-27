@@ -76,11 +76,9 @@ class VerseStandard extends VerseAbstract {
         // echo(PHP_EOL . $Query->toSql() . PHP_EOL);
         // var_dump($binddata);
         // die();
-        //$verses = $Query->get();
 
-        //$verses = DB::select($Query->toSql(), $binddata);
-        //print_r($verses);
-        // die();
+        // $verses = DB::select($Query->toSql(), $binddata);
+        // print_r($verses);
 
         if($Search && !$parameters['multi_bibles'] && !$parameters['page_all']) {
             $verses = $Query->paginate( config('bss.pagination.limit') );
@@ -96,6 +94,10 @@ class VerseStandard extends VerseAbstract {
             $_SESSION['debug']['query_data'] = (isset($binddata)) ? $binddata : NULL;
             // $_SESSION['debug']['query_raw_output'] = $verses->all();
         }
+
+        // $verses = $Query->get();
+        // print_r($verses->all());
+        // die();
 
         return (empty($verses)) ? FALSE : $verses;
     }
@@ -126,6 +128,7 @@ class VerseStandard extends VerseAbstract {
                         $cvst = $parsed['cst'] * 1000 + intval($parsed['vst']);
                         $cven = $parsed['cen'] * 1000 + intval($parsed['ven']);
                         $q .= ' AND ' . $table_fmt . '`chapter_verse` BETWEEN ' . $cvst . ' AND ' . $cven;
+                        
                         // Proposed modification that would eliminate the need for the `chapter_verse` db column
                         //$q .= ' AND ' . $table_fmt . '`chapter` * 1000 + `verse` BETWEEN ' . $cvst . ' AND ' . $cven;
                     }

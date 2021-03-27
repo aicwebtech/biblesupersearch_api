@@ -264,14 +264,15 @@ class SqlSearch {
 
             $last_term_pos = 0;
 
-            // foreach($terms as $term) {
             foreach($items as $term) {
                 list($term_sql, $bind_index) = $this->_termSql($term, $binddata, $fields, $table_alias);
 
                 // We only want to replace it ONCE, in case it is used multiple times
                 $term_pos = strpos($sql, $term, $last_term_pos);
+                // $term_pos = strpos($sql, ' ' . $term . ' ', $last_term_pos);
 
                 if($term_pos !== FALSE) {
+                    // $term_pos ++;
                     $sql = substr_replace($sql, $term_sql, $term_pos, strlen($term));
                 }
 
@@ -560,21 +561,69 @@ class SqlSearch {
 
         // $parsed = static::parseSimpleQueryTerms($parsing);
 
+        $keyword_within_pr = FALSE;
+
         foreach ($phrases as $item) {
             $parsed[] = $item;
+
+            if($breakdown && !$keyword_within_pr) {
+                foreach($general as $g) {
+                    if(strpos($item, $g) !== FALSE) {
+                        $keyword_within_pr = TRUE;
+                        break;
+                    }
+                }
+            }
         }
 
         foreach($regexp as $item) {
             $parsed[] = $item;
+
+            if($breakdown && !$keyword_within_pr) {
+                foreach($general as $g) {
+                    if(strpos($item, $g) !== FALSE) {
+                        $keyword_within_pr = TRUE;
+                        break;
+                    }
+                }
+            }
         }
 
         if($breakdown) {
-            return [
+            $raw = [
                 'all'       => $parsed,
                 'general'   => $general,
                 'phrases'   => $phrases,
                 'regexp'    => $regexp,
             ];
+
+            if($keyword_within_pr) {
+                $size = [];
+
+                // Sort arrays by size, decending
+                foreach($raw as $key => &$d) {
+                    Helpers::sortStringsByLength($d, 'DESC');
+
+                    // usort($d, function($a, $b) {
+                    //     $comp = strlen($b) <=> strlen($a);
+                    //     return $comp * -1;
+                    // });
+
+                    $size[$key] = strlen(json_encode($d));
+                }
+                unset($d);
+                
+                // echo('<pre>');
+                // var_dump($raw);
+                // var_dump($size);
+
+                array_multisort($size, SORT_DESC, SORT_NUMERIC, $raw);
+                // // var_dump($raw);
+                // // die();
+                
+            }
+
+            return $raw;
         }
 
         //$parsed = array_unique($parsed); // Causing breakage
@@ -810,11 +859,15 @@ class SqlSearch {
         // $pre  = '<'  . $this->options['highlight_tag'] . '>';
         // $post = '</' . $this->options['highlight_tag'] . '>';
 
+        Helpers::sortStringsByLength($terms, 'DESC');
+
+
         foreach($terms as $key => $term) {
             $terms_fmt[$key] = $this->_termFormatForHighlight($term, $exact_case, $whole_word);
         }
 
-        // print_r($terms_fmt);
+        // var_dump($terms);
+        // var_dump($terms_fmt);
 
         foreach($results as $bible => &$verses) {
             foreach($verses as &$verse) {
@@ -826,22 +879,24 @@ class SqlSearch {
                     }, $verse->text);
                 }
 
+                // var_dump($verse->text);
+
                 // Clean up
                 $verse->text = preg_replace_callback($pre_pattern, function($matches) use ($pre, $post) {
-                    // var_dump($matches);
                     return $pre . $matches[1];
-                }, $verse->text);                
+                }, $verse->text);      
+
+                // var_dump($verse->text);
 
                 $verse->text = preg_replace_callback($post_pattern, function($matches) use ($pre, $post) {
-                    // var_dump($matches);
                     return $matches[1] . $post;
                 }, $verse->text);
 
                 $verse->text = str_replace([$pre, $post], [$pre_tag, $post_tag], $verse->text);
+                
+                // var_dump($verse->text);
             }
         }
-
-
 
         return $results;
     }
