@@ -11,7 +11,7 @@ enyo.kind({
         {name: 'FiltersContainer', classes: 'filters_container', components: [
             {name: 'Options', style: 'float: right', components: [
                 // {tag: 'button', classes: 'button bulk', content: 'Auto Sort'},
-                {kind: 'BibleManager.Components.Elements.Button', isPrem: true, classes: 'button bulk', content: 'Import Bible', ontap: 'tapImportBible'},
+                {kind: 'BibleManager.Components.Elements.Button', isBeta: true, classes: 'button bulk', content: 'Import Bible', ontap: 'tapImportBible'},
             ]},
             {style: 'clear: both'}
         ]},

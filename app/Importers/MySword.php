@@ -39,6 +39,7 @@ class MySword extends ImporterAbstract {
             'description'   => 'Comments',
             'year'          => 'PublishDate',
             'lang_short'    => 'Language',
+            'encryption'    => 'Encryption',
     ];    
 
     protected $attribute_map_alt = [
@@ -48,6 +49,7 @@ class MySword extends ImporterAbstract {
             'description'   => 'Comments',
             'year'          => 'publishdate',
             'lang_short'    => 'language',
+            'encryption'    => 'encryption',
     ];
 
     // Where did you get this Bible?
@@ -167,9 +169,11 @@ class MySword extends ImporterAbstract {
             $res_desc = $SQLITE->query('SELECT * FROM Details');
             $info = $res_desc->fetchArray(SQLITE3_ASSOC);
 
-            // var_dump($info);
-
             $map = (array_key_exists('description', $info)) ? $this->attribute_map_alt : $this->attribute_map;
+
+            if(array_key_exists($map['encryption'], $info) && $info[ $map['encryption'] ]) {
+                return $this->addError('This Bible is encrypted, and cannot be imported.');
+            }
 
             $res_bib = $SQLITE->query('SELECT * FROM Bible ORDER BY Book ASC, Chapter ASC, Verse ASC LIMIT 10');
             $verse_found = FALSE;

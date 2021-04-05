@@ -3,6 +3,7 @@ Bible SuperSearch API Changelog
 = 4.4.0 / ??? =
 * Added phoning home config to disable contacting main API to check for updates
 * Made API action links clickable on API action descriptions
+* Beta: Bible import UI
 * Proximity searches now always restricted to within the chapter in Psalms.  (Reason: The 'chapter' divisions in Psalms were part of the original, inspired text).
 * '*' now acts as infinite wildcard, similar to other search engines
 * Bugfix: Including single letter keywords such as 'I' or 'a' was causing breakage.
