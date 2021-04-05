@@ -1,0 +1,6 @@
+# PHPUnit tests ran against different PHP versions
+# This script should be regularly updated to run for ALL currently supported PHP versions
+
+echo 'php 7.2'; /usr/bin/php7.2 ./vendor/phpunit/phpunit/phpunit;
+echo 'php 7.3'; /usr/bin/php7.3 ./vendor/phpunit/phpunit/phpunit;
+echo 'php 7.4'; /usr/bin/php7.4 ./vendor/phpunit/phpunit/phpunit;
