@@ -94,6 +94,7 @@
                                         <tr>
                                             <td class='ralign'>Allow Phoning Home: </td>
                                             <td>
+                                                <a id='phone_home' />
                                                 <label for='phone_home_1'>Yes</label>
                                                 <input type='radio' name='app__phone_home' value='1' id='phone_home_1' @if($configs['app.phone_home'] == 1)checked='checked'@endif />
                                                 <label for='phone_home_2'>No</label>

@@ -10,6 +10,8 @@
     <br /><br />
         @if($upstream === NULL)Cannot check for updates, please try again later.<br /><br />
         @elseif($upstream === FALSE || !config('app.phone_home'))
+        Unable to check for updates because <a href='/admin/config#phone_home' target='_BLANK'>phoning home</a> is disabled.<br /><br />
+
         Please visit <a href='https://biblesupersearch.com/downloads'>https://biblesupersearch.com/downloads</a> to manually check for updates.<br /><br />
 
         @else
