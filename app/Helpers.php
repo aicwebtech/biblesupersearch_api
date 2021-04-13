@@ -87,4 +87,14 @@ class Helpers {
         }
     }
 
+    public static function isCommonWord($word, $lang) {
+        $common_en = ['a', 'and', 'the', 'or', 'but'];
+
+        if($lang == 'en' && in_array($word, $common_en)) {
+            return TRUE;
+        }
+
+        return FALSE;
+    }
+
 }
