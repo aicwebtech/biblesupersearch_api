@@ -29,7 +29,7 @@ return array(
     'prox_operator_not_allowed' => 'Proximity operators such as PROX and CHAP can only be used with boolean searches',
     'hit_limit_reached' => 'Maximum hits has been reached for today for this domain / IP address',
     'access_revoked' => 'Your access to this API has been revoked.  Please contact system administrator.',
-    'result_limit_reached' => 'Your search was limited to :maximum results.  Please refine your search if nessessary',
+    'result_limit_reached' => 'Your search was limited to :maximum results.  Please refine your search if necessary',
     'strongs_input_required' => 'Strong\'s Number required',
     'strongs_not_found' => 'Strong\'s Number not found',
 );

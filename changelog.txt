@@ -1,6 +1,6 @@
 Bible SuperSearch API Changelog
 
-= 4.4.0 / ??? =
+= 4.4.0 / Apr 24, 2021 =
 * Added phoning home config to disable contacting main API to check for updates
 * Made API action links clickable on API action descriptions
 * Beta: Bible import UI
