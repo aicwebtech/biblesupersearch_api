@@ -191,6 +191,17 @@ class ErrorTest extends TestCase {
         $this->assertArrayNotHasKey(1, $results);
     }
 
+    public function testGlobalMaximumResults() {
+        $maximum = config('bss.global_maximum_results');
+        $msg     = trans('errors.result_limit_reached', ['maximum' => config('bss.global_maximum_results')]);
+        $Engine  = new Engine();
+        $results = $Engine->actionQuery(['bible' => 'kjv', 'reference' => 'Psalms 1 -', 'data_format' => 'raw']);
+        $errors  = $Engine->getErrors();
+        $this->assertTrue($Engine->hasErrors());
+        $this->assertCount($maximum, $results['kjv']);
+        $this->assertEquals($msg, $errors[0]);
+    }
+
     public function testBooleanMisplacedOperators() {
         $Engine  = new Engine();
 
