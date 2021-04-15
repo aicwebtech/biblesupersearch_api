@@ -53,7 +53,7 @@ enyo.kind({
                 {tag: 'tr', components: [
                     {tag: 'td', classes: 'form_label right', content: 'Restrict: '},
                     {tag: 'td', classes: 'form_label right', components: [
-                        {kind: 'enyo.Checkbox', name: 'restict'},
+                        {kind: 'enyo.Checkbox', name: 'restict', disabled: true},
                     ]}, 
                     {tag: 'td', classes: 'sublabel', attributes: {colspan: 2}, components: [
                         {
