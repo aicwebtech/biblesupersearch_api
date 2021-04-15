@@ -78,12 +78,12 @@ class VerseStandard extends VerseAbstract {
         // die();
         //$verses = $Query->get();
 
-        //$verses = DB::select($Query->toSql(), $binddata);
-        //print_r($verses);
-        // die();
+        // $verses = DB::select($Query->toSql(), $binddata);
+        // print_r($verses);
 
         if($Search && !$parameters['multi_bibles'] && !$parameters['page_all']) {
-            $verses = $Query->paginate( config('bss.pagination.limit') );
+            $page_limit = min( (int) config('bss.pagination.limit'), (int) config('bss.global_maximum_results'));
+            $verses = $Query->paginate($page_limit);
         }
         else {
             ini_set('max_execution_time', 120);
@@ -96,6 +96,10 @@ class VerseStandard extends VerseAbstract {
             $_SESSION['debug']['query_data'] = (isset($binddata)) ? $binddata : NULL;
             // $_SESSION['debug']['query_raw_output'] = $verses->all();
         }
+
+        // $verses = $Query->get();
+        // print_r($verses->all());
+        // die();
 
         return (empty($verses)) ? FALSE : $verses;
     }
@@ -126,6 +130,7 @@ class VerseStandard extends VerseAbstract {
                         $cvst = $parsed['cst'] * 1000 + intval($parsed['vst']);
                         $cven = $parsed['cen'] * 1000 + intval($parsed['ven']);
                         $q .= ' AND ' . $table_fmt . '`chapter_verse` BETWEEN ' . $cvst . ' AND ' . $cven;
+                        
                         // Proposed modification that would eliminate the need for the `chapter_verse` db column
                         //$q .= ' AND ' . $table_fmt . '`chapter` * 1000 + `verse` BETWEEN ' . $cvst . ' AND ' . $cven;
                     }
@@ -187,6 +192,8 @@ class VerseStandard extends VerseAbstract {
             $_SESSION['debug']['prox_query_data'] = (isset($binddata)) ? $binddata : NULL;
         }
 
+        // print($sql);
+        // print_r($binddata);
         $results_raw = DB::select($sql, $binddata);
 
         foreach($results_raw as $a1) {
@@ -201,6 +208,7 @@ class VerseStandard extends VerseAbstract {
 
     static function proximityQueryTest($query) {
         $results_raw = DB::select($query);
+        $results = [];
 
         foreach($results_raw as $a1) {
             foreach($a1 as $val) {
@@ -233,9 +241,8 @@ class VerseStandard extends VerseAbstract {
                 $limit = (empty($parameters['proximity_limit'])) ? 5 : $parameters['proximity_limit'];
             }
 
-            // $ps_chapter = ' AND (' . $alias . '.book != 19 OR '  . $alias . '.chapter = ' . $alias2 . '.chapter )'; 
-            // $join .= (strpos($operator, '~l') === 0) ? ' AND ' . $alias . '.chapter = ' . $alias2 . '.chapter' : $ps_chapter; // Experimental code to to treat Psalms differently
-            $join .= (strpos($operator, '~l') === 0) ? ' AND ' . $alias . '.chapter = ' . $alias2 . '.chapter' : ''; // Limit within chapter
+            $ps_chapter = ' AND (' . $alias . '.book != 19 OR '  . $alias . '.chapter = ' . $alias2 . '.chapter )'; // Always limit within chapter for Psalms
+            $join .= (strpos($operator, '~l') === 0) ? ' AND ' . $alias . '.chapter = ' . $alias2 . '.chapter' : $ps_chapter; // Limit within chapter
             $join .= ' AND ' . $alias . '.id BETWEEN ' . $alias2 . '.id - ' . $limit . ' AND ' . $alias2 . '.id + ' . $limit;
         }
 
@@ -295,7 +302,7 @@ class VerseStandard extends VerseAbstract {
         $ins_count = 0;
 
         foreach($verses as $verse) {
-            if(empty($verse) || $verse{0} == '#') {
+            if(empty($verse) || $verse[0] == '#') {
                 continue;
             }
 
@@ -321,50 +328,6 @@ class VerseStandard extends VerseAbstract {
 
         DB::table($table)->insert($insertable); // Finish inserting data
         return TRUE;
-    }
-
-    protected function _importFromV2() {
-        return FALSE; // Import from V2 really shouldn't be used at this point
-
-        $in_console = (strpos(php_sapi_name(), 'cli') !== FALSE) ? TRUE : FALSE;
-
-        // If importing from V2, make sure v2 table exists
-        if (config('bss.import_from_v2')) {
-            $v2_table = 'bible_' . $this->Bible->module_v2;
-            $res = DB::select("SHOW TABLES LIKE '" . $v2_table . "'");
-            $v2_table_exists = (count($res)) ? TRUE : FALSE;
-        }
-
-        if (config('bss.import_from_v2') && $v2_table_exists) {
-            if ($in_console) {
-                echo(PHP_EOL . 'Importing Bible from V2: ' . $this->Bible->name . ' (' . $this->module . ')' . PHP_EOL);
-            }
-
-            DB::statement('SET NAMES utf8;');
-            DB::statement('SET CHARACTER SET utf8');
-
-            // we use this to determine what the strongs / italics fileds are
-            $v_test = DB::select("SELECT * FROM {$v2_table} ORDER BY `index` LIMIT 1");
-            $strongs = $italics = 'NULL';
-
-            $strongs = isset($v_test[0]->strongs) ? 'strongs' : $strongs;
-            $italics = isset($v_test[0]->italics) ? 'italics' : $italics;
-            $italics = isset($v_test[0]->map) ? 'map' : $italics;
-
-            $prefix = DB::getTablePrefix();
-            $table = $this->getTable();
-
-            $sql = "
-                INSERT INTO {$prefix}{$table} (id, book, chapter, verse, chapter_verse, text, italics, strongs)
-                SELECT `index`, book, chapter, verse, chapter * 1000 + verse, text, {$italics}, {$strongs}
-                FROM {$v2_table}
-            ";
-
-            DB::insert($sql);
-            return TRUE;
-        }
-
-        return FALSE;
     }
 
     public function uninstall() {

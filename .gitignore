@@ -13,6 +13,7 @@ vendor.zip
 
 /bibles/unbound/*.zip
 /bibles/unofficial/*.zip
+/app/Models/Misc
 /bibles/analyzer/*.bib
 /bibles/evening/*
 /bibles/mysword/*

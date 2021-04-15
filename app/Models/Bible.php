@@ -37,6 +37,13 @@ class Bible extends Model {
                 'max:100'
             ],
             'lang_short'    => 'required|alpha|min:2|max:3',
+            'owner'                 => 'nullable',
+            'publisher'             => 'nullable',
+            'restict'               => 'nullable',
+            'research'              => 'nullable',
+            'description'           => 'nullable',
+            'copyright_statement'   => 'nullable',
+            'copyright_id'          => 'required|integer',
         );    
 
         return $rules;

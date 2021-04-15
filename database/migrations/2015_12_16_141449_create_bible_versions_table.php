@@ -31,10 +31,6 @@ class CreateBibleVersionsTable extends Migration
             $table->string('module_v2')->unique()->nullable();
             $table->timestamps();
         });
-
-        if(config('bss.import_from_v2')) {
-            //echo('importing from v2' . PHP_EOL);
-        }
     }
 
     /**

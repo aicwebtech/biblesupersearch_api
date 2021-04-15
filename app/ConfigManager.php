@@ -4,6 +4,7 @@ namespace App;
 
 use App\Models\Config;
 use App\Models\ConfigValue;
+use App\Engine;
 use Illuminate\Contracts\Auth\Guard;
 
 /**
@@ -171,5 +172,15 @@ class ConfigManager {
         }
 
         return $val;
+    }
+
+    static public function getValueConfig($usr_id = 0, $config = NULL) {
+        $ConfigValues = ConfigValue::where('user_id', $user_id)->where('key', $config)->with('config')->first();
+
+        if(!$ConfigValues && !$config) {
+            return Engine::triggerInvalidConfigError();
+        }
+
+        return ($ConfigValues) ? $ConfigValues->value : NULL;
     }
 }

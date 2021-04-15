@@ -107,4 +107,48 @@ class UnicodeTest extends TestCase {
         $this->assertFalse($Engine->hasErrors());
     }
 
+    public function testPassageRegexp() {
+        $pattern = App\Passage::PASSAGE_REGEXP;
+        $this->assertNotEmpty($pattern);
+
+        $lang_tests = [
+            [
+                'text'      => '<h2>Efe 1</h2>',
+                'lang'      => 'es',
+                'passage'   => ['Efe 1'],
+                'book'      => ['Efe'],
+                'cv'        => ['1'],
+            ],
+            // FAILS!
+            // [
+            //     'text'      => '<h2>Ésaïe 31</h2>',
+            //     'lang'      => 'fr',
+            //     'passage'   => ['Ésaïe 31'],
+            //     'book'      => ['Ésaïe'],
+            //     'cv'        => ['31'],
+            // ],
+        ];
+
+        foreach($lang_tests as $ref) {
+            $res = preg_match_all($pattern, $ref['text'], $matches, PREG_SET_ORDER);
+            
+            // Make sure the REGEX didn't have an error.
+            $this->assertNotFalse($res);
+
+            // Make sure we found all the passages we were expecting
+            $this->assertEquals(count($ref['passage']), $res, $ref['text']);
+
+            foreach ($ref['passage'] as $key => $p) {
+                $this->assertEquals($p, $matches[$key][0]);
+            }
+
+            foreach($ref['book'] as $key => $p) {
+                $this->assertEquals($p, trim($matches[$key][1]));
+            }            
+
+            foreach($ref['cv'] as $key => $p) {
+                $this->assertEquals($p, trim($matches[$key][4]));
+            }
+        }
+    }
 }

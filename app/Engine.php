@@ -411,7 +411,7 @@ class Engine {
     public function actionBibles($input) {
         $include_desc = FALSE;
         $Bibles = Bible::select('bibles.name','shortname','module','year','languages.name AS lang','lang_short','copyright','italics','strongs','red_letter',
-                'paragraph','rank','research','copyright_id','copyright_statement', 'languages.rtl', 'languages.native_name AS lang_native');
+                'paragraph','rank','research','bibles.restict','copyright_id','copyright_statement', 'languages.rtl', 'languages.native_name AS lang_native');
 
         $Bibles->leftJoin('languages', 'bibles.lang_short', 'languages.code');
         $bibles = array(); // Array of associative arrays
@@ -645,7 +645,7 @@ class Engine {
         $namespaced_class = 'App\Models\Books\\' . ucfirst($language);
 
         if(!class_exists($namespaced_class)) {
-            $namespaced_class = 'App\Models\Books\\' . config('bss.defaults.language_short');
+            $namespaced_class = 'App\Models\Books\\' . ucfirst( config('bss.defaults.language_short') );
         }
 
         $Books = $namespaced_class::select('id', 'name', 'shortname')->orderBy('id', 'ASC') -> get() -> all();
@@ -709,6 +709,11 @@ class Engine {
 
     public function actionStrongs($input) {
         $response = [];
+        
+        if(!array_key_exists('strongs', $input) || empty($input['strongs'])) {
+            return $this->addError( __('errors.strongs_input_required') );
+        }
+
         $strongs = strip_tags(trim($input['strongs']));
 
         if(preg_match_all('/[GHgh][0-9]+/', $strongs, $matches)) {
@@ -716,7 +721,7 @@ class Engine {
                 $Def = \App\Models\StrongsDefinition::where('number', $clean)->first();
 
                 if(!$Def) {
-                    $this->addError('Strong\s Number ' . $clean . ' not found');
+                    $this->addError( __('errors.strongs_not_found') . ': ' . $clean);
                 }
                 else {
                     $response[] = $this->_formatStrongs($Def->toArray());
@@ -968,6 +973,10 @@ class Engine {
      * @return type
      */
     public static function getUpstreamVersion($verbose = FALSE) {
+        if(!config('app.phone_home')) {
+            return FALSE;
+        }
+
         $json = NULL;
         $url  = 'https://api.biblesupersearch.com/api/version';
 
@@ -1003,6 +1012,10 @@ class Engine {
         }
 
         return $verbose ? $results->results : $results->results->version;
+    }
+
+    public static function triggerInvalidConfigError() {
+        
     }
 
     public static function isBibleEnabled($module) {

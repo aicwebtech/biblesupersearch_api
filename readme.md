@@ -3,7 +3,7 @@
 [BibleSuperSearch.com](https://www.biblesupersearch.com)
 
 Bible SuperSearch Webservice API built using the Laravel framework.
-This API, when combined with a UI, allows you to use Bible SuperSearch entirely on your website, not dependent on ours.
+This API, when combined with a User Interface (UI), allows you to use Bible SuperSearch entirely on your website, not dependent on ours.
 
 #### This software includes the following:
 * Full Bible search engine functionality

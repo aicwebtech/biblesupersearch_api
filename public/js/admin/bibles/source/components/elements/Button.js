@@ -29,6 +29,12 @@ enyo.kind({
                 this.destroy();
             }
         }
+
+        if(this.isBeta) {
+            this.addClass('dev');
+            this.createComponent({tag: 'label', content: this.getContent()});
+            this.createComponent({tag: 'span', content: '(Beta)'});
+        }
     },
     handleTap: function(inSender, inEvent) {
         if(this.isPrem && !bootstrap.premToolsEnabled) {

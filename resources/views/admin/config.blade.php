@@ -90,9 +90,48 @@
                                                     </p>
                                                 </span>
                                             </td>
+                                        </tr>                                        
+                                        <tr>
+                                            <td class='ralign'>Allow Phoning Home: </td>
+                                            <td>
+                                                <a id='phone_home' />
+                                                <label for='phone_home_1'>Yes</label>
+                                                <input type='radio' name='app__phone_home' value='1' id='phone_home_1' @if($configs['app.phone_home'] == 1)checked='checked'@endif />
+                                                <label for='phone_home_2'>No</label>
+                                                <input type='radio' name='app__phone_home' value='0' id='phone_home_2' @if($configs['app.phone_home'] == 0)checked='checked'@endif />
+                                                <span class='info'>
+                                                    <span>i</span>
+                                                    <p>
+                                                        Allows this API to contact the official Bible SuperSearch API on api.biblesupersearch.com
+                                                        This access is used solely for checking for updates.
+                                                        Keep this disabled for more privacy and anonymity.  
+                                                    </p>
+                                                </span>
+                                            </td>
                                         </tr>
                                     </table>
                                 </div>
+                                @if(config('app.premium'))
+                                    <div class='config_block'>
+                                        <h1>Premium</h1>
+
+                                        <table>
+                                            <tr>
+                                                <td class='ralign'>License Status: </td>
+                                                <td><!-- INSERT STATUS HERE -->{{$configs['lc.confirm']}}</td>
+                                            </tr>                                            
+                                            <tr>
+                                                <td class='ralign'>License Key: </td>
+                                                <td><input name='lc__key' size='50' value='{{$configs['lc.key']}}'></td>
+                                            </tr>
+                                            <tr>
+                                                <td class='ralign'>License Expires: </td>
+                                                <td><!-- INSERT LIC EXPIRE / RENEWAL DATE HERE --></td>
+                                            </tr>
+                                        </table>
+                                    </div>
+                                @endif
+
                                 <div class='config_block'>
                                     <h1>Bible List</h1>
                                     <table>

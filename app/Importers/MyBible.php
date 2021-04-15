@@ -8,26 +8,26 @@ use \DB; //Todo - something is wrong with namespaces here, shouldn't this be aut
 use Illuminate\Http\UploadedFile;
 
 /**
- * Imports Bibles in the MySword .mybible (SQLite) format
+ * Imports Bibles in the MyBible .SQLite3 (SQLite) format
+ * (Note: Do not confuse with the MySword .mybible format)
  *
- * This format is described in full here: https://mysword.info/modules-format
- * Text here is tagged with tags in the 'General Bible Format (GBF) tags patterned after The Word'.  
- *
- * TODO: This importer needs to be able to correctly handle compressed modules (.mybible.gz and .mybible.zip)
+ * TODO: This importer needs to be able to correctly handle compressed modules (.gz and .zip)
  *
  */
 
 class MySword extends ImporterAbstract {
     // protected $required = ['module', 'lang', 'lang_short']; // Array of required fields
 
-    protected $italics_st   = '<FI>';
-    protected $italics_en   = '<Fi>';
-    protected $redletter_st = '<FR>';
-    protected $redletter_en = '<Fr>';
-    protected $paragraph    = '<CM>'; // TODO - properly handle paragraphs!
-    protected $paragraph_at_verse_end = TRUE;
+    protected $italics_st   = '<i>';
+    protected $italics_en   = '</i>';
+    protected $redletter_st = '<J>';
+    protected $redletter_en = '</J>';
+    protected $strongs_st   = '<S>';
+    protected $strongs_en   = '</S>';
+    protected $paragraph    = '<pb/>'; // TODO - properly handle paragraphs!
+    protected $paragraph_at_verse_end = FALSE;
     protected $unused_tags  = ['RF', 'RX']; // These tags, along with text enclosed betwween them, will be removed. RF = Translators' notes, RX = Cross references
-    protected $path_short   = 'mysword';
+    protected $path_short   = 'mybible';
 
     protected $has_gui      = TRUE;
     protected $has_cli      = FALSE;
@@ -39,7 +39,6 @@ class MySword extends ImporterAbstract {
             'description'   => 'Comments',
             'year'          => 'PublishDate',
             'lang_short'    => 'Language',
-            'encryption'    => 'Encryption',
     ];    
 
     protected $attribute_map_alt = [
@@ -49,11 +48,10 @@ class MySword extends ImporterAbstract {
             'description'   => 'Comments',
             'year'          => 'publishdate',
             'lang_short'    => 'language',
-            'encryption'    => 'encryption',
     ];
 
     // Where did you get this Bible?
-    protected $source = "This Bible imported from MySword <a href='https://mysword.info/download-mysword/bibles'>https://mysword.info/download-mysword/bibles</a>";
+    protected $source = "This Bible imported from MyBible";
 
     protected function _importHelper(Bible &$Bible) {
         ini_set("memory_limit", "50M");
@@ -83,9 +81,8 @@ class MySword extends ImporterAbstract {
         $SQLITE = new SQLite3($filepath);
 
         if($this->insert_into_bible_table) {
-            $res_desc = $SQLITE->query('SELECT * FROM Details');
-            $info = $res_desc->fetchArray(SQLITE3_ASSOC);
-            $desc = $info['Comments'];
+            $info = $this->_getMeta($SQLITE);
+            $desc = $info['description'];
             $attr = $this->bible_attributes;
             $attr['description'] = $desc . '<br /><br />' . $this->source;
 
@@ -101,11 +98,18 @@ class MySword extends ImporterAbstract {
             echo('Installing: ' . $module . PHP_EOL);
         }
 
-        $res_bib = $SQLITE->query('SELECT Book, Chapter, Verse, Scripture FROM Bible ORDER BY Book ASC, Chapter ASC, Verse ASC');
+        $res_bib = $SQLITE->query('SELECT book_number, chapter, verse, text FROM Bible ORDER BY Book ASC, Chapter ASC, Verse ASC');
         
-        $i = 0;
+        $i = $cur_book = $last_book = 0;
 
         while($row = $res_bib->fetchArray(SQLITE3_NUM)) {
+            // Books are numbered to leave room for the Apocyrpha in the OT.
+            // So, we simply count the books, and don't directly insert source numbers
+            if($row[0] != $last_book) {
+                $cur_book ++;
+                $last_book = $row[0];
+            }
+
             // $text = iconv("UTF-8","UTF-8//IGNORE", $row[3]);
             $this->_addVerse($row[0], $row[1], $row[2], $row[3]);
             $i++;
@@ -130,7 +134,7 @@ class MySword extends ImporterAbstract {
         return $text;
     }
 
-    protected function _formatStrongs($text) {
+    protected function _formatStrongs_UNUSED($text) {
         $parentheses = $this->strongs_parentheses;
         $subpattern  = ($parentheses == 'trim') ? '/[GHgh][0-9]+/' : '/\(?[GHgh][0-9]+\)?/';
 
@@ -138,23 +142,6 @@ class MySword extends ImporterAbstract {
 
         $text = preg_replace_callback('/<W([HG][0-9]+)>/', function($matches) use ($subpattern, $parentheses, $text) {
             return '{' . $matches[1] . '}';
-
-            // removing of parenthenses - not sure if needed here
-            // $st_numbers = [];
-
-            // preg_match_all($subpattern, $matches[0], $submatches);
-
-            // foreach($submatches as $smatch) {
-            //     if($parentheses == 'discard' && $smatch[0]{0} == '(') {
-            //         continue;
-            //     }
-
-            //     if(isset($smatch[0])) {
-            //         $st_numbers[] = '{' . $smatch[0] . '}';
-            //     }
-            // }
-
-            // return (count($st_numbers)) ? implode(' ', $st_numbers) : $matches[0];
         }, $text);
 
         return $text;
@@ -165,15 +152,11 @@ class MySword extends ImporterAbstract {
         $path = $File->getPathname();
 
         try {
-            $SQLITE = new SQLite3($path);
-            $res_desc = $SQLITE->query('SELECT * FROM Details');
-            $info = $res_desc->fetchArray(SQLITE3_ASSOC);
+            $info = $this->_getMeta($SQLITE);
+
+            // var_dump($info);
 
             $map = (array_key_exists('description', $info)) ? $this->attribute_map_alt : $this->attribute_map;
-
-            if(array_key_exists($map['encryption'], $info) && $info[ $map['encryption'] ]) {
-                return $this->addError('This Bible is encrypted, and cannot be imported.');
-            }
 
             $res_bib = $SQLITE->query('SELECT * FROM Bible ORDER BY Book ASC, Chapter ASC, Verse ASC LIMIT 10');
             $verse_found = FALSE;
@@ -198,9 +181,20 @@ class MySword extends ImporterAbstract {
             }
         }
         catch(\Exception $e) {
-            return $this->addError('Could not open MySword file: ' . $e->getMessage());
+            return $this->addError('Could not open MyBible file: ' . $e->getMessage());
         }
 
         return TRUE;
+    }
+
+    private function _getMeta(SQLite3 $SQLITE) {
+        $res_desc = $SQLITE->query('SELECT * FROM info');
+        $info = [];
+
+        while($row = $res_desc->fetchArray(SQLITE3_ASSOC)) {
+            $info[$row['name']] = $row['value'];
+        }
+
+        return $info;
     }
 }

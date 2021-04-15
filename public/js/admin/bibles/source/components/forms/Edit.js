@@ -35,7 +35,7 @@ enyo.kind({
                     {tag: 'td', attributes: {colspan: 2}, classes: 'form_label right', components: [
                         {kind: 'enyo.Input', name: 'module'},
                         {name: 'ModuleRequired', tag: 'span', classes: 'required', content: '* unique'},
-                        {name: 'ModuleDisabled', tag: 'span', classes: '', content: ' (Module cannot be changed once the module file exists)'}
+                        {name: 'ModuleDisabled', tag: 'span', classes: '', content: ' (Module cannot be changed once set)'}
                     ]}
                 ]},
                 {tag: 'tr', name: 'EnabledContainer', components: [
@@ -53,7 +53,7 @@ enyo.kind({
                 {tag: 'tr', components: [
                     {tag: 'td', classes: 'form_label right', content: 'Restrict: '},
                     {tag: 'td', classes: 'form_label right', components: [
-                        {kind: 'enyo.Checkbox', name: 'restict'},
+                        {kind: 'enyo.Checkbox', name: 'restict', disabled: true},
                     ]}, 
                     {tag: 'td', classes: 'sublabel', attributes: {colspan: 2}, components: [
                         {
@@ -279,12 +279,12 @@ enyo.kind({
             this.debugBindings && this.log('formPk', value, dir);
             value = (value && value != '0') ? value : null;
 
-            var disableModule = (value && this.formData.has_module_file == '1') ? true : false;
+            var disableModule = (value) ? true : false;
 
             if(dir == 1) {
                 this.$.module.set('disabled', disableModule);
                 this.$.ModuleRequired.set('showing', !disableModule);
-                this.$.ModuleDisabled.set('showing', disableModule);
+                // this.$.ModuleDisabled.set('showing', disableModule);
             }
 
             return value
