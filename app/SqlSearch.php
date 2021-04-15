@@ -160,12 +160,16 @@ class SqlSearch {
      */
     protected function _validateBoolean($search) {
         $valid = TRUE;
-        $lpar = substr_count($search, '(');
-        $rpar = substr_count($search, ')');
+        $skip_paren_check = (func_num_args() > 1) ? func_get_arg(1) : FALSE;
+        
+        if(!$skip_paren_check) {        
+            $lpar = substr_count($search, '(');
+            $rpar = substr_count($search, ')');
 
-        if($lpar != $rpar) {
-            $this->addError( trans('errors.paren_mismatch'), 4 );
-            $valid = FALSE;
+            if($lpar != $rpar) {
+                $this->addError( trans('errors.paren_mismatch'), 4 );
+                $valid = FALSE;
+            }
         }
 
         $standardized = static::standardizeBoolean($search);
@@ -238,27 +242,45 @@ class SqlSearch {
         $raw_bool = ($count == 1) ? $searches[0] : '(' . implode(') & (', $searches) . ')';
         $std_bool = static::standardizeBoolean($raw_bool);
         $this->search_parsed = $std_bool;
-        $this->terms = $terms = static::parseQueryTerms($std_bool);
+
+        $term_list = static::parseQueryTerms($std_bool, TRUE);
+
+        $this->terms = $terms = $term_list['all'];
         $operators = static::parseQueryOperators($std_bool, $terms);
 
-        $sql = $std_bool;
+        $sql = ' ' . $std_bool . ' ';
 
         if(static::containsInvalidCharacters($terms)) {
             $this->addError( trans('errors.invalid_search.general', ['search' => $search]), 4);
             return FALSE;
         }
 
-        foreach($terms as $term) {
-            list($term_sql, $bind_index) = $this->_termSql($term, $binddata, $fields, $table_alias);
-            //$sql = str_replace($term, $term_sql, $sql);
-            // We only want to replace it ONCE, in case it is used multiple times
-            $term_pos = strpos($sql, $term);
+        // var_dump($sql);
 
-            if($term_pos !== FALSE) {
-                $sql = substr_replace($sql, $term_sql, $term_pos, strlen($term));
+        foreach($term_list as $type => $items) {
+            if($type == 'all') {
+                continue;
+            }
+
+            $last_term_pos = 0;
+
+            foreach($items as $term) {
+                list($term_sql, $bind_index) = $this->_termSql($term, $binddata, $fields, $table_alias);
+
+                // We only want to replace it ONCE, in case it is used multiple times
+                $term_pos = strpos($sql, $term, $last_term_pos);
+                // $term_pos = strpos($sql, ' ' . $term . ' ', $last_term_pos);
+
+                if($term_pos !== FALSE) {
+                    // $term_pos ++;
+                    $sql = substr_replace($sql, $term_sql, $term_pos, strlen($term));
+                }
+
+                $last_term_pos = $term_pos + strlen($term_sql);
             }
         }
 
+        $sql = trim($sql);
         return array($sql, $binddata);
     }
 
@@ -518,9 +540,10 @@ class SqlSearch {
      * @param string $query standardized, booleanized query
      * @return array $parsed
      */
-    public static function parseQueryTerms($query) {
+    public static function parseQueryTerms($query, $breakdown = FALSE) {
         $parsed = $phrases = $matches = array();
         // Remove operators that otherwise would be interpreted as terms
+        $general = [];
         $find    = array(' AND ', ' XOR ', ' OR ', 'NOT ');
         $parsing = str_replace($find, ' ', $query);
         $phrases = static::parseQueryPhrases($query);
@@ -533,16 +556,74 @@ class SqlSearch {
 
         foreach ($matches as $item) {
             $parsed[] = $item[0];
+            $general[] = $item[0];
         }
 
         // $parsed = static::parseSimpleQueryTerms($parsing);
 
+        $keyword_within_pr = FALSE;
+
         foreach ($phrases as $item) {
             $parsed[] = $item;
+
+            if($breakdown && !$keyword_within_pr) {
+                foreach($general as $g) {
+                    if(strpos($item, $g) !== FALSE) {
+                        $keyword_within_pr = TRUE;
+                        break;
+                    }
+                }
+            }
         }
 
         foreach($regexp as $item) {
             $parsed[] = $item;
+
+            if($breakdown && !$keyword_within_pr) {
+                foreach($general as $g) {
+                    if(strpos($item, $g) !== FALSE) {
+                        $keyword_within_pr = TRUE;
+                        break;
+                    }
+                }
+            }
+        }
+
+        if($breakdown) {
+            $raw = [
+                'all'       => $parsed,
+                'general'   => $general,
+                'phrases'   => $phrases,
+                'regexp'    => $regexp,
+            ];
+
+            if($keyword_within_pr) {
+                $size = [];
+
+                // Sort arrays by size, decending
+                foreach($raw as $key => &$d) {
+                    Helpers::sortStringsByLength($d, 'DESC');
+
+                    // usort($d, function($a, $b) {
+                    //     $comp = strlen($b) <=> strlen($a);
+                    //     return $comp * -1;
+                    // });
+
+                    $size[$key] = strlen(json_encode($d));
+                }
+                unset($d);
+                
+                // echo('<pre>');
+                // var_dump($raw);
+                // var_dump($size);
+
+                array_multisort($size, SORT_DESC, SORT_NUMERIC, $raw);
+                // // var_dump($raw);
+                // // die();
+                
+            }
+
+            return $raw;
         }
 
         //$parsed = array_unique($parsed); // Causing breakage
@@ -572,11 +653,11 @@ class SqlSearch {
     }
 
     public static function isTermPhrase($term) {
-        return ($term{0} == '"') ? TRUE : FALSE;
+        return ($term[0] == '"') ? TRUE : FALSE;
     }
 
     public static function isTermRegexp($term) {
-        return ($term{0} == '`') ? TRUE : FALSE;
+        return ($term[0] == '`') ? TRUE : FALSE;
     }
 
     public static function isTermStrongs($term) {
@@ -663,11 +744,13 @@ class SqlSearch {
      */
     public static function standardizeBoolean($query) {
         // Standardise operators and replace them with a placeholder
-        // Handles operator aliases
-        $and = array(' AND ', '*', '&&', '&');
-        $or  = array(' OR ', '+', '||', '|');
-        $not = array('NOT ', '!');
-        $xor = array(' XOR ', '^^', '^');
+        // Handles operator aliases    
+        $and = [' AND ', '&&', '&'];
+        $or  = [' OR ', '||', '|'];
+        $not = ['NOT ', '!'];
+        $xor = [' XOR ', '^^', '^'];
+
+        $wildcard = ['*'];
 
         list($phrases, $underscored) = static::parseQueryPhrases($query, TRUE);  // Underscored stuff doesn't seem to be used.  remove?
         list($regexp, $regexp_uc) = static::parseQueryRegexp($query, TRUE);
@@ -688,6 +771,7 @@ class SqlSearch {
         $query = str_replace($and, ' & ', $query);
         $query = str_replace($or,  ' | ', $query);
         $query = str_replace($not, ' - ', $query);
+        $query = str_replace($wildcard, '%', $query);
         $query = str_replace(array('(', ')'), array(' (', ') '), $query);
         // $query = str_replace('&  -', '-', $query);
         $query = trim(preg_replace('/\s+/', ' ', $query));
@@ -715,10 +799,16 @@ class SqlSearch {
 
         //$patterns = array('/\) [\p{L}0-9"\']/u', '/[\p{L}0-9"\'] \(/u', '/[\p{L}0-9] [\p{L}0-9]/u', '/["\'] [\p{L}0-9"\']/u');  // OLD??
 
+        // Pass 1
+        $query = preg_replace_callback($patterns, function($matches) {
+            return str_replace(' ', ' & ', $matches[0]);
+        }, $query);        
+
+        // Pass 2
         $query = preg_replace_callback($patterns, function($matches) {
             return str_replace(' ', ' & ', $matches[0]);
         }, $query);
-
+        
         // Convert operator place holders into SQL operators
         $find  = array('&', '|', '-', '^');
         $repl  = array('AND', 'OR', ' NOT ', 'XOR');
@@ -757,22 +847,54 @@ class SqlSearch {
         $exact_case = $this->isTruthy('exact_case',  $this->options);
 
         $terms = $this->terms;
-        $terms_fmt = array();
-        $pre  = '<' . $this->options['highlight_tag'] . '>';
-        $post = '</' . $this->options['highlight_tag'] . '>';
+        $terms_fmt = [];
+        $pre = '&';     // Regex safe, reused search alias
+        $post = '%';    // Regex safe, reused search wildcard
+        $pre_tag  = '<'  . $this->options['highlight_tag'] . '>';
+        $post_tag = '</' . $this->options['highlight_tag'] . '>';
+        // $pre_pattern  = '/' . $pre . '([^' . $pre . ' ]*)' . $pre .  '/'; // alt pattern
+        // $post_pattern = '/' . $post . '([^' . $post . ' ]*)' .  $post .  '/';    // alt pattern    
+        $pre_pattern  = '/' . $pre . '([^' . $pre . $post . ']*)' . $pre .  '/';
+        $post_pattern = '/' . $post . '([^' . $pre . $post . ']*)' .  $post .  '/';
+        // $pre  = '<'  . $this->options['highlight_tag'] . '>';
+        // $post = '</' . $this->options['highlight_tag'] . '>';
+
+        Helpers::sortStringsByLength($terms, 'DESC');
+
 
         foreach($terms as $key => $term) {
             $terms_fmt[$key] = $this->_termFormatForHighlight($term, $exact_case, $whole_word);
         }
 
+        // var_dump($terms);
+        // var_dump($terms_fmt);
+
         foreach($results as $bible => &$verses) {
             foreach($verses as &$verse) {
                 foreach($terms_fmt as $key => $term_fmt) {
                     $term = $terms[$key];
+
                     $verse->text = preg_replace_callback($term_fmt, function($matches) use ($pre, $post) {
                         return $pre . $matches[0] . $post;
                     }, $verse->text);
                 }
+
+                // var_dump($verse->text);
+
+                // Clean up
+                $verse->text = preg_replace_callback($pre_pattern, function($matches) use ($pre, $post) {
+                    return $pre . $matches[1];
+                }, $verse->text);      
+
+                // var_dump($verse->text);
+
+                $verse->text = preg_replace_callback($post_pattern, function($matches) use ($pre, $post) {
+                    return $matches[1] . $post;
+                }, $verse->text);
+
+                $verse->text = str_replace([$pre, $post], [$pre_tag, $post_tag], $verse->text);
+                
+                // var_dump($verse->text);
             }
         }
 
@@ -817,5 +939,11 @@ class SqlSearch {
         }
 
         return $big_pieces;
+    }
+
+    // Returns FALSE if is exact phrase or REGEXP search
+    // Returns TRUE otherwise
+    static public function isKeywordSearch($search_type) {
+
     }
 }

@@ -17,7 +17,8 @@ enyo.kind({
 
     create: function() {
         this.inherited(arguments);
-        var kind = bootstrap.premToolsEnabled ? 'BibleManager.Components.Forms.Edit' : 'BibleManager.Components.Forms.EditBasic';
+        // var kind = bootstrap.premToolsEnabled ? 'BibleManager.Components.Forms.Edit' : 'BibleManager.Components.Forms.EditBasic';
+        var kind = 'BibleManager.Components.Forms.Edit';
         this.createComponent({name: 'Form', kind: kind}).render();
 
         this.setDialogOptions({

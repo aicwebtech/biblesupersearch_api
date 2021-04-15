@@ -68,7 +68,7 @@ class ErrorTest extends TestCase {
         $Engine->addBible('aaaa_9876'); // Fictitious Bible module
         $this->assertTrue($Engine->hasErrors());
         $errors = $Engine->getErrors();
-        $this->assertEquals("Bible text 'aaaa_9876' not found.", $errors[0]);
+        $this->assertEquals("Bible text not found: 'aaaa_9876'", $errors[0]);
     }
 
     public function testPassageInvalidReference() {
@@ -189,6 +189,17 @@ class ErrorTest extends TestCase {
         $this->assertCount(1, $results);
         $this->assertEquals(1, $results[0]['verses_count']);
         $this->assertArrayNotHasKey(1, $results);
+    }
+
+    public function testGlobalMaximumResults() {
+        $maximum = config('bss.global_maximum_results');
+        $msg     = trans('errors.result_limit_reached', ['maximum' => config('bss.global_maximum_results')]);
+        $Engine  = new Engine();
+        $results = $Engine->actionQuery(['bible' => 'kjv', 'reference' => 'Psalms 1 -', 'data_format' => 'raw']);
+        $errors  = $Engine->getErrors();
+        $this->assertTrue($Engine->hasErrors());
+        $this->assertCount($maximum, $results['kjv']);
+        $this->assertEquals($msg, $errors[0]);
     }
 
     public function testBooleanMisplacedOperators() {

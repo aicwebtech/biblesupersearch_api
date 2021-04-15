@@ -62,6 +62,7 @@ enyo.kind({
                 {tag: 'td', components: [
                     {kind: 'enyo.Select', _kind: 'AICWEBTECH.Enyo.Select', name:'col_' + letterLC, _letter: letterLC, onchange: 'colSettingChanged', components: [
                         {value: 'none', content: '-- None --'},
+                        {value: 'id', content: 'ID - Unique'},
                         {value: 'bn', content: 'Book Name'},
                         {value: 'b', content: 'Book Number'},
                         {value: 'c', content: 'Chapter'},

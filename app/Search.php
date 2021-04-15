@@ -140,14 +140,13 @@ class Search extends SqlSearch {
             // Check for invalid characters
             // $invalid_chars = preg_replace('/[\p{L}\(\)|!&^ "\'0-9%]+/u', '', $search); // Original
 
-            $invalid_chars = preg_match('/[^' . static::$term_base_regexp . '|!&^ "\'0-9%()]/u', $search, $matches);
+            $invalid_chars = preg_match('/[^' . static::$term_base_regexp . '|!&^ "\'0-9%()*+]/u', $search, $matches);
 
             if(!empty($invalid_chars)) {
                 $this->addError( trans('errors.invalid_search.general', ['search' => $search]), 4);
                 return FALSE;
             }
         }
-
 
         switch ($search_type) {
             case 'boolean' :
@@ -166,11 +165,16 @@ class Search extends SqlSearch {
     }
 
     protected function _validateBoolean($search) {
+        $valid = TRUE;
+        
         if(!$this->is_special) {
             return parent::_validateBoolean($search);
         }
 
-        $valid = TRUE;
+        if(!parent::_validateBoolean($search, TRUE)) {
+            $valid = FALSE;
+        }
+
         $prox_parsed = $this->parseProximitySearch();
 
         foreach($prox_parsed[0] as $Search) {
@@ -196,14 +200,14 @@ class Search extends SqlSearch {
      * @param string $query standardized, booleanized query
      * @return array $parsed
      */
-    public static function parseQueryTerms($query) {
+    public static function parseQueryTerms($query, $breakdown = FALSE) {
         // Remove operators that otherwise would be interpreted as terms
         $find   = array('CHAPTER', 'CHAP', 'BOOK');
         $parsing = str_replace($find, ' ', $query);
         $parsing = preg_replace('/PROXC\([0-9]+\)/', ' ', $parsing);
         $parsing = preg_replace('/PROX\([0-9]+\)/',  ' ', $parsing);
         $parsing = preg_replace('/PROC\([0-9]+\)/',  ' ', $parsing);
-        return parent::parseQueryTerms($parsing);
+        return parent::parseQueryTerms($parsing, $breakdown);
     }
 
     /**

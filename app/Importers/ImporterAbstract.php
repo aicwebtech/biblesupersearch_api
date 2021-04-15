@@ -443,6 +443,18 @@ abstract class ImporterAbstract {
         }
     }
 
+    protected function _validateTextEncoding($text) {
+        $allowed = ['UTF-8'];
+
+        $detected = mb_detect_encoding($text, $allowed, TRUE);
+
+        if(!$detected) {
+            return $this->addError('This Bible\'s text encoding is not supported.  Must be in UTF-8 encoding');
+        }
+
+        return TRUE;
+    }
+
     public static function generateUniqueModuleName($shortname) {
         $module = trim( strtolower($shortname) );
         $module = preg_replace("/\s+/", ' ', $module);

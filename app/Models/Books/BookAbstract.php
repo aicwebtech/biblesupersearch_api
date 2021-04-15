@@ -99,6 +99,7 @@ class BookAbstract extends Model
         }
         else {
             $class_name = $default_class_name;
+            $language = config('bss.defaults.language_short');
         }
 
         if(!class_exists($class_name)) {
@@ -135,6 +136,10 @@ class BookAbstract extends Model
 
         if($Book) {
             return $Book;
+        }
+
+        if(\App\Helpers::isCommonWord($name, $language)) {
+            return NULL;
         }
 
         // Attempt 2: Begins with matching

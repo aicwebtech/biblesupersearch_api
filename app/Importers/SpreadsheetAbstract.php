@@ -119,24 +119,38 @@ abstract class SpreadsheetAbstract extends ImporterAbstract {
                     break;                
                 case 'c:v':
                     $parts = explode(':', $value);
-                    $mapped['chapter']   = $mapped['chapter']   ?: (int) $parts[0];
-                    $mapped['verse']     = $mapped['verse']     ?: (int) $parts[1];
+                    $chapter = array_key_exists(0, $parts) ? $parts[0] : NULL;
+                    $verse = array_key_exists(1, $parts) ? $parts[1] : NULL;
+                    $mapped['chapter']   = $mapped['chapter']   ?: (int) $chapter;
+                    $mapped['verse']     = $mapped['verse']     ?: (int) $verse;
                     break;                  
                 case 'bn c:v':
                     $pts1 = explode(' ', $value);
-                    $pts2 = explode(':', $pts1[1]);
-
                     $mapped['book_name'] = $mapped['book_name'] ?: $pts1[0];
-                    $mapped['chapter']   = $mapped['chapter']   ?: (int) $pts2[0];
-                    $mapped['verse']     = $mapped['verse']     ?: (int) $pts2[1];
+
+                    if(array_key_exists(1, $pts1)) {
+                        $pts2 = explode(':', $pts1[1]);
+
+                        $chapter = array_key_exists(0, $pts2) ? $pts2[0] : NULL;
+                        $verse = array_key_exists(1, $pts2) ? $pts2[1] : NULL;
+                        $mapped['chapter']   = $mapped['chapter']   ?: (int) $chapter;
+                        $mapped['verse']     = $mapped['verse']     ?: (int) $verse;
+                    }
+
                     break;                
                 case 'b c:v':
                     $pts1 = explode(' ', $value);
-                    $pts2 = explode(':', $pts1[1]);
-
                     $mapped['book']      = $mapped['book']      ?: (int) $pts1[0];
-                    $mapped['chapter']   = $mapped['chapter']   ?: (int) $pts2[0];
-                    $mapped['verse']     = $mapped['verse']     ?: (int) $pts2[1];
+
+                    if(array_key_exists(1, $pts1)) {
+                        $pts2 = explode(':', $pts1[1]);
+
+                        $chapter = array_key_exists(0, $pts2) ? $pts2[0] : NULL;
+                        $verse = array_key_exists(1, $pts2) ? $pts2[1] : NULL;
+                        $mapped['chapter']   = $mapped['chapter']   ?: (int) $chapter;
+                        $mapped['verse']     = $mapped['verse']     ?: (int) $verse;
+                    }
+
                     break;
                 case 'none':
                 default:
@@ -220,7 +234,7 @@ abstract class SpreadsheetAbstract extends ImporterAbstract {
             }
             else if(!$ov) {
                 $this->resetErrors();
-                $this->addError('No valid Bible verse fields found; please make sure that \'First Row of Verse Data\' is correct.');
+                $this->addError('No valid Bible verse fields found; please make sure that the column roles and \'First Row of Verse Data\' is correct.');
             }
             else if($this->hasErrors()) {
                 $this->addError('If the columm roles are correct, please make sure that \'First Row of Verse Data\' is correct.');
@@ -255,28 +269,79 @@ abstract class SpreadsheetAbstract extends ImporterAbstract {
         ksort($set);
         $col_map_count = 0;
 
+        $required = [
+            'book'      => 'Book Name or Number',
+            'chapter'   => 'Chapter',
+            'verse'     => 'Verse',
+            'text'      => 'Text',
+        ];
+
+        $found = array_fill_keys(array_keys($required), FALSE);
+
         foreach($set as $key => $value) {
             if(substr($key, 0, 3) == 'col') {
                 $value = ($value && $value != 'null') ? $value : NULL;
-                $this->column_map[] = $value;
+                $this->column_map[] = $value ? trim($value) : NULL;
                 $col_map_count += ($value) ? 1 : 0;
             }
         }
 
-        if($col_map_count < 2) {
-            return $this->addError('Column roles are missing or incomplete');
+        foreach($this->column_map as $map) {
+             switch($map) {
+                case 't':
+                    $found['text'] = TRUE;
+                    break;                
+                case 'v':
+                    $found['verse'] = TRUE;
+                    break;
+                case 'c':
+                    $found['chapter'] = TRUE;
+                    break;                
+                case 'b':
+                    $found['book'] = TRUE;
+                    break;                
+                case 'bn':
+                    $found['book'] = TRUE;
+                    break;                
+                case 'c:v':
+                    $found['chapter'] = TRUE;
+                    $found['verse'] = TRUE;
+                    break;                  
+                case 'bn c:v':
+                    $found['book'] = TRUE;
+                    $found['chapter'] = TRUE;
+                    $found['verse'] = TRUE;
+                    break;                
+                case 'b c:v':
+                    $found['book'] = TRUE;
+                    $found['chapter'] = TRUE;
+                    $found['verse'] = TRUE;
+                    break;
+                case 'none':
+                default:
+                    // do nothing
+            }
+        }
+
+        foreach($found as $key => $f) {
+            if(!$f) {
+                $this->addError('Please specify a column for ' . $required[$key]);
+            }
         }
 
         if(array_key_exists('first_row_data', $set)) {
             $frd = (int) $set['first_row_data'];
 
             if($frd < 1) {
-                return $this->addError('First Row of Verse Data must be a positive integer', 4);
+                $this->addError('First Row of Verse Data must be a positive integer', 4);
             }
 
             $this->first_row_data = $frd - 1;
         }
+        else {
+            $this->addError('First Row of Verse Data is required', 4);
+        }
 
-        return TRUE;
+        return $this->hasErrors() ? FALSE : TRUE;
     }
 }

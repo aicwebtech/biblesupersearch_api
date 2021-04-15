@@ -251,4 +251,14 @@ class InstallManager {
         $server = $http . $current_domain;
         return $server;
     }
+
+    static function getImportableDir() {
+        return [
+            'Models\Books',
+            'Models\Verses',
+            'Models\Misc',
+            'Traits',
+            'Renders\Extras',
+        ];
+    }
 }

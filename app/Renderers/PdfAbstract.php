@@ -258,7 +258,7 @@ abstract class PdfAbstract extends RenderAbstract {
         // TEST CODE - RETAINING FOR NOW
 
         // Retaining the below test code for reference
-        $mod = ($text_test{0} == '[') ? 0 : 1;
+        $mod = ($text_test[0] == '[') ? 0 : 1;
         $pieces = preg_split("/\[|]/", $text); // split text into pieces by [ and ]
         $first_line = TRUE;
 

@@ -4,10 +4,20 @@ namespace App;
 
 class Helpers {
 
+    /*
+     * Sorts an array of strings by string length
+     */
+    public static function sortStringsByLength(&$array, $dir = 'DESC') {
+        return usort($array, function($a, $b) use ($dir) {
+            $comp = strlen($a) <=> strlen($b);
+            $comp = ($dir == 'DESC') ? $comp * -1 : $comp;
+            return $comp;
+        });
+    }
+
     /* 
      * Check to see if premium code is present and enabled
      */
-
     public static function isPremium() {
         if(config('app.premium_disabled')) {
             return FALSE;
@@ -56,6 +66,13 @@ class Helpers {
     }
 
     public static function transformClassName($class_name) {
+        $imp = \App\InstallManager::getImportableDir()[2];
+        $class_name_imp = str_replace("App\\", "App\\" . $imp . "\\", $class_name);
+        
+        if(class_exists($class_name_imp)) {
+            return $class_name_imp;
+        }
+
         return config('app.premium') ? str_replace("App\\", "App\Premium\\", $class_name) : $class_name;
     }
 
@@ -68,6 +85,16 @@ class Helpers {
         else {
             return $number. $ends[$number % 10];
         }
+    }
+
+    public static function isCommonWord($word, $lang) {
+        $common_en = ['a', 'and', 'the', 'or', 'but'];
+
+        if($lang == 'en' && in_array($word, $common_en)) {
+            return TRUE;
+        }
+
+        return FALSE;
     }
 
 }
