@@ -203,6 +203,7 @@ class InstallManager {
             'bibles/unofficial', 
             'bibles/rendered', 
             'bibles/misc',
+            // 'public/index.php', // For future use (Automatic Upgrades)
         ];
 
         foreach($dir as $d) {

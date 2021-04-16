@@ -520,6 +520,10 @@ class Bible extends Model {
     }    
 
     public static function updateFromModuleFile($module, $fields = []) {
+        if(!$module) {
+            return FALSE;
+        }
+
         $Bible = static::findByModule($module);
         $Zip   = static::openModuleFileByModule($module);
 
@@ -598,7 +602,8 @@ class Bible extends Model {
         $Bible = static::findByModule($module);
 
         if($Bible) {
-            $Bible->openModuleFile();
+            $Zip = $Bible->openModuleFile();
+            return $Zip ?: TRUE;
         }
 
         $file_of  = static::getModulePath() . $module . '.zip';
@@ -612,6 +617,49 @@ class Bible extends Model {
 
         if($Zip->open($file_un) === TRUE) {
             return $Zip;
+        }
+
+        return TRUE;
+    }
+
+    // Stub method to check if a module has files in both the official and unofficial directory
+    public static function isModuleConflicted($module) {
+        $Bible = static::findByModule($module);
+
+        $file_of  = static::getModulePath() . $module . '.zip';
+        $file_un  = static::getUnofficialModulePath() . $module . '.zip';
+
+        $Zip_Of = new ZipArchive();
+        $Zip_Un = new ZipArchive();
+
+        $has_official = $has_unofficial = $official_at_fault = FALSE;
+
+        if($Zip_Of->open($file_of) === TRUE) {
+           $has_official = TRUE;
+        }
+
+        if($Zip_Un->open($file_un) === TRUE) {
+            $has_unofficial = TRUE;
+        }
+
+        if(!$has_official || !$has_unofficial) {
+            return FALSE; // no conflict
+        }
+
+        if($Bible && !$Bible->official) {
+            // In this case, the UNOFFICIAL module prevails
+            // todo: flag Bible as conflicted
+            $official_at_fault = TRUE;
+        }
+
+        if($Bible && $Bible->official) {
+            // In this case, the official module prevails
+            // todo: do something?
+        }
+
+        if(!$Bible) {
+            // In this case, the official module prevails
+            // todo: do something?
         }
 
         return TRUE;
