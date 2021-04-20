@@ -126,6 +126,16 @@ class KeywordTest extends TestCase
         $this->assertEquals(2, $results['kjv'][0]->verse);
     }
 
+    public function testKeywordDisambShortcut() {
+        $Engine = new Engine();
+        $Engine->setDefaultDataType('raw');
+        $results = $Engine->actionQuery(['bible' => 'kjv', 'search' => 'Paul', 'whole_words' => TRUE]);
+        $this->assertFalse($Engine->hasErrors());        
+
+        $results = $Engine->actionQuery(['bible' => 'kjv', 'request' => 'Paul', 'whole_words' => TRUE]);
+        $this->assertFalse($Engine->hasErrors());
+    }
+
     // Short keyword tests
 
     // 'a'

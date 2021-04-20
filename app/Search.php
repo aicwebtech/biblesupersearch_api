@@ -125,7 +125,7 @@ class Search extends SqlSearch {
 
     protected function _validateHelper($search, $search_type) {
         // Check for misplaced reference by parsing the search as a passage reference
-        $Passages = Passage::parseReferences($search, $this->languages, TRUE);
+        $Passages = Passage::parseReferences($search, $this->languages, 2);
 
         if(is_array($Passages)) {
             foreach($Passages as $Passage) {

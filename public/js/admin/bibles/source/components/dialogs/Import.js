@@ -33,6 +33,14 @@ enyo.kind({
                     {kind: 'enyo.Input', type: 'file', name: 'file', onChange: 'formChanged'},
                     {tag: 'span', classes: 'required', content: '*'}
                 ]},
+            ]},            
+            {tag: 'tr', components: [
+                {tag: 'td', classes: 'form_label right', content: ''},
+                {tag: 'td', classes: 'form_label right', components: [
+                    {tag: 'span', content: 'Maximum upload size of '},
+                    {tag: 'span', name: 'MaxUploadSize', content: ''},
+                    {tag: 'span', content: 'B'}
+                ]},
             ]}
         ]},
 
@@ -91,6 +99,8 @@ enyo.kind({
                 content: item.name + ' (.' + item.ext.join(', .') + ')'
             });
         }, this);
+
+        this.$.MaxUploadSize.set('content', bootstrap.maxUploadSize.fmt);
     },
 
     fileValidatedChanged: function(was, is) {
@@ -168,13 +178,17 @@ enyo.kind({
             var fnParts = file.name.split('.');
                 ext = fnParts.pop();
 
-            if(!importer.ext.includes(ext)) {
+            if(importer && importer.ext && !importer.ext.includes(ext)) {
                 if(importer.ext.length == 1) {
                     errors.push('Invalid file extension .' + ext + '; File must have .' + importer.ext[0] + ' extension');
                 }
                 else {
                     errors.push('Invalid file extension .' + ext + '; Extension must be one of the following: .' + importer.ext.join(', .'));
                 }
+            }
+
+            if(file.size > bootstrap.maxUploadSize.raw) {
+                errors.push('File is too large.  Max upload file size is ' + bootstrap.maxUploadSize.fmt + 'B.');
             }
         }
 

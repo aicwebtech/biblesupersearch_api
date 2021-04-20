@@ -44,4 +44,24 @@ class HelpersTest extends TestCase
             $this->assertInstanceOf($c, $Object, "Could not instantiate: {$c}");
         }
     }
+
+    public function testMaxUploadSize() {
+        $test = \Illuminate\Http\UploadedFile::getMaxFilesize();
+
+        if(empty($test)) {
+            $this->markTestSkipped();
+        }
+
+        $fmt  = Helpers::maxUploadSize();
+        $raw  = Helpers::maxUploadSize(FALSE);
+        $both = Helpers::maxUploadSize('both');
+
+        $this->assertGreaterThan(0, $raw);
+        $this->assertEquals($test, $raw);
+        $this->assertNotEmpty($fmt);
+        $this->assertIsArray($both);
+        $this->assertGreaterThan(0, $both['raw']);
+        $this->assertEquals($test, $both['raw']);
+        $this->assertNotEmpty($both['fmt']);
+    }
 }

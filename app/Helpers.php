@@ -97,4 +97,30 @@ class Helpers {
         return FALSE;
     }
 
+    public static function maxUploadSize($format = TRUE) {
+        $max = \Illuminate\Http\UploadedFile::getMaxFilesize();
+        $max_fmt = NULL;
+
+        if(!$format) {
+            return $max;
+        }
+
+        $map = [
+            'G' => 1024 ** 3,
+            'M' => 1024 ** 2,
+            'k' => 1024
+        ];
+
+        foreach($map as $k => $v) {
+            if($max >= $v) {
+                $max_fmt = $max / $v;
+                $max_fmt .=  $k;
+                break;
+            }
+        }
+
+        $max_fmt = $max_fmt ?: $max;
+        return ($format === 'both') ? ['raw' => $max, 'fmt' => $max_fmt] : $max_fmt;
+    }
+
 }

@@ -158,6 +158,9 @@ class ImportManager {
                 return $this->addErrors($Importer->getErrors(), $Importer->getErrorLevel());
             }
         }
+        else {
+            return $this->addError('File missing or invalid.  Please note, the maximum upload filesize is ' . Helpers::maxUploadSize());
+        }
 
         $this->sanitized_filename = $Importer->file;
         $this->parsed_attributes  = $Importer->getBibleAttributes();
