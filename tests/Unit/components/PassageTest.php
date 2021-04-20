@@ -604,7 +604,7 @@ class PassageTest extends TestCase
         $this->assertEquals(trans('errors.book.multiple_without_search'), $errors[0]);
     }
 
-    public function testShortcutReference() {
+    public function testShortcutReferenceWithSearch() {
         $is_search = TRUE;
         $nt_references = ['New Testament','NT','New'];
 

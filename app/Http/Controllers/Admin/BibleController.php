@@ -33,6 +33,7 @@ class BibleController extends Controller
         $bootstrap = new \stdClass;
         $bootstrap->devToolsEnabled  = config('bss.dev_tools') ? TRUE : FALSE;
         $bootstrap->premToolsEnabled = config('app.premium');
+        $bootstrap->maxUploadSize    = Helpers::maxUploadSize('both');
         $bootstrap->languages  = \App\Models\Language::orderBy('name', 'asc')->get();
         $bootstrap->copyrights = [];
         $bootstrap->importers  = $ImportManagerClass::getImportersList();
