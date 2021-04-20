@@ -35,6 +35,12 @@
                 You are up to date!
             @endif
         @endif
+
+        @if($show_info)
+            @php
+                phpinfo();
+            @endphp
+        @endif
 </div>
 
 

@@ -4,3 +4,4 @@
 echo 'php 7.2'; /usr/bin/php7.2 ./vendor/phpunit/phpunit/phpunit;
 echo 'php 7.3'; /usr/bin/php7.3 ./vendor/phpunit/phpunit/phpunit;
 echo 'php 7.4'; /usr/bin/php7.4 ./vendor/phpunit/phpunit/phpunit;
+echo 'php 8.0'; /usr/bin/php8.0 ./vendor/phpunit/phpunit/phpunit;
