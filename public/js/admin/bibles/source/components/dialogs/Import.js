@@ -201,16 +201,12 @@ enyo.kind({
             return;
         }
 
+        var configProps = this.$.ConfigView.view.get('configProps');
         var formData = new FormData();
-        // var formData = new enyo.FormData();
-        file && formData.append('file', file, file.name); 
 
+        file && formData.append('file', file, file.name); 
         formData.append('importer', postData.type);
         formData.append('_token', laravelCsrfToken);
-
-        var configProps = this.$.ConfigView.view.get('configProps');
-
-        this.log('configProps', configProps);
 
         for(var i in configProps) {
             formData.append(i, configProps[i]);
@@ -250,8 +246,6 @@ enyo.kind({
         });
 
         ajax.go();
-
-        // this._saveHelper('importcheck', formData);
     },
 
     save: function() {

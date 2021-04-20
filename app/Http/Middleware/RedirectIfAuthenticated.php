@@ -35,7 +35,11 @@ class RedirectIfAuthenticated
     public function handle($request, Closure $next)
     {
         if ($this->auth->check()) {
-            return redirect('/');
+            if($this->auth->user()->access_level >= 100) {
+                return redirect('/admin');
+            }
+
+            return redirect('/landing');
         }
 
         return $next($request);
