@@ -938,10 +938,12 @@ class Passage {
             $languages[] = $def_language;
         }
 
-        foreach($pre_parsed as $key => &$ref) {
-            $ref = static::findShortcut($ref, $languages, TRUE);
+        if($is_search !== 2) {
+            foreach($pre_parsed as $key => &$ref) {
+                $ref = static::findShortcut($ref, $languages, TRUE);
+            }
+            unset($ref);
         }
-        unset($ref);
 
         $mid_parsed = implode(';', $pre_parsed);
         $parsed = static::explodeReferences($mid_parsed, TRUE);
