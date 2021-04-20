@@ -34,7 +34,7 @@ class AdminController extends Controller
         return view('admin.help');
     }
 
-    public function softwareUpdate() {
+    public function softwareUpdate(Request $request) {
         $local_version    = \App\Engine::getHardcodedVersion();
         $upstream_version = \App\Engine::getUpstreamVersion(TRUE);
 
@@ -47,6 +47,7 @@ class AdminController extends Controller
             'php_update'    => FALSE,
             'php_local'     => NULL,
             'php_min'       => NULL,
+            'show_info'     => $request->input('info'),
         ];
 
         if($needs_update && $upstream_version->php_error) {

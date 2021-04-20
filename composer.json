@@ -2,7 +2,7 @@
     "name": "aicwebtech/biblesupersearch-api",
     "description": "Bible SuperSearch API",
     "keywords": ["framework", "laravel"],
-    "license": "GPL-3.0",
+    "license": "GPL-3.0-or-later",
     "type": "project",
     "require": {
         "php": ">=7.2.5",
