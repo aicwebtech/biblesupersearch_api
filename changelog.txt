@@ -10,9 +10,9 @@ Bible SuperSearch API Changelog
 * Bugfix: Putting a reference in the 'request' field was being treated as a search when Limit Search To was not 'Whole Bible'
 * Bugfix: Fixed query breakage when putting a Boolean operator at beginning or end of query when the query contained proximity operators
 * Bugfix: Strong's number API action didn't actually check to see if a Strong's number was provided, causing 500 error
-* Bugfix: Fixed PHP 7.4 / 8.0 compatiblity issues
+* Bugfix: Fixed PHP 7.4 / 8.0 compatibility issues
 * Bugfix: Fixed double highlight when short keyword found inside of longer keyword
-* Bugfix: Attempting to access /login when already logged in was redirecting to / (document homepage).  It now redirectes to admin landing page (currently the Bible manager)
+* Bugfix: Attempting to access /login when already logged in was redirecting to / (document homepage).  It now redirects to admin landing page (currently the Bible manager)
 * Removed: All 'importFromV2' code as this obsolete.
 * Removed: Officially removed _ as single character wildcard.  (This feature was never implemented in 4.0 and was useless in previous versions.)
 
