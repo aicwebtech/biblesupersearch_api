@@ -2,6 +2,7 @@ Bible SuperSearch API Changelog
 
 = 4.4.3 / ??? =
 * Preventing deletion / uninstallation / disabling of default Bible
+* Sending end chapter for each book, end verse for each chapter
 
 = 4.4.0 / Apr 24, 2021 =
 * Added phoning home config to disable contacting main API to check for updates

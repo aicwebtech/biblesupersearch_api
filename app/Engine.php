@@ -649,7 +649,18 @@ class Engine {
         }
 
         $Books = $namespaced_class::select('id', 'name', 'shortname')->orderBy('id', 'ASC') -> get() -> all();
-        return $Books;
+        $Bible = Bible::findByModule(config('bss.defaults.bible'));
+        $cvc   = $Bible->getChapterVerseCount();
+        $books = [];
+
+        foreach($Books as $Book) {
+            $attr = $Book->getAttributes();
+            $attr['chapters']       = $cvc[$Book->id]['chapters'];
+            $attr['chapter_verses'] = $cvc[$Book->id]['chapter_verses'];
+            $books[] = $attr;
+        }
+
+        return $books;
     }
 
     public function languageHasBookSupport($lang) {

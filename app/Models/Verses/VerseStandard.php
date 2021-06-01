@@ -353,12 +353,12 @@ class VerseStandard extends VerseAbstract {
     public function getRandomReference($random_mode) {
         switch($random_mode) {
             case 'chapter':
-                $verse = static::select('book','chapter')->where('verse', '=', 1)->orderBy(DB::raw('RAND()'))->first();
+                $verse = static::select('book','chapter')->where('verse', '=', 1)->inRandomOrder()->first();
                 return array('book_id' => $verse->book, 'chapter_verse' => $verse->chapter);
                 break;
 
             case 'verse':
-                $verse = static::select('book','chapter','verse')->orderBy(DB::raw('RAND()'))->first();
+                $verse = static::select('book','chapter','verse')->inRandomOrder()->first();
                 return array('book_id' => $verse->book, 'chapter_verse' => $verse->chapter . ':' . $verse->verse);
                 break;
 
@@ -388,6 +388,36 @@ class VerseStandard extends VerseAbstract {
         }
 
         return $Query->get()->all();
+    }
+
+    public function getChapterVerseCount($verbose = FALSE) {
+        $counts = [];
+
+        // We use MAX instead of COUNT because of missing verses in Critical Text 'Bibles' that will throw off the numbers
+        $chapters = static::select('book', DB::raw('MAX(chapter) AS chapters'))->groupBy('book')->get();
+        $verses   = static::select('book', 'chapter', DB::raw('MAX(verse) AS verses'))->groupBy('book', 'chapter')->get();
+
+        foreach($chapters as $c) {
+            $counts[$c->book] = [
+                'chapters_max'   => $c->chapters,
+                'chapters'       => $c->chapters,
+                'chapter_verses' => [],
+            ];
+        }
+
+        foreach($verses as $v) {
+            if($verbose) {
+                $counts[$v->book]['chapter_verses'][$v->chapter] = [
+                    'verses'     => $v->verses,
+                    'verses_max' => $v->verses,
+                ];
+            }
+            else {
+                $counts[$v->book]['chapter_verses'][$v->chapter] = $v->verses;
+            }
+        }
+
+        return $counts;
     }
 
     /*

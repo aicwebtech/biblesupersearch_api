@@ -772,4 +772,13 @@ class Bible extends Model {
             'copyright_id' => 'copyright',
         ];
     }
+
+    /**
+     * Gets the count of chapters in each book, and verses in each chapter
+     * 
+     * @return array
+     */
+    public function getChapterVerseCount($verbose = FALSE) {    
+        return $this->verses()->getChapterVerseCount($verbose);
+    }
 }
