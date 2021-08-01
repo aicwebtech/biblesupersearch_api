@@ -85,13 +85,16 @@ Thank you for considering contributing to Bible SuperSearch.  If you find any bu
 
 The Bible SuperSearch API is open-sourced software licensed under the [GNU General Public License (GPL) V3 or Greater](https://opensource.org/licenses/GPL-3.0)
 
-This software is licensed for NON-COMMERCIAL use only.
+This SOFTWARE is made available FREE of charge, and is licensed for NON-COMMERCIAL use only.
+
+    Matthew 10:8 freely ye have received, freely give. - Jesus
 
 Any commercial use requires a commercial license.  Commercial use includes:
 
 * Putting the SOFTWARE behind a paywall
 * Charging others to access or use the SOFTWARE
-* Selling the SOFTWARE for any amount, whether by itself or bundled with other software
+* Selling the SOFTWARE for any amount, whether by itself or bundled with other software.  This includes charging for shipping, handling or installation.
+* Using the SOFTWARE as a gift to solicit donations.
 * Incorporating into third party software which is NOT compatible with the GNU GPL. See [GNU License Compatibility](https://www.gnu.org/licenses/license-list.html#GPLCompatibleLicenses)
 * Any other use which would violate the GNU GPL
 

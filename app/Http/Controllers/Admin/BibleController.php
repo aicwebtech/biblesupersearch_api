@@ -156,11 +156,17 @@ class BibleController extends Controller
         $resp = new \stdClass();
         $resp->success = TRUE;
         
+        if($Bible->module == config('bss.defaults.bible')) {
+            $resp->success = FALSE;
+            $resp->errors = ['Cannot delete the default Bible'];
+            return new Response($resp, 401);
+        }
+
         if($Bible->hasModuleFile() || $Bible->official) {
             $resp->success = FALSE;
             $resp->errors = ['Cannot delete an official Bible or a Bible that has a module file'];
             return new Response($resp, 401);
-        }
+        }        
 
         $Bible->uninstall();
         $Bible->delete();
@@ -186,8 +192,7 @@ class BibleController extends Controller
         }
 
         $rules = $BibleClass::getUpdateRules($id);
-
-        $data = $request->only(array_keys($rules));
+        $data  = $request->only(array_keys($rules));
 
         // $request->validate($rules); // This breaks, even though docs say it will return 422 with JSON data for an AJAX request
 
@@ -226,12 +231,18 @@ class BibleController extends Controller
 
     public function disable(Request $request, $id) {
         $Bible = Bible::findOrFail($id);
-        $Bible->enabled = 0;
-        $Bible->save();
-
-        $resp = [
-            'success' => TRUE,
-        ];
+        $resp = new \stdClass;
+        $resp->success = TRUE;
+        
+        if($Bible->module == config('bss.defaults.bible')) {
+            $resp->success = FALSE;
+            $resp->errors  = ['Cannot disable default Bible'];
+            return new Response($resp, 422);
+        }
+        else {
+            $Bible->enabled = 0;
+            $Bible->save();
+        }
 
         return new Response($resp, 200);
     }
@@ -272,10 +283,16 @@ class BibleController extends Controller
 
     public function uninstall(Request $request, $id) {
         $Bible = Bible::findOrFail($id);
-        $Bible->uninstall();
-
         $resp = new \stdClass();
         $resp->success = TRUE;
+        
+        if($Bible->module == config('bss.defaults.bible')) {
+            $resp->success = FALSE;
+            $resp->errors  = ['Cannot uninstall default Bible'];
+            return new Response($resp, 422);
+        }
+
+        $Bible->uninstall();
 
         if($Bible->hasErrors()) {
             $resp->success = FALSE;

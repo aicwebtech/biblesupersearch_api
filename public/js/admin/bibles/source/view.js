@@ -88,7 +88,7 @@ enyo.kind({
                     content: 'Delete',
                     ontap: 'multiDelete',
                     action: 'revert',
-                    actioning: 'Reverting'
+                    actioning: 'Deleting'
                 },
                 {
                     kind: 'BibleManager.Components.Elements.Button',
