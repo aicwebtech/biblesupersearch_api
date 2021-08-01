@@ -152,4 +152,34 @@ class BibleTest extends TestCase {
         $this->assertTrue(is_file($of_path));
     }
 
+    public function testBibleChapterVerse() {
+        $kjv = Bible::findByModule('kjv');
+
+        $counts = $kjv->getChapterVerseCount();
+        $this->assertCount(66, $counts);
+        $this->assertEquals(150, $counts[19]['chapters']);
+        $this->assertEquals(176, $counts[19]['chapter_verses'][119]);
+        $this->assertEquals(2,   $counts[19]['chapter_verses'][117]);
+        $this->assertEquals(28,  $counts[06]['chapter_verses'][18]);
+        $this->assertEquals(27,  $counts[40]['chapter_verses'][17]); // Matt 17 - missing v 21 in Critical Text
+        $this->assertEquals(20,  $counts[41]['chapter_verses'][16]); // Matt 16 - missing v 9-20 in Critical Text
+
+        // Verbose
+        $counts = $kjv->getChapterVerseCount(TRUE);
+
+        $this->assertCount(66, $counts);
+        $this->assertEquals(150, $counts[19]['chapters']);
+        $this->assertEquals(150, $counts[19]['chapters_max']);
+        $this->assertEquals(176, $counts[19]['chapter_verses'][119]['verses']);
+        $this->assertEquals(2,   $counts[19]['chapter_verses'][117]['verses']);
+        $this->assertEquals(28,  $counts[06]['chapter_verses'][ 18]['verses']);       
+        $this->assertEquals(27,  $counts[40]['chapter_verses'][ 17]['verses']); // Matt 17 - missing v 21 in Critical Text
+        $this->assertEquals(20,  $counts[41]['chapter_verses'][ 16]['verses']); // Matt 16 - missing v 9-20 in Critical Text 
+        $this->assertEquals(176, $counts[19]['chapter_verses'][119]['verses_max']);
+        $this->assertEquals(2,   $counts[19]['chapter_verses'][117]['verses_max']);
+        $this->assertEquals(28,  $counts[06]['chapter_verses'][ 18]['verses_max']);
+        $this->assertEquals(27,  $counts[40]['chapter_verses'][ 17]['verses_max']); // Matt 17 - missing v 21 in Critical Text
+        $this->assertEquals(20,  $counts[41]['chapter_verses'][ 16]['verses_max']); // Matt 16 - missing v 9-20 in Critical Text 
+    }
+
 }

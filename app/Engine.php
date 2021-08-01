@@ -649,7 +649,18 @@ class Engine {
         }
 
         $Books = $namespaced_class::select('id', 'name', 'shortname')->orderBy('id', 'ASC') -> get() -> all();
-        return $Books;
+        $Bible = Bible::findByModule(config('bss.defaults.bible'));
+        $cvc   = $Bible->getChapterVerseCount();
+        $books = [];
+
+        foreach($Books as $Book) {
+            $attr = $Book->getAttributes();
+            $attr['chapters']       = $cvc[$Book->id]['chapters'];
+            $attr['chapter_verses'] = $cvc[$Book->id]['chapter_verses'];
+            $books[] = $attr;
+        }
+
+        return $books;
     }
 
     public function languageHasBookSupport($lang) {
@@ -665,7 +676,7 @@ class Engine {
         $response->download_limit   = config('download.enable') ? config('download.bible_limit') : FALSE;
         $response->download_formats = $response->download_enabled ? array_values(RenderManager::getGroupedRendererList()) : [];
         $response->search_types     = config('bss.search_types');
-        $response->name             = config('app.name');
+        $response->name             = trans('app.name');
         $response->version          = config('app.version');
         $response->environment      = config('app.env');
         return $response;
