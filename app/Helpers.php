@@ -123,4 +123,8 @@ class Helpers {
         return ($format === 'both') ? ['raw' => $max, 'fmt' => $max_fmt] : $max_fmt;
     }
 
+    public static function isAuthorized($access_level) {
+
+    }
+
 }
