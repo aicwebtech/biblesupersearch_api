@@ -183,6 +183,7 @@ class ImportManager {
     public function importFile($data) {
         $importer = $data['_importer'];
         $file     = $data['_file'];
+        $use_mod  = array_key_exists('_force_use_module', $data) && $data['_force_use_module'] ? TRUE : FALSE;
         $settings = json_decode($data['_settings'], TRUE);
 
         unset($data['_importer']);
@@ -190,6 +191,10 @@ class ImportManager {
         unset($data['_settings']);
 
         if(!$this->setType($importer)) {
+            return FALSE;
+        }
+
+        if(!$use_mod && !$this->_checkModule($data['module'])) {
             return FALSE;
         }
         
@@ -212,6 +217,19 @@ class ImportManager {
 
         $this->parsed_attributes = $Bible->getAttributes();
         return TRUE;
+    }
+
+    protected function _checkModule($module) {
+        $res = config('modules_reserved.' . $module);
+
+        if(empty($res)) {
+            return TRUE;
+        }
+
+        $this->addError('Module \'' . $module . '\' is reserved for \'' . $res['name'] . '\'');
+        $this->errors['module_reserved'] = 'Module Reserved';
+
+        return FALSE;
     }
 }
 

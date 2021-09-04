@@ -36,7 +36,7 @@ class Bible extends Model {
                 'alpha_dash',
                 'max:100'
             ],
-            'lang_short'    => 'required|alpha|min:2|max:3',
+            'lang_short'            => 'required|alpha|min:2|max:3',
             'owner'                 => 'nullable',
             'publisher'             => 'nullable',
             'restict'               => 'nullable',
