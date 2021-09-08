@@ -578,7 +578,12 @@ class Bible extends Model {
 
     /**
      * Scans the module directory
-     * Adds Bible records for Bibles not existing
+     * Adds Bible records for Bibles *not existing* in database
+     * Does NOT overwrite existing module data
+     * 
+     * In the case of a module conflict between a new, official module and pre-existing unofficial module,
+     * the new module will be ignored.  If the pre-existing module is ever deleted, the official module
+     * will appear in it's place.
      */
     public static function populateBibleTable() {
         $list = static::getListOfModuleFiles();
@@ -589,6 +594,12 @@ class Bible extends Model {
         }
     }
 
+    /**
+     * NOTE: This method not currently used.
+     * IF it is ever used, will need to ensure that the same logic 
+     * for module confilct is used as for self::populateBibleTable above
+     * 
+     */ 
     public static function updateBibleTable($fields = []) {
         $list = static::getListOfModuleFiles();
 

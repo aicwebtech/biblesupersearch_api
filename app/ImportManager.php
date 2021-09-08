@@ -73,6 +73,7 @@ class ImportManager {
         '_importer' => 'required',
         '_file'     => 'required',
         '_settings' => 'nullable',
+        '_force_use_module' => 'nullable',
     ];
 
     public function __construct() {
@@ -228,6 +229,7 @@ class ImportManager {
 
         $this->addError('Module \'' . $module . '\' is reserved for \'' . $res['name'] . '\'');
         $this->errors['module_reserved'] = 'Module Reserved';
+        $this->errors['module_info']     = $res;
 
         return FALSE;
     }
