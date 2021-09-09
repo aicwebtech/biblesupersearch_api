@@ -411,6 +411,22 @@ class Bible extends Model {
         }
     }
 
+    public function deleteModuleFile($include_official = FALSE) {
+        $path_of = static::getModulePath();
+        $path_un = static::getUnofficialModulePath();
+
+        $file_path_of = $path_of . $this->getModuleFileName();
+        $file_path_un = $path_un . $this->getModuleFileName();
+
+        if($include_official && is_file($file_path_of)) {
+            unlink($file_path_of);
+        }        
+
+        if(is_file($file_path_un)) {
+            unlink($file_path_un);
+        }
+    }
+
     public function getModuleFilePath($short = FALSE) {
         $path = ($this->official) ? static::getModulePath($short) : static::getUnofficialModulePath($short);
         return $path . $this->getModuleFileName();

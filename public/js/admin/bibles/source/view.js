@@ -282,7 +282,7 @@ enyo.kind({
         this._confirmMultiAction('revert', 'Reverting Changes to Bible Properties', 'revert changes to');
     },    
     multiDelete: function(inSender, inEvent) {
-        this._confirmMultiAction('delete', 'Deleting Bible(s)', 'delete');
+        this._confirmMultiAction('delete', 'Deleting Bible(s)', 'delete', true);
     },
     multiInstall: function(inSender, inEvent) {
         this._processSelections();
@@ -356,11 +356,12 @@ enyo.kind({
         this.$.MultiQueue.set('items', enyo.clone(selections));
         this._multiActionHelper(action, actioning, postData, closeWhenFinished, selections);
     },
-    _confirmMultiAction: function(action, actioning, displayAction) {
+    _confirmMultiAction: function(action, actioning, displayAction, nonReversible) {
         this._processSelections();
         var actioning = (typeof actioning == 'undefined') ? 'Processing' : actioning;
         var action    = (typeof action == 'undefined') ? 'process' : action;
         var displayAction = (typeof displayAction == 'undefined') ? action : displayAction;
+        var nonReversible = (typeof nonReversible == 'undefined') ? false : !!nonReversible;
 
         if(this.selections.length == 0) {
             this.$.Alert.alert('Nothing selected');
@@ -370,6 +371,7 @@ enyo.kind({
         this.$.MultiConfirm.set('items', enyo.clone(this.selections));
         this.$.MultiConfirm.set('action', displayAction);
         this.$.MultiConfirm.set('title', actioning);
+        this.$.MultiConfirm.set('nonReversible', nonReversible);
 
         this.$.MultiConfirm.confirm(enyo.bind(this, function(confirmed) {
             if(confirmed) {

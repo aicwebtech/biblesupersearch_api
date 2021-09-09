@@ -50,18 +50,19 @@ enyo.kind({
                         }
                     ]}
                 ]},            
-                {tag: 'tr', components: [
-                    {tag: 'td', classes: 'form_label right', content: 'Restrict: '},
-                    {tag: 'td', classes: 'form_label right', components: [
-                        {kind: 'enyo.Checkbox', name: 'restict', disabled: true},
-                    ]}, 
-                    {tag: 'td', classes: 'sublabel', attributes: {colspan: 2}, components: [
-                        {
-                            tag: 'span', 
-                            content: 'Restrict access to only local domains. No outside API Access.'
-                        }
-                    ]}
-                ]},
+                // Todo - implement this!
+                // {tag: 'tr', components: [
+                //     {tag: 'td', classes: 'form_label right', content: 'Restrict: '},
+                //     {tag: 'td', classes: 'form_label right', components: [
+                //         {kind: 'enyo.Checkbox', name: 'restict', disabled: true},
+                //     ]}, 
+                //     {tag: 'td', classes: 'sublabel', attributes: {colspan: 2}, components: [
+                //         {
+                //             tag: 'span', 
+                //             content: 'Restrict access to only local domains. No outside API Access.'
+                //         }
+                //     ]}
+                // ]},
                 {tag: 'tr', components: [
                     {tag: 'td', classes: 'form_label right', content: 'Research Only: '},
                     {tag: 'td', classes: 'form_label right', components: [

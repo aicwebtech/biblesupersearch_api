@@ -10,6 +10,7 @@ enyo.kind({
     closing: false,
     props: null,
     action: null,
+    nonReversible: false,
     items: [],
 
     components: [
@@ -18,6 +19,7 @@ enyo.kind({
             {tag: 'span', name: 'action'},
             {tag: 'span', content: ' the following Bibles?:'}
         ]},
+        {name: 'NonReversible', showing: false, content: 'This action is NOT reversible!', classes: 'non_reversible'},
         {name: 'ListContainer', tag: 'ul'},
         // {tag: 'br'},
         // {
@@ -29,7 +31,8 @@ enyo.kind({
     ],
 
     bindings: [
-        {from: 'action', to: '$.action.content'}
+        {from: 'action', to: '$.action.content'},
+        {from: 'nonReversible', to: '$.NonReversible.showing'}
     ],
 
     create: function() {

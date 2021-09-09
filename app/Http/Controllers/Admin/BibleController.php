@@ -162,13 +162,14 @@ class BibleController extends Controller
             return new Response($resp, 401);
         }
 
-        if($Bible->hasModuleFile() || $Bible->official) {
+        if($Bible->official) {
             $resp->success = FALSE;
-            $resp->errors = ['Cannot delete an official Bible or a Bible that has a module file'];
+            $resp->errors = ['Cannot delete an official Bible'];
             return new Response($resp, 401);
         }        
 
         $Bible->uninstall();
+        $Bible->deleteModuleFile(FALSE);;
         $Bible->delete();
 
         // if($Bible->hasErrors()) {

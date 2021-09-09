@@ -154,6 +154,13 @@ title.h1 {
     color: red;
 }
 
+.non_reversible {
+    color: red;
+    margin-top: 20px;
+    text-align: center;
+    font-weight: bold;
+}
+
 .error {
     color: #f25a0f;
     background-color: #f5f5ae;
