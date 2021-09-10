@@ -18,6 +18,7 @@ enyo.kind({
     selectedIds: [],
     gridHandle: null,
     idPrefix: 'bible_',
+    colModel: null,
 
     rendered: function() {
         this.inherited(arguments);
@@ -26,45 +27,143 @@ enyo.kind({
             var pagerId = '#' + this.$.GridFooter.get('id');
             var hasFileWidth = (bootstrap.devToolsEnabled) ? '140' : '60';
             var hasFileAlign = (bootstrap.devToolsEnabled) ? 'left' : 'center';
+            var boolNullOptions = {value: '1:Yes;0:No;_no_rest_:No Restriction', sopt: ['eq']};
+            var intOptions = {sopt: ['eq','ne','lt','le','gt','ge','bw','bn','in','ni']};
+            var strOptions = {sopt: ['eq','ne','bw','bn','ew','en','cn','nc']};
+
+            this.colModel = [
+                {
+                    name: 'name', 
+                    index: 'bibles.name', 
+                    label: 'Name', 
+                    width:'200', 
+                    editable: true, 
+                    searchoptions: strOptions
+                },
+                {
+                    name: 'shortname', 
+                    index: 'shortname', 
+                    label: 'Short Name', 
+                    width:'100', 
+                    editable: true, 
+                    searchoptions: strOptions
+                },
+                {
+                    name: 'module', 
+                    index: 'module', 
+                    label: 'Module', 
+                    width:'100',
+                    searchoptions: strOptions
+                },
+                {
+                    name: 'has_module_file', 
+                    index: 'has_module_file', 
+                    label: 'Has File', 
+                    width: hasFileWidth, 
+                    title: false, 
+                    sortable: false, 
+                    align: hasFileAlign, 
+                    search: false,
+                    formatter: enyo.bind(this, this._formatHasFile) // will be sortable when grid is using local data
+                }, 
+                {
+                    name: 'lang', 
+                    index: 'lang', 
+                    label: 'Language', 
+                    width: '100',
+                    stype: 'select',
+
+                    searchoptions: {
+                        dataUrl: '/admin/bibles/languages',
+                        buildSelect: enyo.bind(this, this._formatLanguagesOptions)
+                    }
+                },
+                {
+                    name: 'year', 
+                    index: 'year', 
+                    label: 'Year', 
+                    width: '100', 
+                    searchoptions: strOptions
+                },
+                {
+                    name: 'installed', 
+                    index: 'installed', 
+                    align: 'center', 
+                    label: 'Installed', 
+                    width:'80', 
+                    title: false, 
+                    stype: 'select',
+                    searchoptions: boolNullOptions,
+                    formatter: enyo.bind(this, this._formatInstalled)
+                },
+                {
+                    name: 'enabled', 
+                    index: 'enabled', 
+                    align: 'center', 
+                    label: 'Enabled', 
+                    width:'80', 
+                    title: false, 
+                    stype: 'select',
+                    searchoptions: boolNullOptions,
+                    formatter: enyo.bind(this, this._formatEnabled)
+                },
+                {
+                    name: 'official', 
+                    index: 'official', 
+                    align: 'center', 
+                    label: 'Official *', 
+                    width:'60', 
+                    title: false, 
+                    stype: 'select',
+                    searchoptions: boolNullOptions,
+                    formatter: enyo.bind(this, this._formatSinpleBoolean)
+                },
+                {
+                    name: 'research', 
+                    index: 'research', 
+                    align: 'center', 
+                    label: 'Research **', 
+                    width:'80', 
+                    title: false,
+                    stype: 'select',
+                    searchoptions: boolNullOptions,
+                    formatter: enyo.bind(this, this._formatResearch)
+                },
+                {
+                    name: 'updated_at', 
+                    index: 'updated_at', 
+                    align: 'center', 
+                    label: 'Updated', 
+                    width:'100', 
+                    title: false, 
+                    search: false,
+                    formatter: 'date', 
+                    formatoptions: {srcformat: 'Y-m-d H:i:s', newformat: 'd M Y, H:i'}
+                },
+                {
+                    name: 'rank', 
+                    index: 'rank', 
+                    label: 'Rank', 
+                    width:'60',
+                    searchoptions: intOptions
+                },
+                {
+                    name: 'actions', 
+                    index: 'actions', 
+                    label: '&nbsp', 
+                    width:'120', 
+                    title: false,
+                    formatter: enyo.bind(this, this._formatActions), 
+                    search: false 
+                },
+                {name: 'id', index: 'id', hidden: true}
+            ];
 
             this.gridHandle = $(this.$.Grid.hasNode()).jqGrid({
                 url: '/admin/bibles/grid',
                 datatype: 'json',
                 idPrefix: this.idPrefix,
-                colModel: [
-                    {name: 'name', index: 'name', label: 'Name', width:'200', editable: true},
-                    {name: 'shortname', index: 'shortname', label: 'Short Name', width:'100', editable: true},
-                    {name: 'module', index: 'module', label: 'Module', width:'100'},
-                    {
-                        name: 'has_module_file', 
-                        index: 'has_module_file', 
-                        label: 'Has File', 
-                        width: hasFileWidth, 
-                        title: false, 
-                        sortable: false, 
-                        align: hasFileAlign, 
-                        formatter: enyo.bind(this, this._formatHasFile) // will be sortable when grid is using local data
-                    }, 
-                    {name: 'lang', index: 'lang', label: 'Language', width:'100'},
-                    {name: 'year', index: 'year', label: 'Year', width:'100'},
-                    {name: 'installed', index: 'installed', align: 'center', label: 'Installed', width:'80', title: false, formatter: enyo.bind(this, this._formatInstalled)},
-                    {name: 'enabled', index: 'enabled', align: 'center', label: 'Enabled', width:'80', title: false, formatter: enyo.bind(this, this._formatEnabled)},
-                    {name: 'official', index: 'official', align: 'center', label: 'Official *', width:'60', title: false, formatter: enyo.bind(this, this._formatSinpleBoolean)},
-                    {name: 'research', index: 'research', align: 'center', label: 'Research **', width:'80', title: false, formatter: enyo.bind(this, this._formatResearch)},
-                    {
-                        name: 'updated_at', 
-                        index: 'updated_at', 
-                        align: 'center', 
-                        label: 'Updated', 
-                        width:'100', 
-                        title: false, 
-                        formatter: 'date', 
-                        formatoptions: {srcformat: 'Y-m-d H:i:s', newformat: 'd M Y, H:i'}
-                    },
-                    {name: 'rank', index: 'rank', label: 'Rank', width:'60'},
-                    {name: 'actions', index: 'actions', label: '&nbsp', width:'120', title: false, formatter: enyo.bind(this, this._formatActions)},
-                    {name: 'id', index: 'id', hidden: true}
-                ],
+                colModel: this.colModel,
                 jsonReader: {
                     repeatitems: false,
                     id: 'id'
@@ -84,7 +183,7 @@ enyo.kind({
                 loadError: enyo.bind(this, this._loadError)
             });
 
-            this.gridHandle.navGrid(pagerId, {search: false, edit: false, view: false, del: false, add: false, refresh: true, nav: {
+            this.gridHandle.navGrid(pagerId, {search: true, edit: false, view: false, del: false, add: false, refresh: true, nav: {
 
             }}, {}, {}, {}, {}, {});
 
@@ -97,6 +196,10 @@ enyo.kind({
     },
     _loadComplete: function() {
         this.doSelectionsChanged({length: 0});
+
+        if(this.gridHandle) {
+            var userData = this.gridHandle.getGridParam('userData');
+        }
     },
     _loadError: function(xhr, status, error) {
         console.log('loadError', xhr, status, error);
@@ -219,6 +322,28 @@ enyo.kind({
         html += this.__makeSignalLink('View Description', 'onViewDescription', props);
         html += ' &nbsp; ';
         html += this.__makeSignalLink('Edit', 'onEdit', props);
+        return html;
+    },
+    _formatLanguagesOptions: function(response) {
+        this.log(response);
+
+        if(typeof response == 'string') {
+            response = JSON.parse(response);
+        }
+
+        var html = '<select>';
+
+        response.languages.forEach(function(item) {
+            if(item.code == null) {
+                html += "<option value='null'>(None)</option>";
+            }
+            else {
+                html += "<option value='" + item.code + "'>" + item.name + "</option>";
+            }
+        });
+
+        html += '</select>';
+
         return html;
     },
     getSelectionsWithName: function() {

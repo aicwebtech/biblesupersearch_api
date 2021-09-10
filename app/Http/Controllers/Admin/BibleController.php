@@ -7,6 +7,7 @@ use Illuminate\Http\Request;
 use App\Http\Responses\Response;
 use App\Http\Controllers\Controller;
 use App\Models\Bible;
+use App\Models\Language;
 use App\Helpers;
 use Validator;
 
@@ -61,9 +62,18 @@ class BibleController extends Controller
             $data['sidx'] = 'bibles.' . $data['sidx'];
         }
 
-        $Bibles = Bible::select('bibles.*', 'languages.name AS lang')
-            ->leftJoin('languages', 'bibles.lang_short', 'languages.code')
-            ->orderBy($data['sidx'], $data['sord'])
+        $Query = Bible::select('bibles.*', 'languages.name AS lang')
+            ->leftJoin('languages', 'bibles.lang_short', 'languages.code');
+
+        if(array_key_exists('_search', $data) && $data['_search'] == 'true') {
+            if($data['searchField'] == 'lang') {
+                $data['searchField'] = 'bibles.lang_short';
+            }
+
+            Helpers::buildSearchQuery($data, $Query);
+        }
+
+        $Bibles = $Query->orderBy($data['sidx'], $data['sord'])
             ->paginate($rows_per_page);
 
         foreach($Bibles as $Bible) {
@@ -82,6 +92,14 @@ class BibleController extends Controller
         ];
 
         return response($resp, 200);
+    }
+
+    public function languages(Request $request) {
+        $Languages = Bible::select('languages.code', 'languages.name')
+            ->leftJoin('languages', 'bibles.lang_short', 'languages.code')
+            ->groupBy('languages.id')->orderBy('languages.name')->get();
+
+        return response(['languages' => $Languages], 200);
     }
 
     /**

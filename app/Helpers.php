@@ -127,4 +127,62 @@ class Helpers {
 
     }
 
+    public static function buildSearchQuery($data, &$Query) {
+        $val = $data['searchString'];
+        $op  = NULL;
+
+        switch($data['searchOper']) {
+            case 'eq':
+                $op = '=';
+                break;             
+            case 'ne':
+                $op = '!=';
+                break;           
+            case 'lt':
+                $op = '<';
+                break;             
+            case 'le':
+                $op = '<=';
+                break;
+            case 'gt':
+                $op = '>';
+                break;             
+            case 'le':
+                $op = '>=';
+                break; 
+            case 'bw':
+                $op = 'LIKE';
+                $val .= '%';
+                break;             
+            case 'bn':
+                $op = 'NOT LIKE';
+                $val .= '%';
+                break;            
+            case 'ew':
+                $op = 'LIKE';
+                $val = '%' . $val;
+                break;             
+            case 'en':
+                $op = 'NOT LIKE';
+                $val = '%' . $val;
+                break;             
+            case 'cn':
+                $op = 'LIKE';
+                $val = '%' . $val . '%';
+                break;             
+            case 'nc':
+                $op = 'NOT LIKE';
+                $val = '%' . $val . '%';
+                break; 
+        }
+
+        $sql = $data['searchField'] . ' ' . $op . ' \'' . $val . '\'';
+
+        if($op && $data['searchString'] != '_no_rest_') {
+            $Query->where($data['searchField'], $op, $val);
+        }
+
+        return $sql;
+    }
+
 }

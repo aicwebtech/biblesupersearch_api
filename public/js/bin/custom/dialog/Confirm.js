@@ -66,6 +66,8 @@ enyo.kind({
         if(typeof this.callback == 'function') {
             this.callback(this.confirmed);
         }
+
+        this.set('title', null);
     },
     ok: function() {
         // this.log();
