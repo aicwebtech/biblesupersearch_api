@@ -57,20 +57,28 @@ class BibleController extends Controller
 
         if($data['sidx'] == 'lang') {
             $data['sidx'] = 'languages.name';
+        }        
+        else if($data['sidx'] == 'copy') {
+            $data['sidx'] = 'copyrights.name';
         }
         else {
             $data['sidx'] = 'bibles.' . $data['sidx'];
         }
 
-        $Query = Bible::select('bibles.*', 'languages.name AS lang')
-            ->leftJoin('languages', 'bibles.lang_short', 'languages.code');
+        $Query = Bible::select('bibles.*', 'languages.name AS lang', 'copyrights.name AS copy')
+            ->leftJoin('languages', 'bibles.lang_short', 'languages.code')
+            ->leftJoin('copyrights', 'bibles.copyright_id', 'copyrights.id');
 
         if(array_key_exists('_search', $data) && $data['_search'] == 'true') {
             if($data['searchField'] == 'lang') {
                 $data['searchField'] = 'bibles.lang_short';
+            }            
+
+            if($data['searchField'] == 'copy') {
+                $data['searchField'] = 'bibles.copyright_id';
             }
 
-            Helpers::buildSearchQuery($data, $Query);
+            Helpers::buildGridSearchQuery($data, $Query, ['lang' => 'bibles.lang_short', 'copy' => 'bibles.copyright_id', 'name' => 'bibles.name']);
         }
 
         $Bibles = $Query->orderBy($data['sidx'], $data['sord'])
@@ -100,6 +108,14 @@ class BibleController extends Controller
             ->groupBy('languages.id')->orderBy('languages.name')->get();
 
         return response(['languages' => $Languages], 200);
+    }    
+
+    public function copyrights(Request $request) {
+        $Languages = Bible::select('copyrights.id', 'copyrights.name')
+            ->leftJoin('copyrights', 'bibles.copyright_id', 'copyrights.id')
+            ->groupBy('copyrights.id')->orderBy('copyrights.name')->get();
+
+        return response(['copyrights' => $Languages], 200);
     }
 
     /**

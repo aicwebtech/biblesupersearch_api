@@ -127,11 +127,82 @@ class Helpers {
 
     }
 
-    public static function buildSearchQuery($data, &$Query) {
+    /**
+     * Builds Laravel query from jqgrid search data
+     * 
+     * @param $data response data
+     * @param $Query Laravel query builder
+     */
+    public static function buildGridSearchQuery($data, \Illuminate\Database\Eloquent\Builder &$Query, $field_map = []) {
         $val = $data['searchString'];
         $op  = NULL;
 
-        switch($data['searchOper']) {
+        if(array_key_exists('filters', $data) && $data['filters']) {
+            return self::buildGridSearchMuiltiQuery($data, $Query, $field_map);
+        }
+
+        list($op, $val, $special) = self::_mapSearchOperator($data['searchOper'], $data['searchString']);
+
+        if($op && $data['searchString'] != '_no_rest_') {
+            $field = (array_key_exists($data['searchField'], $field_map) && $field_map[$data['searchField']]) ? $field_map[$data['searchField']] : $data['searchField']; 
+
+            $Query->where($field, $op, $val);
+        }
+    }
+
+    public static function buildGridSearchMuiltiQuery($data, \Illuminate\Database\Eloquent\Builder &$Query, $field_map = []) {
+        if(!array_key_exists('filters', $data) || !$data['filters']) {
+            return;
+        }
+
+        $filters = json_decode($data['filters']);
+        $mapped  = [];
+
+        foreach($filters->rules as $rule) {
+            list($op, $val, $special) = self::_mapSearchOperator($rule->op, $rule->data);
+
+            if($op && $rule->data != '_no_rest_') {            
+                $field = (array_key_exists($rule->field, $field_map) && $field_map[$rule->field]) ? $field_map[$rule->field] : $rule->field; 
+
+                $mapped[] = [
+                    'field' => $field,
+                    'op'    => $op,
+                    'val'   => $val,
+                    'sp'    => $special,
+                ];
+            }
+        }
+
+        // var_dump($filters);
+        // var_dump($mapped);
+
+        if($filters->groupOp == 'AND') {
+            $Query->where(function($q) use ($mapped) {
+                foreach($mapped as $m) {
+                    $q->where($m['field'], $m['op'], $m['val']);
+                }
+            });
+        }        
+
+        if($filters->groupOp == 'OR') {
+            $Query->where(function($q) use ($mapped) {
+                foreach($mapped as $key => $m) {
+                    if($key == 0) {
+                        $q->where($m['field'], $m['op'], $m['val']);
+                    }
+                    else {
+                        $q->orWhere($m['field'], $m['op'], $m['val']);
+                    }
+                }
+            });
+        }
+    }
+
+    protected static function _mapSearchOperator($search_op, $val) {
+        $op = NULL;
+        $special = NULL;
+
+        switch($search_op) {
             case 'eq':
                 $op = '=';
                 break;             
@@ -147,7 +218,7 @@ class Helpers {
             case 'gt':
                 $op = '>';
                 break;             
-            case 'le':
+            case 'ge':
                 $op = '>=';
                 break; 
             case 'bw':
@@ -176,13 +247,7 @@ class Helpers {
                 break; 
         }
 
-        $sql = $data['searchField'] . ' ' . $op . ' \'' . $val . '\'';
-
-        if($op && $data['searchString'] != '_no_rest_') {
-            $Query->where($data['searchField'], $op, $val);
-        }
-
-        return $sql;
+        return [$op, $val, $special];
     }
 
 }

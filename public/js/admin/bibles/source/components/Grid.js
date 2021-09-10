@@ -25,7 +25,8 @@ enyo.kind({
 
         if(this.$.Grid.hasNode() && this.gridHandle == null) {
             var pagerId = '#' + this.$.GridFooter.get('id');
-            var hasFileWidth = (bootstrap.devToolsEnabled) ? '140' : '60';
+            // var hasFileWidth = (bootstrap.devToolsEnabled) ? '140' : '60';
+            var hasFileWidth = (bootstrap.devToolsEnabled) ? '70' : '60';
             var hasFileAlign = (bootstrap.devToolsEnabled) ? 'left' : 'center';
             var boolNullOptions = {value: '1:Yes;0:No;_no_rest_:No Restriction', sopt: ['eq']};
             var intOptions = {sopt: ['eq','ne','lt','le','gt','ge','bw','bn','in','ni']};
@@ -34,7 +35,7 @@ enyo.kind({
             this.colModel = [
                 {
                     name: 'name', 
-                    index: 'bibles.name', 
+                    index: 'name', 
                     label: 'Name', 
                     width:'200', 
                     editable: true, 
@@ -70,19 +71,31 @@ enyo.kind({
                     name: 'lang', 
                     index: 'lang', 
                     label: 'Language', 
-                    width: '100',
+                    width: '80',
                     stype: 'select',
 
                     searchoptions: {
                         dataUrl: '/admin/bibles/languages',
                         buildSelect: enyo.bind(this, this._formatLanguagesOptions)
                     }
+                },                
+                {
+                    name: 'copy', 
+                    index: 'copy', 
+                    label: 'Copyright', 
+                    width: '100',
+                    stype: 'select',
+
+                    searchoptions: {
+                        dataUrl: '/admin/bibles/copyrights',
+                        buildSelect: enyo.bind(this, this._formatCopyrightsOptions)
+                    }
                 },
                 {
                     name: 'year', 
                     index: 'year', 
                     label: 'Year', 
-                    width: '100', 
+                    width: '60', 
                     searchoptions: strOptions
                 },
                 {
@@ -144,14 +157,14 @@ enyo.kind({
                     name: 'rank', 
                     index: 'rank', 
                     label: 'Rank', 
-                    width:'60',
+                    width: '60',
                     searchoptions: intOptions
                 },
                 {
                     name: 'actions', 
                     index: 'actions', 
                     label: '&nbsp', 
-                    width:'120', 
+                    width: '80', 
                     title: false,
                     formatter: enyo.bind(this, this._formatActions), 
                     search: false 
@@ -173,7 +186,7 @@ enyo.kind({
                 sortorder: 'asc',
                 viewrecords: true,
                 height: 'auto',
-                width: 'auto',
+                // width: 'auto',
                 multiselect: true,
                 rowNum: 15,
                 rowList: [10, 15, 20, 30, 50, 100],
@@ -185,7 +198,7 @@ enyo.kind({
 
             this.gridHandle.navGrid(pagerId, {search: true, edit: false, view: false, del: false, add: false, refresh: true, nav: {
 
-            }}, {}, {}, {}, {}, {});
+            }}, {}, {}, {}, {multipleSearch: true, closeOnEscape: true, closeAfterSearch: false, closeAfterReset: true}, {});
 
             $( ".button" ).button();
         }
@@ -260,7 +273,7 @@ enyo.kind({
             var url = this.__makeSignalUrl('onBibleExport', props);
 
             if(bootstrap.devToolsEnabled) {
-                fmt += " &nbsp; &nbsp;<a href='javascript:" + url + "'>Export Module File</a>";
+                fmt += " &nbsp; &nbsp;<a href='javascript:" + url + "' title='Export Module File'>Export</a>";
             }
         }
 
@@ -319,7 +332,7 @@ enyo.kind({
         //     html += ' &nbsp; ';
         // }
 
-        html += this.__makeSignalLink('View Description', 'onViewDescription', props);
+        html += this.__makeSignalLink('View Info', 'onViewDescription', props);
         html += ' &nbsp; ';
         html += this.__makeSignalLink('Edit', 'onEdit', props);
         return html;
@@ -345,7 +358,30 @@ enyo.kind({
         html += '</select>';
 
         return html;
+    },    
+    _formatCopyrightsOptions: function(response) {
+        this.log(response);
+
+        if(typeof response == 'string') {
+            response = JSON.parse(response);
+        }
+
+        var html = '<select>';
+
+        response.copyrights.forEach(function(item) {
+            if(item.id == null) {
+                html += "<option value='null'>(None)</option>";
+            }
+            else {
+                html += "<option value='" + item.id + "'>" + item.name + "</option>";
+            }
+        });
+
+        html += '</select>';
+
+        return html;
     },
+
     getSelectionsWithName: function() {
         var selArr = enyo.clone(this.gridHandle.getGridParam('selarrrow'));
         var selections = [];
