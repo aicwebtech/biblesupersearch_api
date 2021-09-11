@@ -9,14 +9,23 @@ enyo.kind({
 
     components: [
         {name: 'FiltersContainer', classes: 'filters_container', components: [
+            {name: 'Search', style: 'float: left', components: [
+                {kind: 'BibleManager.Components.Elements.Button', classes: 'button bulk ', ontap: 'triggerSearch', components: [
+                    {tag: 'span', classes: 'ui-icon ui-icon-search'},
+                    {tag: 'span', content: 'Search'}
+                ]},
+            ]},
             {name: 'Options', style: 'float: right', components: [
                 // {tag: 'button', classes: 'button bulk', content: 'Auto Sort'},
-                {kind: 'BibleManager.Components.Elements.Button', isBeta: true, classes: 'button bulk', content: 'Import Bible', ontap: 'tapImportBible'},
+                {kind: 'BibleManager.Components.Elements.Button', classes: 'button bulk', ontap: 'tapImportBible', components: [
+                    {tag: 'span', classes: 'ui-icon ui-icon-arrowreturnthick-1-s'},
+                    {tag: 'span', content: 'Import Bible'}
+                ]},
             ]},
             {style: 'clear: both'}
         ]},
         {name: 'BulkActionsContainer', classes: 'buik_actions_container', components: [
-            {name: 'BulkActions', style: 'float: left', showing: false, components: [
+            {name: 'BulkActions', _style: 'float: left', classes: 'bulk_actions', showing: false, components: [
                 {tag: 'span', content: 'With Selected: '},
                 {
                     tag: 'button',
@@ -425,5 +434,8 @@ enyo.kind({
     },
     tapImportBible: function(inSender, inResponse) {
         this.$.Import.openLoad();
+    },
+    triggerSearch: function() {
+        this.$.GridContainer.openSearchDialog();
     }
 });

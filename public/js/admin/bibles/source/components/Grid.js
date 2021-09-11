@@ -2,7 +2,7 @@ enyo.kind({
     name: 'BibleManager.Components.Grid',
 
     components: [
-        {name: 'Grid', tag: 'table'},
+        {name: 'Grid', tag: 'table', style: 'width: 100%; max-width: 1024px'},
         {name: 'GridFooter'},
         {name: 'Legend', style: 'text-align: center; font-size: 0.8em', components: [
             {tag: 'span', content: '* Bible is officially supported.'},
@@ -19,6 +19,7 @@ enyo.kind({
     gridHandle: null,
     idPrefix: 'bible_',
     colModel: null,
+    searchDialogOptions: {multipleSearch: true, closeOnEscape: true, closeAfterSearch: false, closeAfterReset: true},
 
     rendered: function() {
         this.inherited(arguments);
@@ -31,6 +32,13 @@ enyo.kind({
             var boolNullOptions = {value: '1:Yes;0:No;_no_rest_:No Restriction', sopt: ['eq']};
             var intOptions = {sopt: ['eq','ne','lt','le','gt','ge','bw','bn','in','ni']};
             var strOptions = {sopt: ['eq','ne','bw','bn','ew','en','cn','nc']};
+            var vpWidth = Math.min(document.documentElement.clientWidth || 9999, window.innerWidth || 9999);
+            var reduceWidth = (vpWidth < 1530) ? true : false;
+
+            var width = (reduceWidth) ? vpWidth - 135 : '1400';
+            width = Math.max(width, 900);
+
+            this.log('width', vpWidth, width);
 
             this.colModel = [
                 {
@@ -47,6 +55,7 @@ enyo.kind({
                     label: 'Short Name', 
                     width:'100', 
                     editable: true, 
+                    hidden: reduceWidth,
                     searchoptions: strOptions
                 },
                 {
@@ -96,6 +105,7 @@ enyo.kind({
                     index: 'year', 
                     label: 'Year', 
                     width: '60', 
+                    hidden: reduceWidth,
                     searchoptions: strOptions
                 },
                 {
@@ -169,7 +179,7 @@ enyo.kind({
                     formatter: enyo.bind(this, this._formatActions), 
                     search: false 
                 },
-                {name: 'id', index: 'id', hidden: true}
+                {name: 'id', index: 'id', hidden: true, hiddlg: true}
             ];
 
             this.gridHandle = $(this.$.Grid.hasNode()).jqGrid({
@@ -186,7 +196,7 @@ enyo.kind({
                 sortorder: 'asc',
                 viewrecords: true,
                 height: 'auto',
-                // width: 'auto',
+                width: width,
                 multiselect: true,
                 rowNum: 15,
                 rowList: [10, 15, 20, 30, 50, 100],
@@ -198,7 +208,7 @@ enyo.kind({
 
             this.gridHandle.navGrid(pagerId, {search: true, edit: false, view: false, del: false, add: false, refresh: true, nav: {
 
-            }}, {}, {}, {}, {multipleSearch: true, closeOnEscape: true, closeAfterSearch: false, closeAfterReset: true}, {});
+            }}, {}, {}, {}, this.searchDialogOptions, {});
 
             $( ".button" ).button();
         }
@@ -396,5 +406,8 @@ enyo.kind({
         }
 
         return selections;
+    },
+    openSearchDialog: function() {
+        this.gridHandle && this.gridHandle.jqGrid('searchGrid', this.searchDialogOptions);
     }
 });
