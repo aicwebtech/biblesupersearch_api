@@ -43,6 +43,8 @@ abstract class SpreadsheetAbstract extends ImporterAbstract {
     protected $first_unique_verse = 3;
     protected $first_unique_id = 34;
 
+    protected $row_errors = [];
+
     protected function _importHelper(Bible &$Bible) {
         ini_set("memory_limit", "150M"); // TODO - need to test this with LARGE UNICODE BIBLES to make sure it doesn't break!
             // Confirmed working with thaikjv .xls AND .csv (10+ MB files)
@@ -82,8 +84,9 @@ abstract class SpreadsheetAbstract extends ImporterAbstract {
     abstract protected function _importFromSpreadsheet($file_path);
 
     protected function _mapSpreadsheetRow($row) {
+        $this->row_errors = array_fill_keys(array_keys($row), NULL);
         $row = array_values($row);
-        
+
         $mapped = [
             'book_name' => NULL,
             'book'      => NULL,
@@ -100,6 +103,12 @@ abstract class SpreadsheetAbstract extends ImporterAbstract {
             $value = $row[$key];
             $value = trim($value);
             $value = preg_replace('/\s+/', ' ', $value);
+
+            if($value[0] == '=') {
+                $this->row_errors[$key] = 'Column ' . $this->_numberToColumn($key + 1) . ' contains a formula and cannot be imported';
+                // $this->addError('Column ' . $this->_numberToColumn($key + 1) . ' contains a formula and cannot be imported');
+                continue;
+            }
 
             switch($map) {
                 case 't':
@@ -167,10 +176,6 @@ abstract class SpreadsheetAbstract extends ImporterAbstract {
             $mapped['book'] = $this->_last_book_num;
         }
 
-        // print_r($this->column_map);
-        // print_r($row);
-        // print_r($mapped);
-
         return $mapped;
     }
 
@@ -200,15 +205,23 @@ abstract class SpreadsheetAbstract extends ImporterAbstract {
             $count  ++;
             $mapped = $this->_mapSpreadsheetRow($row);
             $ov     = FALSE; // one valid
+            $av     = TRUE;  // all valid
+
+            if($this->hasErrors()) {
+                return FALSE;
+            }
 
             foreach($required as $key => $msg) {
                 if(empty($mapped[$key])) {
                     $this->addError($msg . $msg_ext, 4);
+                    $av = FALSE;
                 }
                 else {
                     $ov = TRUE;
                 }
             }
+
+
 
             // if($count == 1 && $ov) {
             if($count == 1 && !$this->hasErrors()) {
@@ -237,8 +250,18 @@ abstract class SpreadsheetAbstract extends ImporterAbstract {
                 $this->addError('No valid Bible verse fields found; please make sure that the column roles and \'First Row of Verse Data\' is correct.');
             }
             else if($this->hasErrors()) {
+                // Individual column errors are ignored if valid data exists elsewhere
+                if(!$av) {         
+                    foreach($this->row_errors as $err) {
+                        if($err) {
+                            $this->addError($err);
+                        }
+                    }
+                }
+
                 $this->addError('If the columm roles are correct, please make sure that \'First Row of Verse Data\' is correct.');
             }
+
 
             if($this->hasErrors()) {
                 return FALSE;
@@ -343,5 +366,15 @@ abstract class SpreadsheetAbstract extends ImporterAbstract {
         }
 
         return $this->hasErrors() ? FALSE : TRUE;
+    }
+
+    protected function _numberToColumn($num) {
+        $num = (int) $num;
+
+        if($num < 1 || $num > 26) {
+            return NULL;
+        }
+
+        return chr($num + 64);
     }
 }

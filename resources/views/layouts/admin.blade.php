@@ -1,14 +1,15 @@
 @php
     $buttons = [
-        // ['label' => 'Dashboard', 'route' => 'admin.main', 'new_tab' => FALSE],
-        ['label' => 'Bibles', 'route' => 'admin.bibles.index', 'new_tab' => FALSE],
-        ['label' => 'Options', 'route' => 'admin.configs', 'new_tab' => FALSE],
-        ['label' => 'Terms of Service', 'route' => 'admin.tos', 'new_tab' => FALSE],
-        ['label' => 'Privacy Policy', 'route' => 'admin.privacy', 'new_tab' => FALSE],
-        // ['label' => 'Help', 'route' => 'admin.help', 'new_tab' => FALSE],
-        ['label' => 'Update', 'route' => 'admin.update', 'new_tab' => FALSE],
-        ['label' => 'API Documentation', 'route' => 'docs', 'new_tab' => TRUE],
-        ['label' => 'Log Out', 'route' => 'logout', 'new_tab' => FALSE],
+        // ['label' => 'Dashboard', 'route' => 'admin.main', 'new_tab' => FALSE, 'hash' => ''],
+        ['label' => 'Bibles', 'route' => 'admin.bibles.index', 'new_tab' => FALSE, 'hash' => ''],
+        ['label' => 'Options', 'route' => 'admin.configs', 'new_tab' => FALSE, 'hash' => ''],
+        ['label' => 'Terms of Service', 'route' => 'admin.tos', 'new_tab' => FALSE, 'hash' => ''],
+        ['label' => 'Privacy Policy', 'route' => 'admin.privacy', 'new_tab' => FALSE, 'hash' => ''],
+        // ['label' => 'Help', 'route' => 'admin.help', 'new_tab' => FALSE, 'hash' => ''],
+        ['label' => 'Update', 'route' => 'admin.update', 'new_tab' => FALSE, 'hash' => ''],
+        ['label' => 'API Documentation', 'route' => 'docs', 'new_tab' => TRUE, 'hash' => ''],
+        'exports' => ['label' => 'Bible Exports / Downloads', 'route' => 'docs', 'new_tab' => TRUE, 'hash' => '#tab_downloads'],
+        ['label' => 'Log Out', 'route' => 'logout', 'new_tab' => FALSE, 'hash' => ''],
     ];
 
 if(!isset($javascripts)) {
@@ -20,6 +21,10 @@ else if(!is_array($javascripts)) {
 
 if(isset($include_enyo) && $include_enyo) {
     $javascripts[] = '/js/bin/enyo/2.5.1.1/enyo.js';
+}
+
+if(!config('download.enable') || !config('download.tab_enable')) {
+    unset($buttons['exports']);
 }
 
 @endphp
@@ -64,7 +69,7 @@ if(isset($include_enyo) && $include_enyo) {
             <h1>{{ config('app.name', 'Bible SuperSearch API') }} Manager</h1>
             <div id='top_menu'>
                 @foreach ($buttons as $button)
-                    <a href='{{ route($button['route']) }}'
+                    <a href='{{ route($button['route']) }}{{$button['hash']}}'
                        class='menu_item @if(Route::currentRouteName() == $button['route'])active @endif'
                        @if($button['new_tab'])target='_NEW'@endif;
                        >
