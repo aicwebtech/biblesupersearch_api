@@ -23,6 +23,8 @@ use Illuminate\Support\Facades\Storage;
 abstract class ImporterAbstract {
     use \App\Traits\Error;
 
+    public $test_mode = FALSE;
+
     protected $bible_attributes = [];
     protected $default_dir;
     protected $file; // File name (no dir)
@@ -116,16 +118,18 @@ abstract class ImporterAbstract {
             return FALSE;
         }
 
-        try {
-            $this->file = static::sanitizeFileName( $File->getClientOriginalName() );
-            $dest_path = $this->getImportDir() . $this->file;
+        if(!$this->test_mode) {        
+            try {
+                $this->file = static::sanitizeFileName( $File->getClientOriginalName() );
+                $dest_path = $this->getImportDir() . $this->file;
 
-            // if(!file_exists($dest_path)) {
-                $npath = $File->storeAs($this->path_short, $this->file, 'bibles');
-            // }
-        }
-        catch(\Exception $e) {
-            return $this->addError('Could not save import file: ' . $e->getMessage());
+                // if(!file_exists($dest_path)) {
+                    $npath = $File->storeAs($this->path_short, $this->file, 'bibles');
+                // }
+            }
+            catch(\Exception $e) {
+                return $this->addError('Could not save import file: ' . $e->getMessage());
+            }
         }
 
         return TRUE;
@@ -331,7 +335,7 @@ abstract class ImporterAbstract {
             preg_match_all($subpattern, $matches[0], $submatches);
 
             foreach($submatches as $smatch) {
-                if($parentheses == 'discard' && $smatch[0]{0} == '(') {
+                if($parentheses == 'discard' && $smatch[0][0] == '(') {
                     continue;
                 }
 

@@ -8,6 +8,8 @@ use App\Helpers;
 class ImportManager {
     use Traits\Error;
 
+    public $test_mode = FALSE;
+
     // List / map of importers that are accessible via HTTP request
     protected static $type_map = [
         'analyzer' => [
@@ -134,6 +136,7 @@ class ImportManager {
         }
 
         $Importer = new $this->import_class();
+        $Importer->test_mode = $this->test_mode ? TRUE : FALSE;
         $type_info = static::$type_map[$this->type];
         
         if(!$Importer->setSettings($data)) {

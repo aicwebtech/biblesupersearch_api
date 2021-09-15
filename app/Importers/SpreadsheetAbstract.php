@@ -104,7 +104,7 @@ abstract class SpreadsheetAbstract extends ImporterAbstract {
             $value = trim($value);
             $value = preg_replace('/\s+/', ' ', $value);
 
-            if($value[0] == '=') {
+            if($value && $value[0] == '=') {
                 $this->row_errors[$key] = 'Column ' . $this->_numberToColumn($key + 1) . ' contains a formula and cannot be imported';
                 // $this->addError('Column ' . $this->_numberToColumn($key + 1) . ' contains a formula and cannot be imported');
                 continue;
@@ -352,7 +352,10 @@ abstract class SpreadsheetAbstract extends ImporterAbstract {
             }
         }
 
-        if(array_key_exists('first_row_data', $set)) {
+        if(!array_key_exists('first_row_data', $set) || empty($set['first_row_data'])) {
+            $this->addError('First Row of Verse Data is required', 4);
+        } 
+        else {            
             $frd = (int) $set['first_row_data'];
 
             if($frd < 1) {
@@ -360,9 +363,6 @@ abstract class SpreadsheetAbstract extends ImporterAbstract {
             }
 
             $this->first_row_data = $frd - 1;
-        }
-        else {
-            $this->addError('First Row of Verse Data is required', 4);
         }
 
         return $this->hasErrors() ? FALSE : TRUE;
