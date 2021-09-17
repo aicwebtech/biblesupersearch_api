@@ -105,8 +105,7 @@ abstract class SpreadsheetAbstract extends ImporterAbstract {
             $value = preg_replace('/\s+/', ' ', $value);
 
             if($value && $value[0] == '=') {
-                $this->row_errors[$key] = 'Column ' . $this->_numberToColumn($key + 1) . ' contains a formula and cannot be imported';
-                // $this->addError('Column ' . $this->_numberToColumn($key + 1) . ' contains a formula and cannot be imported');
+                $this->row_errors[$key] = 'Column ' . $this->_numberToColumn($key + 1) . ' contains a formula and cannot be imported. Please deselect this column.';
                 continue;
             }
 

@@ -262,4 +262,19 @@ class InstallManager {
             'Renders\Extras',
         ];
     }
+
+    static function uninstall(Request $request) {
+        $InstalledBibles = Bible::where('installed', 1)->get();
+        $success = TRUE;
+        return TRUE;
+
+        foreach($InstalledBibles as $B) {
+            $B->uninstall();
+            $success = ($B->hasErrors()) ? FALSE : $success;
+        }
+
+        $exit_code = Artisan::call('migrate:reset'); // Roll back ALL DB migrations
+
+        return $success;
+    }
 }

@@ -60,6 +60,8 @@ Route::get('/auth/success', 'Auth\PasswordController@success');
 Route::get('/admin/main', 'AdminController@getMain')->name('admin.main');
 Route::get('/admin/help', 'AdminController@help')->name('admin.help');
 Route::get('/admin/update', 'AdminController@softwareUpdate')->name('admin.update');
+Route::get('/admin/uninstall', 'AdminController@uninstallPage')->name('admin.uninstall');
+Route::post('/admin/uninstall', 'AdminController@softwareUninstall')->name('admin.douninstall');
 
 Route::get('/admin/bibles/grid', 'Admin\BibleController@grid');
 Route::get('/admin/bibles/languages', 'Admin\BibleController@languages');

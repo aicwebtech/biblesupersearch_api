@@ -6,6 +6,7 @@ use Illuminate\Http\Request;
 
 use App\Http\Requests;
 use App\Http\Controllers\Controller;
+use Illuminate\Support\Facades\Redirect;
 
 // Controller for views only accessible by Administrative users (access_level >= 100)
 
@@ -23,7 +24,8 @@ class AdminController extends Controller
      */
     public function getMain()
     {
-        return view('admin.main');
+        return Redirect::route('admin.bibles.index');
+        // return view('admin.main');
     }
 
     public function todo() {
@@ -57,6 +59,27 @@ class AdminController extends Controller
         }
 
         return view('admin.update', $vars);
+    }
+
+
+    public function uninstallPage(Request $request) {
+        return view('admin.uninstall');
+    }
+
+    public function softwareUninstall(Request $request) {
+        $confirm = $request->input('confirm');
+        $confirm_bool = ($confirm && $confirm != 'No' && $confirm != 'false') ? TRUE : FALSE;
+
+        if(!$confirm_bool) {
+            return Redirect::route('admin.main');
+        }
+
+        if(\App\InstallManager::uninstall($request)) {
+            return view('admin.uninstall_success');
+        }
+        else {
+            return view('admin.uninstall_failure');
+        }
     }
 
     /**

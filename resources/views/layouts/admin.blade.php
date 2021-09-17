@@ -6,9 +6,10 @@
         ['label' => 'Terms of Service', 'route' => 'admin.tos', 'new_tab' => FALSE, 'hash' => ''],
         ['label' => 'Privacy Policy', 'route' => 'admin.privacy', 'new_tab' => FALSE, 'hash' => ''],
         // ['label' => 'Help', 'route' => 'admin.help', 'new_tab' => FALSE, 'hash' => ''],
-        ['label' => 'Update', 'route' => 'admin.update', 'new_tab' => FALSE, 'hash' => ''],
         ['label' => 'API Documentation', 'route' => 'docs', 'new_tab' => TRUE, 'hash' => ''],
         'exports' => ['label' => 'Bible Exports / Downloads', 'route' => 'docs', 'new_tab' => TRUE, 'hash' => '#tab_downloads'],
+        ['label' => 'Update', 'route' => 'admin.update', 'new_tab' => FALSE, 'hash' => ''],
+        ['label' => 'Uninstall', 'route' => 'admin.uninstall', 'new_tab' => FALSE, 'hash' => ''],
         ['label' => 'Log Out', 'route' => 'logout', 'new_tab' => FALSE, 'hash' => ''],
     ];
 

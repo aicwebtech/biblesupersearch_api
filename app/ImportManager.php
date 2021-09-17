@@ -131,6 +131,8 @@ class ImportManager {
     }
 
     public function checkImportFile($data) {
+        ini_set('memory_limit', '256M');
+
         if(!$this->setType($data['importer'])) {
             return FALSE;
         }
@@ -185,6 +187,8 @@ class ImportManager {
       * 
       */
     public function importFile($data) {
+        ini_set('memory_limit', '256M');
+
         $importer = $data['_importer'];
         $file     = $data['_file'];
         $use_mod  = array_key_exists('_force_use_module', $data) && $data['_force_use_module'] ? TRUE : FALSE;
