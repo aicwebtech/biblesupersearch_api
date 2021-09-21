@@ -266,7 +266,7 @@ class InstallManager {
     static function uninstall(Request $request) {
         $InstalledBibles = Bible::where('installed', 1)->get();
         $success = TRUE;
-        return TRUE;
+        // return TRUE;
 
         foreach($InstalledBibles as $B) {
             $B->uninstall();

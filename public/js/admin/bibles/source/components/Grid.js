@@ -38,8 +38,6 @@ enyo.kind({
             var width = (reduceWidth) ? vpWidth - 135 : '1400';
             width = Math.max(width, 900);
 
-            this.log('width', vpWidth, width);
-
             this.colModel = [
                 {
                     name: 'name', 
@@ -192,7 +190,7 @@ enyo.kind({
                     id: 'id'
                 },
                 pager: pagerId,
-                sortname: 'lang',
+                sortname: 'rank',
                 sortorder: 'asc',
                 viewrecords: true,
                 height: 'auto',

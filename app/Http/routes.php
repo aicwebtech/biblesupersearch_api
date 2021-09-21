@@ -59,8 +59,8 @@ Route::get('/auth/success', 'Auth\PasswordController@success');
 
 Route::get('/admin/main', 'AdminController@getMain')->name('admin.main');
 Route::get('/admin/help', 'AdminController@help')->name('admin.help');
-Route::get('/admin/update', 'AdminController@softwareUpdate')->name('admin.update');
-Route::get('/admin/uninstall', 'AdminController@uninstallPage')->name('admin.uninstall');
+Route::get('/admin/update', 'AdminController@softwareUpdate')->name('admin.update')->middleware('install');
+Route::get('/admin/uninstall', 'AdminController@uninstallPage')->name('admin.uninstall')->middleware('install');
 Route::post('/admin/uninstall', 'AdminController@softwareUninstall')->name('admin.douninstall');
 
 Route::get('/admin/bibles/grid', 'Admin\BibleController@grid');
@@ -84,9 +84,9 @@ Route::post('/admin/bibles/importcheck', 'Admin\BibleController@importCheck');
 Route::post('/admin/bibles/import', 'Admin\BibleController@import');
 Route::post('/admin/bibles/update', 'Admin\BibleController@updateModule');
 
-Route::get('/admin/tos', 'Admin\PostConfigController@tos')->name('admin.tos');
+Route::get('/admin/tos', 'Admin\PostConfigController@tos')->name('admin.tos')->middleware('install');
 Route::post('/admin/tos', 'Admin\PostConfigController@saveTos');
-Route::get('/admin/privacy', 'Admin\PostConfigController@privacy')->name('admin.privacy');
+Route::get('/admin/privacy', 'Admin\PostConfigController@privacy')->name('admin.privacy')->middleware('install');
 Route::post('/admin/privacy', 'Admin\PostConfigController@savePrivacy');
 
 Route::resource('/admin/bibles', 'Admin\BibleController', ['as' => 'admin']);
@@ -95,7 +95,7 @@ Route::resource('/admin/bibles', 'Admin\BibleController', ['as' => 'admin']);
 //     'create', 'edit'// , 'update'
 // ]]);
 
-Route::get('/admin/config', 'Admin\ConfigController@index')->name('admin.configs');
+Route::get('/admin/config', 'Admin\ConfigController@index')->name('admin.configs')->middleware('install');
 Route::post('/admin/config', 'Admin\ConfigController@store')->name('admin.configs.store');
 Route::delete('/admin/config', 'Admin\ConfigController@destroy')->name('admin.configs.destroy');
 Route::post('/admin/config/download/cleanup', 'Admin\ConfigController@cleanUpDownloadFiles');

@@ -14,7 +14,8 @@ class AdminController extends Controller
 {
     public function __construct() {
         parent::__construct();
-        $this->middleware(['auth:100', 'migrate']);
+        $this->middleware('auth:100');
+        $this->middleware(['install', 'migrate'])->except('softwareUninstall');
     }
 
     /**

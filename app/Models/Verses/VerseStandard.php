@@ -90,7 +90,7 @@ class VerseStandard extends VerseAbstract {
             $verses = $Query->get();
         }
 
-        if(config('app.debug')) {
+        if(config('app.debug_query')) {
             $_SESSION['debug']['query']      = $Query->toSql();
             $_SESSION['debug']['query_data'] = (isset($binddata)) ? $binddata : NULL;
             // $_SESSION['debug']['query_raw_output'] = $verses->all();

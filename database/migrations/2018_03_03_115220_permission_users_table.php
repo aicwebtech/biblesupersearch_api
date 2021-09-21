@@ -37,7 +37,7 @@ class PermissionUsersTable extends Migration
     public function down()
     {
         Schema::table('users', function (Blueprint $table) {
-            $table->dropColumn(['access_level', 'comments', 'deleted_at']);
+            $table->dropColumn(['access_level', 'comments']);
         });
     }
 }

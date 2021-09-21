@@ -81,6 +81,8 @@ return [
     */
 
     'debug' => env('APP_DEBUG', FALSE),
+    
+    'debug_query' => env('APP_DEBUG_QUERY', FALSE),
 
     'env' => env('APP_ENV', 'production'),
 

@@ -24,21 +24,25 @@
         <?php endif; ?>
     </tr>
 
-    <?php foreach($bibles as $bible) : ?>
-        <tr>
-            <td class='col_module'><?php echo $bible['module'] ?></td>
-            <td class='col_lang'><?php echo $bible['lang'] ?></td>
-            <td class='col_name'><?php echo $bible['name'] ?></td>
-            <td class='col_shortname'><?php echo $bible['shortname'] ?></td>
-            <td class='col_year'><?php echo $bible['year'] ?></td>
-            <td class='col_copyright'><?php echo $bible['copyright'] ? 'Yes' : 'No' ?></td>
-            <td class='col_research'><?php echo $bible['research'] ? 'Yes' : 'No' ?></td>
+    <?php if(is_array($bibles) && !empty($bibles)): ?>
+        <?php foreach($bibles as $bible) : ?>
+            <tr>
+                <td class='col_module'><?php echo $bible['module'] ?></td>
+                <td class='col_lang'><?php echo $bible['lang'] ?></td>
+                <td class='col_name'><?php echo $bible['name'] ?></td>
+                <td class='col_shortname'><?php echo $bible['shortname'] ?></td>
+                <td class='col_year'><?php echo $bible['year'] ?></td>
+                <td class='col_copyright'><?php echo $bible['copyright'] ? 'Yes' : 'No' ?></td>
+                <td class='col_research'><?php echo $bible['research'] ? 'Yes' : 'No' ?></td>
 
-            <?php if(config('download.enable')): ?>
-                <td class='col_downloadable'><?php echo $bible['downloadable'] ? 'Yes' : 'No' ?></td>
-            <?php endif; ?>
-        </tr>
-    <?php endforeach; ?>
+                <?php if(config('download.enable')): ?>
+                    <td class='col_downloadable'><?php echo $bible['downloadable'] ? 'Yes' : 'No' ?></td>
+                <?php endif; ?>
+            </tr>
+        <?php endforeach; ?>
+    <?php else: ?>
+        <tr><td colspan="8">-- No Bibles Enabled --</td></tr>
+    <?php endif; ?>
 
 </table>
 
