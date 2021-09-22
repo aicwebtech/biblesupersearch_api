@@ -227,6 +227,27 @@ class ImportSpreadsheetTest extends TestCase {
             $Manager->checkImportFile($idata);
             $this->assertTrue($Manager->hasErrors());
         }
+    }    
+
+    public function testFormula() {
+        $data = [
+            'first_row_data' => 9,
+            'col_A' => 'id',
+            'col_B' => 'bn c:v', // contains formula
+            'col_C' => '',
+            'col_D' => '',
+            'col_E' => '',
+            'col_F' => '',
+            'col_G' => 't',
+        ];
+
+        $idata   = $this->_makeFakeImportTest('kjv_w_formula_min.xlsx', $data);
+        $idata['importer'] = 'excel';
+        $Manager = new ImportManager();
+        $Manager->test_mode = TRUE;
+        $Manager->checkImportFile($idata);
+        $this->assertTrue($Manager->hasErrors());
+        $this->assertContains('Column B contains a formula and cannot be imported. Please deselect this column.', $Manager->getErrors());
     }
     /* End deep / slow tests */
 
@@ -396,7 +417,7 @@ class ImportSpreadsheetTest extends TestCase {
 
     protected function _makeFakeImportTest($file_name, $data) {
         $data['file'] = $this->_generateUploadedFile($file_name);
-        $data['importer'] = $this->files[ $file_name ] ?: NULL;  
+        $data['importer'] = array_key_exists($file_name, $this->files) ? $this->files[ $file_name ] : NULL;  
         return $data;
     }
 
