@@ -31,7 +31,7 @@ class BibleSuperSearch extends ImporterAbstract {
         $Bible = Bible::createFromModuleFile($this->module);
 
         if(!$Bible) {
-            $Bible = $this->_getBible($module);
+            $Bible = $this->_getBible($this->module);
         }
 
         if($this->_existing) {
