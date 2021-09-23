@@ -52,8 +52,9 @@ class BibleController extends Controller
 
     public function grid(Request $request) {
         $data = $request->toArray();
-        $rows = [];
-        $rows_per_page = intval($data['rows']);
+        $rows = $postfilters = [];
+        $rows_per_page = (int) $data['rows'];
+        $page          = (int) $_REQUEST['page'];
 
         if($data['sidx'] == 'lang') {
             $data['sidx'] = 'languages.name';
@@ -67,37 +68,66 @@ class BibleController extends Controller
 
         $Query = Bible::select('bibles.*', 'languages.name AS lang', 'copyrights.name AS copy')
             ->leftJoin('languages', 'bibles.lang_short', 'languages.code')
-            ->leftJoin('copyrights', 'bibles.copyright_id', 'copyrights.id');
+            ->leftJoin('copyrights', 'bibles.copyright_id', 'copyrights.id')
+            ->orderBy($data['sidx'], $data['sord']);
 
         if(array_key_exists('_search', $data) && $data['_search'] == 'true') {
-            if($data['searchField'] == 'lang') {
-                $data['searchField'] = 'bibles.lang_short';
-            }            
-
-            if($data['searchField'] == 'copy') {
-                $data['searchField'] = 'bibles.copyright_id';
-            }
-
-            Helpers::buildGridSearchQuery($data, $Query, ['lang' => 'bibles.lang_short', 'copy' => 'bibles.copyright_id', 'name' => 'bibles.name']);
+            Helpers::buildGridSearchQuery($data, $Query, [
+                'lang' => 'bibles.lang_short', 
+                'copy' => 'bibles.copyright_id', 
+                'name' => 'bibles.name',
+                'rank' => 'bibles.rank',
+                'has_module_file' => 'POSTFILTER',
+            ]);
+            
+            $postfilters = $data['_post_filters'];
         }
 
-        $Bibles = $Query->orderBy($data['sidx'], $data['sord'])
-            ->paginate($rows_per_page);
+        $has_post_filter = empty($postfilters) ? FALSE : TRUE;
+        $has_file_filter = NULL;
+
+        if(array_key_exists('has_module_file', $postfilters) && $postfilters['has_module_file'] != '_no_rest_') {
+            $has_file_filter = (int) $postfilters['has_module_file'];
+        }
+
+        $Bibles = ($has_post_filter) ? $Query->get() : $Query->paginate($rows_per_page);
 
         foreach($Bibles as $Bible) {
             $row = $Bible->getAttributes();
             unset($row['description']);
             $row['has_module_file'] = $Bible->hasModuleFile() ? 1 : 0;
-            $row['needs_update']    = $Bible->needsUpdate() ? 1 : 0;
+            $row['needs_update']    = $Bible->needsUpdate()   ? 1 : 0;
+
+            if($has_file_filter === 1 && $row['has_module_file'] == 0 || $has_file_filter === 0 && $row['has_module_file'] == 1) {
+                continue;
+            }
+
             $rows[] = $row;
         }
 
-        $resp = [
-            'total'     => $Bibles->lastPage(),
-            'page'      => $Bibles->currentPage(),
-            'rows'      => $rows,
-            'records'   => $Bibles->total(),
-        ];
+        if($has_post_filter) {
+            $page   = ($page < 1) ? 1 : $page;
+            $offset = $rows_per_page * ($page - 1);
+            $count  = count($rows);
+            $rows   = array_slice($rows, $offset, $rows_per_page);
+
+            $resp = [
+                'total'     => ceil($count / $rows_per_page),
+                'page'      => $page,
+                'rows'      => $rows,
+                'records'   => $count,
+                'post'      => TRUE,
+            ];
+        }
+        else {
+            $resp = [
+                'total'     => $Bibles->lastPage(),
+                'page'      => $Bibles->currentPage(),
+                'rows'      => $rows,
+                'records'   => $Bibles->total(),
+                'post'      => FALSE,
+            ];
+        }
 
         return response($resp, 200);
     }

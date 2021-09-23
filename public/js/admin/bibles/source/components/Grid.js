@@ -19,7 +19,7 @@ enyo.kind({
     gridHandle: null,
     idPrefix: 'bible_',
     colModel: null,
-    searchDialogOptions: {multipleSearch: true, closeOnEscape: true, closeAfterSearch: false, closeAfterReset: true},
+    searchDialogOptions: {multipleSearch: true, closeOnEscape: true, closeAfterSearch: false, closeAfterReset: true, multipleGroup:false },
 
     rendered: function() {
         this.inherited(arguments);
@@ -71,7 +71,9 @@ enyo.kind({
                     title: false, 
                     sortable: false, 
                     align: hasFileAlign, 
-                    search: false,
+                    // search: false,
+                    stype: 'select',
+                    searchoptions: boolNullOptions,
                     formatter: enyo.bind(this, this._formatHasFile) // will be sortable when grid is using local data
                 }, 
                 {
@@ -83,6 +85,7 @@ enyo.kind({
 
                     searchoptions: {
                         dataUrl: '/admin/bibles/languages',
+                        sopt: ['eq','ne'],
                         buildSelect: enyo.bind(this, this._formatLanguagesOptions)
                     }
                 },                
@@ -95,6 +98,7 @@ enyo.kind({
 
                     searchoptions: {
                         dataUrl: '/admin/bibles/copyrights',
+                        sopt: ['eq','ne'],
                         buildSelect: enyo.bind(this, this._formatCopyrightsOptions)
                     }
                 },
