@@ -314,6 +314,7 @@ abstract class ImporterAbstract {
     protected function _postFormatText($text) {
         $text = strip_tags($text);
         $text = preg_replace('/\s+/', ' ', $text);
+        $text = preg_replace('/\s+(\W)/', '$1', $text);
         return $text;
     }
 
