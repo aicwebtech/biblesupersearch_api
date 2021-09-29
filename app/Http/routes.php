@@ -76,13 +76,13 @@ Route::post('/admin/bibles/export/{id}', 'Admin\BibleController@export');
 Route::post('/admin/bibles/meta/{id}', 'Admin\BibleController@meta');
 Route::post('/admin/bibles/revert/{id}', 'Admin\BibleController@revert');
 Route::post('/admin/bibles/test/{id}', 'Admin\BibleController@test');
+Route::post('/admin/bibles/update/{id}', 'Admin\BibleController@updateModule');
 // Route::post('/admin/bibles/delete/{id}', 'Admin\BibleController@delete');
 Route::post('/admin/bibles/delete/{id}', 'Admin\BibleController@destroy');
 Route::post('/admin/bibles/unique', 'Admin\BibleController@uniqueCheck');
 Route::get('/admin/bibles/unique', 'Admin\BibleController@uniqueCheck');
 Route::post('/admin/bibles/importcheck', 'Admin\BibleController@importCheck');
 Route::post('/admin/bibles/import', 'Admin\BibleController@import');
-Route::post('/admin/bibles/update', 'Admin\BibleController@updateModule');
 
 Route::get('/admin/tos', 'Admin\PostConfigController@tos')->name('admin.tos')->middleware('install');
 Route::post('/admin/tos', 'Admin\PostConfigController@saveTos');

@@ -330,13 +330,21 @@ class BibleController extends Controller
     }    
 
     public function updateModule(Request $request, $id) {
-        $Bible = Bible::findOrFail($id);
-        $enable = $Bible->enable;
-        $Bible->uninstall();
-        $Bible->install(FALSE, $enable);
-
+        $Bible  = Bible::findOrFail($id);
         $resp = new \stdClass();
         $resp->success = TRUE;
+
+        if(!$Bible->needsUpdate()) {
+            $resp->success = FALSE;
+            $resp->errors  = ['No update needed.'];
+            return new Response($resp, 422);
+        }
+
+        $enable = $Bible->enabled;
+        $Bible->uninstall();
+        $Bible->install(FALSE, $enable);
+        $Bible->module_updated_at = date('Y-m-d H:i:s');
+        $Bible->save();
 
         if($Bible->hasErrors()) {
             $resp->success = FALSE;
@@ -348,12 +356,12 @@ class BibleController extends Controller
 
     public function uninstall(Request $request, $id) {
         $Bible = Bible::findOrFail($id);
-        $resp = new \stdClass();
+        $resp  = new \stdClass();
         $resp->success = TRUE;
         
         if($Bible->module == config('bss.defaults.bible')) {
             $resp->success = FALSE;
-            $resp->errors  = ['Cannot uninstall default Bible'];
+            $resp->errors  = ['Cannot uninstall default Bible.'];
             return new Response($resp, 422);
         }
 

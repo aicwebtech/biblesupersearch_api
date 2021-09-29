@@ -58,6 +58,14 @@ enyo.kind({
                     ontap: 'multiDisable',
                     action: 'disable',
                     actioning: 'Disabling'
+                },                
+                {
+                    tag: 'button',
+                    classes: 'button bulk',
+                    content: 'Update',
+                    ontap: 'multiUpdateModule',
+                    action: 'update',
+                    actioning: 'Updating'
                 },
                 {
                     tag: 'button',
@@ -277,6 +285,9 @@ enyo.kind({
     },
     multiDisable: function(inSender, inEvent) {
         this._confirmMultiAction('disable', 'Disabling');
+    },    
+    multiUpdateModule: function(inSender, inEvent) {
+        this._confirmMultiAction('update', 'Updating');
     },
     multiUninstall: function(inSender, inEvent) {
         this._confirmMultiAction('uninstall', 'Uninstalling');

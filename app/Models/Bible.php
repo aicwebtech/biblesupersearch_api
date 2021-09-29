@@ -39,7 +39,7 @@ class Bible extends Model {
             'lang_short'            => 'required|alpha|min:2|max:3',
             'owner'                 => 'nullable',
             'publisher'             => 'nullable',
-            'restict'               => 'nullable',
+            'restrict'              => 'nullable',
             'research'              => 'nullable',
             'description'           => 'nullable',
             'copyright_statement'   => 'nullable',
@@ -90,7 +90,7 @@ class Bible extends Model {
     ];
 
     // List of fields to NOT export when creating modules
-    protected $do_not_export = ['id', 'created_at', 'updated_at', 'enabled', 'installed', 'installed_at'];
+    protected $do_not_export = ['id', 'created_at', 'updated_at', 'enabled', 'installed', 'installed_at', 'needs_update', 'module_updated_at'];
 
     // List of fileds to not use as metadata (in addition to those contained in $do_not_export)
     protected $do_not_meta = ['rank', 'module_v2', 'importer', 'import_file', 'copyright_id', 'hebrew_text_id', 'greek_text_id', 'translation_type_id'];
@@ -165,6 +165,9 @@ class Bible extends Model {
             else {
                 $this->installed = 1;
                 $this->installed_at = date('Y-m-d H:i:s');
+                $this->module_updated_at = NULL;
+                $this->needs_update = 0;
+                $this->module_version = config('app.version');
 
                 if($enable) {
                     $this->enabled = 1;
@@ -184,6 +187,7 @@ class Bible extends Model {
             $this->installed = 0;
             $this->enabled = 0;
             $this->installed_at = NULL;
+            $this->module_updated_at = NULL;
             $this->save();
         }
         else {
@@ -279,7 +283,7 @@ class Bible extends Model {
     }
 
     public function isDownloadable() {
-        if($this->restict || !$this->copyright_id) {
+        if($this->restrict || !$this->copyright_id) {
             return FALSE;
         }
 
@@ -444,7 +448,7 @@ class Bible extends Model {
         return is_file($this->getModuleFilePath());
     }
 
-    public function needsUpdate() {
+    public function needsUpdate_OLD() {
         return FALSE;
 
         if(!$this->hasModuleFile()) {
@@ -783,6 +787,38 @@ class Bible extends Model {
         $value = strtolower($value);
         $this->attributes['module'] = $value;
         // self::where('1','1')->get();
+    }
+
+    public function needsUpdate() {
+        if(!$this->installed) {
+            return FALSE;
+        }
+
+        if(!$this->module_version || version_compare($this->module_version, config('app.version')) >= 0) {
+            $this->module_version = config('app.version');
+            $this->needs_update = 0;
+            $this->save();
+            return FALSE;
+        }
+        else if($this->needs_update) {
+            return TRUE;
+        }
+
+        $Zip  = $this->openModuleFile();
+        $json = $Zip->getFromName('info.json');
+        $meta = json_decode($json, TRUE);
+
+        if(array_key_exists('module_version', $meta) && version_compare($this->module_version, $meta['module_version']) == -1) {
+            $this->needs_update = 1;
+            $this->save();
+            return TRUE;
+        }
+        else {
+            $this->module_version = config('app.version');
+            $this->needs_update = 0;
+            $this->save();
+            return FALSE;
+        }
     }
 
     public function getRandomReference($random_mode) {

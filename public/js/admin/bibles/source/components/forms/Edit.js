@@ -54,7 +54,7 @@ enyo.kind({
                 // {tag: 'tr', components: [
                 //     {tag: 'td', classes: 'form_label right', content: 'Restrict: '},
                 //     {tag: 'td', classes: 'form_label right', components: [
-                //         {kind: 'enyo.Checkbox', name: 'restict', disabled: true},
+                //         {kind: 'enyo.Checkbox', name: 'restrict', disabled: true},
                 //     ]}, 
                 //     {tag: 'td', classes: 'sublabel', attributes: {colspan: 2}, components: [
                 //         {
@@ -241,8 +241,8 @@ enyo.kind({
                 return value ? 1 : 0;
             }
         }},        
-        {from: 'formData.restict', to: '$.restict.checked', oneWay: false, transform: function(value, dir) {
-            this.debugBindings && this.log('restict', value, dir);
+        {from: 'formData.restrict', to: '$.restrict.checked', oneWay: false, transform: function(value, dir) {
+            this.debugBindings && this.log('restrict', value, dir);
 
             if(dir == 1) {
                 return (value) ? true : false;
