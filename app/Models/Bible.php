@@ -70,7 +70,7 @@ class Bible extends Model {
         'rank',
         'official',
         'research',
-        'restict',
+        'restrict',
         'publisher',
         'hebrew_text_id',
         'greek_text_id',

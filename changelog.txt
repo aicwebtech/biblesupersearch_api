@@ -1,10 +1,14 @@
 Bible SuperSearch API Changelog
 
-= 4.5.0 / ??? (soft release)
-* Admin: Added filtering on Bible manager
-* Admin: Made Bible manager grid more responsive (not perfect)
-* Admin: Added link to downloads page
-
+= 4.5.0 / Oct 9, 2021 (soft release)
+* Admin: Added filtering on Bible manager.
+* Admin: Made Bible manager grid more responsive (not perfect).
+* Admin: Added link to downloads page.
+* Admin: Added ability to flag users to need to update Bible text from module file.
+* Admin: Added uninstaller.
+* Fixed: Extra spaces in 'KJV with Strongs' text.
+* Improvement: Added unit tests for spreadsheet imports.
+* Improvement: Better column check error messages when importing spreadsheets.
 
 = 4.4.3 / July 31, 2021
 * Preventing deletion / uninstallation / disabling of default Bible
@@ -24,7 +28,7 @@ Bible SuperSearch API Changelog
 * Bugfix: Fixed PHP 7.4 / 8.0 compatibility issues
 * Bugfix: Fixed double highlight when short keyword found inside of longer keyword
 * Bugfix: Attempting to access /login when already logged in was redirecting to / (document homepage).  It now redirects to admin landing page (currently the Bible manager)
-* Removed: All 'importFromV2' code as this obsolete.
+* Removed: All 'importFromV2' code as this is now obsolete.
 * Removed: Officially removed _ as single character wildcard.  (This feature was never implemented in 4.0 and was useless in previous versions.)
 
 = 4.3.4 / Jan 26, 2021
