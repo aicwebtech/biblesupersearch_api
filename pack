@@ -13,6 +13,9 @@ delfiles=(
     update
     .env.example-cli
     readme.md
+    tests/Feature/test_spreadsheets/kjv_full.csv
+    tests/Feature/test_spreadsheets/kjv_full.xlsx
+    tests/Feature/test_spreadsheets/kjv_full.ods
 )
 
 echo ''

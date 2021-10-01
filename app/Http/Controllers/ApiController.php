@@ -40,7 +40,7 @@ class ApiController extends Controller {
         try {
             $results = $Engine->$actionMethod($input);
 
-            if(config('app.debug') && $action == 'query') {
+            if(config('app.debug_query') && $action == 'query') {
                 $Engine->addError( '<pre>' . print_r($_SESSION['debug'], TRUE) . '</pre>', 1);
             }
 

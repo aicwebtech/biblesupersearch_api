@@ -123,4 +123,141 @@ class Helpers {
         return ($format === 'both') ? ['raw' => $max, 'fmt' => $max_fmt] : $max_fmt;
     }
 
+    public static function isAuthorized($access_level) {
+
+    }
+
+    /**
+     * Builds Laravel query from jqgrid search data
+     * 
+     * @param $data response data
+     * @param $Query Laravel query builder
+     */
+    public static function buildGridSearchQuery(&$data, \Illuminate\Database\Eloquent\Builder &$Query, $field_map = []) {
+        $val = $data['searchString'];
+        $op  = NULL;
+        $data['_post_filters'] = [];
+
+        if(array_key_exists('filters', $data) && $data['filters']) {
+            return self::buildGridSearchMuiltiQuery($data, $Query, $field_map);
+        }
+
+        list($op, $val, $special) = self::_mapSearchOperator($data['searchOper'], $data['searchString']);
+
+        if($op && $data['searchString'] != '_no_rest_') {
+            $field = (array_key_exists($data['searchField'], $field_map) && $field_map[$data['searchField']]) ? $field_map[$data['searchField']] : $data['searchField']; 
+
+            if($field == 'POSTFILTER') {
+                $data['_post_filters'][ $data['searchField'] ] = $val;
+            }
+            else {
+                $Query->where($field, $op, $val);
+            }
+        }
+    }
+
+    public static function buildGridSearchMuiltiQuery(&$data, \Illuminate\Database\Eloquent\Builder &$Query, $field_map = []) {
+        if(!array_key_exists('filters', $data) || !$data['filters']) {
+            return;
+        }
+
+        $filters = json_decode($data['filters']);
+        $mapped  = [];
+        $data['_post_filters'] = [];
+
+        foreach($filters->rules as $rule) {
+            list($op, $val, $special) = self::_mapSearchOperator($rule->op, $rule->data);
+
+            if($op && $rule->data != '_no_rest_') {            
+                $field = (array_key_exists($rule->field, $field_map) && $field_map[$rule->field]) ? $field_map[$rule->field] : $rule->field; 
+
+                if($field == 'POSTFILTER') {
+                    $data['_post_filters'][ $rule->field ] = $val;
+                }
+                else {                
+                    $mapped[] = [
+                        'field' => $field,
+                        'op'    => $op,
+                        'val'   => $val,
+                        'sp'    => $special,
+                    ];
+                }
+            }
+        }
+
+        if($filters->groupOp == 'AND') {
+            $Query->where(function($q) use ($mapped) {
+                foreach($mapped as $m) {
+                    $q->where($m['field'], $m['op'], $m['val']);
+                }
+            });
+        }        
+
+        // Known issue: When using a postfilter, the postfilter will always be treated as AND
+        if($filters->groupOp == 'OR') {
+            $Query->where(function($q) use ($mapped) {
+                foreach($mapped as $key => $m) {
+                    if($key == 0) {
+                        $q->where($m['field'], $m['op'], $m['val']);
+                    }
+                    else {
+                        $q->orWhere($m['field'], $m['op'], $m['val']);
+                    }
+                }
+            });
+        }
+    }
+
+    protected static function _mapSearchOperator($search_op, $val) {
+        $op = NULL;
+        $special = NULL;
+
+        switch($search_op) {
+            case 'eq':
+                $op = '=';
+                break;             
+            case 'ne':
+                $op = '!=';
+                break;           
+            case 'lt':
+                $op = '<';
+                break;             
+            case 'le':
+                $op = '<=';
+                break;
+            case 'gt':
+                $op = '>';
+                break;             
+            case 'ge':
+                $op = '>=';
+                break; 
+            case 'bw':
+                $op = 'LIKE';
+                $val .= '%';
+                break;             
+            case 'bn':
+                $op = 'NOT LIKE';
+                $val .= '%';
+                break;            
+            case 'ew':
+                $op = 'LIKE';
+                $val = '%' . $val;
+                break;             
+            case 'en':
+                $op = 'NOT LIKE';
+                $val = '%' . $val;
+                break;             
+            case 'cn':
+                $op = 'LIKE';
+                $val = '%' . $val . '%';
+                break;             
+            case 'nc':
+                $op = 'NOT LIKE';
+                $val = '%' . $val . '%';
+                break; 
+        }
+
+        return [$op, $val, $special];
+    }
+
 }

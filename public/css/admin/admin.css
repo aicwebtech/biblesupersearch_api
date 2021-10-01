@@ -128,7 +128,7 @@ title.h1 {
     cursor: pointer;
 }
 
-.info p {
+.info p, .info div.container {
     display: none;
 }
 
@@ -146,12 +146,28 @@ title.h1 {
     top: 0px;
 }
 
+.info:hover div.container {
+    display: block;
+    position: absolute;
+    background-color: #f7f3cd;
+    width: 300px;
+    padding: 5px;
+    border: 1px solid #c2b751;
+}
+
 .info.narrow:hover p {
     width: 200px;
 }
 
 .red_alert {
     color: red;
+}
+
+.non_reversible {
+    color: red;
+    margin-top: 20px;
+    text-align: center;
+    font-weight: bold;
 }
 
 .error {

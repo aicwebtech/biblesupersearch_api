@@ -37,7 +37,7 @@ class EnhanceBiblesTable extends Migration
     public function down()
     {
         Schema::table('bibles', function (Blueprint $table) {
-            $table->dropColumn(['owner', 'publisher', 'citation_limit', 'red_letter', 'copyright_id', 'restrict', 'paragraph', 'importer', 'import_file',
+            $table->dropColumn(['owner', 'publisher', 'citation_limit', 'red_letter', 'copyright_id', 'restict', 'paragraph', 'importer', 'import_file',
                 'hebrew_text_id', 'greek_text_id', 'translation_type_id'
             ]);
         });

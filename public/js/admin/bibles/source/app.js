@@ -56,10 +56,12 @@ enyo.kind({
 
                 if(Array.isArray(err)) {
                     err.forEach(function(e) {
-                        msg += e + '<br />';
+                        if(typeof e == 'string') {
+                            msg += e + '<br />';
+                        }
                     });
                 }
-                else {
+                else if(typeof err == 'string') {
                     msg += err + '<br />';
                 }
             }

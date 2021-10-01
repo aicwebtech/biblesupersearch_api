@@ -203,7 +203,7 @@
                         <div class='container' style='width:800px'> 
                             <div class='config_group'>
                                 <div class='config_block'>
-                                    <h1>Downloads</h1>
+                                    <h1>Downloads &amp; Exports</h1>
 
                                     <table border='0'>
                                         <tbody>

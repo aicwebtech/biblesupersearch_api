@@ -8,6 +8,7 @@ enyo.kind({
     importerData: {},
     fileSanitized: null,
     debugBindings: false,
+    moduleConfirmed: false,
 
     components: [
         {tag: 'table', classes: 'import_form', _attributes: {border: 1}, components: [
@@ -90,6 +91,7 @@ enyo.kind({
     create: function() {
         this.inherited(arguments);
         this.set('fileValidated', false);
+        this.set('moduleConfirmed', false);
 
         // this.$.type.createComponent({value: null, content: 'Select One ...'});
 
@@ -259,9 +261,10 @@ enyo.kind({
         postData._token = laravelCsrfToken;
         postData._file = this.get('fileSanitized');
         postData._importer = this.$.type.get('value');
+        postData._force_use_module = this.get('moduleConfirmed') ? 1 : 0;
         postData._settings = JSON.stringify(configProps);
 
-        this.log('postData', postData);
+        // this.log('postData', postData);
         
         this.app.set('ajaxLoading', true);
 
@@ -295,34 +298,62 @@ enyo.kind({
         });
 
         ajax.error(this, function(inSender, inResponse) {
-            console.log('ERROR', inSender, inResponse);
+            console.log('IMPORT ERROR', inSender, inResponse);
             this.app.set('ajaxLoading', false);
             var response = JSON.parse(inSender.xhrResponse.body);
+
+            if(response.errors && response.errors.module_reserved) {
+                return this._reservedHandler(inSender, response, inSender.postBody);
+            }
+
             this.app._errorHandler(inSender, response);
         });
 
         ajax.go();
     },
 
-    _errorHandler: function(inSender, inResponse) {
-        var msg = 'An Error has occurred';
+    _reservedHandler: function(inSender, inResponse, postBody) {
+        var t = this;
+        var msg  = 'Note: the module \'' + postBody.module + '\' has been reserved for this Bible:<br /><br />';
+            msg += '&nbsp; &nbsp;\'' + inResponse.errors.module_info.name + '\'<br /><br />';
+            msg += 'Description: ' + inResponse.errors.module_info.desc + '<br /><br />';
+            msg += 'Please confirm that this is the Bible you are importing by clicking OK.<br /><br />';
+            msg += 'Note: This will cause some information to be corrected on the Bible.<br /><br />';
 
-        if(inResponse.errors) {
-            msg += '<br /><br />';
+            this.app.confirm(msg, function(confirm) {
+                if(confirm) {
+                    t.set('moduleConfirmed', true);
+                    // t.save();
+                    postBody = enyo.mixin(postBody, inResponse.errors.module_info);
+                    t.$.EditView.get('view').set('formData', postBody);
+                    t.app.alert('Module confirmed, some information corrected.');
+                }
+            }, this);
+    },
 
-            for(field in inResponse.errors) {
-                var err = inResponse.errors[field];
+    // _errorHandler: function(inSender, inResponse) {
+    //     this.log();
+    //     var msg = 'An Error has occurred';
 
-                err.forEach(function(e) {
-                    msg += e + '<br />';
-                });
-            }
-        }
+    //     if(inResponse.errors) {
+    //         msg += '<br /><br />';
 
-        this.app.alert(msg);
-    }, 
+    //         for(field in inResponse.errors) {
+    //             var err = inResponse.errors[field];
+
+    //             err.forEach(function(e) {
+    //                 if(typeof e == 'string') {
+    //                     msg += e + '<br />';
+    //                 }
+    //             });
+    //         }
+    //     }
+
+    //     this.app.alert(msg);
+    // }, 
     openLoad: function() {
         this.set('fileValidated', false);
+        this.set('moduleConfirmed', false);
         this._resetFormData();
         this._resetBibleData();
         this.set('showing', true);

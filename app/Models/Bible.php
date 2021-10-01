@@ -36,10 +36,10 @@ class Bible extends Model {
                 'alpha_dash',
                 'max:100'
             ],
-            'lang_short'    => 'required|alpha|min:2|max:3',
+            'lang_short'            => 'required|alpha|min:2|max:3',
             'owner'                 => 'nullable',
             'publisher'             => 'nullable',
-            'restict'               => 'nullable',
+            'restrict'              => 'nullable',
             'research'              => 'nullable',
             'description'           => 'nullable',
             'copyright_statement'   => 'nullable',
@@ -70,7 +70,7 @@ class Bible extends Model {
         'rank',
         'official',
         'research',
-        'restict',
+        'restrict',
         'publisher',
         'hebrew_text_id',
         'greek_text_id',
@@ -90,7 +90,7 @@ class Bible extends Model {
     ];
 
     // List of fields to NOT export when creating modules
-    protected $do_not_export = ['id', 'created_at', 'updated_at', 'enabled', 'installed', 'installed_at'];
+    protected $do_not_export = ['id', 'created_at', 'updated_at', 'enabled', 'installed', 'installed_at', 'needs_update', 'module_updated_at'];
 
     // List of fileds to not use as metadata (in addition to those contained in $do_not_export)
     protected $do_not_meta = ['rank', 'module_v2', 'importer', 'import_file', 'copyright_id', 'hebrew_text_id', 'greek_text_id', 'translation_type_id'];
@@ -165,6 +165,9 @@ class Bible extends Model {
             else {
                 $this->installed = 1;
                 $this->installed_at = date('Y-m-d H:i:s');
+                $this->module_updated_at = NULL;
+                $this->needs_update = 0;
+                $this->module_version = config('app.version');
 
                 if($enable) {
                     $this->enabled = 1;
@@ -184,6 +187,7 @@ class Bible extends Model {
             $this->installed = 0;
             $this->enabled = 0;
             $this->installed_at = NULL;
+            $this->module_updated_at = NULL;
             $this->save();
         }
         else {
@@ -279,7 +283,7 @@ class Bible extends Model {
     }
 
     public function isDownloadable() {
-        if($this->restict || !$this->copyright_id) {
+        if($this->restrict || !$this->copyright_id) {
             return FALSE;
         }
 
@@ -411,6 +415,22 @@ class Bible extends Model {
         }
     }
 
+    public function deleteModuleFile($include_official = FALSE) {
+        $path_of = static::getModulePath();
+        $path_un = static::getUnofficialModulePath();
+
+        $file_path_of = $path_of . $this->getModuleFileName();
+        $file_path_un = $path_un . $this->getModuleFileName();
+
+        if($include_official && is_file($file_path_of)) {
+            unlink($file_path_of);
+        }        
+
+        if(is_file($file_path_un)) {
+            unlink($file_path_un);
+        }
+    }
+
     public function getModuleFilePath($short = FALSE) {
         $path = ($this->official) ? static::getModulePath($short) : static::getUnofficialModulePath($short);
         return $path . $this->getModuleFileName();
@@ -428,7 +448,7 @@ class Bible extends Model {
         return is_file($this->getModuleFilePath());
     }
 
-    public function needsUpdate() {
+    public function needsUpdate_OLD() {
         return FALSE;
 
         if(!$this->hasModuleFile()) {
@@ -578,7 +598,12 @@ class Bible extends Model {
 
     /**
      * Scans the module directory
-     * Adds Bible records for Bibles not existing
+     * Adds Bible records for Bibles *not existing* in database
+     * Does NOT overwrite existing module data
+     * 
+     * In the case of a module conflict between a new, official module and pre-existing unofficial module,
+     * the new module will be ignored.  If the pre-existing module is ever deleted, the official module
+     * will appear in it's place.
      */
     public static function populateBibleTable() {
         $list = static::getListOfModuleFiles();
@@ -589,6 +614,12 @@ class Bible extends Model {
         }
     }
 
+    /**
+     * NOTE: This method not currently used.
+     * IF it is ever used, will need to ensure that the same logic 
+     * for module confilct is used as for self::populateBibleTable above
+     * 
+     */ 
     public static function updateBibleTable($fields = []) {
         $list = static::getListOfModuleFiles();
 
@@ -756,6 +787,38 @@ class Bible extends Model {
         $value = strtolower($value);
         $this->attributes['module'] = $value;
         // self::where('1','1')->get();
+    }
+
+    public function needsUpdate() {
+        if(!$this->installed) {
+            return FALSE;
+        }
+
+        if(!$this->module_version || version_compare($this->module_version, config('app.version')) >= 0) {
+            $this->module_version = config('app.version');
+            $this->needs_update = 0;
+            $this->save();
+            return FALSE;
+        }
+        else if($this->needs_update) {
+            return TRUE;
+        }
+
+        $Zip  = $this->openModuleFile();
+        $json = $Zip->getFromName('info.json');
+        $meta = json_decode($json, TRUE);
+
+        if(array_key_exists('module_version', $meta) && version_compare($this->module_version, $meta['module_version']) == -1) {
+            $this->needs_update = 1;
+            $this->save();
+            return TRUE;
+        }
+        else {
+            $this->module_version = config('app.version');
+            $this->needs_update = 0;
+            $this->save();
+            return FALSE;
+        }
     }
 
     public function getRandomReference($random_mode) {
