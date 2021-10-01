@@ -6,6 +6,7 @@ use Illuminate\Http\Request;
 use App\Engine;
 use App\Models\Post;
 use App\RenderManager;
+use Illuminate\Support\Facades\Gate;
 
 class DocumentationController extends Controller {
     public function __construct() {
@@ -25,6 +26,7 @@ class DocumentationController extends Controller {
             'Privacy'   => $Privacy,
             'version'   => $Engine->getHardcodedVersion(),
             'formats'   => RenderManager::getGroupedRendererList(),
+            'admin'     => Gate::allows('admin-access'),
         ]);
     }
 }

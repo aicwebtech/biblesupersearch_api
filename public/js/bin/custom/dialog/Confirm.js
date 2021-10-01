@@ -66,16 +66,20 @@ enyo.kind({
         if(typeof this.callback == 'function') {
             this.callback(this.confirmed);
         }
+
+        this.set('title', null);
     },
     ok: function() {
         // this.log();
         this.confirmed = true;
         this.close();
     },
-    confirm: function(text, callback) {
+    confirm: function(text, callback, context) {
+        cb = (context) ? enyo.bind(context, callback) : callback;
+
         this.confirmed = false;
         this.set('alert', text);
-        this.callback = (typeof callback == 'function') ? callback : null;
+        this.callback = (typeof callback == 'function') ? cb : null;
         this.open();
     }
 });

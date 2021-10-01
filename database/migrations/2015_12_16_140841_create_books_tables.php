@@ -38,7 +38,7 @@ class CreateBooksTables extends Migration
 
         foreach($languages as $lang) {
             $tn = 'books_' . $lang;
-            Schema::drop($tn);
+            Schema::dropifExists($tn);
         }
     }
 }

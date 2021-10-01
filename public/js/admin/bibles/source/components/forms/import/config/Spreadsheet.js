@@ -13,8 +13,25 @@ enyo.kind({
                 {tag: 'span', classes: 'required', content: '*'}
             ]},
             {tag: 'br'},
-            {content: 'Please select the role of each column: ', classes: 'center-align'},
+            {
+                classes: 'center-align', components: [
+                    {tag: 'span', content: 'Please select the role of each column: '},
+                    {tag: 'span', classes: 'info', components: [
+                        {tag: 'span', content: 'i'},
+                        {style: 'text-align: justify', classes: 'container', components: [
+                            {content: 'If multiple columns have the same role, the leftmost column will be used for the role.'},            
+                            {tag: 'br'},
+                            // {tag: 'br'},
+                            // {tag: 'br'},
+                            {content: 'If you do not wish to use a given column in the import, please select --None-- as it\'s role.'},
+                        ]}
+                    ]}
+
+                ]
+            },
             {tag: 'br'},
+        ]},
+        {style: 'width: 250px', classes: 'center-element', components: [
             {tag: 'table', name: 'ColSettings', components: [
                 {tag: 'tr', components: [
                     {tag: 'th', content: 'Column'},
@@ -62,7 +79,7 @@ enyo.kind({
                 {tag: 'td', components: [
                     {kind: 'enyo.Select', _kind: 'AICWEBTECH.Enyo.Select', name:'col_' + letterLC, _letter: letterLC, onchange: 'colSettingChanged', components: [
                         {value: 'none', content: '-- None --'},
-                        {value: 'id', content: 'ID - Unique'},
+                        {value: 'id', content: 'ID - Unique (currently ignored)'},
                         {value: 'bn', content: 'Book Name'},
                         {value: 'b', content: 'Book Number'},
                         {value: 'c', content: 'Chapter'},

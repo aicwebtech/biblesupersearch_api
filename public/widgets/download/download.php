@@ -40,6 +40,8 @@
             </tr>
 
             <?php foreach($BibleSuperSearchBibles as $bible) : ?>
+                <?php if($BibleSuperSearchIsAdmin) {$bible['downloadable'] = TRUE;} ?>
+
                 <?php if(!$BibleSuperSearchDownloadVerbose && !$bible['downloadable']) { continue; } ?>
 
                 <tr class='<?php if(!$bible['downloadable']) { echo 'download_disabled'; }?>'>

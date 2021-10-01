@@ -7,6 +7,7 @@ use Illuminate\Http\Request;
 use App\Http\Responses\Response;
 use App\Http\Controllers\Controller;
 use App\Models\Bible;
+use App\Models\Language;
 use App\Helpers;
 use Validator;
 
@@ -51,37 +52,100 @@ class BibleController extends Controller
 
     public function grid(Request $request) {
         $data = $request->toArray();
-        $rows = [];
-        $rows_per_page = intval($data['rows']);
+        $rows = $postfilters = [];
+        $rows_per_page = (int) $data['rows'];
+        $page          = (int) $_REQUEST['page'];
 
         if($data['sidx'] == 'lang') {
             $data['sidx'] = 'languages.name';
+        }        
+        else if($data['sidx'] == 'copy') {
+            $data['sidx'] = 'copyrights.name';
         }
         else {
             $data['sidx'] = 'bibles.' . $data['sidx'];
         }
 
-        $Bibles = Bible::select('bibles.*', 'languages.name AS lang')
+        $Query = Bible::select('bibles.*', 'languages.name AS lang', 'copyrights.name AS copy')
             ->leftJoin('languages', 'bibles.lang_short', 'languages.code')
-            ->orderBy($data['sidx'], $data['sord'])
-            ->paginate($rows_per_page);
+            ->leftJoin('copyrights', 'bibles.copyright_id', 'copyrights.id')
+            ->orderBy($data['sidx'], $data['sord']);
+
+        if(array_key_exists('_search', $data) && $data['_search'] == 'true') {
+            Helpers::buildGridSearchQuery($data, $Query, [
+                'lang' => 'bibles.lang_short', 
+                'copy' => 'bibles.copyright_id', 
+                'name' => 'bibles.name',
+                'rank' => 'bibles.rank',
+                'has_module_file' => 'POSTFILTER',
+            ]);
+            
+            $postfilters = $data['_post_filters'];
+        }
+
+        $has_post_filter = empty($postfilters) ? FALSE : TRUE;
+        $has_file_filter = NULL;
+
+        if(array_key_exists('has_module_file', $postfilters) && $postfilters['has_module_file'] != '_no_rest_') {
+            $has_file_filter = (int) $postfilters['has_module_file'];
+        }
+
+        $Bibles = ($has_post_filter) ? $Query->get() : $Query->paginate($rows_per_page);
 
         foreach($Bibles as $Bible) {
             $row = $Bible->getAttributes();
             unset($row['description']);
             $row['has_module_file'] = $Bible->hasModuleFile() ? 1 : 0;
-            $row['needs_update']    = $Bible->needsUpdate() ? 1 : 0;
+            $row['needs_update']    = $Bible->needsUpdate()   ? 1 : 0;
+
+            if($has_file_filter === 1 && $row['has_module_file'] == 0 || $has_file_filter === 0 && $row['has_module_file'] == 1) {
+                continue;
+            }
+
             $rows[] = $row;
         }
 
-        $resp = [
-            'total'     => $Bibles->lastPage(),
-            'page'      => $Bibles->currentPage(),
-            'rows'      => $rows,
-            'records'   => $Bibles->total(),
-        ];
+        if($has_post_filter) {
+            $page   = ($page < 1) ? 1 : $page;
+            $offset = $rows_per_page * ($page - 1);
+            $count  = count($rows);
+            $rows   = array_slice($rows, $offset, $rows_per_page);
+
+            $resp = [
+                'total'     => ceil($count / $rows_per_page),
+                'page'      => $page,
+                'rows'      => $rows,
+                'records'   => $count,
+                'post'      => TRUE,
+            ];
+        }
+        else {
+            $resp = [
+                'total'     => $Bibles->lastPage(),
+                'page'      => $Bibles->currentPage(),
+                'rows'      => $rows,
+                'records'   => $Bibles->total(),
+                'post'      => FALSE,
+            ];
+        }
 
         return response($resp, 200);
+    }
+
+    public function languages(Request $request) {
+        $Languages = Bible::select('languages.code', 'languages.name')
+            ->leftJoin('languages', 'bibles.lang_short', 'languages.code')
+            ->groupBy('languages.id')->orderBy('languages.name')->get();
+
+        return response(['languages' => $Languages], 200);
+    }    
+
+    public function copyrights(Request $request) {
+        $Languages = Bible::select('copyrights.id', 'copyrights.name')
+            ->leftJoin('copyrights', 'bibles.copyright_id', 'copyrights.id')
+            ->groupBy('copyrights.id')->orderBy('copyrights.name')->get();
+
+        return response(['copyrights' => $Languages], 200);
     }
 
     /**
@@ -162,13 +226,14 @@ class BibleController extends Controller
             return new Response($resp, 401);
         }
 
-        if($Bible->hasModuleFile() || $Bible->official) {
+        if($Bible->official) {
             $resp->success = FALSE;
-            $resp->errors = ['Cannot delete an official Bible or a Bible that has a module file'];
+            $resp->errors = ['Cannot delete an official Bible'];
             return new Response($resp, 401);
         }        
 
         $Bible->uninstall();
+        $Bible->deleteModuleFile(FALSE);;
         $Bible->delete();
 
         // if($Bible->hasErrors()) {
@@ -265,13 +330,21 @@ class BibleController extends Controller
     }    
 
     public function updateModule(Request $request, $id) {
-        $Bible = Bible::findOrFail($id);
-        $enable = $Bible->enable;
-        $Bible->uninstall();
-        $Bible->install(FALSE, $enable);
-
+        $Bible  = Bible::findOrFail($id);
         $resp = new \stdClass();
         $resp->success = TRUE;
+
+        if(!$Bible->needsUpdate()) {
+            $resp->success = FALSE;
+            $resp->errors  = ['No update needed.'];
+            return new Response($resp, 422);
+        }
+
+        $enable = $Bible->enabled;
+        $Bible->uninstall();
+        $Bible->install(FALSE, $enable);
+        $Bible->module_updated_at = date('Y-m-d H:i:s');
+        $Bible->save();
 
         if($Bible->hasErrors()) {
             $resp->success = FALSE;
@@ -283,12 +356,12 @@ class BibleController extends Controller
 
     public function uninstall(Request $request, $id) {
         $Bible = Bible::findOrFail($id);
-        $resp = new \stdClass();
+        $resp  = new \stdClass();
         $resp->success = TRUE;
         
         if($Bible->module == config('bss.defaults.bible')) {
             $resp->success = FALSE;
-            $resp->errors  = ['Cannot uninstall default Bible'];
+            $resp->errors  = ['Cannot uninstall default Bible.'];
             return new Response($resp, 422);
         }
 

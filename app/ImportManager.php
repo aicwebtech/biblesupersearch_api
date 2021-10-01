@@ -8,6 +8,8 @@ use App\Helpers;
 class ImportManager {
     use Traits\Error;
 
+    public $test_mode = FALSE;
+
     // List / map of importers that are accessible via HTTP request
     protected static $type_map = [
         'analyzer' => [
@@ -73,6 +75,7 @@ class ImportManager {
         '_importer' => 'required',
         '_file'     => 'required',
         '_settings' => 'nullable',
+        '_force_use_module' => 'nullable',
     ];
 
     public function __construct() {
@@ -128,11 +131,14 @@ class ImportManager {
     }
 
     public function checkImportFile($data) {
+        ini_set('memory_limit', '256M');
+
         if(!$this->setType($data['importer'])) {
             return FALSE;
         }
 
         $Importer = new $this->import_class();
+        $Importer->test_mode = $this->test_mode ? TRUE : FALSE;
         $type_info = static::$type_map[$this->type];
         
         if(!$Importer->setSettings($data)) {
@@ -181,8 +187,11 @@ class ImportManager {
       * 
       */
     public function importFile($data) {
+        ini_set('memory_limit', '256M');
+
         $importer = $data['_importer'];
         $file     = $data['_file'];
+        $use_mod  = array_key_exists('_force_use_module', $data) && $data['_force_use_module'] ? TRUE : FALSE;
         $settings = json_decode($data['_settings'], TRUE);
 
         unset($data['_importer']);
@@ -190,6 +199,10 @@ class ImportManager {
         unset($data['_settings']);
 
         if(!$this->setType($importer)) {
+            return FALSE;
+        }
+
+        if(!$use_mod && !$this->_checkModule($data['module'])) {
             return FALSE;
         }
         
@@ -212,6 +225,20 @@ class ImportManager {
 
         $this->parsed_attributes = $Bible->getAttributes();
         return TRUE;
+    }
+
+    protected function _checkModule($module) {
+        $res = config('modules_reserved.' . $module);
+
+        if(empty($res)) {
+            return TRUE;
+        }
+
+        $this->addError('Module \'' . $module . '\' is reserved for \'' . $res['name'] . '\'');
+        $this->errors['module_reserved'] = 'Module Reserved';
+        $this->errors['module_info']     = $res;
+
+        return FALSE;
     }
 }
 
