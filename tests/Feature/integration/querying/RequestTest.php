@@ -95,6 +95,11 @@ class RequestTest extends TestCase {
         $results = $Engine->actionQuery(['bible' => 'kjv', 'request' => 'Revelation 1:1', 'reference' => 'Romans', 'whole_words' => FALSE, 'page_all' => TRUE]);
         $this->assertFalse($Engine->hasErrors());
         $this->assertCount(1, $results['kjv']);
+        $this->assertEquals(66, $results['kjv'][0]->book);        
+
+        $results = $Engine->actionQuery(['bible' => 'kjv', 'request' => 'Revelation 1:1', 'reference' => 'Romans 1', 'whole_words' => FALSE, 'page_all' => TRUE]);
+        $this->assertFalse($Engine->hasErrors());
+        $this->assertCount(1, $results['kjv']);
         $this->assertEquals(66, $results['kjv'][0]->book);
     }
 
@@ -129,6 +134,15 @@ class RequestTest extends TestCase {
         $this->assertCount(2, $metadata->disambiguation);
         $this->assertEquals('1 Kings', $metadata->disambiguation[0]['simple']);
         $this->assertEquals('2 Kings', $metadata->disambiguation[1]['simple']);
+    }
+
+    public function testDisambiguationWithPassageLimit() {
+        $Engine = Engine::getInstance();
+        $Engine->setDefaultDataType('raw');
+
+        $results = $Engine->actionQuery(['bible' => 'kjv', 'request' => 'mark', 'reference' => 'Revelation', 'whole_words' => FALSE]);
+        $this->assertFalse($Engine->hasErrors());
+        $this->assertCount(8, $results['kjv']);
     }
 
     public function testNonPassageCharacters() {

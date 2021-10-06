@@ -1137,7 +1137,7 @@ class Passage {
                 $reference = $request;
             }
             elseif($reference && !$keywords) {
-                if(static::isPassage($request, $languages)) {
+                if(static::isPassageStrict($request, $languages)) {
                     $reference = $request;
                 }
                 else {
@@ -1151,7 +1151,7 @@ class Passage {
         return array($keywords, $reference, $disambiguation, $has_disambiguation_book);
     }
 
-    public static function isPassage($string, $languages) {
+    public static function isPassage($string, $languages, $strict = FALSE) {
         $passages = static::explodeReferences($string, TRUE);
 
         if(!static::_isPossiblePassageHelper($string, $passages)) {
@@ -1163,8 +1163,16 @@ class Passage {
 
         foreach($passages as $passage) {
             $Book = static::findBookByNameAndLanguage($passage['book'], $languages);
-            $has_valid_passage = ($Book)  ? TRUE  : $has_valid_passage;
-            $all_valid_passage = (!$Book) ? FALSE : $all_valid_passage;
+
+            if($strict) {
+                $has_valid_passage = ( $Book &&  $passage['chapter_verse']) ? TRUE  : $has_valid_passage;
+                $all_valid_passage = (!$Book || !$passage['chapter_verse']) ? FALSE : $all_valid_passage;
+            }
+            else {            
+                $has_valid_passage = ($Book)  ? TRUE  : $has_valid_passage;
+                $all_valid_passage = (!$Book) ? FALSE : $all_valid_passage;
+            }
+
         }
 
         return $has_valid_passage;
@@ -1173,6 +1181,13 @@ class Passage {
     public static function isPossiblePassage($string) {
         $passages = static::explodeReferences($string, TRUE);
         return static::_isPossiblePassageHelper($string, $passages);
+    }
+
+    /*
+     * Unlike static::isPassage() this requires the passage to have at least a chapter
+     */
+    public static function isPassageStrict($string, $languages) {
+        return static::isPassage($string, $languages, TRUE);
     }
 
     protected static function _isPossiblePassageHelper($string, $passages) {
