@@ -1,12 +1,26 @@
+<?php 
+    $meta_desc  = '';
+    $meta_desc .= 'Free Bible Web Service API with documentation. Bible search and passage look up.';
+
+    if(config('download.enable') && config('download.tab_enable')) {
+        $meta_desc .= ' Bible Downloads: PDF, MySQL and more!';
+    }
+
+    $meta_desc .= ' Free and Open Source.';
+    $meta_desc .= strlen($meta_desc);
+?>
+
 <!DOCTYPE html>
 <html>
     <head>
-        <title><?php echo config('app.name') ?> <?php echo config('app.version'); ?></title>
+        <title><?php echo config('app.name') ?></title>
         
         <?php if(config('download.enable')): ?>
             <link rel="stylesheet" href="/widgets/download/download.css">
         <?php endif; ?>        
 
+        <meta charset="utf-8" />
+        <meta name="description" content="<?php echo $meta_desc ?>" />
         <link rel="stylesheet" href="/js/bin/jquery-ui/jquery-ui.css">
         <link rel="stylesheet" href="/js/bin/jquery-ui/jquery-ui.theme.css">
         <link rel="stylesheet" href="/css/docs.css">
@@ -27,7 +41,7 @@
     <body>
         <div id='container'>
             <h1 class='hcenter'><?php echo config('app.name') ?> <?php echo trans('app.documentation') ?></h1>
-            <h2 class='hcenter'><?php echo config('app.version'); ?> <?php //echo $version ?> <!-- this is the hardcoded app version --></h2>
+            <h6 class='hcenter'>Version <?php echo config('app.version'); ?></h6>
             <?php if(config('app.env') != 'production'): ?>
                 <h2 class='hcenter warning'><?php echo trans('app.env_warnings.' . config('app.env')) ?></h2>
             <?php endif; ?>
@@ -68,6 +82,13 @@
                     <?php include(dirname(__FILE__) . '/privacy.php'); ?>
                 </div>
             </div>
+        </div>
+
+        <div id='footer'>
+            <b><?php echo config('app.name') ?>&nbsp; &nbsp;Version <?php echo config('app.version'); ?></b><br /><br />
+            This API is Free and Open Source, licenced under the GNU GPL v3.0.<br /><br />
+            To learn how to install it on your website, please visit:<br /><br />
+            <a class='footer-link' href='http://www.biblesupersearch.com/downloads' target='_NEW'>http://www.BibleSuperSearch.com</a>
         </div>
     </body>
 </html>

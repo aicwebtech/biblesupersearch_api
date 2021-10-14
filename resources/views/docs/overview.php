@@ -64,8 +64,3 @@
     </div>
 </div>
 <br /><br />
-
-<div style='text-align: center'>
-    <?php echo trans('app.bss') ?><br /><br />
-    <a href='http://www.biblesupersearch.com' target='_NEW'>http://www.BibleSuperSearch.com</a>
-</div>

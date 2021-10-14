@@ -19,6 +19,23 @@
     background-color: #EEEEEE;
 }
 
+#footer {
+    font-family: Verdana, Arial, sans-serif;
+    text-align: center;
+    color: white;
+    margin: 30px 0 50px;
+    font-size: .85em;
+}
+
+a.footer-link, a.footer-link:visited {
+    color: white;
+    text-decoration: none;
+}
+
+a.footer-link:hover {
+    text-decoration: underline;
+}
+
 body {
     margin: 0;
     background-color: #3c729b;
