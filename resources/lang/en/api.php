@@ -46,8 +46,8 @@ return array(
 
     'overview' => array(
         'name' => 'Overview',
-        'description' => 'This API allows the Bible SuperSearch Bible search engine to be used seamlesly on any website or app. <br /><br />'
-            . 'There is no cost to use the API, however, a website will be limited to ' . config('bss.daily_access_limit') . ' hits per day.<br /><br />',
+        'description' => 'This webservice API allows the Bible SuperSearch Bible search engine to be used seamlesly on any website or app. <br /><br />'
+            . 'There is no cost to use the API, however, your website will be limited to ' . config('bss.daily_access_limit') . ' hits per day.<br /><br />',
         'all_actions' => 'All API Actions',
         'see_in_action' => 'See API in action here',
         'bullets' => array(
@@ -69,7 +69,7 @@ return array(
             'it_should_look_like_this' => 'It should look like this: ',
 
             'client' => array(
-                'label' => 'Stand-Alone Client',
+                'label' => 'Universal Client',
                 'desc'  => 'In your config.js file, set "apiUrl" to',
                 'desc2' => 'Now, save the file and reload the application to make sure it works.',
             ),
