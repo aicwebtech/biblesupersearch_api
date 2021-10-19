@@ -1,4 +1,5 @@
 Bible SuperSearch API Changelog
+* Rebranding 'stand-alone' client to Universal Client
 
 = 4.5.0 / Oct 9, 2021 (soft release)
 * Admin: Added filtering on Bible manager.

@@ -13,9 +13,9 @@ This API, when combined with a User Interface (UI), allows you to use Bible Supe
 * Installer
 
 #### This does NOT include:
-* A User Interface for the Bible search engine
+* A User Interface (UI) for the Bible search engine
 
-We reccommend our pre-built user interface, which is available both as a stand-alone application and as a WordPress plugin.
+We reccommend our pre-built user interface, which is available both as a universal client and as a WordPress plugin.
 These can be downloaded here: [Download](http://www.biblesupersearch.com/downloads)
 You also have the option to build  your own.
 
