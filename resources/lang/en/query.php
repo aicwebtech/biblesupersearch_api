@@ -102,12 +102,18 @@ return array(
             'name' => 'Show All Results',
             'default' => 'false',
             'description' => 'Whether to disable all pagination.',
+        ),        
+        'page_limit' => array(
+            'type' => 'Integer',
+            'name' => 'Results per Page',
+            'default' => config('bss.pagination.limit') . '',
+            'description' => 'Number of verses to display per page.',
         ),
         'page' => array(
             'type' => 'Integer',
-            'name' => 'Page',
+            'name' => 'Page Number',
             'default' => '1',
-            'description' => 'For search results, the page to show.  Currently, only searches support pagination.'
+            'description' => 'For search results, the number of the page to show.  Currently, only searches support pagination.'
             . '&nbsp; See <a href="#pagination">details below</a>',
         ),
         'context' => array(

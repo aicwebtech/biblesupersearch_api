@@ -180,6 +180,10 @@ class Engine {
             'page_all' => array(
                 'type'  => 'bool',
                 'default' => $this->default_page_all,
+            ),            
+            'page_limit' => array(
+                'type'  => 'int_pos',
+                'default' => config('bss.pagination.limit'),
             ),
             'highlight_tag' => array(
                 'type'  => 'string',
@@ -236,6 +240,7 @@ class Engine {
         !empty($input['bible']) && $this->setBibles($input['bible']);
         $input = $this->_sanitizeInput($input, $parsing);
         $input['bible'] = array_keys($this->Bibles);
+        $input['page_limit'] = min( (int) $input['page_limit'], (int) config('bss.global_maximum_results'));
         $parallel = $input['multi_bibles'] = (count($input['bible']) > 1) ? TRUE : FALSE;
         $input['data_format'] = (!empty($input['data_format'])) ? $input['data_format'] : $this->default_data_format;
 
@@ -392,7 +397,7 @@ class Engine {
         $results = $this->_formatDataStructure($results, $input, $Passages, $Search);
 
         if($input['multi_bibles'] && $paginate) {
-            $Paginator = $this->_buildPaginator($results, config('bss.pagination.limit'), $input['page']);
+            $Paginator = $this->_buildPaginator($results, $input['page_limit'], $input['page']);
             $results = $Paginator->all();
             $paging = $this->_getCleanPagingData($Paginator);
         }
@@ -945,6 +950,10 @@ class Engine {
                         break;
                     case 'int':
                         $value = intval($input[$index]);
+                        break;                    
+                    case 'int_pos':
+                        $value = intval($input[$index]);
+                        $value = $value < 0 ? NULL : $value;
                         break;
                     case 'string':
                         $value = strval($input[$index]);

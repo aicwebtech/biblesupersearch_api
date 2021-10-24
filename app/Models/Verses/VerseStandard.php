@@ -81,7 +81,7 @@ class VerseStandard extends VerseAbstract {
         // print_r($verses);
 
         if($Search && !$parameters['multi_bibles'] && !$parameters['page_all']) {
-            $page_limit = min( (int) config('bss.pagination.limit'), (int) config('bss.global_maximum_results'));
+            $page_limit = min( (int) $parameters['page_limit'], (int) config('bss.global_maximum_results'));
             $verses = $Query->paginate($page_limit);
         }
         else {

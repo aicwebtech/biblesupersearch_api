@@ -71,6 +71,17 @@ class PaginationTest extends TestCase {
         $results = $Engine->actionQuery(['bible' => 'kjv', 'search' => 'faith', 'whole_words' => TRUE, 'page_all' => TRUE]);
         $this->assertFalse($Engine->hasErrors());
         $this->assertCount(231, $results);
+    }    
+
+    public function testSearchPageLimit() {
+        $Engine = new Engine();
+        $results = $Engine->actionQuery(['bible' => 'kjv', 'search' => 'faith', 'page_limit' => 5]);
+        $this->assertFalse($Engine->hasErrors());
+        $this->assertCount(5, $results);        
+
+        $results = $Engine->actionQuery(['bible' => 'kjv', 'search' => 'faith', 'page_limit' => 15]);
+        $this->assertFalse($Engine->hasErrors());
+        $this->assertCount(15, $results);
     }
 
     protected function _testViaApi($query) {
