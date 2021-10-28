@@ -670,7 +670,7 @@ class PassageTest extends TestCase
             $this->assertTrue($Passages[0]->hasErrors());
             $errors = $Passages[0]->getErrors();
             $this->assertCount(1, $errors);
-            $this->assertContains('multiple', $errors[0]);
+            $this->assertStringContainsString('multiple', $errors[0]);
         }
 
         $end_times_references = ['End Times','Last Days','End Times Prophecy'];
@@ -701,7 +701,7 @@ class PassageTest extends TestCase
         $this->assertTrue($Passages[0]->hasErrors());
         $errors = $Passages[0]->getErrors();
         $this->assertCount(1, $errors);
-        $this->assertContains('multiple', $errors[0]);
+        $this->assertStringContainsString('multiple', $errors[0]);
         // The Psalms reference is still valid because it will just pull the first chapter
         $this->assertTrue($Passages[1]->is_valid);
         $this->assertFalse($Passages[1]->is_book_range);

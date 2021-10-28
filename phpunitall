@@ -1,9 +1,9 @@
 # PHPUnit tests ran against different PHP versions
 # This script should be regularly updated to run for ALL currently supported PHP versions
 
-echo 'php 7.2:'; 
-/usr/bin/php7.2 -v | grep -E 'PHP [0-9]+\.[0-9]+\.[0-9]+'
-/usr/bin/php7.2 ./vendor/phpunit/phpunit/phpunit;
+#echo 'php 7.2:'; 
+#/usr/bin/php7.2 -v | grep -E 'PHP [0-9]+\.[0-9]+\.[0-9]+'
+#/usr/bin/php7.2 ./vendor/phpunit/phpunit/phpunit;
 
 echo 'php 7.3:'; 
 /usr/bin/php7.3 -v | grep -E 'PHP [0-9]+\.[0-9]+\.[0-9]+'
@@ -16,3 +16,7 @@ echo 'php 7.4:';
 echo 'php 8.0:'; 
 /usr/bin/php8.0 -v | grep -E 'PHP [0-9]+\.[0-9]+\.[0-9]+'
 /usr/bin/php8.0 ./vendor/phpunit/phpunit/phpunit;
+
+#echo 'php 8.1:'; 
+#/usr/bin/php8.1 -v | grep -E 'PHP [0-9]+\.[0-9]+\.[0-9]+'
+#/usr/bin/php8.1 ./vendor/phpunit/phpunit/phpunit;
