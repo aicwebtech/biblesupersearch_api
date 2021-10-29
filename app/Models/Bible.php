@@ -33,7 +33,14 @@ class Bible extends Model {
             'module'        => [
                 'required',
                 Rule::unique('bibles')->ignore($bible_id),
-                'alpha_dash',
+                // 'alpha_dash', // todo - this allows '-', no good!
+                function($attribute, $value, $fail) {
+                    $valid = static::validateModule($value);
+
+                    if(!$valid) {
+                        $fail('Module can contain only lowercase letters, numbers, and underscores.  The first two characters must be letters');
+                    }
+                },
                 'max:100'
             ],
             'lang_short'            => 'required|alpha|min:2|max:3',
@@ -713,43 +720,62 @@ class Bible extends Model {
      * @return string $class_name;
      */
     public static function getVerseClassNameByModule($module) {
+        if(!static::validateModule($module)) {
+            return FALSE;
+        }
+
         $model_class = studly_case($module);
         $namespace = __NAMESPACE__ . '\Verses';
         $class_name = $namespace . '\\' . $model_class;
 
         if (!class_exists($class_name)) {
-            // die('here');
-
-            // var_dump($module);
-            // Atempt to use Anonymous class here, not working
-            // $AnonClass = new class([], $module) extends StandardVerses {
-            //     protected $hasClass = FALSE;
-
-            //     function __construct($attributes = [], $module = NULL) {
-            //         // var_dump($module);
-            //         // die();
-            //         $this->module = $module;
-            //         $this->table = static::getTableByModule($module);
-            //         // var_dump($this->table);
-            //         parent::__construct($attributes);
-            //         var_dump($this->table);
-            //         die();
-            //     }
-            // };
-
-            // class_alias(get_class($AnonClass), $class_name);
+            $table = StandardVerses::getTableByModule($module);
+            $perm_file = (func_num_args() >= 2) ? func_get_arg(1) : FALSE;
 
             $code = '
                 namespace ' . $namespace . ';
                 class ' . $model_class . ' extends VerseStandard {
-                        protected $hasClass = FALSE;
+                    protected $hasClass = FALSE;
+                    protected $table = \'' . $table . '\';
                 }
             ';
 
-            eval($code); // Need this working on live server.
+            if($perm_file && is_writable(dirname(__FILE__) . '/Verses')) {
+                // Create permanent class file and include it
+                $filepath = dirname(__FILE__) . '/Verses/' . $model_class . '.php';
+                file_put_contents($filepath, '<?php ' . $code);
+                include($filepath);
+            }
+            else if(is_writable(sys_get_temp_dir())) {
+                // Create temp class file, include it, then delete it
+                $tempfile = tempnam(sys_get_temp_dir(), $model_class . '.php');
+                file_put_contents($tempfile, '<?php ' . $code);
+                include($tempfile);
+                unlink($tempfile);
+            }
+            else {
+                // Fallback to eval
+                eval($code); // Need this working on live server.
+            }
         }
 
         return $class_name;
+    }
+
+    public static function validateModule($module) {
+        if(empty($module)) {
+            return FALSE;
+        }
+
+        if(preg_match('/[^a-z_0-9]/', $module)) {
+            return FALSE;
+        }        
+
+        if(!preg_match('/^[a-z]{2}/', $module)) {
+            return FALSE;
+        }
+
+        return TRUE;
     }
 
     /**

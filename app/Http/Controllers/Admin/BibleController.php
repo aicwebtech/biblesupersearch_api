@@ -433,6 +433,12 @@ class BibleController extends Controller
 
     public function export(Request $request, $id) {
         $Bible = Bible::findOrFail($id);
+
+        if($Bible->official) {
+            // This will automatically create a class fine for official Bibles if it doesn't exist
+            Bible::getVerseClassNameByModule($Bible->module, TRUE);
+        }
+
         $data  = $request->toArray();
         $over  = (array_key_exists('overwrite', $data) && $data['overwrite']) ? TRUE : FALSE;
         $Bible->export($over);
