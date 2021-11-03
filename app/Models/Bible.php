@@ -33,7 +33,6 @@ class Bible extends Model {
             'module'        => [
                 'required',
                 Rule::unique('bibles')->ignore($bible_id),
-                // 'alpha_dash', // todo - this allows '-', no good!
                 function($attribute, $value, $fail) {
                     $valid = static::validateModule($value);
 

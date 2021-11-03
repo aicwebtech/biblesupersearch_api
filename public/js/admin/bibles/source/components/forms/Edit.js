@@ -8,7 +8,7 @@ enyo.kind({
     copyrightData: {},
     $description: null,
     formPk: null, // binding use only
-    debugBindings: false,
+    debugBindings: true,
     copyrightConfirmed: false,
 
     components: [
@@ -71,7 +71,7 @@ enyo.kind({
                     {tag: 'td', classes: 'sublabel', attributes: {colspan: 2}, components: [
                         {
                             tag: 'span', 
-                            content: 'Mark Bible as "For Research Only," if you don\'t reccommend the tranlation.'
+                            content: 'Mark Bible as "For Research Only," if you don\'t reccommend the translation.'
                         }
                     ]}
                 ]},
@@ -83,11 +83,63 @@ enyo.kind({
                 ]},            
                 {tag: 'tr', components: [
                     {tag: 'td', classes: 'form_label right', content: 'Language: '},
-                    {tag: 'td', attributes: {colspan: 2}, classes: 'form_label right', components: [
-                        {kind: 'AICWEBTECH.Enyo.Select', classes: 'wide', name: 'lang_short', components: [
-                            {value: null, content: 'Select One ...'}
+                    {tag: 'td', attributes: {colspan: 2}, classes: 'form_label right', style: 'position: relative', components: [
+                        {kind: 'AICWEBTECH.Enyo.Autocomplete', name: 'lang_autocomplete', showing: false},
+                        {kind: 'AICWEBTECH.Enyo.Select', classes: 'wide', name: 'lang_short', _style: 'position: absolute', howing: false, components: [
+                            {value: null, content: 'Select One ...'},
                         ]},
-                        {tag: 'span', classes: 'required', content: '*'}
+                        {tag: 'span', classes: 'required', content: '*'},
+                        {tag: 'span', allowHtml: true, content: '&nbsp; &nbsp;'},
+                        {kind: 'enyo.Input', name: 'lang_code', onchange: 'handleLangCodeChange', attributes: {maxlen: 3, size: 4}},
+                        {tag: 'span', allowHtml: true, content: '&nbsp; &nbsp;'},
+                        {tag: 'span', content: '2 or 3 character code'},
+                        {tag: 'span', classes: 'required', content: '*'},
+                    ]}
+                ]},                    
+                {tag: 'tr', components: [
+                    {tag: 'td', classes: 'form_label right', content: ''},
+                    {tag: 'td', attributes: {colspan: 2}, classes: 'form_label right', style: 'position: relative', components: [
+                        {tag: 'span', content: '* ISO-639-1 code if exists, otherwise ISO 639-2 code.'},
+                        {tag: 'br'},
+                        {tag: 'span', content: '* Tip: entering a code will cause the language to be selected, and vice-versa.'},
+                    ]}
+                ]},                
+                {tag: 'tbody', name: 'AddLanguage', showing: false, components: [
+                    {tag: 'tr', components: [
+                        {tag: 'td', attributes: {colspan: 3}, components: [
+                            // {tag: 'hr'}
+                            {tag: 'span', content: ''}
+                        ]}
+                    ]},                    
+                    {tag: 'tr', components: [
+                        {tag: 'th', attributes: {colspan: 3}, content: 'Add Language:'}
+                    ]},
+                    {tag: 'tr', components: [
+                        {tag: 'td', classes: 'form_label right', content: 'Language Code: '},
+                        {tag: 'td', attributes: {colspan: 2}, classes: 'form_label right', components: [
+                            {kind: 'enyo.Input', lasses: 'wide', name: 'lang_code_3', attributes: {size: 3, maxlen: 3}},
+                            {tag: 'span', classes: 'required', content: '* unique'},
+                            {tag: 'span', allowHtml: true, content: '&nbsp; &nbsp;'},
+                            {tag: 'span', content: 'Two or three character ISO language code.  Example: es'},
+                        ]}
+                    ]},                
+                    {tag: 'tr', components: [
+                        {tag: 'td', classes: 'form_label right', content: 'Language Native Name: '},
+                        {tag: 'td', attributes: {colspan: 2}, classes: 'form_label right', components: [
+                            {kind: 'enyo.Input', classes: 'wide', name: 'lang_native_name'},
+                            {tag: 'span', classes: 'required', content: '*'},
+                            {tag: 'span', allowHtml: true, content: '&nbsp; &nbsp;'},
+                            {tag: 'span', content: 'Example: Español'},
+                        ]}
+                    ]},                
+                    {tag: 'tr', components: [
+                        {tag: 'td', classes: 'form_label right', content: 'Language English Name: '},
+                        {tag: 'td', attributes: {colspan: 2}, classes: 'form_label right', components: [
+                            {kind: 'enyo.Input', classes: 'wide', name: 'lang_name'},
+                            {tag: 'span', classes: 'required', content: '*'},
+                            {tag: 'span', allowHtml: true, content: '&nbsp; &nbsp;'},
+                            {tag: 'span', content: 'Example: Spanish'},
+                        ]}
                     ]}
                 ]}
             ]}
@@ -269,8 +321,45 @@ enyo.kind({
         }},
         {from: 'formData.lang_short', to: '$.lang_short.value', oneWay: false, transform: function(value, dir) {
             this.debugBindings && this.log('lang_short', value, dir);
+            // this.$.AddLanguage.set('showing', !!(value == 'NEW_LANG'));
             return (value && value != '0') ? value : null;
-        }},    
+        }},               
+        // {from: 'formData.lang_short', to: '$.lang_autocomplete.value', oneWay: false, transform: function(value, dir) {
+        //     this.debugBindings && this.log('lang_short autocomplete', value, dir);
+        //     // this.$.AddLanguage.set('showing', !!(value == 'NEW_LANG'));
+        //     return (value && value != '0') ? value : null;
+        // }},             
+        {from: '$.lang_short.value', to: '$.lang_code.value', oneWay: true, transform: function(value, dir) {
+        // {from: 'formData.lang_short', to: '$.lang_code.value', oneWay: true, transform: function(value, dir) {
+            this.debugBindings && this.log('lang_code', value, dir);
+
+            if(value) {
+                if(dir == 1) {
+                    value = value.toUpperCase();
+                }
+                else {
+                    value = value.toLowerCase();
+                }
+            }
+
+            return (value && value != '0') ? value : null;
+        }},           
+        // {from: '$.lang_autocomplete.value', to: '$.lang_short.filter', oneWay: true, transform: function(value, dir) {
+        //     this.debugBindings && this.log('lang_autocomplete', value, dir);
+        //     return (value && value != '0') ? value : null;
+        // }},    
+        // {from: 'formData.lang_code', to: '$.lang_code.value', oneWay: false, transform: function(value, dir) {
+        //     this.debugBindings && this.log('lang_code', value, dir);
+        //     return value || '';
+        // }},          
+        // {from: 'formData.lang_name', to: '$.lang_name.value', oneWay: false, transform: function(value, dir) {
+        //     this.debugBindings && this.log('lang_name', value, dir);
+        //     return value || '';
+        // }},          
+        // {from: 'formData.lang_native_name', to: '$.lang_native_name.value', oneWay: false, transform: function(value, dir) {
+        //     this.debugBindings && this.log('lang_native_name', value, dir);
+        //     return value || '';
+        // }},       
         {from: 'formData.copyright_statement', to: '$.copyright_statement.value', oneWay: false, transform: function(value, dir) {
             this.debugBindings && this.log('copyright_statement', value, dir);
             
@@ -309,14 +398,23 @@ enyo.kind({
             });
         }, this);        
 
+        this.languageOptions = [];
+
         bootstrap.languages.forEach(function(item) {
             var displayName = item.name + ' - ' + item.native_name + ' (' + item.code.toUpperCase() + ')';
+
+            this.languageOptions.push({
+                value: item.code,
+                label: displayName
+            });
 
             this.$.lang_short.createComponent({
                 value: item.code,
                 content: displayName
             });
         }, this);
+
+        this.$.lang_autocomplete.set('options', this.languageOptions);
     },
 
     toggleDescription: function() {
@@ -338,6 +436,7 @@ enyo.kind({
         this.$description.on('change', enyo.bind(this, function() {
             this.$.description.set('value', this.$description.getData());
         }));
+
     }, 
 
     _checkUnique: function(field, value, label) {
@@ -433,5 +532,19 @@ enyo.kind({
     handleNameFocus: function(inSender, inEvent) {
         this.log();
 
+    },
+    handleLangCodeChange: function() {
+        var lc = this.$.lang_code.get('value').toLowerCase();
+
+        this.$.lang_short.set('value', lc);
+
+        this.log('lc', lc);
+        this.log('lang_short', this.$.lang_short.get('value'));
+        this.log('lang_code', this.$.lang_code.get('value'));
+
+        if(this.$.lang_short.get('value') != lc) {
+            // not a valid code
+            this.$.lang_code.set('value', '');
+        }
     }
 });
