@@ -109,7 +109,7 @@ class Database {
         }
 
         $contents = array_values(file($path, FILE_SKIP_EMPTY_LINES));
-        $force_null = ($direct_insert_threshold) ? TRUE : FALSE; 
+        $force_null = ($direct_insert_threshold); 
 
         foreach($contents as $key => $line) {
             if($key == 0) {
@@ -123,6 +123,7 @@ class Database {
                 foreach($map as $mkey => $l) {
                     if(array_key_exists($mkey, $raw)) {
                         $mapped[$l] = $raw[$mkey];
+                        $mapped[$l] = ($mapped[$l] == '') ? NULL : $mapped[$l]; 
                     }
                     else if($force_null) {
                         $mapped[$l] = NULL;

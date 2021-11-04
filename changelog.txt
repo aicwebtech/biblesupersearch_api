@@ -1,6 +1,7 @@
 Bible SuperSearch API Changelog
 * Rebranding 'stand-alone' client to Universal Client
 * Improvement: Added ability to change the pagination results per page limit.
+* Added more languages as options
 * Added new Bibles with Strong's numbers:
     + Chinese Union
     + American Standard Version

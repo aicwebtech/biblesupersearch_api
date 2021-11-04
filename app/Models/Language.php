@@ -46,6 +46,14 @@ class Language extends Model {
         ];
 
         \App\Importers\Database::importCSV('languages.csv', $map, '\\' . get_called_class(), 'code');
+    }    
+
+    public static function migrateFromCsv2() {
+        $map = [
+            'code', 'name', 'native_name', 'iso_name', 'iso_639_2', 'rtl', 'notes'
+        ];
+
+        \App\Importers\Database::importCSV('languages_2.csv', $map, '\\' . get_called_class(), 'code');
     }
 
     public static function isRtl($lang) {
