@@ -940,7 +940,7 @@ class Engine {
             if(array_key_exists($index, $input) && !empty($input[$index])) {
                 switch($s['type']) {
                     case 'bool':
-                        $value = ($input[$index]) ? TRUE : FALSE;
+                        $value = (bool) $input[$index];
                         $value = (is_string($input[$index]) && ($input[$index] == 'false' || $input[$index] == 'off' || $input[$index] == 'no')) ? FALSE : $value;
                         break;
                     case 'array_string':
@@ -949,14 +949,14 @@ class Engine {
                         $value = $input[$index];
                         break;
                     case 'int':
-                        $value = intval($input[$index]);
+                        $value = (int) $input[$index];
                         break;                    
                     case 'int_pos':
-                        $value = intval($input[$index]);
+                        $value = (int) $input[$index];
                         $value = $value < 0 ? NULL : $value;
                         break;
                     case 'string':
-                        $value = strval($input[$index]);
+                        $value = (string) $input[$index];
                         break;
                     default:
                         $value = $input[$index];

@@ -129,7 +129,7 @@ class ConfigManager {
     static public function getValueAttribute($value, $type) {
         switch($type) {
             case 'int':
-                $val = intval($value);
+                $val = (int) $value;
                 break;
 
             case 'array':
@@ -141,7 +141,7 @@ class ConfigManager {
                 break;
 
             case 'bool':
-                $val = ($value) ? TRUE : FALSE;
+                $val = (bool) $value;
                 break;
 
             case 'string':
@@ -155,7 +155,7 @@ class ConfigManager {
     static public function setValueAttribute($value, $type) {
         switch($type) {
             case 'int':
-                $val = intval($value);
+                $val = (int) $value;
                 break;
 
             case 'array':

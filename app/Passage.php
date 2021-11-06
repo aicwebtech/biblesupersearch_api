@@ -277,7 +277,7 @@ class Passage {
         foreach($matches as $k => $ar) {
             foreach($ar as $match) {
                 $item = $match[0][0];
-                $item = ($k == 'number') ? intval($item) : $item;
+                $item = ($k == 'number') ? (int) $item : $item;
                 $preparsed[$match[0][1]] = $item;
             }
         }
@@ -1033,7 +1033,7 @@ class Passage {
         $Passage->languages = $languages;
         $Passage->is_search = $is_search;
         $Passage->is_contextual = (array_key_exists('context', $parameters) && $parameters['context'] == TRUE) ? TRUE : FALSE;
-        $Passage->contextual_range = (array_key_exists('context_range', $parameters)) ? intval($parameters['context_range']) : 5;
+        $Passage->contextual_range = (array_key_exists('context_range', $parameters)) ? (int) $parameters['context_range'] : 5;
         $Passage->Bibles = $Bibles;
         $Passage->setBook($book);
         $Passage->setChapterVerse($chapter_verse);

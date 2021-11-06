@@ -127,8 +127,8 @@ class VerseStandard extends VerseAbstract {
                             continue;
                         }
 
-                        $cvst = $parsed['cst'] * 1000 + intval($parsed['vst']);
-                        $cven = $parsed['cen'] * 1000 + intval($parsed['ven']);
+                        $cvst = $parsed['cst'] * 1000 + (int) $parsed['vst'];
+                        $cven = $parsed['cen'] * 1000 + (int) $parsed['ven'];
                         $q .= ' AND ' . $table_fmt . '`chapter_verse` BETWEEN ' . $cvst . ' AND ' . $cven;
                         
                         // Proposed modification that would eliminate the need for the `chapter_verse` db column
@@ -198,7 +198,7 @@ class VerseStandard extends VerseAbstract {
 
         foreach($results_raw as $a1) {
             foreach($a1 as $val) {
-                $results[] = intval($val); // Flatten results into one-dimensional array
+                $results[] = (int) $val; // Flatten results into one-dimensional array
             }
         }
 
@@ -212,7 +212,7 @@ class VerseStandard extends VerseAbstract {
 
         foreach($results_raw as $a1) {
             foreach($a1 as $val) {
-                $results[] = intval($val); // Flatten results into one-dimensional array
+                $results[] = (int) $val; // Flatten results into one-dimensional array
             }
         }
 
@@ -381,7 +381,7 @@ class VerseStandard extends VerseAbstract {
 
         foreach($bcv as $single) {
             $Query->orwhere(function($sub) use ($single) {
-                $book = intval($single / 1000000);
+                $book = (int) ($single / 1000000);
                 $chapter_verse = $single - $book * 1000000;
                 $sub->where('book', $book);
                 $sub->where('chapter_verse', $chapter_verse);
@@ -420,64 +420,4 @@ class VerseStandard extends VerseAbstract {
 
         return $counts;
     }
-
-    /*
-     * KEEP THIS, FOR NOW
-     * protected static function _buildPassageQuery__OLD($Passages) {
-        $query = array();
-
-        foreach($Passages as $Passage) {
-            foreach($Passage->chapter_verse_parsed as $parsed) {
-                $q = '`book` = ' . $Passage->Book->id;
-
-                // Single verses
-                if($parsed['type'] == 'single') {
-                    $q .= ' AND `chapter` = ' . $parsed['c'];
-                    $q .= ($parsed['v']) ? ' AND `verse` = ' . $parsed['v'] : '';
-                }
-                elseif($parsed['type'] == 'range') {
-                    if(!$parsed['cst'] && !$parsed['cen']) {
-                        continue;
-                    }
-
-                    $q .= ' AND (';
-
-                    // Intra-chapter ranges
-                    if($parsed['cst'] == $parsed['cen']) {
-                        $q .= '`chapter` =' . $parsed['cst'];
-
-                        if($parsed['vst'] && $parsed['ven']) {
-                            $q .= ' AND `verse` BETWEEN ' . $parsed['vst'] . ' AND ' . $parsed['ven'];
-                        }
-                        else {
-                            $q .= ($parsed['vst']) ? ' AND `verse` >= ' . $parsed['vst'] : '';
-                            $q .= ($parsed['ven']) ? ' AND `verse` <= ' . $parsed['ven'] : '';
-                        }
-                    }
-                    // Cross-chapter ranges
-                    else {
-                        $cvst = $parsed['cst'] * 1000 + intval($parsed['vst']);
-                        $cven = $parsed['cen'] * 1000 + intval($parsed['ven']);
-
-                        if($parsed['vst'] && $parsed['ven']) {
-                            $q .= '`chapter` * 1000 + `verse` BETWEEN ' . $cvst . ' AND ' . $cven;
-                        }
-                        else {
-                            $q .= ($parsed['vst']) ? '     `chapter` * 1000 + `verse` >= ' . $cvst : '     `chapter` >= ' . $parsed['cst'];
-                            $q .= ($parsed['ven']) ? ' AND `chapter` * 1000 + `verse` <= ' . $cven : ' AND `chapter` <= ' . $parsed['cen'];
-                        }
-                    }
-
-                    $q .= ')';
-                }
-
-                $query[] = $q;
-            }
-        }
-
-        return '(' . implode(') OR (', $query) . ')';
-    }
-     *
-     *
-     */
 }
