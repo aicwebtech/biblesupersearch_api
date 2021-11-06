@@ -42,12 +42,14 @@ enyo.kind({
                     {tag: 'td', classes: 'form_label right', content: 'Enabled: '},
                     {tag: 'td', classes: 'form_label right', components: [
                         {kind: 'enyo.Checkbox', name: 'enabled'}, 
-                    ]},
-                    {tag: 'td', classes: 'sublabel', attributes: {colspan: 2}, components: [
+                        {tag: 'span', allowHtml: true, content: '&nbsp; &nbsp;'},
                         {
-                            tag: 'span', 
+                            tag: 'small', 
                             content: 'Whether the Bible is enabled for use'
                         }
+                    ]},
+                    {tag: 'td', classes: 'sublabel', attributes: {colspan: 2}, components: [
+                        {tag: 'span', allowHtml: true, content: '&nbsp; &nbsp;'},
                     ]}
                 ]},            
                 // Todo - implement this!
@@ -55,30 +57,39 @@ enyo.kind({
                 //     {tag: 'td', classes: 'form_label right', content: 'Restrict: '},
                 //     {tag: 'td', classes: 'form_label right', components: [
                 //         {kind: 'enyo.Checkbox', name: 'restrict', disabled: true},
-                //     ]}, 
-                //     {tag: 'td', classes: 'sublabel', attributes: {colspan: 2}, components: [
+                //         {tag: 'span', allowHtml: true, content: '&nbsp; &nbsp;'},
                 //         {
-                //             tag: 'span', 
+                //             tag: 'small', 
                 //             content: 'Restrict access to only local domains. No outside API Access.'
                 //         }
+                //     ]}, 
+                //     {tag: 'td', classes: 'sublabel', attributes: {colspan: 2}, components: [
+                //         {tag: 'span', allowHtml: true, content: '&nbsp; &nbsp;'},
                 //     ]}
                 // ]},
                 {tag: 'tr', components: [
                     {tag: 'td', classes: 'form_label right', content: 'Research Only: '},
                     {tag: 'td', classes: 'form_label right', components: [
                         {kind: 'enyo.Checkbox', name: 'research'},
-                    ]}, 
-                    {tag: 'td', classes: 'sublabel', attributes: {colspan: 2}, components: [
+                        {tag: 'span', allowHtml: true, content: '&nbsp; &nbsp;'},
                         {
-                            tag: 'span', 
+                            tag: 'small', 
                             content: 'Mark Bible as "For Research Only," if you don\'t reccommend the translation.'
                         }
+                    ]}, 
+                    {tag: 'td', classes: 'sublabel', attributes: {colspan: 2}, components: [
+                        {tag: 'span', allowHtml: true, content: '&nbsp; &nbsp;'},
                     ]}
                 ]},
                 {tag: 'tr', components: [
                     {tag: 'td', classes: 'form_label right', content: 'Rank: '},
                     {tag: 'td', attributes: {colspan: 2}, classes: 'form_label right', components: [
-                        {kind: 'enyo.Input', name: 'rank'}
+                        {kind: 'enyo.Input', name: 'rank'},
+                        {tag: 'span', allowHtml: true, content: '&nbsp; &nbsp;'},
+                        {
+                            tag: 'small', 
+                            content: 'Customizable sort order.'
+                        }
                     ]}
                 ]},            
                 {tag: 'tr', components: [
