@@ -22,6 +22,7 @@ class Engine {
     protected $Bible_Primary = NULL; // Primary Bible version
     protected $languages = array();
     protected $primary_language = NULL;
+    protected $default_language = NULL;
     protected $default_data_format = 'passage';
     protected $default_page_all = FALSE;
     protected $metadata = NULL;
@@ -43,6 +44,8 @@ class Engine {
         $this->primary_language = NULL;
         $this->multi_bibles = FALSE;
 
+        $default_language = $this->default_language ?: config('bss.defaults.language_short');
+
         $modules = $this->_parseInputArray($modules);
         $Bibles = Bible::whereIn('module', $modules)->get();
         $primary = NULL;
@@ -57,7 +60,11 @@ class Engine {
         }
 
         $this->setPrimaryBible($primary);
-        $this->primary_language = $this->primary_language ?: config('bss.defaults.language_short');
+
+        if(!$this->primary_language) {
+            $this->primary_language = $default_language;
+            array_unshift($this->languages, $this->primary_language);
+        }
     }
 
     protected function _parseInputArray($input) {
@@ -81,6 +88,16 @@ class Engine {
 
         $this->Bible_Primary = $this->Bibles[$module];
         return TRUE;
+    }
+
+    public function setDefaultLanguage($lang) {
+        if($this->languageHasBookSupport($lang)) {
+            $this->default_language = $lang;
+            $this->languages[] = $lang;
+            return TRUE;
+        }
+
+        return FALSE;
     }
 
     public function addBible($module) {
@@ -223,6 +240,10 @@ class Engine {
                 'type'   => 'int',
                 'default' => config('bss.context.range'),
             ),
+            'language' => [
+                'type' => 'string',
+                'default' => NULL,
+            ],
             'markup' => array(
                 'type'  => 'string',
                 'default' => 'none'
@@ -237,8 +258,11 @@ class Engine {
         $this->metadata = new \stdClass;
         $this->metadata->hash = $Cache->hash;
 
-        !empty($input['bible']) && $this->setBibles($input['bible']);
+
         $input = $this->_sanitizeInput($input, $parsing);
+        $this->setDefaultLanguage($input['language']);
+        !empty($input['bible']) && $this->setBibles($input['bible']);
+
         $input['bible'] = array_keys($this->Bibles);
         $input['page_limit'] = min( (int) $input['page_limit'], (int) config('bss.global_maximum_results'));
         $parallel = $input['multi_bibles'] = (count($input['bible']) > 1) ? TRUE : FALSE;

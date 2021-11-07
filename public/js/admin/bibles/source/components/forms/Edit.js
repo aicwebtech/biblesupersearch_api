@@ -177,16 +177,18 @@ enyo.kind({
             ]},
         ]},
         {classes: 'form_section', components: [
-            {tag: 'table', components: [
+            {tag: 'table', attributes: {border: '0'}, components: [
                 {tag: 'tr', ontap: 'toggleDescription', components: [
-                    {tag: 'th', content: '&nbsp', allowHtml: true},
+                    {tag: 'th', content: '&nbsp', allowHtml: true, style: 'width: 10px'},
                     {tag: 'th', attributes: {colspan: 4}, content: 'Description'},
-                    {tag: 'th', name: 'descriptionPointer', content: '&#x25bc;', allowHtml: true, style: 'text-align: right'}
+                    {tag: 'th', name: 'descriptionPointer', content: '&#x25bc;', allowHtml: true, style: 'text-align: right; width: 10px'}
                 ]},            
                 {tag: 'tr', name: 'DescriptionContainer', showing: false, components: [
+                    {tag: 'td'},
                     {tag: 'td', attributes: {colspan: 4}, components: [
                         {kind: 'enyo.TextArea', name: 'description', id:'description'}
-                    ]}
+                    ]},
+                    {tag: 'td'}
                 ]}
             ]}
         ]}
