@@ -23,4 +23,13 @@ class TestCase extends Illuminate\Foundation\Testing\TestCase
         $this->use_named_bindings = config('app.query_use_named_placeholders');
         return $app;
     }
+
+    public function tearDown(): void
+    {
+        $this->beforeApplicationDestroyed(function () {
+            DB::disconnect();
+        });
+
+        parent::tearDown();
+    }
 }
