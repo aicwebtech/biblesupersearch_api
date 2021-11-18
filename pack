@@ -60,7 +60,7 @@ echo ''
 echo ''
 echo 'Running tests (phpunit)'
 echo ''
-./vendor/phpunit/phpunit/phpunit # comment out ONLY for debugging of this script.
+php artisan test --parallel # comment out ONLY for debugging of this script.
 
 code=$?
 

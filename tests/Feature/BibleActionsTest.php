@@ -92,7 +92,6 @@ class BibleActionsTest extends TestCase
                         'success' => TRUE,
                     ]);
 
-
         $shared['last_response'] = $response;
         $shared['importer'] = 'csv';
 
@@ -355,6 +354,87 @@ class BibleActionsTest extends TestCase
         return $shared;
     }    
 
+    /**
+     * @depends testUpdate
+     */ 
+    public function testUpdateModule(array $shared) {
+
+        $response = $this->actingAs($shared['User'])
+                    ->withSession(['banned' => FALSE])
+                    ->postJson('/admin/bibles/meta/' . $shared['bible_id'], ['create_new' => 0]);
+
+        $response->assertStatus(200)
+                    ->assertJson([
+                        'success' => TRUE,
+                    ]);
+
+        $shared['Bible']->refresh();
+
+        return $shared;
+    }        
+
+    /**
+     * @depends testUpdateModule
+     */ 
+    public function testRevert(array $shared) {
+        $this->assertTrue(TRUE);
+
+        // Since this is called after self::testUpdateModule, the metadata on the module file will match that on the Bible record
+
+        $shared['Bible']->refresh();
+        $orig = $shared['Bible']->attributesToArray();
+
+        $edits = [
+            'name' => 'TEST ' . time(),
+            'description' => 'And this one was poorly edited and needs to be reverted',
+            'year' => '1945',
+            'rank' => 1234,
+        ];
+
+        $shared['Bible']->fill($edits);
+        $shared['Bible']->save();
+
+        $response = $this->actingAs($shared['User'])
+                    ->withSession(['banned' => FALSE])
+                    ->postJson('/admin/bibles/revert/' . $shared['bible_id']);
+
+        $response->assertStatus(200)
+                    ->assertJson([
+                        'success' => TRUE,
+                    ]);
+
+        $shared['Bible']->refresh();
+
+        foreach($edits as $key => $new_value) {
+            $this->assertNotEquals($new_value, $shared['Bible']->$key);
+            $this->assertEquals($orig[$key], $shared['Bible']->$key);
+        }
+
+        return $shared;
+    }        
+
+    /**
+     * @depends testRevert
+     */ 
+    public function testDelete(array $shared) {
+
+        $response = $this->actingAs($shared['User'])
+                    ->withSession(['banned' => FALSE])
+                    ->postJson('/admin/bibles/delete/' . $shared['bible_id']);
+
+        $response->assertStatus(200)
+                    ->assertJson([
+                        'success' => TRUE,
+                    ]);
+
+        $this->assertFalse($shared['Bible']->hasModuleFile());
+
+        $this->expectException(Illuminate\Database\Eloquent\ModelNotFoundException::class);
+
+        $shared['Bible']->refresh(); // This will throw a ModelNotFoundException
+
+        return $shared;
+    }    
 
     protected function _makeFakeImportTest($importer, $data) {
         $data['file'] = $this->_generateUploadedFile($importer);

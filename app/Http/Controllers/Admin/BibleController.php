@@ -256,23 +256,7 @@ class BibleController extends Controller
             $Bible = new Bible();
         }
 
-        $lang_short = $request->input('lang_short');
-
-        $new_lang = ($request->input('lang_short') == 'LANG') ? TRUE : FALSE;
-
-
         $rules = $BibleClass::getUpdateRules($id);
-
-        // if($new_lang) {
-        //     $lang_rules = [
-        //         'code' => [
-        //             'required',
-        //             'alpha',
-        //             'min:2'
-        //             'max:3',
-        //     ]
-        // }
-
         $data  = $request->only(array_keys($rules));
 
         // $request->validate($rules); // This breaks, even though docs say it will return 422 with JSON data for an AJAX request

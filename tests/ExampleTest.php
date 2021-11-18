@@ -32,14 +32,14 @@ class ExampleTest extends TestCase
      */
     public function testBasicExample()
     {
-        $this->assertTrue(TRUE);
-        return;
+        // $this->assertTrue(FALSE);
+        // return;
 
         $response = $this->get('/');
         $response->assertStatus(200);
 
-        //$this->assertContains('Documentation', $response);
-        //$response->assertContains('Documentation');
-             //->see('Documentation');
+        // $this->assertContains('Documentation', $response);
+        // $response->assertContains('Documentation')
+        //      ->see('Documentation');
     }
 }
