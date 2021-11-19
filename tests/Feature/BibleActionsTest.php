@@ -394,6 +394,11 @@ class BibleActionsTest extends TestCase
         $shared['Bible']->fill($edits);
         $shared['Bible']->save();
 
+        foreach($edits as $key => $new_value) {
+            $this->assertEquals($new_value, $shared['Bible']->$key);
+            $this->assertNotEquals($orig[$key], $shared['Bible']->$key);
+        }
+
         $response = $this->actingAs($shared['User'])
                     ->withSession(['banned' => FALSE])
                     ->postJson('/admin/bibles/revert/' . $shared['bible_id']);
