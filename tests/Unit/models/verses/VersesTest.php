@@ -157,6 +157,10 @@ class VersesTest extends TestCase
         $Bibles = Bible::where('installed', 1)->get();
 
         foreach($Bibles as $Bible) {
+            if(strpos($Bible->module, 'test_bible_') !== FALSE) {
+                continue;
+            }
+
             $Verses = $Bible->verses();
             $this->assertTrue( Schema::hasTable($Verses->getTable()), 'No table for module: ' . $Verses->getTable() );
             $verses_class_static = Bible::getVerseClassNameByModule($Bible->module);

@@ -20,14 +20,14 @@ class ApiController extends Controller {
         }
 
         $debug_input = FALSE;
-        $_SESSION['debug'] = array();
+        $_SESSION['debug'] = [];
 
         if(!in_array($action, $allowed_actions)) {
             return new Response('Action not found', 404);
         }
 
         $input = $Request->input();
-        $pretty_print = (array_key_exists('pretty_print', $input) && $input['pretty_print']) ? TRUE : FALSE;
+        $pretty_print = (array_key_exists('pretty_print', $input) && $input['pretty_print']);
         $Engine = new Engine();
         $actionMethod = 'action' . \Illuminate\Support\Str::studly($action);
 
@@ -68,7 +68,6 @@ class ApiController extends Controller {
     }
 
     private function _prettyPrintErrors($input, $response) {
-        // return view('errors.pretty_print', compact($input, $response));
         return view('errors.pretty_print', [
             'input'    => $input,
             'response' => $response,

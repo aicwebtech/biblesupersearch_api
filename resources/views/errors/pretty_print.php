@@ -9,7 +9,7 @@
 
     <h2>Please go back and try again</h2>
 
-    <?php if($_SERVER['HTTP_REFERER']): ?>
+    <?php if(array_key_exists('HTTP_REFERER', $_SERVER)): ?>
         <form action="<?php echo $_SERVER['HTTP_REFERER'] ?>" method='get' >
             <input type='submit' onclick='history.back(); return false;' value='Back'>
         </form>

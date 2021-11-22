@@ -717,7 +717,7 @@ class Engine {
         $namespaced_class = 'App\Models\Shortcuts\\' . ucfirst($language);
 
         if(!class_exists($namespaced_class)) {
-            $namespaced_class = 'App\Models\Shortcuts\\' . config('bss.defaults.language_short');
+            $namespaced_class = 'App\Models\Shortcuts\\' . ucfirst( config('bss.defaults.language_short') );
         }
 
         $Shortcuts = $namespaced_class::select('id', 'name', 'reference')->orderBy('id', 'ASC') ->where('display', 1) -> get() -> all();
@@ -751,7 +751,7 @@ class Engine {
         $response = [];
         
         if(!array_key_exists('strongs', $input) || empty($input['strongs'])) {
-            return $this->addError( __('errors.strongs_input_required') );
+            return $this->addError( __('errors.strongs_input_required'), 4);
         }
 
         $strongs = strip_tags(trim($input['strongs']));

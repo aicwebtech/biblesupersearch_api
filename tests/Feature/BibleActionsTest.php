@@ -60,6 +60,8 @@ class BibleActionsTest extends TestCase
 
         $response->assertStatus(200);
 
+        $this->assertEquals('testing', config('app.env'));
+
         return ['User' => $User];
     }
 

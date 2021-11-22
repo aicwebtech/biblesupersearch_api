@@ -20,12 +20,12 @@ class ApiAccess
      * @return mixed
      */
     public function handle($request, Closure $next) {
-        $host = (array_key_exists('HTTP_REFERER', $_SERVER)) ? $_SERVER['HTTP_REFERER'] : NULL;
+        $host = (array_key_exists('HTTP_REFERER', $_SERVER)) ? $_SERVER['HTTP_REFERER'] : 'localhost';
+        $ip   = (array_key_exists('REMOTE_ADDR', $_SERVER))  ? $_SERVER['REMOTE_ADDR']  : '127.0.0.1';
         // $ip = gethostbyname($host); // Cannot do this - as this is for IP v4 ONLY
         // $ip = ($ip == $host) ? $_SERVER['REMOTE_ADDR'] : $ip;
         // $ip = ($host) ? $_SERVER['REMOTE_ADDR'] : NULL;
         
-        $ip = $_SERVER['REMOTE_ADDR'];
         $IP = IpAccess::findOrCreateByIpOrDomain($ip, $host);
 
         if(!$IP->incrementDailyHits()) {
