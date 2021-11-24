@@ -451,13 +451,7 @@ class BibleActionsTest extends TestCase
 
     protected function _generateUploadedFile($importer) {
         $file_name = $this->files[ $importer ];
-
-        // if(!array_key_exists($importer, $this->UploadedFiles)) {
-            $file_path = dirname(__FILE__) . '/test_spreadsheets/' . $file_name;
-            return new UploadedFile($file_path, $file_name, NULL, NULL, TRUE);
-            $this->UploadedFiles[$importer] = new UploadedFile($file_path, $file_name, NULL, NULL, TRUE);
-        // }
-
-        return $this->UploadedFiles[$importer];
+        $file_path = dirname(__FILE__) . '/../test_spreadsheets/' . $file_name;
+        return new UploadedFile($file_path, $file_name, NULL, NULL, TRUE);
     }
 }

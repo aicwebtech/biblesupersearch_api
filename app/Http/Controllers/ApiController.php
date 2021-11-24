@@ -10,7 +10,7 @@ use App\Engine;
 
 class ApiController extends Controller {
 
-    public function genericAction($action = 'query', Request $Request) {
+    public function genericAction(Request $Request, $action = 'query') {
         $allowed_actions = ['query', 'bibles', 'books', 'statics', 'version', 'readcache', 'strongs'];
 
         if(config('download.enable')) {

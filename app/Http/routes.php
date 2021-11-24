@@ -59,6 +59,7 @@ Route::get('/auth/success', 'Auth\PasswordController@success');
 
 Route::get('/admin/main', 'AdminController@getMain')->name('admin.main');
 Route::get('/admin/help', 'AdminController@help')->name('admin.help');
+Route::get('/admin/debug', 'AdminController@debug')->name('admin.debug');
 Route::get('/admin/update', 'AdminController@softwareUpdate')->name('admin.update')->middleware('install');
 Route::get('/admin/uninstall', 'AdminController@uninstallPage')->name('admin.uninstall')->middleware('install');
 Route::post('/admin/uninstall', 'AdminController@softwareUninstall')->name('admin.douninstall');

@@ -35,6 +35,10 @@ class AdminController extends Controller
 
     public function help() {
         return view('admin.help');
+    }    
+
+    public function debug() {
+        phpinfo();
     }
 
     public function softwareUpdate(Request $request) {
