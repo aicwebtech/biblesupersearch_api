@@ -15,6 +15,7 @@ class IpAccess extends Model {
         if($domain) {
             $IP = static::firstOrNew(['domain' => $domain]);
             $IP->ip_address = $ip_address;
+            $IP->limit = ($ip_address == '127.0.0.1' || $ip_address == '::1') ? 0 : NULL;
             $IP->save();
         }
         else {

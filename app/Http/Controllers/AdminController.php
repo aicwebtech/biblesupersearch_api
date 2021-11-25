@@ -66,7 +66,6 @@ class AdminController extends Controller
         return view('admin.update', $vars);
     }
 
-
     public function uninstallPage(Request $request) {
         return view('admin.uninstall');
     }

@@ -40,17 +40,6 @@ class BibleActionsTest extends TestCase
     }
 
 
-    /**
-     * A basic feature test example.
-     *
-     * @return void
-     */
-    public function testExample()
-    {
-        $response = $this->get('/');
-        $response->assertStatus(200);        
-    }
-
     public function testInit() {
         $User = User::find(1);
 
@@ -103,10 +92,7 @@ class BibleActionsTest extends TestCase
     /**
      * @depends testImportCheck
      */ 
-    public function testImport(array $shared) {
-
-        // print_r($shared['last_response']->decodeResponseJson());
-        
+    public function testImport(array $shared) {        
         $ts = time();
 
         $data = $shared['last_response']['bible'];

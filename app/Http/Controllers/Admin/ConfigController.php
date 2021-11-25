@@ -52,7 +52,7 @@ class ConfigController extends Controller
         $data = $request->toArray();
         ConfigManager::setGlobalConfigs($data);
 
-        if($data['app__config_cache']) {
+        if(array_key_exists('app__config_cache', $data) && $data['app__config_cache']) {
             Artisan::call('config:cache');
         }
         else {

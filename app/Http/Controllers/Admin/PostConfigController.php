@@ -10,6 +10,7 @@ class PostConfigController extends Controller
 {
     public function __construct() {
         parent::__construct();
+        $this->middleware('auth:100');
         $this->middleware('migrate');
     }
 
