@@ -157,7 +157,7 @@ class VersesTest extends TestCase
         $Bibles = Bible::where('installed', 1)->get();
 
         foreach($Bibles as $Bible) {
-            if(strpos($Bible->module, 'test_bible_') !== FALSE) {
+            if(strpos($Bible->module, 'test_bible') !== FALSE) {
                 continue;
             }
 

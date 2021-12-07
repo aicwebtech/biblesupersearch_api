@@ -5,6 +5,7 @@ use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Database\Migrations\Migration;
 use App\Models\Bible;
 use App\Models\Copyright as Model;
+use Database\Seeders\DatabaseSeeder;
 
 class CreateCopyrightTable extends Migration
 {

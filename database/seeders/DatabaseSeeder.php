@@ -6,7 +6,7 @@ use Illuminate\Database\Seeder;
 use Illuminate\Database\Eloquent\Model;
 
 // This isn't autoloading??
-require_once(dirname(__FILE__) . '/UserTableSeeder.php');
+//require_once(dirname(__FILE__) . '/UserTableSeeder.php');
 
 class DatabaseSeeder extends Seeder
 {
@@ -25,8 +25,8 @@ class DatabaseSeeder extends Seeder
         // As we are doing here
 
         $this->call('UserTableSeeder');
-        $this->call('Bibles');
-        $this->call('IndexTableSeeder');
+        //// $this->call('Bibles'); // No longer used, do NOT uncomment
+        // $this->call('IndexTableSeeder'); // No longer used
         $this->call('BookListSeeder');
         $this->call('ShortcutsSeeder');
         //// $this->call('StrongsDefinitionsSeeder'); // moved to migration, do NOT uncomment
@@ -52,7 +52,7 @@ class DatabaseSeeder extends Seeder
         foreach($contents as $line) {
             $line = trim($line);
 
-            if(empty($line) || $line{0} == '/' || $line{0} == '*') {
+            if(empty($line) || $line[0] == '/' || $line[0] == '*') {
                 continue; // Ignore comments
             }
 

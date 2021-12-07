@@ -428,7 +428,12 @@ class RenderManager {
         $cur_space = static::getUsedSpace();
         $est_space = $this->getEstimatedSpace( count($modules_no_file) );
         $est_space_all = $this->getEstimatedSpace( count($modules) );
-        $max_space = config('download.cache.cache_size') + config('download.cache.temp_cache_size');
+
+        $retain             = (bool) config('download.retain');
+        $cache_size         = ($retain) ? (int) config('download.cache.cache_size') : 0;
+        $temp_cache_size    = (int) config('download.cache.temp_cache_size') ?: FALSE;
+
+        $max_space = $cache_size + $temp_cache_size;
 
         if($est_space_all > $max_space) {
             return $this->addError('Not enough space allocated to render all of the selected Bibles.  Please reduce the amount of Bibles selected.');
@@ -488,9 +493,11 @@ class RenderManager {
     }
 
     private static function _cleanUpFilesHelper($DeletableRenderings, $space_needed_render = 0, $dry_run = FALSE, $verbose = FALSE, $debug_overrides = []) {
+        $retain             = (bool) config('download.retain');
         $min_render_time    = config('download.cache.min_render_time') ?: FALSE;
         $min_hits           = config('download.cache.min_hits') ?: FALSE;
         $cache_size         = config('download.cache.cache_size') ?: FALSE;
+        $cache_size         = ($retain) ? $cache_size : 0;
         $temp_cache_size    = config('download.cache.temp_cache_size') ?: FALSE;
         $days               = config('download.cache.days') ?: FALSE;
         $max_filesize       = config('download.cache.max_filesize') ?: FALSE;

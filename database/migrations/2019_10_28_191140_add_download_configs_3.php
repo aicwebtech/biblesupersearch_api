@@ -33,7 +33,7 @@ class AddDownloadConfigs3 extends Migration
         [
             'key'       => 'download.cache.cache_size',
             'descr'     => 'Download Retained File Cache Size (MB)',
-            'default'   => 450,
+            'default'   => 0,
             'global'    => 1,
             'type'      => 'int',
         ],        

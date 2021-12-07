@@ -68,7 +68,8 @@ class CheckMigration {
 
     private function _migrate($pretend = FALSE) {
         Artisan::call('view:clear'); // Force cached view templates to clear out because HTML may have changed
-        return Artisan::call('migrate', ['--seed' => TRUE, '--force' => TRUE, '--pretend' => $pretend]);
+        return Artisan::call('migrate', ['--force' => TRUE, '--pretend' => $pretend]);
+        // return Artisan::call('migrate', ['--seed' => TRUE, '--force' => TRUE, '--pretend' => $pretend]);
     }
 
     private function _migrationNeeded() {

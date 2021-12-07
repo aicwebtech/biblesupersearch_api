@@ -3,7 +3,6 @@
 namespace {
     
     // todo: use namespaces on all tests
-    // todo2: refine this class in the Tests namespace
     class TestCase extends Illuminate\Foundation\Testing\TestCase
     {
         /**

@@ -1,4 +1,6 @@
 Bible SuperSearch API Changelog
+
+= 5.0.0 / Feb __, 2022
 * Bugfix: Bible admin: 'Description' label no longer shifts when opening the description.
 * Rebranding 'stand-alone' client to Universal Client
 * Improvement: Added ability to change the pagination results per page limit.

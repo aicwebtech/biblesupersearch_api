@@ -78,6 +78,11 @@ if(!config('download.enable') || !config('download.tab_enable')) {
                     </a>
                 @endforeach
             </div>
+            @if( !config('download.enable'))
+            <div class='error'>
+                Bible downloads is not enabled.  &nbsp;<a href='/admin/config#tab_download'>Please enable</a> it now.
+            </div>
+            @endif
         </div>
 
         <div id="app">

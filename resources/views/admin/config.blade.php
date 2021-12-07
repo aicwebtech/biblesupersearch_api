@@ -6,12 +6,21 @@
         '/js/bin/custom/alert/package.js',
         '/js/admin/config.js',
     ];
+
+    $stylesheets = [
+       '/css/admin/config.css',
+    ];
 ?>
 
 @extends('layouts.admin')
 
 @section('content')
     <div class='container'>
+        <script> 
+            var downloadCacheSize = {{$configs['download.cache.cache_size']}};
+            var downloadTempCacheSize = {{$configs['download.cache.temp_cache_size']}};
+        </script>
+
         <div class='content' style='margin-left: 200px; margin-right: 200px;'>
             <form method='POST'>
                 <?php echo csrf_field() ?>
@@ -203,7 +212,7 @@
                         <div class='container' style='width:800px'> 
                             <div class='config_group'>
                                 <div class='config_block'>
-                                    <h1>Downloads &amp; Exports</h1>
+                                    <h1>Bible Downloads &amp; Exports</h1>
 
                                     <table border='0'>
                                         <tbody>
@@ -260,7 +269,7 @@
                                             
                                             @endif
                                         </tbody>
-                                        <tbody id='download_addl_settings' @if($configs['download.enable'] == 0)style='display:none'@endif>
+                                        <tbody class='download_addl_settings' @if($configs['download.enable'] == 0)style='display:none'@endif>
                                             <tr><td colspan='3'>&nbsp;</td></tr>
                                             <tr>
                                                 <td class='ralign'>Enable Downloads Tab: </td>
@@ -282,7 +291,6 @@
                                                         </p>
                                                     </span>
                                                 </td>
-                                                <!-- <td>&nbsp;</td> -->
                                             </tr>
                                             <tr>
                                                 <td colspan="2">&nbsp;</td>
@@ -298,12 +306,29 @@
                                                         </p>
                                                     </span>
                                                 </td>
-                                                <!-- <td>&nbsp;</td> -->
-                                            </tr>                                     
+                                            </tr>         
+                                            <tr>
+                                                <td colspan="2">&nbsp;</td>
+                                            </tr>                            
+                                            <tr><th colspan="2">Rendered / Retained Files Settings</th></tr>
                                             <tr>
                                                 <td colspan="2">&nbsp;</td>
                                             </tr>
-                                            <tr><th colspan="2">Rendered Files Settings</th></tr>
+                                            <tr>
+                                                <td class='ralign'>Temporary Space for Rendered Files: </td>
+                                                <td>
+                                                    <input 
+                                                        name='download__cache__temp_cache_size' id='download_temp_cache_size' size='5' class='download_size'
+                                                        value='{{$configs['download.cache.temp_cache_size']}}'> MB
+                                                    <span class='info'>
+                                                        <span>i</span>
+                                                        <p>
+                                                            This space is used temporarily to hold rendered Bible files.  Files will be cleaned up after download.
+                                                            Warning:  Setting this two low will limit the number of Bibles that can be downloaded at once. 
+                                                        </p>
+                                                    </span>
+                                                </td>
+                                            </tr>                             
                                             <tr>
                                                 <td colspan="2">
                                                     <p>
@@ -314,24 +339,45 @@
                                                 </td>
                                             </tr>
                                             <tr>
-                                                <td class='ralign'>Temporary Space for Rendered Files: </td>
+                                                <td class='ralign' style='width:320px'>Retain Rendered Files: </td>
                                                 <td>
-                                                    <input name='download__cache__temp_cache_size' size='5' value='{{$configs['download.cache.temp_cache_size']}}'> MB
+                                                    <label for='download_retain_1'>Yes</label>
+                                                    <input
+                                                        type='radio' name='download__retain' value='1' id='download_retain_1'
+                                                        @if($configs['download.retain'] == 1)checked='checked'@endif
+                                                     />
+                                                    <label for='download_retain_0'>No</label>
+                                                    <input
+                                                        type='radio' name='download__retain' value='0' id='download_retain_0'
+                                                        @if($configs['download.retain'] == 0)checked='checked'@endif
+                                                        />
                                                     <span class='info'>
                                                         <span>i</span>
                                                         <p>
-                                                            If not enough space to render files, this space is used temporarily to hold them.  Files will be cleaned up after download.
-                                                            Warning:  setting this two low will limit the number of Bibles that can be downloaded at onces. 
-                                                            This space is only used if not enough space allocated in Maximum Space for Retained Files
+                                                            This enables saving of rendered Bibles for quicker downloads later.
                                                         </p>
                                                     </span>
                                                 </td>
-                                                <!-- <td>&nbsp;</td> -->
-                                            </tr>                             
+                                            </tr>
+                                        </tbody>
+                                        <tbody id='retained_file_settings' @if($configs['download.retain'] == 0 || $configs['download.enable'] == 0)style='display:none'@endif >
                                             <tr>
-                                                <td class='ralign'>Maximum Space for Retained Files: </td>
+                                                <td colspan="2">&nbsp;</td>
+                                            </tr>
+                                            <tr>
+                                                <td colspan="2">
+                                                    <div id='rendered_space_slider'></div>
+                                                </td>
+                                            </tr>
+                                            <tr>
+                                                <td colspan="2">&nbsp;</td>
+                                            </tr>
+                                            <tr>
+                                                <td class='ralign'>Space for Retained Files: </td>
                                                 <td>
-                                                    <input name='download__cache__cache_size' size='5' value='{{$configs['download.cache.cache_size']}}'> MB
+                                                    <input 
+                                                        name='download__cache__cache_size' id='download_cache_size' size='5' class='download_size' 
+                                                        value='{{$configs['download.cache.cache_size']}}'> MB
                                                     <span class='info'>
                                                         <span>i</span>
                                                         <p>
@@ -339,7 +385,24 @@
                                                         </p>
                                                     </span>
                                                 </td>
-                                                <!-- <td>&nbsp;</td> -->
+                                            </tr>                                            
+                                            <tr>
+                                                <td class='ralign'>Total Space Reserved: </td>
+                                                <td>
+                                                    <input 
+                                                        name='download__cache__total_cache_size' id='download_total_cache_size' size='5' class='download_size'
+                                                        value='{{$configs['download.cache.cache_size'] + $configs['download.cache.temp_cache_size']}}'
+                                                        > MB
+                                                    <span class='info'>
+                                                        <span>i</span>
+                                                        <p>
+                                                            Maximum allowable disk space for any temporary or retained Bible files.
+                                                        </p>
+                                                    </span>
+                                                </td>
+                                            </tr>
+                                            <tr>
+                                                <td colspan="2">&nbsp;</td>
                                             </tr>
                                             <tr>
                                                 <td class='ralign'>Days to Retain Files: </td>
@@ -350,7 +413,6 @@
                                                         <p>Number of days to retain a Bible file since it's last download before being deleted.  0 = unlimited days.  </p>
                                                     </span>
                                                 </td>
-                                                <!-- <td>&nbsp;</td> -->
                                             </tr>
                                             <tr>
                                                 <td class='ralign'>Maximum File Size: </td>
@@ -364,7 +426,6 @@
                                                         </p>
                                                     </span>
                                                 </td>
-                                                <!-- <td>&nbsp;</td> -->
                                             </tr>                                
                                             <tr>
                                                 <td class='ralign'>Minimum Rendering Time: </td>
@@ -377,7 +438,6 @@
                                                         </p>
                                                     </span>
                                                 </td>
-                                                <!-- <td>&nbsp;</td> -->
                                             </tr>                                
                                             <tr>
                                                 <td class='ralign'>Minimum Hits: </td>
@@ -390,14 +450,23 @@
                                                         </p>
                                                     </span>
                                                 </td>
-                                                <!-- <td>&nbsp;</td> -->
                                             </tr>
+                                        </tbody>
+                                        <tbody class='download_addl_settings' @if($configs['download.enable'] == 0)style='display:none'@endif>
+                                            <!-- <tr><td colspan="2">&nbsp;</td></tr> -->
                                             <tr><td colspan="2">&nbsp;</td></tr>
                                             <tr><th colspan="2">Copyright Settings</th></tr>
+                                            <tr><td colspan="2">&nbsp;</td></tr>
                                             <tr><td colspan="2">All Bible files include a copyright statement, even if the text is in the public domain.</td></tr>
+                                            <tr><td colspan="2">&nbsp;</td></tr>
                                             <tr><th colspan="2">Derivative Copyright Notice</th></tr>
+                                            <tr><td colspan="2">&nbsp;</td></tr>
                                             <tr><td colspan="2">If provided, will be appended to the copyright notice on each Bible file.</td></tr>
-                                            <tr><td colspan="2">HTML is allowed, but may be stripped out depending on the format selected.  YYYY will be replaced by the current year.</td></tr>
+                                            <tr>
+                                                <td colspan="2">
+                                                    HTML is allowed, but may be stripped out depending on the format selected.  YYYY will be replaced by the current year.
+                                                </td>
+                                            </tr>
                                             <tr>
                                                 <td colspan="2">
                                                     <textarea style='width: 100%; height: 100px'

@@ -64,7 +64,7 @@ class Database {
         foreach($contents as $line) {
             $line = trim($line);
 
-            if(empty($line) || $line{0} == '/' || $line{0} == '*') {
+            if(empty($line) || $line[0] == '/' || $line[0] == '*') {
                 continue; // Ignore comments
             }
 

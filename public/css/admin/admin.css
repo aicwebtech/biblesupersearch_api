@@ -177,3 +177,15 @@ title.h1 {
     padding: 10px;
     margin: 10px;
 }
+
+#header .error {
+    max-width: 800px;
+    margin: 10px auto;
+}
+
+.warning {
+    color: red;
+    background-color: #FAF834;
+    padding: 5px;
+    border-radius: 10px;
+}
