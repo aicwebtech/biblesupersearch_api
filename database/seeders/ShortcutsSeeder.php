@@ -14,7 +14,7 @@ class ShortcutsSeeder extends Seeder
      */
     public function run()
     {
-        $languages = Config::get('bss_table_languages.shortcuts');
+        $languages = config('bss_table_languages.shortcuts');
 
         foreach($languages as $lang) {
             $file  = 'shortcuts_' . $lang . '.sql';

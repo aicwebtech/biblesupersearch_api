@@ -4,6 +4,7 @@ namespace Database\Seeders;
 
 use Illuminate\Database\Seeder;
 use Illuminate\Database\Eloquent\Model;
+use \DB;
 
 // This isn't autoloading??
 //require_once(dirname(__FILE__) . '/UserTableSeeder.php');
@@ -24,11 +25,14 @@ class DatabaseSeeder extends Seeder
         // NOT populating with data needed for the application to work
         // As we are doing here
 
-        $this->call('UserTableSeeder');
+        // TODO - add artisan command for adding admin user
+        //  $this->call(UserTableSeeder::class); // do not use
         //// $this->call('Bibles'); // No longer used, do NOT uncomment
         // $this->call('IndexTableSeeder'); // No longer used
-        $this->call('BookListSeeder');
-        $this->call('ShortcutsSeeder');
+
+        // $this->call(BookListSeeder::class);
+        // $this->call(ShortcutsSeeder::class);
+
         //// $this->call('StrongsDefinitionsSeeder'); // moved to migration, do NOT uncomment
 
         Model::reguard();
@@ -37,7 +41,7 @@ class DatabaseSeeder extends Seeder
     static public function importSqlFile($file, $dir = NULL, $threshold = 100) {
         $default_dir = ($dir) ? FALSE : TRUE;
         $dir = ($dir) ? $dir : dirname(__FILE__) . '/../dumps';
-        $prefix = Config::get('database.prefix');
+        $prefix = config('database.prefix');
         $path = $dir . '/' . $file;
         $display_path = ($default_dir) ? '<app_dir>/database/dumps/' . $file : $path;
         //var_dump($file);

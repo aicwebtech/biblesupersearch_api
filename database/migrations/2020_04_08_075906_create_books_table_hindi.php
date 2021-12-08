@@ -4,6 +4,7 @@ use Illuminate\Support\Facades\Schema;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Database\Migrations\Migration;
 use App\Models\Books\BookAbstract as Book;
+use Database\Seeders\DatabaseSeeder;
 
 class CreateBooksTableHindi extends Migration
 {
@@ -33,7 +34,6 @@ class CreateBooksTableHindi extends Migration
             });
 
             $file  = 'bible_books_' . $lang . '.sql';
-            $table = 'books_' . $lang;
             DatabaseSeeder::importSqlFile($file);
             DatabaseSeeder::setCreatedUpdated($table);
         }

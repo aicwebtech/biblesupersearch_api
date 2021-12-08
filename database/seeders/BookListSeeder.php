@@ -13,7 +13,7 @@ class BookListSeeder extends Seeder
      * @return void
      */
     public function run() {
-        $languages = Config::get('bss_table_languages.books');
+        $languages = config('bss_table_languages.books');
 
         // import book lists from files
         foreach($languages as $lang) {

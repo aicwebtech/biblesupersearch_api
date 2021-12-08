@@ -36,8 +36,9 @@ class InstallManager {
         // Generate application key
         Artisan::call('key:generate');
 
-        // Set up database
-        $exit_code = Artisan::call('migrate', array('--seed' => TRUE, '--force' => TRUE));
+        // Set up database // --force Allows migration to run in production
+        $exit_code = Artisan::call('migrate', array('--force' => TRUE));
+        // $exit_code = Artisan::call('migrate', array('--seed' => TRUE, '--force' => TRUE));
 
         // Populate the Bible table
         Bible::populateBibleTable();
@@ -274,6 +275,10 @@ class InstallManager {
         }
 
         $exit_code = Artisan::call('migrate:reset'); // Roll back ALL DB migrations
+
+        if(\Schema::hasTable('migrations')) {
+            \Schema::drop('migrations');
+        }
 
         return $success;
     }

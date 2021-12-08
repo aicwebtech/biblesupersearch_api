@@ -4,6 +4,8 @@ namespace Database\Seeders;
 
 use Illuminate\Database\Seeder;
 
+// OBSOLETE!!
+
 class BibleTableSeeder extends Seeder
 {
     /**
@@ -14,7 +16,7 @@ class BibleTableSeeder extends Seeder
     public function run()
     {
         
-        $supported = Config::get('supported_bibles');
+        $supported = config('supported_bibles');
 
         print_r($supported);
 

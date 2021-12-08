@@ -5,6 +5,8 @@ namespace Database\Seeders;
 use Illuminate\Database\Seeder;
 use App\Models\Bible;
 
+// OBSOLETE!!!
+
 class Bibles extends Seeder
 {
     /**
@@ -16,7 +18,7 @@ class Bibles extends Seeder
     {
         return; // this is now no longer needed - doesn't import ENOUGH
 
-        $supported = Config::get('bss_supported_bibles');
+        $supported = config('bss_supported_bibles');
         $lang = config('bss.defaults.language');
         $lang_st = config('bss.defaults.language_short');
         $rank = 0;
