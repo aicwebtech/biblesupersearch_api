@@ -10,6 +10,8 @@ Bible SuperSearch API Changelog
     + American Standard Version
     + Reina Valera 1909 (Spanish)
 
+* Added Bible: NET Bible® 
+
 = 4.5.0 / Oct 9, 2021 (soft release)
 * Admin: Added filtering on Bible manager.
 * Admin: Made Bible manager grid more responsive (not perfect).

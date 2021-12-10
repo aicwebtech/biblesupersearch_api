@@ -313,7 +313,7 @@ class VerseStandard extends VerseAbstract {
                 $map[$field] = $verse[$index];
             }
 
-            $map['chapter_verse'] = $map['chapter'] * 1000 + $map['verse'];
+            $map['chapter_verse'] = (int) $map['chapter'] * 1000 + (int) $map['verse'];
             $insertable[] = $map;
             $ins_count ++;
 

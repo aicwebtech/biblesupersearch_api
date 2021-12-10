@@ -14,8 +14,8 @@ class AdminController extends Controller
 {
     public function __construct() {
         parent::__construct();
-        $this->middleware('auth:100');
-        $this->middleware(['install', 'migrate'])->except('softwareUninstall');
+        $this->middleware('auth:100')->except('uninstalled');
+        $this->middleware(['install', 'migrate'])->except(['softwareUninstall', 'uninstalled']);
     }
 
     /**
@@ -79,11 +79,15 @@ class AdminController extends Controller
         }
 
         if(\App\InstallManager::uninstall($request)) {
-            return view('admin.uninstall_success');
+            return Redirect::route('admin.uninstalled');
         }
         else {
             return view('admin.uninstall_failure');
         }
+    }
+
+    public function uninstalled(Request $request) {
+        return view('admin.uninstall_success');
     }
 
     /**

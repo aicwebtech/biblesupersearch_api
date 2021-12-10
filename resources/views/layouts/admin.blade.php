@@ -28,6 +28,10 @@ if(!config('download.enable') || !config('download.tab_enable')) {
     unset($buttons['exports']);
 }
 
+if(!isset($hide_menus)) {
+    $hide_menus = FALSE;
+}
+
 @endphp
 
 <!DOCTYPE html>
@@ -68,20 +72,22 @@ if(!config('download.enable') || !config('download.tab_enable')) {
     <body>
         <div id='header'>
             <h1>{{ config('app.name', 'Bible SuperSearch API') }} Manager</h1>
-            <div id='top_menu'>
-                @foreach ($buttons as $button)
-                    <a href='{{ route($button['route']) }}{{$button['hash']}}'
-                       class='menu_item @if(Route::currentRouteName() == $button['route'])active @endif'
-                       @if($button['new_tab'])target='_NEW'@endif;
-                       >
-                       {{ $button['label'] }}
-                    </a>
-                @endforeach
-            </div>
-            @if( !config('download.enable'))
-            <div class='error'>
-                Bible downloads is not enabled.  &nbsp;<a href='/admin/config#tab_download'>Please enable</a> it now.
-            </div>
+            @if(!$hide_menus)
+                <div id='top_menu'>
+                    @foreach ($buttons as $button)
+                        <a href='{{ route($button['route']) }}{{$button['hash']}}'
+                           class='menu_item @if(Route::currentRouteName() == $button['route'])active @endif'
+                           @if($button['new_tab'])target='_NEW'@endif;
+                           >
+                           {{ $button['label'] }}
+                        </a>
+                    @endforeach
+                </div>
+                @if( !config('download.enable'))
+                    <div class='error'>
+                        Bible downloads is not enabled.  &nbsp;<a href='/admin/config#tab_download'>Please enable</a> it now.
+                    </div>
+                @endif
             @endif
         </div>
 
