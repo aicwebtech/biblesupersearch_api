@@ -48,7 +48,7 @@ class ImportManager {
             'name'  => 'MySword',
             'desc'  => 'Imports a Bible from an MySword / MyBible module.',
             'url'   => 'https://mysword.info/download-mysword/bibles',
-            'ext'   => ['mybible'],
+            'ext'   => ['mybible', 'mybible.zip', 'mybible.gz'],
             'kind'  => 'MySword',
             'class' => \App\Importers\MySword::class,
         ],         
@@ -148,17 +148,26 @@ class ImportManager {
         if($data['file']->isValid()) {
             $fileinfo = pathinfo( trim($data['file']->getClientOriginalName()) );
 
-            if(!in_array($fileinfo['extension'], $type_info['ext'])) {
-                $msg = 'Invalid file extension: .' . $fileinfo['extension'] . '; ';
+            if(is_array($type_info['ext']) && !empty($type_info['ext'])) {
+                $matches_ext = FALSE;
 
-                if(count($type_info['ext']) > 1) {
-                    $msg .= 'Extension must be one of the following: .' . implode(', .', $type_info['ext']);
-                }
-                else {
-                    $msg .= 'This importer requires an extension of .' . $type_info['ext'][0];
+                foreach($type_info['ext'] as $e) {
+                    if(str_ends_with($fileinfo['basename'], $e)) {
+                        $matches_ext = TRUE;
+                        break;
+                    }
                 }
 
-                return $this->addError($msg, 4);
+                if(!$matches_ext) {
+                    if(count($type_info['ext']) > 1) {
+                        $msg .= 'Extension must be one of the following: .' . implode(', .', $type_info['ext']);
+                    }
+                    else {
+                        $msg .= 'This importer requires an extension of .' . $type_info['ext'][0];
+                    }
+
+                    return $this->addError($msg, 4);
+                }
             }
 
             if(!$Importer->acceptUploadedFile($data['file'])) {

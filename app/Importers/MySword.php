@@ -80,7 +80,12 @@ class MySword extends ImporterAbstract {
             return $this->addError('File does not exist: ' . $file);
         }
 
-        $SQLITE = new SQLite3($filepath);
+        // $SQLITE = new SQLite3($filepath);
+        $SQLITE = $this->_getSQLite($filepath, $file);
+
+        if(!$SQLITE) {
+            return $this->addError('Could not open MySword file');
+        }
 
         if($this->insert_into_bible_table) {
             $res_desc = $SQLITE->query('SELECT * FROM Details');
@@ -165,7 +170,13 @@ class MySword extends ImporterAbstract {
         $path = $File->getPathname();
 
         try {
-            $SQLITE = new SQLite3($path);
+            // $SQLITE = new SQLite3($path);
+            $SQLITE = $this->_getSQLite($path, $File->getClientOriginalName());
+
+            if(!$SQLITE) {
+                return $this->addError('Could not open MySword file');
+            }
+
             $res_desc = $SQLITE->query('SELECT * FROM Details');
             $info = $res_desc->fetchArray(SQLITE3_ASSOC);
 
@@ -202,5 +213,61 @@ class MySword extends ImporterAbstract {
         }
 
         return TRUE;
+    }
+
+    private function _getSQLite($path, $orig_filename) {
+        $path_lc = strtolower($orig_filename);
+        $temp_fn = tempnam(sys_get_temp_dir(), 'mybib');
+        $dir = $this->getImportDir();
+        $new_path = $dir . $orig_filename;
+
+        if(!is_file($path)) {
+            return $this->addError('File does not exist');
+        }
+
+        if(str_ends_with($path_lc, '.mybible.zip')) {
+            $uz_file = substr($orig_filename, 0, -4);
+            $uz_path = $dir . '' . $uz_file;
+            $Zip = new \ZipArchive;
+
+            if($Zip->open($path) === TRUE) {
+                if(!$Zip->extractTo($dir, $uz_file)) {
+                    return $this->addError('Could not extract from .zip file');
+                }
+
+                return new SQLite3($uz_path);
+            }
+            else {
+                return $this->addError('Could not open .zip file');
+            }
+        }        
+        else if(str_ends_with($path_lc, '.mybible.gz')) {
+            $uz_file = substr($orig_filename, 0, -3);
+            $uz_path = $dir . '' . $uz_file;
+            
+            // 'Extracting' from a .gz file
+            // Raising this value may increase performance
+            $buffer_size = 4096; // read 4kb at a time
+
+            // Open our files (in binary mode)
+            $in_file  = gzopen($path, 'rb');
+            $out_file = fopen($uz_path, 'wb');
+
+            // Keep repeating until the end of the input file
+            while(!gzeof($in_file)) {
+                // Both fwrite and gzread and binary-safe
+                fwrite($out_file, gzread($in_file, $buffer_size));
+            }
+
+            fclose($out_file);
+            gzclose($in_file);
+
+            return new SQLite3($uz_path);
+        }        
+        else if(str_ends_with($path_lc, '.mybible')) {
+            return new SQLite3($path);
+        }
+
+        return FALSE;
     }
 }

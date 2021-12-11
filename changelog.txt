@@ -4,6 +4,7 @@ Bible SuperSearch API Changelog
 * Bugfix: Bible admin: 'Description' label no longer shifts when opening the description.
 * Rebranding 'stand-alone' client to Universal Client
 * Improvement: Added ability to change the pagination results per page limit.
+* Improbement: MySword import can now import .bible.zip and .bible.gz files without extracting them first.
 * Added more languages as options
 * Added new Bibles with Strong's numbers:
     + Chinese Union

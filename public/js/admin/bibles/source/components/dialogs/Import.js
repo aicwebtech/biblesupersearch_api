@@ -177,15 +177,27 @@ enyo.kind({
             errors.push('File is required');
         }
         else {
-            var fnParts = file.name.split('.');
-                ext = fnParts.pop();
+            var fnParts = file.name.split('.'),
+                ext = fnParts.pop(),
+                matchesExt = false;
 
-            if(importer && importer.ext && !importer.ext.includes(ext)) {
-                if(importer.ext.length == 1) {
-                    errors.push('Invalid file extension .' + ext + '; File must have .' + importer.ext[0] + ' extension');
+            if(importer && importer.ext && importer.ext.length > 0) {
+                for(i in importer.ext) {
+                    var e = importer.ext[i];
+
+                    if(file.name.endsWith(e)) {
+                        matchesExt = true;
+                        break;
+                    }
                 }
-                else {
-                    errors.push('Invalid file extension .' + ext + '; Extension must be one of the following: .' + importer.ext.join(', .'));
+
+                if(!matchesExt) {
+                    if(importer.ext.length == 1) {
+                        errors.push('Invalid file extension. File must have .' + importer.ext[0] + ' extension');
+                    }
+                    else {
+                        errors.push('Invalid file extension. Extension must be one of the following: .' + importer.ext.join(', .'));
+                    }
                 }
             }
 
