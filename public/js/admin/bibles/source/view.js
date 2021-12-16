@@ -256,8 +256,8 @@ enyo.kind({
 
         ajax.response(this, function(inSender, inResponse) {
             if(!inResponse.success) {
-                var msg = 'An Error has occurred';
-                this.app.alert(msg);
+                this.handleError(inSender, inResponse);
+                return;
             }
 
             this.app.set('ajaxLoading', false);
@@ -428,7 +428,6 @@ enyo.kind({
     openEdit: function(inSender, inEvent) {
         this.log(inEvent.id);
         this.$.Edit.set('pk', inEvent.id);
-        // this.log('PKQ', this.$.Edit.get('pk'));
         this.$.Edit.openLoad();
     },
     selectionsChanged: function(inSender, inEvent) {
