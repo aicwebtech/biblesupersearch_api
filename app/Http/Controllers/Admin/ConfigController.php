@@ -80,7 +80,7 @@ class ConfigController extends Controller
     }
 
     public function deleteAllDownloadFiles() {
-        \App\RenderManager::deleteAllFiles(TRUE);
+        \App\RenderManager::deleteAllFiles();
         $resp = new \stdClass();
         $resp->success = TRUE;
         $resp->space_used = \App\RenderManager::getUsedSpace();

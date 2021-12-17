@@ -32,4 +32,5 @@ return array(
     'result_limit_reached' => 'Your search was limited to :maximum results.  Please refine your search if necessary.',
     'strongs_input_required' => 'Strong\'s Number required',
     'strongs_not_found' => 'Strong\'s Number not found',
+    'to_many_download' => 'Too many Bibles requested for download.  You can request a maximum of :maximum Bibles at once.',
 );

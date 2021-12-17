@@ -13,7 +13,6 @@ use App\ConfigManager;
  */
 class InstallManager {
     static function isInstalled() {
-
         if(config('app.installed')) {
             return TRUE;
         }

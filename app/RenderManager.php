@@ -105,6 +105,10 @@ class RenderManager {
                 $this->Bibles[] = $Bible;
             }
         }
+
+        if(config('download.bible_limit') && count($this->modules) > config('download.bible_limit')) {
+            $this->addError( trans('errors.to_many_download', ['maximum' => config('download.bible_limit')]) );
+        }
     }
 
     protected function _selectAllBibles() {

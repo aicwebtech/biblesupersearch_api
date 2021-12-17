@@ -14,8 +14,20 @@ class AddDownloadRetainConfigs extends Migration
             'default'   => FALSE,
             'global'    => 1,
             'type'      => 'bool',
+        ],        
+        [
+            'key'       => 'app.configs_updated_at',
+            'descr'     => 'Retain rendered files',
+            'default'   => FALSE,
+            'global'    => 1,
+            'type'      => 'int',
         ],
     ];
+
+    public function __construct() {
+        // parent::__construct(); // DNE
+        $this->config_items[1]['default'] = time();
+    }
 
     /**
      * Run the migrations.
@@ -27,9 +39,9 @@ class AddDownloadRetainConfigs extends Migration
         ConfigManager::addConfigItems($this->config_items);
 
         // This works, but 
-        if(config('download.enable')) {
-            ConfigManager::setConfig('download.retain', TRUE);
-        }
+        // if(config('download.enable')) {
+        //     ConfigManager::setConfig('download.retain', TRUE);
+        // }
     }
 
     /**

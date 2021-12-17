@@ -705,9 +705,29 @@ class Engine {
         $response->download_limit   = config('download.enable') ? config('download.bible_limit') : FALSE;
         $response->download_formats = $response->download_enabled ? array_values(RenderManager::getGroupedRendererList()) : [];
         $response->search_types     = config('bss.search_types');
-        $response->name             = trans('app.name');
+        $response->name             = config('app.name');
+        $response->hash             = $this->_getNameHash();
         $response->version          = config('app.version');
         $response->environment      = config('app.env');
+        return $response;
+    }
+
+    private function _getNameHash() {
+        return hash('sha256', config('app.name_static'));
+    }
+
+    public function actionStaticsChanged($input) {
+        $response = new \stdClass;
+        $response->success = TRUE;
+        $response->dates = new \stdClass;
+
+        $response->dates->bible     = strtotime(Bible::max('updated_at'));                  // Most recent Bible change
+        $response->dates->shortcuts = strtotime(Models\Shortcuts\En::max('updated_at'));    // Most recent shortcut change
+        $response->dates->configs   = (int) config('app.configs_updated_at');               // most recent config change, including most recent update
+
+        $response->updated = max((array) $response->dates);
+        // $response->updated_dt = date('Y-m-d H:i:s', $response->updated);
+
         return $response;
     }
 
@@ -727,6 +747,7 @@ class Engine {
     public function actionVersion($input) {
         $response = new \stdClass;
         $response->name         = config('app.name');
+        $response->hash         = $this->_getNameHash();
         $response->version      = config('app.version');
         $response->environment  = config('app.env');
 

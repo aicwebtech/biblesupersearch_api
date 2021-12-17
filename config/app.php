@@ -12,6 +12,9 @@ return [
 
     'name' => 'Bible SuperSearch API',
 
+    'name_static' => 'Bible SuperSearch API', // DO NOT CHANGE
+
+
     /*
     |--------------------------------------------------------------------------
     | Application Version
@@ -20,7 +23,7 @@ return [
     |
     */
 
-    'version' => '4.5.0',
+    'version' => '5.0.0alpha1',
 
     /*
     |--------------------------------------------------------------------------

@@ -82,16 +82,46 @@ class RenderManagerTest extends TestCase {
         $this->assertEquals(0, $results['space_needed_overall']);   
     }
 
-    /* Methods below should not be called in production */
+
+    public function testDaysToRetain() {
+        $test_space = 150;
+
+        $results = RenderManager::_testCleanUpFiles($test_space, FALSE);
+
+        $freed_space_raw = $results['freed_space'];
+
+        print_r($results);
+
+        $TextRender = new \App\Renderers\PlainText('kjv');
+        $Rendering0 = $TextRender->_getRenderingRecord();
+        $success = $TextRender->renderIfNeeded();        
+        $this->assertTrue($success);
+
+        $results = RenderManager::_testCleanUpFiles($test_space, FALSE);
+        $freed_space_raw = $results['freed_space'];
+        print_r($results);
+
+        $render_file_path = $TextRender->getRenderFilePath();
+
+        $this->assertFalse($TextRender->isRenderNeeded(TRUE), 'Already rendered, shoudnt need it here ' . __LINE__);
+
+        $Rendering = $TextRender->_getRenderingRecord();
+
+        $Rendering->file_size = 10;
+        $Rendering->save();
+
+
+        $results = RenderManager::_testCleanUpFiles($test_space, TRUE, ['max_filesize' => 7]);
+
+        $this->assertEquals($freed_space_raw + 10, $results['freed_space']);
+    }
 
     public function testRenderNeeded() {
-        if($this->skip_render_tests) {
-            // $this->markTestSkipped('Rendering tests skipped to save time');\            
-            $this->assertTrue(TRUE);
-            return;
-        }
-
-        return;
+        // if($this->skip_render_tests) {
+        //     // $this->markTestSkipped('Rendering tests skipped to save time');\            
+        //     $this->assertTrue(TRUE);
+        //     return;
+        // }
         
         $TextRender = new \App\Renderers\PlainText('kjv');
         $Rendering0 = $TextRender->_getRenderingRecord();
@@ -142,23 +172,7 @@ class RenderManagerTest extends TestCase {
         $this->assertFalse($TextRender->isRenderNeeded(TRUE), 'file is back, no rendering needed');
     }
 
-    public function testDirectRender() {
-
-        if($this->skip_render_tests) {
-            $this->assertTrue(TRUE);
-            return;
-        }
-
-        return;
-
-        $TextRender = new \App\Renderers\PlainText('kjv');
-        $success = $TextRender->render(TRUE);        
-        $TextRender = new \App\Renderers\MachineReadableText('kjv');
-        $success = $TextRender->render(TRUE);
-
-        $this->assertTrue($success);
-        $this->assertFalse($TextRender->hasErrors());
-    }
+    /* Methods below should not be called in production */
 
     public function testManagerRender() {
 
