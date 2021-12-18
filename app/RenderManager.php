@@ -517,6 +517,10 @@ class RenderManager {
                     $$key = $value;
                 }
             }
+
+            $dry_run_vars = compact('cur_space','space_needed_render');
+            $dry_run_vars['freed_space'] = -1;
+            $dry_run_vars['error'] = FALSE;
         }
 
         $dry_run_verbose = ($dry_run && $verbose) ? TRUE : FALSE;
@@ -525,6 +529,11 @@ class RenderManager {
         $cache_size_max     = (int) $cache_size + (int) $temp_cache_size;
 
         if($space_needed_render > $cache_size_max) {
+            if($dry_run) {
+                $dry_run_vars['error'] = 'Too much space needed';
+                return $dry_run_vars;
+            }
+
             return FALSE;
         }
 
@@ -552,7 +561,7 @@ class RenderManager {
         }
 
         if($days) {
-            $comp_date = strtotime('23:59:59 -' . $days . ' days');
+            $comp_date = strtotime('today -' . $days . ' days');
         }
 
         if($dry_run_verbose) {
@@ -590,7 +599,7 @@ class RenderManager {
 
                 if($date_ts < $comp_date) {
                     $delete = TRUE;
-                    static::_cleanUpDryRunMessage($dry_run_verbose, $R, 'days');
+                    $dry_run_verbose && static::_cleanUpDryRunMessage($dry_run_verbose, $R, 'days: ' . date('Y-m-d H:i:s', $date_ts));
                 }
             }
 
@@ -632,7 +641,7 @@ class RenderManager {
         }
 
         if($dry_run) {
-            return compact('cur_space', 'space_needed_overall', 'freed_space');
+            return compact('cur_space', 'space_needed_overall', 'freed_space', 'space_needed_render');
         }
 
         return ($space_needed_overall > $freed_space) ? FALSE : TRUE;
@@ -640,7 +649,7 @@ class RenderManager {
 
     private static function _cleanUpDryRunMessage($dry_run, $Rendering, $config) {
         if($dry_run) {
-            // print "Deleting {$Rendering->renderer}/{$Rendering->file_name} -> {$config} \n\n";
+            print "Deleting {$Rendering->renderer}/{$Rendering->file_name} -> {$config} \n\n";
         }
     }
 

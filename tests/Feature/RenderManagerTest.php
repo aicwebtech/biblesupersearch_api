@@ -82,38 +82,75 @@ class RenderManagerTest extends TestCase {
         $this->assertEquals(0, $results['space_needed_overall']);   
     }
 
-
     public function testDaysToRetain() {
-        $test_space = 150;
-
-        $results = RenderManager::_testCleanUpFiles($test_space, FALSE);
-
-        $freed_space_raw = $results['freed_space'];
-
-        print_r($results);
+        $test_space = 50;
+        
+        $test_params = [
+            'cache_size'        => 200,
+            'temp_cache_size'   => 100,
+            'cur_space'         => 150,
+            'min_hits'          => 0,
+            'days'              => 10,
+        ];
 
         $TextRender = new \App\Renderers\PlainText('kjv');
         $Rendering0 = $TextRender->_getRenderingRecord();
         $success = $TextRender->renderIfNeeded();        
         $this->assertTrue($success);
-
-        $results = RenderManager::_testCleanUpFiles($test_space, FALSE);
-        $freed_space_raw = $results['freed_space'];
-        print_r($results);
-
-        $render_file_path = $TextRender->getRenderFilePath();
-
         $this->assertFalse($TextRender->isRenderNeeded(TRUE), 'Already rendered, shoudnt need it here ' . __LINE__);
 
         $Rendering = $TextRender->_getRenderingRecord();
+        $Rendering->downloaded_at = date('Y-m-d H:i:s');
+        $Rendering->save();
+        $Rendering->refresh();
 
+        $results = RenderManager::_testCleanUpFiles($test_space, FALSE, $test_params);
+        $freed_space_raw = $results['freed_space'];
+
+        // Testing max filesize
         $Rendering->file_size = 10;
         $Rendering->save();
+        $Rendering->refresh();
+        $this->assertEquals(10, $Rendering->file_size);
 
+        // Too much
+        $results = RenderManager::_testCleanUpFiles($test_space, FALSE, array_replace($test_params, ['max_filesize' => 9]));
+        $this->assertEquals($freed_space_raw + 10, $results['freed_space']);        
 
-        $results = RenderManager::_testCleanUpFiles($test_space, TRUE, ['max_filesize' => 7]);
+        // Same
+        $results = RenderManager::_testCleanUpFiles($test_space, FALSE, array_replace($test_params, ['max_filesize' => 10]));
+        $this->assertEquals($freed_space_raw, $results['freed_space']);        
 
+        // Plenty
+        $results = RenderManager::_testCleanUpFiles($test_space, FALSE, array_replace($test_params, ['max_filesize' => 11]));
+        $this->assertEquals($freed_space_raw, $results['freed_space']);
+
+        // Testing days to retain
+        
+        // Not yet
+        $Rendering->downloaded_at = date('Y-m-d H:i:s', strtotime('-9 days'));
+        $Rendering->save();
+
+        $results = RenderManager::_testCleanUpFiles($test_space, FALSE, array_replace($test_params, []));
+        $this->assertEquals($freed_space_raw, $results['freed_space']);        
+
+        // It happens today, but later
+        $Rendering->downloaded_at = date('Y-m-d H:i:s', strtotime('-10 days'));
+        $Rendering->save();
+
+        $results = RenderManager::_testCleanUpFiles($test_space, FALSE, array_replace($test_params, []));
+        $this->assertEquals($freed_space_raw, $results['freed_space']);        
+
+        // Expired!
+        $Rendering->downloaded_at = date('Y-m-d H:i:s', strtotime('-11 days'));
+        $Rendering->save();
+
+        $results = RenderManager::_testCleanUpFiles($test_space, FALSE, array_replace($test_params, []));
         $this->assertEquals($freed_space_raw + 10, $results['freed_space']);
+
+        // Minimum rendering time
+
+        // Minimum hits
     }
 
     public function testRenderNeeded() {
