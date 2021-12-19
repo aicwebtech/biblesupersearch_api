@@ -568,6 +568,7 @@ class RenderManager {
             print "\nspace needed render: " . $space_needed_render;
             print "\nspace needed cache: " . $space_needed_cache;
             print "\nspace needed overall: " . $space_needed_overall;
+            print "\nmin render time: " . $min_render_time;
             print "\ncomp date: " . date('Y-m-d H:i:s', $comp_date) . "\n\n";
         }
 
@@ -621,7 +622,7 @@ class RenderManager {
                 }
 
                 $freed_space += $R->file_size;
-                static::_cleanUpDryRunMessage($dry_run, $R, 'more_space_needed');
+                static::_cleanUpDryRunMessage($dry_run_verbose, $R, 'more_space_needed');
                 
                 if(!$dry_run) {
                     $R->deleteRenderedFile();
