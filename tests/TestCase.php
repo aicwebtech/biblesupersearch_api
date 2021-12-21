@@ -20,6 +20,7 @@ namespace {
          */
         public function createApplication()
         {
+            ini_set('memory_limit','512M');
             $app = require __DIR__.'/../bootstrap/app.php';
 
             $app->make(Illuminate\Contracts\Console\Kernel::class)->bootstrap();

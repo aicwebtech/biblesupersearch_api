@@ -56,7 +56,9 @@ class MySword extends ImporterAbstract {
     protected $source = "This Bible imported from MySword <a href='https://mysword.info/download-mysword/bibles'>https://mysword.info/download-mysword/bibles</a>";
 
     protected function _importHelper(Bible &$Bible) {
-        ini_set("memory_limit", "50M");
+        if(config('app.env') != 'testing') {
+            ini_set("memory_limit", "50M");
+        }
 
         // Script settings
         $dir    = $this->getImportDir();
@@ -102,7 +104,7 @@ class MySword extends ImporterAbstract {
         $Verses = $Bible->verses();
         $table  = $Verses->getTable();
 
-        if(\App::runningInConsole()) {
+        if(config('app.env') != 'testing' && \App::runningInConsole()) {
             echo('Installing: ' . $module . PHP_EOL);
         }
 

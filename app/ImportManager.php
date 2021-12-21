@@ -115,7 +115,7 @@ class ImportManager {
             return TRUE;
         }
 
-        if(!static::$type_map[$type]) {
+        if(!array_key_exists($type, static::$type_map)) {
             return $this->addError('Import type does not exist: ' . $type);
         }
         
