@@ -507,6 +507,7 @@ class RenderManager {
         $max_filesize       = config('download.cache.max_filesize') ?: FALSE;
         $cur_space          = static::getUsedSpace();
         $comp_date          = NULL;
+        $deleted_files      = [];
 
         if($dry_run) {
             if(is_array($debug_overrides)) {
@@ -606,6 +607,7 @@ class RenderManager {
 
             if($delete) {
                 $freed_space += $R->file_size;
+                $deleted_files[] = $R->getRenderedFilePath();
 
                 if(!$dry_run) {
                     $R->deleteRenderedFile();
@@ -623,6 +625,7 @@ class RenderManager {
 
                 $freed_space += $R->file_size;
                 static::_cleanUpDryRunMessage($dry_run_verbose, $R, 'more_space_needed');
+                $deleted_files[] = $R->getRenderedFilePath();
                 
                 if(!$dry_run) {
                     $R->deleteRenderedFile();
@@ -642,7 +645,7 @@ class RenderManager {
         }
 
         if($dry_run) {
-            return compact('cur_space', 'space_needed_overall', 'freed_space', 'space_needed_render');
+            return compact('cur_space', 'space_needed_overall', 'freed_space', 'space_needed_render', 'deleted_files');
         }
 
         return ($space_needed_overall > $freed_space) ? FALSE : TRUE;

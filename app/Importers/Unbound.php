@@ -92,6 +92,10 @@ class Unbound extends ImporterAbstract {
             return $this->addError('Unable to open ' . $zipfile, 4);
         }
 
+        if(empty($bib)) {
+            return $this->addError('Unable to extract Bible text from ' . $file_raw . '_utf8.txt');
+        }
+
         if($this->insert_into_bible_table) {
             $attr = $this->_parseAttributes($desc);
             $Bible->fill($attr);

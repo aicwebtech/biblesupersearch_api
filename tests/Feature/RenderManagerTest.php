@@ -82,6 +82,69 @@ class RenderManagerTest extends TestCase {
         $this->assertEquals(0, $results['space_needed_overall']);   
     }
 
+    /**
+     * Testing the output of the CSV render
+     * 
+     */ 
+    public function testRenderedCsv() {
+        $Renderer = new \App\Renderers\Csv('kjv');
+        $success = $Renderer->renderIfNeeded();        
+        $this->assertTrue($success);
+        $this->assertFalse($Renderer->isRenderNeeded(TRUE), 'Already rendered, shoudnt need it here ' . __LINE__);
+
+        $file_path = $Renderer->getRenderFilePath();
+        $this->assertFileExists($file_path);
+
+        $file_data = file($file_path);
+
+        $this->assertIsArray($file_data);
+        $this->assertNotEmpty($file_data);
+
+        $row = str_getcsv($file_data[0]);
+        $this->assertEquals('Authorized King James Version', $row[0]);
+        
+        // Blank rows
+        $row = str_getcsv($file_data[1]);
+        $this->assertEmpty($row[0]);        
+        $row = str_getcsv($file_data[2]);
+        $this->assertEmpty($row[0]);
+
+        // Copyright
+        $row = str_getcsv($file_data[3]);
+        $this->assertStringContainsString('Public Domain in most parts of the world', $row[0]);
+        $this->assertStringContainsString('Crown copyright', $row[0]);
+
+        // Blank row
+        $row = str_getcsv($file_data[4]);
+        $this->assertEmpty($row[0]);
+
+        // Column headers
+        $row = str_getcsv($file_data[5]);
+        $this->assertEquals(['Verse ID','Book Name', 'Book Number', 'Chapter', 'Verse', 'Text'], $row);
+
+        // First Verse, Genesis 1:1
+        $row = str_getcsv($file_data[6]);
+        $this->assertEquals(1, $row[0]);
+        $this->assertEquals('Genesis', $row[1]);
+        $this->assertEquals(1, $row[2]);
+        $this->assertEquals(1, $row[3]);
+        $this->assertEquals(1, $row[4]);        
+        $this->assertStringContainsString('In the beginning God', $row[5]);
+
+        // Last Verse, Revelation 22:21
+        $row = str_getcsv($file_data[31107]);
+        $this->assertEquals(31102, $row[0]);
+        $this->assertEquals('Revelation', $row[1]);
+        $this->assertEquals(66, $row[2]);
+        $this->assertEquals(22, $row[3]);
+        $this->assertEquals(21, $row[4]);
+        $this->assertStringContainsString('Amen', $row[5]);
+
+        // Shouldn't be anything here
+        $this->assertArrayNotHasKey(31108, $file_data);
+        $this->assertCount(31108, $file_data);
+    }
+
     public function testRetainConfigsInit() {
         $test_space = 50;
         
@@ -97,6 +160,9 @@ class RenderManagerTest extends TestCase {
         $success = $TextRender->renderIfNeeded();        
         $this->assertTrue($success);
         $this->assertFalse($TextRender->isRenderNeeded(TRUE), 'Already rendered, shoudnt need it here ' . __LINE__);
+        
+        $file_path = $TextRender->getRenderFilePath();
+        $this->assertFileExists($file_path);
 
         $Rendering = $TextRender->_getRenderingRecord();
         $Rendering->downloaded_at = date('Y-m-d H:i:s');
@@ -106,7 +172,7 @@ class RenderManagerTest extends TestCase {
         $results = RenderManager::_testCleanUpFiles($test_space, FALSE, $test_params);
         $freed_space_raw = $results['freed_space'];
 
-        return compact('test_space', 'test_params', 'freed_space_raw', 'Rendering');
+        return compact('test_space', 'test_params', 'freed_space_raw', 'Rendering', 'file_path');
     }
 
 
@@ -125,19 +191,19 @@ class RenderManagerTest extends TestCase {
 
         // Too much
         $results = RenderManager::_testCleanUpFiles($test_space, FALSE, array_replace($test_params, ['max_filesize' => 9]));
-        $this->assertEquals($freed_space_raw + 10, $results['freed_space']);        
+        $this->assertContains($file_path, $results['deleted_files']);;        
 
         // Same
         $results = RenderManager::_testCleanUpFiles($test_space, FALSE, array_replace($test_params, ['max_filesize' => 10]));
-        $this->assertEquals($freed_space_raw, $results['freed_space']);        
+        $this->assertNotContains($file_path, $results['deleted_files']);      
 
         // Plenty
         $results = RenderManager::_testCleanUpFiles($test_space, FALSE, array_replace($test_params, ['max_filesize' => 11]));
-        $this->assertEquals($freed_space_raw, $results['freed_space']);
+        $this->assertNotContains($file_path, $results['deleted_files']);;
 
         // Unlimited space
         $results = RenderManager::_testCleanUpFiles($test_space, FALSE, array_replace($test_params, ['max_filesize' => 0]));
-        $this->assertEquals($freed_space_raw, $results['freed_space']);
+        $this->assertNotContains($file_path, $results['deleted_files']);;
 
         $shared['Rendering'] = $Rendering;
         return $shared;
@@ -156,29 +222,28 @@ class RenderManagerTest extends TestCase {
         $Rendering->save();
 
         $results = RenderManager::_testCleanUpFiles($test_space, FALSE, array_replace($test_params, []));
-        $this->assertEquals($freed_space_raw, $results['freed_space']);        
+        $this->assertNotContains($file_path, $results['deleted_files']);      
 
         // It happens today, but later
         $Rendering->downloaded_at = date('Y-m-d H:i:s', strtotime('-10 days'));
         $Rendering->save();
 
         $results = RenderManager::_testCleanUpFiles($test_space, FALSE, array_replace($test_params, []));
-        $this->assertEquals($freed_space_raw, $results['freed_space']);        
+        $this->assertNotContains($file_path, $results['deleted_files']);      
 
         // Expired!
         $Rendering->downloaded_at = date('Y-m-d H:i:s', strtotime('-11 days'));
         $Rendering->save();
 
         $results = RenderManager::_testCleanUpFiles($test_space, FALSE, array_replace($test_params, []));
-        $this->assertEquals($freed_space_raw + 10, $results['freed_space']);
+        $this->assertContains($file_path, $results['deleted_files']);;
 
         // Unlimited time
         $Rendering->downloaded_at = date('Y-m-d H:i:s', strtotime('-1100 days'));
         $Rendering->save();
 
         $results = RenderManager::_testCleanUpFiles($test_space, FALSE, array_replace($test_params, ['days' => 0]));
-        $this->assertEquals($freed_space_raw, $results['freed_space']);
-
+        $this->assertNotContains($file_path, $results['deleted_files']);;
 
         $Rendering->downloaded_at = date('Y-m-d H:i:s');
         $Rendering->save();
@@ -202,26 +267,26 @@ class RenderManagerTest extends TestCase {
 
         // These do not get deleted
         $results = RenderManager::_testCleanUpFiles($test_space, FALSE, array_replace($test_params, ['min_render_time' => 5]));
-        $this->assertEquals($freed_space_raw, $results['freed_space']);           
+        $this->assertNotContains($file_path, $results['deleted_files']);
 
         $results = RenderManager::_testCleanUpFiles($test_space, FALSE, array_replace($test_params, ['min_render_time' => 10]));
-        $this->assertEquals($freed_space_raw, $results['freed_space']);        
+        $this->assertNotContains($file_path, $results['deleted_files']);
 
         $results = RenderManager::_testCleanUpFiles($test_space, FALSE, array_replace($test_params, ['min_render_time' => 14]));
-        $this->assertEquals($freed_space_raw, $results['freed_space']);        
+        $this->assertNotContains($file_path, $results['deleted_files']);
 
         $results = RenderManager::_testCleanUpFiles($test_space, FALSE, array_replace($test_params, ['min_render_time' => 15]));
-        $this->assertEquals($freed_space_raw, $results['freed_space']);        
+        $this->assertNotContains($file_path, $results['deleted_files']);
 
         // These do get deleted
         $results = RenderManager::_testCleanUpFiles($test_space, FALSE, array_replace($test_params, ['min_render_time' => 16]));
-        $this->assertEquals($freed_space_raw + 10, $results['freed_space']);
+        $this->assertContains($file_path, $results['deleted_files']);
         $results = RenderManager::_testCleanUpFiles($test_space, FALSE, array_replace($test_params, ['min_render_time' => 20]));
-        $this->assertEquals($freed_space_raw + 10, $results['freed_space']);
-
+        $this->assertContains($file_path, $results['deleted_files']);
+        
         // Unlimited
         $results = RenderManager::_testCleanUpFiles($test_space, FALSE, array_replace($test_params, ['min_render_time' => 0]));
-        $this->assertEquals($freed_space_raw, $results['freed_space']);  
+        $this->assertNotContains($file_path, $results['deleted_files']);
 
         // What if it's 0?
         $Rendering->rendered_duration = 0;
@@ -229,11 +294,11 @@ class RenderManagerTest extends TestCase {
         $Rendering->save();
 
         $results = RenderManager::_testCleanUpFiles($test_space, FALSE, array_replace($test_params, ['min_render_time' => 1]));
-        $this->assertEquals($freed_space_raw + 10, $results['freed_space']);
+        $this->assertContains($file_path, $results['deleted_files']);
 
         // Only retainted if Unlimited
         $results = RenderManager::_testCleanUpFiles($test_space, FALSE, array_replace($test_params, ['min_render_time' => 0]));
-        $this->assertEquals($freed_space_raw, $results['freed_space']);  
+        $this->assertNotContains($file_path, $results['deleted_files']);
 
         $Rendering->rendered_duration = $cached;
         $Rendering->save();
@@ -256,21 +321,21 @@ class RenderManagerTest extends TestCase {
 
         // These don't get deleted
         $results = RenderManager::_testCleanUpFiles($test_space, FALSE, array_replace($test_params, ['min_hits' => 40]));
-        $this->assertEquals($freed_space_raw, $results['freed_space']); 
+        $this->assertNotContains($file_path, $results['deleted_files']);; 
         $results = RenderManager::_testCleanUpFiles($test_space, FALSE, array_replace($test_params, ['min_hits' => 44]));
-        $this->assertEquals($freed_space_raw, $results['freed_space']);         
+        $this->assertNotContains($file_path, $results['deleted_files']);       
         $results = RenderManager::_testCleanUpFiles($test_space, FALSE, array_replace($test_params, ['min_hits' => 45]));
-        $this->assertEquals($freed_space_raw, $results['freed_space']);         
+        $this->assertNotContains($file_path, $results['deleted_files']);       
 
         // These get deleted
         $results = RenderManager::_testCleanUpFiles($test_space, FALSE, array_replace($test_params, ['min_hits' => 46]));
-        $this->assertEquals($freed_space_raw + 10, $results['freed_space']); 
+        $this->assertContains($file_path, $results['deleted_files']);; 
         $results = RenderManager::_testCleanUpFiles($test_space, FALSE, array_replace($test_params, ['min_hits' => 50]));
-        $this->assertEquals($freed_space_raw + 10, $results['freed_space']); 
+        $this->assertContains($file_path, $results['deleted_files']);; 
 
         // Unlimited
         $results = RenderManager::_testCleanUpFiles($test_space, FALSE, array_replace($test_params, ['min_hits' => 0]));
-        $this->assertEquals($freed_space_raw, $results['freed_space']);  
+        $this->assertNotContains($file_path, $results['deleted_files']);
 
         // What if it's 0?
         $Rendering->hits = 0;
@@ -278,11 +343,11 @@ class RenderManagerTest extends TestCase {
         $this->assertEquals(0, $Rendering->hits);
 
         $results = RenderManager::_testCleanUpFiles($test_space, FALSE, array_replace($test_params, ['min_hits' => 1]));
-        $this->assertEquals($freed_space_raw + 10, $results['freed_space']);
+        $this->assertContains($file_path, $results['deleted_files']);;
 
         // Only retainted if Unlimited
         $results = RenderManager::_testCleanUpFiles($test_space, FALSE, array_replace($test_params, ['min_hits' => 0]));
-        $this->assertEquals($freed_space_raw, $results['freed_space']);  
+        $this->assertNotContains($file_path, $results['deleted_files']);
 
         $this->assertTrue(TRUE);
 

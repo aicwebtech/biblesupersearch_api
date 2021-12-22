@@ -255,6 +255,14 @@ class ApiActionsTest extends TestCase
         
         // POST
         $response = $this->postJson('/api/render_needed', ['bible' => 'kjv', 'format' => 'csv']);
+
+        // attempt to trap intermittint error
+        if($response->getStatusCode() != 200) {
+            var_dump($response['error_level']);
+            var_dump($response['errors']);
+            var_dump($response['results']);
+        }
+
         $response->assertStatus(200);        
         $this->assertEquals(0, $response['error_level']);
     }    
