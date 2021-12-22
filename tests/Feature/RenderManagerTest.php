@@ -82,69 +82,6 @@ class RenderManagerTest extends TestCase {
         $this->assertEquals(0, $results['space_needed_overall']);   
     }
 
-    /**
-     * Testing the output of the CSV render
-     * 
-     */ 
-    public function testRenderedCsv() {
-        $Renderer = new \App\Renderers\Csv('kjv');
-        $success = $Renderer->renderIfNeeded();        
-        $this->assertTrue($success);
-        $this->assertFalse($Renderer->isRenderNeeded(TRUE), 'Already rendered, shoudnt need it here ' . __LINE__);
-
-        $file_path = $Renderer->getRenderFilePath();
-        $this->assertFileExists($file_path);
-
-        $file_data = file($file_path);
-
-        $this->assertIsArray($file_data);
-        $this->assertNotEmpty($file_data);
-
-        $row = str_getcsv($file_data[0]);
-        $this->assertEquals('Authorized King James Version', $row[0]);
-        
-        // Blank rows
-        $row = str_getcsv($file_data[1]);
-        $this->assertEmpty($row[0]);        
-        $row = str_getcsv($file_data[2]);
-        $this->assertEmpty($row[0]);
-
-        // Copyright
-        $row = str_getcsv($file_data[3]);
-        $this->assertStringContainsString('Public Domain in most parts of the world', $row[0]);
-        $this->assertStringContainsString('Crown copyright', $row[0]);
-
-        // Blank row
-        $row = str_getcsv($file_data[4]);
-        $this->assertEmpty($row[0]);
-
-        // Column headers
-        $row = str_getcsv($file_data[5]);
-        $this->assertEquals(['Verse ID','Book Name', 'Book Number', 'Chapter', 'Verse', 'Text'], $row);
-
-        // First Verse, Genesis 1:1
-        $row = str_getcsv($file_data[6]);
-        $this->assertEquals(1, $row[0]);
-        $this->assertEquals('Genesis', $row[1]);
-        $this->assertEquals(1, $row[2]);
-        $this->assertEquals(1, $row[3]);
-        $this->assertEquals(1, $row[4]);        
-        $this->assertStringContainsString('In the beginning God', $row[5]);
-
-        // Last Verse, Revelation 22:21
-        $row = str_getcsv($file_data[31107]);
-        $this->assertEquals(31102, $row[0]);
-        $this->assertEquals('Revelation', $row[1]);
-        $this->assertEquals(66, $row[2]);
-        $this->assertEquals(22, $row[3]);
-        $this->assertEquals(21, $row[4]);
-        $this->assertStringContainsString('Amen', $row[5]);
-
-        // Shouldn't be anything here
-        $this->assertArrayNotHasKey(31108, $file_data);
-        $this->assertCount(31108, $file_data);
-    }
-
     public function testRetainConfigsInit() {
         $test_space = 50;
         

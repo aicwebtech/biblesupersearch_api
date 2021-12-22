@@ -98,7 +98,7 @@ class Bible extends Model {
     // List of fields to NOT export when creating modules
     protected $do_not_export = ['id', 'created_at', 'updated_at', 'enabled', 'installed', 'installed_at', 'needs_update', 'module_updated_at'];
 
-    // List of fileds to not use as metadata (in addition to those contained in $do_not_export)
+    // List of fileds to not use as metadata (in addition to those contained in $this->do_not_export)
     protected $do_not_meta = ['rank', 'module_v2', 'importer', 'import_file', 'copyright_id', 'hebrew_text_id', 'greek_text_id', 'translation_type_id'];
 
     public $migrate_code = 0;  // 0 = no change, 1 = deleted unnessessary file, 2 = moved file, 3 = file does not exist

@@ -3,6 +3,7 @@
 /* Error messages */
 
 return array(
+    'app_not_installed' => 'API present but not installed, please contact webmaster.',
     'no_query'  => 'No query terms provided. Please specify search term(s) and/or passage reference(s).',
     'no_results' => 'Your search produced no results.',
     'triple_request' => 'Cannot use request, search and reference at the same time.  Please inform webmaster of UI design error.',

@@ -82,7 +82,6 @@ class MySword extends ImporterAbstract {
             return $this->addError('File does not exist: ' . $file);
         }
 
-        // $SQLITE = new SQLite3($filepath);
         $SQLITE = $this->_getSQLite($filepath, $file);
 
         if(!$SQLITE) {
@@ -95,6 +94,7 @@ class MySword extends ImporterAbstract {
             $desc = $info['Comments'];
             $attr = $this->bible_attributes;
             $attr['description'] = $desc . '<br /><br />' . $this->source;
+            $attr['year'] = date('Y', strtotime($attr['year']));
 
             $Bible->fill($attr);
             $Bible->save();
@@ -215,6 +215,11 @@ class MySword extends ImporterAbstract {
         }
 
         return TRUE;
+    }
+
+    public function mapMetaToAttributes($meta, $preserve_attributes = FALSE, $map = NULL) {
+        parent::mapMetaToAttributes($meta, $preserve_attributes, $map);
+        $this->bible_attributes['year'] = date('Y', strtotime($this->bible_attributes['year']));
     }
 
     private function _getSQLite($path, $orig_filename) {
