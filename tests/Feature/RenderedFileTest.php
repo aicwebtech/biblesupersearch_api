@@ -72,6 +72,154 @@ class RenderedFileTest extends TestCase
         $this->assertCount(31108, $file_data);
     }
 
+    /**
+     *  @depen_ds testRenderedCsv
+     */ 
+    public function testRenderedCopyright() {
+        // Cache the existing config value
+        $cache_deriv_cr = config('download.derivative_copyright_statement');
+        $cache_bss_link = config('download.bss_link_enable');
+        $cache_app_link = config('download.app_link_enable');
+        
+        // Set some test values
+        $test_deriv_cr = 'Big test of copyright year YYYY 12343123'; // YYYY is replaced with current year
+        
+        $find_deriv_cr = 'Big test of copyright year ' . date('Y') . ' 12343123';
+        $find_bss_url = 'www.BibleSuperSearch.com';
+        $find_app_url = config('app.url');
+
+        $Renderer = new \App\Renderers\Csv('kjv');
+
+        // All configs disabled
+        config([
+            'download.derivative_copyright_statement' => '',
+            'download.bss_link_enable' => FALSE,
+            'download.app_link_enable' => FALSE,
+        ]);
+
+        $this->assertEquals('', config('download.derivative_copyright_statement'));
+        $this->assertFalse(config('download.app_link_enable'));
+        $this->assertFalse(config('download.bss_link_enable'));
+
+        $this->assertTrue( $Renderer->render(TRUE, TRUE) ); // Force render
+        $file_path = $Renderer->getRenderFilePath();
+        $this->assertFileExists($file_path);
+        $file_data = file($file_path);
+
+        $this->assertIsArray($file_data);
+        $this->assertArrayHasKey(3, $file_data);
+
+        $cr = str_getcsv($file_data[3])[0];
+
+        $this->assertStringNotContainsString($find_deriv_cr, $cr);
+        $this->assertStringNotContainsString($find_bss_url, $cr);
+        $this->assertStringNotContainsString($find_app_url, $cr);
+        $this->assertNotEmpty($cr);
+
+        // Add the App url
+        config([
+            'download.derivative_copyright_statement' => '',
+            'download.app_link_enable' => TRUE,
+            'download.bss_link_enable' => FALSE,
+        ]);
+
+        $this->assertEquals('', config('download.derivative_copyright_statement'));
+        $this->assertTrue(config('download.app_link_enable'));
+        $this->assertFalse(config('download.bss_link_enable'));
+
+        $this->assertTrue( $Renderer->render(TRUE, TRUE) ); // Force render
+        $file_path = $Renderer->getRenderFilePath();
+        $this->assertFileExists($file_path);
+        $file_data = file($file_path);
+
+        $this->assertIsArray($file_data);
+        $this->assertArrayHasKey(3, $file_data);
+
+        $cr = str_getcsv($file_data[3])[0];
+
+        $this->assertStringNotContainsString($find_deriv_cr, $cr);
+        $this->assertStringNotContainsString($find_bss_url, $cr);
+        $this->assertStringContainsString($find_app_url, $cr);
+
+        // Add the BSS url
+        config([
+            'download.derivative_copyright_statement' => '',
+            'download.app_link_enable' => TRUE,
+            'download.bss_link_enable' => TRUE,
+        ]);
+
+        $this->assertEquals('', config('download.derivative_copyright_statement'));
+        $this->assertTrue(config('download.app_link_enable'));
+        $this->assertTrue(config('download.bss_link_enable'));
+
+        $this->assertTrue( $Renderer->render(TRUE, TRUE) ); // Force render
+        $file_path = $Renderer->getRenderFilePath();
+        $this->assertFileExists($file_path);
+        $file_data = file($file_path);
+
+        $this->assertIsArray($file_data);
+        $this->assertArrayHasKey(3, $file_data);
+
+        $cr = str_getcsv($file_data[3])[0];
+
+        $this->assertStringNotContainsString($find_deriv_cr, $cr);
+        $this->assertStringContainsString($find_bss_url, $cr);
+        $this->assertStringContainsString($find_app_url, $cr);
+
+        // Add a deriv copyright statement
+        config(['download.derivative_copyright_statement' => $test_deriv_cr]);
+        $this->assertEquals($test_deriv_cr, config('download.derivative_copyright_statement'));
+
+        $this->assertTrue( $Renderer->render(TRUE, TRUE) ); // Force render
+        $file_path = $Renderer->getRenderFilePath();
+        $this->assertFileExists($file_path);
+        $file_data = file($file_path);
+
+        $this->assertIsArray($file_data);
+        $this->assertArrayHasKey(3, $file_data);
+
+        $cr = str_getcsv($file_data[3])[0];
+
+        $this->assertStringContainsString($find_deriv_cr, $cr);
+        $this->assertStringContainsString($find_bss_url, $cr);
+        $this->assertStringContainsString($find_app_url, $cr);
+
+        // Revert to cached 
+        config([
+            'download.derivative_copyright_statement' => $cache_deriv_cr,
+            'download.bss_link_enable' => $cache_bss_link,
+            'download.app_link_enable' => $cache_app_link,
+        ]);
+
+        $this->assertTrue( $Renderer->render(TRUE, TRUE) ); // Force render
+        $file_path = $Renderer->getRenderFilePath();
+        $this->assertFileExists($file_path);
+        $file_data = file($file_path);
+
+        $this->assertIsArray($file_data);
+        $this->assertArrayHasKey(3, $file_data);
+
+        $cr = str_getcsv($file_data[3])[0];
+
+        if($cache_deriv_cr) {
+            $this->assertStringNotContainsString($cache_deriv_cr, $cr);
+        }
+
+        if($cache_bss_link) {
+            $this->assertStringContainsString($find_bss_url, $cr);
+        }
+        else {
+            $this->assertStringNotContainsString($find_bss_url, $cr);
+        }
+        
+        if($cache_app_link) {
+            $this->assertStringContainsString($find_app_url, $cr);
+        }
+        else {
+            $this->assertStringNotContainsString($find_app_url, $cr);
+        }
+    }
+
     public function testRenderedJson() {
         $Renderer = new \App\Renderers\Json('kjv');
         $success = $Renderer->renderIfNeeded();        
