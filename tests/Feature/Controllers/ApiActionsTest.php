@@ -261,9 +261,13 @@ class ApiActionsTest extends TestCase
             var_dump($response['error_level']);
             var_dump($response['errors']);
             var_dump($response['results']);
+            $this->assertEquals(1, $response['error_level']);
+            $this->assertEquals(TRUE, $response['results']['render_needed']);
+        }
+        else {
+            $response->assertStatus(200);        
         }
 
-        $response->assertStatus(200);        
         $this->assertEquals(0, $response['error_level']);
     }    
 

@@ -96,3 +96,7 @@ td.good {
     margin-left: auto;
     margin-right: auto;
 }
+
+.import_config ol li {
+    margin-bottom: 20px;
+}

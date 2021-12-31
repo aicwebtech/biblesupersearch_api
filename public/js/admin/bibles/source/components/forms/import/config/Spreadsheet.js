@@ -10,7 +10,15 @@ enyo.kind({
             {   components: [
                 {tag: 'label', content: 'First Row of Verse Data: '},
                 {kind: 'enyo.Input', name: 'first_row_data', value: '2', style: 'width: 50px'},
-                {tag: 'span', classes: 'required', content: '*'}
+                {tag: 'span', classes: 'required', content: '*'},
+                {tag: 'span', classes: 'info', components: [
+                    {tag: 'span', content: 'i'},
+                    {style: 'text-align: justify', classes: 'container', components: [
+                        {content: 'Row number containing the first verse, usually Genesis 1:1'},            
+                        {tag: 'br'},
+                        {content: 'Typically, row 1 will contain column headers, and the row 2 will contain the first verse.'},
+                    ]}
+                ]}
             ]},
             {tag: 'br'},
             {
@@ -19,14 +27,11 @@ enyo.kind({
                     {tag: 'span', classes: 'info', components: [
                         {tag: 'span', content: 'i'},
                         {style: 'text-align: justify', classes: 'container', components: [
-                            {content: 'If multiple columns have the same role, the leftmost column will be used for the role.'},            
+                            {content: 'If multiple columns are selected for the same role, the leftmost column will be used for the role.'},            
                             {tag: 'br'},
-                            // {tag: 'br'},
-                            // {tag: 'br'},
                             {content: 'If you do not wish to use a given column in the import, please select --None-- as it\'s role.'},
                         ]}
                     ]}
-
                 ]
             },
             {tag: 'br'},

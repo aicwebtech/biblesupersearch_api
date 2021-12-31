@@ -126,22 +126,25 @@ title.h1 {
     background-color: yellow;
     text-align: center;
     cursor: pointer;
+    z-index: 10;
 }
 
 .info p, .info div.container {
     display: none;
 }
 
+
 .info:hover p {
+/*.info p {*/
     display: inline-block;
     position: absolute;
     /*border: 1px solid red;*/
+    z-index: 10000;
     width:  400px;
     background-color: #f7f3cd;
     font-size: .9em;
     padding: 5px;
     text-align: justify;
-    z-index: 10000;
     left: 25px;
     top: 0px;
 }
@@ -150,6 +153,7 @@ title.h1 {
     display: block;
     position: absolute;
     background-color: #f7f3cd;
+    z-index: 10000;
     width: 300px;
     padding: 5px;
     border: 1px solid #c2b751;

@@ -8,7 +8,7 @@ enyo.kind({
     copyrightData: {},
     $description: null,
     formPk: null, // binding use only
-    debugBindings: true,
+    debugBindings: false,
     copyrightConfirmed: false,
 
     components: [

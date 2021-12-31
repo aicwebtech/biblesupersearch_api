@@ -10,7 +10,7 @@ class ImportManager {
 
     public $test_mode = FALSE;
 
-    // List / map of importers that are accessible via HTTP request
+    // Registry / map of importers that are accessible via HTTP request
     protected static $type_map = [
         'analyzer' => [
             'name'  => 'Bible Analyzer',
