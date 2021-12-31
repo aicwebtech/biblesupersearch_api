@@ -233,7 +233,8 @@ class BibleController extends Controller
         }        
 
         $Bible->uninstall();
-        $Bible->deleteModuleFile(FALSE);;
+        $Bible->deleteRenderedFiles();
+        $Bible->deleteModuleFile(FALSE);
         $Bible->delete();
 
         // if($Bible->hasErrors()) {

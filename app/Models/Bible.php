@@ -437,6 +437,15 @@ class Bible extends Model {
         }
     }
 
+    public function deleteRenderedFiles() {
+        $Renderings = \App\Models\Rendering::where('module', $this->module)->get();
+
+        foreach($Renderings as $R) {
+            $R->deleteRenderedFile();
+            $R->delete();
+        }
+    }
+
     public function getModuleFilePath($short = FALSE) {
         $path = ($this->official) ? static::getModulePath($short) : static::getUnofficialModulePath($short);
         return $path . $this->getModuleFileName();

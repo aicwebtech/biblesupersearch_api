@@ -241,9 +241,6 @@ enyo.kind({
     },
     _singleActionHelper: function(action, id, postData) {
         var url = '/admin/bibles/' + action + '/' + id;
-        // this.log(action, id);
-        // this.log('about to load', url);
-        // this.log('postData', postData);
         this.app.set('ajaxLoading', true);
         postData._token = laravelCsrfToken;
 
@@ -265,17 +262,6 @@ enyo.kind({
         });
 
         ajax.error(this, 'handleError');
-
-        // ajax.error(this, function(inSender, inResponse) {
-        //     console.log('ERROR', inSender, inResponse);
-        //     var response = JSON.parse(inSender.xhrResponse.body);
-        //     this.app.set('ajaxLoading', false);
-        //     this.app._handleError(inSender, response);
-
-        //     // var errors = response.errors || ['Unknown Error'];
-        //     // var msg = 'An Error has occurred: <br /><ul><li>' + errors.join('</li><li>') + '</li></ul>';
-        //     // this.app.alert(msg);
-        // });
 
         ajax.go();
     },
@@ -302,7 +288,23 @@ enyo.kind({
         this._confirmMultiAction('revert', 'Reverting Changes to Bible Properties', 'revert changes to');
     },    
     multiDelete: function(inSender, inEvent) {
-        this._confirmMultiAction('delete', 'Deleting Bible(s)', 'delete', true);
+        var dfMsg = [
+            '<h2>Are you sure?</h2><br />', 
+            'This will <b>permanently</b> remove these Bibles<br />from your system, deleting everything:<br />',
+            // 'This will delete <b>everything</b><br />in regards to the selected Bibles:<br />',
+            '<ul style="text-align:left">',
+            '<li>Database tables</li>',
+            '<li>Module files</li>',
+            '<li>Downloadable files</li>',
+            '</ul>',
+            'Once deleted, you will NOT be able to reinstall<br />these Bibles without reimporting them.'
+        ].join('\n');
+
+        this._confirmMultiAction('delete', 'Deleting Bible(s)', 'delete', true, dfMsg);
+
+        // this.$.Confirm.confirm('are u sure', enyo.bind(this, function(confirmed) {
+        //     confirmed && this._confirmMultiAction('delete', 'Deleting Bible(s)', 'delete', true);
+        // }));
     },
     multiInstall: function(inSender, inEvent) {
         this._processSelections();
@@ -376,12 +378,13 @@ enyo.kind({
         this.$.MultiQueue.set('items', enyo.clone(selections));
         this._multiActionHelper(action, actioning, postData, closeWhenFinished, selections);
     },
-    _confirmMultiAction: function(action, actioning, displayAction, nonReversible) {
+    _confirmMultiAction: function(action, actioning, displayAction, nonReversible, doubleConfirmMsg) {
         this._processSelections();
         var actioning = (typeof actioning == 'undefined') ? 'Processing' : actioning;
         var action    = (typeof action == 'undefined') ? 'process' : action;
         var displayAction = (typeof displayAction == 'undefined') ? action : displayAction;
         var nonReversible = (typeof nonReversible == 'undefined') ? false : !!nonReversible;
+        var doubleConfirmMsg = (typeof doubleConfirmMsg == 'undefined') ? null : doubleConfirmMsg;
 
         if(this.selections.length == 0) {
             this.$.Alert.alert('Nothing selected');
@@ -395,7 +398,14 @@ enyo.kind({
 
         this.$.MultiConfirm.confirm(enyo.bind(this, function(confirmed) {
             if(confirmed) {
-                this._multiActionHelper(action, actioning, {});
+                if(doubleConfirmMsg) {
+                    this.$.Confirm.confirm(doubleConfirmMsg, enyo.bind(this, function(doubleConfirmed) {
+                        doubleConfirmed && this._multiActionHelper(action, actioning, {});
+                    }));
+                }
+                else {
+                    this._multiActionHelper(action, actioning, {});
+                }
             }
         }));
     },
