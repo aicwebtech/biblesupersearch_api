@@ -243,6 +243,7 @@ class RenderManager {
     }
 
     public function download($bypass_render_limit = FALSE) {
+
         if($this->hasErrors()) {
             return FALSE;
         }
@@ -648,7 +649,12 @@ class RenderManager {
             return compact('cur_space', 'space_needed_overall', 'freed_space', 'space_needed_render', 'deleted_files');
         }
 
-        return ($space_needed_overall > $freed_space) ? FALSE : TRUE;
+        if($space_needed_overall > $freed_space && $space_needed_render > 0) {
+            // echo "$space_needed_overall / $freed_space";
+            return FALSE;
+        }
+
+        return TRUE;
     }
 
     private static function _cleanUpDryRunMessage($dry_run, $Rendering, $config) {

@@ -536,7 +536,7 @@ class Engine {
     }
 
     protected function _renderDownloadHelper($input, $action = 'render') {
-        $download = ($action == 'download') ? TRUE : FALSE;
+        $download = ($action == 'download');
 
         if(empty($input['bible'])) {
             $this->addError('Bible is required', 4);
@@ -566,13 +566,13 @@ class Engine {
         }
 
         if(array_key_exists('zip', $input)) {
-            $zip = ($input['zip']) ? TRUE : FALSE;
+            $zip = (bool) ($input['zip']);
         }
         else {
             $zip = FALSE;
         }
 
-        $bypass_limit = (array_key_exists('bypass_limit', $input) && $input['bypass_limit']) ? TRUE : FALSE;
+        $bypass_limit = (array_key_exists('bypass_limit', $input) && $input['bypass_limit']);
 
         $sanitized = [
             'format'    => $format,
@@ -587,7 +587,7 @@ class Engine {
 
         if($action == 'render_needed') {
             $bibles_needing_render = $Manager->getBiblesNeedingRender(NULL, FALSE, FALSE, 0);
-            $success = ($bibles_needing_render === FALSE || count($bibles_needing_render) > 0) ? FALSE : TRUE;
+            $success = ($bibles_needing_render === FALSE || count($bibles_needing_render) > 0);
             $Manager->cleanUpTempFiles();
             $response->render_needed = ($success) ? FALSE : TRUE;
         }
