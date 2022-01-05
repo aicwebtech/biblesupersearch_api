@@ -21,7 +21,7 @@
             var downloadTempCacheSize = {{$configs['download.cache.temp_cache_size']}};
         </script>
 
-        <div class='content' style='margin-left: 200px; margin-right: 200px;'>
+        <div class='content'>
             <form method='POST'>
                 <?php echo csrf_field() ?>
 
