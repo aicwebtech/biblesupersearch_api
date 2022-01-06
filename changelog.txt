@@ -12,7 +12,13 @@ Bible SuperSearch API Changelog
     + Chinese Union
     + American Standard Version
     + Reina Valera 1909 (Spanish)
+
 * Added Bible: NET Bible® 
+* Added German Bibles:
+    + Luther 1912
+    + Elberfelder (1871)
+    + Elberfelder (1905)
+    + Schlachter Bibel
 
 = 4.5.0 / Oct 9, 2021 (soft release)
 * Admin: Added filtering on Bible manager.
