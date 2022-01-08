@@ -587,9 +587,9 @@ class Engine {
 
         if($action == 'render_needed') {
             $bibles_needing_render = $Manager->getBiblesNeedingRender(NULL, FALSE, FALSE, 0);
-            $success = ($bibles_needing_render === FALSE || count($bibles_needing_render) > 0);
+            $success = !($bibles_needing_render === FALSE || count($bibles_needing_render) > 0);
             $Manager->cleanUpTempFiles();
-            $response->render_needed = ($success) ? FALSE : TRUE;
+            $response->render_needed = !($success);
         }
         else {
             // if($bypass_limit) {
@@ -600,7 +600,6 @@ class Engine {
                 $success = ($download) ? $Manager->download($bypass_limit) : $Manager->render(FALSE, TRUE, $bypass_limit);
                 // $success = ($download) ? $Manager->download() :  $Manager->getBiblesNeedingRender();
             // }
-
         }
 
         if(!$success) {

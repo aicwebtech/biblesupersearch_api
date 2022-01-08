@@ -271,6 +271,45 @@ class ApiActionsTest extends TestCase
         $this->assertEquals(0, $response['error_level']);
     }    
 
+    /*
+     * This tests the render_needed flag on the render action
+     */
+    public function testRenderNeededFlag() {
+        if(!config('download.enable')) {
+            $this->markTestSkipped('Downloads disabled');
+        }
+
+        // Test NOT needing render
+
+        // Render a file.  
+        $Renderer = new \App\Renderers\MachineReadableText('kjv');
+        $Renderer->renderIfNeeded();
+        $RR = $Renderer->_getRenderingRecord();
+        $file_path = $RR->getRenderedFilePath();
+
+        $this->assertFalse($Renderer->hasErrors());
+        $this->assertFileExists($file_path);
+
+        $response = $this->postJson('/api/render_needed', ['bible' => 'kjv', 'format' => 'mr_text']);
+
+        $response->assertStatus(200);      
+        $this->assertEquals(0, $response['error_level']);
+        $this->assertFalse($response['results']['render_needed']);
+
+        // Test needing render
+
+        // Delete the rendered file
+        $Renderer->deleteRenderFile();
+        $this->assertFileDoesNotExist($file_path);
+
+        $response = $this->postJson('/api/render_needed', ['bible' => 'kjv', 'format' => 'mr_text']);
+
+        // Yes, this is returned as an 'error'
+        $response->assertStatus(400);      
+        $this->assertEquals(1, $response['error_level']);
+        $this->assertTrue($response['results']['render_needed']);
+    }
+
     /**
      * Tests of the 'render' action
      *

@@ -34,4 +34,5 @@ return array(
     'strongs_input_required' => 'Strong\'s Number required',
     'strongs_not_found' => 'Strong\'s Number not found',
     'to_many_download' => 'Too many Bibles requested for download.  You can request a maximum of :maximum Bibles at once.',
+    'bible_no_download' => 'Download of Bible not allowed: :module',
 );

@@ -14,6 +14,7 @@ Bible SuperSearch API Changelog
     + Reina Valera 1909 (Spanish)
 
 * Added Bible: NET Bible® 
+
 * Added German Bibles:
     + Luther 1912
     + Elberfelder (1871)
