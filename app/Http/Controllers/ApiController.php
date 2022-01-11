@@ -48,10 +48,14 @@ class ApiController extends Controller {
             $response->results = $results;
             $code = ($Engine->hasErrors()) ? 400 : 200;
         }
-        catch (Exception $ex) {
-            return (new Response($ex->getMessage(), 500))
-                -> header('Content-Type', 'application/json; charset=utf-8')
-                -> header('Access-Control-Allow-Origin', '*');
+        catch (Exception $ex) {        
+            if( env('APP_ENV', 'production') == 'production') {
+                return (new Response($ex->getMessage(), 500))
+                    -> header('Content-Type', 'application/json; charset=utf-8')
+                    -> header('Access-Control-Allow-Origin', '*');
+            }
+
+            throw $ex;
         }
 
         if(array_key_exists('callback', $input)) {

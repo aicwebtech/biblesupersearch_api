@@ -5,6 +5,7 @@ use App\Models\Bible;
 use App\Models\Process;
 use App\Models\Rendering;
 use App\ProcessManager;
+use Illuminate\Support\Facades\Gate;
 
 class RenderManager {
     use Traits\Error;
@@ -97,7 +98,7 @@ class RenderManager {
                     continue;
                 }
 
-                if(!$Bible->isDownloadable()) {
+                if(!$Bible->isDownloadable() && !Gate::allows('admin-access')) {
                     $this->addError( trans('errors.bible_no_download', ['module' => $module]) );
                     continue;
                 }
@@ -157,7 +158,7 @@ class RenderManager {
             // create detatched process on 'php artisan queue:work --once ONLY' if jobs table is EMPTY
             // $this->_createDetatchedProcess($format, $Bibles_Needing_Render, $overwrite);
             $this->needs_process = TRUE;
-            return $this->addError('The requested Bibles will take a while to render.  Please come back in an hour and try your download again.');
+            $this->addError('The requested Bibles will take a while to render.  Please come back in an hour and try your download again.');
         }
 
         return $Bibles_Needing_Render;
@@ -203,7 +204,11 @@ class RenderManager {
             }
         }
         catch (\Exception $e) {
-            return $this->addError($e->getMessage());
+            if( env('APP_ENV', 'production') == 'production') {
+                return $this->addError($e->getMessage());
+            }
+
+            throw $e;
         }
 
         error_reporting($error_reporting_cache);

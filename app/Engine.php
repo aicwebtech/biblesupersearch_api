@@ -590,6 +590,13 @@ class Engine {
             $success = !($bibles_needing_render === FALSE || count($bibles_needing_render) > 0);
             $Manager->cleanUpTempFiles();
             $response->render_needed = !($success);
+            $response->bibles_needing_render = [];
+
+            if(is_array($bibles_needing_render)) {
+                foreach($bibles_needing_render as $Bible) {
+                    $response->bibles_needing_render[] = $Bible->module;
+                }
+            }
         }
         else {
             // if($bypass_limit) {
