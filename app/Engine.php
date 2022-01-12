@@ -1008,6 +1008,7 @@ class Engine {
                         break;
                     case 'string':
                         $value = (string) $input[$index];
+                        $value = str_replace("\n", ' ', $value);
                         break;
                     default:
                         $value = $input[$index];

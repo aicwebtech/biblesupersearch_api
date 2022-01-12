@@ -295,6 +295,8 @@ class ApiActionsTest extends TestCase
         $response->assertStatus(200);      
         $this->assertEquals(0, $response['error_level']);
         $this->assertFalse($response['results']['render_needed']);
+        $this->assertIsArray($response['results']['bibles_needing_render']);
+        $this->assertEmpty($response['results']['bibles_needing_render']);
 
         // Test needing render
 
@@ -308,6 +310,8 @@ class ApiActionsTest extends TestCase
         $response->assertStatus(400);      
         $this->assertEquals(1, $response['error_level']);
         $this->assertTrue($response['results']['render_needed']);
+        $this->assertIsArray($response['results']['bibles_needing_render']);
+        $this->assertContains('kjv', $response['results']['bibles_needing_render']);
     }
 
     /**
