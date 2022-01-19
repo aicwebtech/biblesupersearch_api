@@ -206,6 +206,10 @@ class SqlSearch {
         $this->search_type = (isset($this->options['search_type'])) ? $this->options['search_type'] : 'and';
     }
 
+    public function isBooleanSearch() {
+        return ($this->search_type == 'boolean');
+    }
+
     /**
      * Generates the WHERE clause portion from the search query
      * @return array|bool
@@ -217,7 +221,7 @@ class SqlSearch {
     }
 
     protected function _generateQueryHelper($search, $search_type, $table_alias = '', $include_extra_fields = FALSE, $binddata = array(), $fields = '') {
-        $searches   = array();
+        $searches = [];
 
         if($search) {
             $searches[] = $this->booleanizeQuery($search, $search_type);
@@ -254,8 +258,6 @@ class SqlSearch {
             $this->addError( trans('errors.invalid_search.general', ['search' => $search]), 4);
             return FALSE;
         }
-
-        // var_dump($sql);
 
         foreach($term_list as $type => $items) {
             if($type == 'all') {
@@ -359,9 +361,11 @@ class SqlSearch {
         $is_phrase = $is_regexp = $is_strongs = $uses_regexp = FALSE;
         $term_inexact = '%' . trim($term, '%"`\'') . '%';
         $phrase_whitespace = ' ';
-        $phrase_whitespace = '[[:>:]]\s|(\{.*\})[[:<:]]';
+        // $phrase_whitespace = '[[:>:]]\s|(\{.*\})[[:<:]]';
         $phrase_whitespace = '([^a-fi-zA-FI-Z]+)';  // General approximation (fails open - may pull MORE results than it should)
         // $phrase_whitespace = "\]?[ {]([^a-fi-zA-FI-Z]*)"; // This prefered whitespace separator works in navicat but not in this software?
+
+        // $primary_only = TRUE;
 
         // Regexp
         if($this->_isRegexpSearch($term)) {
@@ -377,11 +381,14 @@ class SqlSearch {
             $is_phrase = TRUE;
             $uses_regexp = TRUE;
             $term_inexact = str_replace(' ', '%', $term_inexact);
+            // $whole_words = TRUE;
 
             if(!$whole_words) {
                 $phrase_term = str_replace(' ', $phrase_whitespace, $term);
+                // $phrase_term = '.*' . str_replace(' ', $phrase_whitespace, $term) . '.*';
 
                 // to do - use this return if bible has no markup
+                // return ($primary_only) ? $phrase_term : [$phrase_term];
                 return ($primary_only) ? $phrase_term : [$term_inexact, $phrase_term];
             }
         }
@@ -480,16 +487,27 @@ class SqlSearch {
         if(!is_array($binddata)) {
             return FALSE;
         }
-
+            
         $idx = ($avoid_duplicates) ? array_search($item, $binddata) : FALSE;
 
-        if($idx === FALSE) {
-            $idx = ':' . $index_prefix .  (count($binddata) + 1);
-            //$idx = count($binddata);
-            $binddata[$idx] = $item;
+        if(config('app.query_use_named_placeholders')) {        
+
+            if($idx === FALSE) {
+                $idx = ':' . $index_prefix .  (count($binddata) + 1);
+                $binddata[$idx] = $item;
+            }
+    
+            return $idx;
+        }
+        else {
+            if($idx === FALSE) {
+                $binddata[] = $item;
+                $idx = count($binddata) - 1;
+            }
+
+            return '?';
         }
 
-        return $idx;
     }
 
     public function booleanizeQuery($query, $search_type, $arg3 = NULL) {
@@ -528,7 +546,6 @@ class SqlSearch {
                 break;
             case 'not':
                 $query = 'NOT (' . $query . ')';
-                //$query = 'NOT ' . implode(' NOT ', $parsed);
                 break;
         }
 
@@ -603,24 +620,11 @@ class SqlSearch {
                 // Sort arrays by size, decending
                 foreach($raw as $key => &$d) {
                     Helpers::sortStringsByLength($d, 'DESC');
-
-                    // usort($d, function($a, $b) {
-                    //     $comp = strlen($b) <=> strlen($a);
-                    //     return $comp * -1;
-                    // });
-
                     $size[$key] = strlen(json_encode($d));
                 }
                 unset($d);
                 
-                // echo('<pre>');
-                // var_dump($raw);
-                // var_dump($size);
-
                 array_multisort($size, SORT_DESC, SORT_NUMERIC, $raw);
-                // // var_dump($raw);
-                // // die();
-                
             }
 
             return $raw;
@@ -861,13 +865,9 @@ class SqlSearch {
 
         Helpers::sortStringsByLength($terms, 'DESC');
 
-
         foreach($terms as $key => $term) {
             $terms_fmt[$key] = $this->_termFormatForHighlight($term, $exact_case, $whole_word);
         }
-
-        // var_dump($terms);
-        // var_dump($terms_fmt);
 
         foreach($results as $bible => &$verses) {
             foreach($verses as &$verse) {
@@ -879,22 +879,16 @@ class SqlSearch {
                     }, $verse->text);
                 }
 
-                // var_dump($verse->text);
-
                 // Clean up
                 $verse->text = preg_replace_callback($pre_pattern, function($matches) use ($pre, $post) {
                     return $pre . $matches[1];
                 }, $verse->text);      
-
-                // var_dump($verse->text);
 
                 $verse->text = preg_replace_callback($post_pattern, function($matches) use ($pre, $post) {
                     return $matches[1] . $post;
                 }, $verse->text);
 
                 $verse->text = str_replace([$pre, $post], [$pre_tag, $post_tag], $verse->text);
-                
-                // var_dump($verse->text);
             }
         }
 

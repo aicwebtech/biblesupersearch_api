@@ -182,9 +182,6 @@ class PassageStructureTest extends TestCase {
         $expected_indices = [2,3,14,15];  // Keys should be in this order
         $wrong_indices = [3,2,14,15];  // Keys should NOT be in this order
 
-        //print_r($results[3]['chapter_verse_parsed']);
-        //print_r($results[4]['chapter_verse_parsed']);
-
         foreach($bibles as $bible) {
             // These tests no longer relavant as this results in 5 passages not one
             //$this->assertEquals($expected_indices, array_keys($results[0]['verses'][$bible]));
@@ -220,7 +217,6 @@ class PassageStructureTest extends TestCase {
         // Restructuring the query, we still have 5 passages here as that is how it's parsed
         $results = $Engine->actionQuery(['bible' => 'kjv', 'reference' => 'John 3:16, John 3:23, John 2:1-5; John 14:30-15:2', 'data_format' => 'passage']);
         $this->assertFalse($Engine->hasErrors());
-        //print_r($results[3]['chapter_verse_parsed']);
         $this->assertCount(5, $results);
         $this->assertTrue($results[0]['single_verse']);
         $this->assertTrue($results[1]['single_verse']);

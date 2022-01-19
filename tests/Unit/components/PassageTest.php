@@ -322,8 +322,6 @@ class PassageTest extends TestCase
 
         $Exploded = $Passages[0]->explodePassage(FALSE, TRUE);
         $this->assertCount(4, $Exploded);
-        //var_dump($Exploded[3]->chapter_verse);
-        //var_dump($Exploded[3]->chapter_verse_parsed);
         $this->assertEquals('3:1-3', $Exploded[0]->chapter_verse);
         $this->assertEquals('4',     $Exploded[1]->chapter_verse);
         $this->assertEquals('1:5-',     $Exploded[2]->chapter_verse);
@@ -341,8 +339,6 @@ class PassageTest extends TestCase
         $this->assertEquals('6:23',     $Exploded[1]->chapter_verse);
         $this->assertEquals('5:8',     $Exploded[2]->chapter_verse);
         $this->assertEquals('10:-14',     $Exploded[3]->chapter_verse);
-        //var_dump($Exploded[3]->chapter_verse_parsed);
-        //var_dump($Exploded[3]->chapter_verse);
     }
 
     public function testChapterVerseParsing() {
@@ -876,7 +872,6 @@ class PassageTest extends TestCase
             $this->assertEquals(count($ref['passage']), $res, $ref['text']);
 
             foreach ($ref['passage'] as $key => $p) {
-                // print_r($matches[$key]);
                 $this->assertEquals($p, $matches[$key][0]);
             }
 

@@ -894,19 +894,16 @@ class Passage {
                     }
 
                     $Passage = clone $this;
-                    //$Passage->setChapterVerse($cvst);
                     $Passage->setChapterVerseFromParsed($parsed_st);
                     $Passages[] = $Passage;
 
                     for($chapter = $cst + 1; $chapter < $cen; $chapter ++) {
-                        //var_dump($chapter);
                         $Passage = clone $this;
                         $Passage->setChapterVerse($chapter);
                         $Passages[] = $Passage;
                     }
 
                     $Passage = clone $this;
-                    //$Passage->setChapterVerse($cven);
                     $Passage->setChapterVerseFromParsed($parsed_en);
                     $Passages[] = $Passage;
                 }
@@ -1081,8 +1078,6 @@ class Passage {
         $disambiguation = [];
         $has_disambiguation_book = FALSE;
 
-        // var_dump($request);
-
         if(!empty($request)) {
             if(!$keywords && !$reference) {
                 $request_org = $request;
@@ -1145,8 +1140,6 @@ class Passage {
                 }
             }
         }
-
-        // var_dump($keywords);
 
         return array($keywords, $reference, $disambiguation, $has_disambiguation_book);
     }
@@ -1215,16 +1208,10 @@ class Passage {
     }
 
     public static function _containsNonPassageCharacters($string) {
-        // echo PHP_EOL;
-        // echo('_containsNonPassageCharacters' . PHP_EOL);
-        // echo($string . PHP_EOL);
-
         $non_passage_chars = preg_match('/[`\\~!@#$%\^&*{}_[\]()]/', $string, $matches);
         // $non_passage_chars = preg_match_all('/[\p{Ps}\p{Pe}\(\)\\\|\+&]/', $string, $matches); // BookAbstract::findByEnteredName
         // $non_passage_chars = preg_match_all('/[^0-9\p{L}\p{M} :,.-]/', $string, $matches);
         // $non_passage_chars = preg_match_all('/[`\\~!@#$%\^&*{}_[\]]/', $string, $matches);
-
-        // print_r($non_passage_chars);
 
         return $non_passage_chars ? TRUE : FALSE;
     }

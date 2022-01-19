@@ -23,10 +23,7 @@ class LoadConfiguration
      */
     public function bootstrap(Application $app)
     {
-//        var_dump('boot strayppy');
         $items = [];
-
-
 
         // First we will see if we have a cache configuration file. If we do, we'll load
         // the configuration items from that file so that it is very quick. Otherwise
@@ -56,12 +53,12 @@ class LoadConfiguration
         date_default_timezone_set($config->get('app.timezone', 'UTC'));
 
         mb_internal_encoding('UTF-8');
-$bible = DB::select('select * from bss_bibles LIMIT 1');
-var_dump($bible);
-//                $Bible = new Bible();
-//$Bible->setConnection(env('DB_CONNECTION', 'mysql'));
-//$Bib = $Bible->first();
-//var_dump($Bib->name);
+        $bible = DB::select('select * from bss_bibles LIMIT 1');
+        var_dump($bible);
+        //                $Bible = new Bible();
+        //$Bible->setConnection(env('DB_CONNECTION', 'mysql'));
+        //$Bib = $Bible->first();
+        //var_dump($Bib->name);
     }
 
     /**

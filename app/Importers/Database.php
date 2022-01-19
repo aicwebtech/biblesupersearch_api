@@ -52,8 +52,6 @@ class Database {
             DB::table($db_table)->truncate();
         }
 
-        //var_dump($file);
-
         if(!is_file($path)) {
             throw new \Exception('Warning: Sql import file not found: ' . $display_path);
             return;
@@ -74,7 +72,6 @@ class Database {
             catch (\ErrorException $ex) {
                 $line = str_replace('`%s', '`' . $prefix, $line);
             }
-            //echo $line . PHP_EOL;
 
             try {
                 \DB::insert($line);

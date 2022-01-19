@@ -30,10 +30,10 @@ class VerseStandard extends VerseAbstract {
         $Verse = new static;
         $table = $Verse->getTable();
         $passage_query = $search_query = NULL;
-        $is_special_search = ($Search && $Search->is_special) ? TRUE : FALSE;
+        $is_special_search = ($Search && $Search->is_special);
         $Query = DB::table($table . ' AS tb');
-        
-        // $Query->select(DB::raw('SQL_NO_CACHE id, book, chapter, verse, text'));
+
+        $reccommend_raw_query = FALSE;
 
         $Query->select('id','book','chapter','verse','text','italics');
         $Query->orderBy('book', 'ASC')->orderBy('chapter', 'ASC')->orderBy('verse', 'ASC');
@@ -47,6 +47,8 @@ class VerseStandard extends VerseAbstract {
         }
 
         if($Search) {
+            $reccommend_raw_query = $Search->isBooleanSearch();
+            
             if($is_special_search) {
                 $table = static::$special_table . '_1';
                 $passage_query_special = static::_buildPassageQuery($Passages, $table, $parameters);
@@ -73,33 +75,52 @@ class VerseStandard extends VerseAbstract {
             }
         }
 
-        // echo(PHP_EOL . $Query->toSql() . PHP_EOL);
-        // var_dump($binddata);
-        // die();
-
-        // $verses = DB::select($Query->toSql(), $binddata);
-        // print_r($verses);
-
+        $binddata = !isset($binddata) ? [] : $binddata;
 
         if($Search && !$parameters['multi_bibles'] && !$parameters['page_all']) {
             $page_limit = min( (int) $parameters['page_limit'], (int) config('bss.global_maximum_results'));
-            $verses = $Query->paginate($page_limit);
+                
+            if($reccommend_raw_query) {
+                $page = (!array_key_exists('page', $parameters) || !$parameters['page']) ? 1 : $parameters['page'];
+
+                // Manually query the count - we need this for the paginator
+                $sql_parts = explode('from', $Query->toSql());
+                $sql_count = 'SELECT COUNT(*) AS count FROM' . $sql_parts[1];
+                $count = (int) DB::select($sql_count, $binddata)[0]->count;
+                
+                $Query->limit($page_limit);
+                $Query->offset(($page - 1) * $page_limit);
+
+                $results = DB::select($Query->toSql(), $binddata);
+
+                // Manually drop the results into the paginator:
+                $verses = new \Illuminate\Pagination\LengthAwarePaginator($results, $count, $page_limit, $page);
+            }
+            else {
+                $verses = $Query->paginate($page_limit);
+            }
         }
         else {
             ini_set('max_execution_time', 120);
             $Query->limit( config('bss.global_maximum_results') );
-            $verses = $Query->get();
+
+            if($reccommend_raw_query) {
+                $verses = collect( DB::select($Query->toSql(), $binddata) );
+            }
+            else {
+                $verses = $Query->get();
+            }
         }
 
         if(config('app.debug_query')) {
-            $_SESSION['debug']['query']      = $Query->toSql();
-            $_SESSION['debug']['query_data'] = (isset($binddata)) ? $binddata : NULL;
-            // $_SESSION['debug']['query_raw_output'] = $verses->all();
-        }
+            // $Query->dump();
+            // $Query->dd();
 
-        // $verses = $Query->get();
-        // print_r($verses->all());
-        // die();
+            $_SESSION['debug']['query']      = $Query->toSql();
+            $_SESSION['debug']['_raw_search_query']      = $search_query;
+            $_SESSION['debug']['query_data'] = $Query->getBindings();
+            $_SESSION['debug']['query_data_raw'] = (isset($binddata)) ? $binddata : NULL;
+        }
 
         return (empty($verses)) ? FALSE : $verses;
     }
@@ -192,8 +213,6 @@ class VerseStandard extends VerseAbstract {
             $_SESSION['debug']['prox_query_data'] = (isset($binddata)) ? $binddata : NULL;
         }
 
-        // print($sql);
-        // print_r($binddata);
         $results_raw = DB::select($sql, $binddata);
 
         foreach($results_raw as $a1) {

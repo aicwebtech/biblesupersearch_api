@@ -142,8 +142,6 @@ class AdvancedSearchTest extends TestCase {
                     INNER JOIN bss_verses_kjv AS bible_2 ON bible_2.book = bible_1.book AND (bible_2.book != 19 OR bible_2.chapter = bible_1.chapter ) AND bible_2.id BETWEEN bible_1.id - 10 AND bible_1.id + 10 AND (`bible_2`.`text` LIKE '%joy%' AND `bible_2`.`text` REGEXP '[[:<:]]joy[[:>:]]')
                     WHERE (`bible_1`.`text` LIKE '%peace%' AND `bible_1`.`text` REGEXP '[[:<:]]peace[[:>:]]')";
 
-        // var_dump(VerseStandard::proximityQueryTest($query));
-
         $this->assertFalse($Engine->hasErrors());
         // $this->assertCount(92, $results['kjv']); // Allows cross-chapter in Psalms
         $this->assertCount(88, $results['kjv']); 

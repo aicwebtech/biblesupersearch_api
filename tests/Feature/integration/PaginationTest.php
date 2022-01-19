@@ -51,14 +51,16 @@ class PaginationTest extends TestCase {
         $this->assertEquals(1, $metadata->paging['current_page']);
     }
 
-    // Still can't get this to test right - works from frontend
-    // Issue is with how the 'page' variable gets through the request to Laravel's pagination
-    public function _testSearchPageMiddle() {
+    public function testSearchPageMiddle() {
         $Engine = new Engine();
 
         $_POST['page'] = 3; // Because Laravel pulls from here
-        $results = $this->_testViaApi(['bible' => 'kjv', 'search' => 'faith', 'whole_words' => TRUE, 'page' => 3]);
-        $results = $Engine->actionQuery(['bible' => 'kjv', 'search' => 'faith', 'whole_words' => TRUE, 'page' => 3]);
+        $response = $this->_testViaApi(['bible' => 'kjv', 'search' => 'faith', 'whole_words' => TRUE, 'page' => 3]);
+        $results = $response['results'];
+
+        // Still can't get this to test right - works from frontend and via API call.  Not via Engine
+        // Issue is with how the 'page' variable gets through the request to Laravel's pagination
+        // $results = $Engine->actionQuery(['bible' => 'kjv', 'search' => 'faith', 'whole_words' => TRUE, 'page' => 3]);
         $this->assertFalse($Engine->hasErrors());
         $this->assertCount(config('bss.pagination.limit'), $results);
 
@@ -85,12 +87,9 @@ class PaginationTest extends TestCase {
     }
 
     protected function _testViaApi($query) {
-        var_dump($query);
-
-        $response = $this->json('GET', '/api/query', $query);
+        $response = $this->json('POST', '/api/query', $query);
         $response->assertStatus(200);
 
-        var_dump($response);
-        die();
+        return $response;
     }
 }

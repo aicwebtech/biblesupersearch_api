@@ -3,6 +3,7 @@ Bible SuperSearch API Changelog
 = 5.0.0 / Feb __, 2022
 * Bugfix: Bible admin: 'Description' label no longer shifts when opening the description.
 * Bugfix: API single action error handler sometimes gave generic, not descriptive error messages.
+* Bugfix: Fixed longstanding issues when using exact phrases within boolean searches.
 * Rebranding 'stand-alone' client to Universal Client
 * Improvement: Added ability to change the pagination results per page limit.
 * Improvement: MySword import can now import .bible.zip and .bible.gz files without extracting them first.

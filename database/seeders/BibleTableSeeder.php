@@ -18,8 +18,6 @@ class BibleTableSeeder extends Seeder
         
         $supported = config('supported_bibles');
 
-        print_r($supported);
-
         foreach($supported as $bible) {
             //Bible::create($bible);
         }

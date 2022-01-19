@@ -133,15 +133,7 @@ class HighlightTest extends TestCase {
         $this->assertFalse($Engine->hasErrors());        
 
         foreach($results['kjv'] as $key => $verse) {
-            // var_dump($verse->text);
-
             $this->assertFalse((strpos($verse->text, $embedded)), 'Highlight tag within tag: ' . $verse->text);
         }
-        
-        // Laravel bug again!
-        // $results = $Engine->actionQuery(['bible' => 'kjv', 'search' => 'me "measure of faith"', 'highlight' => TRUE, 'whole_words' => FALSE, 'search_type' => 'boolean']);
-        // $this->assertFalse($Engine->hasErrors());
-        
-
     }
 }

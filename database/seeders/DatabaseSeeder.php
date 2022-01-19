@@ -44,7 +44,6 @@ class DatabaseSeeder extends Seeder
         $prefix = config('database.prefix');
         $path = $dir . '/' . $file;
         $display_path = ($default_dir) ? '<app_dir>/database/dumps/' . $file : $path;
-        //var_dump($file);
 
         if(!is_file($path)) {
             echo 'Warning: Sql import file not found, continuing: ' . $display_path . PHP_EOL;
