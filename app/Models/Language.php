@@ -13,7 +13,7 @@ class Language extends Model {
     ];
 
     public function rtl() {
-        return $this->rtl ? TRUE : FALSE;
+        return (bool) $this->rtl;
         // return static::isRtl($this->code);
     }
 
@@ -63,7 +63,7 @@ class Language extends Model {
             return FALSE;
         }
 
-        return ($Language->rtl) ? TRUE : FALSE;
+        return (bool) $Language->rtl;
     }
 
     public static function findByCode($code) {

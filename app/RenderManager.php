@@ -58,8 +58,8 @@ class RenderManager {
     public $include_extras = FALSE;
 
     public function __construct($modules, $format, $zip = FALSE) {
-        $this->multi_bibles = ($modules == 'ALL' || count($modules) > 1) ? TRUE : FALSE;
-        $this->multi_format = ($format  == 'ALL' || count($format)  > 1) ? TRUE : FALSE;
+        $this->multi_bibles = ($modules == 'ALL' || count($modules) > 1);
+        $this->multi_format = ($format  == 'ALL' || count($format)  > 1);
         $this->zip = ($this->multi_bibles && $this->multi_format) ? TRUE : $zip;
 
         if($this->multi_bibles && $this->multi_format) {
@@ -530,7 +530,7 @@ class RenderManager {
             $dry_run_vars['error'] = FALSE;
         }
 
-        $dry_run_verbose = ($dry_run && $verbose) ? TRUE : FALSE;
+        $dry_run_verbose = ($dry_run && $verbose);
         $space_needed_render = ($space_needed_render < 0 ) ? 0 : $space_needed_render;
         $space_needed_cache = $space_needed_overall = $freed_space = $space_needed_extra = 0;
         $cache_size_max     = (int) $cache_size + (int) $temp_cache_size;

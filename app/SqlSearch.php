@@ -289,7 +289,7 @@ class SqlSearch {
     protected function _termSql($term, &$binddata = array(), $fields = '', $table_alias = '') {
         $exact_case  = $this->options['exact_case'];
         $whole_words = $this->options['whole_words'];
-        $exact_phrase = ($this->options['search_type'] == 'phrase') ? TRUE : FALSE;
+        $exact_phrase = ($this->options['search_type'] == 'phrase');
 
         if($this->options['whole_words_debug']) {
             $whole_words = FALSE;
@@ -340,13 +340,13 @@ class SqlSearch {
         }
 
         // Other searches that use REGEXP
-        $uses_regexp = ($this->_isPhraseSearch($term) || $whole_words || $is_strongs) ? TRUE : FALSE;
+        $uses_regexp = ($this->_isPhraseSearch($term) || $whole_words || $is_strongs);
 
         if($is_regexp) {
             return ($primary_only) ? 'REGEXP' : ['REGEXP'];
         }
 
-        $is_special = (static::isTermRegexp($term) || $exact_phrase) ? TRUE : FALSE;
+        $is_special = (static::isTermRegexp($term) || $exact_phrase);
 
         if($whole_words || $uses_regexp) {
             return ($primary_only) ? 'REGEXP' : ['LIKE', 'REGEXP'];
@@ -406,8 +406,8 @@ class SqlSearch {
 
         $terms = [$term_inexact];
 
-        $has_st_pct = (strpos($term, '%') === 0) ? TRUE : FALSE;
-        $has_en_pct = (strrpos($term, '%') === strlen($term) - 1) ? TRUE : FALSE;
+        $has_st_pct = (strpos($term, '%') === 0);
+        $has_en_pct = (strrpos($term, '%') === strlen($term) - 1);
 
         if($has_st_pct && $has_en_pct) {
             return ($primary_only) ? $term : [$term];
@@ -657,11 +657,11 @@ class SqlSearch {
     }
 
     public static function isTermPhrase($term) {
-        return ($term[0] == '"') ? TRUE : FALSE;
+        return ($term[0] == '"');
     }
 
     public static function isTermRegexp($term) {
-        return ($term[0] == '`') ? TRUE : FALSE;
+        return ($term[0] == '`');
     }
 
     public static function isTermStrongs($term) {
@@ -843,7 +843,7 @@ class SqlSearch {
     }
 
     public function setUseNamedBindings($value) {
-        $this->use_named_bindings = ($value) ? TRUE : FALSE;
+        $this->use_named_bindings = (bool) $value;
     }
 
     public function highlightResults($results) {

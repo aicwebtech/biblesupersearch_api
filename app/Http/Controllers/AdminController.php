@@ -72,7 +72,7 @@ class AdminController extends Controller
 
     public function softwareUninstall(Request $request) {
         $confirm = $request->input('confirm');
-        $confirm_bool = ($confirm && $confirm != 'No' && $confirm != 'false') ? TRUE : FALSE;
+        $confirm_bool = ($confirm && $confirm != 'No' && $confirm != 'false');
 
         if(!$confirm_bool) {
             return Redirect::route('admin.main');

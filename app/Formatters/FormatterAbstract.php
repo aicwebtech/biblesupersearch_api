@@ -27,7 +27,7 @@ abstract class FormatterAbstract {
         $this->results      = $results;
         $this->Passages     = $Passages;
         $this->Search       = $Search;
-        $this->is_search    = ($Search) ? TRUE : FALSE;
+        $this->is_search    = (bool) $Search;
         $this->languages    = $languages;
     }
 

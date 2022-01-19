@@ -83,10 +83,10 @@ class InstallManager {
         $composer     = json_decode($composer_txt);
 
         $php_version = substr($composer->require->php, 2);
-        $php_success = (version_compare(phpversion(), $php_version, '>=') == -1) ? TRUE : FALSE;
+        $php_success = (version_compare(phpversion(), $php_version, '>=') == -1);
         $conname = config('database.default');
         $db_info = config('database.connections.' . $conname);
-        $sqlite_required = ($db_info['driver'] == 'sqlite') ? TRUE : FALSE;
+        $sqlite_required = ($db_info['driver'] == 'sqlite');
 
         $checklist = [];
         $installed_php_parts = explode('.', PHP_VERSION);
@@ -95,7 +95,7 @@ class InstallManager {
         // TODO - MAKE SURE SENDMAIL IS INSTALLED!
 
         $checklist[] = ['type' => 'header', 'label' => 'Software'];
-        $env = (is_file(base_path('.env')) && is_writable(base_path('.env'))) ? TRUE : FALSE;
+        $env = (is_file(base_path('.env')) && is_writable(base_path('.env')));
         $checklist[] = ['type' => 'item', 'label' => '.env config file exists and is writable', 'success' => $env];
         $checklist[] = ['type' => 'item', 'label' => 'PHP Version >= ' . $php_version . ' (' . $installed_php . ')', 'success' => $php_success];
 
@@ -144,7 +144,7 @@ class InstallManager {
             $checklist[] = ['type' => 'item', 'label' => 'Unsupported Database Type: ' . $db_info['driver'], 'success' => FALSE];
         }
 
-        $file = ($db_info['driver'] == 'sqlite') ? TRUE : FALSE;
+        $file = ($db_info['driver'] == 'sqlite');
 
 
         $checklist[] = ['type' => 'item', 'label' => 'Database PDO Driver: ' . $pdo_driver, 'success' => extension_loaded($pdo_driver)];
@@ -220,7 +220,7 @@ class InstallManager {
             $checklist[] = ['type' => 'item', 'label' => 'Bad thingy ', 'success' => FALSE];
 
             $rs = rand(1,3);
-            $rsb = ($rs == 1) ? TRUE : FALSE;
+            $rsb = ($rs == 1);
             $rsb = ($rs == 3) ? NULL : $rsb;
             $checklist[] = ['type' => 'item', 'label' => 'Randomly thingy ', 'success' => $rsb];
         }

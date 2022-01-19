@@ -138,7 +138,7 @@ class ImportManager {
         }
 
         $Importer = new $this->import_class();
-        $Importer->test_mode = $this->test_mode ? TRUE : FALSE;
+        $Importer->test_mode = (bool) $this->test_mode;
         $type_info = static::$type_map[$this->type];
         
         if(!$Importer->setSettings($data)) {
@@ -200,7 +200,7 @@ class ImportManager {
 
         $importer = $data['_importer'];
         $file     = $data['_file'];
-        $use_mod  = array_key_exists('_force_use_module', $data) && $data['_force_use_module'] ? TRUE : FALSE;
+        $use_mod  = (array_key_exists('_force_use_module', $data) && $data['_force_use_module']);
         $settings = json_decode($data['_settings'], TRUE);
 
         unset($data['_importer']);

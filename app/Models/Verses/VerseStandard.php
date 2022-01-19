@@ -271,7 +271,7 @@ class VerseStandard extends VerseAbstract {
 
     // Todo - prevent installation if already installed!
     public function install($structure_only = FALSE) {
-        $in_console = (strpos(php_sapi_name(), 'cli') !== FALSE) ? TRUE : FALSE;
+        $in_console = (strpos(php_sapi_name(), 'cli') !== FALSE);
 
         if (Schema::hasTable($this->table)) {
             return TRUE;

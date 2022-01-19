@@ -112,7 +112,7 @@ class IpAccess extends Model {
             return FALSE;
         }
 
-        return ($Log->limit_reached) ? TRUE : FALSE;
+        return (bool) $Log->limit_reached;
     }
 
     public function getAccessLimit() {
@@ -143,7 +143,7 @@ class IpAccess extends Model {
     }
 
     public function isAccessRevoked() {
-        return ($this->getAccessLimit() < 0) ? TRUE : FALSE;
+        return ($this->getAccessLimit() < 0);
     }
 
     public function delete() {

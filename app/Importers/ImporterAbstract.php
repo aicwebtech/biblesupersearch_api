@@ -145,7 +145,7 @@ abstract class ImporterAbstract {
 
         foreach($map as $key => $meta_key) {
             if(array_key_exists($meta_key, $meta)) {
-                $equal_old_value = (array_key_exists($key, $old_attr) && $old_attr[$key] == $meta[$meta_key]) ? TRUE : FALSE;
+                $equal_old_value = (array_key_exists($key, $old_attr) && $old_attr[$key] == $meta[$meta_key]);
 
                 if(!$equal_old_value) {
 
@@ -229,8 +229,8 @@ abstract class ImporterAbstract {
     public function setProperties($file, $module, $overwrite, $attributes, $autopopulate) {
         $this->file      = $file;
         $this->module    = $module;
-        $this->overwrite = ($overwrite) ? TRUE : FALSE;
-        $this->save_bible = (!$overwrite || !$autopopulate) ? TRUE : FALSE;
+        $this->overwrite = (bool) $overwrite;
+        $this->save_bible = (!$overwrite || !$autopopulate);
 
         if(!($overwrite && $autopopulate)) {
             $attributes['module']       = $module;
@@ -411,7 +411,7 @@ abstract class ImporterAbstract {
 
     protected function _getBible($module) {
         $Bible  = Bible::findByModule($module);
-        $this->_existing = ($Bible) ? TRUE : FALSE;
+        $this->_existing = (bool) $Bible;
         $Bible  = ($Bible) ? $Bible : new Bible;
         $Bible->module = $module;
         $Verses = $Bible->verses();
@@ -440,7 +440,7 @@ abstract class ImporterAbstract {
         $str = ['module', 'file'];
 
         if(in_array($name, $bool)) {
-            $this->$name = $value ? TRUE : FALSE;
+            $this->$name = (bool) $value;
         }        
 
         if(in_array($name, $str)) {

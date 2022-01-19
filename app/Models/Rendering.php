@@ -30,6 +30,6 @@ class Rendering extends Model
         $comp_date = strtotime('-' . $days . ' days');
         $ren_ts    = strtotime($this->rendered_at);
 
-        return ($ren_ts > $comp_date) ? TRUE : FALSE;
+        return ($ren_ts > $comp_date);
     }
 }

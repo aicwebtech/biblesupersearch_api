@@ -330,7 +330,7 @@ class Passage {
             foreach($preparsed_values as $in => $value) {
                 $next = (isset($preparsed_values[$in + 1])) ? $preparsed_values[$in + 1] : NULL;
                 $last = (isset($preparsed_values[$in - 1])) ? $preparsed_values[$in - 1] : NULL;
-                $end_of_ref = ($next == ',' || $next == NULL) ? TRUE : FALSE;
+                $end_of_ref = ($next == ',' || $next == NULL);
 
                 if(is_int($value)) {
                     if($next == ':' || !$current_chapter) {
@@ -630,7 +630,7 @@ class Passage {
         $next_book_id = $this->Book->id + 1;
         $next_book_id = ($next_book_id <= count(config('bss.books_common'))) ? $next_book_id : NULL;
         $PrevBook = $NextBook = NULL;
-        $whole_chapter = ($this->chapter_min && strval($this->chapter_min) != $this->chapter_verse) ? TRUE : FALSE;
+        $whole_chapter = ($this->chapter_min && strval($this->chapter_min) != $this->chapter_verse);
 
         if($verbose) {
             $PrevBook = ($prev_book_id) ? $book_class::find($prev_book_id) : NULL;
@@ -814,8 +814,7 @@ class Passage {
         $parsing = $this->getNormalizedReferences();
 
         if(count($parsing) == 1) {
-            //return ($parsing[0]['type'] == 'single') ? TRUE : FALSE;
-            return ($parsing[0]['type'] == 'single' && $parsing[0]['v'] !== NULL) ? TRUE : FALSE;
+            return ($parsing[0]['type'] == 'single' && $parsing[0]['v'] !== NULL);
         }
 
         return FALSE;
@@ -827,7 +826,7 @@ class Passage {
      * @return bool
      */
     public function containsSingleVerse() {
-        return ($this->verses_count == 1) ? TRUE : FALSE;
+        return ($this->verses_count == 1);
     }
 
     public function isSingleBook() {
@@ -835,7 +834,7 @@ class Passage {
             return FALSE;
         }
 
-        return (empty($this->getNormalizedReferences())) ? TRUE : FALSE;
+        return (empty($this->getNormalizedReferences()));
     }
 
     /**
@@ -845,7 +844,7 @@ class Passage {
      * @return bool
      */
     public function isChapterOnly() {
-        return (strpos($this->chapter_verse, ':') === FALSE) ? TRUE : FALSE;
+        return (strpos($this->chapter_verse, ':') === FALSE);
     }
 
     public function explodePassage($separate_book_ranges, $separate_chapters) {
@@ -1029,7 +1028,7 @@ class Passage {
         $Passage = new static;
         $Passage->languages = $languages;
         $Passage->is_search = $is_search;
-        $Passage->is_contextual = (array_key_exists('context', $parameters) && $parameters['context'] == TRUE) ? TRUE : FALSE;
+        $Passage->is_contextual = (array_key_exists('context', $parameters) && $parameters['context'] == TRUE);
         $Passage->contextual_range = (array_key_exists('context_range', $parameters)) ? (int) $parameters['context_range'] : 5;
         $Passage->Bibles = $Bibles;
         $Passage->setBook($book);
@@ -1213,6 +1212,6 @@ class Passage {
         // $non_passage_chars = preg_match_all('/[^0-9\p{L}\p{M} :,.-]/', $string, $matches);
         // $non_passage_chars = preg_match_all('/[`\\~!@#$%\^&*{}_[\]]/', $string, $matches);
 
-        return $non_passage_chars ? TRUE : FALSE;
+        return (bool) $non_passage_chars;
     }
 }

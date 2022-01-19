@@ -268,7 +268,7 @@ class Bible extends Model {
 
         $this->installed_at = date('Y-m-d H:i:s');
         $this->save();
-        return ($res === TRUE) ? TRUE : FALSE;
+        return ($res === TRUE);
     }
 
     protected function _getExportInfo() {
@@ -354,7 +354,7 @@ class Bible extends Model {
 
         $this->installed_at = date('Y-m-d H:i:s');
         $this->save();
-        return ($res === TRUE) ? TRUE : FALSE;
+        return ($res === TRUE);
     }    
 
     public function revertMetaInfo() {
@@ -380,7 +380,7 @@ class Bible extends Model {
             $Zip->close();
         }
 
-        return ($res === TRUE) ? TRUE : FALSE;
+        return ($res === TRUE);
     }
 
     public function migrateModuleFile($dry_run = FALSE) {
@@ -504,7 +504,7 @@ class Bible extends Model {
 
     public static function isEnabled($module) {
         $Bible = static::findByModule($module);
-        return ($Bible && $Bible->enabled) ? TRUE : FALSE;
+        return ($Bible && $Bible->enabled);
     }
 
     public static function getModulePath($short = FALSE) {

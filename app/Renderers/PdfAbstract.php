@@ -166,12 +166,9 @@ abstract class PdfAbstract extends RenderAbstract {
     }
 
     protected function _renderSingleVerse($verse) {
-        if($verse->id > 1000) {
-            // return;
-        }
 
         if($this->pdf_verses_paragraph === 'auto') {
-            $this->pdf_verses_paragraph = (strpos($verse->text, '¶') !== FALSE) ? TRUE : FALSE;
+            $this->pdf_verses_paragraph = (strpos($verse->text, '¶') !== FALSE);
         }
 
         $this->TCPDF->setCurrentVerse($verse);
@@ -355,7 +352,7 @@ abstract class PdfAbstract extends RenderAbstract {
             $this->_renderTestamentHeader(__('basic.new_testament'));
         }
 
-        $this->in_psalms = ($book == 19) ? TRUE : FALSE;
+        $this->in_psalms = ($book == 19);
         $this->TCPDF->setFont($this->pdf_font_family, $this->pdf_book_style, $this->pdf_book_size);
         $this->TCPDF->Ln();
         $this->TCPDF->Ln();

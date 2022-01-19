@@ -265,7 +265,7 @@ class Engine {
 
         $input['bible'] = array_keys($this->Bibles);
         $input['page_limit'] = min( (int) $input['page_limit'], (int) config('bss.global_maximum_results'));
-        $parallel = $input['multi_bibles'] = (count($input['bible']) > 1) ? TRUE : FALSE;
+        $parallel = $input['multi_bibles'] = (count($input['bible']) > 1);
         $input['data_format'] = (!empty($input['data_format'])) ? $input['data_format'] : $this->default_data_format;
 
         // Secondary search elements are detected automatically by Search class
@@ -285,7 +285,7 @@ class Engine {
 
         $Search     = Search::parseSearch($keywords, $input);
         $is_search  = ($Search) ? TRUE : FALSE;
-        $paginate   = ($is_search && !$input['page_all'] && (!$input['multi_bibles'] || $this->_canPaginate($input['data_format']))) ? TRUE : FALSE;
+        $paginate   = ($is_search && !$input['page_all'] && (!$input['multi_bibles'] || $this->_canPaginate($input['data_format'])));
         $paging     = array();
 
         if(!$is_search && empty($references)) {
@@ -707,7 +707,7 @@ class Engine {
         $response->bibles           = $this->actionBibles($input);
         $response->books            = $this->actionBooks($input);
         $response->shortcuts        = $this->actionShortcuts($input);
-        $response->download_enabled = config('download.enable') ? TRUE : FALSE;
+        $response->download_enabled = (bool) config('download.enable');
         $response->download_limit   = config('download.enable') ? config('download.bible_limit') : FALSE;
         $response->download_formats = $response->download_enabled ? array_values(RenderManager::getGroupedRendererList()) : [];
         $response->search_types     = config('bss.search_types');
@@ -763,9 +763,7 @@ class Engine {
             $composer     = json_decode($composer_txt);
 
             $php_version = substr($composer->require->php, 2);
-            $php_success = (version_compare($input['pher'], $php_version, '>=') == -1) ? TRUE : FALSE;
-            // var_dump($php_version);
-            // var_dump($input['pher']);
+            $php_success = (version_compare($input['pher'], $php_version, '>=') == -1);
 
             $response->php_required_min = $php_success ? NULL : $php_version;
             $response->php_error = !$php_success;
@@ -971,7 +969,7 @@ class Engine {
     protected function _canPaginate($data_format) {
         $data_format = strtolower($data_format);
         $allowed     = ['passage', 'lite'];
-        return (in_array($data_format, $allowed)) ? TRUE : FALSE;
+        return in_array($data_format, $allowed);
     }
 
     protected function _buildPaginator($data, $per_page, $current_page) {
@@ -1031,7 +1029,7 @@ class Engine {
     }
 
     public function setDefaultPageAll($value) {
-        $this->default_page_all = ($value) ? TRUE : FALSE;
+        $this->default_page_all = (bool) $value;
     }
 
     public static function getHardcodedVersion() {
@@ -1092,7 +1090,7 @@ class Engine {
 
     public static function isBibleEnabled($module) {
         $Bible = Bible::findByModule($module);
-        return($Bible && $Bible->installed && $Bible->enabled) ? TRUE : FALSE;
+        return($Bible && $Bible->installed && $Bible->enabled);
     }
 }
 

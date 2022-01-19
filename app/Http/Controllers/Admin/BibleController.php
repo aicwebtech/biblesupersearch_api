@@ -32,7 +32,7 @@ class BibleController extends Controller
         $ImportManagerClass = Helpers::find('\App\ImportManager');
 
         $bootstrap = new \stdClass;
-        $bootstrap->devToolsEnabled  = config('bss.dev_tools') ? TRUE : FALSE;
+        $bootstrap->devToolsEnabled  = (bool) config('bss.dev_tools');
         $bootstrap->premToolsEnabled = config('app.premium');
         $bootstrap->maxUploadSize    = Helpers::maxUploadSize('both');
         $bootstrap->languages  = \App\Models\Language::orderBy('name', 'asc')->get();
@@ -285,7 +285,7 @@ class BibleController extends Controller
         $Bible->save();
 
         $resp = [
-            'success' => ($Bible->enabled) ? TRUE : FALSE,
+            'success' => (bool) $Bible->enabled,
         ];
 
         if(!$Bible->enabled) {
@@ -316,7 +316,7 @@ class BibleController extends Controller
     public function install(Request $request, $id) {
         $Bible = Bible::findOrFail($id);
         $data  = $request->toArray();
-        $enable = (array_key_exists('enable', $data) && $data['enable']) ? TRUE : FALSE;
+        $enable = (array_key_exists('enable', $data) && $data['enable']);
         $Bible->install(FALSE, $enable);
 
         $resp = new \stdClass();
@@ -441,7 +441,7 @@ class BibleController extends Controller
         }
 
         $data  = $request->toArray();
-        $over  = (array_key_exists('overwrite', $data) && $data['overwrite']) ? TRUE : FALSE;
+        $over  = (array_key_exists('overwrite', $data) && $data['overwrite']);
         $Bible->export($over);
 
         $resp = new \stdClass();
@@ -458,7 +458,7 @@ class BibleController extends Controller
     public function meta(Request $request, $id) {
         $Bible  = Bible::findOrFail($id);
         $data   = $request->toArray();
-        $create = (array_key_exists('create_new', $data) && $data['create_new']) ? TRUE : FALSE;
+        $create = (array_key_exists('create_new', $data) && $data['create_new']);
         $Bible->updateMetaInfo($create);
 
         $resp = new \stdClass();
