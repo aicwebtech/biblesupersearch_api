@@ -247,6 +247,10 @@ class Search extends SqlSearch {
     }
 
     public static function standardizeProximityOperators($query, $suffix = '') {
+        if(!$query) {
+            return $query;
+        }
+
         $proc = array('PROC','PROXC'); // Proximity - force within same chapter (Legacy 2.x functionality)
         $prox = array('PROX'); // Proximity - within same book
         // Todo - these can be search terms - how to resolve?

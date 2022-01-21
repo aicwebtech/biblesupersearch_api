@@ -120,7 +120,7 @@ class SqlSearch {
      * @param string $search
      */
     public function setSearch($search) {
-        $this->search = trim(preg_replace('/\s+/', ' ', $search));
+        $this->search = $search ? trim(preg_replace('/\s+/', ' ', $search)) : '';
     }
 
     /**
@@ -736,7 +736,7 @@ class SqlSearch {
      * @return array $parsed
      */
     public static function parseSimpleQueryTerms($query) {
-        $parsed = explode(' ', $query);
+        $parsed = $query ? explode(' ', $query) : [];
         $parsed = array_unique($parsed);
         return $parsed;
     }

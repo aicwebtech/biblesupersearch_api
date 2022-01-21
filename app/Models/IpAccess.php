@@ -103,7 +103,7 @@ class IpAccess extends Model {
             return FALSE;
         }
 
-        $date = (strtotime($date)) ? date('Y-m-d', strtotime($date)) : date('Y-m-d');
+        $date = ($date && strtotime($date)) ? date('Y-m-d', strtotime($date)) : date('Y-m-d');
 
         try {
             $Log = IpAccessLog::where([['ip_id', '=', $this->id], ['date', '=', $date]])->firstOrFail();

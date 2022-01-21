@@ -23,7 +23,7 @@ return [
     |
     */
 
-    'version' => '5.0.0alpha1',
+    'version' => '5.0.beta1',
     // 'version' => '5.0.0',
 
     /*
@@ -32,7 +32,7 @@ return [
     |
     | Soft config holding the last known application version.  
     |
-    | When this dooes NOT equal the application version, an update is triggered 
+    | When this does NOT equal the application version, an update is triggered 
     |
     |--------------------------------------------------------------------------
     |
