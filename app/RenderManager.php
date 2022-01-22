@@ -196,7 +196,6 @@ class RenderManager {
 
                     $Renderer = new $CLASS($Bible);
 
-                    // if(!$Renderer->render($overwrite, $suppress_overwrite_error)) {
                     if(!$Renderer->render(TRUE, $suppress_overwrite_error)) {
                         $this->addErrors($Renderer->getErrors(), $Renderer->getErrorLevel());
                     }

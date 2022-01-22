@@ -196,7 +196,6 @@ function bibleDownloadProcessNext() {
             data: {bible: bible, format: bibleRenderSelectedFormat},
             dataType: 'json',
             success: function(data, status, xhr) {
-                // console.log('success', data);
                 _bibleDownloadItemDone();
             },
             error: function(xhr, status, error) {
@@ -207,18 +206,14 @@ function bibleDownloadProcessNext() {
                     response = false;
                 }
 
-                if(!response) {
-                    bibleDownloadAlert('An unknown error has occurred');
-                }
-                else if(response.results.success) {
+                if(response && response.results && response.results.success) {
                     _bibleDownloadItemDone();
-                }
-                else {
-                    $('#bible_download_dialog_content').append('<span class="float_right">-- ERROR</span><br>');
-                    $('#bible_download_dialog_content').append('    ' + response.errors.join('<br>') );
-                    bibleRenderQueueProcess = false;
                     return;
                 }
+
+                bibleDownloadAlert('An error has occurred, please try again later.');
+                bibleRenderQueueProcess = false;
+                return;
             }
         });
     }
