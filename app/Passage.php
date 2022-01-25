@@ -667,7 +667,7 @@ class Passage {
 
         if($this->chapter_max == $book_com['chapters']) {
             $nav['ncb'] = ($next_book_id) ? $next_book_id : NULL;
-            $nav['ncc'] = ($next_book_id) ? ' 1' : NULL;
+            $nav['ncc'] = ($next_book_id) ? 1 : NULL;
         }
         else {
             $nav['ncb'] = $this->Book->id;
