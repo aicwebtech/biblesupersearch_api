@@ -14,8 +14,8 @@ class AdminController extends Controller
 {
     public function __construct() {
         parent::__construct();
-        $this->middleware('auth:100');
-        $this->middleware(['install', 'migrate'])->except('softwareUninstall');
+        $this->middleware('auth:100')->except('uninstalled');
+        $this->middleware(['install', 'migrate'])->except(['softwareUninstall', 'uninstalled']);
     }
 
     /**
@@ -35,6 +35,10 @@ class AdminController extends Controller
 
     public function help() {
         return view('admin.help');
+    }    
+
+    public function debug() {
+        phpinfo();
     }
 
     public function softwareUpdate(Request $request) {
@@ -62,25 +66,28 @@ class AdminController extends Controller
         return view('admin.update', $vars);
     }
 
-
     public function uninstallPage(Request $request) {
         return view('admin.uninstall');
     }
 
     public function softwareUninstall(Request $request) {
         $confirm = $request->input('confirm');
-        $confirm_bool = ($confirm && $confirm != 'No' && $confirm != 'false') ? TRUE : FALSE;
+        $confirm_bool = ($confirm && $confirm != 'No' && $confirm != 'false');
 
         if(!$confirm_bool) {
             return Redirect::route('admin.main');
         }
 
         if(\App\InstallManager::uninstall($request)) {
-            return view('admin.uninstall_success');
+            return Redirect::route('admin.uninstalled');
         }
         else {
             return view('admin.uninstall_failure');
         }
+    }
+
+    public function uninstalled(Request $request) {
+        return view('admin.uninstall_success');
     }
 
     /**

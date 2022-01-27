@@ -22,6 +22,7 @@ class Engine {
     protected $Bible_Primary = NULL; // Primary Bible version
     protected $languages = array();
     protected $primary_language = NULL;
+    protected $default_language = NULL;
     protected $default_data_format = 'passage';
     protected $default_page_all = FALSE;
     protected $metadata = NULL;
@@ -43,6 +44,8 @@ class Engine {
         $this->primary_language = NULL;
         $this->multi_bibles = FALSE;
 
+        $default_language = $this->default_language ?: config('bss.defaults.language_short');
+
         $modules = $this->_parseInputArray($modules);
         $Bibles = Bible::whereIn('module', $modules)->get();
         $primary = NULL;
@@ -57,7 +60,11 @@ class Engine {
         }
 
         $this->setPrimaryBible($primary);
-        $this->primary_language = $this->primary_language ?: config('bss.defaults.language_short');
+
+        if(!$this->primary_language) {
+            $this->primary_language = $default_language;
+            array_unshift($this->languages, $this->primary_language);
+        }
     }
 
     protected function _parseInputArray($input) {
@@ -81,6 +88,16 @@ class Engine {
 
         $this->Bible_Primary = $this->Bibles[$module];
         return TRUE;
+    }
+
+    public function setDefaultLanguage($lang) {
+        if($this->languageHasBookSupport($lang)) {
+            $this->default_language = $lang;
+            $this->languages[] = $lang;
+            return TRUE;
+        }
+
+        return FALSE;
     }
 
     public function addBible($module) {
@@ -180,6 +197,10 @@ class Engine {
             'page_all' => array(
                 'type'  => 'bool',
                 'default' => $this->default_page_all,
+            ),            
+            'page_limit' => array(
+                'type'  => 'int_pos',
+                'default' => config('bss.pagination.limit'),
             ),
             'highlight_tag' => array(
                 'type'  => 'string',
@@ -219,6 +240,10 @@ class Engine {
                 'type'   => 'int',
                 'default' => config('bss.context.range'),
             ),
+            'language' => [
+                'type' => 'string',
+                'default' => NULL,
+            ],
             'markup' => array(
                 'type'  => 'string',
                 'default' => 'none'
@@ -233,10 +258,14 @@ class Engine {
         $this->metadata = new \stdClass;
         $this->metadata->hash = $Cache->hash;
 
-        !empty($input['bible']) && $this->setBibles($input['bible']);
+
         $input = $this->_sanitizeInput($input, $parsing);
+        $this->setDefaultLanguage($input['language']);
+        !empty($input['bible']) && $this->setBibles($input['bible']);
+
         $input['bible'] = array_keys($this->Bibles);
-        $parallel = $input['multi_bibles'] = (count($input['bible']) > 1) ? TRUE : FALSE;
+        $input['page_limit'] = min( (int) $input['page_limit'], (int) config('bss.global_maximum_results'));
+        $parallel = $input['multi_bibles'] = (count($input['bible']) > 1);
         $input['data_format'] = (!empty($input['data_format'])) ? $input['data_format'] : $this->default_data_format;
 
         // Secondary search elements are detected automatically by Search class
@@ -256,7 +285,7 @@ class Engine {
 
         $Search     = Search::parseSearch($keywords, $input);
         $is_search  = ($Search) ? TRUE : FALSE;
-        $paginate   = ($is_search && !$input['page_all'] && (!$input['multi_bibles'] || $this->_canPaginate($input['data_format']))) ? TRUE : FALSE;
+        $paginate   = ($is_search && !$input['page_all'] && (!$input['multi_bibles'] || $this->_canPaginate($input['data_format'])));
         $paging     = array();
 
         if(!$is_search && empty($references)) {
@@ -392,7 +421,7 @@ class Engine {
         $results = $this->_formatDataStructure($results, $input, $Passages, $Search);
 
         if($input['multi_bibles'] && $paginate) {
-            $Paginator = $this->_buildPaginator($results, config('bss.pagination.limit'), $input['page']);
+            $Paginator = $this->_buildPaginator($results, $input['page_limit'], $input['page']);
             $results = $Paginator->all();
             $paging = $this->_getCleanPagingData($Paginator);
         }
@@ -507,7 +536,7 @@ class Engine {
     }
 
     protected function _renderDownloadHelper($input, $action = 'render') {
-        $download = ($action == 'download') ? TRUE : FALSE;
+        $download = ($action == 'download');
 
         if(empty($input['bible'])) {
             $this->addError('Bible is required', 4);
@@ -537,13 +566,13 @@ class Engine {
         }
 
         if(array_key_exists('zip', $input)) {
-            $zip = ($input['zip']) ? TRUE : FALSE;
+            $zip = (bool) ($input['zip']);
         }
         else {
             $zip = FALSE;
         }
 
-        $bypass_limit = (array_key_exists('bypass_limit', $input) && $input['bypass_limit']) ? TRUE : FALSE;
+        $bypass_limit = (array_key_exists('bypass_limit', $input) && $input['bypass_limit']);
 
         $sanitized = [
             'format'    => $format,
@@ -558,9 +587,16 @@ class Engine {
 
         if($action == 'render_needed') {
             $bibles_needing_render = $Manager->getBiblesNeedingRender(NULL, FALSE, FALSE, 0);
-            $success = ($bibles_needing_render === FALSE || count($bibles_needing_render) > 0) ? FALSE : TRUE;
+            $success = !($bibles_needing_render === FALSE || count($bibles_needing_render) > 0);
             $Manager->cleanUpTempFiles();
-            $response->render_needed = ($success) ? FALSE : TRUE;
+            $response->render_needed = !($success);
+            $response->bibles_needing_render = [];
+
+            if(is_array($bibles_needing_render)) {
+                foreach($bibles_needing_render as $Bible) {
+                    $response->bibles_needing_render[] = $Bible->module;
+                }
+            }
         }
         else {
             // if($bypass_limit) {
@@ -571,7 +607,6 @@ class Engine {
                 $success = ($download) ? $Manager->download($bypass_limit) : $Manager->render(FALSE, TRUE, $bypass_limit);
                 // $success = ($download) ? $Manager->download() :  $Manager->getBiblesNeedingRender();
             // }
-
         }
 
         if(!$success) {
@@ -672,13 +707,33 @@ class Engine {
         $response->bibles           = $this->actionBibles($input);
         $response->books            = $this->actionBooks($input);
         $response->shortcuts        = $this->actionShortcuts($input);
-        $response->download_enabled = config('download.enable') ? TRUE : FALSE;
+        $response->download_enabled = (bool) config('download.enable');
         $response->download_limit   = config('download.enable') ? config('download.bible_limit') : FALSE;
         $response->download_formats = $response->download_enabled ? array_values(RenderManager::getGroupedRendererList()) : [];
         $response->search_types     = config('bss.search_types');
-        $response->name             = trans('app.name');
+        $response->name             = config('app.name');
+        $response->hash             = $this->_getNameHash();
         $response->version          = config('app.version');
         $response->environment      = config('app.env');
+        return $response;
+    }
+
+    private function _getNameHash() {
+        return hash('sha256', config('app.name_static'));
+    }
+
+    public function actionStaticsChanged($input) {
+        $response = new \stdClass;
+        $response->success = TRUE;
+        $response->dates = new \stdClass;
+
+        $response->dates->bible     = strtotime(Bible::max('updated_at'));                  // Most recent Bible change
+        $response->dates->shortcuts = strtotime(Models\Shortcuts\En::max('updated_at'));    // Most recent shortcut change
+        $response->dates->configs   = (int) config('app.configs_updated_at');               // most recent config change, including most recent update
+
+        $response->updated = max((array) $response->dates);
+        // $response->updated_dt = date('Y-m-d H:i:s', $response->updated);
+
         return $response;
     }
 
@@ -688,7 +743,7 @@ class Engine {
         $namespaced_class = 'App\Models\Shortcuts\\' . ucfirst($language);
 
         if(!class_exists($namespaced_class)) {
-            $namespaced_class = 'App\Models\Shortcuts\\' . config('bss.defaults.language_short');
+            $namespaced_class = 'App\Models\Shortcuts\\' . ucfirst( config('bss.defaults.language_short') );
         }
 
         $Shortcuts = $namespaced_class::select('id', 'name', 'reference')->orderBy('id', 'ASC') ->where('display', 1) -> get() -> all();
@@ -698,6 +753,7 @@ class Engine {
     public function actionVersion($input) {
         $response = new \stdClass;
         $response->name         = config('app.name');
+        $response->hash         = $this->_getNameHash();
         $response->version      = config('app.version');
         $response->environment  = config('app.env');
 
@@ -707,9 +763,7 @@ class Engine {
             $composer     = json_decode($composer_txt);
 
             $php_version = substr($composer->require->php, 2);
-            $php_success = (version_compare($input['pher'], $php_version, '>=') == -1) ? TRUE : FALSE;
-            // var_dump($php_version);
-            // var_dump($input['pher']);
+            $php_success = (version_compare($input['pher'], $php_version, '>=') == -1);
 
             $response->php_required_min = $php_success ? NULL : $php_version;
             $response->php_error = !$php_success;
@@ -722,7 +776,7 @@ class Engine {
         $response = [];
         
         if(!array_key_exists('strongs', $input) || empty($input['strongs'])) {
-            return $this->addError( __('errors.strongs_input_required') );
+            return $this->addError( __('errors.strongs_input_required'), 4);
         }
 
         $strongs = strip_tags(trim($input['strongs']));
@@ -915,7 +969,7 @@ class Engine {
     protected function _canPaginate($data_format) {
         $data_format = strtolower($data_format);
         $allowed     = ['passage', 'lite'];
-        return (in_array($data_format, $allowed)) ? TRUE : FALSE;
+        return in_array($data_format, $allowed);
     }
 
     protected function _buildPaginator($data, $per_page, $current_page) {
@@ -935,7 +989,7 @@ class Engine {
             if(array_key_exists($index, $input) && !empty($input[$index])) {
                 switch($s['type']) {
                     case 'bool':
-                        $value = ($input[$index]) ? TRUE : FALSE;
+                        $value = (bool) $input[$index];
                         $value = (is_string($input[$index]) && ($input[$index] == 'false' || $input[$index] == 'off' || $input[$index] == 'no')) ? FALSE : $value;
                         break;
                     case 'array_string':
@@ -944,10 +998,15 @@ class Engine {
                         $value = $input[$index];
                         break;
                     case 'int':
-                        $value = intval($input[$index]);
+                        $value = (int) $input[$index];
+                        break;                    
+                    case 'int_pos':
+                        $value = (int) $input[$index];
+                        $value = $value < 0 ? NULL : $value;
                         break;
                     case 'string':
-                        $value = strval($input[$index]);
+                        $value = (string) $input[$index];
+                        $value = str_replace("\n", ' ', $value);
                         break;
                     default:
                         $value = $input[$index];
@@ -970,7 +1029,7 @@ class Engine {
     }
 
     public function setDefaultPageAll($value) {
-        $this->default_page_all = ($value) ? TRUE : FALSE;
+        $this->default_page_all = (bool) $value;
     }
 
     public static function getHardcodedVersion() {
@@ -1031,7 +1090,7 @@ class Engine {
 
     public static function isBibleEnabled($module) {
         $Bible = Bible::findByModule($module);
-        return($Bible && $Bible->installed && $Bible->enabled) ? TRUE : FALSE;
+        return($Bible && $Bible->installed && $Bible->enabled);
     }
 }
 

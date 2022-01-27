@@ -1,26 +1,46 @@
 <?php
-
-class TestCase extends Illuminate\Foundation\Testing\TestCase
-{
-    /**
-     * The base URL to use while testing the application.
-     *
-     * @var string
-     */
-    protected $baseUrl = 'http://localhost';
-    protected $use_named_bindings = FALSE;
+// For older, non-namespaced tests
+namespace {
     
-    /**
-     * Creates the application.
-     *
-     * @return \Illuminate\Foundation\Application
-     */
-    public function createApplication()
+    // todo: use namespaces on all tests
+    class TestCase extends Illuminate\Foundation\Testing\TestCase
     {
-        $app = require __DIR__.'/../bootstrap/app.php';
+        /**
+         * The base URL to use while testing the application.
+         *
+         * @var string
+         */
+        protected $baseUrl = 'http://localhost';
+        protected $use_named_bindings = FALSE;
+        
+        /**
+         * Creates the application.
+         *
+         * @return \Illuminate\Foundation\Application
+         */
+        public function createApplication()
+        {
+            ini_set('memory_limit','512M');
+            $app = require __DIR__.'/../bootstrap/app.php';
 
-        $app->make(Illuminate\Contracts\Console\Kernel::class)->bootstrap();
-        $this->use_named_bindings = config('app.query_use_named_placeholders');
-        return $app;
+            $app->make(Illuminate\Contracts\Console\Kernel::class)->bootstrap();
+            $this->use_named_bindings = config('app.query_use_named_placeholders');
+            return $app;
+        }
+
+        public function tearDown(): void
+        {
+            $this->beforeApplicationDestroyed(function () {
+                DB::disconnect();
+            });
+
+            parent::tearDown();
+        }
     }
 }
+
+// For newer, namespaced tests
+namespace Tests {
+    class TestCase extends \TestCase {}
+}
+

@@ -74,7 +74,6 @@ class RequestTest extends TestCase {
         $Engine = new Engine();
         $Engine->setDefaultDataType('raw');
         $results = $Engine->actionQuery(['bible' => 'kjv', 'request' => 'faith', 'whole_words' => TRUE, 'page_all' => TRUE]);
-        //print_r($Engine->getErrors());
         $this->assertFalse($Engine->hasErrors());
         $this->assertCount(231, $results['kjv']);
 
@@ -82,9 +81,9 @@ class RequestTest extends TestCase {
         $this->assertFalse($Engine->hasErrors());
         $this->assertCount(6, $results['kjv']); // 7 if module has Pauline postscripts
 
-//        $results = $Engine->actionQuery(['bible' => 'kjv', 'request' => 'Peter John', 'whole_words' => FALSE, 'page_all' => TRUE]);
-//        $this->assertFalse($Engine->hasErrors());
-//        $this->assertCount(6, $results['kjv']);
+        $results = $Engine->actionQuery(['bible' => 'kjv', 'request' => 'Peter John', 'whole_words' => FALSE, 'page_all' => TRUE]);
+        $this->assertFalse($Engine->hasErrors());
+        $this->assertCount(19, $results['kjv']);
     }    
 
     // In this case, the request and reference fields are both references.

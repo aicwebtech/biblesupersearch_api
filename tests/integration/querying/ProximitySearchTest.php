@@ -73,7 +73,6 @@ class ProximitySearchTest extends TestCase {
         ";
 
         // $test_count = VerseStandard::proximityQueryTest($query);  // returns 96
-        // var_dump($test_count);
         $this->assertCount(96, $results['kjv']);
     }
 

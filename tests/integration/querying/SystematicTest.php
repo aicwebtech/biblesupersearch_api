@@ -54,7 +54,6 @@ class SystematicTest extends TestCase {
 
                     $key = $this->variable_field_keys[$k];
                     $val = $this->variable_field_values[$k][$b];
-                    // var_dump($k, $b, $key, $val, $this->variable_field_values[$k]);
                     $query[$key] = $val;
                 }
 

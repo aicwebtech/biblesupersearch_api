@@ -36,7 +36,9 @@ class Analyzer extends ImporterAbstract {
     protected $source = "This Bible imported from Bible Analyzer <a href='http://www.bibleanalyzer.com/download.htm'>http://www.bibleanalyzer.com/download.htm</a>";
 
     protected function _importHelper(Bible &$Bible) {
-        ini_set("memory_limit", "50M");
+        if(config('app.env') != 'testing') {
+            ini_set("memory_limit", "50M");
+        }
 
         // Script settings
         $dir    = $this->getImportDir();
@@ -80,7 +82,7 @@ class Analyzer extends ImporterAbstract {
         $table  = $Verses->getTable();
         $st = ($testaments == 'nt') ? 40 : 0;
 
-        if(\App::runningInConsole()) {
+        if(config('app.env') != 'testing' && \App::runningInConsole()) {
             echo('Installing: ' . $module . PHP_EOL);
         }
 

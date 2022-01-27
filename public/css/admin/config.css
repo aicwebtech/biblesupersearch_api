@@ -1,0 +1,10 @@
+#retained_file_settings {
+    /*background-color: #999;*/
+    background-color: #b1b7da;
+    /*opacity: 0.3;*/
+}
+
+.content {
+    max-width: 1200px;
+    margin: 0 auto;
+}

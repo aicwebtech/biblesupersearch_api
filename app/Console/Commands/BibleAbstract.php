@@ -20,7 +20,8 @@ abstract class BibleAbstract extends Command {
 
     public function handle() {
         if($this->option('list')) {
-            return $this->_listBibles();
+            $this->_listBibles();
+            return;
         }
 
         if($this->option('all')) {

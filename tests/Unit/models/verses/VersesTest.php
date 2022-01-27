@@ -157,8 +157,12 @@ class VersesTest extends TestCase
         $Bibles = Bible::where('installed', 1)->get();
 
         foreach($Bibles as $Bible) {
+            if(strpos($Bible->module, 'test_bible') !== FALSE) {
+                continue;
+            }
+
             $Verses = $Bible->verses();
-            $this->assertTrue( Schema::hasTable($Verses->getTable()), 'No table for module: ' . $Verses->getTable() );
+            $this->assertTrue( Schema::hasTable($Verses->getTable()), 'No table for module: ' . $Bible->module . ', table:' . $Verses->getTable() );
             $verses_class_static = Bible::getVerseClassNameByModule($Bible->module);
             $verses_class = $Bible->getVerseClassName();
             $this->assertInstanceOf('App\Models\Bible', $Bible);
@@ -180,10 +184,14 @@ class VersesTest extends TestCase
         $Bibles = Bible::where('enabled', 1)->get();
 
         foreach($Bibles as $Bible) {
+            if(strpos($Bible->module, 'test_bible') !== FALSE) {
+                continue;
+            }
+
             // Make sure it's installed and the verses table exists
             $Verses = $Bible->verses();
             $this->assertEquals(1, $Bible->installed, $Bible->module . ' is enabled but NOT installed.');
-            $this->assertTrue( Schema::hasTable($Verses->getTable()), 'No table for module: ' . $Verses->getTable());
+            $this->assertTrue( Schema::hasTable($Verses->getTable()), 'No table for module: ' . $Bible->module . ', table:' . $Verses->getTable() );
         }
     }
 }

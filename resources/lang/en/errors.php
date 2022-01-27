@@ -3,6 +3,7 @@
 /* Error messages */
 
 return array(
+    'app_not_installed' => 'API present but not installed, please contact webmaster.',
     'no_query'  => 'No query terms provided. Please specify search term(s) and/or passage reference(s).',
     'no_results' => 'Your search produced no results.',
     'triple_request' => 'Cannot use request, search and reference at the same time.  Please inform webmaster of UI design error.',
@@ -32,4 +33,6 @@ return array(
     'result_limit_reached' => 'Your search was limited to :maximum results.  Please refine your search if necessary.',
     'strongs_input_required' => 'Strong\'s Number required',
     'strongs_not_found' => 'Strong\'s Number not found',
+    'to_many_download' => 'Too many Bibles requested for download.  You can request a maximum of :maximum Bibles at once.',
+    'bible_no_download' => 'Download of Bible not allowed: :module',
 );

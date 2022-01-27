@@ -20,24 +20,37 @@ class ApiAccess
      * @return mixed
      */
     public function handle($request, Closure $next) {
-        $host = (array_key_exists('HTTP_REFERER', $_SERVER)) ? $_SERVER['HTTP_REFERER'] : NULL;
-        // $ip = gethostbyname($host); // Cannot do this - as this is for IP v4 ONLY
-        // $ip = ($ip == $host) ? $_SERVER['REMOTE_ADDR'] : $ip;
-        // $ip = ($host) ? $_SERVER['REMOTE_ADDR'] : NULL;
+
+        $err  = NULL;
+        $code = NULL;
+
+        if(!config('app.installed')) {
+            $err = 'errors.app_not_installed';
+            $code = 500;
+        }
         
-        $ip = $_SERVER['REMOTE_ADDR'];
-        $IP = IpAccess::findOrCreateByIpOrDomain($ip, $host);
+        if(!$err) {        
+            $host = (array_key_exists('HTTP_REFERER', $_SERVER)) ? $_SERVER['HTTP_REFERER'] : 'localhost';
+            $ip   = (array_key_exists('REMOTE_ADDR', $_SERVER))  ? $_SERVER['REMOTE_ADDR']  : '127.0.0.1';
+            // $ip = gethostbyname($host); // Cannot do this - as this is for IP v4 ONLY
+            // $ip = ($ip == $host) ? $_SERVER['REMOTE_ADDR'] : $ip;
+            // $ip = ($host) ? $_SERVER['REMOTE_ADDR'] : NULL;
+            
+            $IP = IpAccess::findOrCreateByIpOrDomain($ip, $host);
 
-        if(!$IP->incrementDailyHits()) {
-            if($IP->isAccessRevoked()) {
-                $err  = 'errors.access_revoked';
-                $code = 403;
+            if(!$IP->incrementDailyHits()) {
+                if($IP->isAccessRevoked()) {
+                    $err  = 'errors.access_revoked';
+                    $code = 403;
+                }
+                else {
+                    $err  = 'errors.hit_limit_reached';
+                    $code = 500;
+                }
             }
-            else {
-                $err  = 'errors.hit_limit_reached';
-                $code = 500;
-            }
-
+        }
+        
+        if($err) {            
             $response = new \stdClass;
             $response->errors = array(trans($err));
             $response->error_level = 4;

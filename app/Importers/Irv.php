@@ -81,7 +81,6 @@ class Irv extends ImporterAbstract {
 
             for($i = 0; $i < $Zip->numFiles; $i++) {
                 $filename = $Zip->getNameIndex($i);
-                // var_dump($filename);
                 $this->_zipImportHelper($Zip, $filename);
             }
 

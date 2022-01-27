@@ -52,8 +52,6 @@ class Database {
             DB::table($db_table)->truncate();
         }
 
-        //var_dump($file);
-
         if(!is_file($path)) {
             throw new \Exception('Warning: Sql import file not found: ' . $display_path);
             return;
@@ -64,7 +62,7 @@ class Database {
         foreach($contents as $line) {
             $line = trim($line);
 
-            if(empty($line) || $line{0} == '/' || $line{0} == '*') {
+            if(empty($line) || $line[0] == '/' || $line[0] == '*') {
                 continue; // Ignore comments
             }
 
@@ -74,7 +72,6 @@ class Database {
             catch (\ErrorException $ex) {
                 $line = str_replace('`%s', '`' . $prefix, $line);
             }
-            //echo $line . PHP_EOL;
 
             try {
                 \DB::insert($line);
@@ -109,7 +106,7 @@ class Database {
         }
 
         $contents = array_values(file($path, FILE_SKIP_EMPTY_LINES));
-        $force_null = ($direct_insert_threshold) ? TRUE : FALSE; 
+        $force_null = ($direct_insert_threshold); 
 
         foreach($contents as $key => $line) {
             if($key == 0) {
@@ -123,6 +120,7 @@ class Database {
                 foreach($map as $mkey => $l) {
                     if(array_key_exists($mkey, $raw)) {
                         $mapped[$l] = $raw[$mkey];
+                        $mapped[$l] = ($mapped[$l] == '') ? NULL : $mapped[$l]; 
                     }
                     else if($force_null) {
                         $mapped[$l] = NULL;

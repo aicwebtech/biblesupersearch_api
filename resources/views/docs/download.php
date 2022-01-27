@@ -6,4 +6,4 @@
     $BibleSuperSearchDownloadLimit   = config('download.bible_limit');
     $BibleSuperSearchIsAdmin         = $admin;
 
-    include $_SERVER['DOCUMENT_ROOT'] . '/widgets/download/download.php';
+    include public_path() . '/widgets/download/download.php';

@@ -27,7 +27,7 @@ abstract class FormatterAbstract {
         $this->results      = $results;
         $this->Passages     = $Passages;
         $this->Search       = $Search;
-        $this->is_search    = ($Search) ? TRUE : FALSE;
+        $this->is_search    = (bool) $Search;
         $this->languages    = $languages;
     }
 
@@ -65,15 +65,6 @@ abstract class FormatterAbstract {
                 unset($this->Passages[$key]);
             }
         }
-
-        // foreach($results as $bible => $unclaimed) {
-        //     if(count($unclaimed) > 0) {
-        //         echo('some verses not claimed');
-        //         var_dump($bible);
-        //         print_r($unclaimed);
-        //         return FALSE;
-        //     }
-        // }
 
         return TRUE;
     }

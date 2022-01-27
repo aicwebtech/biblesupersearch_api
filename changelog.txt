@@ -1,5 +1,27 @@
 Bible SuperSearch API Changelog
 
+= 5.0.0 / Feb __, 2022
+* Bugfix: Bible admin: 'Description' label no longer shifts when opening the description.
+* Bugfix: API single action error handler sometimes gave generic, not descriptive error messages.
+* Bugfix: Fixed longstanding issues when using exact phrases within boolean searches.
+* Rebranding 'stand-alone' client to Universal Client
+* Improvement: Added ability to change the pagination results per page limit.
+* Improvement: MySword import can now import .bible.zip and .bible.gz files without extracting them first.
+* Added more languages as options
+
+* Added new Bibles with Strong's numbers:
+    + Chinese Union
+    + American Standard Version
+    + Reina Valera 1909 (Spanish)
+
+* Added Bible: NET Bible® 
+
+* Added German Bibles:
+    + Luther 1912
+    + Elberfelder (1871)
+    + Elberfelder (1905)
+    + Schlachter Bibel
+
 = 4.5.0 / Oct 9, 2021 (soft release)
 * Admin: Added filtering on Bible manager.
 * Admin: Made Bible manager grid more responsive (not perfect).

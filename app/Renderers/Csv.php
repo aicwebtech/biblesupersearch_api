@@ -17,10 +17,15 @@ class Csv extends RenderAbstract {
      */
     protected function _renderStart() {
         $filepath = $this->getRenderFilePath(TRUE);
+        
+        if(is_file($filepath)) {
+            unlink($filepath);
+        }
+
         $this->handle = fopen($filepath, 'w');
         fputcsv($this->handle, [$this->Bible->name]);
         fwrite($this->handle, PHP_EOL . PHP_EOL);
-        fwrite($this->handle, $this->_getCopyrightStatement(TRUE));
+        fwrite($this->handle, '"' . $this->_getCopyrightStatement(TRUE, '  ') . '"');
         fwrite($this->handle, PHP_EOL . PHP_EOL);
         fputcsv($this->handle, ['Verse ID','Book Name', 'Book Number', 'Chapter', 'Verse', 'Text']);
         return TRUE;

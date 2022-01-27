@@ -11,14 +11,14 @@ class AddDownloadConfigs extends Migration
         [
             'key'       => 'download.enable',
             'descr'     => 'Downloads Enabled',
-            'default'   => FALSE,
+            'default'   => TRUE,
             'global'    => 1,
             'type'      => 'bool',
         ],
         [
             'key'       => 'download.tab_enable',
             'descr'     => 'Downloads Tab Enabled',
-            'default'   => FALSE,
+            'default'   => TRUE,
             'global'    => 1,
             'type'      => 'bool',
         ],

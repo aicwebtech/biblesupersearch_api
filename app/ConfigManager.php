@@ -29,6 +29,10 @@ class ConfigManager {
         $config_values = [];
 
         foreach($ConfigValues as $Value) {
+            if(!$Value->config) {
+                continue;
+            }
+
             $config_values[$Value->config->key] = ($return_models) ? $Value : $Value->value;
         }
 
@@ -111,6 +115,7 @@ class ConfigManager {
 
     static function setConfigs($config_values, $user_id = 0) {
         $ConfigValues = self::getConfigs($user_id, TRUE);
+        $config_values['app.configs_updated_at'] = time();
 
         foreach($config_values as $key => $value) {
             $key = str_replace('__', '.', $key);
@@ -129,7 +134,7 @@ class ConfigManager {
     static public function getValueAttribute($value, $type) {
         switch($type) {
             case 'int':
-                $val = intval($value);
+                $val = (int) $value;
                 break;
 
             case 'array':
@@ -141,7 +146,7 @@ class ConfigManager {
                 break;
 
             case 'bool':
-                $val = ($value) ? TRUE : FALSE;
+                $val = (bool) $value;
                 break;
 
             case 'string':
@@ -155,7 +160,7 @@ class ConfigManager {
     static public function setValueAttribute($value, $type) {
         switch($type) {
             case 'int':
-                $val = intval($value);
+                $val = (int) $value;
                 break;
 
             case 'array':

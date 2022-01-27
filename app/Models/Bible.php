@@ -33,7 +33,13 @@ class Bible extends Model {
             'module'        => [
                 'required',
                 Rule::unique('bibles')->ignore($bible_id),
-                'alpha_dash',
+                function($attribute, $value, $fail) {
+                    $valid = static::validateModule($value);
+
+                    if(!$valid) {
+                        $fail('Module can contain only lowercase letters, numbers, and underscores.  The first two characters must be letters');
+                    }
+                },
                 'max:100'
             ],
             'lang_short'            => 'required|alpha|min:2|max:3',
@@ -92,7 +98,7 @@ class Bible extends Model {
     // List of fields to NOT export when creating modules
     protected $do_not_export = ['id', 'created_at', 'updated_at', 'enabled', 'installed', 'installed_at', 'needs_update', 'module_updated_at'];
 
-    // List of fileds to not use as metadata (in addition to those contained in $do_not_export)
+    // List of fileds to not use as metadata (in addition to those contained in $this->do_not_export)
     protected $do_not_meta = ['rank', 'module_v2', 'importer', 'import_file', 'copyright_id', 'hebrew_text_id', 'greek_text_id', 'translation_type_id'];
 
     public $migrate_code = 0;  // 0 = no change, 1 = deleted unnessessary file, 2 = moved file, 3 = file does not exist
@@ -262,7 +268,7 @@ class Bible extends Model {
 
         $this->installed_at = date('Y-m-d H:i:s');
         $this->save();
-        return ($res === TRUE) ? TRUE : FALSE;
+        return ($res === TRUE);
     }
 
     protected function _getExportInfo() {
@@ -348,7 +354,7 @@ class Bible extends Model {
 
         $this->installed_at = date('Y-m-d H:i:s');
         $this->save();
-        return ($res === TRUE) ? TRUE : FALSE;
+        return ($res === TRUE);
     }    
 
     public function revertMetaInfo() {
@@ -374,7 +380,7 @@ class Bible extends Model {
             $Zip->close();
         }
 
-        return ($res === TRUE) ? TRUE : FALSE;
+        return ($res === TRUE);
     }
 
     public function migrateModuleFile($dry_run = FALSE) {
@@ -428,6 +434,15 @@ class Bible extends Model {
 
         if(is_file($file_path_un)) {
             unlink($file_path_un);
+        }
+    }
+
+    public function deleteRenderedFiles() {
+        $Renderings = \App\Models\Rendering::where('module', $this->module)->get();
+
+        foreach($Renderings as $R) {
+            $R->deleteRenderedFile();
+            $R->delete();
         }
     }
 
@@ -489,7 +504,7 @@ class Bible extends Model {
 
     public static function isEnabled($module) {
         $Bible = static::findByModule($module);
-        return ($Bible && $Bible->enabled) ? TRUE : FALSE;
+        return ($Bible && $Bible->enabled);
     }
 
     public static function getModulePath($short = FALSE) {
@@ -713,43 +728,62 @@ class Bible extends Model {
      * @return string $class_name;
      */
     public static function getVerseClassNameByModule($module) {
+        if(!static::validateModule($module)) {
+            return FALSE;
+        }
+
         $model_class = studly_case($module);
         $namespace = __NAMESPACE__ . '\Verses';
         $class_name = $namespace . '\\' . $model_class;
 
         if (!class_exists($class_name)) {
-            // die('here');
-
-            // var_dump($module);
-            // Atempt to use Anonymous class here, not working
-            // $AnonClass = new class([], $module) extends StandardVerses {
-            //     protected $hasClass = FALSE;
-
-            //     function __construct($attributes = [], $module = NULL) {
-            //         // var_dump($module);
-            //         // die();
-            //         $this->module = $module;
-            //         $this->table = static::getTableByModule($module);
-            //         // var_dump($this->table);
-            //         parent::__construct($attributes);
-            //         var_dump($this->table);
-            //         die();
-            //     }
-            // };
-
-            // class_alias(get_class($AnonClass), $class_name);
+            $table = StandardVerses::getTableByModule($module);
+            $perm_file = (func_num_args() >= 2) ? func_get_arg(1) : FALSE;
 
             $code = '
                 namespace ' . $namespace . ';
                 class ' . $model_class . ' extends VerseStandard {
-                        protected $hasClass = FALSE;
+                    protected $hasClass = FALSE;
+                    protected $table = \'' . $table . '\';
                 }
             ';
 
-            eval($code); // Need this working on live server.
+            if($perm_file && is_writable(dirname(__FILE__) . '/Verses')) {
+                // Create permanent class file and include it
+                $filepath = dirname(__FILE__) . '/Verses/' . $model_class . '.php';
+                file_put_contents($filepath, '<?php ' . $code);
+                include($filepath);
+            }
+            else if(is_writable(sys_get_temp_dir())) {
+                // Create temp class file, include it, then delete it
+                $tempfile = tempnam(sys_get_temp_dir(), $model_class . '.php');
+                file_put_contents($tempfile, '<?php ' . $code);
+                include($tempfile);
+                unlink($tempfile);
+            }
+            else {
+                // Fallback to eval
+                eval($code); // Need this working on live server.
+            }
         }
 
         return $class_name;
+    }
+
+    public static function validateModule($module) {
+        if(empty($module)) {
+            return FALSE;
+        }
+
+        if(preg_match('/[^a-z_0-9]/', $module)) {
+            return FALSE;
+        }        
+
+        if(!preg_match('/^[a-z]{2}/', $module)) {
+            return FALSE;
+        }
+
+        return TRUE;
     }
 
     /**

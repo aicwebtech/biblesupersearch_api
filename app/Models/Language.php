@@ -13,7 +13,7 @@ class Language extends Model {
     ];
 
     public function rtl() {
-        return $this->rtl ? TRUE : FALSE;
+        return (bool) $this->rtl;
         // return static::isRtl($this->code);
     }
 
@@ -46,6 +46,14 @@ class Language extends Model {
         ];
 
         \App\Importers\Database::importCSV('languages.csv', $map, '\\' . get_called_class(), 'code');
+    }    
+
+    public static function migrateFromCsv2() {
+        $map = [
+            'code', 'name', 'native_name', 'iso_name', 'iso_639_2', 'rtl', 'notes'
+        ];
+
+        \App\Importers\Database::importCSV('languages_2.csv', $map, '\\' . get_called_class(), 'code');
     }
 
     public static function isRtl($lang) {
@@ -55,7 +63,7 @@ class Language extends Model {
             return FALSE;
         }
 
-        return ($Language->rtl) ? TRUE : FALSE;
+        return (bool) $Language->rtl;
     }
 
     public static function findByCode($code) {

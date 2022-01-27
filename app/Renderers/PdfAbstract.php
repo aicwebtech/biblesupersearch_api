@@ -46,6 +46,7 @@ abstract class PdfAbstract extends RenderAbstract {
     protected $pdf_verses_paragraph     = FALSE;     // TRUE, FALSE or 'auto'  'auto' will set it to true if Bible has Paragraph markings in it's text
     protected $pdf_break_new_testament  = NULL; // none, column, page
     protected $pdf_break_new_book       = NULL; // none, column, page
+    protected $pdf_suppress_write_err   = FALSE;
 
     protected $pdf_language_overrides = [
         'ar' => [
@@ -68,6 +69,9 @@ abstract class PdfAbstract extends RenderAbstract {
             'pdf_columns' => 2,
             'pdf_column_width' => 95,
             'pdf_text_align' => 'L',
+        ],
+        'he' => [
+            'pdf_suppress_write_err' => TRUE,
         ],
     ];
 
@@ -162,12 +166,9 @@ abstract class PdfAbstract extends RenderAbstract {
     }
 
     protected function _renderSingleVerse($verse) {
-        if($verse->id > 1000) {
-            // return;
-        }
 
         if($this->pdf_verses_paragraph === 'auto') {
-            $this->pdf_verses_paragraph = (strpos($verse->text, '¶') !== FALSE) ? TRUE : FALSE;
+            $this->pdf_verses_paragraph = (strpos($verse->text, '¶') !== FALSE);
         }
 
         $this->TCPDF->setCurrentVerse($verse);
@@ -251,7 +252,17 @@ abstract class PdfAbstract extends RenderAbstract {
         // $html = str_replace('  ', '&nbsp;&nbsp;', $text); // for some reason THIS takes 16 min for the KJV!
         // $html = $text;
         $this->TCPDF->setFont($this->pdf_font_family, '', $this->pdf_text_size);
+        
+        if($this->pdf_suppress_write_err) {
+            $er_cache = error_reporting();
+            error_reporting(0);
+        }
+
         $this->TCPDF->WriteHTML($html, TRUE, FALSE, TRUE, FALSE, $this->pdf_text_align);
+
+        if($this->pdf_suppress_write_err) {
+            error_reporting($er_cache);
+        }
         
         return;
 
@@ -341,7 +352,7 @@ abstract class PdfAbstract extends RenderAbstract {
             $this->_renderTestamentHeader(__('basic.new_testament'));
         }
 
-        $this->in_psalms = ($book == 19) ? TRUE : FALSE;
+        $this->in_psalms = ($book == 19);
         $this->TCPDF->setFont($this->pdf_font_family, $this->pdf_book_style, $this->pdf_book_size);
         $this->TCPDF->Ln();
         $this->TCPDF->Ln();

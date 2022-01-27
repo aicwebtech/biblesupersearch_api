@@ -40,6 +40,7 @@
         'highlight',
         'highlight_tag',
         'page',
+        'page_limit',
         'page_all',
         'context',
         'context_range',

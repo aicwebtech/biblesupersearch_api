@@ -58,7 +58,7 @@ class Search extends SqlSearch {
         // Check for special search identifiers
         $special_ops   = ['~p', '~c', '~b', '~l'];
         $special_types = ['proximity', 'chapter', 'book']; // strongs??
-        $is_special    = (in_array($search_type, $special_types)) ? TRUE : FALSE;
+        $is_special    = (in_array($search_type, $special_types));
 
         if(!$is_special && ($search_type == 'boolean' || $search_type == 'and')) {
             $is_special = static::containsProximityOperators($search);
@@ -216,7 +216,7 @@ class Search extends SqlSearch {
      * @return boolean
      */
     public static function isTermStrongs($term) {
-        return (preg_match('/^[GHgh][0-9]+$/', $term)) ? TRUE : FALSE;
+        return (preg_match('/^[GHgh][0-9]+$/', $term));
     }
 
     public static function getTermType($term) {
@@ -247,6 +247,10 @@ class Search extends SqlSearch {
     }
 
     public static function standardizeProximityOperators($query, $suffix = '') {
+        if(!$query) {
+            return $query;
+        }
+
         $proc = array('PROC','PROXC'); // Proximity - force within same chapter (Legacy 2.x functionality)
         $prox = array('PROX'); // Proximity - within same book
         // Todo - these can be search terms - how to resolve?

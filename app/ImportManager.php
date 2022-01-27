@@ -10,7 +10,7 @@ class ImportManager {
 
     public $test_mode = FALSE;
 
-    // List / map of importers that are accessible via HTTP request
+    // Registry / map of importers that are accessible via HTTP request
     protected static $type_map = [
         'analyzer' => [
             'name'  => 'Bible Analyzer',
@@ -48,7 +48,7 @@ class ImportManager {
             'name'  => 'MySword',
             'desc'  => 'Imports a Bible from an MySword / MyBible module.',
             'url'   => 'https://mysword.info/download-mysword/bibles',
-            'ext'   => ['mybible'],
+            'ext'   => ['mybible', 'mybible.zip', 'mybible.gz'],
             'kind'  => 'MySword',
             'class' => \App\Importers\MySword::class,
         ],         
@@ -115,7 +115,7 @@ class ImportManager {
             return TRUE;
         }
 
-        if(!static::$type_map[$type]) {
+        if(!array_key_exists($type, static::$type_map)) {
             return $this->addError('Import type does not exist: ' . $type);
         }
         
@@ -138,7 +138,7 @@ class ImportManager {
         }
 
         $Importer = new $this->import_class();
-        $Importer->test_mode = $this->test_mode ? TRUE : FALSE;
+        $Importer->test_mode = (bool) $this->test_mode;
         $type_info = static::$type_map[$this->type];
         
         if(!$Importer->setSettings($data)) {
@@ -148,17 +148,26 @@ class ImportManager {
         if($data['file']->isValid()) {
             $fileinfo = pathinfo( trim($data['file']->getClientOriginalName()) );
 
-            if(!in_array($fileinfo['extension'], $type_info['ext'])) {
-                $msg = 'Invalid file extension: .' . $fileinfo['extension'] . '; ';
+            if(is_array($type_info['ext']) && !empty($type_info['ext'])) {
+                $matches_ext = FALSE;
 
-                if(count($type_info['ext']) > 1) {
-                    $msg .= 'Extension must be one of the following: .' . implode(', .', $type_info['ext']);
-                }
-                else {
-                    $msg .= 'This importer requires an extension of .' . $type_info['ext'][0];
+                foreach($type_info['ext'] as $e) {
+                    if(str_ends_with($fileinfo['basename'], $e)) {
+                        $matches_ext = TRUE;
+                        break;
+                    }
                 }
 
-                return $this->addError($msg, 4);
+                if(!$matches_ext) {
+                    if(count($type_info['ext']) > 1) {
+                        $msg .= 'Extension must be one of the following: .' . implode(', .', $type_info['ext']);
+                    }
+                    else {
+                        $msg .= 'This importer requires an extension of .' . $type_info['ext'][0];
+                    }
+
+                    return $this->addError($msg, 4);
+                }
             }
 
             if(!$Importer->acceptUploadedFile($data['file'])) {
@@ -191,7 +200,7 @@ class ImportManager {
 
         $importer = $data['_importer'];
         $file     = $data['_file'];
-        $use_mod  = array_key_exists('_force_use_module', $data) && $data['_force_use_module'] ? TRUE : FALSE;
+        $use_mod  = (array_key_exists('_force_use_module', $data) && $data['_force_use_module']);
         $settings = json_decode($data['_settings'], TRUE);
 
         unset($data['_importer']);
