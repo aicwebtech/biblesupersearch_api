@@ -15,6 +15,7 @@ class IpAccess extends Model {
         if($domain) {
             $IP = static::firstOrNew(['domain' => $domain]);
             $IP->ip_address = $ip_address;
+            $IP->limit = ($ip_address == '127.0.0.1' || $ip_address == '::1') ? 0 : NULL;
             $IP->save();
         }
         else {
@@ -102,7 +103,7 @@ class IpAccess extends Model {
             return FALSE;
         }
 
-        $date = (strtotime($date)) ? date('Y-m-d', strtotime($date)) : date('Y-m-d');
+        $date = ($date && strtotime($date)) ? date('Y-m-d', strtotime($date)) : date('Y-m-d');
 
         try {
             $Log = IpAccessLog::where([['ip_id', '=', $this->id], ['date', '=', $date]])->firstOrFail();
@@ -111,7 +112,7 @@ class IpAccess extends Model {
             return FALSE;
         }
 
-        return ($Log->limit_reached) ? TRUE : FALSE;
+        return (bool) $Log->limit_reached;
     }
 
     public function getAccessLimit() {
@@ -142,7 +143,7 @@ class IpAccess extends Model {
     }
 
     public function isAccessRevoked() {
-        return ($this->getAccessLimit() < 0) ? TRUE : FALSE;
+        return ($this->getAccessLimit() < 0);
     }
 
     public function delete() {

@@ -106,9 +106,6 @@ class AuthController extends Controller
      * @return mixed
      */
     protected function authenticated(Request $request, $user) {
-        // print_r($user->toArray());
-        // die();
-
         // Redirect based on user's role
         if(!$user) {
             return redirect($this->loginPath);

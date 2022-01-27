@@ -30,10 +30,10 @@ class VerseStandard extends VerseAbstract {
         $Verse = new static;
         $table = $Verse->getTable();
         $passage_query = $search_query = NULL;
-        $is_special_search = ($Search && $Search->is_special) ? TRUE : FALSE;
+        $is_special_search = ($Search && $Search->is_special);
         $Query = DB::table($table . ' AS tb');
-        
-        // $Query->select(DB::raw('SQL_NO_CACHE id, book, chapter, verse, text'));
+
+        $reccommend_raw_query = FALSE;
 
         $Query->select('id','book','chapter','verse','text','italics');
         $Query->orderBy('book', 'ASC')->orderBy('chapter', 'ASC')->orderBy('verse', 'ASC');
@@ -47,6 +47,8 @@ class VerseStandard extends VerseAbstract {
         }
 
         if($Search) {
+            $reccommend_raw_query = $Search->isBooleanSearch();
+            
             if($is_special_search) {
                 $table = static::$special_table . '_1';
                 $passage_query_special = static::_buildPassageQuery($Passages, $table, $parameters);
@@ -73,33 +75,52 @@ class VerseStandard extends VerseAbstract {
             }
         }
 
-        // echo(PHP_EOL . $Query->toSql() . PHP_EOL);
-        // var_dump($binddata);
-        // die();
-        //$verses = $Query->get();
-
-        // $verses = DB::select($Query->toSql(), $binddata);
-        // print_r($verses);
+        $binddata = !isset($binddata) ? [] : $binddata;
 
         if($Search && !$parameters['multi_bibles'] && !$parameters['page_all']) {
-            $page_limit = min( (int) config('bss.pagination.limit'), (int) config('bss.global_maximum_results'));
-            $verses = $Query->paginate($page_limit);
+            $page_limit = min( (int) $parameters['page_limit'], (int) config('bss.global_maximum_results'));
+                
+            if($reccommend_raw_query) {
+                $page = (!array_key_exists('page', $parameters) || !$parameters['page']) ? 1 : $parameters['page'];
+
+                // Manually query the count - we need this for the paginator
+                $sql_parts = explode('from', $Query->toSql());
+                $sql_count = 'SELECT COUNT(*) AS count FROM' . $sql_parts[1];
+                $count = (int) DB::select($sql_count, $binddata)[0]->count;
+                
+                $Query->limit($page_limit);
+                $Query->offset(($page - 1) * $page_limit);
+
+                $results = DB::select($Query->toSql(), $binddata);
+
+                // Manually drop the results into the paginator:
+                $verses = new \Illuminate\Pagination\LengthAwarePaginator($results, $count, $page_limit, $page);
+            }
+            else {
+                $verses = $Query->paginate($page_limit);
+            }
         }
         else {
             ini_set('max_execution_time', 120);
             $Query->limit( config('bss.global_maximum_results') );
-            $verses = $Query->get();
+
+            if($reccommend_raw_query) {
+                $verses = collect( DB::select($Query->toSql(), $binddata) );
+            }
+            else {
+                $verses = $Query->get();
+            }
         }
 
         if(config('app.debug_query')) {
-            $_SESSION['debug']['query']      = $Query->toSql();
-            $_SESSION['debug']['query_data'] = (isset($binddata)) ? $binddata : NULL;
-            // $_SESSION['debug']['query_raw_output'] = $verses->all();
-        }
+            // $Query->dump();
+            // $Query->dd();
 
-        // $verses = $Query->get();
-        // print_r($verses->all());
-        // die();
+            $_SESSION['debug']['query']      = $Query->toSql();
+            $_SESSION['debug']['_raw_search_query']      = $search_query;
+            $_SESSION['debug']['query_data'] = $Query->getBindings();
+            $_SESSION['debug']['query_data_raw'] = (isset($binddata)) ? $binddata : NULL;
+        }
 
         return (empty($verses)) ? FALSE : $verses;
     }
@@ -127,8 +148,8 @@ class VerseStandard extends VerseAbstract {
                             continue;
                         }
 
-                        $cvst = $parsed['cst'] * 1000 + intval($parsed['vst']);
-                        $cven = $parsed['cen'] * 1000 + intval($parsed['ven']);
+                        $cvst = $parsed['cst'] * 1000 + (int) $parsed['vst'];
+                        $cven = $parsed['cen'] * 1000 + (int) $parsed['ven'];
                         $q .= ' AND ' . $table_fmt . '`chapter_verse` BETWEEN ' . $cvst . ' AND ' . $cven;
                         
                         // Proposed modification that would eliminate the need for the `chapter_verse` db column
@@ -192,13 +213,11 @@ class VerseStandard extends VerseAbstract {
             $_SESSION['debug']['prox_query_data'] = (isset($binddata)) ? $binddata : NULL;
         }
 
-        // print($sql);
-        // print_r($binddata);
         $results_raw = DB::select($sql, $binddata);
 
         foreach($results_raw as $a1) {
             foreach($a1 as $val) {
-                $results[] = intval($val); // Flatten results into one-dimensional array
+                $results[] = (int) $val; // Flatten results into one-dimensional array
             }
         }
 
@@ -212,7 +231,7 @@ class VerseStandard extends VerseAbstract {
 
         foreach($results_raw as $a1) {
             foreach($a1 as $val) {
-                $results[] = intval($val); // Flatten results into one-dimensional array
+                $results[] = (int) $val; // Flatten results into one-dimensional array
             }
         }
 
@@ -252,7 +271,7 @@ class VerseStandard extends VerseAbstract {
 
     // Todo - prevent installation if already installed!
     public function install($structure_only = FALSE) {
-        $in_console = (strpos(php_sapi_name(), 'cli') !== FALSE) ? TRUE : FALSE;
+        $in_console = (strpos(php_sapi_name(), 'cli') !== FALSE);
 
         if (Schema::hasTable($this->table)) {
             return TRUE;
@@ -313,7 +332,7 @@ class VerseStandard extends VerseAbstract {
                 $map[$field] = $verse[$index];
             }
 
-            $map['chapter_verse'] = $map['chapter'] * 1000 + $map['verse'];
+            $map['chapter_verse'] = (int) $map['chapter'] * 1000 + (int) $map['verse'];
             $insertable[] = $map;
             $ins_count ++;
 
@@ -381,7 +400,7 @@ class VerseStandard extends VerseAbstract {
 
         foreach($bcv as $single) {
             $Query->orwhere(function($sub) use ($single) {
-                $book = intval($single / 1000000);
+                $book = (int) ($single / 1000000);
                 $chapter_verse = $single - $book * 1000000;
                 $sub->where('book', $book);
                 $sub->where('chapter_verse', $chapter_verse);
@@ -420,64 +439,4 @@ class VerseStandard extends VerseAbstract {
 
         return $counts;
     }
-
-    /*
-     * KEEP THIS, FOR NOW
-     * protected static function _buildPassageQuery__OLD($Passages) {
-        $query = array();
-
-        foreach($Passages as $Passage) {
-            foreach($Passage->chapter_verse_parsed as $parsed) {
-                $q = '`book` = ' . $Passage->Book->id;
-
-                // Single verses
-                if($parsed['type'] == 'single') {
-                    $q .= ' AND `chapter` = ' . $parsed['c'];
-                    $q .= ($parsed['v']) ? ' AND `verse` = ' . $parsed['v'] : '';
-                }
-                elseif($parsed['type'] == 'range') {
-                    if(!$parsed['cst'] && !$parsed['cen']) {
-                        continue;
-                    }
-
-                    $q .= ' AND (';
-
-                    // Intra-chapter ranges
-                    if($parsed['cst'] == $parsed['cen']) {
-                        $q .= '`chapter` =' . $parsed['cst'];
-
-                        if($parsed['vst'] && $parsed['ven']) {
-                            $q .= ' AND `verse` BETWEEN ' . $parsed['vst'] . ' AND ' . $parsed['ven'];
-                        }
-                        else {
-                            $q .= ($parsed['vst']) ? ' AND `verse` >= ' . $parsed['vst'] : '';
-                            $q .= ($parsed['ven']) ? ' AND `verse` <= ' . $parsed['ven'] : '';
-                        }
-                    }
-                    // Cross-chapter ranges
-                    else {
-                        $cvst = $parsed['cst'] * 1000 + intval($parsed['vst']);
-                        $cven = $parsed['cen'] * 1000 + intval($parsed['ven']);
-
-                        if($parsed['vst'] && $parsed['ven']) {
-                            $q .= '`chapter` * 1000 + `verse` BETWEEN ' . $cvst . ' AND ' . $cven;
-                        }
-                        else {
-                            $q .= ($parsed['vst']) ? '     `chapter` * 1000 + `verse` >= ' . $cvst : '     `chapter` >= ' . $parsed['cst'];
-                            $q .= ($parsed['ven']) ? ' AND `chapter` * 1000 + `verse` <= ' . $cven : ' AND `chapter` <= ' . $parsed['cen'];
-                        }
-                    }
-
-                    $q .= ')';
-                }
-
-                $query[] = $q;
-            }
-        }
-
-        return '(' . implode(') OR (', $query) . ')';
-    }
-     *
-     *
-     */
 }

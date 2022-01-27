@@ -76,7 +76,7 @@ enyo.kind({
     },
 
     openLoad: function() {
-        this.inherited(arguments);
+        // this.inherited(arguments);
         this.app.set('ajaxLoading', true);
         this.pk = this.pk || null;
 

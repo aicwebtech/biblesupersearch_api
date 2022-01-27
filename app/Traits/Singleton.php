@@ -27,16 +27,12 @@ trait Singleton {
             $called_class  = get_called_class();
             $premium_class = Helpers::transformClassName($called_class);
 
-            // var_dump($called_class);
-            // var_dump($premium_class);
-
             if(class_exists($premium_class)) {
                 $Instance = new $premium_class;
             }
         }
         
         $Instance = $Instance ?: new static;
-
         return $Instance;
     }
 }

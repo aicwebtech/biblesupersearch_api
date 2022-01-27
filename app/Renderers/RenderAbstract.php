@@ -142,7 +142,7 @@ abstract class RenderAbstract {
             return FALSE;
         }
 
-        return $success ? TRUE : FALSE;
+        return (bool) $success;
     }
 
     public function isRenderNeeded($ignore_cache = FALSE) {

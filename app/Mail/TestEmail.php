@@ -31,6 +31,7 @@ class TestEmail extends Mailable
     public function build()
     {
         return $this->view('test.email')
+                    ->from('pwm@preservedword.com')
                     ->to($this->email_address)
                     ->with([
                         'email_address' => $this->email_address,
@@ -39,6 +40,8 @@ class TestEmail extends Mailable
     }
 
     protected function getServerUrl() {
+        return config('app.url');
+
         $http   = (array_key_exists('HTTPS', $_SERVER) && !empty($_SERVER['HTTPS'])) ? 'https://' : 'http://';
         $server = (array_key_exists('SERVER_NAME', $_SERVER) && !empty($_SERVER['SERVER_NAME'])) ? $_SERVER['SERVER_NAME'] : 'biblesupersearch.com';
         $server = $http . $server;

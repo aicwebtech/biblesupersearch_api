@@ -2,6 +2,7 @@
 
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Database\Migrations\Migration;
+use Database\Seeders\DatabaseSeeder;
 
 class CreateShortcutsTables extends Migration
 {
@@ -13,6 +14,7 @@ class CreateShortcutsTables extends Migration
     public function up()
     {
         $languages = Config::get('bss_table_languages.shortcuts');
+
         foreach($languages as $lang) {
             $tn = 'shortcuts_' . $lang;
 
@@ -26,6 +28,10 @@ class CreateShortcutsTables extends Migration
                 $table->tinyInteger('display')->default(0)->unsigned();
                 $table->timestamps();
             });
+
+            $file  = 'shortcuts_' . $lang . '.sql';
+            DatabaseSeeder::importSqlFile($file);
+            DatabaseSeeder::setCreatedUpdated($tn);
         }
     }
 

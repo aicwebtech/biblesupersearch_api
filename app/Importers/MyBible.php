@@ -153,9 +153,6 @@ class MySword extends ImporterAbstract {
 
         try {
             $info = $this->_getMeta($SQLITE);
-
-            // var_dump($info);
-
             $map = (array_key_exists('description', $info)) ? $this->attribute_map_alt : $this->attribute_map;
 
             $res_bib = $SQLITE->query('SELECT * FROM Bible ORDER BY Book ASC, Chapter ASC, Verse ASC LIMIT 10');

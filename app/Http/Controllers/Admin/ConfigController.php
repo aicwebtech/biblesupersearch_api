@@ -52,7 +52,7 @@ class ConfigController extends Controller
         $data = $request->toArray();
         ConfigManager::setGlobalConfigs($data);
 
-        if($data['app__config_cache']) {
+        if(array_key_exists('app__config_cache', $data) && $data['app__config_cache']) {
             Artisan::call('config:cache');
         }
         else {
@@ -80,7 +80,7 @@ class ConfigController extends Controller
     }
 
     public function deleteAllDownloadFiles() {
-        \App\RenderManager::deleteAllFiles(TRUE);
+        \App\RenderManager::deleteAllFiles();
         $resp = new \stdClass();
         $resp->success = TRUE;
         $resp->space_used = \App\RenderManager::getUsedSpace();

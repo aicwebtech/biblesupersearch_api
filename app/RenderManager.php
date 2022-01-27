@@ -5,6 +5,7 @@ use App\Models\Bible;
 use App\Models\Process;
 use App\Models\Rendering;
 use App\ProcessManager;
+use Illuminate\Support\Facades\Gate;
 
 class RenderManager {
     use Traits\Error;
@@ -57,8 +58,8 @@ class RenderManager {
     public $include_extras = FALSE;
 
     public function __construct($modules, $format, $zip = FALSE) {
-        $this->multi_bibles = ($modules == 'ALL' || count($modules) > 1) ? TRUE : FALSE;
-        $this->multi_format = ($format  == 'ALL' || count($format)  > 1) ? TRUE : FALSE;
+        $this->multi_bibles = ($modules == 'ALL' || count($modules) > 1);
+        $this->multi_format = ($format  == 'ALL' || count($format)  > 1);
         $this->zip = ($this->multi_bibles && $this->multi_format) ? TRUE : $zip;
 
         if($this->multi_bibles && $this->multi_format) {
@@ -97,13 +98,17 @@ class RenderManager {
                     continue;
                 }
 
-                if(!$Bible->isDownloadable()) {
+                if(!$Bible->isDownloadable() && !Gate::allows('admin-access')) {
                     $this->addError( trans('errors.bible_no_download', ['module' => $module]) );
                     continue;
                 }
 
                 $this->Bibles[] = $Bible;
             }
+        }
+
+        if(config('download.bible_limit') && count($this->modules) > config('download.bible_limit')) {
+            $this->addError( trans('errors.to_many_download', ['maximum' => config('download.bible_limit')]) );
         }
     }
 
@@ -153,7 +158,7 @@ class RenderManager {
             // create detatched process on 'php artisan queue:work --once ONLY' if jobs table is EMPTY
             // $this->_createDetatchedProcess($format, $Bibles_Needing_Render, $overwrite);
             $this->needs_process = TRUE;
-            return $this->addError('The requested Bibles will take a while to render.  Please come back in an hour and try your download again.');
+            $this->addError('The requested Bibles will take a while to render.  Please come back in an hour and try your download again.');
         }
 
         return $Bibles_Needing_Render;
@@ -191,7 +196,6 @@ class RenderManager {
 
                     $Renderer = new $CLASS($Bible);
 
-                    // if(!$Renderer->render($overwrite, $suppress_overwrite_error)) {
                     if(!$Renderer->render(TRUE, $suppress_overwrite_error)) {
                         $this->addErrors($Renderer->getErrors(), $Renderer->getErrorLevel());
                     }
@@ -199,7 +203,11 @@ class RenderManager {
             }
         }
         catch (\Exception $e) {
-            return $this->addError($e->getMessage());
+            if( env('APP_ENV', 'production') == 'production') {
+                return $this->addError($e->getMessage());
+            }
+
+            throw $e;
         }
 
         error_reporting($error_reporting_cache);
@@ -239,6 +247,7 @@ class RenderManager {
     }
 
     public function download($bypass_render_limit = FALSE) {
+
         if($this->hasErrors()) {
             return FALSE;
         }
@@ -428,7 +437,12 @@ class RenderManager {
         $cur_space = static::getUsedSpace();
         $est_space = $this->getEstimatedSpace( count($modules_no_file) );
         $est_space_all = $this->getEstimatedSpace( count($modules) );
-        $max_space = config('download.cache.cache_size') + config('download.cache.temp_cache_size');
+
+        $retain             = (bool) config('download.retain');
+        $cache_size         = ($retain) ? (int) config('download.cache.cache_size') : 0;
+        $temp_cache_size    = (int) config('download.cache.temp_cache_size') ?: FALSE;
+
+        $max_space = $cache_size + $temp_cache_size;
 
         if($est_space_all > $max_space) {
             return $this->addError('Not enough space allocated to render all of the selected Bibles.  Please reduce the amount of Bibles selected.');
@@ -488,14 +502,17 @@ class RenderManager {
     }
 
     private static function _cleanUpFilesHelper($DeletableRenderings, $space_needed_render = 0, $dry_run = FALSE, $verbose = FALSE, $debug_overrides = []) {
+        $retain             = (bool) config('download.retain');
         $min_render_time    = config('download.cache.min_render_time') ?: FALSE;
         $min_hits           = config('download.cache.min_hits') ?: FALSE;
         $cache_size         = config('download.cache.cache_size') ?: FALSE;
+        $cache_size         = ($retain) ? $cache_size : 0;
         $temp_cache_size    = config('download.cache.temp_cache_size') ?: FALSE;
         $days               = config('download.cache.days') ?: FALSE;
         $max_filesize       = config('download.cache.max_filesize') ?: FALSE;
         $cur_space          = static::getUsedSpace();
         $comp_date          = NULL;
+        $deleted_files      = [];
 
         if($dry_run) {
             if(is_array($debug_overrides)) {
@@ -506,14 +523,23 @@ class RenderManager {
                     $$key = $value;
                 }
             }
+
+            $dry_run_vars = compact('cur_space','space_needed_render');
+            $dry_run_vars['freed_space'] = -1;
+            $dry_run_vars['error'] = FALSE;
         }
 
-        $dry_run_verbose = ($dry_run && $verbose) ? TRUE : FALSE;
+        $dry_run_verbose = ($dry_run && $verbose);
         $space_needed_render = ($space_needed_render < 0 ) ? 0 : $space_needed_render;
         $space_needed_cache = $space_needed_overall = $freed_space = $space_needed_extra = 0;
         $cache_size_max     = (int) $cache_size + (int) $temp_cache_size;
 
         if($space_needed_render > $cache_size_max) {
+            if($dry_run) {
+                $dry_run_vars['error'] = 'Too much space needed';
+                return $dry_run_vars;
+            }
+
             return FALSE;
         }
 
@@ -541,13 +567,14 @@ class RenderManager {
         }
 
         if($days) {
-            $comp_date = strtotime('23:59:59 -' . $days . ' days');
+            $comp_date = strtotime('today -' . $days . ' days');
         }
 
         if($dry_run_verbose) {
             print "\nspace needed render: " . $space_needed_render;
             print "\nspace needed cache: " . $space_needed_cache;
             print "\nspace needed overall: " . $space_needed_overall;
+            print "\nmin render time: " . $min_render_time;
             print "\ncomp date: " . date('Y-m-d H:i:s', $comp_date) . "\n\n";
         }
 
@@ -579,12 +606,13 @@ class RenderManager {
 
                 if($date_ts < $comp_date) {
                     $delete = TRUE;
-                    static::_cleanUpDryRunMessage($dry_run_verbose, $R, 'days');
+                    $dry_run_verbose && static::_cleanUpDryRunMessage($dry_run_verbose, $R, 'days: ' . date('Y-m-d H:i:s', $date_ts));
                 }
             }
 
             if($delete) {
                 $freed_space += $R->file_size;
+                $deleted_files[] = $R->getRenderedFilePath();
 
                 if(!$dry_run) {
                     $R->deleteRenderedFile();
@@ -601,7 +629,8 @@ class RenderManager {
                 }
 
                 $freed_space += $R->file_size;
-                static::_cleanUpDryRunMessage($dry_run, $R, 'more_space_needed');
+                static::_cleanUpDryRunMessage($dry_run_verbose, $R, 'more_space_needed');
+                $deleted_files[] = $R->getRenderedFilePath();
                 
                 if(!$dry_run) {
                     $R->deleteRenderedFile();
@@ -621,15 +650,20 @@ class RenderManager {
         }
 
         if($dry_run) {
-            return compact('cur_space', 'space_needed_overall', 'freed_space');
+            return compact('cur_space', 'space_needed_overall', 'freed_space', 'space_needed_render', 'deleted_files');
         }
 
-        return ($space_needed_overall > $freed_space) ? FALSE : TRUE;
+        if($space_needed_overall > $freed_space && $space_needed_render > 0) {
+            // echo "$space_needed_overall / $freed_space";
+            return FALSE;
+        }
+
+        return TRUE;
     }
 
     private static function _cleanUpDryRunMessage($dry_run, $Rendering, $config) {
         if($dry_run) {
-            // print "Deleting {$Rendering->renderer}/{$Rendering->file_name} -> {$config} \n\n";
+            print "Deleting {$Rendering->renderer}/{$Rendering->file_name} -> {$config} \n\n";
         }
     }
 

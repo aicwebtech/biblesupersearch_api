@@ -19,9 +19,13 @@ class AddUpdatesToBibleTable extends Migration
             $table->string('module_version', 50)->nullable()->after('module_v2')->comment('When module is up to date, this will equal app version.');
             $table->tinyInteger('needs_update')->default(0)->unsigned()->after('module_version');
             $table->dateTime('module_updated_at')->nullable()->after('installed_at')->comment('Last time the Bible text was updated from the module file.');
-
-            $table->renameColumn('restict', 'restrict'); // LOL
         });
+
+        if(Schema::hasColumn('bibles', 'restict')) {
+            Schema::table('bibles', function (Blueprint $table) {
+                $table->renameColumn('restict', 'restrict'); // LOL
+            });
+        }
 
         $KjvStrongs = Bible::findByModule('kjv_strongs');
 

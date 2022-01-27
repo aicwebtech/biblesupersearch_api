@@ -8,6 +8,7 @@ use Illuminate\Foundation\Auth\SendsPasswordResetEmails;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Password;
+use App\Http\Controllers\Auth\Message;
 
 class PasswordController extends Controller
 {
@@ -102,12 +103,14 @@ class PasswordController extends Controller
 
         $broker = $this->broker();
 
-        $response = $broker->sendResetLink($request->only('email'), function (Message $message) {
-            $message->subject($this->getEmailSubject());
-                $message->from('baconman@example.com', 'You can be a big pig too');
-//            $message->from(env('MAIL_FROM'), env('APP_NAME'));
-                throw new Exception('farquad was here');
-        });
+//         $response = $broker->sendResetLink($request->only('email'), function (Message $message) {
+//             $message->subject($this->getEmailSubject());
+//                 $message->from('baconman@example.com', 'You can be a big pig too');
+// //            $message->from(env('MAIL_FROM'), env('APP_NAME'));
+//                 throw new Exception('farquad was here');
+//         });
+        
+        $response = $broker->sendResetLink($request->only('email'));
 
 //        $response = $this->broker()->sendResetLink(
 //            $request->only('email'),

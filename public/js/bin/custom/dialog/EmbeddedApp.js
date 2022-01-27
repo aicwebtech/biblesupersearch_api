@@ -4,6 +4,7 @@ enyo.kind({
 
     components: [
         {name: 'Confirm', kind: 'AICWEBTECH.Enyo.jQuery.Confirm'},
+        {name: 'Alert', kind: 'AICWEBTECH.Enyo.jQuery.Alert'},
         {name: 'TextConfirm', kind: 'AICWEBTECH.Enyo.jQuery.TextConfirm'},
         {name: 'Loading', kind: 'AICWEBTECH.Enyo.jQuery.Loading'}
     ],
@@ -12,6 +13,9 @@ enyo.kind({
         {from: 'loadingShowing', to: '$.Loading.showing'}
     ],
 
+    alert: function(text, callback) {
+        this.$.Alert.alert(text, callback);
+    },      
     confirm: function(text, callback) {
         this.$.Confirm.confirm(text, callback);
     },    

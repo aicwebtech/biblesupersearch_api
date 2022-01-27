@@ -2,6 +2,7 @@
 
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Database\Migrations\Migration;
+use Database\Seeders\DatabaseSeeder;
 
 class CreateBooksTables extends Migration
 {
@@ -12,7 +13,8 @@ class CreateBooksTables extends Migration
      */
     public function up()
     {
-        $languages = Config::get('bss_table_languages.books');
+        $languages = \App\Models\Books\BookAbstract::getSupportedLanguages();
+        
         foreach($languages as $lang) {
             $tn = 'books_' . $lang;
 
@@ -24,6 +26,10 @@ class CreateBooksTables extends Migration
                 $table->string('matching2')->nullable();
                 $table->timestamps();
             });
+
+            $file  = 'bible_books_' . $lang . '.sql';
+            DatabaseSeeder::importSqlFile($file);
+            DatabaseSeeder::setCreatedUpdated($tn);
         }
     }
 
@@ -34,7 +40,7 @@ class CreateBooksTables extends Migration
      */
     public function down()
     {
-        $languages = Config::get('bss_table_languages.books');
+        $languages = \App\Models\Books\BookAbstract::getSupportedLanguages();
 
         foreach($languages as $lang) {
             $tn = 'books_' . $lang;

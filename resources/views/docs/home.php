@@ -24,6 +24,8 @@
         <link rel="stylesheet" href="/js/bin/jquery-ui/jquery-ui.css">
         <link rel="stylesheet" href="/js/bin/jquery-ui/jquery-ui.theme.css">
         <link rel="stylesheet" href="/css/docs.css">
+        <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
+        <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
         <script src='/js/bin/jquery/jquery-3.1.1.min.js'></script>
         <script src='/js/bin/jquery-ui/jquery-ui.js'></script>
         <script src='/js/docs.js'></script>

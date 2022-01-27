@@ -27,7 +27,7 @@ enyo.kind({
 
     bindings: [
         {from: 'props.enable', to: '$.enable.checked', oneWay: false, transform: function(value, dir) {
-            this.log('enable', value, dir);
+            // this.log('enable', value, dir);
 
             if(dir == 1) {
                 return (value) ? true : false;

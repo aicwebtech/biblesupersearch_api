@@ -42,12 +42,14 @@ enyo.kind({
                     {tag: 'td', classes: 'form_label right', content: 'Enabled: '},
                     {tag: 'td', classes: 'form_label right', components: [
                         {kind: 'enyo.Checkbox', name: 'enabled'}, 
-                    ]},
-                    {tag: 'td', classes: 'sublabel', attributes: {colspan: 2}, components: [
+                        {tag: 'span', allowHtml: true, content: '&nbsp; &nbsp;'},
                         {
-                            tag: 'span', 
+                            tag: 'small', 
                             content: 'Whether the Bible is enabled for use'
                         }
+                    ]},
+                    {tag: 'td', classes: 'sublabel', attributes: {colspan: 2}, components: [
+                        {tag: 'span', allowHtml: true, content: '&nbsp; &nbsp;'},
                     ]}
                 ]},            
                 // Todo - implement this!
@@ -55,39 +57,62 @@ enyo.kind({
                 //     {tag: 'td', classes: 'form_label right', content: 'Restrict: '},
                 //     {tag: 'td', classes: 'form_label right', components: [
                 //         {kind: 'enyo.Checkbox', name: 'restrict', disabled: true},
-                //     ]}, 
-                //     {tag: 'td', classes: 'sublabel', attributes: {colspan: 2}, components: [
+                //         {tag: 'span', allowHtml: true, content: '&nbsp; &nbsp;'},
                 //         {
-                //             tag: 'span', 
+                //             tag: 'small', 
                 //             content: 'Restrict access to only local domains. No outside API Access.'
                 //         }
+                //     ]}, 
+                //     {tag: 'td', classes: 'sublabel', attributes: {colspan: 2}, components: [
+                //         {tag: 'span', allowHtml: true, content: '&nbsp; &nbsp;'},
                 //     ]}
                 // ]},
                 {tag: 'tr', components: [
                     {tag: 'td', classes: 'form_label right', content: 'Research Only: '},
                     {tag: 'td', classes: 'form_label right', components: [
                         {kind: 'enyo.Checkbox', name: 'research'},
+                        {tag: 'span', allowHtml: true, content: '&nbsp; &nbsp;'},
+                        {
+                            tag: 'small', 
+                            content: 'Mark Bible as "For Research Only," if you don\'t reccommend the translation.'
+                        }
                     ]}, 
                     {tag: 'td', classes: 'sublabel', attributes: {colspan: 2}, components: [
-                        {
-                            tag: 'span', 
-                            content: 'Mark Bible as "For Research Only," if you don\'t reccommend the tranlation.'
-                        }
+                        {tag: 'span', allowHtml: true, content: '&nbsp; &nbsp;'},
                     ]}
                 ]},
                 {tag: 'tr', components: [
                     {tag: 'td', classes: 'form_label right', content: 'Rank: '},
                     {tag: 'td', attributes: {colspan: 2}, classes: 'form_label right', components: [
-                        {kind: 'enyo.Input', name: 'rank'}
+                        {kind: 'enyo.Input', name: 'rank'},
+                        {tag: 'span', allowHtml: true, content: '&nbsp; &nbsp;'},
+                        {
+                            tag: 'small', 
+                            content: 'Customizable sort order.'
+                        }
                     ]}
                 ]},            
                 {tag: 'tr', components: [
                     {tag: 'td', classes: 'form_label right', content: 'Language: '},
-                    {tag: 'td', attributes: {colspan: 2}, classes: 'form_label right', components: [
-                        {kind: 'AICWEBTECH.Enyo.Select', classes: 'wide', name: 'lang_short', components: [
-                            {value: null, content: 'Select One ...'}
+                    {tag: 'td', attributes: {colspan: 2}, classes: 'form_label right', style: 'position: relative', components: [
+                        {kind: 'AICWEBTECH.Enyo.Autocomplete', name: 'lang_autocomplete', showing: false},
+                        {kind: 'AICWEBTECH.Enyo.Select', classes: 'wide', name: 'lang_short', _style: 'position: absolute', howing: false, components: [
+                            {value: null, content: 'Select One ...'},
                         ]},
-                        {tag: 'span', classes: 'required', content: '*'}
+                        {tag: 'span', classes: 'required', content: '*'},
+                        {tag: 'span', allowHtml: true, content: '&nbsp; &nbsp;'},
+                        {kind: 'enyo.Input', name: 'lang_code', onchange: 'handleLangCodeChange', attributes: {maxlen: 3, size: 4}},
+                        {tag: 'span', allowHtml: true, content: '&nbsp; &nbsp;'},
+                        {tag: 'span', content: '2 or 3 character code'},
+                        {tag: 'span', classes: 'required', content: '*'},
+                    ]}
+                ]},                    
+                {tag: 'tr', components: [
+                    {tag: 'td', classes: 'form_label right', content: ''},
+                    {tag: 'td', attributes: {colspan: 2}, classes: 'form_label right', style: 'position: relative', components: [
+                        {tag: 'span', content: '* ISO-639-1 code if exists, otherwise ISO 639-2 code.'},
+                        {tag: 'br'},
+                        {tag: 'span', content: '* Tip: entering a code will cause the language to be selected, and vice-versa.'},
                     ]}
                 ]}
             ]}
@@ -152,16 +177,18 @@ enyo.kind({
             ]},
         ]},
         {classes: 'form_section', components: [
-            {tag: 'table', components: [
+            {tag: 'table', attributes: {border: '0'}, components: [
                 {tag: 'tr', ontap: 'toggleDescription', components: [
-                    {tag: 'th', content: '&nbsp', allowHtml: true},
+                    {tag: 'th', content: '&nbsp', allowHtml: true, style: 'width: 10px'},
                     {tag: 'th', attributes: {colspan: 4}, content: 'Description'},
-                    {tag: 'th', name: 'descriptionPointer', content: '&#x25bc;', allowHtml: true, style: 'text-align: right'}
+                    {tag: 'th', name: 'descriptionPointer', content: '&#x25bc;', allowHtml: true, style: 'text-align: right; width: 10px'}
                 ]},            
                 {tag: 'tr', name: 'DescriptionContainer', showing: false, components: [
+                    {tag: 'td'},
                     {tag: 'td', attributes: {colspan: 4}, components: [
                         {kind: 'enyo.TextArea', name: 'description', id:'description'}
-                    ]}
+                    ]},
+                    {tag: 'td'}
                 ]}
             ]}
         ]}
@@ -270,7 +297,22 @@ enyo.kind({
         {from: 'formData.lang_short', to: '$.lang_short.value', oneWay: false, transform: function(value, dir) {
             this.debugBindings && this.log('lang_short', value, dir);
             return (value && value != '0') ? value : null;
-        }},    
+        }},                          
+        {from: '$.lang_short.value', to: '$.lang_code.value', oneWay: true, transform: function(value, dir) {
+        // {from: 'formData.lang_short', to: '$.lang_code.value', oneWay: true, transform: function(value, dir) {
+            this.debugBindings && this.log('lang_code', value, dir);
+
+            if(value) {
+                if(dir == 1) {
+                    value = value.toUpperCase();
+                }
+                else {
+                    value = value.toLowerCase();
+                }
+            }
+
+            return (value && value != '0') ? value : null;
+        }},               
         {from: 'formData.copyright_statement', to: '$.copyright_statement.value', oneWay: false, transform: function(value, dir) {
             this.debugBindings && this.log('copyright_statement', value, dir);
             
@@ -310,7 +352,9 @@ enyo.kind({
         }, this);        
 
         bootstrap.languages.forEach(function(item) {
-            var displayName = item.name + ' - ' + item.native_name + ' (' + item.code.toUpperCase() + ')';
+            var displayName = item.name;
+                displayName += (item.native_name) ? ' - ' + item.native_name : '';
+                displayName += ' (' + item.code.toUpperCase() + ')';
 
             this.$.lang_short.createComponent({
                 value: item.code,
@@ -338,6 +382,7 @@ enyo.kind({
         this.$description.on('change', enyo.bind(this, function() {
             this.$.description.set('value', this.$description.getData());
         }));
+
     }, 
 
     _checkUnique: function(field, value, label) {
@@ -433,5 +478,19 @@ enyo.kind({
     handleNameFocus: function(inSender, inEvent) {
         this.log();
 
+    },
+    handleLangCodeChange: function() {
+        var lc = this.$.lang_code.get('value').toLowerCase();
+
+        this.$.lang_short.set('value', lc);
+
+        this.log('lc', lc);
+        this.log('lang_short', this.$.lang_short.get('value'));
+        this.log('lang_code', this.$.lang_code.get('value'));
+
+        if(this.$.lang_short.get('value') != lc) {
+            // not a valid code
+            this.$.lang_code.set('value', '');
+        }
     }
 });

@@ -82,9 +82,6 @@ class BookAbstract extends Model
 //        $test = preg_replace('/[\p{L}\p{M}\p{N}\p{P}\p{Pf}\p{Pd}\p{Zs}]+/', '', $name); // Attempted test, not working
 
         if(!empty($test)) {
-//            var_dump('bad test ' . $test);
-//            var_dump($test);
-//            var_dump($name);
             return FALSE;
         }
 
@@ -105,8 +102,6 @@ class BookAbstract extends Model
         if(!class_exists($class_name)) {
             $class_name = $default_class_name;
         }
-
-        // var_dump($class_name);
 
         if(!is_string($name)) {
             return $class_name::find(intval($name));
@@ -131,8 +126,6 @@ class BookAbstract extends Model
                 -> orwhere('matching2', $name);
 
         $Book = ($multiple) ? $Query->get()->all() : $Query->first();
-
-//        var_dump($Book->getAttributes());
 
         if($Book) {
             return $Book;

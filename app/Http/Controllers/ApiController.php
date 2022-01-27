@@ -10,8 +10,9 @@ use App\Engine;
 
 class ApiController extends Controller {
 
-    public function genericAction($action = 'query', Request $Request) {
-        $allowed_actions = ['query', 'bibles', 'books', 'statics', 'version', 'readcache', 'strongs'];
+    public function genericAction(Request $Request, $action = 'query') {
+        $allowed_actions = ['query', 'bibles', 'books', 'statics', 'statics_changed', 'version', 'readcache', 'strongs'];
+        header("Access-Control-Allow-Origin: *");
 
         if(config('download.enable')) {
             $allowed_actions[] = 'render';
@@ -20,19 +21,19 @@ class ApiController extends Controller {
         }
 
         $debug_input = FALSE;
-        $_SESSION['debug'] = array();
+        $_SESSION['debug'] = [];
 
         if(!in_array($action, $allowed_actions)) {
             return new Response('Action not found', 404);
         }
 
         $input = $Request->input();
-        $pretty_print = (array_key_exists('pretty_print', $input) && $input['pretty_print']) ? TRUE : FALSE;
+        $pretty_print = (array_key_exists('pretty_print', $input) && $input['pretty_print']);
         $Engine = new Engine();
         $actionMethod = 'action' . \Illuminate\Support\Str::studly($action);
 
         if($debug_input) {
-            header("Access-Control-Allow-Origin: *"); // Enable for debugging
+            // header("Access-Control-Allow-Origin: *"); // Enable for debugging
             print_r($input);
             die();
         }
@@ -48,10 +49,14 @@ class ApiController extends Controller {
             $response->results = $results;
             $code = ($Engine->hasErrors()) ? 400 : 200;
         }
-        catch (Exception $ex) {
-            return (new Response($ex->getMessage(), 500))
-                -> header('Content-Type', 'application/json; charset=utf-8')
-                -> header('Access-Control-Allow-Origin', '*');
+        catch (Exception $ex) {        
+            if( env('APP_ENV', 'production') == 'production') {
+                return (new Response($ex->getMessage(), 500))
+                    -> header('Content-Type', 'application/json; charset=utf-8');
+                    // -> header('Access-Control-Allow-Origin', '*');
+            }
+
+            throw $ex;
         }
 
         if(array_key_exists('callback', $input)) {
@@ -63,12 +68,11 @@ class ApiController extends Controller {
         }
 
         return (new Response(json_encode($response), $code))
-            -> header('Content-Type', 'application/json; charset=utf-8')
-            -> header('Access-Control-Allow-Origin', '*');
+            -> header('Content-Type', 'application/json; charset=utf-8');
+            // -> header('Access-Control-Allow-Origin', '*');
     }
 
     private function _prettyPrintErrors($input, $response) {
-        // return view('errors.pretty_print', compact($input, $response));
         return view('errors.pretty_print', [
             'input'    => $input,
             'response' => $response,

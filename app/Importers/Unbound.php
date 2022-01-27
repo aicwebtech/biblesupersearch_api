@@ -51,7 +51,9 @@ class Unbound extends ImporterAbstract {
     protected $has_gui = TRUE;
 
     protected function _importHelper(Bible &$Bible) {
-        ini_set("memory_limit", "50M");
+        if(config('app.env') != 'testing') {
+            ini_set("memory_limit", "50M");
+        }
 
         // Script settings
         $dir    = $this->getImportDir();
@@ -90,6 +92,10 @@ class Unbound extends ImporterAbstract {
             return $this->addError('Unable to open ' . $zipfile, 4);
         }
 
+        if(empty($bib)) {
+            return $this->addError('Unable to extract Bible text from ' . $file_raw . '_utf8.txt');
+        }
+
         if($this->insert_into_bible_table) {
             $attr = $this->_parseAttributes($desc);
             $Bible->fill($attr);
@@ -101,7 +107,7 @@ class Unbound extends ImporterAbstract {
         $table  = $this->_table;
         $st = ($testaments == 'nt') ? 40 : 0;
 
-        if(\App::runningInConsole()) {
+        if(config('app.env') != 'testing' && \App::runningInConsole()) {
             echo('Installing: ' . $module . PHP_EOL);
         }
 
@@ -156,6 +162,8 @@ class Unbound extends ImporterAbstract {
     private function _parseAttributes($desc, $clear_existing = FALSE) {
         $attr = $this->bible_attributes ?: [];
         $attr = $clear_existing ? [] : $attr;
+        $lang = NULL;
+        $name = NULL;
         
         // Attempt to parse name and language from Unbound description
         if(preg_match('/<b>(.*?)<\/b>/', $desc, $matches) == 1) {

@@ -52,8 +52,8 @@ return array(
             'description' => 'Type of search when using keyword search. <br />'
             . 'Options: <ul>'
             . '<li>"and" or "all_words" - Searches for verses containing all words given.</li>'
-            . '<li>"or" or "any_words" - Searches for verses containing any words given.</li>'
-            . '<li>"xor" or "one_words" - Searches for verses containing only one word given.</li>'
+            . '<li>"or" or "any_word" - Searches for verses containing any words given.</li>'
+            . '<li>"xor" or "one_word" - Searches for verses containing only one word given.</li>'
             . '<li>"two_or_more" - Searches for two or more of the given keywords.<br />'
             . '<li>"keyword_limit" - Searches for two or more of the given keywords, with limit being changable via \'keyword_limit\'.<br />'
             . '<li>"phrase" - Searches for verses containing the exact phrase given.</li>'
@@ -102,12 +102,18 @@ return array(
             'name' => 'Show All Results',
             'default' => 'false',
             'description' => 'Whether to disable all pagination.',
+        ),        
+        'page_limit' => array(
+            'type' => 'Integer',
+            'name' => 'Results per Page',
+            'default' => config('bss.pagination.limit') . '',
+            'description' => 'Number of verses to display per page.',
         ),
         'page' => array(
             'type' => 'Integer',
-            'name' => 'Page',
+            'name' => 'Page Number',
             'default' => '1',
-            'description' => 'For search results, the page to show.  Currently, only searches support pagination.'
+            'description' => 'For search results, the number of the page to show.  Currently, only searches support pagination.'
             . '&nbsp; See <a href="#pagination">details below</a>',
         ),
         'context' => array(

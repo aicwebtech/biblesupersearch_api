@@ -20,7 +20,7 @@ class EnhanceBiblesTable extends Migration
             $table->string('owner', 100)->nullable()->after('publisher');
             $table->integer('copyright_id')->nullable()->unsigned()->after('copyright');
             $table->integer('citation_limit')->default(0)->unsigned()->after('copyright_id')->comment('Number of verses that can be displayed at once, 0 = unlimited');
-            $table->tinyInteger('restict')->default(0)->unsigned()->after('citation_limit')->comment('restrict access to only local domains');
+            $table->tinyInteger('restrict')->default(0)->unsigned()->after('citation_limit')->comment('restrict access to only local domains');
             $table->string('importer', 50)->nullable()->after('module_v2');
             $table->string('import_file')->nullable()->after('importer');
             $table->integer('hebrew_text_id')->nullable()->unsigned()->after('research');

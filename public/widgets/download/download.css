@@ -131,6 +131,23 @@ tr.download_disabled {
     float: right;
 }
 
+#bible_download_process {
+    width: 100%;
+    height: 15px;
+    padding: 0px;
+    border:  1px solid black;
+    background-color: white;
+    margin-bottom: 10px;
+}
+
+#bible_download_process_bar {
+    margin-left: 0;
+    border-right:  1px solid #555;
+    background-color: #aaa;
+    height:  100%;
+    width:  35%;
+}
+
 @media only screen and (max-width: 1200px) {
     #bible_download_form .container {
         float: initial;

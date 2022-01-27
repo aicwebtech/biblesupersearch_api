@@ -136,7 +136,7 @@ trait Error {
      * @param int $level
      */
     public function setErrorLevel($level) {
-        $this->error_level = intval($level);
+        $this->error_level = (int) $level;
         return ($this->error_level) ? FALSE : TRUE;
     }
 

@@ -56,7 +56,9 @@ class MySword extends ImporterAbstract {
     protected $source = "This Bible imported from MySword <a href='https://mysword.info/download-mysword/bibles'>https://mysword.info/download-mysword/bibles</a>";
 
     protected function _importHelper(Bible &$Bible) {
-        ini_set("memory_limit", "50M");
+        if(config('app.env') != 'testing') {
+            ini_set("memory_limit", "50M");
+        }
 
         // Script settings
         $dir    = $this->getImportDir();
@@ -80,7 +82,11 @@ class MySword extends ImporterAbstract {
             return $this->addError('File does not exist: ' . $file);
         }
 
-        $SQLITE = new SQLite3($filepath);
+        $SQLITE = $this->_getSQLite($filepath, $file);
+
+        if(!$SQLITE) {
+            return $this->addError('Could not open MySword file');
+        }
 
         if($this->insert_into_bible_table) {
             $res_desc = $SQLITE->query('SELECT * FROM Details');
@@ -88,6 +94,7 @@ class MySword extends ImporterAbstract {
             $desc = $info['Comments'];
             $attr = $this->bible_attributes;
             $attr['description'] = $desc . '<br /><br />' . $this->source;
+            $attr['year'] = date('Y', strtotime($attr['year']));
 
             $Bible->fill($attr);
             $Bible->save();
@@ -97,7 +104,7 @@ class MySword extends ImporterAbstract {
         $Verses = $Bible->verses();
         $table  = $Verses->getTable();
 
-        if(\App::runningInConsole()) {
+        if(config('app.env') != 'testing' && \App::runningInConsole()) {
             echo('Installing: ' . $module . PHP_EOL);
         }
 
@@ -165,7 +172,13 @@ class MySword extends ImporterAbstract {
         $path = $File->getPathname();
 
         try {
-            $SQLITE = new SQLite3($path);
+            // $SQLITE = new SQLite3($path);
+            $SQLITE = $this->_getSQLite($path, $File->getClientOriginalName());
+
+            if(!$SQLITE) {
+                return $this->addError('Could not open MySword file');
+            }
+
             $res_desc = $SQLITE->query('SELECT * FROM Details');
             $info = $res_desc->fetchArray(SQLITE3_ASSOC);
 
@@ -202,5 +215,66 @@ class MySword extends ImporterAbstract {
         }
 
         return TRUE;
+    }
+
+    public function mapMetaToAttributes($meta, $preserve_attributes = FALSE, $map = NULL) {
+        parent::mapMetaToAttributes($meta, $preserve_attributes, $map);
+        $this->bible_attributes['year'] = date('Y', strtotime($this->bible_attributes['year']));
+    }
+
+    private function _getSQLite($path, $orig_filename) {
+        $path_lc = strtolower($orig_filename);
+        $temp_fn = tempnam(sys_get_temp_dir(), 'mybib');
+        $dir = $this->getImportDir();
+        $new_path = $dir . $orig_filename;
+
+        if(!is_file($path)) {
+            return $this->addError('File does not exist');
+        }
+
+        if(str_ends_with($path_lc, '.mybible.zip')) {
+            $uz_file = substr($orig_filename, 0, -4);
+            $uz_path = $dir . '' . $uz_file;
+            $Zip = new \ZipArchive;
+
+            if($Zip->open($path) === TRUE) {
+                if(!$Zip->extractTo($dir, $uz_file)) {
+                    return $this->addError('Could not extract from .zip file');
+                }
+
+                return new SQLite3($uz_path);
+            }
+            else {
+                return $this->addError('Could not open .zip file');
+            }
+        }        
+        else if(str_ends_with($path_lc, '.mybible.gz')) {
+            $uz_file = substr($orig_filename, 0, -3);
+            $uz_path = $dir . '' . $uz_file;
+            
+            // 'Extracting' from a .gz file
+            // Raising this value may increase performance
+            $buffer_size = 4096; // read 4kb at a time
+
+            // Open our files (in binary mode)
+            $in_file  = gzopen($path, 'rb');
+            $out_file = fopen($uz_path, 'wb');
+
+            // Keep repeating until the end of the input file
+            while(!gzeof($in_file)) {
+                // Both fwrite and gzread and binary-safe
+                fwrite($out_file, gzread($in_file, $buffer_size));
+            }
+
+            fclose($out_file);
+            gzclose($in_file);
+
+            return new SQLite3($uz_path);
+        }        
+        else if(str_ends_with($path_lc, '.mybible')) {
+            return new SQLite3($path);
+        }
+
+        return FALSE;
     }
 }

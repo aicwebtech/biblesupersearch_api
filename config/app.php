@@ -12,6 +12,9 @@ return [
 
     'name' => 'Bible SuperSearch API',
 
+    'name_static' => 'Bible SuperSearch API', // DO NOT CHANGE
+
+
     /*
     |--------------------------------------------------------------------------
     | Application Version
@@ -20,7 +23,8 @@ return [
     |
     */
 
-    'version' => '4.5.0',
+    'version' => '5.0.beta1',
+    // 'version' => '5.0.0',
 
     /*
     |--------------------------------------------------------------------------
@@ -28,7 +32,7 @@ return [
     |
     | Soft config holding the last known application version.  
     |
-    | When this dooes NOT equal the application version, an update is triggered 
+    | When this does NOT equal the application version, an update is triggered 
     |
     |--------------------------------------------------------------------------
     |
@@ -114,7 +118,6 @@ return [
     |
     */
 
-    //'timezone' => 'UTC',
     'timezone' => env('APP_TIMEZONE','America/Detroit'),
 
     /*

@@ -101,3 +101,32 @@ span.warning {
 .import_config {
     width: 400px;
 }
+
+.aicwebtech_autocomplete {
+    position: relative;
+    width: 400px;
+    display: inline-block;
+    margin-right: 5px;
+    z-index: 1999999;
+}
+
+.aicwebtech_autocomplete_input {
+    width:  100%;
+}
+
+.aicwebtech_autocomplete_options {
+    position: absolute;
+    width: 100%;
+    background-color: #ddd;
+    max-height: 200px;
+    overflow-y: auto;
+}
+
+.aicwebtech_autocomplete_options_option {
+    cursor: pointer;
+}
+
+.aicwebtech_autocomplete_options_option:hover {
+    background-color: blue;
+    color: white;
+}

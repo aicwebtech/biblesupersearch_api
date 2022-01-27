@@ -82,17 +82,221 @@ class RenderManagerTest extends TestCase {
         $this->assertEquals(0, $results['space_needed_overall']);   
     }
 
-    /* Methods below should not be called in production */
+    public function testRetainConfigsInit() {
+        $test_space = 50;
+        
+        $test_params = [
+            'cache_size'        => 200,
+            'temp_cache_size'   => 100,
+            'cur_space'         => 150,
+            'min_hits'          => 0,
+            'days'              => 10,
+        ];
+
+        $TextRender = new \App\Renderers\PlainText('kjv');
+        $success = $TextRender->renderIfNeeded();        
+        $this->assertTrue($success);
+        $this->assertFalse($TextRender->isRenderNeeded(TRUE), 'Already rendered, shoudnt need it here ' . __LINE__);
+        
+        $file_path = $TextRender->getRenderFilePath();
+        $this->assertFileExists($file_path);
+
+        $Rendering = $TextRender->_getRenderingRecord();
+        $Rendering->downloaded_at = date('Y-m-d H:i:s');
+        $Rendering->save();
+        $Rendering->refresh();
+
+        $results = RenderManager::_testCleanUpFiles($test_space, FALSE, $test_params);
+        $freed_space_raw = $results['freed_space'];
+
+        return compact('test_space', 'test_params', 'freed_space_raw', 'Rendering', 'file_path');
+    }
+
+
+    /**
+     * Testing max filesize.  Anything larger will be deleted
+     * 
+     * @depends testRetainConfigsInit
+     */ 
+    public function testRetainMaxFilesize($shared) {
+        extract($shared);
+
+        $Rendering->file_size = 10;
+        $Rendering->save();
+        $Rendering->refresh();
+        $this->assertEquals(10, $Rendering->file_size);
+
+        // Too much
+        $results = RenderManager::_testCleanUpFiles($test_space, FALSE, array_replace($test_params, ['max_filesize' => 9]));
+        $this->assertContains($file_path, $results['deleted_files']);;        
+
+        // Same
+        $results = RenderManager::_testCleanUpFiles($test_space, FALSE, array_replace($test_params, ['max_filesize' => 10]));
+        $this->assertNotContains($file_path, $results['deleted_files']);      
+
+        // Plenty
+        $results = RenderManager::_testCleanUpFiles($test_space, FALSE, array_replace($test_params, ['max_filesize' => 11]));
+        $this->assertNotContains($file_path, $results['deleted_files']);;
+
+        // Unlimited space
+        $results = RenderManager::_testCleanUpFiles($test_space, FALSE, array_replace($test_params, ['max_filesize' => 0]));
+        $this->assertNotContains($file_path, $results['deleted_files']);;
+
+        $shared['Rendering'] = $Rendering;
+        return $shared;
+    }
+
+    /**
+     * Testing days to retain
+     * 
+     * @depends testRetainMaxFilesize
+     */ 
+    public function testRetainDays($shared) {
+        extract($shared);
+        
+        // Not yet
+        $Rendering->downloaded_at = date('Y-m-d H:i:s', strtotime('-9 days'));
+        $Rendering->save();
+
+        $results = RenderManager::_testCleanUpFiles($test_space, FALSE, array_replace($test_params, []));
+        $this->assertNotContains($file_path, $results['deleted_files']);      
+
+        // It happens today, but later
+        $Rendering->downloaded_at = date('Y-m-d H:i:s', strtotime('-10 days'));
+        $Rendering->save();
+
+        $results = RenderManager::_testCleanUpFiles($test_space, FALSE, array_replace($test_params, []));
+        $this->assertNotContains($file_path, $results['deleted_files']);      
+
+        // Expired!
+        $Rendering->downloaded_at = date('Y-m-d H:i:s', strtotime('-11 days'));
+        $Rendering->save();
+
+        $results = RenderManager::_testCleanUpFiles($test_space, FALSE, array_replace($test_params, []));
+        $this->assertContains($file_path, $results['deleted_files']);;
+
+        // Unlimited time
+        $Rendering->downloaded_at = date('Y-m-d H:i:s', strtotime('-1100 days'));
+        $Rendering->save();
+
+        $results = RenderManager::_testCleanUpFiles($test_space, FALSE, array_replace($test_params, ['days' => 0]));
+        $this->assertNotContains($file_path, $results['deleted_files']);;
+
+        $Rendering->downloaded_at = date('Y-m-d H:i:s');
+        $Rendering->save();
+
+        $shared['Rendering'] = $Rendering;
+        return $shared;
+    }
+
+    /**
+     * Testing Minimum rendering time
+     * 
+     * @depends testRetainDays
+     */ 
+    public function testRetainMinimumRenderTime($shared) {
+        extract($shared);
+        $cached = $Rendering->rendered_duration;
+
+        $Rendering->rendered_duration = 15;
+        $Rendering->save();
+        $this->assertEquals(15, $Rendering->rendered_duration);
+
+        // These do not get deleted
+        $results = RenderManager::_testCleanUpFiles($test_space, FALSE, array_replace($test_params, ['min_render_time' => 5]));
+        $this->assertNotContains($file_path, $results['deleted_files']);
+
+        $results = RenderManager::_testCleanUpFiles($test_space, FALSE, array_replace($test_params, ['min_render_time' => 10]));
+        $this->assertNotContains($file_path, $results['deleted_files']);
+
+        $results = RenderManager::_testCleanUpFiles($test_space, FALSE, array_replace($test_params, ['min_render_time' => 14]));
+        $this->assertNotContains($file_path, $results['deleted_files']);
+
+        $results = RenderManager::_testCleanUpFiles($test_space, FALSE, array_replace($test_params, ['min_render_time' => 15]));
+        $this->assertNotContains($file_path, $results['deleted_files']);
+
+        // These do get deleted
+        $results = RenderManager::_testCleanUpFiles($test_space, FALSE, array_replace($test_params, ['min_render_time' => 16]));
+        $this->assertContains($file_path, $results['deleted_files']);
+        $results = RenderManager::_testCleanUpFiles($test_space, FALSE, array_replace($test_params, ['min_render_time' => 20]));
+        $this->assertContains($file_path, $results['deleted_files']);
+        
+        // Unlimited
+        $results = RenderManager::_testCleanUpFiles($test_space, FALSE, array_replace($test_params, ['min_render_time' => 0]));
+        $this->assertNotContains($file_path, $results['deleted_files']);
+
+        // What if it's 0?
+        $Rendering->rendered_duration = 0;
+        $this->assertEquals(0, $Rendering->rendered_duration);
+        $Rendering->save();
+
+        $results = RenderManager::_testCleanUpFiles($test_space, FALSE, array_replace($test_params, ['min_render_time' => 1]));
+        $this->assertContains($file_path, $results['deleted_files']);
+
+        // Only retainted if Unlimited
+        $results = RenderManager::_testCleanUpFiles($test_space, FALSE, array_replace($test_params, ['min_render_time' => 0]));
+        $this->assertNotContains($file_path, $results['deleted_files']);
+
+        $Rendering->rendered_duration = $cached;
+        $Rendering->save();
+        $shared['Rendering'] = $Rendering;
+        return $shared;
+    }    
+
+    /**
+     * Testing Minimum hits
+     * 
+     * @depends testRetainMinimumRenderTime
+     */ 
+    public function testRetainMinimumHits($shared) {
+        extract($shared);
+
+        $cached = $Rendering->hits; // this is prob 0 if non-production build
+
+        $Rendering->hits = 45;
+        $Rendering->save();
+
+        // These don't get deleted
+        $results = RenderManager::_testCleanUpFiles($test_space, FALSE, array_replace($test_params, ['min_hits' => 40]));
+        $this->assertNotContains($file_path, $results['deleted_files']);; 
+        $results = RenderManager::_testCleanUpFiles($test_space, FALSE, array_replace($test_params, ['min_hits' => 44]));
+        $this->assertNotContains($file_path, $results['deleted_files']);       
+        $results = RenderManager::_testCleanUpFiles($test_space, FALSE, array_replace($test_params, ['min_hits' => 45]));
+        $this->assertNotContains($file_path, $results['deleted_files']);       
+
+        // These get deleted
+        $results = RenderManager::_testCleanUpFiles($test_space, FALSE, array_replace($test_params, ['min_hits' => 46]));
+        $this->assertContains($file_path, $results['deleted_files']);; 
+        $results = RenderManager::_testCleanUpFiles($test_space, FALSE, array_replace($test_params, ['min_hits' => 50]));
+        $this->assertContains($file_path, $results['deleted_files']);; 
+
+        // Unlimited
+        $results = RenderManager::_testCleanUpFiles($test_space, FALSE, array_replace($test_params, ['min_hits' => 0]));
+        $this->assertNotContains($file_path, $results['deleted_files']);
+
+        // What if it's 0?
+        $Rendering->hits = 0;
+        $Rendering->save();
+        $this->assertEquals(0, $Rendering->hits);
+
+        $results = RenderManager::_testCleanUpFiles($test_space, FALSE, array_replace($test_params, ['min_hits' => 1]));
+        $this->assertContains($file_path, $results['deleted_files']);;
+
+        // Only retainted if Unlimited
+        $results = RenderManager::_testCleanUpFiles($test_space, FALSE, array_replace($test_params, ['min_hits' => 0]));
+        $this->assertNotContains($file_path, $results['deleted_files']);
+
+        $this->assertTrue(TRUE);
+
+        $Rendering->hits = $cached;
+        $Rendering->save();
+
+        $shared['Rendering'] = $Rendering;
+        return $shared;
+    }
 
     public function testRenderNeeded() {
-        if($this->skip_render_tests) {
-            // $this->markTestSkipped('Rendering tests skipped to save time');\            
-            $this->assertTrue(TRUE);
-            return;
-        }
 
-        return;
-        
         $TextRender = new \App\Renderers\PlainText('kjv');
         $Rendering0 = $TextRender->_getRenderingRecord();
         $success = $TextRender->renderIfNeeded();        
@@ -142,23 +346,7 @@ class RenderManagerTest extends TestCase {
         $this->assertFalse($TextRender->isRenderNeeded(TRUE), 'file is back, no rendering needed');
     }
 
-    public function testDirectRender() {
-
-        if($this->skip_render_tests) {
-            $this->assertTrue(TRUE);
-            return;
-        }
-
-        return;
-
-        $TextRender = new \App\Renderers\PlainText('kjv');
-        $success = $TextRender->render(TRUE);        
-        $TextRender = new \App\Renderers\MachineReadableText('kjv');
-        $success = $TextRender->render(TRUE);
-
-        $this->assertTrue($success);
-        $this->assertFalse($TextRender->hasErrors());
-    }
+    /* Methods below are really slow, and should not be called in production */
 
     public function testManagerRender() {
 
@@ -185,23 +373,5 @@ class RenderManagerTest extends TestCase {
             print_r($Manager->getErrors());
         }
 
-    }
-
-    public function testFileCleanUp() {
-
-        if($this->skip_render_tests) {
-            $this->assertTrue(TRUE);
-            return;
-        }
-
-        return;
-        // RenderManager::_testCleanUpFiles(130);
-
-        RenderManager::_testCleanUpFiles(120, FALSE, [
-            'cache_size' => 200,
-            'temp_cache_size' => 100,
-        ]);
-        
-        $this->assertTrue(TRUE);
     }
 }

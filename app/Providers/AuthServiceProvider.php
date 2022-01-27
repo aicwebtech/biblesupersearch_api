@@ -28,7 +28,7 @@ class AuthServiceProvider extends ServiceProvider
         $this->registerPolicies($gate);
 
         Gate::define('admin-access', function($User) {
-            return $User->access_level >= 100 ? TRUE : FALSE;
+            return ($User->access_level >= 100);
         });
     }
 }
