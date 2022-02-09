@@ -41,6 +41,10 @@ class BibleActionsTest extends TestCase
 
 
     public function testInit() {
+        if(!$this->test_http) {
+            $this->markTestSkipped();
+        }
+
         $User = User::find(1);
 
         $response = $this->actingAs($User)
@@ -223,12 +227,6 @@ class BibleActionsTest extends TestCase
      * @depends testUnresearch
      */ 
     public function testExport(array $shared) {
-        if(!$this->test_http) {
-            // $this->markTestSkipped();
-            $this->testUninstall($shared);
-            return;
-        }
-
         $response = $this->actingAs($shared['User'])
                     ->withSession(['banned' => FALSE])
                     ->postJson('/admin/bibles/export/' . $shared['bible_id']);
