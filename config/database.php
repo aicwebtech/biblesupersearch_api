@@ -77,7 +77,7 @@ return [
             'password' => env('DB_PASSWORD', ''),
             'charset'  => 'utf8',
             'prefix'   => env('DB_PREFIX', ''),
-            'schema'   => 'public',
+            'search_path'  => 'public',
         ],
 
         'sqlsrv' => [
