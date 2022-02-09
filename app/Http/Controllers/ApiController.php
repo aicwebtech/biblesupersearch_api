@@ -12,7 +12,9 @@ class ApiController extends Controller {
 
     public function genericAction(Request $Request, $action = 'query') {
         $allowed_actions = ['query', 'bibles', 'books', 'statics', 'statics_changed', 'version', 'readcache', 'strongs'];
-        header("Access-Control-Allow-Origin: *");
+        if(env('APP_ENV', 'production') != 'testing') {
+            header("Access-Control-Allow-Origin: *");
+        }
 
         if(config('download.enable')) {
             $allowed_actions[] = 'render';

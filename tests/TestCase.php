@@ -12,6 +12,7 @@ namespace {
          */
         protected $baseUrl = 'http://localhost';
         protected $use_named_bindings = FALSE;
+        protected $test_http = FALSE;
         
         /**
          * Creates the application.
@@ -25,6 +26,7 @@ namespace {
 
             $app->make(Illuminate\Contracts\Console\Kernel::class)->bootstrap();
             $this->use_named_bindings = config('app.query_use_named_placeholders');
+            $this->test_http = env('APP_TEST_HTTP', FALSE);
             return $app;
         }
 
