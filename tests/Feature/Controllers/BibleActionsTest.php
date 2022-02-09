@@ -239,7 +239,7 @@ class BibleActionsTest extends TestCase
     }        
 
     /**
-     * @depends testUnresearch
+     * @depends testExport
      */ 
     public function testUninstall(array $shared) {
 
