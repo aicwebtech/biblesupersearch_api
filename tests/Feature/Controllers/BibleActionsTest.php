@@ -223,6 +223,11 @@ class BibleActionsTest extends TestCase
      * @depends testUnresearch
      */ 
     public function testExport(array $shared) {
+        if(!$this->test_http) {
+            // $this->markTestSkipped();
+            $this->testUninstall($shared);
+            return;
+        }
 
         $response = $this->actingAs($shared['User'])
                     ->withSession(['banned' => FALSE])
