@@ -42,7 +42,7 @@ class BibleActionsTest extends TestCase
 
     public function testInit() {
         if(!$this->test_http) {
-            $this->markTestSkipped();
+            $this->markTestSkipped('The .env config APP_TEST_HTTP must be true to run these tests.');
         }
 
         $User = User::find(1);
