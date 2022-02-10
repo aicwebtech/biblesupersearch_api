@@ -839,6 +839,11 @@ class Bible extends Model {
         }
 
         $Zip  = $this->openModuleFile();
+
+        if(!$Zip) {
+            return FALSE;
+        }
+        
         $json = $Zip->getFromName('info.json');
         $meta = json_decode($json, TRUE);
 
