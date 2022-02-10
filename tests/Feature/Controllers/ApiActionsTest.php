@@ -238,6 +238,10 @@ class ApiActionsTest extends TestCase
             $this->markTestSkipped('Downloads disabled');
         }
 
+        // Render a file.  
+        $Renderer = new \App\Renderers\Csv('kjv');
+        $Renderer->renderIfNeeded();
+
         // GET - empty request
         $response = $this->getJson('/api/render_needed');
         $response->assertStatus(400);        
