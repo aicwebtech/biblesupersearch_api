@@ -47,7 +47,7 @@ You also have the option to build your own.
 
 
 Server Requirements:
-* PHP >= 7.2.5
+* PHP >= 8.0.2
 * MySQL database
 * OpenSSL PHP Extension
 * PDO PHP Extension
@@ -72,13 +72,15 @@ Installation:
 
 * Make sure the entire directory is readable by the web server
 
-* Make these directories and files writable by the web server: (UNIX permissions should be 775)
+* Make these directories and files writable by the web server: (UNIX permissions should be 0775)
     * .env
     * storage               (all directories need to be writable)
     * bootstrap/cache
+    * bibles
     * bibles/modules        (all files need to be writable)
     * bibles/unofficial     (all files need to be writable)
     * bibles/rendered       (all files need to be writable)
+    * bibles/misc           (all files need to be writable)
 
 * Now, point a subdomain (Something like https://biblesupersearch-api.your-domain.com) to path/to/biblesupersearch_api/public
 
