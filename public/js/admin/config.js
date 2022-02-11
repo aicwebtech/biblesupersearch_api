@@ -90,7 +90,7 @@ $( function() {
       range: true,
       min: 30,
       max: 5000,
-      values: [ downloadTempCacheSize, downloadTempCacheSize + downloadTempCacheSize ],
+      values: [ downloadTempCacheSize, downloadTempCacheSize + downloadCacheSize ],
       slide: function( event, ui ) {
         var temp = ui.values[0];
         var total = ui.values[1];
@@ -104,8 +104,6 @@ $( function() {
 
     $('.download_size').change(function(e) {
         var elmId = e.currentTarget.id;
-
-        console.log(elmId);
         var min = temp = parseInt( $('#download_temp_cache_size').val(), 10);
         var cache = parseInt( $('#download_cache_size').val(), 10);
         var max = total = parseInt( $('#download_total_cache_size').val(), 10);
