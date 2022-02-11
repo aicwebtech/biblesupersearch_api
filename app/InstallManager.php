@@ -270,14 +270,13 @@ class InstallManager {
 
         $InstalledBibles = Bible::where('installed', 1)->get();
         $success = TRUE;
-        // return TRUE;
 
         foreach($InstalledBibles as $B) {
             $B->uninstall();
             $success = ($B->hasErrors()) ? FALSE : $success;
         }
 
-        $exit_code = Artisan::call('migrate:reset'); // Roll back ALL DB migrations
+        $exit_code = Artisan::call('migrate:reset', array('--force' => TRUE)); // Roll back ALL DB migrations
 
         if(\Schema::hasTable('migrations')) {
             \Schema::drop('migrations');
