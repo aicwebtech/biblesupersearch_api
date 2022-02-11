@@ -22,7 +22,7 @@ You also have the option to build  your own.
 ## Official Documentation
 
 ### Server Requirements:
-* PHP >= 8.0.0
+* PHP >= 8.0.2
 * MySQL
 * OpenSSL PHP Extension
 * PDO PHP Extension

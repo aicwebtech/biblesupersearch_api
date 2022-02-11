@@ -264,6 +264,10 @@ class InstallManager {
     }
 
     static function uninstall(Request $request) {
+        if(!defined('STDIN')) {
+            define('STDIN', fopen('php://stdin', 'r'));
+        }
+
         $InstalledBibles = Bible::where('installed', 1)->get();
         $success = TRUE;
         // return TRUE;
