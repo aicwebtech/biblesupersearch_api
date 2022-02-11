@@ -9,15 +9,6 @@ use App\User;
 
 class AdminControllerTest extends TestCase
 {
-//     Route::get('/admin/debug', 'AdminController@debug')->name('admin.debug');
-//     Route::get('/admin/update', 'AdminController@softwareUpdate')->name('admin.update')->middleware('install');
-//     Route::get('/admin/uninstall', 'AdminController@uninstallPage')->name('admin.uninstall')->middleware('install');
-//     Route::get('/admin/tos', 'Admin\PostConfigController@tos')->name('admin.tos')->middleware('install');
-// Route::post('/admin/tos', 'Admin\PostConfigController@saveTos');
-// Route::get('/admin/privacy', 'Admin\PostConfigController@privacy')->name('admin.privacy')->middleware('install');
-// Route::post('/admin/privacy', 'Admin\PostConfigController@savePrivacy');
-
-// Route::resource('/admin/bibles', 'Admin\BibleController', ['as' => 'admin']);
 
     public function testBible()
     {
