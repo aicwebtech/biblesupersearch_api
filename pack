@@ -86,7 +86,8 @@ if [[ $REPLY =~ ^[Yy]$ ]]
 then
     # do dangerous stuff
     echo
-    echo 'Clearing out Laravel caching'
+    echo 'Clearing out Laravel cacheing'
+    php artisan config:cache 
     php artisan optimize:clear
 
     echo ''
