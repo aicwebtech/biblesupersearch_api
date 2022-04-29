@@ -1,5 +1,8 @@
 Bible SuperSearch API Changelog
 
+= 5.0.1 / Apr 30, 2022
+* Applying upstream security fixes and bug fixes
+
 = 5.0.0 / Feb 12, 2022
 * Bugfix: Bible admin: 'Description' label no longer shifts when opening the description.
 * Bugfix: API single action error handler sometimes gave generic, not descriptive error messages.
