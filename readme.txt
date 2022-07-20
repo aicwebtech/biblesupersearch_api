@@ -84,7 +84,8 @@ Installation:
 
 * Now, point a subdomain (Something like https://biblesupersearch-api.your-domain.com) to path/to/biblesupersearch_api/public
 
-* Navigate to this subdomain to complete the installation process.
+* Navigate to this subdomain to complete the installation process.  
+    You will set a username and password for the API Manager as part of this process.
 
 * Once the API is fully installed, point your Bible SuperSearch client software to the subdomain.
     * Standalone
@@ -94,6 +95,11 @@ Installation:
         Set API URL to your subdomain (https://biblesupersearch-api.your-domain.com)
 
 Documentation for using the API can be found at this subdomain once installed.
+
+API Manager
+
+Navigate to https://biblesupersearch-api.your-domain.com/login
+
 
 
 Troubleshooting:
