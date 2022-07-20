@@ -1,5 +1,8 @@
 Bible SuperSearch API Changelog
 
+= 5.0.2 / July 23, 2022
+* Applying upstream security fixes and bug fixes
+
 = 5.0.1 / Apr 30, 2022
 * Applying upstream security fixes and bug fixes
 
