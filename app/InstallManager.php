@@ -151,6 +151,7 @@ class InstallManager {
 
         // attempt to connect to db
         $able_to_connect = TRUE;
+        $db_connect_msg = null;
 
         try {
             \DB::connection()->getPdo();
@@ -161,6 +162,26 @@ class InstallManager {
         }
         catch (\Exception $e) {
             $able_to_connect = FALSE;
+            $msg = $e->getMessage();
+            
+            // User-friendly unable-to-connect messages
+            $db_connect_msg = '';
+
+            if(stripos($msg, 'unknown database') !== false) {
+                $db_connect_msg .= 'Unknown database "' . $db_info['database'] . '"';
+            }
+            else if(stripos($msg, 'access denied') !== false) {
+                $db_connect_msg .= 'Access denied: DB_USERNAME and / or DB_PASSWORD are incorrect.';
+            }            
+            else if(stripos($msg, 'Name or service not known') !== false) {
+                $db_connect_msg .= 'Unable to find DB_HOST of "' . $db_info['host'] . '"';
+            }            
+            else if(stripos($msg, 'Connection timed out') !== false) {
+                $db_connect_msg .= 'Connection timed out; Is your DB_HOST correct?';
+            }
+            else {
+                $db_connect_msg = 'Error Recieved: ' . $msg;
+            }
         }
 
         if(!$file) {
@@ -184,7 +205,7 @@ class InstallManager {
         $checklist[] = ['type' => 'item', 'label' => 'Able to Connect', 'success' => $able_to_connect];
 
         if(!$able_to_connect) {
-            $checklist[] = ['type' => 'header', 'label' => 'Unable to connect to database; Please check your database credentials'];
+            $checklist[] = ['type' => 'error', 'label' => 'Unable to connect to database: <br />' . $db_connect_msg];
         }
 
         $checklist[] = ['type' => 'hr'];
