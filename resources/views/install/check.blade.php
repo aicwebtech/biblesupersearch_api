@@ -13,8 +13,11 @@ Let's check to see if you're ready to install {{ config('app.name') }} on your s
 <?php foreach($checklist as $row): ?>
     <?php $rowcount ++; ?>
 
-    <?php if($row['type'] == 'header'): ?>
-            <tr><th colspan='2'><?php echo $row['label']; ?></th></tr>
+    <?php 
+        if($row['type'] == 'header'): ?>
+            <tr><th colspan='2'><?php echo $row['label']; ?></th></tr>        
+        <?php elseif($row['type'] == 'error'): ?>
+            <tr><th colspan='2' class='bad'><?php echo $row['label']; ?></th></tr>
         <?php elseif($row['type'] == 'hr'): ?>
             <tr><td colspan='2'><hr /></td></tr>
         <?php else: ?>
@@ -31,27 +34,7 @@ Let's check to see if you're ready to install {{ config('app.name') }} on your s
         <?php endif; ?>
 <?php endforeach; ?>
 
-<!--
-@foreach($checklist as $row)
-    @switch($row['type'])
-        @case('header')
-            <tr><th colspan='2'>{{$row['label']}}</th></tr>
-            @break
-        @case('hr')
-            <tr><td colspan='2'><hr /></td></tr>
-            @break
-        @default
-            <tr>
-                <td>{{$row['label']}}</td>
-                @if($row['success'] == TRUE)
-                    <td class='good'>Good</td>
-                @else
-                    <td class='bad'>Bad</td>
-                @endif
-            </tr>
-    @endswitch
-@endforeach
--->
+
 </table>
 
 <br /><br />
