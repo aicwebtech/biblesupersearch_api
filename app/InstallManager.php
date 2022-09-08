@@ -92,11 +92,58 @@ class InstallManager {
         $installed_php_parts = explode('.', PHP_VERSION);
         $installed_php = $installed_php_parts[0] . '.' . $installed_php_parts[1] . '.' . intval($installed_php_parts[2]);
 
+
         // TODO - MAKE SURE SENDMAIL IS INSTALLED!
 
-        $checklist[] = ['type' => 'header', 'label' => 'Software'];
+        $checklist[] = ['type' => 'header', 'label' => 'Configuration'];
         $env = (is_file(base_path('.env')) && is_writable(base_path('.env')));
         $checklist[] = ['type' => 'item', 'label' => '.env config file exists and is writable', 'success' => $env];
+        
+        // TODO - detect dedicated (sub) domain!
+        $host = request()->getHost();
+
+        $subdomain = $subdomain_pub_dir = false;
+        $uri = $_SERVER['REQUEST_URI'];
+        $uri_parts = explode('/', trim($uri, '/'));
+
+        if($uri_parts[0] == 'public') {
+            $subdomain = true;
+            $subdomain_pub_dir = false;
+        }
+        else if(in_array('public', $uri_parts)) {
+            $subdomain = false;
+            $subdomain_pub_dir = false;
+        } else {
+            $subdomain = true;
+            $subdomain_pub_dir = true;
+        }
+
+        $has_domain_error = (!$subdomain || !$subdomain_pub_dir);
+
+        $allowed_uri = [
+            '/install/check'
+        ];
+
+        $checklist[] = ['type' => 'item', 'label' => 'Has dedicated domain or sub-domain', 'success' => $subdomain];
+        $checklist[] = ['type' => 'item', 'label' => 'Dedicated domain or sub-domain pointed to public directory in API', 'success' => $subdomain_pub_dir];
+
+        if(!$subdomain) {
+            $checklist[] = ['type' => 'error', 'label' => 'You appear to have the API running inside your main website.  This won\'t work, and you will need to set up a dedicated sub-domain.'];
+            $checklist[] = ['type' => 'error', 'label' => 'Please be sure to point your sub-domain to path/to/api/public'];
+        }
+        else if(!$subdomain_pub_dir) {
+            $checklist[] = ['type' => 'error', 'label' => 'Please point your sub-domain to path/to/api/public NOT path/to/api!'];
+        }
+
+        if($has_domain_error) {
+            $checklist[] = ['type' => 'error', 'label' => 'You will notice that this page isn\'t formatted nicely, along with all kinds of errors in the console.'];
+            $checklist[] = ['type' => 'error', 'label' => 'Please configure the sub-domain properly, and these issues will resolve themselves!'];
+        }
+
+        $checklist[] = ['type' => 'hr'];
+
+
+        $checklist[] = ['type' => 'header', 'label' => 'Software'];
         $checklist[] = ['type' => 'item', 'label' => 'PHP Version >= ' . $php_version . ' (' . $installed_php . ')', 'success' => $php_success];
 
         $extensions = ['OpenSSL', 'PDO', 'Mbstring', 'Tokenizer', 'XML', 'Zip', 'Ctype', 'JSON', 'BCMath', 'gd', 'Fileinfo'];
