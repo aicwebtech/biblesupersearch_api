@@ -1,6 +1,10 @@
 Bible SuperSearch API Changelog
 
-= 5.x.x
+= 5.0.1 / ???
+* Improved Bible download page.
+* Added Excel render option
+* Added config to lable / describe research-only Bibles
+
 
 = 5.0.2 / July 23, 2022
 * Applying upstream security fixes and bug fixes

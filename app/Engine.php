@@ -715,6 +715,7 @@ class Engine {
         $response->hash             = $this->_getNameHash();
         $response->version          = config('app.version');
         $response->environment      = config('app.env');
+        $response->research_desc    = config('bss.research_description');
         return $response;
     }
 

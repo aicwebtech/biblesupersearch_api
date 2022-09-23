@@ -120,15 +120,16 @@ tr.download_disabled {
 }
 
 #bible_download_form .container {
-    width: 45%;
+    max-width: 800px;
+    margin: 0 auto 0;
 }
 
 #bible_download_form .bible_container {
-    float: left;
+    
 }
 
 #bible_download_form .format_container {
-    float: right;
+    
 }
 
 #bible_download_process {
@@ -146,6 +147,19 @@ tr.download_disabled {
     background-color: #aaa;
     height:  100%;
     width:  35%;
+}
+
+.bible_container div.scrollable {
+    height: 400px;
+    overflow-y: scroll;
+}
+
+.bible_container .language_header {
+    /*border-bottom: 2px solid black;*/
+}
+
+.bible_download_select {
+    /*margin-left:  100%;*/
 }
 
 @media only screen and (max-width: 1200px) {

@@ -24,7 +24,7 @@ class RenderManager {
         'spreadsheet'      => [
             'name'      => 'Spreadsheet',
             'desc'      => 'Opens in MS Excel or other spreadsheet software.  Both human and machine readable.',
-            'formats'   => ['csv'],
+            'formats'   => ['csv', 'xlsx'],
         ],
         'database' => [
             'name'      => 'Databases',
@@ -43,6 +43,7 @@ class RenderManager {
         'text'              => \App\Renderers\PlainText::class,
         'mr_text'           => \App\Renderers\MachineReadableText::class,
         'csv'               => \App\Renderers\Csv::class,
+        'xlsx'              => \App\Renderers\Excel::class,
         'json'              => \App\Renderers\Json::class,
         'sqlite3'           => \App\Renderers\SQLite3::class,
         'mysql'             => \App\Renderers\MySQL::class,
