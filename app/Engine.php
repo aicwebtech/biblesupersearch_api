@@ -108,6 +108,11 @@ class Engine {
 
             if(!in_array($Bible->lang_short, $this->languages)) {
                 $this->languages[] = $Bible->lang_short;
+                
+                if($Bible->lang_short == 'zh') {
+                    $this->languages[] = 'zh_TW';
+                    $this->languages[] = 'zh_CN';
+                }
             }
 
             if(!$this->primary_language && $this->languageHasBookSupport($Bible->lang_short)) {

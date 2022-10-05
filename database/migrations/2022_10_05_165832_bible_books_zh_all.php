@@ -1,10 +1,11 @@
 <?php
 
-use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
 use Database\Seeders\DatabaseSeeder;
 
-class CreateBooksTables extends Migration
+return new class extends Migration
 {
     /**
      * Run the migrations.
@@ -13,7 +14,16 @@ class CreateBooksTables extends Migration
      */
     public function up()
     {
-        $languages = \App\Models\Books\BookAbstract::getSupportedLanguages();
+        if(Schema::hasTable('books_zh_cn')) {
+            return; // skip if we already have these new tables
+        }
+
+        $languages = ['zh_CN', 'zh_TW'];
+
+        // Nuke existing bible_books_zh and repopulate it
+        DB::table('books_zh')->truncate();
+        DatabaseSeeder::importSqlFile('bible_books_zh.sql');
+        DatabaseSeeder::setCreatedUpdated('books_zh');
         
         foreach($languages as $lang) {
             $lang_lc = strtolower($lang);
@@ -41,11 +51,7 @@ class CreateBooksTables extends Migration
      */
     public function down()
     {
-        $languages = \App\Models\Books\BookAbstract::getSupportedLanguages();
-
-        foreach($languages as $lang) {
-            $tn = 'books_' . strtolower($lang);
-            Schema::dropifExists($tn);
-        }
+        // Nothing to do
+        // Allow main book list migration handle reversal
     }
-}
+};

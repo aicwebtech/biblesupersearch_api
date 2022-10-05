@@ -34,7 +34,7 @@ class BookAbstract extends Model
      * @return string the class name
      */
     public static function getClassNameByLanguageRaw($language) {
-        $class_name = __NAMESPACE__ . '\\' . ucfirst($language);
+        $class_name = __NAMESPACE__ . '\\' . studly_case(strtolower($language));
         return $class_name;
     }
 
@@ -46,6 +46,7 @@ class BookAbstract extends Model
      */
     public static function getClassNameByLanguage($language) {
         $class_name = static::getClassNameByLanguageRaw($language);
+
 
         if(!class_exists($class_name)) {
             $class_name = static::getClassNameByLanguageRaw(config('app.locale'));
@@ -102,6 +103,9 @@ class BookAbstract extends Model
         if(!class_exists($class_name)) {
             $class_name = $default_class_name;
         }
+
+        // var_dump($language);
+        // var_dump($class_name);
 
         if(!is_string($name)) {
             return $class_name::find(intval($name));
@@ -180,7 +184,7 @@ class BookAbstract extends Model
     }
 
     static public function getSupportedLanguages() {
-        return ['ar', 'de', 'en', 'es', 'fr', 'hu', 'it', 'nl', 'ro', 'ru', 'zh', 'hi', 'pt', 'ja'];
+        return ['ar', 'de', 'en', 'es', 'fr', 'hu', 'it', 'nl', 'ro', 'ru', 'zh', 'hi', 'pt', 'ja', 'zh_CN', 'zh_TW'];
     }
 
     static public function isSupportedLanguage($lang_code) {
