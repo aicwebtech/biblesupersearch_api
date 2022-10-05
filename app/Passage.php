@@ -925,10 +925,14 @@ class Passage {
         if(!is_string($reference)) {
             return FALSE;
         }
-
         $Passages   = array();
         $pre_parsed = static::explodeReferences($reference);
+
+        // var_dump($reference);
+        // var_dump($pre_parsed);
+        // var_dump($languages);
         $def_language = config('bss.defaults.language_short');
+
 
         if(!in_array($def_language, $languages)) {
             $languages[] = $def_language;
@@ -941,6 +945,8 @@ class Passage {
             unset($ref);
         }
 
+        // var_dump($languages);
+        // die('dead');
         $mid_parsed = implode(';', $pre_parsed);
         $parsed = static::explodeReferences($mid_parsed, TRUE);
 

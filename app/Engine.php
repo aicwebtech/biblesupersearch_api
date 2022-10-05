@@ -272,7 +272,6 @@ class Engine {
         $references = empty($input['reference']) ? NULL : $input['reference'];
         $keywords   = empty($input['search'])    ? NULL : $input['search'];
         $request    = empty($input['request'])   ? NULL : $input['request'];
-
         if($references && $keywords && $request) {
             $this->addError(trans('errors.triple_request'), 4);
             return FALSE;
@@ -294,7 +293,7 @@ class Engine {
         }
 
         // Passage parsing and validation
-        $Passages = Passage::parseReferences($references, $this->languages, $is_search, $this->Bibles, $input);
+        $Passages = Passage::parseReferences($references . ' ', $this->languages, $is_search, $this->Bibles, $input);
 
         if(is_array($Passages)) {
             foreach($Passages as $key => $Passage) {
@@ -675,6 +674,9 @@ class Engine {
             }
 
             return $books_by_lang;
+        } else if(strpos($language, '_') !== false) {
+            // Todo - add locale support.
+            list($language, $locale) = explode('_', $language);
         }
 
         $namespaced_class = 'App\Models\Books\\' . ucfirst($language);
