@@ -925,10 +925,14 @@ class Passage {
         if(!is_string($reference)) {
             return FALSE;
         }
-
         $Passages   = array();
         $pre_parsed = static::explodeReferences($reference);
+
+        // var_dump($reference);
+        // var_dump($pre_parsed);
+        // var_dump($languages);
         $def_language = config('bss.defaults.language_short');
+
 
         if(!in_array($def_language, $languages)) {
             $languages[] = $def_language;
@@ -941,6 +945,8 @@ class Passage {
             unset($ref);
         }
 
+        // var_dump($languages);
+        // die('dead');
         $mid_parsed = implode(';', $pre_parsed);
         $parsed = static::explodeReferences($mid_parsed, TRUE);
 
@@ -959,7 +965,7 @@ class Passage {
         for($pos = $ref_end; $pos >= 0; $pos --) {
             $char = $reference[$pos];
 
-            if(!$book_end && ctype_alpha($char)) {
+            if(!$book_end && !static::isChapterVerse($char) && !static::isWhitespace($char)) {
                 $book_end = $pos;
             }
             elseif($book_end && ($char == ',' || $char == ';' || $pos == 0)) {
@@ -987,6 +993,32 @@ class Passage {
         // To keep the references in the same order that they were submitted
         $exploded = array_reverse($exploded);
         return $exploded;
+    }
+
+    /**
+     * Locale agnostic replacement for ctype_alpha
+     */ 
+    public static function isAlpha($char) 
+    {
+        $found = preg_match('/[\p{L}\p{M}\p{Pd}]+/', $char, $matches);
+
+        if(!$found) {
+            return false;
+        }
+
+        return true;
+
+        // $extra = preg_match('/[^\p{L}]+/', $char, $matches);
+        // return !$extra; 
+    }
+
+    public static function isChapterVerse($char)
+    {
+        return is_numeric($char) || in_array($char, [':',',',';','-']);
+    }
+
+    public static function isWhitespace($char) {
+        return $char == ' ';
     }
 
     public static function isRandom($reference) {

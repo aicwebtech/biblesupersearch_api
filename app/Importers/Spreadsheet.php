@@ -75,8 +75,6 @@ class Spreadsheet extends SpreadsheetAbstract {
         $minRow = $this->first_row_data + 1;
         $range  = 'A' . $minRow .':' . $maxCol . $maxRow;
 
-        // die($range);
-
         return $Sheet->rangeToArray($range, NULL, FALSE, FALSE);
     }
 }

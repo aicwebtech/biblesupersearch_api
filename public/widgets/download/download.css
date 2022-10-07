@@ -8,7 +8,6 @@ tr.download_disabled {
 }
 
 .format_group_box {
-    /*background-color: #5aa700;*/
     background-color: #ddd;
     border-radius: 10px;
     padding: 8px;
@@ -18,7 +17,6 @@ tr.download_disabled {
 .format_group_box h2.name {
     margin-top: 0;
     margin-bottom: 0px;
-    /*font-size: 1em;*/
     font-weight: bold;
 }
 
@@ -80,7 +78,6 @@ tr.download_disabled {
 .pseudo_dialog_contents span.float_left {
     display: inline-block;
     float: left;
-    /*font-family: Courier, Monospace;*/
 }
 
 .pseudo_dialog_contents span.rendering_name {
@@ -94,7 +91,6 @@ tr.download_disabled {
 .pseudo_dialog_contents span.float_right {
     display: inline-block;
     float: right;
-    /*font-family: Courier, Monospace;*/
 }
 
 .pseudo_dialog_buttons {
@@ -112,23 +108,12 @@ tr.download_disabled {
 }
 
 #bible_download_form {
-    
-}
-
-#bible_download_form {
     position: relative;
 }
 
 #bible_download_form .container {
-    width: 45%;
-}
-
-#bible_download_form .bible_container {
-    float: left;
-}
-
-#bible_download_form .format_container {
-    float: right;
+    max-width: 800px;
+    margin: 0 auto 0;
 }
 
 #bible_download_process {
@@ -146,6 +131,11 @@ tr.download_disabled {
     background-color: #aaa;
     height:  100%;
     width:  35%;
+}
+
+.bible_container div.scrollable {
+    height: 400px;
+    overflow-y: scroll;
 }
 
 @media only screen and (max-width: 1200px) {

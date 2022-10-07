@@ -138,6 +138,19 @@ $( function() {
         $('input[name="bible[]"]').each(function() {
             $(this).prop('checked', checked);
         });
+
+        $('.bible_download_check_all_lang').prop('checked', checked);
+    });
+
+    $('.bible_download_check_all_lang').click(function() {
+        var checked = ($(this).prop('checked')) ? true : false;
+        var lang = $(this).prop('id').substring(25);
+
+        $('input[name="bible[]"]').each(function() {
+            if($(this).prop('lang') == lang) {
+                $(this).prop('checked', checked);
+            }
+        });
     });
 });
 
