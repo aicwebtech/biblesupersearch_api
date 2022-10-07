@@ -109,7 +109,7 @@ class LookupLanguagesTest extends TestCase
         }
 
         $Engine = new Engine();
-        $Engine->setDefaultDataType('raw');
+        $Engine->setDefaultDataType('passage');
 
         $results = $Engine->actionQuery(['bible' => 'chinese_union_trad', 'reference' => '歷代志下', 'whole_words' => FALSE]);
         $this->assertFalse($Engine->hasErrors());        
@@ -119,11 +119,16 @@ class LookupLanguagesTest extends TestCase
 
         $results = $Engine->actionQuery(['bible' => 'chinese_union_trad', 'reference' => '歷代志下 5:1-10', 'whole_words' => FALSE]);
         $this->assertFalse($Engine->hasErrors());
-        $this->assertCount(10, $results['chinese_union_trad']);        
 
+        // print_r($results[0]['verses']['chinese_union_trad']); die();
+
+        $this->assertCount(10, $results[0]['verses']['chinese_union_trad'][5]);    
+        $this->assertEquals(14, $results[0]['book_id']);
+        $this->assertEquals('历代志下', $results[0]['book_name']); // Returns simplified even if we searched using traditional
+ 
         $results = $Engine->actionQuery(['bible' => 'chinese_union_trad', 'reference' => '約一 1', 'whole_words' => FALSE]);
         $this->assertFalse($Engine->hasErrors());
-        $this->assertCount(10, $results['chinese_union_trad']);        
+        $this->assertCount(10, $results[0]['verses']['chinese_union_trad'][1]);     
     }    
 
     function testChineseSimplified()
@@ -133,7 +138,7 @@ class LookupLanguagesTest extends TestCase
         }
 
         $Engine = new Engine();
-        $Engine->setDefaultDataType('raw');
+        $Engine->setDefaultDataType('passage');
 
         $results = $Engine->actionQuery(['bible' => 'chinese_union_trad', 'reference' => '历代志下', 'whole_words' => FALSE]);
         $this->assertFalse($Engine->hasErrors());        
@@ -143,10 +148,12 @@ class LookupLanguagesTest extends TestCase
 
         $results = $Engine->actionQuery(['bible' => 'chinese_union_trad', 'reference' => '历代志下 5:1-10', 'whole_words' => FALSE]);
         $this->assertFalse($Engine->hasErrors());
-        $this->assertCount(10, $results['chinese_union_trad']);        
+        $this->assertCount(10, $results[0]['verses']['chinese_union_trad'][5]);    
+        $this->assertEquals(14, $results[0]['book_id']);
+        $this->assertEquals('历代志下', $results[0]['book_name']); // Returns simplified even if we searched using traditional    
 
         $results = $Engine->actionQuery(['bible' => 'chinese_union_trad', 'reference' => '约翰一书 1', 'whole_words' => FALSE]);
         $this->assertFalse($Engine->hasErrors());
-        $this->assertCount(10, $results['chinese_union_trad']);        
+        $this->assertCount(10, $results[0]['verses']['chinese_union_trad'][1]);       
     }
 }

@@ -1,10 +1,13 @@
 Bible SuperSearch API Changelog
 
-= 5.0.1 / ???
+= 5.1.0 / Oct 7, 2022
 * Improved Bible download page.
 * Added Excel render option
-* Added config to lable / describe research-only Bibles
-
+* Added config to label / describe research-only Bibles
+* Fixed / Improved Chinese language support
+* Added separate book lists for Traditional and Simplified Chinese
+* PHP 8.2 support (tentative)
+* Applying upstream security fixes and bug fixes
 
 = 5.0.2 / July 23, 2022
 * Applying upstream security fixes and bug fixes
