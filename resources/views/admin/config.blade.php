@@ -168,6 +168,12 @@
                                             </td>
                                         </tr>
                                     </table>
+
+                                    <h4>Research Mode Description</h4>
+
+                                    For Bibles that are marked as for research purposes only, please provide a reason why.<br /><br />
+
+                                    <textarea style='width: 98%; height: 100px' name='bss__research_description'>{{$configs['bss.research_description']}}</textarea>
                                 </div>
                                 <div class='config_block'>
                                     <h1>Limitations</h1>
