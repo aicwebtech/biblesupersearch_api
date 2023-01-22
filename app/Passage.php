@@ -4,6 +4,7 @@ namespace App;
 
 use App\Models\Books\BookAbstract as Book;
 use App\Models\Shortcuts\ShortcutAbstract as Shortcut;
+use App\Models\Bible;
 
 /**
  * Class for parsing and handling of Bible passage references
@@ -941,6 +942,7 @@ class Passage {
         if($is_search !== 2) {
             foreach($pre_parsed as $key => &$ref) {
                 $ref = static::findShortcut($ref, $languages, TRUE);
+                $ref = static::findVerseIds($ref, $Bibles);
             }
             unset($ref);
         }
@@ -993,6 +995,32 @@ class Passage {
         // To keep the references in the same order that they were submitted
         $exploded = array_reverse($exploded);
         return $exploded;
+    }
+
+    protected static function findVerseIds($ref, $Bibles)
+    {
+        $Bible = $Bibles ? array_values($Bibles)[0] : Bible::findByModule(config('bss.defaults.bible'));
+        $last_book = null;
+
+        $ref = preg_replace_callback('/(-?)([0-9]{1,5})V/', function($matches) use ($Bible, &$last_book) {
+            $vid = (int) $matches[2];
+            $Verse = $Bible->verses()->find($vid);
+
+            if($Verse) {
+                $str = $Verse->chapter . ':' . $Verse->verse;
+
+                if($last_book != $Verse->book) {
+                    $str = $Verse->book . 'B ' . $str;
+                    $last_book = $Verse->book;
+                }
+
+                return $matches[1] . $str;
+            }
+
+            return $matches[0];
+        }, $ref);
+
+        return $ref;
     }
 
     /**
