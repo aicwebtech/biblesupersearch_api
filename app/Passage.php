@@ -1002,19 +1002,30 @@ class Passage {
         $Bible = $Bibles ? array_values($Bibles)[0] : Bible::findByModule(config('bss.defaults.bible'));
         $last_book = null;
 
-        $ref = preg_replace_callback('/(-?)([0-9]{1,5})V/', function($matches) use ($Bible, &$last_book) {
+        $ref = preg_replace_callback('/(-\s*)?([0-9]{1,5})V/', function($matches) use ($Bible, &$last_book) {
             $vid = (int) $matches[2];
             $Verse = $Bible->verses()->find($vid);
+            $dash = $matches[1] ? '-' : '';
 
             if($Verse) {
                 $str = $Verse->chapter . ':' . $Verse->verse;
 
                 if($last_book != $Verse->book) {
-                    $str = $Verse->book . 'B ' . $str;
+                    // if($dash && $Verse->book - $) {
+                    //     $lb1 = $last_book ++;
+                    //     $vb1 = $Verse->book
+                    // }
+                    // else {
+                        $str = $Verse->book . 'B ' . $str;
+                    // }
+
                     $last_book = $Verse->book;
                 }
 
-                return $matches[1] . $str;
+                return $dash . $str;
+            }
+            else {
+                $last_book = null;
             }
 
             return $matches[0];
