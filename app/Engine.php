@@ -263,6 +263,12 @@ class Engine {
         $this->metadata = new \stdClass;
         $this->metadata->hash = $Cache->hash;
 
+        $test = [];
+
+        if(!isset($test['search'])) {
+            //
+        }
+
 
         $input = $this->_sanitizeInput($input, $parsing);
         $this->setDefaultLanguage($input['language']);

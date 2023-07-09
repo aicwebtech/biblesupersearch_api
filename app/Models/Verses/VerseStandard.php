@@ -372,6 +372,11 @@ class VerseStandard extends VerseAbstract {
 
     public function getRandomReference($random_mode) {
         switch($random_mode) {
+            case 'book':
+                $verse = static::select('book','chapter')->where('chapter', '=', 1)->where('verse', '=', 1)->inRandomOrder()->first();
+                return array('book_id' => $verse->book, 'chapter_verse' => $verse->chapter);
+                break;            
+
             case 'chapter':
                 $verse = static::select('book','chapter')->where('verse', '=', 1)->inRandomOrder()->first();
                 return array('book_id' => $verse->book, 'chapter_verse' => $verse->chapter);

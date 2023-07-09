@@ -177,7 +177,15 @@ class Search extends SqlSearch {
 
         $prox_parsed = $this->parseProximitySearch();
 
+        if(count($prox_parsed[0]) != count($prox_parsed[1]) + 1) {
+            return $this->addError( trans('errors.prox_keywords_missing') );
+        }
+
         foreach($prox_parsed[0] as $Search) {
+            if(empty($Search->search) || $Search->search == '()') {
+                return $this->addError( trans('errors.prox_operator_beg_end') ) ;
+            }
+
             if(!$Search->validate()) {
                 $valid = FALSE;
                 $errors = $Search->getErrors();
@@ -192,7 +200,8 @@ class Search extends SqlSearch {
             }
         }
 
-        return $valid;
+
+        return !$this->hasErrors();
     }
 
     /**

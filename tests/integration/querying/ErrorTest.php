@@ -24,6 +24,22 @@ class ErrorTest extends TestCase {
         $errors = $Engine->getErrors();
         $this->assertCount(1, $errors);
         $this->assertEquals( trans('errors.no_results'), $errors[0]);
+    }    
+
+    public function testNoKeywords() {
+        $Engine = new Engine();
+        $results = $Engine->actionQuery(['bible' => 'kjv', 'search' => '']);
+        $this->assertTrue($Engine->hasErrors());
+        $errors = $Engine->getErrors();
+        $this->assertCount(1, $errors);
+        $this->assertEquals( trans('errors.no_query'), $errors[0]);
+
+        $Engine = new Engine();
+        $results = $Engine->actionQuery(['bible' => 'kjv', 'search' => ' *']);
+        $this->assertTrue($Engine->hasErrors());
+        $errors = $Engine->getErrors();
+        $this->assertCount(1, $errors);
+        $this->assertEquals( trans('errors.no_keywords'), $errors[0]);
     }
 
     public function testParallelLookupNoResults() {
