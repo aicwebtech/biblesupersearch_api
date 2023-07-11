@@ -130,20 +130,26 @@ class Search extends SqlSearch {
         if(is_array($Passages)) {
             foreach($Passages as $Passage) {
                 if(!$Passage->isSingleBook() && !$Passage->hasErrors()) {
-                    $this->addError( trans('errors.invalid_search.reference', ['search' => $search]), 4);
+                    $this->addTransError( 'errors.invalid_search.reference', ['search' => $search], 4);
                     return FALSE;
                 }
             }
         }
 
         if($search_type != 'regexp' && strpos($search, '"') === FALSE && strpos($search, '`') === FALSE) {
+            $keywords = static::parseQueryTerms($search);
+
+            if($search && empty($keywords)) {
+                return $this->addTransError('errors.invalid_search.general', ['search' => $search], 4);
+            }
+            
             // Check for invalid characters
             // $invalid_chars = preg_replace('/[\p{L}\(\)|!&^ "\'0-9%]+/u', '', $search); // Original
 
             $invalid_chars = preg_match('/[^' . static::$term_base_regexp . '|!&^ "\'0-9%()*+]/u', $search, $matches);
 
             if(!empty($invalid_chars)) {
-                $this->addError( trans('errors.invalid_search.general', ['search' => $search]), 4);
+                $this->addTransError('errors.invalid_search.general', ['search' => $search], 4);
                 return FALSE;
             }
         }
@@ -177,13 +183,27 @@ class Search extends SqlSearch {
 
         $prox_parsed = $this->parseProximitySearch();
 
+        $operators =  static::parseQueryOperators($search, $terms = NULL);
+
         if(count($prox_parsed[0]) != count($prox_parsed[1]) + 1) {
-            return $this->addError( trans('errors.prox_keywords_missing') );
+            //return $this->addError( trans('errors.prox_keywords_missing') );
         }
 
-        foreach($prox_parsed[0] as $Search) {
+        $lim = count($prox_parsed[0]) - 1;
+
+        foreach($prox_parsed[0] as $key => $Search) {
             if(empty($Search->search) || $Search->search == '()') {
-                return $this->addError( trans('errors.prox_operator_beg_end') ) ;
+                if($key == 0) {
+                    $op = array_shift($operators);
+                    return $this->addError( trans('errors.operator.op_at_beginning', ['op' => $op]) );
+                } elseif ($key == $lim) {
+                    $op = array_pop($operators);
+                    return $this->addError( trans('errors.operator.op_at_end', ['op' => $op]) );
+                } else {
+
+                }
+
+                //return $this->addError( trans('errors.prox_operator_beg_end') ) ;
             }
 
             if(!$Search->validate()) {
