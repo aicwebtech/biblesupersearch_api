@@ -19,7 +19,12 @@ return array(
     'context' => [
         'range' => 5
     ],
-    'global_maximum_results' => 500,
+    
+    // Maximum number of verses that can be displayed at once
+    'global_maximum_results' => 500, 
+    // Maximum number of verses returned by parallel search, displayed or not
+    'parallel_search_maximum_results' => 2000, 
+
     // List of all search types the API supports
     'search_types' => [
         [

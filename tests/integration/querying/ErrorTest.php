@@ -37,21 +37,25 @@ class ErrorTest extends TestCase {
     }
 
     public function testIllegalCharacters() {
-        $list = ['*', ' * ', ' + ', ' ', ' " "'];
+        $list = ['*', ' * ', ' + ', ' ', ' " "', "  "];
+        $list[] = '"' . chr(32) . '"';
 
         $Engine = Engine::getInstance();
         
         foreach($list as $qu) {        
-            $qu_tr = trim($qu);
+            $qu_tr = $qu;
+            $qu_tr = $qu_tr ?: $qu;
 
+            // Reference
             $results = $Engine->actionQuery(['bible' => 'kjv', 'reference' => $qu]);
             $this->assertTrue($Engine->hasErrors());
             $errors = $Engine->getErrors();
             $this->assertCount(1, $errors);
             $this->assertEquals( trans('errors.passage_not_found', ['passage' => $qu]), $errors[0]);      
 
+            // Search, type = all words
             $results = $Engine->actionQuery(['bible' => 'kjv', 'request' => $qu]);
-            $this->assertTrue($Engine->hasErrors());
+            $this->assertTrue($Engine->hasErrors(), $qu);
             $errors = $Engine->getErrors();
 
             $this->assertCount(1, $errors);
@@ -62,6 +66,7 @@ class ErrorTest extends TestCase {
             $errors = $Engine->getErrors();
             $this->assertCount(1, $errors);
             $this->assertEquals( trans('errors.invalid_search.general', ['search' => $qu_tr]), $errors[0]);            
+            // Search, type = boolean
             $results = $Engine->actionQuery(['bible' => 'kjv', 'request' => $qu, 'search_type' => 'boolean']);
             $this->assertTrue($Engine->hasErrors());
             $errors = $Engine->getErrors();
@@ -75,7 +80,6 @@ class ErrorTest extends TestCase {
             $this->assertCount(1, $errors);
             $this->assertEquals( trans('errors.invalid_search.general', ['search' => $qu_tr]), $errors[0]);
         }
-
     }
 
     public function testParallelLookupNoResults() {

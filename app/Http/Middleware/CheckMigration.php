@@ -79,7 +79,10 @@ class CheckMigration {
         $needed = FALSE;
 
         foreach($output_array as $row) {
-            if(preg_match('/\|\s*No\s*\|/', $row)) {
+            if(
+                preg_match('/\s*Pending\s*/', $row) ||
+                preg_match('/\|\s*No\s*\|/', $row) // legacy
+            ) {
                 $needed = TRUE;
                 break;
             }

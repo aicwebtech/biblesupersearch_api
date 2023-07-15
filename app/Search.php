@@ -182,12 +182,7 @@ class Search extends SqlSearch {
         }
 
         $prox_parsed = $this->parseProximitySearch();
-
         $operators =  static::parseQueryOperators($search, $terms = NULL);
-
-        if(count($prox_parsed[0]) != count($prox_parsed[1]) + 1) {
-            //return $this->addError( trans('errors.prox_keywords_missing') );
-        }
 
         $lim = count($prox_parsed[0]) - 1;
 
@@ -200,10 +195,8 @@ class Search extends SqlSearch {
                     $op = array_pop($operators);
                     return $this->addError( trans('errors.operator.op_at_end', ['op' => $op]) );
                 } else {
-
+                    return $this->addError( trans('errors.invalid_search.general', ['search' => $search]) );
                 }
-
-                //return $this->addError( trans('errors.prox_operator_beg_end') ) ;
             }
 
             if(!$Search->validate()) {

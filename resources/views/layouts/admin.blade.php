@@ -101,9 +101,14 @@ if(!isset($hide_menus)) {
 
         <div id='footer'>
             Bible SuperSearch API Version {{ config('app.version') }}.  Copyright &copy; 2006 - {{ date('Y') }} &nbsp;
-            <a href='https://biblesupersearch.com'target="_NEW">BibleSuperSearch.com</a> &nbsp;
+            <a href='https://biblesupersearch.com'target="_NEW">BibleSuperSearch.com</a> 
+            <br /><br />
             This open source software is licensed under the terms of the
             <a href='https://www.gnu.org/licenses/gpl-3.0.en.html' target="_NEW">GNU General Public License, Version 3</a>.
+            <br /><br />
+            Built and maintiained by 
+            <a class='footer-link' href='http://www.aicwebtech.com/' target='_NEW'>AIC Web Tech</a>: 
+            <a class='footer-link' href='http://www.aicwebtech.com/' target='_NEW'>aicwebtech.com</a>
         </div>
     </body>
 </html>
