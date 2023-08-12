@@ -41,6 +41,9 @@ enyo.kind({
 
     rendered: function() {
         this.inherited(arguments);
+        this.init();
+    }, 
+    init: function() {
         var id = this.$.Editor.get('id');
 
         // var element = document.getElementById(id);
@@ -50,11 +53,32 @@ enyo.kind({
         settings.toolbarGroups = this.editorToolbarGroups;
         settings.removePlugins = this.editorRemovePlugins;
 
-        this.ckeditor = CKEDITOR.replace(id, settings);
+        if(typeof ClassicEditor != 'undefined' && ClassicEditor) {
+            // CKEDITOR 5 - NOT working!!!
+            t = this;
 
-        this.ckeditor.on('change', enyo.bind(this, function() {
-            this.$.Editor.set('value', this.ckeditor.getData());
-        }));
+            ClassicEditor
+                .create( document.querySelector('#' + id), settings)
+                .then(editor => {
+                    t.ckeditor = editor;
+
+                    t.ckeditor.model.document.on('change:data', enyo.bind(this, function() {
+                        t.$.Editor.set('value', this.ckeditor.getData());
+                    }));
+                })
+
+            // this.ckeditor.model.document.on('change:data', enyo.bind(this, function() {
+            //     this.$.Editor.set('value', this.ckeditor.getData());
+            // }));
+
+        } else {        
+            this.ckeditor = CKEDITOR.replace(id, settings);
+
+            this.ckeditor.on('change', enyo.bind(this, function() {
+                this.$.Editor.set('value', this.ckeditor.getData());
+            }));
+        }
+
 
         // CKEDITOR.on('instanceCreated', enyo.bind(this, function(e) {
         //     console.log('instanceCreated');
@@ -65,5 +89,5 @@ enyo.kind({
 
         //     this.ckeditor.config.toolbarGroups = this.editorToolbarGroups;
         // }));
-    }, 
+    }
 });

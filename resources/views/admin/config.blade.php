@@ -196,9 +196,20 @@
                                                 <span class='info'>
                                                     <span>i</span>
                                                     <p>
-                                                        Total maximum number of verses returned by ANY query. &nbsp;Users are advised to narrow their searches if this value is
-                                                        exceeded. &nbsp;This helps prevent overload of your server. &nbsp; Also, most Bible publishers do not allow displaying
-                                                        more than 500 verses at once.
+                                                        Maximum number of verses returned to the user by ANY query. &nbsp;Users are advised to narrow their searches if this value is
+                                                        exceeded. &nbsp;This helps prevent overload of your server. &nbsp; Also, most Bible publishers do not allow displaying more than 500 verses at once.
+                                                    </p>
+                                                </span>
+                                            </td>
+                                        </tr>                                        
+                                        <tr>
+                                            <td class='ralign'>Parallel Search Maximum Results: </td>
+                                            <td>
+                                                <input name='bss__parallel_search_maximum_results' size='5' value='{{$configs['bss.parallel_search_maximum_results']}}'>
+                                                <span class='info'>
+                                                    <span>i</span>
+                                                    <p>
+                                                        Maximum number of verses discoverable by a parallel Bible Search. &nbsp;The number of verses actually returned is still limited by 'Overall Maximum Verses' above. &nbsp;This number should be GREATER that that one.  
                                                     </p>
                                                 </span>
                                             </td>

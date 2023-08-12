@@ -111,7 +111,7 @@ trait Error {
      * @return array $errors
      */
     public function getErrors() {
-        return $this->errors;
+        return array_values($this->errors);
     }
 
     /**
@@ -158,7 +158,12 @@ trait Error {
      * @return bool FALSE
      */
     public function addError($message, $level = 1, $http_status = NULL, $unique = TRUE) {
-        if(!in_array($message, $this->errors)) {
+        if($unique && is_string($unique)) {
+            if(!isset($this->errors[$unique])) {
+                $this->errors[$unique] = $message;
+            }
+        }
+        else if(!in_array($message, $this->errors)) {
             $this->errors[] = $message;
         }
 
@@ -170,6 +175,11 @@ trait Error {
         $this->error_level = max($this->error_level, $level);
         $this->http_status = $http_status;
         return FALSE;
+    }
+
+    public function addTransError($trans, $prop = [], $level = 1, $http_status = null, $unique = true) {
+        $unique = $unique ? $trans : false;
+        return $this->addError(trans($trans, $prop), $level, $http_status, $unique);
     }
 
     /**

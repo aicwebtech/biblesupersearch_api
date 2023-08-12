@@ -88,9 +88,14 @@
 
         <div id='footer'>
             <b><?php echo config('app.name') ?>&nbsp; &nbsp;Version <?php echo config('app.version'); ?></b><br /><br />
-            This API is Free and Open Source, licenced under the GNU GPL v3.0.<br /><br />
-            To learn how to install it on your website, please visit:<br /><br />
+            This API is Free and Open Source software, licenced under the GNU GPL v3.0.<br /><br />
+            To learn how to install it in it's entirety on your website, please visit:<br /><br />
             <a class='footer-link' href='http://www.biblesupersearch.com/downloads' target='_NEW'>http://www.BibleSuperSearch.com</a>
+            <br /><br />
+
+            Built and maintiained by 
+            <a class='footer-link' href='http://www.aicwebtech.com/' target='_NEW'>AIC Web Tech</a>:
+            <a class='footer-link' href='http://www.aicwebtech.com/' target='_NEW'>aicwebtech.com</a>
         </div>
     </body>
 </html>

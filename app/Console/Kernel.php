@@ -35,6 +35,8 @@ class Kernel extends ConsoleKernel
         Commands\BibleRefresh::class,
         Commands\TempMigrateStrongs::class,
         Commands\TestEmail::class,
+        Commands\UserCreate::class,
+        Commands\UserPassword::class,
         Commands\MigrateModuleFiles::class,
     ];
 

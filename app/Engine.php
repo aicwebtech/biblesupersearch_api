@@ -263,6 +263,12 @@ class Engine {
         $this->metadata = new \stdClass;
         $this->metadata->hash = $Cache->hash;
 
+        $test = [];
+
+        if(!isset($test['search'])) {
+            //
+        }
+
 
         $input = $this->_sanitizeInput($input, $parsing);
         $this->setDefaultLanguage($input['language']);
@@ -280,6 +286,14 @@ class Engine {
         if($references && $keywords && $request) {
             $this->addError(trans('errors.triple_request'), 4);
             return FALSE;
+        }
+
+        $this->checkSemiEmpty($references, 'reference');
+        $this->checkSemiEmpty($keywords, 'search');
+        $this->checkSemiEmpty($request, 'request');
+
+        if($this->hasErrors()) {
+            return false;
         }
 
         list($keywords, $references, $this->metadata->disambiguation, $disamb_book) = Passage::mapRequest($input, $this->languages, $this->Bibles);
@@ -359,7 +373,10 @@ class Engine {
                         $paging = $this->_getCleanPagingData($BibleResults);
                     }
 
-                    if($BibleResults->count() == config('bss.global_maximum_results')) {
+                    if($parallel && $BibleResults->count() == config('bss.parallel_search_maximum_results')) {
+                        $this->addError( trans('errors.result_limit_reached', ['maximum' => config('bss.parallel_search_maximum_results')]), 3);
+                    }
+                    else if($BibleResults->count() == config('bss.global_maximum_results')) {
                         $this->addError( trans('errors.result_limit_reached', ['maximum' => config('bss.global_maximum_results')]), 3);
                     }
                 }
@@ -425,6 +442,7 @@ class Engine {
         $results = $this->_formatDataStructure($results, $input, $Passages, $Search);
 
         if($input['multi_bibles'] && $paginate) {
+            $results = array_slice($results, 0, config('bss.parallel_search_maximum_results'));
             $Paginator = $this->_buildPaginator($results, $input['page_limit'], $input['page']);
             $results = $Paginator->all();
             $paging = $this->_getCleanPagingData($Paginator);
@@ -1038,6 +1056,40 @@ class Engine {
 
     public function setDefaultPageAll($value) {
         $this->default_page_all = (bool) $value;
+    }
+
+    // Detect and error for cases when there is an input, but it's effectively empty
+    protected function checkSemiEmpty($value, $as = 'request') {
+        $value_org = $value;
+        $value = trim($value);
+        $value = str_replace('_', ' ', $value);
+
+        if(empty($value)) {
+            // If it's actually empty, no error. Re: we have separate checks for this
+            return true; 
+        }
+
+        if($as == 'search' || $as == 'request') {
+            if(preg_match("/\p{L}/", $value)) {
+                return true;
+            }            
+        }
+
+        if($as == 'reference' || $as == 'request') {
+            if(preg_match("/[\p{L}\d]/", $value)) {
+                return true;
+            }            
+        }
+
+        if($as == 'reference') {
+            $tstr = 'errors.passage_not_found';
+            $prop = ['passage' => $value_org];
+        } else {
+            $tstr = 'errors.invalid_search.general';
+            $prop = ['search' => $value_org];
+        }
+
+        return $this->addTransError($tstr, $prop, 4);
     }
 
     public static function getHardcodedVersion() {

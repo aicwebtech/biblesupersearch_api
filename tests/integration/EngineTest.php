@@ -165,15 +165,19 @@ class EngineTest extends TestCase
         $Engine->setDefaultPageAll(TRUE);
 
         $results = $Engine->actionQuery(['bible' => 'kjv', 'search' => 'faith hope', 'reference' => 'Rom', 'search_type' => 'proximity']);
+        $this->assertFalse($Engine->hasErrors());
         $this->assertCount(13, $results['kjv']);
 
         $results = $Engine->actionQuery(['bible' => 'kjv', 'search' => 'faith hope', 'search_type' => 'chapter']);
+        $this->assertFalse($Engine->hasErrors());
         $this->assertCount(151, $results['kjv']);
 
         $results = $Engine->actionQuery(['bible' => 'kjv', 'search' => 'faith hope', 'reference' => 'Rom', 'search_type' => 'book']);
+        $this->assertFalse($Engine->hasErrors());
         $this->assertCount(43, $results['kjv']);
 
         $results = $Engine->actionQuery(['bible' => 'kjv', 'search' => 'faith PROC(5) hope', 'reference' => 'Rom', 'search_type' => 'boolean']);
+        $this->assertFalse($Engine->hasErrors());
         $this->assertCount(10, $results['kjv']);
     }
 
