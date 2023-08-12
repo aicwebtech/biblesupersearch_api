@@ -101,8 +101,16 @@ class VerseStandard extends VerseAbstract {
             }
         }
         else {
-            ini_set('max_execution_time', 120);
-            $Query->limit( config('bss.global_maximum_results') );
+            $met = 120;
+            $lim = config('bss.global_maximum_results');
+
+            if($Search && $parameters['multi_bibles']) {
+                $met = 600;
+                $lim = config('bss.parallel_search_maximum_results');
+            }
+
+            ini_set('max_execution_time', $met);
+            $lim && $Query->limit( $lim);
 
             if($reccommend_raw_query) {
                 $verses = collect( DB::select($Query->toSql(), $binddata) );
@@ -372,6 +380,11 @@ class VerseStandard extends VerseAbstract {
 
     public function getRandomReference($random_mode) {
         switch($random_mode) {
+            case 'book':
+                $verse = static::select('book','chapter')->where('chapter', '=', 1)->where('verse', '=', 1)->inRandomOrder()->first();
+                return array('book_id' => $verse->book, 'chapter_verse' => $verse->chapter);
+                break;            
+
             case 'chapter':
                 $verse = static::select('book','chapter')->where('verse', '=', 1)->inRandomOrder()->first();
                 return array('book_id' => $verse->book, 'chapter_verse' => $verse->chapter);

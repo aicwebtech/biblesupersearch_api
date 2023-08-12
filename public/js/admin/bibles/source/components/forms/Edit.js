@@ -477,7 +477,6 @@ enyo.kind({
     },
     handleNameFocus: function(inSender, inEvent) {
         this.log();
-
     },
     handleLangCodeChange: function() {
         var lc = this.$.lang_code.get('value').toLowerCase();

@@ -27,6 +27,10 @@ class Language extends Model {
         $this->attributes['iso_639_3_raw'] = $value;
         $this->attributes['iso_639_3']     = substr($value, 0, 3);
     }
+
+    public function getNativeNameAttribute($value) {
+        return ucwords($value);
+    }
     
     public function _setIso6391Attribute($value) {
         $value = trim($value);    

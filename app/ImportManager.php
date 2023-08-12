@@ -64,11 +64,18 @@ class ImportManager {
             'name'  => 'Unbound Bible',
             'desc'  => 'Imports a Bible in the (zipped) Unbound Bible Format',
             'url'   => 'https://www.biblesupersearch.com/unbound-downloads/',
-            // 'url'   => 'https://unbound.biola.edu/index.cfm?method=downloads.showDownloadMain', // DEAD
             'ext'   => ['zip'],
             'kind'  => 'Unbound',
             'class' => \App\Importers\Unbound::class,
-        ],          
+        ],           
+        // 'usx' => [
+        //     'name'  => 'USX',
+        //     'desc'  => 'Imports a Bible in the (zipped XML) USX Bible Format',
+        //     //'url'   => 'https://app.thedigitalbiblelibrary.org/',
+        //     'ext'   => ['zip'],
+        //     'kind'  => 'Usx',
+        //     'class' => \App\Importers\Usx::class,
+        // ],          
     ];
 
     protected static $import_rules = [

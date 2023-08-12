@@ -1,5 +1,5 @@
 Bible SuperSearch API
-Copyright (C) 2006-2019  Luke Mounsey
+Copyright (C) 2006-2023  Luke Mounsey
 
 This program is free software; you can redistribute it and/or
 modify it under the terms of the GNU General Public License (GPL)

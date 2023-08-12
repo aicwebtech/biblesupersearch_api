@@ -193,3 +193,10 @@ title.h1 {
     padding: 5px;
     border-radius: 10px;
 }
+
+ .cke_dialog {
+/*    z-index: 100000000 !important;
+    background-color: green;
+    color: yellow;*/
+}
+

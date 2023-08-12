@@ -75,7 +75,7 @@ class BookAbstract extends Model
         // Because searches are also tested against this, we must filter out items with boolean or regexp operators
         // Need this to work with Unicode book names such as Ésaïe (French for Isaiah)
         // Cannot remove this test as it's needed for tests / ect - removing will cause breakage!
-        $test = preg_match('/[\p{Ps}\p{Pe}\(\)\\\|\+&]/', $name, $matches);
+        $test = preg_match('/[\p{Ps}\p{Pe}\(\)\\\|\+&\*]/', $name, $matches);
 //        $test2 = preg_match('/".*"/', $name, $matches); // Additional test, if needed
 //        $test3 = preg_match("/'.*'/", $name, $matches); // Additional test, if needed
 

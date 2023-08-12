@@ -42,6 +42,83 @@ class ProximitySearchTest extends TestCase {
         // ?? not sure what this was supposed to test
     }
 
+    public function testMissingKeywordChap() {
+        $Engine = Engine::getInstance();
+        $Engine->setDefaultDataType('raw');
+
+        $results = $Engine->actionQuery(['bible' => 'kjv', 'search' => 'faith CHAP', 'search_type' => 'boolean']);
+
+        $this->assertTrue($Engine->hasErrors());
+        $errors = $Engine->getErrors();
+        $this->assertCount(1, $errors);
+        $this->assertEquals( trans('errors.operator.op_at_end', ['op' => 'CHAP']), $errors[0]);    
+
+        $results = $Engine->actionQuery(['bible' => 'kjv', 'search' => 'CHAP God', 'search_type' => 'boolean']);
+
+        $this->assertTrue($Engine->hasErrors());
+        $errors = $Engine->getErrors();
+        // print_r($errors);
+        $this->assertCount(1, $errors);
+        $this->assertEquals( trans('errors.operator.op_at_beginning', ['op' => 'CHAP']), $errors[0]);
+    }    
+
+    public function testMissingKeywordProx() {
+        $Engine = Engine::getInstance();
+        $Engine->setDefaultDataType('raw');
+
+        $results = $Engine->actionQuery(['bible' => 'kjv', 'search' => 'faith PROX(5)', 'search_type' => 'boolean']);
+
+        $this->assertTrue($Engine->hasErrors());
+        $errors = $Engine->getErrors();
+        $this->assertCount(1, $errors);
+        $this->assertEquals( trans('errors.operator.op_at_end', ['op' => 'PROX(5)']), $errors[0]);       
+
+        $results = $Engine->actionQuery(['bible' => 'kjv', 'search' => 'PROX(5) God', 'search_type' => 'boolean']);
+
+        $this->assertTrue($Engine->hasErrors());
+        $errors = $Engine->getErrors();
+        $this->assertCount(1, $errors);
+        $this->assertEquals( trans('errors.operator.op_at_beginning', ['op' => 'PROX(5)']), $errors[0]);
+    }    
+
+    public function testMissingKeywordProc() {
+        $Engine = Engine::getInstance();
+        $Engine->setDefaultDataType('raw');
+
+        $results = $Engine->actionQuery(['bible' => 'kjv', 'search' => 'faith PROC(5)', 'search_type' => 'boolean']);
+
+        $this->assertTrue($Engine->hasErrors());
+        $errors = $Engine->getErrors();
+        $this->assertCount(1, $errors);
+        $this->assertEquals( trans('errors.operator.op_at_end', ['op' => 'PROC(5)']), $errors[0]);  
+
+        $results = $Engine->actionQuery(['bible' => 'kjv', 'search' => 'PROC(5) God', 'search_type' => 'boolean']);
+
+        $this->assertTrue($Engine->hasErrors());
+        $errors = $Engine->getErrors();
+        $this->assertCount(1, $errors);
+        $this->assertEquals( trans('errors.operator.op_at_beginning', ['op' => 'PROC(5)']), $errors[0]);
+    }    
+
+    public function testMissingKeywordBook() {
+        $Engine = Engine::getInstance();
+        $Engine->setDefaultDataType('raw');
+
+        $results = $Engine->actionQuery(['bible' => 'kjv', 'search' => 'faith BOOK', 'search_type' => 'boolean']);
+
+        $this->assertTrue($Engine->hasErrors());
+        $errors = $Engine->getErrors();
+        $this->assertCount(1, $errors);
+        $this->assertEquals( trans('errors.operator.op_at_end', ['op' => 'BOOK']), $errors[0]);  
+
+        $results = $Engine->actionQuery(['bible' => 'kjv', 'search' => 'BOOK God', 'search_type' => 'boolean']);
+
+        $this->assertTrue($Engine->hasErrors());
+        $errors = $Engine->getErrors();
+        $this->assertCount(1, $errors);
+        $this->assertEquals( trans('errors.operator.op_at_beginning', ['op' => 'BOOK']), $errors[0]);
+    }
+
     public function testProximitySearchType() {
         $Engine = Engine::getInstance();
         $Engine->setDefaultDataType('raw');

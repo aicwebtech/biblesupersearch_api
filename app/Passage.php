@@ -1064,7 +1064,7 @@ class Passage {
         $reference = strtolower($reference);
         $reference = str_replace(' ', '_', $reference);
 
-        $randoms = ['random_chapter', 'random_verse'];
+        $randoms = ['random_book', 'random_chapter', 'random_verse'];
 
         foreach($randoms as $rand) {
             if(strpos($reference, $rand) === 0) {
@@ -1078,7 +1078,7 @@ class Passage {
     public static function normalizeRandom($reference) {
         $ref = strtolower($reference);
         $ref = str_replace(' ', '_', $ref);
-        $randoms = ['random_chapter', 'random_verse'];
+        $randoms = ['random_book', 'random_chapter', 'random_verse'];
 
         foreach($randoms as $rand) {
             if(strpos($ref, $rand) === 0) {
