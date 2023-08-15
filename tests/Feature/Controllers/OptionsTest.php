@@ -17,12 +17,13 @@ class OptionsTest extends TestCase
         $cache = ConfigManager::getConfigs();
         $test_post = [];
         $User = User::find(1);
+        $this->assertGreaterThanOrEqual(100, $User->access_level);
 
         $test_config = [
             'app.client_url' => 'http://testurl.com',   // String
             'bss.daily_access_limit' => 456,            // Int
             // 'download.tab_enable' => 0,                 // Bool
-            'bss.defaults.bible' => $cache['bss.defaults.bible'], // keep the same: this in intentional
+            'bss.defaults.bible' => $cache['bss.defaults.bible'], // keep the same: this is intentional
             'app.phone_home' => $cache['app.phone_home'] ? 0 : 1, // Toggle a bool
         ];
 
@@ -56,6 +57,7 @@ class OptionsTest extends TestCase
         $Post = Post::where('key', 'tos')->firstOrFail();
         $orig = $Post->content; // cache existing
         $User = User::find(1);
+        $this->assertGreaterThanOrEqual(100, $User->access_level);
 
         $response = $this->actingAs($User)
                             ->post('/admin/tos', ['content' => 'Test TOS']);
@@ -74,6 +76,7 @@ class OptionsTest extends TestCase
         $Post = Post::where('key', 'privacy')->firstOrFail();
         $orig = $Post->content; // cache existing
         $User = User::find(1);
+        $this->assertGreaterThanOrEqual(100, $User->access_level);
 
         $response = $this->actingAs($User)
                             ->post('/admin/privacy', ['content' => 'Test Privacy Stmn']);
