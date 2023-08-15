@@ -20,6 +20,7 @@ class Base extends TestCase {
         $this->assertNotNull($this->importer);
         // $this->assertEquals('testing', config('app.env')); // not alway the case
         $User = \App\User::find(1);
+        $this->assertGreaterThanOrEqual(100, $User->access_level);
         return ['User' => $User];
     }
 
