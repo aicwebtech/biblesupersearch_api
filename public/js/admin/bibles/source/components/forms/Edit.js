@@ -7,6 +7,7 @@ enyo.kind({
     formData: {},
     copyrightData: {},
     $description: null,
+    copyrightStatement: null,
     formPk: null, // binding use only
     debugBindings: false,
     copyrightConfirmed: false,
@@ -117,6 +118,7 @@ enyo.kind({
                 ]}
             ]}
         ]},
+        // {tag: 'hr'},
         {classes: 'form_section', components: [
             {tag: 'table', components: [        
                 {tag: 'tr', components: [
@@ -147,14 +149,14 @@ enyo.kind({
                     ]}
                 ]},
             ]},
-            {tag: 'hr'},
+            {tag: 'br'},
             {tag: 'table', components: [
                 {tag: 'tr', components: [
-                    {tag: 'td', attributes: {colspan: 2}, style: 'width: 49%', components: [
+                    {tag: 'td', attributes: {colspan: 2}, style: 'width: 69%', components: [
                         {content: 'Copyright Statement' },
                         {tag:'small', classes: 'sublabel', content: 'Will be displayed with Bible on search results page.' }
                     ]},
-                    {tag: 'td', attributes: {colspan: 2}, style: 'width: 49%', components: [
+                    {tag: 'td', attributes: {colspan: 2}, style: 'width: 29%', components: [
                         {content: 'Default Copyright Statement' },
                         {tag:'small', classes: 'sublabel', content: 'Will be used if copyright statement is left blank.' }
                     ]}
@@ -163,19 +165,27 @@ enyo.kind({
                     {tag: 'td', attributes: {colspan: 2}, components: [
                         {
                             name: 'copyright_statement', 
-                            kind: 'AICWEBTECH.Enyo.CKEDITOR.Editor', 
+                            kind: 'enyo.TextArea', 
+                            // kind: 'AICWEBTECH.Enyo.CKEDITOR.Editor', 
                             editorSettings: {
                                 height: 100,
                                 width: 400,
                             }
                         }
                     ]},
-                    {tag: 'td', classes: 'align_top', attributes: {colspan: 2}, components: [
-                        {name: 'copyright_statement_default', allowHtml: true, classes: 'copyright_statement_default pseudo_input'}
-                    ]}
+                    {
+                        tag: 'td', 
+                        classes: 'align_top', 
+                        attributes: {colspan: 2}, 
+                        name: 'copyright_statement_default', allowHtml: true, classes: 'align_top copyright_statement_default pseudo_input',
+                        _components: [
+                            {name: 'copyright_statement_default', allowHtml: true, classes: 'copyright_statement_default pseudo_input'}
+                        ]
+                    }
                 ]},
             ]},
         ]},
+        // {tag: 'hr'},
         {classes: 'form_section', components: [
             {tag: 'table', attributes: {border: '0'}, components: [
                 {tag: 'tr', ontap: 'toggleDescription', components: [
@@ -244,6 +254,15 @@ enyo.kind({
             
             return value;
         }},
+        {from: 'formData.copyright_statement', to: '$.copyright_statement.value', oneWay: false, transform: function(value, dir) {
+            this.debugBindings && this.log('copyright_statement', value, dir);
+
+            if(dir == 1 && this.$copyrightStatement) {
+                this.$copyrightStatement.setData(value); // feed it to the CKEDITOR
+            }
+            
+            return value || '';
+        }},  
         {from: 'formData.rank', to: '$.rank.value', oneWay: false, transform: function(value, dir) {
             this.debugBindings && this.log('rank', value, dir);
             return (value || value === 0) ? value : null;
@@ -312,12 +331,7 @@ enyo.kind({
             }
 
             return (value && value != '0') ? value : null;
-        }},               
-        {from: 'formData.copyright_statement', to: '$.copyright_statement.value', oneWay: false, transform: function(value, dir) {
-            this.debugBindings && this.log('copyright_statement', value, dir);
-            
-            return value || '';
-        }},       
+        }},                    
         {from: 'formData.id', to: 'formPk', oneWay: false, transform: function(value, dir) {
             this.debugBindings && this.log('formPk', value, dir);
             value = (value && value != '0') ? value : null;
@@ -373,15 +387,110 @@ enyo.kind({
 
     rendered: function() {
         this.inherited(arguments);
+        t = this;
 
-        this.$description = CKEDITOR.replace('description', {
-            height: 300,
-            width: 750,
-        });
+        // this.$description = CKEDITOR.replace('description', {
+        //     height: 300,
+        //     width: 750,
+        // });
 
-        this.$description.on('change', enyo.bind(this, function() {
-            this.$.description.set('value', this.$description.getData());
-        }));
+        // this.$description.on('change', enyo.bind(this, function() {
+        //     this.$.description.set('value', this.$description.getData());
+        // }));
+
+        ClassicEditor
+            .create( this.$.description.hasNode(), {
+                height: 300,
+                width: 600,
+                link: {
+                    decorators: {
+                        openInNewTab: {
+                            mode: 'manual',
+                            label: 'Open in a new tab',
+                            attributes: {
+                                target: '_blank',
+                                rel: 'noopener noreferrer'
+                            }
+                        }
+                    }
+                },
+                toolbar: {
+                    items: [
+                        'findAndReplace', 'selectAll', '|',
+                        'heading', '|',
+                        'bold', 'italic', 'strikethrough', 'underline', 'subscript', 'superscript', 'removeFormat', '|',
+                        'bulletedList', 'numberedList', '|',
+                        'outdent', 'indent', '|',
+                        'undo', 'redo',
+                        '-',
+                        'fontSize', 'fontFamily', 'fontColor', 'fontBackgroundColor', 'highlight', '|',
+                        'alignment', '|',
+                        'link', 'insertImage', 'blockQuote', 'insertTable', '|',
+                        'specialCharacters', 'horizontalLine', 'pageBreak', '|',
+                        'sourceEditing'
+                    ],
+                    shouldNotGroupWhenFull: true
+                },
+            } )
+            .then( newEditor => {
+                t.$description = newEditor;
+
+                t.$description.model.document.on('change:data', enyo.bind(t, function() {
+                    console.log('desciption changed');
+                    t.$.description.set('value', t.$description.getData());
+                }));
+            } )
+            .catch( error => {
+                console.error( error );
+            } );
+        
+        // CKEditor for Copyright Statement
+        ClassicEditor
+            .create( this.$.copyright_statement.hasNode(), {
+                height: 300,
+                width: 600,
+                link: {
+                    decorators: {
+                        openInNewTab: {
+                            mode: 'manual',
+                            label: 'Open in a new tab',
+                            attributes: {
+                                target: '_blank',
+                                rel: 'noopener noreferrer'
+                            }
+                        }
+                    }
+                },
+                toolbar: {
+                    items: [
+                        'findAndReplace', 'selectAll', '|',
+                        'heading', '|',
+                        'bold', 'italic', 'strikethrough', 'underline', 'subscript', 'superscript', 'removeFormat', '|',
+                        'bulletedList', 'numberedList', '|',
+                        'outdent', 'indent', '|',
+                        'undo', 'redo',
+                        'fontSize', 'fontFamily', 'fontColor', 'fontBackgroundColor', 'highlight', '|',
+                        'alignment', '|',
+                        '-',
+                        'link', 'insertImage', 'blockQuote', 'insertTable', '|',
+                        'specialCharacters', 'horizontalLine', 'pageBreak', '|',
+                        'sourceEditing'
+                    ],
+                    shouldNotGroupWhenFull: true
+                },
+            } )
+            .then( newEditor => {
+                t.copyrightStatement = newEditor;
+
+                t.copyrightStatement.model.document.on('change:data', enyo.bind(t, function() {
+                    console.log('copyright statement changed');
+                    t.$.copyright_statement.set('value', t.copyrightStatement.getData());
+                }));
+            } )
+            .catch( error => {
+                console.error( error );
+            } );
+
 
     }, 
 
@@ -429,6 +538,8 @@ enyo.kind({
             this._confirmCopyright(this.formData.copyright_id, null);
             return;
         }
+
+        //this.formData.description = this.$description.getData();
 
         this.inherited(arguments);
     },

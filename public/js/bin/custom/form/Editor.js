@@ -1,3 +1,4 @@
+// Not currently used!
 enyo.kind({
     name: 'AICWEBTECH.Enyo.CKEDITOR.Editor',
     ckeditor: null,
@@ -49,29 +50,37 @@ enyo.kind({
         // var element = document.getElementById(id);
         // element.setAttribute('contenteditable', true);
 
+        this.log('editor id', id);
+
         var settings = this.editorSettings;
         settings.toolbarGroups = this.editorToolbarGroups;
-        settings.removePlugins = this.editorRemovePlugins;
+        //settings.removePlugins = this.editorRemovePlugins;
 
-        if(typeof ClassicEditor != 'undefined' && ClassicEditor) {
+        if(typeof window.ClassicEditor != 'undefined' && ClassicEditor) {
             // CKEDITOR 5 - NOT working!!!
             t = this;
+            this.log('CKEditor 5!');
 
             ClassicEditor
-                .create( document.querySelector('#' + id), settings)
-                .then(editor => {
-                    t.ckeditor = editor;
+                .create( this.$.Editor.hasNode(), settings)
+                // .then(editor => {
+                //     t.ckeditor = editor;
 
-                    t.ckeditor.model.document.on('change:data', enyo.bind(this, function() {
-                        t.$.Editor.set('value', this.ckeditor.getData());
-                    }));
-                })
+                //     t.ckeditor.model.document.on('change:data', enyo.bind(this, function() {
+                //         t.$.Editor.set('value', this.ckeditor.getData());
+                //     }));
+                // });
 
             // this.ckeditor.model.document.on('change:data', enyo.bind(this, function() {
             //     this.$.Editor.set('value', this.ckeditor.getData());
             // }));
+            .catch( error => {
+                console.error( error );
+            } );
 
         } else {        
+            this.log('CKEditor 4 - boo');
+
             this.ckeditor = CKEDITOR.replace(id, settings);
 
             this.ckeditor.on('change', enyo.bind(this, function() {

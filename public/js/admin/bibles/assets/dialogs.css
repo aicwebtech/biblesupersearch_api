@@ -26,12 +26,14 @@ input:disabled, .pseudo_input.disabled {
 
 .copyright_statement_default {
     width: calc(99% - 20px);
-    height: 80px;
-    margin-top: 75px;
+    height: 100%;
+/*    margin-top: 75px;*/
     padding: 10px;
     background-color: rgb(235, 235, 228);
     color: rgb(45, 45, 45);
     overflow-y: auto;
+    position: relative;
+    bottom: 0px;
 }
 
 input.wide, select.wide, .unique_text.wide {
@@ -129,4 +131,14 @@ span.warning {
 .aicwebtech_autocomplete_options_option:hover {
     background-color: blue;
     color: white;
+}
+
+.ck .ck-balloon-panel  {
+    z-index: 100001;
+    background-color: cyan;
+}
+
+.ck .ck-balloon-panel .ck-input-text  {
+    z-index: 100001;
+    background-color: red;
 }
