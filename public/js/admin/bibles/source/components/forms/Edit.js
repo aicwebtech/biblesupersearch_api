@@ -11,6 +11,7 @@ enyo.kind({
     formPk: null, // binding use only
     debugBindings: false,
     copyrightConfirmed: false,
+    debugBindings: false,
 
     components: [
         {classes: 'form_section', components: [
@@ -150,7 +151,7 @@ enyo.kind({
                 ]},
             ]},
             {tag: 'br'},
-            {tag: 'table', components: [
+            {name: 'CopyrightStatementTable', tag: 'table', components: [
                 {tag: 'tr', components: [
                     {tag: 'td', attributes: {colspan: 2}, style: 'width: 69%', components: [
                         {content: 'Copyright Statement' },
@@ -186,7 +187,7 @@ enyo.kind({
             ]},
         ]},
         // {tag: 'hr'},
-        {classes: 'form_section', components: [
+        {name: 'DescriptionSection', classes: 'form_section', components: [
             {tag: 'table', attributes: {border: '0'}, components: [
                 {tag: 'tr', ontap: 'toggleDescription', components: [
                     {tag: 'th', content: '&nbsp', allowHtml: true, style: 'width: 10px'},
@@ -380,6 +381,11 @@ enyo.kind({
             this.$.DescriptionContainer.set('showing', true);
             this.$.descriptionPointer.set('showing', false);
         }
+
+        if(this.quick) {
+            this.$.DescriptionSection.set('showing', false);
+            this.$.CopyrightStatementTable.set('showing', false);
+        }
     },
 
     toggleDescription: function() {
@@ -489,11 +495,11 @@ enyo.kind({
                 },
             } )
             .then( newEditor => {
-                t.copyrightStatement = newEditor;
+                t.$copyrightStatement = newEditor;
 
-                t.copyrightStatement.model.document.on('change:data', enyo.bind(t, function() {
+                t.$copyrightStatement.model.document.on('change:data', enyo.bind(t, function() {
                     console.log('copyright statement changed');
-                    t.$.copyright_statement.set('value', t.copyrightStatement.getData());
+                    t.$.copyright_statement.set('value', t.$copyrightStatement.getData());
                 }));
             } )
             .catch( error => {
