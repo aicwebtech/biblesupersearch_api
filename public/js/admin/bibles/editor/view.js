@@ -53,8 +53,8 @@ enyo.kind({
     bindings: [
         {from: 'app.ajaxLoading', to: '$.Loading.showing'},
         {from: 'title', to: '$.Title.content', transform: function(value, dir) {
+            value = value || 'Editing';
             document.title = value;
-
             return value;
         }},
         // {from: 'title', to: 'window.document.title'}
@@ -65,6 +65,26 @@ enyo.kind({
 
         this.$.Form.set('pk', bootstrap.bibleId);
         this.$.Form.openLoad();
+
+          window.addEventListener("unload", enyo.bind(this, function(e) {
+                this.log('beforeunload');
+
+                if(window.cofirm('Are you sure you want to refresh this page?')) {
+                    return true;
+                }
+
+                return false;
+
+                if(!c) {
+                    e.preventDefault();
+                }
+
+                // this.app.confirm('Are you sure you want to refresh this page?', function(c) {
+                //     if(!c) {
+                //         e.preventDefault();
+                //     }
+                // })     
+          }));
     },
 
     openEdit: function(inSender, inEvent) {

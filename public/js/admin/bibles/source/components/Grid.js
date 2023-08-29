@@ -353,7 +353,7 @@ enyo.kind({
         // html += ' &nbsp; ';
         html += this.__makeSignalLink('Quick Edit', 'onEdit', props);
         html += ' &nbsp; ';
-        html += this.__makeHtmlLink('Edit', '/admin/bibles/' + rowObject.module + '/edit', 'bible_edit');
+        html += this.__makeHtmlLink('Edit', '/admin/bibles/' + rowObject.module + '/edit', '_NEW');
         return html;
     },    
     _formatName: function(cellvalue, options, rowObject) {
