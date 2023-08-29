@@ -67,12 +67,14 @@ enyo.kind({
         }
     },
     showingChanged: function(was, is) {
-        if(is) {
-            this.handle.dialog('open');
-            this.handle.scrollTop(0);
-        }
-        else {
-            this.handle.dialog('close');
+        if(this.handle && this.handle.dialog) {        
+            if(is) {
+                this.handle.dialog('open');
+                this.handle.scrollTop(0);
+            }
+            else {
+                this.handle.dialog('close');
+            }
         }
     },
     close: function() {

@@ -100,3 +100,22 @@ td.good {
 .import_config ol li {
     margin-bottom: 20px;
 }
+
+.bible_editor .edit_form .title {
+    text-align: center;
+}
+
+.bible_editor .edit_form {
+    width: 810px;
+    margin-right: auto;
+    margin-left: auto;
+}
+
+.bible_editor .button_row {
+    text-align: center;
+}
+
+.bible_editor .button_row span {
+    display:inline-block; 
+    width: 30px;
+}
