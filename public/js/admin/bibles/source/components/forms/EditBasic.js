@@ -4,6 +4,7 @@ enyo.kind({
     pk: null,
     formData: {},
     standalone: false,
+    quick: false,
 
     debugBindings: false,
     classes: 'dialog_form edit_form edit_form_basic',
@@ -85,10 +86,12 @@ enyo.kind({
 
         this.waterfall('onViewForm', {pk: this.pk});
 
+        var q = this.quick ? 'Quick ' : '';
+
         if(!this.pk) {
             this.open();
             this.set('formData', {});
-            this.parent.set('title', 'Editing: <new Bible>');
+            this.parent.set('title', q + 'Editing: <new Bible>');
             return;
         }
 
@@ -110,7 +113,7 @@ enyo.kind({
 
             this.open();
             this.set('formData', enyo.clone(inResponse.Bible));
-            this.parent.set('title', 'Editing: ' + inResponse.Bible.name);
+            this.parent.set('title', q + 'Editing: ' + inResponse.Bible.name);
         });
 
         ajax.error(this, function(inSender, inResponse) {
@@ -142,6 +145,8 @@ enyo.kind({
 
             if(!inResponse.success) {
                 return this.app._errorHandler(inSender, inResponse)
+            } else {
+                this.app.alert('Bible information saved!');
             }
 
             this.app.refreshGrid && this.app.refreshGrid();
