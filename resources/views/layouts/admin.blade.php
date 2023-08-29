@@ -95,7 +95,7 @@ if(!isset($hide_menus)) {
             @yield('content')
         </div>
 
-        <div id='page_loading_dialog'>
+        <div id='page_loading_dialog' style='display: none'>
             Updating database, please wait ...
         </div>
 

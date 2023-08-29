@@ -3,7 +3,7 @@ enyo.kind({
     kind: 'AICWEBTECH.Enyo.jQuery.Dialog',
     pk: null,
     formData: {},
-    classes: 'edit_dialog',
+    classes: '_edit_dialog',
     components: [],
 
     handlers: {

@@ -45,7 +45,8 @@ enyo.kind({
                     label: 'Name', 
                     width:'200', 
                     editable: true, 
-                    searchoptions: strOptions
+                    searchoptions: strOptions,
+                    formatter: enyo.bind(this, this._formatName)
                 },
                 {
                     name: 'shortname', 
@@ -255,6 +256,10 @@ enyo.kind({
         var url = this.__makeSignalUrl(signal, props);
         var html = "<a href='javascript:" + url + "'>" + text + "</a>";
         return html;
+    },    
+    __makeHtmlLink: function(text, url, target) {
+        var html = "<a href='" + url + "' target='" + target + "'>" + text + "</a>";
+        return html;
     },
     __setCellColor: function(rowId, cellIndex, color) {
         // this.gridHandle && this.gridHandle.
@@ -344,10 +349,17 @@ enyo.kind({
         //     html += ' &nbsp; ';
         // }
 
-        html += this.__makeSignalLink('View Info', 'onViewDescription', props);
+        // html += this.__makeSignalLink('Info', 'onViewDescription', props);
+        // html += ' &nbsp; ';
+        html += this.__makeSignalLink('Quick Edit', 'onEdit', props);
         html += ' &nbsp; ';
-        html += this.__makeSignalLink('Edit', 'onEdit', props);
+        html += this.__makeHtmlLink('Edit', '/admin/bibles/' + rowObject.module + '/edit', 'bible_edit');
         return html;
+    },    
+    _formatName: function(cellvalue, options, rowObject) {
+        var props = {id: options.rowId};
+
+        return this.__makeSignalLink(cellvalue, 'onViewDescription', props);
     },
     _formatLanguagesOptions: function(response) {
         this.log(response);

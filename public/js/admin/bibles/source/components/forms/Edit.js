@@ -375,9 +375,18 @@ enyo.kind({
                 content: displayName
             });
         }, this);
+
+        if(this.standalone) {
+            this.$.DescriptionContainer.set('showing', true);
+            this.$.descriptionPointer.set('showing', false);
+        }
     },
 
     toggleDescription: function() {
+        if(this.standalone) {
+            return;
+        }
+
         this.$.DescriptionContainer.set('showing', !this.$.DescriptionContainer.get('showing'));
 
         var pointer = this.$.DescriptionContainer.get('showing') ? '&#x25b2;' : '&#x25bc;'
@@ -593,10 +602,6 @@ enyo.kind({
         var lc = this.$.lang_code.get('value').toLowerCase();
 
         this.$.lang_short.set('value', lc);
-
-        this.log('lc', lc);
-        this.log('lang_short', this.$.lang_short.get('value'));
-        this.log('lang_code', this.$.lang_code.get('value'));
 
         if(this.$.lang_short.get('value') != lc) {
             // not a valid code
