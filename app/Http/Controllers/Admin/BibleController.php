@@ -180,7 +180,6 @@ class BibleController extends Controller
         $resp->success = TRUE;
         $resp->Bible   = $Bible->attributesToArray();
         $resp->Bible['has_module_file'] = $Bible->hasModuleFile() ? 1 : 0;
-        // $resp->Bible['has_module_file'] =  0; // Debugging
 
         return new Response($resp, 200);
     }
@@ -192,7 +191,36 @@ class BibleController extends Controller
      * @return \Illuminate\Http\Response
      */
     public function edit($id) {
-        return response('Not Implemented', 501);
+        //return response('Not Implemented', 501);
+        $Bible = Bible::findByModule($id);
+
+        if(!$Bible) {
+            $Bible = Bible::findOrFail($id);
+        }
+
+        Bible::populateBibleTable();
+        $ImportManagerClass = Helpers::find('\App\ImportManager');
+
+        $bootstrap = new \stdClass;
+        $bootstrap->devToolsEnabled  = (bool) config('bss.dev_tools');
+        $bootstrap->premToolsEnabled = config('app.premium');
+        $bootstrap->maxUploadSize    = Helpers::maxUploadSize('both');
+        $bootstrap->languages  = \App\Models\Language::orderBy('name', 'asc')->get();
+        $bootstrap->importers  = $ImportManagerClass::getImportersList();
+        $bootstrap->copyrights = [];
+        $bootstrap->bibleId = $Bible->id;
+        $bootstrap->Bible   = $Bible->attributesToArray();
+        $bootstrap->Bible['has_module_file'] = $Bible->hasModuleFile() ? 1 : 0;
+
+        foreacH(\App\Models\Copyright::all() as $Copyright) {
+            $data = $Copyright->getAttributes();
+            $data['copyright_statement_processed'] = $Copyright->getProcessedCopyrightStatement();
+            $bootstrap->copyrights[] = $data;
+        }
+
+        $bootstrap = json_encode($bootstrap);
+
+        return view('admin.bible_editor', ['bootstrap' => $bootstrap]);
     }
 
     /**

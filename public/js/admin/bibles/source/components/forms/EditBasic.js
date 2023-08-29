@@ -3,6 +3,7 @@ enyo.kind({
 
     pk: null,
     formData: {},
+    standalone: false,
 
     debugBindings: false,
     classes: 'dialog_form edit_form edit_form_basic',
@@ -143,7 +144,7 @@ enyo.kind({
                 return this.app._errorHandler(inSender, inResponse)
             }
 
-            this.app.refreshGrid();
+            this.app.refreshGrid && this.app.refreshGrid();
             this.close();
         });
 
@@ -158,10 +159,18 @@ enyo.kind({
     },
 
     close: function() {
-        this.doClose();
+        if(this.standalone) {
+            // ??
+        } else {
+            this.doClose();
+        }
     },
     open: function() {
-        this.doOpen();
+        if(this.standalone) {
+            // ??
+        } else {
+            this.doOpen();
+        }
     },
     _errorHandler: function(inSender, inResponse) {
         var msg = inResponse.message || 'An Error has occurred';
