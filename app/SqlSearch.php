@@ -37,14 +37,21 @@ class SqlSearch {
     // \p{L}: any kind of letter from any language.
     // \p{M}: a character intended to be combined with another character (e.g. accents, umlauts, enclosing boxes, etc.).
     // \p{N}: any kind of numeric character in any script.
+
+    // Other punctuation: 
+    // \p{P}: any kind of punctuation character.
+    // \p{Pd}: any kind of hyphen or dash.
+    // \p{Ps}: any kind of opening bracket.
+    // \p{Pe}: any kind of closing bracket.
     // \p{Pi}: any kind of opening quote.
     // \p{Pf}: any kind of closing quote.
-    // \p{Pd}: any kind of hyphen or dash.
-    static protected $term_base_regexp = '\p{L}\p{M}\p{N}\p{Pi}\p{Pf}\p{Pd}'; //
+    // \p{Po}: Other:  any kind of punctuation character that is not a dash, bracket, quote
+    static protected $term_base_regexp = '\p{L}\p{M}\p{N}\p{Pi}\p{Pf}\p{Pd}\p{Po}'; //
 
     static protected $term_match_regexp = '/[`].*[`]/u'; // Regexp to match a regexp term
     // static protected $term_match_phrase = '/["][\p{L}0-9 \'%]+["]/u'; // Regexp to match an exact phrase term
-    static protected $term_match_phrase = '/["][\p{L}\p{M}\p{N} \'%]+["]/u'; // Unicode-safe Regexp to match an exact phrase term
+    //static protected $term_match_phrase = '/["][\p{L}\p{M}\p{N} \'%]+["]/u'; // Unicode-safe Regexp to match an exact phrase term
+    static protected $term_match_phrase = '/["][\p{L}\p{M}\p{N}\p{Pd}\p{Po} \'%]+["]/u'; // Unicode-safe Regexp to match an exact phrase term
 
     static protected $search_inputs = array(
         'search' => array(
@@ -121,6 +128,38 @@ class SqlSearch {
      */
     public function setSearch($search) {
         $this->search = $search ? trim(preg_replace('/\s+/', ' ', $search)) : '';
+    }
+
+    /**
+     * SAnitized the search term(s)
+     */
+    public function sanitize() {
+        $this->search = $this->_sanitizeHelper($this->search, $this->search_type);
+
+        foreach(static::$search_inputs as $input => $settings) {
+            if(!empty($this->options[$input])) {
+                $search_type = (array_key_exists('search_type', $settings)) ? $settings['search_type'] : $this->search_type;
+                $this->options[$input] = $this->_sanitizeHelper($this->options[$input], $search_type);
+            }
+        }
+    }
+
+    protected function _sanitizeHelper($search, $search_type) {
+        switch ($search_type) {
+            case 'boolean':
+            case 'regexp':
+            case 'phrase':
+                return $search; //
+                break;
+            default:
+                // return preg_match('/[^' . static::$term_base_regexp . '|!&^ "\'0-9%()*+]/u', '', $search);
+                return static::removeUnsafeCharacters($search);
+        }
+    }
+
+    public static function removeUnsafeCharacters($search) {
+        $search = preg_replace('/\p{P}$/', '', $search);
+        return $search;
     }
 
     /**
@@ -243,8 +282,10 @@ class SqlSearch {
             return FALSE;
         }
 
+
         $raw_bool = ($count == 1) ? $searches[0] : '(' . implode(') & (', $searches) . ')';
         $std_bool = static::standardizeBoolean($raw_bool);
+
         $this->search_parsed = $std_bool;
 
         $term_list = static::parseQueryTerms($std_bool, TRUE);
@@ -267,6 +308,8 @@ class SqlSearch {
             $last_term_pos = 0;
 
             foreach($items as $term) {
+                //$term = static::removeUnsafeCharacters($term);
+
                 list($term_sql, $bind_index) = $this->_termSql($term, $binddata, $fields, $table_alias);
 
                 // We only want to replace it ONCE, in case it is used multiple times
@@ -283,6 +326,11 @@ class SqlSearch {
         }
 
         $sql = trim($sql);
+
+        // print_r($sql);
+        // print_r($binddata);
+        // die();
+
         return array($sql, $binddata);
     }
 
@@ -517,7 +565,7 @@ class SqlSearch {
             return $query;
         }
 
-        $parsed = static::parseSimpleQueryTerms($query);
+        $parsed = static::parseSimpleQueryTerms($query, $search_type);
 
         switch ($search_type) {
             case 'and':
@@ -687,6 +735,17 @@ class SqlSearch {
         }
 
         return FALSE;
+    }    
+
+    public static function stripInvalidCharacters(&$terms) {
+        foreach($terms as &$term) {
+            if(static::isTermPhrase($term) || static::isTermRegexp($term)) {
+                continue; // Ignore phrases and REGEXP
+            }
+
+            $term = preg_replace('/[' . static::$term_base_regexp . '\(\)|!&^ "\'0-9%]+/u', '', $term);
+        }
+        unset($term);
     }
 
     /**
@@ -735,7 +794,7 @@ class SqlSearch {
      * @param type $query
      * @return array $parsed
      */
-    public static function parseSimpleQueryTerms($query) {
+    public static function parseSimpleQueryTerms($query, $search_type = 'and') {
         $parsed = $query ? explode(' ', $query) : [];
         $parsed = array_unique($parsed);
         return $parsed;
@@ -780,6 +839,10 @@ class SqlSearch {
         // $query = str_replace('&  -', '-', $query);
         $query = trim(preg_replace('/\s+/', ' ', $query));
 
+        // strip invalid characters
+        // $query = preg_replace('/[' . static::$term_base_regexp . '\(\)|!&^ "\'0-9%]+/u', '', $query);
+
+
         // Insert implied AND
         //$patterns = array('/\) [a-zA-Z0-9"]/', '/[a-zA-Z0-9"] \(/', '/[a-zA-Z0-9"] [a-zA-Z0-9"]/');
         // Note - this will break if we ever have
@@ -792,16 +855,25 @@ class SqlSearch {
 
         $unicode_safe_base  = '\p{L}\p{M}\p{N}';
         $unicode_safe_base2 = '\p{L}\p{M}';
+        $unicode_safe_base3 = '\p{P}';
+
+            // Other punctuation: 
+    // \p{P}: any kind of punctuation character.
+    // \p{Pd}: any kind of hyphen or dash.
+    // \p{Ps}: any kind of opening bracket.
+    // \p{Pe}: any kind of closing bracket.
+    // \p{Pi}: any kind of opening quote.
+    // \p{Pf}: any kind of closing quote.
+    // \p{Po}: Other:  any kind of punctuation character that is not a dash, bracket, quote
 
         $patterns = array(
             '/\) [' . $unicode_safe_base . '\'%"]/u',                               // ") word"
             '/[' . $unicode_safe_base . '\'%"] \(/u',                               // "word ("
+            '/[' . $unicode_safe_base . '\'%"][' . $unicode_safe_base3 . '] [' . $unicode_safe_base . '\'%"]/u', // "word1<punctuation> word2"
             '/[' . $unicode_safe_base . '\'%"] [' . $unicode_safe_base . '\'%"]/u', // "word1 word2"
             '/[' . $unicode_safe_base . '\'%"] -/u',                                // "word -" ("word NOT")
             '/[' . $unicode_safe_base2 . ']\) \(/u',                                // "<punctuation> ("
         ); // Unicode safe, passing all unit tests
-
-        //$patterns = array('/\) [\p{L}0-9"\']/u', '/[\p{L}0-9"\'] \(/u', '/[\p{L}0-9] [\p{L}0-9]/u', '/["\'] [\p{L}0-9"\']/u');  // OLD??
 
         // Pass 1
         $query = preg_replace_callback($patterns, function($matches) {
@@ -822,6 +894,8 @@ class SqlSearch {
         $query = str_replace($regexp_placeholders, $regexp, $query);
         //$query = str_replace($underscored, $phrases, $query);
         $query = trim(preg_replace('/\s+/', ' ', $query));
+
+        // $query = static::removeUnsafeCharacters($query);
 
         return $query;
     }

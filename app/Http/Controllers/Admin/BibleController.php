@@ -191,13 +191,20 @@ class BibleController extends Controller
      * @return \Illuminate\Http\Response
      */
     public function edit($id) {
-        //return response('Not Implemented', 501);
         $Bible = Bible::findByModule($id);
 
         if(!$Bible) {
             $Bible = Bible::findOrFail($id);
         }
 
+        return $this->editHelper($Bible->id);
+    }
+
+    public function editHash() {
+        return $this->editHelper(0);
+    }
+
+    protected function editHelper($bibleId = null) {
         Bible::populateBibleTable();
         $ImportManagerClass = Helpers::find('\App\ImportManager');
 
@@ -208,9 +215,7 @@ class BibleController extends Controller
         $bootstrap->languages  = \App\Models\Language::orderBy('name', 'asc')->get();
         $bootstrap->importers  = $ImportManagerClass::getImportersList();
         $bootstrap->copyrights = [];
-        $bootstrap->bibleId = $Bible->id;
-        $bootstrap->Bible   = $Bible->attributesToArray();
-        $bootstrap->Bible['has_module_file'] = $Bible->hasModuleFile() ? 1 : 0;
+        $bootstrap->bibleId = $bibleId;
 
         foreacH(\App\Models\Copyright::all() as $Copyright) {
             $data = $Copyright->getAttributes();

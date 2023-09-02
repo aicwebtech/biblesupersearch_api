@@ -2,9 +2,14 @@ enyo.kind({
     name: 'BibleManager.Components.Forms.EditBasic',
 
     pk: null,
+    pkPending: null,
+
     formData: {},
     standalone: false,
     quick: false,
+
+    dirty: false,
+    initialLoad: false,
 
     debugBindings: false,
     classes: 'dialog_form edit_form edit_form_basic',
@@ -77,6 +82,28 @@ enyo.kind({
 
     },
 
+    openByPk: function(pk) {
+        if(this.dirty && this.initialLoad) {
+            this.app.alert('Please save your changes or cancel first!');
+            this.set('pkPending', pk);
+            return;
+        }
+
+        this.set('pk', pk);
+        this.set('pkPending', null);
+        this.openLoad();
+    },
+
+    openByPendingPk: function() {
+        if(this.hasPendingPk()) {
+            this.openByPk(this.get('pkPending'));
+        }
+    },
+
+    hasPendingPk: function() {
+        return !!this.get('pkPending');
+    },
+
     openLoad: function() {
         // this.inherited(arguments);
         this.app.set('ajaxLoading', true);
@@ -114,6 +141,8 @@ enyo.kind({
             this.open();
             this.set('formData', enyo.clone(inResponse.Bible));
             this.parent.set('title', q + 'Editing: ' + inResponse.Bible.name);
+            this.initialLoad = true;
+            this.dirty = false;
         });
 
         ajax.error(this, function(inSender, inResponse) {
@@ -147,6 +176,7 @@ enyo.kind({
                 return this.app._errorHandler(inSender, inResponse)
             } else {
                 this.app.alert('Bible information saved!');
+                this.dirty = false;
             }
 
             this.app.refreshGrid && this.app.refreshGrid();
@@ -193,5 +223,12 @@ enyo.kind({
         }
 
         this.app.alert(msg);
+    },
+    handleBindingsGeneric: function(value, dir) {
+        if(dir == 2) {
+            this.dirty = true;
+        }
+
+        return value;
     }
 });

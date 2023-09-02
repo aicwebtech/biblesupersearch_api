@@ -338,6 +338,11 @@ class Engine {
         // Search validation
         if($Search) {
             $search_valid = $Search->validate();
+
+            if($search_valid) {
+                $Search->sanitize();
+            }
+
             $strongs = Search::parseStrongs($keywords);
 
             if(!empty($strongs)) {

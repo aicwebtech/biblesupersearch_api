@@ -48,7 +48,7 @@ class VerseStandard extends VerseAbstract {
 
         if($Search) {
             $reccommend_raw_query = $Search->isBooleanSearch();
-            
+
             if($is_special_search) {
                 $table = static::$special_table . '_1';
                 $passage_query_special = static::_buildPassageQuery($Passages, $table, $parameters);

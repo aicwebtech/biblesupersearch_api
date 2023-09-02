@@ -149,8 +149,12 @@ class Search extends SqlSearch {
             $invalid_chars = preg_match('/[^' . static::$term_base_regexp . '|!&^ "\'0-9%()*+]/u', $search, $matches);
 
             if(!empty($invalid_chars)) {
-                $this->addTransError('errors.invalid_search.general', ['search' => $search], 4);
-                return FALSE;
+                if($search_type != 'phrase') {
+                    
+                }
+
+                // $this->addTransError('errors.invalid_search.general 152', ['search' => $search], 4);
+                // return FALSE;
             }
         }
 
