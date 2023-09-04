@@ -465,6 +465,8 @@ class Engine {
      * @param array $input
      */
     public function actionBibles($input) {
+        $language_float = isset($input['language_float']) ? $input['language_float'] : null;
+
         $include_desc = FALSE;
         $Bibles = Bible::select('bibles.name','shortname','module','year','languages.name AS lang','lang_short','copyright','italics','strongs','red_letter',
                 'paragraph','rank','research','bibles.restrict','copyright_id','copyright_statement', 'languages.rtl', 'languages.native_name AS lang_native');
@@ -514,6 +516,7 @@ class Engine {
                     case 'rank':
                     case 'name':
                     case 'shortname':
+                        $language_float = null; // language float ignored in these cases
                     case 'lang_short':
                         $Bibles -> orderBy($ob, 'ASC');
                         break; 
@@ -532,6 +535,21 @@ class Engine {
             $bibles[$Bible->module] = $Bible->getAttributes();
             $bibles[$Bible->module]['downloadable'] = $Bible->isDownloadable();
             $bibles[$Bible->module]['copyright_statement'] = $Bible->getCopyrightStatement();
+        }
+
+        if($language_float) {
+            $bibles_floated = [];
+
+            foreach($bibles as $key => $bible) {
+                if($bible['lang_short'] == $language_float) {
+                    $bibles_floated[$key] = $bible;
+                    unset($bibles[$key]);
+                }
+            }
+
+            foreach($bibles as $key => $bible) {
+                $bibles_floated[$key] = $bible;
+            }
         }
 
         return $bibles;

@@ -158,8 +158,13 @@ class SqlSearch {
     }
 
     public static function removeUnsafeCharacters($search) {
-        $search = preg_replace('/\p{P}$/', '', $search);
+        // Need to ALLOW % as valid character, so IDK of a better way ...
+        $unsafe = ['.',',',':',';','\'','"','!','-','?','(',')','[',']'];
+        $search = str_replace($unsafe, '', $search);
         return $search;
+
+        // $search = preg_replace('/\p{P}$/', '', $search);
+        // return $search;
     }
 
     /**

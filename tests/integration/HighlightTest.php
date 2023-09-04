@@ -43,7 +43,16 @@ class HighlightTest extends TestCase {
         $Engine = new Engine();
         $Engine->setDefaultDataType('raw');
         $tag = 'em';
-        $results = $Engine->actionQuery(['bible' => 'kjv', 'reference' => 'Deut', 'search' => 'faith%', 'highlight' => TRUE, 'highlight_tag' => $tag, 'whole_words' => TRUE]);
+        
+        $results = $Engine->actionQuery([
+            'bible'         => 'kjv', 
+            'reference'     => 'Deut', 
+            'search'        => 'faith%', 
+            'highlight'     => TRUE, 
+            'highlight_tag' => $tag, 
+            'whole_words'   => TRUE,
+        ]);
+        
         $this->assertFalse($Engine->hasErrors());
         $verse = $results['kjv'][0];
 
