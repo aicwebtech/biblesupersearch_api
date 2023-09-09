@@ -368,7 +368,22 @@ class Engine {
             $has_search_results = FALSE;
 
             foreach($this->Bibles as $Bible) {
-                $BibleResults = $Bible->getSearch($Passages, $Search, $input); // Laravel Collection
+                try {
+                    $BibleResults = $Bible->getSearch($Passages, $Search, $input); // Laravel Collection
+                }
+                catch (\Exception $e) {
+                    $this->addTransError('errors.500', [], 4, 500);
+
+                    if(config('app.debug')) {
+                        $m = $e->getMessage();
+                        $m = "<div style='width:800px;font-family:Monospace;white-space:pre-wrap;text- align:left'>" . $m . "</div>";
+                        
+                        $this->addError('DATABASE ERROR:');
+                        $this->addError($m);
+                    }
+
+                    break;   
+                }
 
                 if(!empty($BibleResults) && !$BibleResults->isEmpty()) {
                     $results[$Bible->module] = $BibleResults->all();

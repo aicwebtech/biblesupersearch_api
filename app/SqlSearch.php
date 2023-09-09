@@ -49,9 +49,9 @@ class SqlSearch {
     static protected $term_base_regexp = '\p{L}\p{M}\p{N}\p{Pi}\p{Pf}\p{Pd}\p{Po}'; //
 
     static protected $term_match_regexp = '/[`].*[`]/u'; // Regexp to match a regexp term
-    // static protected $term_match_phrase = '/["][\p{L}0-9 \'%]+["]/u'; // Regexp to match an exact phrase term
-    //static protected $term_match_phrase = '/["][\p{L}\p{M}\p{N} \'%]+["]/u'; // Unicode-safe Regexp to match an exact phrase term
-    static protected $term_match_phrase = '/["][\p{L}\p{M}\p{N}\p{Pd}\p{Po} \'%]+["]/u'; // Unicode-safe Regexp to match an exact phrase term
+
+    //static protected $term_match_phrase = '/["][\p{L}\p{M}\p{N}\p{Pd}\p{Po} \'%]+["]/u'; // Unicode-safe Regexp to match an exact phrase term
+    static protected $term_match_phrase = '/["][\p{L}\p{M}\p{N}\p{P} \'%]+["]/u'; // Unicode-safe Regexp to match an exact phrase term
 
     static protected $search_inputs = array(
         'search' => array(
@@ -158,13 +158,39 @@ class SqlSearch {
     }
 
     public static function removeUnsafeCharacters($search) {
-        // Need to ALLOW % as valid character, so IDK of a better way ...
-        $unsafe = ['.',',',':',';','\'','"','!','-','?','(',')','[',']'];
-        $search = str_replace($unsafe, '', $search);
-        return $search;
+        // Need to ALLOW some punctuation but not others
 
-        // $search = preg_replace('/\p{P}$/', '', $search);
-        // return $search;
+        // \p{P}: any kind of punctuation character.
+        // \p{Pd}: any kind of hyphen or dash.
+        // \p{Ps}: any kind of opening bracket.
+        // \p{Pe}: any kind of closing bracket.
+        // \p{Pi}: any kind of opening quote.
+        // \p{Pf}: any kind of closing quote.
+        // \p{Po}: Other:  any kind of punctuation character that is not a dash, bracket, quote
+
+        $search = preg_replace_callback('/\p{P}/', function($matches) {
+            $p = $matches[0];
+            
+            if(in_array($p, ['.',',',':',';','\'','"','!','-','?','(',')','[',']'])) {
+                return '';
+            }
+
+            if(in_array($p, ['%', '*'])) {
+                return $p;
+            }
+
+            if(preg_match('/\p{Pd}/', $p)) {
+                return $p;
+            }
+
+            if(preg_match('/\p{Po}/', $p)) {
+                return $p;
+            }
+
+            return '';
+        }, $search);
+
+        return $search;
     }
 
     /**
@@ -264,7 +290,10 @@ class SqlSearch {
         return $this->_generateQueryHelper($search, $search_type, $table_alias, TRUE, $binddata);
     }
 
-    protected function _generateQueryHelper($search, $search_type, $table_alias = '', $include_extra_fields = FALSE, $binddata = array(), $fields = '') {
+    protected function _generateQueryHelper(
+        $search, $search_type, $table_alias = '', $include_extra_fields = FALSE, 
+        $binddata = array(), $fields = ''
+    ) {
         $searches = [];
 
         if($search) {
@@ -313,8 +342,6 @@ class SqlSearch {
             $last_term_pos = 0;
 
             foreach($items as $term) {
-                //$term = static::removeUnsafeCharacters($term);
-
                 list($term_sql, $bind_index) = $this->_termSql($term, $binddata, $fields, $table_alias);
 
                 // We only want to replace it ONCE, in case it is used multiple times
@@ -331,11 +358,6 @@ class SqlSearch {
         }
 
         $sql = trim($sql);
-
-        // print_r($sql);
-        // print_r($binddata);
-        // die();
-
         return array($sql, $binddata);
     }
 

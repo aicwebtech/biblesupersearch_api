@@ -77,48 +77,59 @@ class VerseStandard extends VerseAbstract {
 
         $binddata = !isset($binddata) ? [] : $binddata;
 
-        if($Search && !$parameters['multi_bibles'] && !$parameters['page_all']) {
-            $page_limit = min( (int) $parameters['page_limit'], (int) config('bss.global_maximum_results'));
-                
-            if($reccommend_raw_query) {
-                $page = (!array_key_exists('page', $parameters) || !$parameters['page']) ? 1 : $parameters['page'];
+        try {
+            if($Search && !$parameters['multi_bibles'] && !$parameters['page_all']) {
+                $page_limit = min( (int) $parameters['page_limit'], (int) config('bss.global_maximum_results'));
+                    
+                if($reccommend_raw_query) {
+                    $page = (!array_key_exists('page', $parameters) || !$parameters['page']) ? 1 : $parameters['page'];
 
-                // Manually query the count - we need this for the paginator
-                $sql_parts = explode('from', $Query->toSql());
-                $sql_count = 'SELECT COUNT(*) AS count FROM' . $sql_parts[1];
-                $count = (int) DB::select($sql_count, $binddata)[0]->count;
-                
-                $Query->limit($page_limit);
-                $Query->offset(($page - 1) * $page_limit);
+                    // Manually query the count - we need this for the paginator
+                    $sql_parts = explode('from', $Query->toSql());
+                    $sql_count = 'SELECT COUNT(*) AS count FROM' . $sql_parts[1];
+                    $count = (int) DB::select($sql_count, $binddata)[0]->count;
+                    
+                    $Query->limit($page_limit);
+                    $Query->offset(($page - 1) * $page_limit);
 
-                $results = DB::select($Query->toSql(), $binddata);
+                    $results = DB::select($Query->toSql(), $binddata);
 
-                // Manually drop the results into the paginator:
-                $verses = new \Illuminate\Pagination\LengthAwarePaginator($results, $count, $page_limit, $page);
+                    // Manually drop the results into the paginator:
+                    $verses = new \Illuminate\Pagination\LengthAwarePaginator($results, $count, $page_limit, $page);
+                }
+                else {
+                    $verses = $Query->paginate($page_limit);
+                }
             }
             else {
-                $verses = $Query->paginate($page_limit);
+                $met = 120;
+                $lim = config('bss.global_maximum_results');
+
+                if($Search && $parameters['multi_bibles']) {
+                    $met = 600;
+                    $lim = config('bss.parallel_search_maximum_results');
+                }
+
+                ini_set('max_execution_time', $met);
+                $lim && $Query->limit( $lim);
+
+                if($reccommend_raw_query) {
+                    $verses = collect( DB::select($Query->toSql(), $binddata) );
+                }
+                else {
+                    $verses = $Query->get();
+                }
             }
         }
-        else {
-            $met = 120;
-            $lim = config('bss.global_maximum_results');
+        catch(\Exception $e) {
+            $msg = $Query->toSql();
+            $msg .= print_r($binddata, true);
 
-            if($Search && $parameters['multi_bibles']) {
-                $met = 600;
-                $lim = config('bss.parallel_search_maximum_results');
-            }
+            $msg .= $e->getMessage();
 
-            ini_set('max_execution_time', $met);
-            $lim && $Query->limit( $lim);
-
-            if($reccommend_raw_query) {
-                $verses = collect( DB::select($Query->toSql(), $binddata) );
-            }
-            else {
-                $verses = $Query->get();
-            }
+            throw new \Exception($msg);
         }
+
 
         if(config('app.debug_query')) {
             // $Query->dump();

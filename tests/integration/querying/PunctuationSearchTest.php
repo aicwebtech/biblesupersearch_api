@@ -105,5 +105,4 @@ class PunctuationSearchTest extends TestCase
         $this->assertCount(1, $results['kjv']);
         $this->assertFalse($Engine->hasErrors());
     }
-
 }

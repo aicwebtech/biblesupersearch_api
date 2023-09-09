@@ -46,7 +46,6 @@ enyo.kind({
                     width:'200', 
                     editable: true, 
                     searchoptions: strOptions,
-                    formatter: enyo.bind(this, this._formatName)
                 },
                 {
                     name: 'shortname', 
@@ -62,7 +61,8 @@ enyo.kind({
                     index: 'module', 
                     label: 'Module', 
                     width:'100',
-                    searchoptions: strOptions
+                    searchoptions: strOptions,
+                    formatter: enyo.bind(this, this._formatName)
                 },
                 {
                     name: 'has_module_file', 

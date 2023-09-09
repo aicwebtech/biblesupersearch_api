@@ -15,7 +15,7 @@ class UnicodeTest extends TestCase {
             $this->markTestSkipped('Bible rvg not installed or enabled');
         }
 
-        $Engine = new Engine();
+        $Engine = Engine::getInstance();
         $Engine->setDefaultDataType('raw');
         $results = $Engine->actionQuery(['bible' => 'rvg', 'request' => 'Señor', 'whole_words' => FALSE]);
         $this->assertFalse($Engine->hasErrors());
@@ -26,7 +26,7 @@ class UnicodeTest extends TestCase {
             $this->markTestSkipped('Bible rvg not installed or enabled');
         }
 
-        $Engine = new Engine();
+        $Engine = Engine::getInstance();
         $Engine->setDefaultDataType('raw');
         $results = $Engine->actionQuery(['bible' => 'rvg', 'request' => 'Efe 1', 'whole_words' => FALSE]); // Ephesians
         $this->assertFalse($Engine->hasErrors());
@@ -40,7 +40,7 @@ class UnicodeTest extends TestCase {
             $this->markTestSkipped('Bible diodati not installed or enabled');
         }
 
-        $Engine = new Engine();
+        $Engine = Engine::getInstance();
         $Engine->setDefaultDataType('raw');
         $results = $Engine->actionQuery(['bible' => 'diodati', 'request' => 'l’uomo', 'whole_words' => FALSE]);
         $this->assertFalse($Engine->hasErrors());        
@@ -61,7 +61,7 @@ class UnicodeTest extends TestCase {
             $this->markTestSkipped('Bible wlc not installed or enabled');
         }
 
-        $Engine = new Engine();
+        $Engine = Engine::getInstance();
         $Engine->setDefaultDataType('raw');
         $results = $Engine->actionQuery(['bible' => 'wlc', 'request' => 'בְּרֵאשִׁית', 'whole_words' => FALSE]);
         $this->assertFalse($Engine->hasErrors());        
@@ -74,7 +74,7 @@ class UnicodeTest extends TestCase {
             $this->markTestSkipped('Bible svd (Smith Van Dyke) not installed or enabled');
         }
 
-        $Engine = new Engine();
+        $Engine = Engine::getInstance();
         $Engine->setDefaultDataType('raw');
         $results = $Engine->actionQuery(['bible' => 'svd', 'request' => 'المسيح ', 'whole_words' => FALSE]);
         $this->assertFalse($Engine->hasErrors());        
@@ -87,13 +87,51 @@ class UnicodeTest extends TestCase {
             $this->markTestSkipped('Bible thaikjv not installed or enabled');
         }
 
-        $Engine = new Engine();
+        $Engine = Engine::getInstance();
         $Engine->setDefaultDataType('raw');
         $results = $Engine->actionQuery(['bible' => 'thaikjv', 'request' => 'ประการแรก', 'whole_words' => FALSE]);
         $this->assertFalse($Engine->hasErrors());
 
-        $results = $Engine->actionQuery(['bible' => 'thaikjv', 'request' => '(ประการแรก) (เพราะว่า)', 'whole_words' => FALSE]);
+        $results = $Engine->actionQuery(['bible' => 'thaikjv', 'request' => 'ประการแรก เพราะว่า', 'whole_words' => FALSE]);
+
         $this->assertFalse($Engine->hasErrors());
+
+        $results = $Engine->actionQuery(['bible' => 'thaikjv', 'request' => 'ประการแรก เพราะว่า', 'whole_words' => FALSE, 'search_type' => 'phrase']);
+        $this->assertFalse($Engine->hasErrors());
+
+        // I'm not sure why these keywords originally include (), as no () in returned verses!!!
+        $results = $Engine->actionQuery(['bible' => 'thaikjv', 'request' => '(ประการแรก) (เพราะว่า)', 'whole_words' => FALSE]); 
+        $this->assertFalse($Engine->hasErrors());
+
+        $results = $Engine->actionQuery(['bible' => 'thaikjv', 'request' => '(ประการแรก) (เพราะว่า)', 'whole_words' => FALSE, 'search_type' => 'phrase']);  // PREVIOUSLY BROKE
+        
+        $this->assertTrue($Engine->hasErrors());
+    }
+
+    public function testLatvian() {
+        $Engine = Engine::getInstance();
+        $Engine->setDefaultDataType('raw');
+        $Engine->setDefaultPageAll(TRUE);
+
+        $query = [
+            'bible'  => 'kjv', // Because we don't actually have a Latvian Bible atm
+            'search' => 'Un Dievs sacīja: „Lai top gaisma.“ Un gaisma tapa.',
+        ];
+
+        $results = $Engine->actionQuery($query);
+        $this->assertTrue($Engine->hasErrors());
+
+        $query['search_type'] = 'any_word';
+        $results = $Engine->actionQuery($query);
+        $this->assertTrue($Engine->hasErrors());
+
+        $query['search_type'] = 'phrase';
+        $results = $Engine->actionQuery($query);
+        $this->assertTrue($Engine->hasErrors());
+        $errors = $Engine->getErrors();
+
+        $this->assertEquals(trans('errors.no_results'), $errors[0]);
+        $this->assertCount(1, $errors);  // not found only
     }
 
     public function testFrenchLookup() {
@@ -101,7 +139,7 @@ class UnicodeTest extends TestCase {
             $this->markTestSkipped('Bible martin not installed or enabled');
         }
 
-        $Engine = new Engine();
+        $Engine = Engine::getInstance();
         $Engine->setDefaultDataType('raw');
         $results = $Engine->actionQuery(['bible' => 'martin', 'request' => 'Ésaïe 31', 'whole_words' => FALSE]);
         $this->assertFalse($Engine->hasErrors());

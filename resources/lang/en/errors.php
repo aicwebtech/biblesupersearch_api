@@ -12,6 +12,7 @@ return array(
     'passage_not_found' => 'Your request for :passage produced no results.',
     'bible_no_exist' => 'Bible text not found: \':module\'',
     'no_bible_enabled' => 'No Bibles are enabled. Please contact site adminstrator.',
+    '500' => 'System Error. Please contact site adminstrator.',
     'invalid_search' => array(
         'reference' => 'Your search for \':search\' is invalid, and appears to be a passage reference.',
         'general' => 'Your search for \':search\' is invalid.',
