@@ -109,12 +109,16 @@ class UnicodeTest extends TestCase {
     }
 
     public function testLatvian() {
+        if(!Engine::isBibleEnabled('lv_gluck_8')) {
+            $this->markTestSkipped('Bible lv_gluck_8 not installed or enabled');
+        }
+
         $Engine = Engine::getInstance();
         $Engine->setDefaultDataType('raw');
         $Engine->setDefaultPageAll(TRUE);
 
         $query = [
-            'bible'  => 'kjv', // Because we don't actually have a Latvian Bible atm
+            'bible'  => 'lv_gluck_8',
             'search' => 'Un Dievs sacīja: „Lai top gaisma.“ Un gaisma tapa.',
         ];
 
