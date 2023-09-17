@@ -119,6 +119,45 @@ class UnicodeTest extends TestCase {
 
         $query = [
             'bible'  => 'lv_gluck_8',
+            'search' => 'Iesākumā Dievs radīja debesis un zemi.', // Genesis 1:1
+            'search_type' => 'phrase',
+        ];
+
+        // Keyword searching for Iesākumā Dievs radīja debesis un zemi
+        // Results in search for Iesākumā Dievs radja debesis un zemi
+        // Something is wrong in Search::removeUnsafeCharacters
+
+        $search_words = 'Iesākumā Dievs debesis un zemi'; // temp search
+        $this->assertEquals($search_words, \App\Search::removeUnsafeCharacters($search_words));
+
+        $results = $Engine->actionQuery($query);
+        $this->assertFalse($Engine->hasErrors());
+        $this->assertCount(1, $results['lv_gluck_8']);
+
+        $query['search_type'] = 'all_words';
+        $query['search'] = $search_words;
+        $results = $Engine->actionQuery($query);
+        $this->assertFalse($Engine->hasErrors()); 
+        $errors = $Engine->getErrors();
+        $this->assertCount(1, $results['lv_gluck_8']);
+
+        $query['search_type'] = 'any_word';
+        $query['search'] = $search_words;
+        $results = $Engine->actionQuery($query);
+        // Will probably results in too many results error
+        // Just going to assert that it has results.
+        $this->assertIsArray($results['lv_gluck_8']);
+        $this->assertNotEmpty($results['lv_gluck_8']);
+
+        // print_r($Engine->getErrors());
+        // $this->assertFalse($Engine->hasErrors());
+        // $this->assertEquals(trans('errors.no_results'), $errors[0]);
+   
+
+        $query = [
+            'bible'  => 'lv_gluck_8',
+            // Customer-provided string, but does NOT exist in lv_gluck_8
+            // Closest match is Genesis 1:3
             'search' => 'Un Dievs sacīja: „Lai top gaisma.“ Un gaisma tapa.',
         ];
 

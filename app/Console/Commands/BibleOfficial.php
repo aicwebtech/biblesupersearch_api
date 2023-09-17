@@ -22,6 +22,5 @@ class BibleOfficial extends BibleAbstract
         $Bible->save();
 
         print "Please run `php artisan bible:migrate-module-files` \n\n";
-        // print '';
     }
 }
