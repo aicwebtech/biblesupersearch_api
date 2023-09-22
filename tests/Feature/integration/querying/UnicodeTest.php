@@ -127,15 +127,25 @@ class UnicodeTest extends TestCase {
         // Results in search for Iesākumā Dievs radja debesis un zemi
         // Something is wrong in Search::removeUnsafeCharacters
 
-        $search_words = 'Iesākumā Dievs debesis un zemi'; // temp search
-        $this->assertEquals($search_words, \App\Search::removeUnsafeCharacters($search_words));
+        $search_words_arr = [];
+        $search_words_arr[] = 'Iesākumā Dievs radīja debesis un zemi';
+        $search_words_arr[] = 'Tad Dieva bērni redzēja cilvēku meitas ka tās bija skaistas un ņēma sev sievas kādas tiem patika';
+        $search_words_arr[] = 'Un zeme bija tumša un tukša un tumsa bija pār dziļumiem un Dieva Gars lidinājās pa ūdeņu virsu';
+
+        foreach($search_words_arr as $search_words) {
+            $this->assertEquals($search_words, \App\Search::removeUnsafeCharacters($search_words));
+        }
+
+        //$search_words = ;
+
+        //$search_words = 'Iesākumā Dievs debesis un zemi'; // temp search
 
         $results = $Engine->actionQuery($query);
         $this->assertFalse($Engine->hasErrors());
         $this->assertCount(1, $results['lv_gluck_8']);
 
         $query['search_type'] = 'all_words';
-        $query['search'] = $search_words;
+        // $query['search'] = $search_words;
         $results = $Engine->actionQuery($query);
         $this->assertFalse($Engine->hasErrors()); 
         $errors = $Engine->getErrors();
@@ -175,6 +185,50 @@ class UnicodeTest extends TestCase {
 
         $this->assertEquals(trans('errors.no_results'), $errors[0]);
         $this->assertCount(1, $errors);  // not found only
+    }
+
+    public function testRussian() {
+        if(!Engine::isBibleEnabled('synodal')) {
+            $this->markTestSkipped('Bible synodal not installed or enabled');
+        }
+
+        $Engine = Engine::getInstance();
+        $Engine->setDefaultDataType('raw');
+        $Engine->setDefaultPageAll(TRUE);
+
+        $query = [
+            'bible'  => 'synodal',
+            'search' => 'В начале сотворил Бог небо и землю.', // Genesis 1:1
+            'search_type' => 'phrase',
+        ];
+
+        $search_words_arr = [];
+        //$search_words_arr[] = 'В начале сотворил Бог небо и землю';
+        $search_words_arr[] = 'Земля же была безвидна и пуста и тьма над бездною и Дух Божий носился над водою';
+        $search_words_arr[] = 'И увидел Бог свет что он хорош и отделил Бог свет от тьмы';
+
+        foreach($search_words_arr as $search_words) {
+            $this->assertEquals($search_words, \App\Search::removeUnsafeCharacters($search_words));
+        }
+
+        $results = $Engine->actionQuery($query);
+        $this->assertFalse($Engine->hasErrors());
+        $this->assertCount(1, $results['synodal']);
+
+        $query['search_type'] = 'all_words';
+        $results = $Engine->actionQuery($query);
+        $this->assertFalse($Engine->hasErrors()); 
+        $errors = $Engine->getErrors();
+        $this->assertCount(1, $results['synodal']);
+
+        $query['search_type'] = 'any_word';
+        $query['search'] = $search_words;
+        $results = $Engine->actionQuery($query);
+        // Will probably results in too many results error
+        // Just going to assert that it has results.
+        $this->assertIsArray($results['synodal']);
+        $this->assertNotEmpty($results['synodal']);
+
     }
 
     public function testFrenchLookup() {

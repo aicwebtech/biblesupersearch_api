@@ -175,6 +175,14 @@ class SqlSearch {
                 return '';
             }
 
+            if(preg_match('/\p{Pi}/', $p)) {
+                return $p;
+            }
+
+            if(preg_match('/\p{Pf}/', $p)) {
+                return $p;
+            }
+
             if(in_array($p, ['%', '*'])) {
                 return $p;
             }
