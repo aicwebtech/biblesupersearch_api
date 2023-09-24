@@ -19,27 +19,40 @@ abstract class FormatterAbstract {
 
     protected $results;
     protected $Passages;
+    protected $PassagesOrig;
     protected $Search;
     protected $is_search;
+    protected $has_passages;
     protected $languages;
+    protected $input;
 
-    public function __construct($results, $Passages, $Search, $languages) {
+    public function __construct($results, $Passages, $Search, $languages, $input) {
         $this->results      = $results;
         $this->Passages     = $Passages;
+        $this->PassagesOrig = $Passages;
         $this->Search       = $Search;
         $this->is_search    = (bool) $Search;
         $this->languages    = $languages;
+        $this->input        = $input;
+        $this->has_passages = is_array($this->Passages) && count($this->Passages);
     }
 
     abstract public function format();
 
     protected function _mapResultsToPassages($results) {
-        if(!is_array($this->Passages) || !count($this->Passages) || $this->is_search) {
+        $passage_group_search = false;
+
+        if($this->input['group_passage_search_results'] && $this->is_search && $this->has_passages) {
+            $passage_group_search = true;
+        }
+
+        if(!($passage_group_search) && (!$this->has_passages || $this->is_search)) {
+            
             if(!$this->is_search) {
                 return FALSE;
             }
 
-            $Passages = array();
+            $Passages = [];
 
             // We loop through every verse returned for every Bible requested,
             // so none are omitted
@@ -58,12 +71,18 @@ abstract class FormatterAbstract {
         }
 
         // We explode chapters only if not a search
-        $this->Passages = Passage::explodePassages($this->Passages, TRUE, !$this->is_search);
+        $explode_chapters = !$this->is_search || $passage_group_search;
+
+        $this->Passages = Passage::explodePassages($this->Passages, true, $explode_chapters);
 
         foreach($this->Passages as $key => $Passage) {
             if(!$Passage->claimVerses($results)) {
                 unset($this->Passages[$key]);
             }
+        }
+
+        if($passage_group_search) {
+            $this->Passages = Passage::explodePassagesByChapters($this->Passages);
         }
 
         return TRUE;
@@ -74,12 +93,14 @@ abstract class FormatterAbstract {
     }
 
     protected function _preFormatVerses($results) {
-        foreach($results as $key => &$verse) {
+        return $results; //
 
-        }
-        unset($value);
+        // foreach($results as $key => &$verse) {
 
-        return $results;
+        // }
+        // unset($value);
+
+        // return $results;
     }
 
     protected function _preFormatVersesHelper(&$verse) {

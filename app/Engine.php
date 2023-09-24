@@ -241,6 +241,10 @@ class Engine {
                 'type'   => 'bool',
                 'default' => FALSE,
             ),
+            'group_passage_search_results' => array(
+                'type'   => 'bool',
+                'default' => FALSE,
+            ),
             'context_range' => array(
                 'type'   => 'int',
                 'default' => config('bss.context.range'),
@@ -447,7 +451,7 @@ class Engine {
             }
         }
 
-        if(is_array($Passages) && !$Search) {
+        if(is_array($Passages) && (!$Search || $input['group_passage_search_results'])) {
             foreach($Passages as $Passage) {
                 if($this->debug) {
                     print_r($Passage->chapter_verse_parsed);
@@ -456,8 +460,11 @@ class Engine {
                 if(!$Passage->claimVerses($results, TRUE)) {
                     $this->addError( trans('errors.passage_not_found', ['passage' => $Passage->raw_book . ' ' . $Passage->raw_chapter_verse]), 3);
                 }
+
+                //print_r($Passage->toArray());
             }
         }
+
 
         $results = $this->_formatDataStructure($results, $input, $Passages, $Search);
 
@@ -922,7 +929,7 @@ class Engine {
             $results = $this->_highlightResults($results, $Search);
         }
 
-        $Formatter = new $format_class($results, $Passages, $Search, $this->languages);
+        $Formatter = new $format_class($results, $Passages, $Search, $this->languages, $input);
         return $Formatter->format();
     }
 
