@@ -117,15 +117,7 @@ class UnicodeTest extends TestCase {
         $Engine->setDefaultDataType('raw');
         $Engine->setDefaultPageAll(TRUE);
 
-        $query = [
-            'bible'  => 'lv_gluck_8',
-            'search' => 'Iesākumā Dievs radīja debesis un zemi.', // Genesis 1:1
-            'search_type' => 'phrase',
-        ];
-
-        // Keyword searching for Iesākumā Dievs radīja debesis un zemi
-        // Results in search for Iesākumā Dievs radja debesis un zemi
-        // Something is wrong in Search::removeUnsafeCharacters
+        // Testing removing unsafe characters
 
         $search_words_arr = [];
         $search_words_arr[] = 'Iesākumā Dievs radīja debesis un zemi';
@@ -136,9 +128,12 @@ class UnicodeTest extends TestCase {
             $this->assertEquals($search_words, \App\Search::removeUnsafeCharacters($search_words));
         }
 
-        //$search_words = ;
-
-        //$search_words = 'Iesākumā Dievs debesis un zemi'; // temp search
+        // Search 1
+        $query = [
+            'bible'  => 'lv_gluck_8',
+            'search' => 'Iesākumā Dievs radīja debesis un zemi.', // Genesis 1:1
+            'search_type' => 'phrase',
+        ];
 
         $results = $Engine->actionQuery($query);
         $this->assertFalse($Engine->hasErrors());
@@ -162,29 +157,95 @@ class UnicodeTest extends TestCase {
         // print_r($Engine->getErrors());
         // $this->assertFalse($Engine->hasErrors());
         // $this->assertEquals(trans('errors.no_results'), $errors[0]);
-   
+
+        // Search 2
+            // Customer-provided string, but does NOT exist in lv_gluck_8
+            // Closest match is Genesis 1:3
+        $search_2 = 'Un Dievs sacīja: „Lai top gaisma.“ Un gaisma tapa.';
+        $search_2_safe = 'Un Dievs sacīja Lai top gaisma Un gaisma tapa';
+
+        $this->assertEquals($search_2_safe, \App\Search::removeUnsafeCharacters($search_2));
 
         $query = [
             'bible'  => 'lv_gluck_8',
-            // Customer-provided string, but does NOT exist in lv_gluck_8
-            // Closest match is Genesis 1:3
-            'search' => 'Un Dievs sacīja: „Lai top gaisma.“ Un gaisma tapa.',
+            //'bible'  => 'lvt_65,lv_gluck_8',
+            'search' => $search_2,
         ];
 
         $results = $Engine->actionQuery($query);
-        $this->assertTrue($Engine->hasErrors());
+        $this->assertFalse($Engine->hasErrors());
+        $errors = $Engine->getErrors();
+        $this->assertNotContains('System Error. Please contact site adminstrator.', $errors);
+        $this->assertNotContains('DATABASE ERROR:', $errors);
 
         $query['search_type'] = 'any_word';
         $results = $Engine->actionQuery($query);
-        $this->assertTrue($Engine->hasErrors());
+        // Will probably results in too many results error
+        // Just going to assert that it has results.
+        $this->assertIsArray($results['lv_gluck_8']);
+        $this->assertNotEmpty($results['lv_gluck_8']);
 
         $query['search_type'] = 'phrase';
         $results = $Engine->actionQuery($query);
-        $this->assertTrue($Engine->hasErrors());
+        $this->assertTrue($Engine->hasErrors()); // No results in lv_gluck_8
         $errors = $Engine->getErrors();
 
         $this->assertEquals(trans('errors.no_results'), $errors[0]);
         $this->assertCount(1, $errors);  // not found only
+
+        // Search 3: Genesis 1:16
+        $search_3 = 'Un Dievs darīja divus lielus spīdekļus, lielāko spīdekli, dienu valdīt un mazāko spīdekli, naktī valdīt, — un zvaigznes.';
+
+        $search_3_safe = 'Un Dievs darīja divus lielus spīdekļus lielāko spīdekli dienu valdīt un mazāko spīdekli naktī valdīt  un zvaigznes';
+
+        $this->assertEquals($search_3_safe, \App\Search::removeUnsafeCharacters($search_3));
+        
+        $query = [
+            'bible'  => 'lv_gluck_8',
+            'search' => $search_3,
+        ];
+
+        $results = $Engine->actionQuery($query);
+        $this->assertFalse($Engine->hasErrors());
+
+        $query['search_type'] = 'any_word';
+        $results = $Engine->actionQuery($query);
+        // Will probably results in too many results error
+        // Just going to assert that it has results.
+        $this->assertIsArray($results['lv_gluck_8']);
+        $this->assertNotEmpty($results['lv_gluck_8']);
+
+        $query['search_type'] = 'phrase';
+        $results = $Engine->actionQuery($query);
+        $this->assertFalse($Engine->hasErrors());
+        $errors = $Engine->getErrors();
+
+        // Search 4: Matt 1:23
+        $search_4 = '“Redzi, jumprava būs grūta un dzemdēs Dēlu, un Viņa vārdu sauks Immanuels,” tas ir tulkots: “Dievs ar mums.”';
+
+        $search_4_safe = 'Redzi jumprava būs grūta un dzemdēs Dēlu un Viņa vārdu sauks Immanuels tas ir tulkots Dievs ar mums';
+
+        $this->assertEquals($search_4_safe, \App\Search::removeUnsafeCharacters($search_4));
+
+        $query = [
+            'bible'  => 'lv_gluck_8',
+            'search' => $search_4,
+        ];
+
+        $results = $Engine->actionQuery($query);
+        $this->assertFalse($Engine->hasErrors());
+
+        $query['search_type'] = 'any_word';
+        $results = $Engine->actionQuery($query);
+        // Will probably results in too many results error
+        // Just going to assert that it has results.
+        $this->assertIsArray($results['lv_gluck_8']);
+        $this->assertNotEmpty($results['lv_gluck_8']);
+
+        $query['search_type'] = 'phrase';
+        $results = $Engine->actionQuery($query);
+        $this->assertFalse($Engine->hasErrors());
+        $errors = $Engine->getErrors();
     }
 
     public function testRussian() {
@@ -229,6 +290,72 @@ class UnicodeTest extends TestCase {
         $this->assertIsArray($results['synodal']);
         $this->assertNotEmpty($results['synodal']);
 
+        // Search 2: Gen 1:26
+        $search_2 = 'И сказал Бог: сотворим человека по образу Нашему по подобию Нашему,и да владычествуют они над рыбами морскими, и над птицами небесными, и над скотом, и над всею землею, и над всеми гадами, пресмыкающимися по земле.';
+
+        $search_2_safe = 'И сказал Бог сотворим человека по образу Нашему по подобию Нашемуи да владычествуют они над рыбами морскими и над птицами небесными и над скотом и над всею землею и над всеми гадами пресмыкающимися по земле';
+
+        $this->assertEquals($search_2_safe, \App\Search::removeUnsafeCharacters($search_2));
+
+        $query = [
+            'bible'  => 'synodal',
+            'search' => $search_2,
+            'search_type' => 'phrase',
+        ];
+
+        $results = $Engine->actionQuery($query);
+        $this->assertFalse($Engine->hasErrors());
+        $this->assertCount(1, $results['synodal']);
+
+        $query['search_type'] = 'all_words';
+        $results = $Engine->actionQuery($query);
+        $this->assertFalse($Engine->hasErrors()); 
+        $errors = $Engine->getErrors();
+        $this->assertCount(1, $results['synodal']);
+
+        $query['search_type'] = 'any_word';
+        $query['search'] = $search_words;
+        $results = $Engine->actionQuery($query);
+        // Will probably results in too many results error
+        // Just going to assert that it has results.
+        $this->assertIsArray($results['synodal']);
+        $this->assertNotEmpty($results['synodal']);
+    }
+
+    public function testWeirdHighlightIssue() {
+        if(!Engine::isBibleEnabled('synodal')) {
+            $this->markTestSkipped('Bible synodal not installed or enabled');
+        }        
+
+        if(!Engine::isBibleEnabled('bishops')) {
+            $this->markTestSkipped('Bible bishops not installed or enabled');
+        }
+
+        $Engine = Engine::getInstance();
+        $Engine->setDefaultDataType('raw');
+        $Engine->setDefaultPageAll(TRUE);
+
+        // Search 2: Gen 1:26
+        $search_2 = 'И сказал Бог: сотворим человека по образу Нашему по подобию Нашему,и да владычествуют они над рыбами морскими, и над птицами небесными, и над скотом, и над всею землею, и над всеми гадами, пресмыкающимися по земле.';
+
+        $query = [
+            'bible'         => ['synodal','bishops'],
+            'search'        => $search_2,
+            'search_type'   => 'phrase',
+            'highlight'     => true,
+            'highlight_tag' => 'high',
+        ];
+
+        $results = $Engine->actionQuery($query);
+
+        $this->assertTrue($Engine->hasErrors()); // No resutls in Bishups
+        $this->assertCount(1, $results['synodal']);
+        $this->assertCount(1, $results['bishops']);
+
+        $this->assertStringContainsString('<high>', $results['synodal'][0]->text);
+        $this->assertStringContainsString('</high>', $results['synodal'][0]->text);
+        $this->assertStringNotContainsString('<high>', $results['bishops'][0]->text);
+        $this->assertStringNotContainsString('</high>', $results['bishops'][0]->text);
     }
 
     public function testFrenchLookup() {

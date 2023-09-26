@@ -170,8 +170,8 @@ class SqlSearch {
 
         $search = preg_replace_callback('/\p{P}/', function($matches) {
             $p = $matches[0];
-            
-            if(in_array($p, ['.',',',':',';','\'','"','!','-','?','(',')','[',']'])) {
+
+            if(in_array($p, ['—','.',',',':',';','\'','"','!','-','?','(',')','[',']'])) {
                 return '';
             }
 
@@ -197,6 +197,10 @@ class SqlSearch {
 
             return '';
         }, $search);
+
+        $other = ['—', '„', '“','”'];
+
+        $search = str_replace($other, '', $search);
 
         return $search;
     }
@@ -980,6 +984,10 @@ class SqlSearch {
 
         foreach($results as $bible => &$verses) {
             foreach($verses as &$verse) {
+                if(isset($verse->_unmatched) && $verse->_unmatched) {
+                    continue;
+                }
+
                 foreach($terms_fmt as $key => $term_fmt) {
                     $term = $terms[$key];
 

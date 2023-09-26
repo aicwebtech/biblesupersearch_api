@@ -1013,6 +1013,7 @@ class Engine {
 
                 foreach($found as $verse) {
                     $bcv = $verse->book * 1000000 + $verse->chapter * 1000 + $verse->verse;
+                    $verse->_unmatched = true; // Note: these 'unmatched' verses are never highlighted
                     $agg[$bcv][$bible] = $verse;
                 }
             }
