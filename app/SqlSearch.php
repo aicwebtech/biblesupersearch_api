@@ -172,7 +172,7 @@ class SqlSearch {
             $p = $matches[0];
 
             if(in_array($p, ['—','.',',',':',';','\'','"','!','-','?','(',')','[',']'])) {
-                return '';
+                return ' ';
             }
 
             if(preg_match('/\p{Pi}/', $p)) {
@@ -195,12 +195,14 @@ class SqlSearch {
                 return $p;
             }
 
-            return '';
+            return ' ';
         }, $search);
 
         $other = ['—', '„', '“','”'];
 
-        $search = str_replace($other, '', $search);
+        $search = str_replace($other, ' ', $search);
+        $search = preg_replace('/\s{2,}/', ' ', $search);
+        $search = trim($search);
 
         return $search;
     }
@@ -963,6 +965,7 @@ class SqlSearch {
         $whole_word = $this->isTruthy('whole_words', $this->options);
         $exact_case = $this->isTruthy('exact_case',  $this->options);
 
+
         $terms = $this->terms;
         $terms_fmt = [];
         $pre = '&';     // Regex safe, reused search alias
@@ -973,8 +976,7 @@ class SqlSearch {
         // $post_pattern = '/' . $post . '([^' . $post . ' ]*)' .  $post .  '/';    // alt pattern    
         $pre_pattern  = '/' . $pre . '([^' . $pre . $post . ']*)' . $pre .  '/';
         $post_pattern = '/' . $post . '([^' . $pre . $post . ']*)' .  $post .  '/';
-        // $pre  = '<'  . $this->options['highlight_tag'] . '>';
-        // $post = '</' . $this->options['highlight_tag'] . '>';
+        $hl_word_pattern = '/' . $pre . '([^ ]+)' . $post . '/';
 
         Helpers::sortStringsByLength($terms, 'DESC');
 
@@ -1003,6 +1005,10 @@ class SqlSearch {
 
                 $verse->text = preg_replace_callback($post_pattern, function($matches) use ($pre, $post) {
                     return $matches[1] . $post;
+                }, $verse->text);
+
+                $verse->text = preg_replace_callback($hl_word_pattern, function($matches) use ($pre, $post) {
+                    return $pre . str_replace([$pre, $post], '', $matches[1]) . $post;
                 }, $verse->text);
 
                 $verse->text = str_replace([$pre, $post], [$pre_tag, $post_tag], $verse->text);

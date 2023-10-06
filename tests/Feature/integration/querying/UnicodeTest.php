@@ -147,7 +147,7 @@ class UnicodeTest extends TestCase {
         $this->assertCount(1, $results['lv_gluck_8']);
 
         $query['search_type'] = 'any_word';
-        $query['search'] = $search_words;
+        // $query['search'] = $search_words;
         $results = $Engine->actionQuery($query);
         // Will probably results in too many results error
         // Just going to assert that it has results.
@@ -196,7 +196,7 @@ class UnicodeTest extends TestCase {
         // Search 3: Genesis 1:16
         $search_3 = 'Un Dievs darīja divus lielus spīdekļus, lielāko spīdekli, dienu valdīt un mazāko spīdekli, naktī valdīt, — un zvaigznes.';
 
-        $search_3_safe = 'Un Dievs darīja divus lielus spīdekļus lielāko spīdekli dienu valdīt un mazāko spīdekli naktī valdīt  un zvaigznes';
+        $search_3_safe = 'Un Dievs darīja divus lielus spīdekļus lielāko spīdekli dienu valdīt un mazāko spīdekli naktī valdīt un zvaigznes';
 
         $this->assertEquals($search_3_safe, \App\Search::removeUnsafeCharacters($search_3));
         
@@ -283,7 +283,7 @@ class UnicodeTest extends TestCase {
         $this->assertCount(1, $results['synodal']);
 
         $query['search_type'] = 'any_word';
-        $query['search'] = $search_words;
+        // $query['search'] = $search_words;
         $results = $Engine->actionQuery($query);
         // Will probably results in too many results error
         // Just going to assert that it has results.
@@ -293,7 +293,10 @@ class UnicodeTest extends TestCase {
         // Search 2: Gen 1:26
         $search_2 = 'И сказал Бог: сотворим человека по образу Нашему по подобию Нашему,и да владычествуют они над рыбами морскими, и над птицами небесными, и над скотом, и над всею землею, и над всеми гадами, пресмыкающимися по земле.';
 
-        $search_2_safe = 'И сказал Бог сотворим человека по образу Нашему по подобию Нашемуи да владычествуют они над рыбами морскими и над птицами небесными и над скотом и над всею землею и над всеми гадами пресмыкающимися по земле';
+        $search_2_safe = 'И сказал Бог сотворим человека по образу Нашему по подобию Нашему и да владычествуют они над рыбами морскими и над птицами небесными и над скотом и над всею землею и над всеми гадами пресмыкающимися по земле';
+
+        // Search 2, but with words causing difficulty removed
+        $search_2_adjusted = 'И сказал Бог сотворим человека по образу Нашему по Нашему и да владычествуют они над рыбами и над небесными и над скотом и над всею землею и над всеми по земле';
 
         $this->assertEquals($search_2_safe, \App\Search::removeUnsafeCharacters($search_2));
 
@@ -307,19 +310,63 @@ class UnicodeTest extends TestCase {
         $this->assertFalse($Engine->hasErrors());
         $this->assertCount(1, $results['synodal']);
 
-        $query['search_type'] = 'all_words';
-        $results = $Engine->actionQuery($query);
-        $this->assertFalse($Engine->hasErrors()); 
-        $errors = $Engine->getErrors();
-        $this->assertCount(1, $results['synodal']);
-
         $query['search_type'] = 'any_word';
-        $query['search'] = $search_words;
         $results = $Engine->actionQuery($query);
         // Will probably results in too many results error
         // Just going to assert that it has results.
         $this->assertIsArray($results['synodal']);
         $this->assertNotEmpty($results['synodal']);
+
+        $query['search_type'] = 'all_words';
+        $query['search'] = $search_2;
+        $results = $Engine->actionQuery($query);
+        $this->assertFalse($Engine->hasErrors()); 
+        $errors = $Engine->getErrors();
+        $this->assertCount(1, $results['synodal']);
+    }
+
+    public function testRussianHighlight() {
+        if(!Engine::isBibleEnabled('synodal')) {
+            $this->markTestSkipped('Bible synodal not installed or enabled');
+        }
+
+        $Engine = Engine::getInstance();
+        $Engine->setDefaultDataType('raw');
+        $Engine->setDefaultPageAll(TRUE);
+
+        // Search: Exact text of Gen 1:26
+        $search = 'И сказал Бог: сотворим человека по образу Нашему по подобию Нашему,и да владычествуют они над рыбами морскими, и над птицами небесными, и над скотом, и над всею землею, и над всеми гадами, пресмыкающимися по земле.';
+
+        $expected_hl_phrase = '<B>И сказал Бог: сотворим человека по образу Нашему по подобию Нашему,и да владычествуют они над рыбами морскими, и над птицами небесными, и над скотом, и над всею землею, и над всеми гадами, пресмыкающимися по земле</B>.'; // .</B> ???
+
+        $expected_hl_other = '<B>И</B> <B>сказал</B> <B>Бог</B>: <B>сотворим</B> <B>человека</B> <B>по</B> <B>образу</B> <B>Нашему</B> <B>по</B> <B>подобию</B> <B>Нашему,и</B> <B>да</B> <B>владычествуют</B> <B>они</B> <B>над</B> <B>рыбами</B> <B>морскими</B>, <B>и</B> <B>над</B> <B>птицами</B> <B>небесными</B>, <B>и</B> <B>над</B> <B>скотом</B>, <B>и</B> <B>над</B> <B>всею</B> <B>землею</B>, <B>и</B> <B>над</B> <B>всеми</B> <B>гадами</B>, <B>пресмыкающимися</B> <B>по</B> <B>земле</B>.';
+
+        $query = [
+            'bible'  => 'synodal',
+            'search' => $search,
+            'search_type' => 'phrase',
+            'reference' => 'Genesis 1:26',
+            'highlight'     => true,
+            'highlight_tag' => 'B',
+        ];
+
+        $search_types = ['phrase', 'any_word', 'all_words'];
+        // $search_types = ['any_word'];
+
+        foreach($search_types as $st) {
+            $stt = 'search_type = ' . $st;
+
+            $expected = $st == 'phrase' ? $expected_hl_phrase : $expected_hl_other;
+
+            $query['search_type'] = $st;
+            $results = $Engine->actionQuery($query);
+            $this->assertFalse($Engine->hasErrors(), $stt);
+            $this->assertCount(1, $results['synodal'], $stt);
+
+            //print_r($results['synodal'][0]);
+
+            $this->assertEquals($expected, $results['synodal'][0]->text, $stt);
+        }
     }
 
     public function testWeirdHighlightIssue() {
@@ -348,7 +395,7 @@ class UnicodeTest extends TestCase {
 
         $results = $Engine->actionQuery($query);
 
-        $this->assertTrue($Engine->hasErrors()); // No resutls in Bishups
+        $this->assertTrue($Engine->hasErrors()); // No results in Bishups
         $this->assertCount(1, $results['synodal']);
         $this->assertCount(1, $results['bishops']);
 
@@ -356,6 +403,8 @@ class UnicodeTest extends TestCase {
         $this->assertStringContainsString('</high>', $results['synodal'][0]->text);
         $this->assertStringNotContainsString('<high>', $results['bishops'][0]->text);
         $this->assertStringNotContainsString('</high>', $results['bishops'][0]->text);
+
+
     }
 
     public function testFrenchLookup() {
