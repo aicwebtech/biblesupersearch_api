@@ -772,7 +772,15 @@ class Engine {
         return in_array($lang, \App\Models\Books\BookAbstract::getSupportedLanguages());
     }
 
+    /**
+     * returns data that the API needs to run
+     */
     public function actionStatics($input) {
+        $IP = \App\Models\IpAccess::findOrCreateByIpOrDomain(true);
+
+        // $this->addError('chicken man doth commeth', 1);
+        // return $this->addError('What this?', 0);
+
         $response = new \stdClass;
         $response->bibles           = $this->actionBibles($input);
         $response->books            = $this->actionBooks($input);
@@ -786,7 +794,101 @@ class Engine {
         $response->version          = config('app.version');
         $response->environment      = config('app.env');
         $response->research_desc    = config('bss.research_description');
+        $response->access           = new \stdClass;
+        $response->access->allowed          = !$IP->isAccessRevoked();
+        $response->access->limit            = $IP->getAccessLimit();
+        $response->access->limit_reached    = $IP->isLimitReached();
+        $response->access->hits    = $IP->getDailyHits();
         return $response;
+    }
+
+    /**
+     * returns statistics about the indicated passage(s)
+     */
+    public function actionStatistics($input) 
+    {
+        $parsing = [
+            'reference' => [
+                'type' => 'string',
+            ],
+            'bible' => [
+                'type' => 'array_string'
+            ],
+            'language' => [
+                'type' => 'string',
+                'default' => NULL,
+            ],
+        ];
+
+        $this->resetErrors();
+        $results = $bible_no_results = [];
+
+        $input = $this->_sanitizeInput($input, $parsing);
+        $this->setDefaultLanguage($input['language']);
+        !empty($input['bible']) && $this->setBibles($input['bible']);
+
+        $input['bible'] = array_keys($this->Bibles);
+        $parallel = $input['multi_bibles'] = (count($input['bible']) > 1);
+
+        $references = empty($input['reference']) ? NULL : $input['reference'];
+        $is_search = false;
+
+        if(empty($references)) {
+            $this->addError(trans('errors.no_query'));
+        }
+
+        $this->checkSemiEmpty($references, 'reference');
+
+        if($this->hasErrors()) {
+            return false;
+        }
+
+        // Passage parsing and validation
+        $Passages = Passage::parseReferences($references . ' ', $this->languages, $is_search, $this->Bibles, $input);
+
+        if(is_array($Passages)) {
+            foreach($Passages as $key => $Passage) {
+                if($Passage->hasErrors()) {
+                    $this->addErrors($Passage->getErrors(), $Passage->getErrorLevel());
+                    unset($Passages[$key]);
+                }
+            }
+
+            if(empty($Passages)) {
+                $this->setErrorLevel(4);
+                return FALSE; // If all of the passages are invalid, return
+            }
+        }
+
+        if(!empty($references) && empty($Passages)) {
+            $this->addError(trans('errors.passage_not_found', ['passage' => $references]), 4);
+            return FALSE;
+        }
+
+
+        foreach($this->Bibles as $Bible) {
+            try {
+                $stats = $Bible->getStatistics($Passages[0]);
+                $results[$Bible->module] = $stats;
+            }
+            catch (\Exception $e) {
+                $this->addTransError('errors.500', [], 4, 500);
+                throw $e;
+
+                // if(config('app.debug')) {
+                //     $m = $e->getMessage();
+                //     $m = "<div style='width:800px;font-family:Monospace;white-space:pre-wrap;text- align:left'>" . $m . "</div>";
+                    
+                //     $this->addError('DATABASE ERROR:');
+                //     $this->addError($m);
+                // }
+
+                break;   
+            }
+        }
+
+
+        return $results;
     }
 
     private function _getNameHash() {

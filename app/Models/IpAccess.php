@@ -10,6 +10,11 @@ class IpAccess extends Model {
     protected $fillable = ['ip_address','domain', 'limit'];
 
     static public function findOrCreateByIpOrDomain($ip_address = NULL, $host = NULL) {
+        if($ip_address === true) {
+            $host = (array_key_exists('HTTP_REFERER', $_SERVER)) ? $_SERVER['HTTP_REFERER'] : 'localhost';
+            $ip_address = (array_key_exists('REMOTE_ADDR', $_SERVER))  ? $_SERVER['REMOTE_ADDR']  : '127.0.0.1';
+        }
+
         $domain = static::parseDomain($host);
 
         if($domain) {

@@ -157,6 +157,17 @@ class Bible extends Model {
         return $this->verses()->getSearch($Passages, $Search, $parameters);
     }
 
+    /**
+     * Processes and executes the Bible statistics query
+     *
+     * @param array $Passages Array of App/Passage instances, represents the passages requested, if any
+     * @param array $parameters Search parameters - user input
+     * @return array $Verses array of Verses instances (found verses)
+     */
+    public function getStatistics($Passages = NULL, $parameters = []) {
+        return $this->verses()->getStatistics($Passages, $parameters);
+    }
+
     public function getVersesByBCV($bcv) {
         return $this->verses()->getVersesByBCV($bcv);
     }

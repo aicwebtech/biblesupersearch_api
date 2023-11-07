@@ -434,7 +434,212 @@ class VerseStandard extends VerseAbstract {
         return $Query->get()->all();
     }
 
-    public function getChapterVerseCount($verbose = FALSE) {
+    public function countVerses($book = null, $chapter = null, $verse = null)
+    {
+        $Query = DB::table($this->getTable() . ' AS tb');
+
+        if($book) {
+            $Query->where('book', $book);
+
+        }
+
+        if($chapter) {
+            $Query->where('chapter', $chapter);
+        }
+
+        if($verse) {
+            $range = explode('-', $verse);
+
+            if(count($range) == 1) {
+                $Query->where('verse', $verse);
+            } else {
+                $Query->whereBetween('verse', $range);
+            }
+        }
+
+        return $Query->count();
+    }
+
+    public static function getStatistics($Passage, $input = [])
+    {
+
+        $b = $c = $v = null;
+
+        $has_verses = $has_chapters = false;
+        $table_fmt = ''; // for aliases
+
+        $queries = [
+            'passage' => [],
+            'chapter' => [],
+            'book' => [],
+        ];
+
+        $references = [
+
+        ];
+
+        $book_st = $book_en = $chapter = $chapter_verse = null;
+        $chapters = [];
+
+        if($Passage) {
+            if(count($Passage->chapter_verse_normal)) {
+                $chapter_verse = $Passage->chapter_verse;
+
+                foreach($Passage->chapter_verse_normal as $parsed) {
+                    $v_q = $c_q = $b_q = $table_fmt . '`book` = ' . $Passage->Book->id;
+                    $book_st = $Passage->Book->id;
+
+                    // Single verses
+                    if($parsed['type'] == 'single') {
+                        $c_q .= ' AND ' . $table_fmt . '`chapter` = ' . $parsed['c'];
+                        $v_q .= ' AND ' . $table_fmt . '`chapter` = ' . $parsed['c'];
+                        //                                                              $c_r .= ''
+                        $v_q .= ($parsed['v']) ? ' AND ' . $table_fmt . '`verse` = ' . $parsed['v'] : '';
+
+                        $has_verses = $parsed['v'] ? true : $has_verses;
+                        $has_chapters = true;
+                        $chapters[] = $parsed['c'];
+                    }
+                    elseif($parsed['type'] == 'range') {
+                        if(!$parsed['cst'] && !$parsed['cen']) {
+                            continue;
+                        }
+
+                        $has_verses = ($parsed['vst'] != 0 || $parsed['ven'] != 999) ? true : $has_verses; 
+                        $has_chapters = true;
+
+                        $cvst = $parsed['cst'] * 1000 + (int) $parsed['vst'];
+                        $cven = $parsed['cen'] * 1000 + (int) $parsed['ven'];
+                        $v_q .= ' AND ' . $table_fmt . '`chapter_verse` BETWEEN ' . $cvst . ' AND ' . $cven;
+                        $c_q .= ' AND ' . $table_fmt . '`chapter` BETWEEN ' . $parsed['cst'] . ' AND ' . $parsed['cen'];
+
+                        if($parsed['cst'] == $parsed['cen']) {
+                            $chapters[] = $parsed['cst'];
+                        } else {
+                            $chapters[] = $parsed['cst'] . ' - ' . $parsed['cen'];
+                        }
+                        
+                        // Proposed modification that would eliminate the need for the `chapter_verse` db column
+                        //$q .= ' AND ' . $table_fmt . '`chapter` * 1000 + `verse` BETWEEN ' . $cvst . ' AND ' . $cven;
+                    }
+
+                    $queries['passage'][] = $v_q;
+                    $queries['chapter'][] = $c_q;
+                    $queries['book'][] = $b_q;
+                }
+            }
+            else {
+                if($Passage->is_book_range) {
+                    $queries['book'][] = $table_fmt . '`book` BETWEEN ' . $Passage->Book->id . ' AND ' . $Passage->Book_En->id;
+                    $book_st = $Passage->Book->id;
+                    $book_en = $Passage->Book_En->id;
+                }
+                else {
+                    $queries['book'][] = $table_fmt . '`book` = ' . $Passage->Book->id;
+                    $book_st = $Passage->Book->id;
+                }
+            }
+        }
+
+        if($has_verses) {
+            $queries['passage'] = '(' . implode(' OR ', $queries['passage']) . ')';
+
+            $references['passage'] = [
+                'book' => $book_st,
+                'chapter_verse' => $chapter_verse,
+            ];
+        } else {
+            unset($queries['passage']);
+        }        
+
+        if($has_chapters) {
+            $queries['chapter'] = '('. implode(' OR ', $queries['chapter']) . ')';
+
+            $references['chapter'] = [
+                'book' => $book_st,
+                'chapter_verse' => implode(', ', $chapters),
+            ];
+        } else {
+            unset($queries['chapter']);
+        }
+
+        $queries['book'] = '(' . implode(' OR ', $queries['book']) . ')';
+        
+        $references['book'] = [
+            'book_st' => $book_st,
+            'book_en' => $book_en,
+        ];
+
+        $stats = [];
+
+        foreach($queries as $type => $query) {
+            $stats[$type] = self::statsHelper($type, $query, $references[$type]);
+        }
+
+        $stats['full'] = self::statsHelper();
+        return $stats;
+    }
+
+    protected static function statsHelper($type = 'full', $query = null, $reference = null)
+    {
+        $sub = [
+            'type'          => $type,
+            'reference'     => $reference,
+            'num_verses'    => null,
+            'num_chapters'  => null,
+            'num_books'     => null,
+        ];
+
+        $Verse = new static;
+        $table = $Verse->getTable();
+        $Query = DB::table($table . ' AS tb');
+
+        $Query->select('id','book','chapter','verse','text','italics');
+        $Query->orderBy('book', 'ASC')->orderBy('chapter', 'ASC')->orderBy('verse', 'ASC');
+
+        if($query) {
+            $Query->whereRaw('(' . $query . ')');
+        }
+
+        $Verses = $Query->get();
+
+        $first = $Verses->first();
+
+        $ChapterCounts = $Verses->countBy(function($verse) {
+            return $verse->book . '_' . $verse->chapter;
+        });       
+
+        $sub['num_verses'] = $Verses->count();
+        $sub['num_chapters'] = $ChapterCounts->count();
+
+        $sub['num_books'] = $Verses->countBy(function($verse) {
+            return $verse->book;
+        })->count();
+
+        switch($type) {
+            case 'book':
+                $sub['book_position'] = $sub['num_books'] == 1 ? $first->book : null;
+                break;
+            case 'chapter':  
+                $sub['chapter_position'] = $sub['num_chapters'] == 1 ?  'what' : null;
+                break;
+            case 'passage':
+                if($sub['num_verses'] == 1) {
+                    // $ccidx = array_keys($ChapterCounts->all());
+                    // $idx = array_search($first->book . '_' . $first->chapter, $ccidx);
+
+                } else {
+
+                }
+
+                $sub['verse_position']  =  $sub['num_verses'] == 1 ? $first->id : null;
+                break;
+        }
+
+        return $sub;
+    }
+
+    public function getChapterVerseCount($verbose = false) {
         $counts = [];
 
         // We use MAX instead of COUNT because of missing verses in Critical Text 'Bibles' that will throw off the numbers

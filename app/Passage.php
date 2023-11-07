@@ -947,6 +947,17 @@ class Passage {
         return $Exploded;
     }
 
+    public function getStatistics($input = [])
+    {
+        $by_bible = [];
+
+        foreach($this->Bibles as $Bible) {
+            $by_bible[$Bible->module] = $Bible->getStatistics($this, $input);
+        }
+
+        return $by_bible;
+    }
+
     /**
      * Parses the reference string from the user into references that can be used by the query
      * @param string $reference
