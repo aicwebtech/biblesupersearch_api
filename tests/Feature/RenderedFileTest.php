@@ -9,6 +9,8 @@ use Tests\TestCase;
 class RenderedFileTest extends TestCase
 {
 
+    protected $kjvcm = 'NOTICE: The RenderedFile tests assume that the end user has NOT changed any metadata on the KJV (Authorized King James Version) module';
+
     /**
      * Testing the output of the CSV render
      * 
@@ -28,7 +30,7 @@ class RenderedFileTest extends TestCase
         $this->assertNotEmpty($file_data);
 
         $row = str_getcsv($file_data[0]);
-        $this->assertEquals('Authorized King James Version', $row[0]);
+        $this->assertEquals('Authorized King James Version', $row[0], $this->kjvcm);
         
         // Blank rows
         $row = str_getcsv($file_data[1]);
@@ -38,8 +40,8 @@ class RenderedFileTest extends TestCase
 
         // Copyright
         $row = str_getcsv($file_data[3]);
-        $this->assertStringContainsString('Public Domain in most parts of the world', $row[0]);
-        $this->assertStringContainsString('Crown copyright', $row[0]);
+        $this->assertStringContainsString('Public Domain in most parts of the world', $row[0], $this->kjvcm);
+        $this->assertStringContainsString('Crown copyright', $row[0], $this->kjvcm);
 
         // Blank row
         $row = str_getcsv($file_data[4]);
@@ -236,7 +238,7 @@ class RenderedFileTest extends TestCase
 
         $this->assertIsObject($file_data);
         $this->assertIsObject($file_data->metadata);
-        $this->assertEquals('Authorized King James Version', $file_data->metadata->name);
+        $this->assertEquals('Authorized King James Version', $file_data->metadata->name, $this->kjvcm);
         $this->assertEquals('KJV', $file_data->metadata->shortname);
         $this->assertEquals('en', $file_data->metadata->lang_short);
         $this->assertIsArray($file_data->verses);
@@ -275,8 +277,8 @@ class RenderedFileTest extends TestCase
 
         $this->assertEmpty( trim($file_data[1]) ); // blank line
 
-        $this->assertStringContainsString('Public Domain in most parts of the world', $file_data[2]);
-        $this->assertStringContainsString('Crown copyright', $file_data[2]);
+        $this->assertStringContainsString('Public Domain in most parts of the world', $file_data[2], $this->kjvcm);
+        $this->assertStringContainsString('Crown copyright', $file_data[2], $this->kjvcm);
 
         $this->assertEmpty( trim($file_data[3]) ); // blank line
         $this->assertEmpty( trim($file_data[4]) ); // blank line

@@ -68,6 +68,7 @@ Route::get('/admin/uninstalled', 'AdminController@uninstalled')->name('admin.uni
 Route::get('/admin/bibles/grid', 'Admin\BibleController@grid');
 Route::get('/admin/bibles/languages', 'Admin\BibleController@languages');
 Route::get('/admin/bibles/copyrights', 'Admin\BibleController@copyrights');
+Route::get('/admin/bibles/edit', 'Admin\BibleController@editHash');
 Route::post('/admin/bibles/enable/{id}', 'Admin\BibleController@enable');
 Route::post('/admin/bibles/disable/{id}', 'Admin\BibleController@disable');
 Route::post('/admin/bibles/install/{id}', 'Admin\BibleController@install');

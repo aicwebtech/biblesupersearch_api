@@ -72,12 +72,21 @@ class KeywordTest extends TestCase
         $Engine = new Engine();
         $Engine->setDefaultDataType('raw');
 
-        $results = $Engine->actionQuery(['bible' => 'kjv', 'search' => 'faith && joy || "free spirit"']);
+        $results = $Engine->actionQuery([
+            'bible'         => 'kjv', 
+            'search'        => 'faith && joy || "free spirit"', 
+            'search_type'   => 'boolean'
+        ]);
+        
         $this->assertCount(9, $results['kjv']);
 
-        $results = $Engine->actionQuery(['bible' => 'kjv', 'search' => "faith && joy || 'free spirit'"]);
+        $results = $Engine->actionQuery([
+            'bible'         => 'kjv', 
+            'search'        => "faith && joy || 'free spirit'", 
+            'search_type'   => 'boolean'
+        ]);
+        
         //$this->assertCount(9, $results['kjv']);
-
     }
 
     public function testExactPhraseOneWord() {

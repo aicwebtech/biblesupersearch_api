@@ -152,4 +152,97 @@ class RequestTest extends TestCase {
         $this->assertTrue( Passage::_containsNonPassageCharacters('love.{0,200}joy') );
         $this->assertTrue( Passage::_containsNonPassageCharacters('(love OR joy ) hope') );
     }
+
+    public function testSearchGroupedAsPassage() {
+        $Engine = Engine::getInstance();
+
+        $query = [
+            'bible'         => 'kjv', 
+            'request'       => 'faith', 
+            'reference'     => 'Ps 89', 
+            'whole_words'   => false,
+            'data_format'   => 'lite',
+        ];
+
+        $results = $Engine->actionQuery($query);
+
+        $this->assertFalse($Engine->hasErrors());
+        // Returns 7 passages, containing 1 verse each
+        $this->assertCount(7, $results);
+        $this->assertTrue($results[0]['single_verse']);
+        $this->assertEquals(1, $results[0]['verses_count']);
+
+        $query['group_passage_search_results'] = true;
+
+        $results = $Engine->actionQuery($query);
+
+        $this->assertFalse($Engine->hasErrors());
+        // Returns 1 passages, containing 7 verses
+        $this->assertCount(1, $results);
+        $this->assertFalse($results[0]['single_verse']);
+        $this->assertEquals(7, $results[0]['verses_count']);
+    }    
+
+    public function testSearchGroupedAsPassageMultiDifferentChapters() {
+        $Engine = Engine::getInstance();
+
+        $query = [
+            'bible'         => 'kjv', 
+            'request'       => 'faith', 
+            'reference'     => '1 Sam', 
+            'whole_words'   => false,
+            'data_format'   => 'lite',
+        ];
+
+        $results = $Engine->actionQuery($query);
+
+        $this->assertFalse($Engine->hasErrors());
+        $this->assertCount(3, $results);
+        $this->assertTrue($results[0]['single_verse']);
+        $this->assertEquals(1, $results[0]['verses_count']);
+
+        // Since all of these results are in different chapters, 
+        // turning on the passage grouping should have no effect on results
+
+        $query['group_passage_search_results'] = true;
+
+        $results = $Engine->actionQuery($query);
+
+        $this->assertFalse($Engine->hasErrors());
+        $this->assertCount(3, $results);
+        $this->assertTrue($results[0]['single_verse']);
+        $this->assertEquals(1, $results[0]['verses_count']);
+    }    
+
+    public function testSearchGroupedAsPassageMultiSharedChapters() {
+        $Engine = Engine::getInstance();
+
+        $query = [
+            'bible'         => 'kjv', 
+            'request'       => 'faith', 
+            'reference'     => 'Romans', 
+            'whole_words'   => false,
+            'data_format'   => 'lite',
+            'page_all'      => true,
+        ];
+
+        $results = $Engine->actionQuery($query);
+
+        $this->assertFalse($Engine->hasErrors());
+        $this->assertCount(34, $results);
+        $this->assertTrue($results[0]['single_verse']);
+        $this->assertEquals(1, $results[0]['verses_count']);
+
+        // Since all of these results are in different chapters, 
+        // turning on the passage grouping should have no effect on results
+
+        $query['group_passage_search_results'] = true;
+
+        $results = $Engine->actionQuery($query);
+
+        $this->assertFalse($Engine->hasErrors());
+        $this->assertCount(10, $results);  // 10 different chapters returned
+        $this->assertFalse($results[0]['single_verse']);
+        $this->assertEquals(4, $results[0]['verses_count']);
+    }
 }

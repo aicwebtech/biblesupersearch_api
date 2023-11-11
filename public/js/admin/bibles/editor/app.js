@@ -6,6 +6,15 @@ enyo.kind({
     renderTarget: 'enyo_container',
     ajaxLoading: false,
 
+    components: [
+        {
+            name: 'Router',
+            kind: 'enyo.Router',
+            triggerOnStart: true,
+            routes: [ {handler: 'handleHashGeneric', default: true} ]
+        }
+    ],
+
     defaultAjaxHeaders: {
         'X-Requested-With' : 'XMLHttpRequest'
     },
@@ -35,15 +44,16 @@ enyo.kind({
     },
     _errorHandler: function(inSender, inResponse) {
         this.log(inSender, inResponse);
+        var msg = inResponse.message || 'An Error has occurred';
 
         // Treat 405 (method not allowed) as a session time out
-        if(inSender && inSender.xhrResponse && inSender.xhrResponse.status == 405) {
-            inResponse = {
-                message: 'Your session has timed out, please log in again'
+        if(inSender && inSender.xhrResponse) {
+            if(inSender.xhrResponse.status == 405) {
+                msg = 'Your session has timed out, please log in again';
+            } else if (inSender.xhrResponse.status == 404) {
+                msg = '404 Not found';
             }
         };
-
-        var msg = inResponse.message || 'An Error has occurred';
 
         if(inResponse.errors) {
             msg += '<br /><br />';
@@ -65,6 +75,9 @@ enyo.kind({
         }
 
         this.alert(msg);
+    },
+    handleHashGeneric: function(hash) {
+        this.view.$.Form.openByPk(hash)
     }
 
 });

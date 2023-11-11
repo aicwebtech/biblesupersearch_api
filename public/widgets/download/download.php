@@ -5,6 +5,7 @@
 
 <?php
     $downloadable_bibles = 0;
+    $BibleSuperSearchBibles = (array) $BibleSuperSearchBibles;
 
     foreach($BibleSuperSearchBibles as $bible) {
         if($bible['downloadable']) {

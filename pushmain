@@ -1,0 +1,3 @@
+git push bitbucket develop beta master
+git push sourceforge develop beta master
+git push github develop beta master

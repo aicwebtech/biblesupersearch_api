@@ -46,7 +46,6 @@ enyo.kind({
                     width:'200', 
                     editable: true, 
                     searchoptions: strOptions,
-                    formatter: enyo.bind(this, this._formatName)
                 },
                 {
                     name: 'shortname', 
@@ -62,7 +61,8 @@ enyo.kind({
                     index: 'module', 
                     label: 'Module', 
                     width:'100',
-                    searchoptions: strOptions
+                    searchoptions: strOptions,
+                    formatter: enyo.bind(this, this._formatName)
                 },
                 {
                     name: 'has_module_file', 
@@ -353,7 +353,8 @@ enyo.kind({
         // html += ' &nbsp; ';
         html += this.__makeSignalLink('Quick Edit', 'onEdit', props);
         html += ' &nbsp; ';
-        html += this.__makeHtmlLink('Edit', '/admin/bibles/' + rowObject.module + '/edit', '_NEW');
+        // html += this.__makeHtmlLink('Edit', '/admin/bibles/' + rowObject.module + '/edit', '_NEW');
+        html += this.__makeHtmlLink('Edit', '/admin/bibles/edit#' + options.rowId, '_NEW');
         return html;
     },    
     _formatName: function(cellvalue, options, rowObject) {
