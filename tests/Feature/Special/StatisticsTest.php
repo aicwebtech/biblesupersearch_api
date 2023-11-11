@@ -17,7 +17,7 @@ class StatisticsTest extends TestCase {
         $response = $Engine->actionStatistics(['bible' => 'kjv', 'reference' => 'John 3:16']);
         $this->assertFalse($Engine->hasErrors());
 
-        var_dump($response);
+        // var_dump($response);
 
         $this->assertIsArray($response['kjv']);
         $this->assertIsArray($response['kjv']['passage']);
@@ -49,7 +49,7 @@ class StatisticsTest extends TestCase {
         $response = $Engine->actionStatistics(['bible' => 'kjv', 'reference' => 'Romans 5:8-10']);
         $this->assertFalse($Engine->hasErrors());
 
-        var_dump($response);
+        // var_dump($response);
 
         $this->assertIsArray($response['kjv']);
         $this->assertIsArray($response['kjv']['passage']);

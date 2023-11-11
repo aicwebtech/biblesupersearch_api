@@ -11,6 +11,8 @@ class IpAccessTest extends TestCase {
     public function testDefaultLimit() {
         $default_limit = config('bss.daily_access_limit');
 
+        $no_limit = ($default_limit == 0);
+
         $ip = $this->_fakeIp();
         $IP = IpAccess::findOrCreateByIpOrDomain($ip);
 
@@ -21,20 +23,51 @@ class IpAccessTest extends TestCase {
         $this->assertEquals(1, $IP->getDailyHits());
         $this->assertFalse($IP->isLimitReached());
 
-        // Speed up this test by setting the current count to limit - 5
-        $Log = $IP->getAccessLog();
-        $Log->count = $default_limit - 5;
-        $Log->save();
+        if($no_limit) {
+            $this->assertEquals(0, $IP->getAccessLimit());
+            $this->assertTrue($IP->hasUnlimitedAccess());
+        } else {
+            // Speed up this test by setting the current count to limit - 5
+            $Log = $IP->getAccessLog();
+            $Log->count = $default_limit - 5;
+            $Log->save();
 
-        for($i = 1; $i < 5; $i ++) {
-            $IP->incrementDailyHits();
+            $this->assertEquals($default_limit - 5, $IP->getDailyHits());
+
+            for($i = 1; $i < 7; $i ++) {
+                $IP->incrementDailyHits();
+            }
+
+            $this->assertFalse($IP->isLimitReached());
+            // Next hit will push it over the limit
+            $this->assertTrue( $IP->incrementDailyHits() );
+            $this->assertTrue($IP->isLimitReached());
+            $this->assertFalse( $IP->incrementDailyHits() );
         }
+
+        $IP->delete();
+    }
+
+    public function testNoLimit() 
+    {
+        $ip = $this->_fakeIp();
+        $IP = IpAccess::findOrCreateByIpOrDomain($ip);
+        $limit = 0;
+        $IP->limit = $limit;
+        $IP->save();
+
+        $this->assertEquals($limit, $IP->getAccessLimit());
+        $this->assertEquals(0, $IP->getDailyHits());
+        $this->assertTrue($IP->hasUnlimitedAccess());
+
+        $IP->incrementDailyHits();
+        $this->assertEquals(1, $IP->getDailyHits());
+        $this->assertFalse($IP->isLimitReached());
 
         $this->assertFalse($IP->isLimitReached());
         $IP->incrementDailyHits();
-        $this->assertTrue($IP->isLimitReached());
         $IP->delete();
-    }
+    }    
 
     public function testCustomLimit() {
         $ip = $this->_fakeIp();
@@ -55,8 +88,10 @@ class IpAccessTest extends TestCase {
         }
 
         $this->assertFalse($IP->isLimitReached());
-        $IP->incrementDailyHits();
+        // Next hit will push it over the limit
+        $this->assertTrue( $IP->incrementDailyHits() );
         $this->assertTrue($IP->isLimitReached());
+        $this->assertFalse( $IP->incrementDailyHits() );
         $IP->delete();
     }
 

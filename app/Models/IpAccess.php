@@ -147,6 +147,11 @@ class IpAccess extends Model {
         return $limit_raw;
     }
 
+    public function hasUnlimitedAccess() 
+    {
+        return $this->getAccessLimit() === 0;
+    }
+
     public function isAccessRevoked() {
         return ($this->getAccessLimit() < 0);
     }
