@@ -12,8 +12,20 @@ use App\ConfigManager;
 // This class tests OptionManager, along with some option related controller actions.
 class OptionsTest extends TestCase
 {
+    
+    protected $run_in_production = false;
+
+    protected function _init() {
+        if(!$this->run_in_production && config('app.env') == 'production') {
+            $this->markTestSkipped('This test skipped in production');
+        }
+    }
+
+
     public function testSoftConfigs() 
     {
+        $this->_init();
+
         $cache = ConfigManager::getConfigs();
         $test_post = [];
         $User = User::find(1);
@@ -54,6 +66,8 @@ class OptionsTest extends TestCase
 
     public function testTosSave()
     {
+        $this->_init();
+
         $Post = Post::where('key', 'tos')->firstOrFail();
         $orig = $Post->content; // cache existing
         $User = User::find(1);
@@ -73,6 +87,8 @@ class OptionsTest extends TestCase
 
     public function testPrivacySave()
     {
+        $this->_init();
+
         $Post = Post::where('key', 'privacy')->firstOrFail();
         $orig = $Post->content; // cache existing
         $User = User::find(1);
@@ -89,6 +105,5 @@ class OptionsTest extends TestCase
         $Post->content = $orig;
         $Post->save();
     }    
-
 
 }

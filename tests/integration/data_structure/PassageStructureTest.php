@@ -57,25 +57,33 @@ class PassageStructureTest extends TestCase {
     }
 
     public function testVerseIndex() {
-        // Tyndale Bible does not have a Romans 1:22 (it is part of v 23).  The verse index would be used to insure parallel passages are lined up correctly
-        $expected_verse_index = array(1 => [20,21,22,23,24,25,26,27,28,29,30]);
-        $Engine  = new Engine();
-        $results = $Engine->actionQuery(['bible' => ['kjv', 'tyndale'], 'reference' => 'Rom 1:20-30', 'data_format' => 'passage']);
-        $this->assertEquals($expected_verse_index, $results[0]['verse_index']);
+        if(!Bible::isEnabled('tyndale') && !Bible::isEnabled('luther')) {
+            $this->markTestSkipped('Bibles needed for test: tyndale, luther');
+        }
 
-        // Reverse the Bible order, results should be the same
-        $results = $Engine->actionQuery(['bible' => ['tyndale', 'kjv'], 'reference' => 'Rom 1:20-30', 'data_format' => 'passage']);
-        $this->assertEquals($expected_verse_index, $results[0]['verse_index']);
+        if(Bible::isEnabled('tyndale')) {        
+            // Tyndale Bible does not have a Romans 1:22 (it is part of v 23).  The verse index would be used to insure parallel passages are lined up correctly
+            $expected_verse_index = array(1 => [20,21,22,23,24,25,26,27,28,29,30]);
+            $Engine  = new Engine();
+            $results = $Engine->actionQuery(['bible' => ['kjv', 'tyndale'], 'reference' => 'Rom 1:20-30', 'data_format' => 'passage']);
+            $this->assertEquals($expected_verse_index, $results[0]['verse_index']);
 
-        // Luther Bible may not have a Romans 14:6.  The verse index would be used to insure parallel passages are lined up correctly
-        $expected_verse_index = array(14 => [5,6,7,8,9]);
-        $Engine  = new Engine();
-        $results = $Engine->actionQuery(['bible' => ['kjv', 'luther'], 'reference' => 'Rom 14:5-9', 'data_format' => 'passage']);
-        $this->assertEquals($expected_verse_index, $results[0]['verse_index']);
+            // Reverse the Bible order, results should be the same
+            $results = $Engine->actionQuery(['bible' => ['tyndale', 'kjv'], 'reference' => 'Rom 1:20-30', 'data_format' => 'passage']);
+            $this->assertEquals($expected_verse_index, $results[0]['verse_index']);
+        }
 
-        // Reverse the Bible order, results should be the same
-        $results = $Engine->actionQuery(['bible' => ['luther', 'kjv'], 'reference' => 'Rom 14:5-9', 'data_format' => 'passage']);
-        $this->assertEquals($expected_verse_index, $results[0]['verse_index']);
+        if(Bible::isEnabled('tyndale')) {
+            // Luther Bible may not have a Romans 14:6.  The verse index would be used to insure parallel passages are lined up correctly
+            $expected_verse_index = array(14 => [5,6,7,8,9]);
+            $Engine  = new Engine();
+            $results = $Engine->actionQuery(['bible' => ['kjv', 'luther'], 'reference' => 'Rom 14:5-9', 'data_format' => 'passage']);
+            $this->assertEquals($expected_verse_index, $results[0]['verse_index']);
+
+            // Reverse the Bible order, results should be the same
+            $results = $Engine->actionQuery(['bible' => ['luther', 'kjv'], 'reference' => 'Rom 14:5-9', 'data_format' => 'passage']);
+            $this->assertEquals($expected_verse_index, $results[0]['verse_index']);
+        }
     }
 
     /**

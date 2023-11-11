@@ -17,14 +17,10 @@ class Passage extends FormatterAbstract {
 
     public function format() {
         $results  = $this->_preFormatVerses($this->results);
-        $passages = array();
+        $passages = [];
 
         if(!$this->_mapResultsToPassages($results)) {
-            $this->Passages = array();
-
-            //foreach($this->results as $verse) {
-
-            //}
+            $this->Passages = [];
         }
 
         foreach($this->Passages as $Passage) {

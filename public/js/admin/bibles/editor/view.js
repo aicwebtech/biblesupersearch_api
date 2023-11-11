@@ -63,8 +63,13 @@ enyo.kind({
     create: function() {
         this.inherited(arguments);
 
-        this.$.Form.set('pk', bootstrap.bibleId);
-        this.$.Form.openLoad();
+        var id = bootstrap.bibleId || null;
+
+        if(id && id != '') {        
+            this.$.Form.set('pk', id);
+            this.$.Form.openLoad();
+        }
+
 
           window.addEventListener("unload", enyo.bind(this, function(e) {
                 this.log('beforeunload');
@@ -97,10 +102,23 @@ enyo.kind({
     },
 
     cancel: function() {
-        this.close();
+        this.$.Form.openLoad();
+
+        if(this.$.Form.hasPendingPk()) {
+            this.app.confirm('Continue to next Bible to edit?  Otherwise this tab will close.', enyo.bind(this, function(c) {
+                if(c) {
+                    this.$.Form.openByPendingPk();
+                    return;
+                } else {
+                    this.close();
+                }
+            }));
+        } else {
+            this.close();
+        }
     },
     close: function() {
-        // do something
+        window.close()
     },
     handleKeyDown: function(inSender, inEvent) {
         this.log(inEvent);

@@ -25,7 +25,8 @@ class Kernel extends ConsoleKernel
         Commands\ImportBibleAnalyzer::class,
         Commands\ImportBibleEvening::class,
         Commands\ImportBibleMySword::class,
-        // Commands\ImportBibleCustom::class,  // Comment out when not using
+        // Commands\ImportBibleCustom::class,  // DEV TOOL: Comment out when not using
+        // Commands\BibleOfficial::class, // DEV TOOL: Mark Bible official, Comment out when not using
         Commands\ListBibles::class,
         Commands\EnableBible::class,
         Commands\DisableBible::class,

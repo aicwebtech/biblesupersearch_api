@@ -4,6 +4,8 @@ enyo.kind({
     classes: 'dialog_form edit_form edit_form_full',
 
     pk: null,
+    pkPending: null,
+
     formData: {},
     copyrightData: {},
     $description: null,
@@ -208,6 +210,7 @@ enyo.kind({
     bindings: [
         {from: 'formData.name', to: '$.name.value', oneWay: false, transform: function(value, dir) {
             this.debugBindings && this.log('name', value, dir);
+            value = this.handleBindingsGeneric(value, dir);
 
             if(dir == 2) {
                 // this._checkUnique('name', value, 'Full Display Name');
@@ -217,6 +220,7 @@ enyo.kind({
         }},
         {from: 'formData.shortname', to: '$.shortname.value', oneWay: false, transform: function(value, dir) {
             this.debugBindings && this.log('shortname', value, dir);
+            value = this.handleBindingsGeneric(value, dir);
 
             if(dir == 2) {
                 // this._checkUnique('shortname', value, 'Short Display Name');
@@ -226,6 +230,7 @@ enyo.kind({
         }},       
         {from: 'formData.module', to: '$.module.value', oneWay: false, transform: function(value, dir) {
             this.debugBindings && this.log('module', value, dir);
+            value = this.handleBindingsGeneric(value, dir);
 
             if(dir == 2) {
                 // this._checkUnique('module', value, 'Module');
@@ -235,18 +240,22 @@ enyo.kind({
         }},
         {from: 'formData.year', to: '$.year.value', oneWay: false, transform: function(value, dir) {
             this.debugBindings && this.log('year', value, dir);
+            value = this.handleBindingsGeneric(value, dir);
             return value || '';
         }},           
         {from: 'formData.publisher', to: '$.publisher.value', oneWay: false, transform: function(value, dir) {
             this.debugBindings && this.log('publisher', value, dir);
+            value = this.handleBindingsGeneric(value, dir);
             return value || '';
         }},          
         {from: 'formData.owner', to: '$.owner.value', oneWay: false, transform: function(value, dir) {
             this.debugBindings && this.log('owner', value, dir);
+            value = this.handleBindingsGeneric(value, dir);
             return value || '';
         }},        
         {from: 'formData.description', to: '$.description.value', oneWay: false, transform: function(value, dir) {
             this.debugBindings && this.log('description', value, dir);
+            value = this.handleBindingsGeneric(value, dir);
             value = value || '';
             
             if(dir == 1 && this.$description) {
@@ -257,6 +266,7 @@ enyo.kind({
         }},
         {from: 'formData.copyright_statement', to: '$.copyright_statement.value', oneWay: false, transform: function(value, dir) {
             this.debugBindings && this.log('copyright_statement', value, dir);
+            value = this.handleBindingsGeneric(value, dir);
 
             if(dir == 1 && this.$copyrightStatement) {
                 this.$copyrightStatement.setData(value); // feed it to the CKEDITOR
@@ -266,10 +276,12 @@ enyo.kind({
         }},  
         {from: 'formData.rank', to: '$.rank.value', oneWay: false, transform: function(value, dir) {
             this.debugBindings && this.log('rank', value, dir);
+            value = this.handleBindingsGeneric(value, dir);
             return (value || value === 0) ? value : null;
         }},        
         {from: 'formData.research', to: '$.research.checked', oneWay: false, transform: function(value, dir) {
             this.debugBindings && this.log('research', value, dir);
+            value = this.handleBindingsGeneric(value, dir);
 
             if(dir == 1) {
                 return (value) ? true : false;
@@ -280,6 +292,7 @@ enyo.kind({
         }},
         {from: 'formData.enabled', to: '$.enabled.checked', oneWay: false, transform: function(value, dir) {
             this.debugBindings && this.log('enabled', value, dir);
+            value = this.handleBindingsGeneric(value, dir);
 
             if(dir == 1) {
                 return (value) ? true : false;
@@ -290,6 +303,7 @@ enyo.kind({
         }},        
         {from: 'formData.restrict', to: '$.restrict.checked', oneWay: false, transform: function(value, dir) {
             this.debugBindings && this.log('restrict', value, dir);
+            value = this.handleBindingsGeneric(value, dir);
 
             if(dir == 1) {
                 return (value) ? true : false;
@@ -300,6 +314,7 @@ enyo.kind({
         }},
         {from: 'formData.copyright_id', to: '$.copyright_id.value', oneWay: false, transform: function(value, dir) {
             this.debugBindings && this.log('copyright_id', value, dir);
+            value = this.handleBindingsGeneric(value, dir);
 
             value = (value && value != '0') ? value : null;
 
@@ -316,11 +331,13 @@ enyo.kind({
         }},
         {from: 'formData.lang_short', to: '$.lang_short.value', oneWay: false, transform: function(value, dir) {
             this.debugBindings && this.log('lang_short', value, dir);
+            value = this.handleBindingsGeneric(value, dir);
             return (value && value != '0') ? value : null;
         }},                          
         {from: '$.lang_short.value', to: '$.lang_code.value', oneWay: true, transform: function(value, dir) {
         // {from: 'formData.lang_short', to: '$.lang_code.value', oneWay: true, transform: function(value, dir) {
             this.debugBindings && this.log('lang_code', value, dir);
+            value = this.handleBindingsGeneric(value, dir);
 
             if(value) {
                 if(dir == 1) {
@@ -335,6 +352,7 @@ enyo.kind({
         }},                    
         {from: 'formData.id', to: 'formPk', oneWay: false, transform: function(value, dir) {
             this.debugBindings && this.log('formPk', value, dir);
+            value = this.handleBindingsGeneric(value, dir);
             value = (value && value != '0') ? value : null;
 
             var disableModule = (value) ? true : false;
@@ -351,6 +369,7 @@ enyo.kind({
         // Copyright data bindings
         {from: 'copyrightData.copyright_statement_processed', to: '$.copyright_statement_default.content', oneWay: true, transform: function(value, dir) {
             this.debugBindings && this.log('copyright_statement_default', value, dir);
+            value = this.handleBindingsGeneric(value, dir);
             return value || '';
         }},
 

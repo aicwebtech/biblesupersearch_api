@@ -14,8 +14,17 @@ use App\ImportManager;
 class Base extends TestCase {
     protected $file_name = NULL;
     protected $importer = NULL;
+    protected $run_in_production = false;
+
+    protected function _init() {
+        if(!$this->run_in_production && config('app.env') == 'production') {
+            $this->markTestSkipped('This test skipped in production');
+        }
+    }
 
     public function testInit() {
+        $this->_init();
+
         $this->assertNotNull($this->file_name);
         $this->assertNotNull($this->importer);
         // $this->assertEquals('testing', config('app.env')); // not alway the case

@@ -241,6 +241,10 @@ class Engine {
                 'type'   => 'bool',
                 'default' => FALSE,
             ),
+            'group_passage_search_results' => array(
+                'type'   => 'bool',
+                'default' => FALSE,
+            ),
             'context_range' => array(
                 'type'   => 'int',
                 'default' => config('bss.context.range'),
@@ -338,6 +342,11 @@ class Engine {
         // Search validation
         if($Search) {
             $search_valid = $Search->validate();
+
+            if($search_valid) {
+                $Search->sanitize();
+            }
+
             $strongs = Search::parseStrongs($keywords);
 
             if(!empty($strongs)) {
@@ -363,7 +372,22 @@ class Engine {
             $has_search_results = FALSE;
 
             foreach($this->Bibles as $Bible) {
-                $BibleResults = $Bible->getSearch($Passages, $Search, $input); // Laravel Collection
+                try {
+                    $BibleResults = $Bible->getSearch($Passages, $Search, $input); // Laravel Collection
+                }
+                catch (\Exception $e) {
+                    $this->addTransError('errors.500', [], 4, 500);
+
+                    if(config('app.debug')) {
+                        $m = $e->getMessage();
+                        $m = "<div style='width:800px;font-family:Monospace;white-space:pre-wrap;text- align:left'>" . $m . "</div>";
+                        
+                        $this->addError('DATABASE ERROR:');
+                        $this->addError($m);
+                    }
+
+                    break;   
+                }
 
                 if(!empty($BibleResults) && !$BibleResults->isEmpty()) {
                     $results[$Bible->module] = $BibleResults->all();
@@ -427,7 +451,7 @@ class Engine {
             }
         }
 
-        if(is_array($Passages) && !$Search) {
+        if(is_array($Passages) && (!$Search || $input['group_passage_search_results'])) {
             foreach($Passages as $Passage) {
                 if($this->debug) {
                     print_r($Passage->chapter_verse_parsed);
@@ -436,8 +460,11 @@ class Engine {
                 if(!$Passage->claimVerses($results, TRUE)) {
                     $this->addError( trans('errors.passage_not_found', ['passage' => $Passage->raw_book . ' ' . $Passage->raw_chapter_verse]), 3);
                 }
+
+                //print_r($Passage->toArray());
             }
         }
+
 
         $results = $this->_formatDataStructure($results, $input, $Passages, $Search);
 
@@ -460,6 +487,8 @@ class Engine {
      * @param array $input
      */
     public function actionBibles($input) {
+        $language_float = isset($input['language_float']) ? $input['language_float'] : null;
+
         $include_desc = FALSE;
         $Bibles = Bible::select('bibles.name','shortname','module','year','languages.name AS lang','lang_short','copyright','italics','strongs','red_letter',
                 'paragraph','rank','research','bibles.restrict','copyright_id','copyright_statement', 'languages.rtl', 'languages.native_name AS lang_native');
@@ -509,6 +538,7 @@ class Engine {
                     case 'rank':
                     case 'name':
                     case 'shortname':
+                        $language_float = null; // language float ignored in these cases
                     case 'lang_short':
                         $Bibles -> orderBy($ob, 'ASC');
                         break; 
@@ -527,6 +557,21 @@ class Engine {
             $bibles[$Bible->module] = $Bible->getAttributes();
             $bibles[$Bible->module]['downloadable'] = $Bible->isDownloadable();
             $bibles[$Bible->module]['copyright_statement'] = $Bible->getCopyrightStatement();
+        }
+
+        if($language_float) {
+            $bibles_floated = [];
+
+            foreach($bibles as $key => $bible) {
+                if($bible['lang_short'] == $language_float) {
+                    $bibles_floated[$key] = $bible;
+                    unset($bibles[$key]);
+                }
+            }
+
+            foreach($bibles as $key => $bible) {
+                $bibles_floated[$key] = $bible;
+            }
         }
 
         return $bibles;
@@ -727,7 +772,15 @@ class Engine {
         return in_array($lang, \App\Models\Books\BookAbstract::getSupportedLanguages());
     }
 
+    /**
+     * returns data that the API needs to run
+     */
     public function actionStatics($input) {
+        $IP = \App\Models\IpAccess::findOrCreateByIpOrDomain(true);
+
+        // $this->addError('chicken man doth commeth', 1);
+        // return $this->addError('What this?', 0);
+
         $response = new \stdClass;
         $response->bibles           = $this->actionBibles($input);
         $response->books            = $this->actionBooks($input);
@@ -741,7 +794,101 @@ class Engine {
         $response->version          = config('app.version');
         $response->environment      = config('app.env');
         $response->research_desc    = config('bss.research_description');
+        $response->access           = new \stdClass;
+        $response->access->allowed          = !$IP->isAccessRevoked();
+        $response->access->limit            = $IP->getAccessLimit();
+        $response->access->limit_reached    = $IP->isLimitReached();
+        $response->access->hits    = $IP->getDailyHits();
         return $response;
+    }
+
+    /**
+     * returns statistics about the indicated passage(s)
+     */
+    public function actionStatistics($input) 
+    {
+        $parsing = [
+            'reference' => [
+                'type' => 'string',
+            ],
+            'bible' => [
+                'type' => 'array_string'
+            ],
+            'language' => [
+                'type' => 'string',
+                'default' => NULL,
+            ],
+        ];
+
+        $this->resetErrors();
+        $results = $bible_no_results = [];
+
+        $input = $this->_sanitizeInput($input, $parsing);
+        $this->setDefaultLanguage($input['language']);
+        !empty($input['bible']) && $this->setBibles($input['bible']);
+
+        $input['bible'] = array_keys($this->Bibles);
+        $parallel = $input['multi_bibles'] = (count($input['bible']) > 1);
+
+        $references = empty($input['reference']) ? NULL : $input['reference'];
+        $is_search = false;
+
+        if(empty($references)) {
+            $this->addError(trans('errors.no_query'));
+        }
+
+        $this->checkSemiEmpty($references, 'reference');
+
+        if($this->hasErrors()) {
+            return false;
+        }
+
+        // Passage parsing and validation
+        $Passages = Passage::parseReferences($references . ' ', $this->languages, $is_search, $this->Bibles, $input);
+
+        if(is_array($Passages)) {
+            foreach($Passages as $key => $Passage) {
+                if($Passage->hasErrors()) {
+                    $this->addErrors($Passage->getErrors(), $Passage->getErrorLevel());
+                    unset($Passages[$key]);
+                }
+            }
+
+            if(empty($Passages)) {
+                $this->setErrorLevel(4);
+                return FALSE; // If all of the passages are invalid, return
+            }
+        }
+
+        if(!empty($references) && empty($Passages)) {
+            $this->addError(trans('errors.passage_not_found', ['passage' => $references]), 4);
+            return FALSE;
+        }
+
+
+        foreach($this->Bibles as $Bible) {
+            try {
+                $stats = $Bible->getStatistics($Passages[0]);
+                $results[$Bible->module] = $stats;
+            }
+            catch (\Exception $e) {
+                $this->addTransError('errors.500', [], 4, 500);
+                throw $e;
+
+                // if(config('app.debug')) {
+                //     $m = $e->getMessage();
+                //     $m = "<div style='width:800px;font-family:Monospace;white-space:pre-wrap;text- align:left'>" . $m . "</div>";
+                    
+                //     $this->addError('DATABASE ERROR:');
+                //     $this->addError($m);
+                // }
+
+                break;   
+            }
+        }
+
+
+        return $results;
     }
 
     private function _getNameHash() {
@@ -884,7 +1031,7 @@ class Engine {
             $results = $this->_highlightResults($results, $Search);
         }
 
-        $Formatter = new $format_class($results, $Passages, $Search, $this->languages);
+        $Formatter = new $format_class($results, $Passages, $Search, $this->languages, $input);
         return $Formatter->format();
     }
 
@@ -968,6 +1115,7 @@ class Engine {
 
                 foreach($found as $verse) {
                     $bcv = $verse->book * 1000000 + $verse->chapter * 1000 + $verse->verse;
+                    $verse->_unmatched = true; // Note: these 'unmatched' verses are never highlighted
                     $agg[$bcv][$bible] = $verse;
                 }
             }

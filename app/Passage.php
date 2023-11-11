@@ -35,11 +35,12 @@ class Passage {
     protected $verses_index;                // Array of book / chapter / verse
     protected $verses_count = 0;            // Count of the verses matched to this passage (as found by the query).
     protected $languages;                   // Array of language short names
-    protected $Bibles = array();            // Array of Bibles
+    protected $Bibles = [];            // Array of Bibles
     protected $is_valid = FALSE;            // Is the provided reference valid?
     protected $is_random = FALSE;           // Is the user requesting a random chapter or verse?
     protected $is_contextual = FALSE;
     protected $contextual_range = 5;
+    protected $partial_verses = false;      // Whether the passage actually only contains a subset of the verses indicated by it's reference (mainly for passage-search combinations)
 
     public function __construct() {
         // Do something?
@@ -263,11 +264,11 @@ class Passage {
         $chapter_verse = (!$this->is_search && empty($chapter_verse)) ? '1' : $chapter_verse;
         $this->chapter_verse = $chapter_verse;
 
-        $preparsed = $matches = $counts = $parsed = $chapters = array();
+        $preparsed = $matches = $counts = $parsed = $chapters = [];
         $counts['number'] = preg_match_all('/[0-9]+/', $chapter_verse, $matches['number'], PREG_OFFSET_CAPTURE | PREG_SET_ORDER);
 
         if(!$counts['number']) {
-            $this->chapter_verse_parsed = ($this->is_search) ? array() : array( array('c' => 1, 'v' => NULL, 'type' => 'single') );
+            $this->chapter_verse_parsed = ($this->is_search) ? [] : array( array('c' => 1, 'v' => NULL, 'type' => 'single') );
             return;
         }
 
@@ -445,7 +446,7 @@ class Passage {
     public function setChapterVerseFromParsed($parsed_item) {
         $this->clearChapterVerse();
         $chapter_verse = '';
-        $chapters = array();
+        $chapters = [];
 
         if($parsed_item['type'] == 'range') {
             if($parsed_item['cst']) {
@@ -488,12 +489,12 @@ class Passage {
     }
 
     public function clearChapterVerse() {
-        $this->chapter_verse_parsed = array();
+        $this->chapter_verse_parsed = [];
         $this->raw_chapter_verse = NULL;
         $this->chapter_verse = NULL;
         $this->chapter_max = NULL;
         $this->chapter_min = NULL;
-        $this->verses = array();
+        $this->verses = [];
         $this->verses_count = 0;
     }
 
@@ -501,7 +502,7 @@ class Passage {
         $parsed = $this->chapter_verse_parsed;
 
         if(!is_array($parsed)) {
-            return array();
+            return [];
         }
 
         foreach($parsed as &$part) {
@@ -512,12 +513,13 @@ class Passage {
                 $part['cen'] = ($part['cen']) ? $part['cen'] : 999;
             }
         }
+        unset($part);
 
         return $parsed;
     }
 
     public function getAdjustedChapterVerse() {
-        $adjusted = $pre = array();
+        $adjusted = $pre = [];
         $chapter_only = $this->isChapterOnly();
 
         if(!is_array($this->verses)) {
@@ -533,7 +535,7 @@ class Passage {
         }
 
         foreach($pre as $chapter => $verses) {
-            $v = array();
+            $v = [];
             $last_verse = $first_verse = NULL;
 
             if($chapter_only) {
@@ -560,7 +562,7 @@ class Passage {
     }
 
     public function __set($name, $value) {
-        $settable = ['languages', 'is_search', 'Bibles', 'is_contextual', 'contextual_range'];
+        $settable = ['languages', 'is_search', 'Bibles', 'is_contextual', 'contextual_range', 'partial_verses'];
 
         if($name == 'book') {
             $this->setBook($value);
@@ -621,7 +623,7 @@ class Passage {
     }
 
     public function getNavigationData($verbose = FALSE) {
-        $nav = array();
+        $nav = [];
         $language = $this->getPrimaryLanguage();
         $book_class = Book::getClassNameByLanguage($language);
         $book_com = config('bss.books_common.' . $this->Book->id);
@@ -632,6 +634,7 @@ class Passage {
         $next_book_id = ($next_book_id <= count(config('bss.books_common'))) ? $next_book_id : NULL;
         $PrevBook = $NextBook = NULL;
         $whole_chapter = ($this->chapter_min && strval($this->chapter_min) != $this->chapter_verse);
+        $whole_chapter = $this->partial_verses ? true : $whole_chapter;
 
         if($verbose) {
             $PrevBook = ($prev_book_id) ? $book_class::find($prev_book_id) : NULL;
@@ -703,15 +706,15 @@ class Passage {
 
     public function generateVerseIndex() {
         if(empty($this->verses)) {
-            return array();
+            return [];
         }
 
-        $index = array();
+        $index = [];
 
         foreach($this->verses as $bible => $chapters) {
             foreach($chapters as $chapter => $verses) {
                 if(!array_key_exists($chapter, $index)) {
-                    $index[$chapter] = array();
+                    $index[$chapter] = [];
                 }
 
                 foreach($verses as $verse => $object) {
@@ -734,7 +737,7 @@ class Passage {
     public function claimVerses(&$results, $retain = FALSE) {
         $this->verses_count = 0;
         $verse_claimed = FALSE;
-        $count = array();
+        $count = [];
 
         foreach($results as $bible => $verses) {
             $count[$bible] = 0;
@@ -850,7 +853,7 @@ class Passage {
 
     public function explodePassage($separate_book_ranges, $separate_chapters) {
         if($separate_book_ranges && $this->is_book_range) {
-            $Passages = array();
+            $Passages = [];
 
             for($book = $this->Book->id; $book <= $this->Book_En->id; $book ++) {
                 $Passage = clone $this;
@@ -862,7 +865,7 @@ class Passage {
         }
 
         if($separate_chapters && count($this->chapter_verse_parsed)) {
-            $Passages = array();
+            $Passages = [];
 
             foreach($this->chapter_verse_parsed as $parsed) {
                 if($parsed['type'] == 'single' || $parsed['type'] == 'range' && $parsed['cst'] == $parsed['cen']) {
@@ -912,7 +915,47 @@ class Passage {
             return $Passages;
         }
 
-        return array($this);
+        return [$this];
+    }
+
+    public function explodePassageByChapters() {
+        $Exploded = [];
+
+        if(empty($this->verses) || !$this->isSingleBook()) {
+            return [$this];
+        }
+
+        $verses_by_chapter = [];
+
+        foreach($this->verses as $bible => $vbb) {
+            foreach($vbb as $ch => $verses) {
+                if(!isset($verses_by_chapter[$ch])) {
+                    $verses_by_chapter[$ch] = [];
+                }
+                
+                $verses_by_chapter[$ch][$bible] = $verses;
+            }
+        }
+
+        foreach($verses_by_chapter as $ch => $vbb) {
+            $Passage = static::createFromChapter($this->Book->id, $ch, $this->languages, $this->is_search);
+            $Passage->claimVerses($vbb);
+            $Passage->partial_verses = true;
+            $Exploded[] = $Passage;
+        }
+
+        return $Exploded;
+    }
+
+    public function getStatistics($input = [])
+    {
+        $by_bible = [];
+
+        foreach($this->Bibles as $Bible) {
+            $by_bible[$Bible->module] = $Bible->getStatistics($this, $input);
+        }
+
+        return $by_bible;
     }
 
     /**
@@ -922,11 +965,11 @@ class Passage {
      * @param bool $is_search - whether the parser should interpret this as a search
      * @return array|bool $Passages - array of passage instances, or FALSE if nothing parsed
      */
-    public static function parseReferences($reference, $languages = array(), $is_search = FALSE, $Bibles = array(), $parameters = array()) {
+    public static function parseReferences($reference, $languages = [], $is_search = FALSE, $Bibles = [], $parameters = []) {
         if(!is_string($reference)) {
             return FALSE;
         }
-        $Passages   = array();
+        $Passages   = [];
         $pre_parsed = static::explodeReferences($reference);
 
         // var_dump($reference);
@@ -960,7 +1003,7 @@ class Passage {
     }
 
     public static function explodeReferences($reference, $separate_book = FALSE) {
-        $exploded = array();
+        $exploded = [];
         $ref_end  = strlen($reference) - 1;
         $book_end = FALSE;
 
@@ -1095,7 +1138,7 @@ class Passage {
      * @param string $chapter_verse - string representing the chapter and verse references
      * @return \App\Passage
      */
-    public static function parseSingleReference($book, $chapter_verse, $languages = array(), $is_search = FALSE, $Bibles = array(), $parameters = array()) {
+    public static function parseSingleReference($book, $chapter_verse, $languages = [], $is_search = FALSE, $Bibles = [], $parameters = []) {
         $Passage = new static;
         $Passage->languages = $languages;
         $Passage->is_search = $is_search;
@@ -1110,26 +1153,56 @@ class Passage {
     /**
      * Creates a single-verse passage from a verse
      *
-     * @param type $verse
+     * @param stdClass $verse
      * @return \App\Passage
      */
-    public static function createFromVerse($verse, $languages = array(), $is_search = FALSE) {
+    public static function createFromVerse($verse, $languages = [], $is_search = FALSE) {
         $Passage = new static;
         $Passage->languages = $languages;
         $Passage->is_search = $is_search;
         $Passage->setBookById($verse->book);
         $Passage->setChapterVerse($verse->chapter . ':' . $verse->verse);
         return $Passage;
+    }    
+
+    /**
+     * Creates a passage for the given book_id and chapter
+     *
+     * @param int $book_id
+     * @param int $chapter
+     * @return \App\Passage
+     */
+    public static function createFromChapter($book_id, $chapter, $languages = [], $is_search = FALSE) {
+        $Passage = new static;
+        $Passage->languages = $languages;
+        $Passage->is_search = $is_search;
+        $Passage->setBookById($book_id);
+        $Passage->setChapterVerse($chapter);
+        return $Passage;
     }
 
-    public static function explodePassages($Passages = array(), $separate_book_ranges = TRUE, $separate_chapters = FALSE) {
-        $Exploded = array();
+    public static function explodePassages($Passages = [], $separate_book_ranges = TRUE, $separate_chapters = FALSE) {
+        $Exploded = [];
 
         foreach($Passages as $Passage) {
             $Exploded = array_merge($Exploded, $Passage->explodePassage($separate_book_ranges, $separate_chapters));
         }
 
         return $Exploded;
+    }    
+
+    public static function explodePassagesByChapters($Passages = []) {
+        $Exploded = [];
+
+        foreach($Passages as $Passage) {
+            $Exploded = array_merge($Exploded, $Passage->explodePassageByChapters());
+        }
+
+        return $Exploded;
+    }
+
+    public static function implodePassages($VersePassages, $RequestedPassages) {
+        $Imploded = [];
     }
 
     /**

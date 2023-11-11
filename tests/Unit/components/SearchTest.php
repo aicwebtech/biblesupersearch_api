@@ -77,22 +77,26 @@ class SearchTest extends TestCase {
         $this->assertEquals(array('faith', 'hope', 'charity'), $parsed);
         $parsed = Search::parseQueryTerms('faith CHAP hope BOOK charity');
         $this->assertEquals(array('faith', 'hope', 'charity'), $parsed);
+        
         // When in all caps, chapter and book are interpreted as operators
         $parsed = Search::parseQueryTerms('faith CHAPTER hope BOOK charity');
         $this->assertEquals(array('faith', 'hope', 'charity'), $parsed);
+        
         // When in all lower case, chapter and book are interpreted as keywords
         $parsed = Search::parseQueryTerms('faith chapter hope book charity');
         $this->assertEquals(array('faith', 'chapter', 'hope', 'book', 'charity'), $parsed);
         $parsed = Search::parseQueryTerms('(faith OR hope) charity PROX(12) (Joy or love)');
         $this->assertEquals(array('faith', 'hope', 'charity', 'Joy', 'or', 'love'), $parsed); // lowercase 'or' is considered a keyword
+        
         $parsed = Search::parseQueryTerms('(faith OR hope) charity PROX(12) (Joy OR love)');
         $this->assertEquals(array('faith', 'hope', 'charity', 'Joy', 'love'), $parsed);
         $parsed = Search::parseQueryTerms('(faith OR hope) charity PROC(12) (Joy OR love)');
         $this->assertEquals(array('faith', 'hope', 'charity', 'Joy', 'love'), $parsed);
         $parsed = Search::parseQueryTerms('(faith OR hope) charity PROXC(12) (Joy OR love)');
         $this->assertEquals(array('faith', 'hope', 'charity', 'Joy', 'love'), $parsed);
+        
         // Regexp
-        $parsed = Search::parseQueryTerms('`gr[ae]y matt?er` && faith');
+        $parsed = Search::parseQueryTerms('`gr[ae]y matt?er` AND faith');
         //$this->assertEquals(array('`gr[ae]y matt?er`', 'faith'), $parsed);
         $this->assertContains('`gr[ae]y matt?er`', $parsed);
         $this->assertCount(2, $parsed);
