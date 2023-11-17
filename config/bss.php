@@ -1,21 +1,21 @@
 <?php
 
 /* Bible SuperSearch configs */
-return array(
-    'defaults' => array(
+return [
+    'defaults' => [
         'language'       => env('DEFAULT_LANGUAGE', 'English'),
         'language_short' => env('DEFAULT_LANGUAGE_SHORT', 'en'),
         'bible'          => env('DEFAULT_BIBLE', 'kjv'),
         'highlight_tag'  => env('DEFAULT_HIGHLIGHT_TAG', 'b'),
-    ),
+    ],
     'import_from_v2' => env('IMPORT_FROM_V2', FALSE),
     'daily_access_limit' => env('DAILY_ACCESS_LIMIT', 2000),
 
     'dev_tools' => env('ENABLE_DEV_TOOLS', FALSE),
 
-    'pagination' => array(
+    'pagination' => [
         'limit' => 30,
-    ),
+    ],
     'context' => [
         'range' => 5
     ],
@@ -79,203 +79,203 @@ return array(
         ],
     ],
     'books_common' => [
-        1 => array(
+        1 => [
             'chapters' => 50,
-        ),
-        2 => array(
+        ],
+        2 => [
             'chapters' => 40,
-        ),
-        3 => array(
+        ],
+        3 => [
             'chapters' => 27,
-        ),
-        4 => array(
+        ],
+        4 => [
             'chapters' => 36,
-        ),
-        5 => array(
+        ],
+        5 => [
             'chapters' => 34,
-        ),
-        6 => array(
+        ],
+        6 => [
             'chapters' => 24,
-        ),
-        7 => array(
+        ],
+        7 => [
             'chapters' => 21,
-        ),
-        8 => array(
+        ],
+        8 => [
             'chapters' => 4,
-        ),
-        9 => array(
+        ],
+        9 => [
             'chapters' => 31,
-        ),
-        10 => array(
+        ],
+        10 => [
             'chapters' => 24,
-        ),
-        11 => array(
+        ],
+        11 => [
             'chapters' => 22,
-        ),
-        12 => array(
+        ],
+        12 => [
             'chapters' => 25,
-        ),
-        13 => array(
+        ],
+        13 => [
             'chapters' => 29,
-        ),
-        14 => array(
+        ],
+        14 => [
             'chapters' => 36,
-        ),
-        15 => array(
+        ],
+        15 => [
             'chapters' => 10,
-        ),
-        16 => array(
+        ],
+        16 => [
             'chapters' => 13,
-        ),
-        17 => array(
+        ],
+        17 => [
             'chapters' => 10,
-        ),
-        18 => array(
+        ],
+        18 => [
             'chapters' => 42,
-        ),
-        19 => array(
+        ],
+        19 => [
             'chapters' => 150,
-        ),
-        20 => array(
+        ],
+        20 => [
             'chapters' => 31,
-        ),
-        21 => array(
+        ],
+        21 => [
             'chapters' => 12,
-        ),
-        22 => array(
+        ],
+        22 => [
             'chapters' => 8,
-        ),
-        23 => array(
+        ],
+        23 => [
             'chapters' => 66,
-        ),
-        24 => array(
+        ],
+        24 => [
             'chapters' => 52,
-        ),
-        26 => array(
+        ],
+        26 => [
             'chapters' => 48,
-        ),
-        27 => array(
+        ],
+        27 => [
             'chapters' => 12,
-        ),
-        25 => array(
+        ],
+        25 => [
             'chapters' => 5,
-        ),
-        28 => array(
+        ],
+        28 => [
             'chapters' => 14,
-        ),
-        29 => array(
+        ],
+        29 => [
             'chapters' => 3,
-        ),
-        30 => array(
+        ],
+        30 => [
             'chapters' => 9,
-        ),
-        31 => array(
+        ],
+        31 => [
             'chapters' => 1,
-        ),
-        32 => array(
+        ],
+        32 => [
             'chapters' => 4,
-        ),
-        33 => array(
+        ],
+        33 => [
             'chapters' => 7,
-        ),
-        34 => array(
+        ],
+        34 => [
             'chapters' => 3,
-        ),
-        35 => array(
+        ],
+        35 => [
             'chapters' => 3,
-        ),
-        36 => array(
+        ],
+        36 => [
             'chapters' => 3,
-        ),
-        37 => array(
+        ],
+        37 => [
             'chapters' => 2,
-        ),
-        38 => array(
+        ],
+        38 => [
             'chapters' => 14,
-        ),
-        39 => array(
+        ],
+        39 => [
             'chapters' => 4,
-        ),
-        40 => array(
+        ],
+        40 => [
             'chapters' => 28,
-        ),
-        41 => array(
+        ],
+        41 => [
             'chapters' => 16,
-        ),
-        42 => array(
+        ],
+        42 => [
             'chapters' => 24,
-        ),
-        43 => array(
+        ],
+        43 => [
             'chapters' => 21,
-        ),
-        44 => array(
+        ],
+        44 => [
             'chapters' => 28,
-        ),
-        45 => array(
+        ],
+        45 => [
             'chapters' => 16,
-        ),
-        46 => array(
+        ],
+        46 => [
             'chapters' => 16,
-        ),
-        47 => array(
+        ],
+        47 => [
             'chapters' => 13,
-        ),
-        48 => array(
+        ],
+        48 => [
             'chapters' => 6,
-        ),
-        49 => array(
+        ],
+        49 => [
             'chapters' => 6,
-        ),
-        50 => array(
+        ],
+        50 => [
             'chapters' => 4,
-        ),
-        51 => array(
+        ],
+        51 => [
             'chapters' => 4,
-        ),
-        52 => array(
+        ],
+        52 => [
             'chapters' => 5,
-        ),
-        53 => array(
+        ],
+        53 => [
             'chapters' => 3,
-        ),
-        54 => array(
+        ],
+        54 => [
             'chapters' => 6,
-        ),
-        55 => array(
+        ],
+        55 => [
             'chapters' => 4,
-        ),
-        56 => array(
+        ],
+        56 => [
             'chapters' => 3,
-        ),
-        57 => array(
+        ],
+        57 => [
             'chapters' => 1,
-        ),
-        58 => array(
+        ],
+        58 => [
             'chapters' => 13,
-        ),
-        59 => array(
+        ],
+        59 => [
             'chapters' => 5,
-        ),
-        60 => array(
+        ],
+        60 => [
             'chapters' => 5,
-        ),
-        61 => array(
+        ],
+        61 => [
             'chapters' => 3,
-        ),
-        62 => array(
+        ],
+        62 => [
             'chapters' => 5,
-        ),
-        63 => array(
+        ],
+        63 => [
             'chapters' => 1,
-        ),
-        64 => array(
+        ],
+        64 => [
             'chapters' => 1,
-        ),
-        65 => array(
+        ],
+        65 => [
             'chapters' => 1,
-        ),
-        66 => array(
+        ],
+        66 => [
             'chapters' => 22,
-        ),
+        ],
     ]
-);
+];

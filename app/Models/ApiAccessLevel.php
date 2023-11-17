@@ -10,7 +10,7 @@ class ApiAccessLevel extends Model
     use HasFactory;
 
     const NONE  = 1; // No Access
-    const BASIC = 2; // Basic Access
+    const BASIC = 2; // Basic Access only
     const KEYED = 3; // Keyed acess - user defined
     const FULL  = 4; // Full, unlimited access
 

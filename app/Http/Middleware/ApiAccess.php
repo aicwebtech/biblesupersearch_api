@@ -20,60 +20,53 @@ class ApiAccess
      * @param  \Closure  $next
      * @return mixed
      */
-    public function handle($request, Closure $next) {
+    public function handle($request, Closure $next) 
+    {
 
         $err  = NULL;
         $code = NULL;
+        $key = $request->input('key') ?: null;
+        $uri = $request->path();
+        $parts = explode('/', $uri);
+        $action = isset($parts[1]) ? $parts[1] : 'query';
+        $ApiKey = null;
+        $key_id = null;
 
         if(!config('app.installed')) {
             $err = 'errors.app_not_installed';
             $code = 500;
         }
+
+        if(config('app.experimental') && !$err && $key) {
+            // keyed access - look up key
+
+            $ApiKey = ApiKey::findByKey($key);
+
+            if(!$ApiKey) {
+                // Key not found - no access granted
+                $err = 'errors.access_revoked';
+            } else {
+                $key_id = $ApiKey->id;
+            }
+        }
         
         if(!$err) {        
-            $key = $request->input('key') ?: null;
+            // look up IP record / keyed AND keyless access          
+            
+            $host = (array_key_exists('HTTP_REFERER', $_SERVER)) ? $_SERVER['HTTP_REFERER'] : 'localhost';
+            $ip   = (array_key_exists('REMOTE_ADDR', $_SERVER))  ? $_SERVER['REMOTE_ADDR']  : '127.0.0.1';                
+            $IP = IpAccess::findOrCreateByIpOrDomain($ip, $host, $key_id);
 
-            if($key) {
-                // keyed access
-
-                $ApiKey = ApiKey::findByKey($key);
-
-                if(!$ApiKey) {
-                    // Key not found - no access granted
-                    $err = 'errors.app_not_installed';
-                } else {
-
+            if(!$IP->incrementDailyHits()) {
+                if($IP->isAccessRevoked()) {
+                    $err  = 'errors.access_revoked';
+                    $code = 403;
                 }
-
-                // if(!$ApiKey->incrementDailyHits()) {
-                //     if($ApiKey->isAccessRevoked()) {
-                //         $err  = 'errors.access_revoked';
-                //         $code = 403;
-                //     }
-                //     else {
-                //         $err  = 'errors.hit_limit_reached';
-                //         $code = 500;
-                //     }
-                // }
-            } else {
-                // keyless access            
-                
-                $host = (array_key_exists('HTTP_REFERER', $_SERVER)) ? $_SERVER['HTTP_REFERER'] : 'localhost';
-                $ip   = (array_key_exists('REMOTE_ADDR', $_SERVER))  ? $_SERVER['REMOTE_ADDR']  : '127.0.0.1';                
-                $IP = IpAccess::findOrCreateByIpOrDomain($ip, $host);
-
-                if(!$IP->incrementDailyHits()) {
-                    if($IP->isAccessRevoked()) {
-                        $err  = 'errors.access_revoked';
-                        $code = 403;
-                    }
-                    else {
-                        $err  = 'errors.hit_limit_reached';
-                        $code = 500;
-                    }
+                else {
+                    $err  = 'errors.hit_limit_reached';
+                    $code = 500;
                 }
             }
-
         }
         
         if($err) {            

@@ -4,12 +4,15 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
+use App\Interfaces\AccessLogInterface;
 
-class IpAccess extends Model {
+class IpAccess extends Model implements AccessLogInterface 
+{
+
     protected $table = 'ip_access';
     protected $fillable = ['ip_address','domain', 'limit'];
 
-    static public function findOrCreateByIpOrDomain($ip_address = NULL, $host = NULL) {
+    static public function findOrCreateByIpOrDomain($ip_address = NULL, $host = NULL, $key_id = null) {
         if($ip_address === true) {
             $host = (array_key_exists('HTTP_REFERER', $_SERVER)) ? $_SERVER['HTTP_REFERER'] : 'localhost';
             $ip_address = (array_key_exists('REMOTE_ADDR', $_SERVER))  ? $_SERVER['REMOTE_ADDR']  : '127.0.0.1';
