@@ -12,7 +12,8 @@ class IpAccess extends Model implements AccessLogInterface
     protected $table = 'ip_access';
     protected $fillable = ['ip_address','domain', 'limit'];
 
-    static public function findOrCreateByIpOrDomain($ip_address = NULL, $host = NULL, $key_id = null) {
+    static public function findOrCreateByIpOrDomain($ip_address = null, $host = null) 
+    {
         if($ip_address === true) {
             $host = (array_key_exists('HTTP_REFERER', $_SERVER)) ? $_SERVER['HTTP_REFERER'] : 'localhost';
             $ip_address = (array_key_exists('REMOTE_ADDR', $_SERVER))  ? $_SERVER['REMOTE_ADDR']  : '127.0.0.1';
@@ -22,20 +23,22 @@ class IpAccess extends Model implements AccessLogInterface
 
         if($domain) {
             $IP = static::firstOrNew(['domain' => $domain]);
+            
             $IP->ip_address = $ip_address;
-            $IP->limit = ($ip_address == '127.0.0.1' || $ip_address == '::1') ? 0 : NULL;
+            $IP->limit = ($ip_address == '127.0.0.1' || $ip_address == '::1') ? 0 : null;
             $IP->save();
         }
         else {
-            $IP = static::firstOrCreate(['ip_address' => $ip_address, 'domain' => NULL]);
+            $IP = static::firstOrCreate(['ip_address' => $ip_address, 'domain' => null]);
         }
 
         return $IP;
     }
 
-    static public function parseDomain($host) {
+    static public function parseDomain($host) 
+    {
         if(empty($host)) {
-            return NULL;
+            return null;
         }
 
         $host = str_replace(array('http:','https:'), '', $host);
@@ -61,13 +64,26 @@ class IpAccess extends Model implements AccessLogInterface
         }
 
         if($domain == 'localhost') {
-            return NULL;
+            return null;
         }
 
         return $domain;
     }
 
-    public function incrementDailyHits() {
+    public function accessLevel()
+    {
+        return $this->belongsTo(ApiAccessLevel::class);
+    }
+
+    public function getAccessLog($date = null) 
+    {
+        $date = (strtotime($date)) ? date('Y-m-d', strtotime($date)) : date('Y-m-d');
+        return IpAccessLog::firstOrNew(['ip_id' => $this->id, 'date' => $date]);
+    }
+
+    /** BEGIN AccessLogInterface */
+    public function incrementDailyHits() 
+    {
         if($this->isAccessRevoked()) {
             return FALSE;
         }
@@ -89,11 +105,8 @@ class IpAccess extends Model implements AccessLogInterface
         return TRUE;
     }
 
-    public function getAccessLog() {
-        return IpAccessLog::firstOrNew(['ip_id' => $this->id, 'date' => date('Y-m-d')]);
-    }
-
-    public function getDailyHits($date = NULL) {
+    public function getDailyHits($date = null) 
+    {
         $date = (strtotime($date)) ? date('Y-m-d', strtotime($date)) : date('Y-m-d');
 
         try {
@@ -106,7 +119,8 @@ class IpAccess extends Model implements AccessLogInterface
         return intval($Log->count);
     }
 
-    public function isLimitReached($date = NULL) {
+    public function isLimitReached($date = null) 
+    {
         if($this->getAccessLimit() === 0) {
             return FALSE;
         }
@@ -123,7 +137,8 @@ class IpAccess extends Model implements AccessLogInterface
         return (bool) $Log->limit_reached;
     }
 
-    public function getAccessLimit() {
+    public function getAccessLimit() 
+    {
         $limit_raw = $this->limit;
 
         if($this->domain) {
@@ -143,7 +158,11 @@ class IpAccess extends Model implements AccessLogInterface
             }
         }
 
-        if($limit_raw === NULL) {
+        if($limit_raw === null) {
+            $limit_raw = $this->accessLevel->limit;
+        }
+
+        if($limit_raw === null) {
             $limit_raw = config('bss.daily_access_limit');
         }
 
@@ -156,8 +175,14 @@ class IpAccess extends Model implements AccessLogInterface
     }
 
     public function isAccessRevoked() {
+        if($this->access_level_id == ApiAccessLevel::NONE) {
+            return true;
+        }
+
         return ($this->getAccessLimit() < 0);
     }
+    /** END AccessLogInterface */
+
 
     public function delete() {
         IpAccessLog::where('ip_id', $this->id)->delete();

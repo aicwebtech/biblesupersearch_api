@@ -57,16 +57,24 @@ class ApiAccess
             $ip   = (array_key_exists('REMOTE_ADDR', $_SERVER))  ? $_SERVER['REMOTE_ADDR']  : '127.0.0.1';                
             $IP = IpAccess::findOrCreateByIpOrDomain($ip, $host, $key_id);
 
-            if(!$IP->incrementDailyHits()) {
-                if($IP->isAccessRevoked()) {
+            $Access = $ApiKey ?: $IP;
+
+            if(!$Access->incrementDailyHits()) {
+                if($Access->isAccessRevoked()) {
                     $err  = 'errors.access_revoked';
                     $code = 403;
                 }
                 else {
                     $err  = 'errors.hit_limit_reached';
-                    $code = 500;
+                    $code = 429;
                 }
             }
+
+            if(!$err && !$Access->accessLevel->hasActionAccess($action)) {
+                $err  = 'errors.action.not_allowed';
+                $code = 403;
+            }
+
         }
         
         if($err) {            
