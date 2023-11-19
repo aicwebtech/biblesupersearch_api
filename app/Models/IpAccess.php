@@ -12,6 +12,17 @@ class IpAccess extends Model implements AccessLogInterface
     protected $table = 'ip_access';
     protected $fillable = ['ip_address','domain', 'limit'];
 
+    protected $attributes = [
+        'access_level_id' => null,
+    ];
+
+    public function __construct()
+    {
+        parent::__construct();
+
+        $this->attributes['access_level_id'] = ApiAccessLevel::BASIC;
+    }
+
     static public function findOrCreateByIpOrDomain($ip_address = null, $host = null) 
     {
         if($ip_address === true) {
@@ -23,7 +34,6 @@ class IpAccess extends Model implements AccessLogInterface
 
         if($domain) {
             $IP = static::firstOrNew(['domain' => $domain]);
-            
             $IP->ip_address = $ip_address;
             $IP->limit = ($ip_address == '127.0.0.1' || $ip_address == '::1') ? 0 : null;
             $IP->save();

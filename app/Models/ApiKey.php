@@ -5,10 +5,22 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use App\Interfaces\AccessLogInterface;
+use App\Models\IpAccess;
 
 class ApiKey extends Model implements AccessLogInterface
 {
     use HasFactory;
+
+    protected $attributes = [
+        'access_level_id' => null,
+    ];
+
+    public function __construct()
+    {
+        parent::__construct();
+
+        $this->attributes['access_level_id'] = ApiAccessLevel::BASIC;
+    }
 
     static public function findByKey($key, $fail) 
     {
@@ -31,7 +43,8 @@ class ApiKey extends Model implements AccessLogInterface
             return FALSE;
         }
 
-        $Log = ApiKeyAccessLog::firstOrNew(['key_id' => $this->id, 'date' => date('Y-m-d')]);
+        $IP = IpAccess::findOrCreateByIpOrDomain(true);
+        $Log = ApiKeyAccessLog::firstOrNew(['key_id' => $this->id, 'date' => date('Y-m-d'), 'ip_id' => $IP->id]);
         $limit = $this->getAccessLimit();
 
         if($Log->limit_reached && $limit > 0) {
@@ -45,6 +58,9 @@ class ApiKey extends Model implements AccessLogInterface
         }
 
         $Log->save();
+
+        // For tracking purposes, we log the hits against the IP, however, the IP is not used to determine limits, ect.
+        $IP->incrementDailyHits(); // for tracking pu
         return TRUE;
     }
 

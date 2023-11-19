@@ -20,7 +20,6 @@ return new class extends Migration
             $table->string('name');
             $table->string('system_name')->nullable();
             $table->unsignedTinyInteger('can_edit')->default(0)->comment('RFU');
-            $table->unsignedTinyInteger('basic')->default(0);
             $table->integer('limit')->nullable();
             $table->unsignedTinyInteger('statistics')->default(0);
             $table->unsignedTinyInteger('commentaries')->default(0);

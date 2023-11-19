@@ -53,9 +53,9 @@ class ApiAccess
         if(!$err) {        
             // look up IP record / keyed AND keyless access          
             
-            $host = (array_key_exists('HTTP_REFERER', $_SERVER)) ? $_SERVER['HTTP_REFERER'] : 'localhost';
-            $ip   = (array_key_exists('REMOTE_ADDR', $_SERVER))  ? $_SERVER['REMOTE_ADDR']  : '127.0.0.1';                
-            $IP = IpAccess::findOrCreateByIpOrDomain($ip, $host, $key_id);
+            // $host = (array_key_exists('HTTP_REFERER', $_SERVER)) ? $_SERVER['HTTP_REFERER'] : 'localhost';
+            // $ip   = (array_key_exists('REMOTE_ADDR', $_SERVER))  ? $_SERVER['REMOTE_ADDR']  : '127.0.0.1';                
+            $IP = IpAccess::findOrCreateByIpOrDomain(true);
 
             $Access = $ApiKey ?: $IP;
 
