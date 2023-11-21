@@ -4,12 +4,14 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Support\Str;
 use App\Interfaces\AccessLogInterface;
 use App\Models\IpAccess;
 
 class ApiKey extends Model implements AccessLogInterface
 {
-    use HasFactory;
+    use HasFactory, SoftDeletes;
 
     protected $attributes = [
         'access_level_id' => null,
@@ -22,13 +24,49 @@ class ApiKey extends Model implements AccessLogInterface
         $this->attributes['access_level_id'] = ApiAccessLevel::BASIC;
     }
 
-    static public function findByKey($key, $fail) 
+    public function delete()
+    {
+        $this->access_level_id = ApiAccessLevel::NONE;
+        $this->save();
+        parent::delete();
+    }
+
+    static public function findByKey($key, $fail = false) 
     {
         if($fail) {
             return static::where('key', $key)->firstOrFail();
         } else {
             return static::where('key', $key)->first();
         }
+    }
+
+    static public function generateKeyHash()
+    {
+        $hash = static::generateHashHelper();
+        $Key  = static::withTrashed()->where('key', $hash)->first();
+
+        while($Key) {
+            $hash = static::generateHashHelper();
+            $Key  = static::withTrashed()->where('key', $hash)->first();
+        }
+
+        return $hash;
+    }
+
+    private static function generateHashHelper() 
+    {
+        $hash_size = 24;
+        $hash = 'TrU';
+
+        $hash .= Str::Random(10);
+
+        for($i = 1; $i <= $hash_size; $i ++) {
+            $num  = random_int(0, 35);
+            $char = ($num < 10) ? $num : chr($num + 87);
+            $hash .= $char;
+        }
+
+        return $hash;
     }
 
     public function accessLevel()
@@ -43,8 +81,7 @@ class ApiKey extends Model implements AccessLogInterface
             return FALSE;
         }
 
-        $IP = IpAccess::findOrCreateByIpOrDomain(true);
-        $Log = ApiKeyAccessLog::firstOrNew(['key_id' => $this->id, 'date' => date('Y-m-d'), 'ip_id' => $IP->id]);
+        $Log = ApiKeyAccessLog::firstOrNew(['key_id' => $this->id, 'date' => date('Y-m-d')]);
         $limit = $this->getAccessLimit();
 
         if($Log->limit_reached && $limit > 0) {
@@ -59,8 +96,12 @@ class ApiKey extends Model implements AccessLogInterface
 
         $Log->save();
 
-        // For tracking purposes, we log the hits against the IP, however, the IP is not used to determine limits, ect.
-        $IP->incrementDailyHits(); // for tracking pu
+        // For tracking purposes, we also log the hits against the IP with the key, however, this count is not used to determine limit overage, ect.
+        $IP = IpAccess::findOrCreateByIpOrDomain(true);
+        $IpKeyCount = ApiIpKeyCount::firstOrNew(['key_id' => $this->id, 'ip_id' => $IP->id, 'date' => date('Y-m-d')]);
+        $IpKeyCount->count ++;
+        $IpKeyCount->save();
+
         return TRUE;
     }
 

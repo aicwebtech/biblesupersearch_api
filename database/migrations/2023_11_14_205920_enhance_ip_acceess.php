@@ -16,10 +16,6 @@ return new class extends Migration
         Schema::table('ip_access', function (Blueprint $table) {
             $table->integer('access_level_id')->default(2);
         });
-
-        Schema::table('ip_access_log', function (Blueprint $table) {
-            $table->integer('key_id')->nullable();
-        });
     }
 
     /**
@@ -32,9 +28,5 @@ return new class extends Migration
         Schema::table('ip_access', function (Blueprint $table) {
             $table->dropColumn(['access_level_id']);
         });        
-
-        Schema::table('ip_access_log', function (Blueprint $table) {
-            $table->dropColumn(['key_id']);
-        });
     }
 };

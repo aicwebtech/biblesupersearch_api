@@ -49,13 +49,12 @@ return new class extends Migration
     {
         $records = [
             ['id' => 1, 'name' => 'None', 'system_name' => 'none'],
-            ['id' => 2, 'name' => 'Basic', 'system_name' => 'basic', 'basic' => 1],
-            ['id' => 3, 'name' => 'Keyed', 'system_name' => 'keyed', 'basic' => 1, 'can_edit' => 1],
+            ['id' => 2, 'name' => 'Basic', 'system_name' => 'basic',],
+            ['id' => 3, 'name' => 'Keyed', 'system_name' => 'keyed', 'can_edit' => 1],
             [
                 'id' => 4, 
                 'name' => 'Full', 
                 'system_name' => 'full', 
-                'basic' => 1, 
                 'statistics' => 1, 
                 'commentaries' => 1, 
                 'dictionaries' => 1,
