@@ -154,6 +154,10 @@ class ApiKey extends Model implements AccessLogInterface
 
     public function hasUnlimitedAccess() 
     {
+        if($this->isAccessRevoked()) {
+            return false;
+        }
+
         return $this->getAccessLimit() === 0;
     }
 

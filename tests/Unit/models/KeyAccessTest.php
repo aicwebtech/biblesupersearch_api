@@ -88,7 +88,13 @@ class KeyAccessTest extends TestCase
         $Key = ApiKey::findByKey($key);
 
         $this->assertNotEmpty($Key);
-        $this->assertFalse($Key->hasUnlimitedAccess());
+        
+        if(config('bss.daily_access_limit') === 0) {
+            $this->assertTrue($Key->hasUnlimitedAccess());
+        } else {
+            $this->assertFalse($Key->hasUnlimitedAccess());
+        }
+
         $this->assertTrue($Key->accessLevel->hasBasicAccess());
         $this->assertFalse($Key->accessLevel->hasNoAccess());
         $this->assertFalse($Key->accessLevel->hasActionAccess('statistics'));
