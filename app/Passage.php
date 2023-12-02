@@ -561,6 +561,39 @@ class Passage {
         return implode('; ', $adjusted);
     }
 
+    public function highlightContext($results, $highlight_tag = null) 
+    {
+        if(!$this->is_contextual) {
+            return $results;
+        }
+
+        $highlight_tag = $highlight_tag ?: config('bss.defaults.highlight_tag');
+
+        $pre_tag  = '<'  . $highlight_tag . '>';
+        $post_tag = '</' . $highlight_tag . '>';
+
+        $parsed = $this->chapter_verse_parsed;
+        $b = $this->Book->id;
+
+        list($c, $v) = explode(':', $this->chapter_verse);
+
+        $c = (int) trim($c);
+        $v = (int) trim($v);
+
+        foreach($results as $bible => &$verses) {
+            foreach($verses as &$verse) {
+
+                if($verse->book == $this->Book->id && $verse->chapter == $c && $verse->verse == $v) {
+                    $verse->text = $pre_tag . $verse->text . $post_tag;
+                }
+            }
+            unset($verse);
+        }
+        unset($verses);
+
+        return $results;
+    }
+
     public function __set($name, $value) {
         $settable = ['languages', 'is_search', 'Bibles', 'is_contextual', 'contextual_range', 'partial_verses'];
 
@@ -814,8 +847,9 @@ class Passage {
      * Indicates if this is a reference to exactly ONE verse.  (IE: 1 John 1:1)
      */
 
-    public function isSingleVerse() {
-        $parsing = $this->getNormalizedReferences();
+    public function isSingleVerse() 
+    {
+        $parsing = $this->chapter_verse_parsed;
 
         if(count($parsing) == 1) {
             return ($parsing[0]['type'] == 'single' && $parsing[0]['v'] !== NULL);
@@ -829,11 +863,13 @@ class Passage {
      *
      * @return bool
      */
-    public function containsSingleVerse() {
+    public function containsSingleVerse() 
+    {
         return ($this->verses_count == 1);
     }
 
-    public function isSingleBook() {
+    public function isSingleBook() 
+    {
         if($this->is_book_range) {
             return FALSE;
         }
