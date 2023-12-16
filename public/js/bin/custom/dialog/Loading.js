@@ -7,7 +7,7 @@ enyo.kind({
 
     components: [
         {name: 'Alert', content: 'Loading ...'},
-        {name: 'Img', kind: 'enyo.Image', src: '/images/Spinner.gif', style: 'margin-top: 20px'}
+        {name: 'Img', kind: 'enyo.Image', src: '../images/Spinner.gif', style: 'margin-top: 20px'}
     ],
 
     create: function() {

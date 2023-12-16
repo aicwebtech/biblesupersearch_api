@@ -1,8 +1,11 @@
 enyo.depends(
     //'/js/bin/ckeditor/ckeditor.js',  // v4
-    '/js/bin/ckeditor5/build/ckeditor.js',
-    '/js/bin/custom/form',
-    '/js/bin/custom/dialog',
+    '../../bin/ckeditor5/build/ckeditor.js',
+    //'js/bin/ckeditor5/build/ckeditor.js',
+    '../../bin/custom/form',
+    // 'js/bin/custom/form',
+    '../../bin/custom/dialog',
+    // 'js/bin/custom/dialog',
     'source',
     'assets/style.css',
     'assets/dialogs.css'

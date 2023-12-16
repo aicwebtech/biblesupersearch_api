@@ -186,7 +186,7 @@ enyo.kind({
             ];
 
             this.gridHandle = $(this.$.Grid.hasNode()).jqGrid({
-                url: '/admin/bibles/grid',
+                url: '../admin/bibles/grid',
                 datatype: 'json',
                 idPrefix: this.idPrefix,
                 colModel: this.colModel,
