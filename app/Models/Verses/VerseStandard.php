@@ -570,17 +570,20 @@ class VerseStandard extends VerseAbstract {
             'book_en' => $book_en,
         ];
 
+        $full_bible = self::statsHelper();
+
         $stats = [];
 
         foreach($queries as $type => $query) {
-            $stats[$type] = self::statsHelper($type, $query, $references[$type]);
+            $stats[$type] = self::statsHelper($type, $query, $references[$type], $full_bible);
         }
 
-        $stats['full'] = self::statsHelper();
+        unset($full_bible['_chapter_counts']);
+        $stats['full'] = $full_bible;
         return $stats;
     }
 
-    protected static function statsHelper($type = 'full', $query = null, $reference = null)
+    protected static function statsHelper($type = 'full', $query = null, $reference = null, $full_bible = [])
     {
         $sub = [
             'type'          => $type,
@@ -602,7 +605,6 @@ class VerseStandard extends VerseAbstract {
         }
 
         $Verses = $Query->get();
-
         $first = $Verses->first();
 
         $ChapterCounts = $Verses->countBy(function($verse) {
@@ -621,7 +623,16 @@ class VerseStandard extends VerseAbstract {
                 $sub['book_position'] = $sub['num_books'] == 1 ? $first->book : null;
                 break;
             case 'chapter':  
-                $sub['chapter_position'] = $sub['num_chapters'] == 1 ?  'what' : null;
+                $FullChapterCounts = isset($full_bible['_chapter_counts']) ? $full_bible['_chapter_counts'] : null;
+                
+                if($sub['num_chapters'] == 1 && $FullChapterCounts) {
+                    $cca_keys = array_keys($FullChapterCounts->toArray());
+                    $chap_pos = array_search($first->book . '_' . $first->chapter, $cca_keys) + 1;
+                    $sub['chapter_position'] = $chap_pos;
+                } else {
+                    $sub['chapter_position'] = null;
+                }
+
                 break;
             case 'passage':
                 if($sub['num_verses'] == 1) {
@@ -634,6 +645,8 @@ class VerseStandard extends VerseAbstract {
 
                 $sub['verse_position']  =  $sub['num_verses'] == 1 ? $first->id : null;
                 break;
+            case 'full':
+                $sub['_chapter_counts'] = $ChapterCounts;
         }
 
         return $sub;

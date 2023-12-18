@@ -12,8 +12,8 @@ class SqlSearch {
     protected $search; // String containing the search keywords
     protected $search_parsed;
     protected $terms; // Search keys for current search
-    protected $options = array();
-    protected $languages = array();
+    protected $options = [];
+    protected $languages = [];
     protected $search_type = 'and';
 
     protected $options_default = array(
@@ -91,8 +91,8 @@ class SqlSearch {
     // Todo: Make Unicode safe by replacing with regexp \p{P}
     public $punctuation = array('.',',',':',';','\'','"','!','-','?','(',')','[',']');
 
-    public function __construct($search = NULL, $options = array()) {
-        $this->options_default['highlight_tag'] = config('bss.defaults.highlight_tag');
+    public function __construct($search = NULL, $options = []) 
+    {
         $this->setSearch($search);
         $this->setOptions($options, TRUE);
     }
@@ -103,7 +103,7 @@ class SqlSearch {
      * @param array $options
      * @return App\Search|boolean
      */
-    static public function parseSearch($search = NULL, $options = array()) {
+    static public function parseSearch($search = NULL, $options = []) {
         if (empty($search)) {
             $has_search = FALSE;
 
@@ -298,7 +298,7 @@ class SqlSearch {
      * Generates the WHERE clause portion from the search query
      * @return array|bool
      */
-    public function generateQuery($binddata = array(), $table_alias = '') {
+    public function generateQuery($binddata = [], $table_alias = '') {
         $search_type = (!empty($this->search_type)) ? $this->search_type : 'and';
         $search = $this->search;
         return $this->_generateQueryHelper($search, $search_type, $table_alias, TRUE, $binddata);
@@ -306,7 +306,7 @@ class SqlSearch {
 
     protected function _generateQueryHelper(
         $search, $search_type, $table_alias = '', $include_extra_fields = FALSE, 
-        $binddata = array(), $fields = ''
+        $binddata = [], $fields = ''
     ) {
         $searches = [];
 
@@ -375,7 +375,7 @@ class SqlSearch {
         return array($sql, $binddata);
     }
 
-    protected function _termSql($term, &$binddata = array(), $fields = '', $table_alias = '') {
+    protected function _termSql($term, &$binddata = [], $fields = '', $table_alias = '') {
         $exact_case  = $this->options['exact_case'];
         $whole_words = $this->options['whole_words'];
         $exact_phrase = ($this->options['search_type'] == 'phrase');
@@ -384,13 +384,13 @@ class SqlSearch {
             $whole_words = FALSE;
         }
 
-        $sql = array();
+        $sql = [];
         $fields    = $this->_termFields($term, $fields, $table_alias);
         $term_fmts = $this->_termFormat($term, $exact_phrase, $whole_words, FALSE);
         $term_ops  = $this->_termOperator($term, $exact_phrase, $whole_words, FALSE);
 
         foreach($fields as $field) {
-            $sql_sub = array();
+            $sql_sub = [];
 
             foreach($term_fmts AS $key => $term_fmt) {
                 $bind_index = static::pushToBindData($term_fmt, $binddata);
@@ -647,7 +647,7 @@ class SqlSearch {
      * @return array $parsed
      */
     public static function parseQueryTerms($query, $breakdown = FALSE) {
-        $parsed = $phrases = $matches = array();
+        $parsed = $phrases = $matches = [];
         // Remove operators that otherwise would be interpreted as terms
         $general = [];
         $find    = array(' AND ', ' XOR ', ' OR ', 'NOT ');
@@ -810,7 +810,7 @@ class SqlSearch {
     }
 
     protected static function _parseQueryTermsSpecialHelpser($query, $underscore_map, $matching) {
-        $matches = $phrases = $underscores = array();
+        $matches = $phrases = $underscores = [];
         preg_match_all($matching, $query, $matches, PREG_SET_ORDER);
 
         foreach ($matches as $item) {
@@ -859,7 +859,7 @@ class SqlSearch {
         list($phrases, $underscored) = static::parseQueryPhrases($query, TRUE);  // Underscored stuff doesn't seem to be used.  remove?
         list($regexp, $regexp_uc) = static::parseQueryRegexp($query, TRUE);
 
-        $phrase_placeholders = $regexp_placeholders = array();
+        $phrase_placeholders = $regexp_placeholders = [];
 
         foreach($phrases as $key => $phrase) {
             $phrase_placeholders[] = 'ph' . $key . 'ph';
@@ -961,17 +961,18 @@ class SqlSearch {
         $this->use_named_bindings = (bool) $value;
     }
 
-    public function highlightResults($results) {
+    public function highlightResults($results, $highlight_tag = null) {
         $whole_word = $this->isTruthy('whole_words', $this->options);
         $exact_case = $this->isTruthy('exact_case',  $this->options);
 
+        $highlight_tag = $highlight_tag ?: config('bss.defaults.highlight_tag');
 
         $terms = $this->terms;
         $terms_fmt = [];
         $pre = '&';     // Regex safe, reused search alias
         $post = '%';    // Regex safe, reused search wildcard
-        $pre_tag  = '<'  . $this->options['highlight_tag'] . '>';
-        $post_tag = '</' . $this->options['highlight_tag'] . '>';
+        $pre_tag  = '<'  . $highlight_tag . '>';
+        $post_tag = '</' . $highlight_tag . '>';
         // $pre_pattern  = '/' . $pre . '([^' . $pre . ' ]*)' . $pre .  '/'; // alt pattern
         // $post_pattern = '/' . $post . '([^' . $post . ' ]*)' .  $post .  '/';    // alt pattern    
         $pre_pattern  = '/' . $pre . '([^' . $pre . $post . ']*)' . $pre .  '/';
@@ -1013,7 +1014,9 @@ class SqlSearch {
 
                 $verse->text = str_replace([$pre, $post], [$pre_tag, $post_tag], $verse->text);
             }
+            unset($verse);
         }
+        unset($verses);
 
         return $results;
     }

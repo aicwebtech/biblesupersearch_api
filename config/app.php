@@ -89,6 +89,8 @@ return [
 
     'env' => env('APP_ENV', 'production'),
 
+    'experimental' => env('APP_EXPERIMENTAL', false),
+
     'config_cache' => FALSE,
 
     'installed' => FALSE,

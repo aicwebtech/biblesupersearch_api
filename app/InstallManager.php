@@ -119,19 +119,27 @@ class InstallManager {
         }
 
         $has_domain_error = (!$subdomain || !$subdomain_pub_dir);
+        $has_domain_error = false;
+
+        $subdomain_pub_dir = $subdomain ? $subdomain_pub_dir : null;
 
         $allowed_uri = [
             '/install/check'
         ];
 
-        $checklist[] = ['type' => 'item', 'label' => 'Has dedicated domain or sub-domain', 'success' => $subdomain];
-        $checklist[] = ['type' => 'item', 'label' => 'Dedicated domain or sub-domain pointed to public directory in API', 'success' => $subdomain_pub_dir];
-
-        if(!$subdomain) {
-            $checklist[] = ['type' => 'error', 'label' => 'You appear to have the API running inside your main website.  This won\'t work, and you will need to set up a dedicated sub-domain.'];
-            $checklist[] = ['type' => 'error', 'label' => 'Please be sure to point your sub-domain to path/to/api/public'];
+        $checklist[] = ['type' => 'item', 'label' => 'Has dedicated domain or sub-domain (HIGHLY recommended!)', 'success' => $subdomain ?: null];
+        
+        if($subdomain) {
+            $checklist[] = ['type' => 'item', 'label' => 'Dedicated domain or sub-domain pointed to public directory in API', 'success' => $subdomain_pub_dir];
         }
-        else if(!$subdomain_pub_dir) {
+
+        // if(!$subdomain) {
+        //     $checklist[] = ['type' => 'error', 'label' => 'You appear to have the API running inside your main website.  This won\'t work, and you will need to set up a dedicated sub-domain.'];
+        //     $checklist[] = ['type' => 'error', 'label' => 'Please be sure to point your sub-domain to path/to/api/public'];
+        // }
+    
+        if($subdomain && !$subdomain_pub_dir) {
+            $checklist[] = ['type' => 'error', 'label' => 'Your sub-domain needs to be pointed to the public directory inside the API.'];
             $checklist[] = ['type' => 'error', 'label' => 'Please point your sub-domain to path/to/api/public NOT path/to/api!'];
         }
 

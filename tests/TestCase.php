@@ -27,6 +27,7 @@ namespace {
             $app->make(Illuminate\Contracts\Console\Kernel::class)->bootstrap();
             $this->use_named_bindings = config('app.query_use_named_placeholders');
             $this->test_http = env('APP_TEST_HTTP', FALSE);
+
             return $app;
         }
 
@@ -37,6 +38,16 @@ namespace {
             });
 
             parent::tearDown();
+        }
+
+        public function setUp(): void
+        {
+            parent::setUp();
+
+            if(!config('app.installed')) {
+                // Skip all tests if not installed to database
+                $this->markTestSkipped('APP NOT INSTALLED TO DATABASE, UNABLE TO TEST!!!');
+            }
         }
     }
 }

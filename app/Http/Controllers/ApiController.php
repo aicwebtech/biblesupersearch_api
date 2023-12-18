@@ -8,7 +8,8 @@ use App\Http\Requests;
 use App\Http\Controllers\Controller;
 use App\Engine;
 
-class ApiController extends Controller {
+class ApiController extends Controller 
+{
 
     public function genericAction(Request $Request, $action = 'query') {
         $allowed_actions = ['query', 'bibles', 'books', 'statics', 'statics_changed', 'version', 'readcache', 'strongs'];

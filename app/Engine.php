@@ -209,6 +209,7 @@ class Engine {
             ),
             'highlight_tag' => array(
                 'type'  => 'string',
+                //'default' => null,
             ),
             'search_type' => array(
                 'type'  => 'string',
@@ -1028,19 +1029,26 @@ class Engine {
         $results = $this->_processMarkup($results, $input['markup']);
 
         if($this->isTruthy('highlight', $input)) {
-            $results = $this->_highlightResults($results, $Search);
+            $results = $this->_highlightResults($results, $Search, $Passages, $input);
         }
 
         $Formatter = new $format_class($results, $Passages, $Search, $this->languages, $input);
         return $Formatter->format();
     }
 
-    protected function _highlightResults($results, $Search) {
-        if(!$Search) {
-            return $results;
+    protected function _highlightResults($results, $Search, $Passages, $input) 
+    {
+        $highlight_tag = array_key_exists('highlight_tag', $input) ? $input['highlight_tag'] : config('bss.defaults.highlight_tag');;
+
+        if($Search) {
+            $results = $Search->highlightResults($results, $highlight_tag);
         }
 
-        return $Search->highlightResults($results);
+        if($Passages && count($Passages) == 1 && $input['context']) {
+            $results = $Passages[0]->highlightContext($results, $highlight_tag);
+        }
+
+        return $results;
     }
 
     protected function _processMarkup($results, $mode) {

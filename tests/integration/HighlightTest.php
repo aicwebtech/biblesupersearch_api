@@ -145,4 +145,36 @@ class HighlightTest extends TestCase {
             $this->assertFalse((strpos($verse->text, $embedded)), 'Highlight tag within tag: ' . $verse->text);
         }
     }
+
+    public function testContextHighlight()
+    {
+        $Engine = new Engine();
+        $Engine->setDefaultDataType('raw');
+        $tag = config('bss.defaults.highlight_tag');
+        $st = '<' . $tag . '>';
+        $en = '</' . $tag . '>';
+
+        $results = $Engine->actionQuery([
+            'bible'         => 'kjv', 
+            'reference'     => 'James 3:7', 
+            'highlight'     => true, 
+            'context'       => true,
+            'context_range' => 5,
+        ]);
+        
+        $this->assertFalse($Engine->hasErrors());        
+
+        foreach($results['kjv'] as $key => $verse) {
+            $this->assertEquals(59, $verse->book);
+            $this->assertEquals(3, $verse->chapter);
+
+            if($verse->verse == 7) {
+                $this->assertStringStartsWith($st, $verse->text);
+                $this->assertStringEndsWith($en, $verse->text);
+            } else {
+                $this->assertStringNotContainsString($st, $verse->text);
+                $this->assertStringNotContainsString($en, $verse->text);
+            }
+        }
+    }
 }

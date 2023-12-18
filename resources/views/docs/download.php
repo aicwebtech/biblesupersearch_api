@@ -1,5 +1,5 @@
 <?php
-    $BibleSuperSearchAPIURL          = '';
+    $BibleSuperSearchAPIURL          = url('');
     $BibleSuperSearchDownloadVerbose = TRUE;
     $BibleSuperSearchBibles          = $bibles;
     $BibleSuperSearchDownloadFormats = $formats;
