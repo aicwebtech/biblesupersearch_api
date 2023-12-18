@@ -65,5 +65,6 @@ function getServerUrl() {
     $http   = (array_key_exists('HTTPS', $_SERVER) && !empty($_SERVER['HTTPS'])) ? 'https://' : 'http://';
     $server = (array_key_exists('SERVER_NAME', $_SERVER) && !empty($_SERVER['SERVER_NAME'])) ? $_SERVER['SERVER_NAME'] : 'biblesupersearch.com';
     $server = $http . $server;
+    return url('');
     return $server;
 }

@@ -24,20 +24,23 @@ You also have the option to build  your own.
 ### Server Requirements:
 * PHP >= 8.0.2
 * MySQL
+* BCMath PHP Extension
+* Ctype PHP Extension
+* Fileinfo PHP extension
+* gd PHP extension
+* JSON PHP Extension
+* Mbstring PHP Extension
 * OpenSSL PHP Extension
 * PDO PHP Extension
 * PDO_MYSQL PHP Extension
-* Mbstring PHP Extension
 * Tokenizer PHP Extension
 * XML PHP Extension
 * Zip PHP Extension
-* Ctype PHP Extension
-* Fileinfo PHP extension
-* JSON PHP Extension
-* BCMath PHP Extension
+* SQLite3 PHP Extension (recommended)
 * Composer
 
-Also, this API must have it's own subdomain.
+
+Also, it is highly recommended to have a dedicated domain or subdomain for this API.
 
 ### Installation (Web Browser):
 (Recommended) [Download](http://www.biblesupersearch.com/downloads) the official release, and follow the instructions in it's readme.txt

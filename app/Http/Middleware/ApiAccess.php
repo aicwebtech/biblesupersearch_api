@@ -4,6 +4,7 @@ namespace App\Http\Middleware;
 
 use Closure;
 use App\Models\IpAccess;
+use App\Models\ApiKey;
 use Illuminate\Http\Response;
 
 /*
@@ -19,34 +20,51 @@ class ApiAccess
      * @param  \Closure  $next
      * @return mixed
      */
-    public function handle($request, Closure $next) {
+    public function handle($request, Closure $next) 
+    {
 
         $err  = NULL;
         $code = NULL;
+        $key = $request->input('key') ?: null;
+        $uri = $request->path();
+        $parts = explode('/', $uri);
+        $action = isset($parts[1]) ? $parts[1] : 'query';
+        $Access = null;
+        $key_id = null;
 
         if(!config('app.installed')) {
             $err = 'errors.app_not_installed';
             $code = 500;
         }
+
+        if(config('app.experimental') && !$err && $key) {
+            // keyed access - look up key
+            $Access = ApiKey::findByKey($key);
+
+            if(!$Access || $Access->isAccessRevoked()) {
+                // Key not found - no access granted
+                $err  = 'errors.access_revoked';
+                $code = 403;
+            } else {
+                $key_id = $Access->id;
+            }
+        }
         
         if(!$err) {        
-            $host = (array_key_exists('HTTP_REFERER', $_SERVER)) ? $_SERVER['HTTP_REFERER'] : 'localhost';
-            $ip   = (array_key_exists('REMOTE_ADDR', $_SERVER))  ? $_SERVER['REMOTE_ADDR']  : '127.0.0.1';
-            // $ip = gethostbyname($host); // Cannot do this - as this is for IP v4 ONLY
-            // $ip = ($ip == $host) ? $_SERVER['REMOTE_ADDR'] : $ip;
-            // $ip = ($host) ? $_SERVER['REMOTE_ADDR'] : NULL;
-            
-            $IP = IpAccess::findOrCreateByIpOrDomain($ip, $host);
+            // look up IP record for keyless access                       
+            $Access = $Access ?: IpAccess::findOrCreateByIpOrDomain(true);
 
-            if(!$IP->incrementDailyHits()) {
-                if($IP->isAccessRevoked()) {
-                    $err  = 'errors.access_revoked';
-                    $code = 403;
-                }
-                else {
-                    $err  = 'errors.hit_limit_reached';
-                    $code = 500;
-                }
+            if($Access->isAccessRevoked()) {
+                $err  = 'errors.access_revoked';
+                $code = 403;
+            } else if(!in_array($action, config('bss.free_actions')) && !$Access->incrementDailyHits()) {
+                $err  = 'errors.hit_limit_reached';
+                $code = 429;
+            }
+
+            if(!$err && !$Access->accessLevel->hasActionAccess($action)) {
+                $err  = 'errors.action.not_allowed';
+                $code = 403;
             }
         }
         

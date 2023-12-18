@@ -32,6 +32,7 @@ class StatisticsTest extends TestCase {
         $this->assertEquals(36, $response['kjv']['chapter']['num_verses']);
         $this->assertEquals(1, $response['kjv']['chapter']['num_chapters']);
         $this->assertEquals(1, $response['kjv']['chapter']['num_books']);
+        $this->assertEquals(1000, $response['kjv']['chapter']['chapter_position']);
 
         // $this->assertEquals(433, $response['kjv']['book']['num_verses']);
         $this->assertEquals(21, $response['kjv']['book']['num_chapters']);
@@ -64,6 +65,7 @@ class StatisticsTest extends TestCase {
         $this->assertEquals(21, $response['kjv']['chapter']['num_verses']);
         $this->assertEquals(1, $response['kjv']['chapter']['num_chapters']);
         $this->assertEquals(1, $response['kjv']['chapter']['num_books']);
+        $this->assertEquals(1051, $response['kjv']['chapter']['chapter_position']);
 
         $this->assertEquals(433, $response['kjv']['book']['num_verses']);
         $this->assertEquals(16, $response['kjv']['book']['num_chapters']);

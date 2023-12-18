@@ -229,7 +229,7 @@ enyo.kind({
         this.app.set('ajaxLoading', true);
 
         var ajax = new enyo.Ajax({
-            url: '/admin/bibles/importcheck',
+            url: '../admin/bibles/importcheck',
             method: 'POST',
             contentType: 'multipart/form-data',
             headers: this.app.defaultAjaxHeaders,
@@ -281,7 +281,7 @@ enyo.kind({
         this.app.set('ajaxLoading', true);
 
         var ajax = new enyo.Ajax({
-            url: '/admin/bibles/import',
+            url: '../admin/bibles/import',
             method: 'POST',
             headers: this.app.defaultAjaxHeaders,
             postBody: postData

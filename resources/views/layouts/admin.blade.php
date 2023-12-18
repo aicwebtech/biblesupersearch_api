@@ -32,6 +32,8 @@ if(!isset($hide_menus)) {
     $hide_menus = FALSE;
 }
 
+$u = url('');
+
 @endphp
 
 <!DOCTYPE html>
@@ -44,20 +46,20 @@ if(!isset($hide_menus)) {
         <meta name="csrf-token" content="{{ csrf_token() }}">
         <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
         <meta contentType="text/html; charset=UTF-8"/>
-        <link rel="stylesheet" href="/css/common.css" >
-        <link rel="stylesheet" href="/css/admin/admin.css" >
-        <link rel="stylesheet" href="/js/bin/jquery-ui/jquery-ui.css">
-        <link rel="stylesheet" href="/js/bin/jquery-ui/jquery-ui.theme.css">
+        <link rel="stylesheet" href="{{ $u }}/css/common.css" >
+        <link rel="stylesheet" href="{{ $u }}/css/admin/admin.css" >
+        <link rel="stylesheet" href="{{ $u }}/js/bin/jquery-ui/jquery-ui.css">
+        <link rel="stylesheet" href="{{ $u }}/js/bin/jquery-ui/jquery-ui.theme.css">
         @if( isset($stylesheets) && is_array($stylesheets) )
         @foreach ($stylesheets as $css)
         <link rel="stylesheet" href="{{ asset($css) }}">
         @endforeach
         @endif
 
-        <script src='/js/bin/jquery/jquery-3.1.1.min.js'></script>
+        <script src='{{ $u }}/js/bin/jquery/jquery-3.1.1.min.js'></script>
         <!--<script src="https://code.jquery.com/jquery-migrate-3.0.1.js"></script>-->
-        <script src='/js/bin/jquery-ui/jquery-ui.js'></script>
-        <script src='/js/admin/admin.js'></script>
+        <script src='{{ $u }}/js/bin/jquery-ui/jquery-ui.js'></script>
+        <script src='{{ $u }}/js/admin/admin.js'></script>
         @if( isset($javascripts) && is_array($javascripts) )
         @foreach ($javascripts as $js)
         <script src='{{ asset($js) }}'></script>
