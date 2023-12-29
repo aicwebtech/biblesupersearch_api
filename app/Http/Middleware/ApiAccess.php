@@ -5,6 +5,7 @@ namespace App\Http\Middleware;
 use Closure;
 use App\Models\IpAccess;
 use App\Models\ApiKey;
+use App\ApiAccessManager;
 use Illuminate\Http\Response;
 
 /*
@@ -26,6 +27,7 @@ class ApiAccess
         $err  = NULL;
         $code = NULL;
         $key = $request->input('key') ?: null;
+        $dom = $request->input('domain') ?: null;
         $uri = $request->path();
         $parts = explode('/', $uri);
         $action = isset($parts[1]) ? $parts[1] : 'query';
@@ -37,6 +39,25 @@ class ApiAccess
             $code = 500;
         }
 
+        if(!$err) {
+            $Access = ApiAccessManager::lookUp($request);
+
+            if(!$Access || $Access->isAccessRevoked()) {
+                // Key not found - no access granted
+                $err  = 'errors.access_revoked';
+                $code = 403;
+            } else if(!in_array($action, config('bss.free_actions')) && !$Access->incrementDailyHits()) {
+                $err  = 'errors.hit_limit_reached';
+                $code = 429;
+            }
+
+            if(!$err && !$Access->accessLevel->hasActionAccess($action)) {
+                $err  = 'errors.action.not_allowed';
+                $code = 403;
+            }
+        }
+
+        /*
         if(config('app.experimental') && !$err && $key) {
             // keyed access - look up key
             $Access = ApiKey::findByKey($key);
@@ -52,7 +73,7 @@ class ApiAccess
         
         if(!$err) {        
             // look up IP record for keyless access                       
-            $Access = $Access ?: IpAccess::findOrCreateByIpOrDomain(true);
+            $Access = $Access ?: IpAccess::findOrCreateByIpOrDomain(true, $dom);
 
             if($Access->isAccessRevoked()) {
                 $err  = 'errors.access_revoked';
@@ -67,6 +88,7 @@ class ApiAccess
                 $code = 403;
             }
         }
+        */
         
         if($err) {            
             $response = new \stdClass;

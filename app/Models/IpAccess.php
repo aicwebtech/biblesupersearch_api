@@ -26,7 +26,8 @@ class IpAccess extends Model implements AccessLogInterface
     static public function findOrCreateByIpOrDomain($ip_address = null, $host = null) 
     {
         if($ip_address === true) {
-            $host = (array_key_exists('HTTP_REFERER', $_SERVER)) ? $_SERVER['HTTP_REFERER'] : 'localhost';
+            $default_host = (array_key_exists('HTTP_REFERER', $_SERVER)) ? $_SERVER['HTTP_REFERER'] : 'localhost';
+            $host = $host ?: $default_host;
             $ip_address = (array_key_exists('REMOTE_ADDR', $_SERVER))  ? $_SERVER['REMOTE_ADDR']  : '127.0.0.1';
         }
 

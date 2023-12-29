@@ -777,10 +777,8 @@ class Engine {
      * returns data that the API needs to run
      */
     public function actionStatics($input) {
-        $IP = \App\Models\IpAccess::findOrCreateByIpOrDomain(true);
-
-        // $this->addError('chicken man doth commeth', 1);
-        // return $this->addError('What this?', 0);
+        $domain = isset($input['domain']) ? $input['domain'] : null;
+        $Access = \App\ApiAccessManager::lookUpByInput($input);
 
         $response = new \stdClass;
         $response->bibles           = $this->actionBibles($input);
@@ -796,10 +794,10 @@ class Engine {
         $response->environment      = config('app.env');
         $response->research_desc    = config('bss.research_description');
         $response->access           = new \stdClass;
-        $response->access->allowed          = !$IP->isAccessRevoked();
-        $response->access->limit            = $IP->getAccessLimit();
-        $response->access->limit_reached    = $IP->isLimitReached();
-        $response->access->hits    = $IP->getDailyHits();
+        $response->access->allowed          = !$Access->isAccessRevoked();
+        $response->access->limit            = $Access->getAccessLimit();
+        $response->access->limit_reached    = $Access->isLimitReached();
+        $response->access->hits    = $Access->getDailyHits();
         return $response;
     }
 
