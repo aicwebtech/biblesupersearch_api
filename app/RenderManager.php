@@ -276,6 +276,8 @@ class RenderManager {
             $date = new \DateTime();
             $zip_filename = 'truth_' . $date->format('Ymd_His_u') . '.zip';
 
+            $group_by_language = true;
+
             // Create Zip File in tmp dir
             // $dir = sys_get_temp_dir();
             $dir = Renderers\RenderAbstract::getRenderBasePath(); // . 'temp_zip/';
@@ -283,6 +285,10 @@ class RenderManager {
             $zip_path = $dir . $zip_filename;
 
             $readme = "Bible SuperSearch Bible Export\n\n";
+
+            usort($this->Bibles, function($a, $b) {
+                return strcmp($a->lang_short, $b->lang_short);
+            });
 
             try {
                 $Zip = new \ZipArchive;
@@ -305,11 +311,18 @@ class RenderManager {
                     foreach($this->Bibles as $Bible) {
                         $Renderer = new $CLASS($Bible);
                         $filepath = $Renderer->getRenderFilePath();
-                        $filename = basename($filepath);
                         $lang = $Bible->language->native_name;
                         $lang .= ($Bible->language->name != $Bible->language->native_name) ? ' (' . $Bible->language->name . ')' : '';
                         $display_name = $Bible->name;
                         $display_name .= ($Bible->year) ? ' (' . $Bible->year . ')' : '';
+
+                        $lang_dir = strtoupper($Bible->lang_short) . '-' . str_replace(' ', '_', trim($Bible->language->native_name));
+
+                        if($group_by_language) {
+                            $filename = $lang_dir . '/' . basename($filepath);
+                        } else {
+                            $filename = basename($filepath);
+                        }
 
                         $readme_cache[$filename]  = '';
                         $readme_cache[$filename] .= '* ' . str_pad($filename . ' ', 30, '-');
@@ -317,7 +330,7 @@ class RenderManager {
                         $readme_cache[$filename] .= $lang;
                         $readme_cache[$filename] .= "\n";
 
-                        if( !$Zip->addFile($filepath, basename($filepath)) ) {
+                        if( !$Zip->addFile($filepath, $filename) ) {
                             return $this->addError('Unable to add Bible to ZIP file: ' . $Bible->name);
                         }
                         
