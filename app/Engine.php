@@ -8,6 +8,7 @@ use App\Passage;
 use App\Search;
 use App\CacheManager;
 use App\Helpers;
+use Illuminate\Support\Arr;
 use Illuminate\Pagination\LengthAwarePaginator as Paginator;
 
 class Engine {
@@ -47,7 +48,6 @@ class Engine {
         $default_language = $this->default_language ?: config('bss.defaults.language_short');
 
         $modules = $this->_parseInputArray($modules);
-        $Bibles = Bible::whereIn('module', $modules)->get();
         $primary = NULL;
 
         foreach($modules as $module) {
@@ -100,7 +100,8 @@ class Engine {
         return FALSE;
     }
 
-    public function addBible($module) {
+    public function addBible($module) 
+    {
         $Bible = Bible::findByModule($module);
 
         if($Bible && ($Bible->enabled || $this->allow_disabled_bibles)) {
@@ -127,11 +128,30 @@ class Engine {
         return TRUE;
     }
 
-    public function getBibles() {
+    public function getBibles() 
+    {
         return $this->Bibles;
     }
 
-    public function getMetadata($include_errors = FALSE) {
+    public function hasMultipleBibleLanguages()
+    {
+        $lang = null;
+
+        foreach($this->Bibles as $Bible) {
+            if($lang != $Bible->lang_short) {
+                if(!$lang) {
+                    $lang = $Bible->lang_short;
+                } else {
+                    return true;
+                }
+            }
+        }
+
+        return false;
+    }
+
+    public function getMetadata($include_errors = FALSE) 
+    {
         if(!$include_errors) {
             return $this->metadata;
         }
@@ -278,6 +298,7 @@ class Engine {
         $input = $this->_sanitizeInput($input, $parsing);
         $this->setDefaultLanguage($input['language']);
         !empty($input['bible']) && $this->setBibles($input['bible']);
+        $multi_bible_languages = $this->hasMultipleBibleLanguages();
 
         $input['bible'] = array_keys($this->Bibles);
         $input['page_limit'] = min( (int) $input['page_limit'], (int) config('bss.global_maximum_results'));
@@ -309,7 +330,7 @@ class Engine {
         $Search     = Search::parseSearch($keywords, $input);
         $is_search  = ($Search) ? TRUE : FALSE;
         $paginate   = ($is_search && !$input['page_all'] && (!$input['multi_bibles'] || $this->_canPaginate($input['data_format'])));
-        $paging     = array();
+        $paging     = [];
 
         if(!$is_search && empty($references)) {
             $this->addError(trans('errors.no_query'), 4);
@@ -342,6 +363,29 @@ class Engine {
 
         // Search validation
         if($Search) {
+            if(empty($input['search_type'])) {
+                $input['search_type'] = 'and';
+            }
+
+            $search_type = Arr::first(config('bss.search_types'), function($st) use ($input) {
+                return $st['value'] == $input['search_type'] || 
+                    isset($st['alias']) && is_array($st['alias']) && in_array($input['search_type'], $st['alias']);
+            });
+
+            if(!$search_type) {
+                $this->addError(trans('errors.invalid_search.type_does_not_exist', ['type' => $input['search_type']]));
+            }
+
+            $multi_bible_languages_allow = config('bss.parallel_search_different_languages');
+
+            if($multi_bible_languages) {
+                if($multi_bible_languages_allow == 'never') {
+                    $this->addError(trans('errors.invalid_search.multi_bible_languages'), 4);
+                } else if ($multi_bible_languages_allow == 'search_type' && !$search_type['multi_lang']) {
+                    $this->addError(trans('errors.invalid_search.multi_bible_languages_type'), 4);
+                }
+            }
+
             $search_valid = $Search->validate();
 
             if($search_valid) {
@@ -461,11 +505,8 @@ class Engine {
                 if(!$Passage->claimVerses($results, TRUE)) {
                     $this->addError( trans('errors.passage_not_found', ['passage' => $Passage->raw_book . ' ' . $Passage->raw_chapter_verse]), 3);
                 }
-
-                //print_r($Passage->toArray());
             }
         }
-
 
         $results = $this->_formatDataStructure($results, $input, $Passages, $Search);
 
@@ -781,23 +822,24 @@ class Engine {
         $Access = \App\ApiAccessManager::lookUpByInput($input);
 
         $response = new \stdClass;
-        $response->bibles           = $this->actionBibles($input);
-        $response->books            = $this->actionBooks($input);
-        $response->shortcuts        = $this->actionShortcuts($input);
-        $response->download_enabled = (bool) config('download.enable');
-        $response->download_limit   = config('download.enable') ? config('download.bible_limit') : FALSE;
-        $response->download_formats = $response->download_enabled ? array_values(RenderManager::getGroupedRendererList()) : [];
-        $response->search_types     = config('bss.search_types');
-        $response->name             = config('app.name');
-        $response->hash             = $this->_getNameHash();
-        $response->version          = config('app.version');
-        $response->environment      = config('app.env');
-        $response->research_desc    = config('bss.research_description');
-        $response->access           = new \stdClass;
+        $response->bibles                   = $this->actionBibles($input);
+        $response->books                    = $this->actionBooks($input);
+        $response->shortcuts                = $this->actionShortcuts($input);
+        $response->download_enabled         = (bool) config('download.enable');
+        $response->download_limit           = config('download.enable') ? config('download.bible_limit') : FALSE;
+        $response->download_formats         = $response->download_enabled ? array_values(RenderManager::getGroupedRendererList()) : [];
+        $response->search_types             = config('bss.search_types');
+        $response->name                     = config('app.name');
+        $response->hash                     = $this->_getNameHash();
+        $response->version                  = config('app.version');
+        $response->environment              = config('app.env');
+        $response->research_desc            = config('bss.research_description');
+        $response->parallel_lang_search     = config('bss.parallel_search_different_languages');
+        $response->access                   = new \stdClass;
         $response->access->allowed          = !$Access->isAccessRevoked();
         $response->access->limit            = $Access->getAccessLimit();
         $response->access->limit_reached    = $Access->isLimitReached();
-        $response->access->hits    = $Access->getDailyHits();
+        $response->access->hits             = $Access->getDailyHits();
         return $response;
     }
 

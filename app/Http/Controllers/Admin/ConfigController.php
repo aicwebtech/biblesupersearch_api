@@ -7,6 +7,7 @@ use App\Http\Controllers\Controller;
 use App\ConfigManager;
 use Illuminate\Support\Facades\Artisan;
 use App\Http\Responses\Response;
+use Illuminate\Support\Arr;
 
 class ConfigController extends Controller
 {
@@ -32,13 +33,18 @@ class ConfigController extends Controller
             $config_values['download.enable'] = FALSE;
         }
 
+        $st_lang = array_filter(config('bss.search_types'), function($st) {
+            return (bool)$st['multi_lang'];
+        });
+
         return view('admin.config', [
-            'configs'           => $config_values,
-            'bibles'            => $Bibles,
-            'hl_tags'           => ['b', 'em', 'strong'],
-            'rendered_space'    => \App\RenderManager::getUsedSpace(),
-            'render_writeable'  => $render_writeable,
-            'render_dir'        => $render_dir,
+            'configs'                   => $config_values,
+            'bibles'                    => $Bibles,
+            'hl_tags'                   => ['b', 'em', 'strong'],
+            'rendered_space'            => \App\RenderManager::getUsedSpace(),
+            'render_writeable'          => $render_writeable,
+            'render_dir'                => $render_dir,
+            'search_type_multi_lang'    => $st_lang,
         ]);
     }
 

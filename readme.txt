@@ -71,6 +71,8 @@ Also, it is highly recommended to have a dedicated domain or subdomain for this 
 Installation:
 * Upload this entire directory to a directory (/path/to/biblesupersearch_api) on your web server.
 * Rename .env.example to .env
+    (NOTE: Please make sure your file browser is set to display hidden files, or you won't be able to find the .env.example file.)
+    
 * Make .env WRITABLE by the web server
 * In .env, enter your database connection information, and save the file.
 

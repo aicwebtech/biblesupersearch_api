@@ -299,23 +299,29 @@ class RenderManager {
 
                 // Copy all appropiate files into Zip file
                 foreach($this->format as $format) {
-                    $readme_cache = [];
+                    $readme_cache = $language_cache = [];
                     $CLASS = static::$register[$format];
 
                     $readme .= strip_tags( $CLASS::getName() ) . "\n";
                     $readme .= strip_tags( $CLASS::getDescription() ) . "\n\n\n";
                     $readme .= "Index of Bibles Included: \n\n";
-                    $readme .= 'File' . str_repeat(' ', 30) . 'Bible' . str_repeat(' ', 76) . "Language\n";
+                    
+                    if($group_by_language) {
+                        $readme .= 'File' . str_repeat(' ', 40) . "Bible\n";
+                    } else {
+                        $readme .= 'File' . str_repeat(' ', 40) . 'Bible' . str_repeat(' ', 76) . "Language\n";
+                    }
+
                     $readme .= str_repeat('=', 160) . "\n";
 
                     foreach($this->Bibles as $Bible) {
                         $Renderer = new $CLASS($Bible);
                         $filepath = $Renderer->getRenderFilePath();
-                        $lang = $Bible->language->native_name;
+                        $lang = trim($Bible->language->native_name);
                         $lang .= ($Bible->language->name != $Bible->language->native_name) ? ' (' . $Bible->language->name . ')' : '';
                         $display_name = $Bible->name;
                         $display_name .= ($Bible->year) ? ' (' . $Bible->year . ')' : '';
-
+                        $display_filename = basename($filepath);
                         $lang_dir = strtoupper($Bible->lang_short) . '-' . str_replace(' ', '_', trim($Bible->language->native_name));
 
                         if($group_by_language) {
@@ -324,10 +330,22 @@ class RenderManager {
                             $filename = basename($filepath);
                         }
 
+                        if($group_by_language && !isset($language_cache[$Bible->lang_short])) {
+                            $lang_english = $Bible->lang_short == 'en' ? '' : '   (' . $Bible->language->name . ')';
+                            $readme_cache[$lang_dir] = "\n\n" . $lang_dir . $lang_english . "\n" . str_repeat('-', 140) . "\n";
+                            $language_cache[$Bible->lang_short] = true;
+                        }
+
                         $readme_cache[$filename]  = '';
-                        $readme_cache[$filename] .= '* ' . str_pad($filename . ' ', 30, '-');
-                        $readme_cache[$filename] .= '- ' . $mb_str_pad($display_name . ' ', 80, '-') . ' ';
-                        $readme_cache[$filename] .= $lang;
+                        $readme_cache[$filename] .= '* ' . $mb_str_pad($display_filename . ' ', 40, '-');
+                        
+                        if($group_by_language) {
+                            $readme_cache[$filename] .= '- ' . $display_name;
+                        } else {
+                            $readme_cache[$filename] .= '- ' . $mb_str_pad($display_name . ' ', 80, '-') . ' ';
+                            $readme_cache[$filename] .= $lang;
+                        }
+
                         $readme_cache[$filename] .= "\n";
 
                         if( !$Zip->addFile($filepath, $filename) ) {

@@ -29,57 +29,74 @@ return [
     // Maximum number of verses returned by parallel search, displayed or not
     'parallel_search_maximum_results' => 2000, 
 
+    // Do we allow searching across Bibles of different languages?
+    // OPtions: 'always', 'search_type', 'never' 
+    'parallel_search_different_languages' => 'never',
+
     // List of all search types the API supports
     'search_types' => [
         [
             'label' => 'All Words',
             'value' => 'and',
+            'alias' => ['all_words'],
             'bool'  => FALSE, // Whether to allow boolean / proximity operators on this search type
+            'multi_lang' => true, // Whether to allow searches across Bibles of different languages with this search type
         ],
         [
             'label' => 'Any Word',
             'value' => 'or',
+            'alias' => ['any_word'],
             'bool'  => FALSE,
+            'multi_lang' => true,
         ],
         [
             'label' => 'Exact Phrase',
             'value' => 'phrase',
             'bool'  => FALSE,
+            'multi_lang' => true,
         ],
         [
             'label' => 'Only One Word',
             'value' => 'xor',
+            'alias' => ['one_word'],
             'bool'  => FALSE,
+            'multi_lang' => true,
         ],
         [
             'label' => 'Two or More Words',
             'value' => 'two_or_more',
             'bool'  => FALSE,
+            'multi_lang' => true,
         ],
         [
             'label' => 'Words Within 5 Verses',
             'value' => 'proximity',
             'bool'  => FALSE,
+            'multi_lang' => false,
         ],
         [
             'label' => 'Words Within Same Chapter',
             'value' => 'chapter',
             'bool'  => FALSE,
+            'multi_lang' => false,
         ],        
         [
             'label' => 'Words Within Same Book',
             'value' => 'book',
             'bool'  => FALSE,
+            'multi_lang' => false,
         ],
         [
             'label' => 'Boolean Expression',
             'value' => 'boolean',
             'bool'  => TRUE,
+            'multi_lang' => true,
         ],
         [
             'label' => 'Regular Expression',
             'value' => 'regexp',
             'bool'  => FALSE,
+            'multi_lang' => true,
         ],
     ],
     'books_common' => [
