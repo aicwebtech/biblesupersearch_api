@@ -960,7 +960,9 @@ class Engine {
             $namespaced_class = 'App\Models\Shortcuts\\' . ucfirst( config('bss.defaults.language_short') );
         }
 
-        $Shortcuts = $namespaced_class::select('id', 'name', 'reference')->orderBy('id', 'ASC') ->where('display', 1) -> get() -> all();
+        $Shortcuts = $namespaced_class::select('id', 'name', 'short1', 'short2', 'reference', 'display')
+            ->orderBy('id', 'ASC') -> get() -> all();
+        
         return $Shortcuts;
     }
 
