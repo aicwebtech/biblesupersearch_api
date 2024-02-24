@@ -16,6 +16,9 @@ return array(
     'invalid_search' => array(
         'reference' => 'Your search for \':search\' is invalid, and appears to be a passage reference.',
         'general' => 'Your search for \':search\' is invalid.',
+        'type_does_not_exist' => 'Search type \':type\' does not exist.',
+        'multi_bible_languages' => 'You cannot search across Bibles of different languages.',
+        'multi_bible_languages_type' => 'You cannot search across Bibles of different languages using the selected search type.',
     ),
     'book' => array(
         'invalid_in_range' => 'Invalid book in book range: \':range\'.',

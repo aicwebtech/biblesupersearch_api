@@ -215,6 +215,44 @@
                                             </td>
                                         </tr>
                                         <tr>
+                                            <td class='ralign'>Allow Parallel Search Across<br />Bibles of Differing Languages: </td>
+                                            <td>
+                                                <a id='parallel_search_different_languages' />
+                                                <input 
+                                                    type='radio' name='bss__parallel_search_different_languages' value='always' 
+                                                    id='parallel_search_different_languages_always' 
+                                                    @if($configs['bss.parallel_search_different_languages'] == 'always')checked='checked'@endif 
+                                                />
+                                                <label for='parallel_search_different_languages_always'>Yes</label>
+                                                <br />
+                                                
+                                                <input 
+                                                    type='radio' name='bss__parallel_search_different_languages' value='never' 
+                                                    id='parallel_search_different_languages_never' 
+                                                    @if($configs['bss.parallel_search_different_languages'] == 'never')checked='checked'@endif 
+                                                />                                                
+                                                <label for='parallel_search_different_languages_never'>No</label>
+                                                <br />
+
+                                                <input 
+                                                    type='radio' name='bss__parallel_search_different_languages' value='search_type' 
+                                                    id='parallel_search_different_languages_search_type' 
+                                                    @if($configs['bss.parallel_search_different_languages'] == 'search_type')checked='checked'@endif 
+                                                />
+                                                <label for='parallel_search_different_languages_search_type'>Depends on Search Type</label>
+
+                                                <span class='info right up'>
+                                                    <span>i</span>
+                                                    <p>
+                                                        Allowed for the following search types: <br /><br />
+                                                            @foreach($search_type_multi_lang as $st)
+                                                                * {{$st['label']}} ({{$st['value']}})<br />
+                                                            @endforeach
+                                                    </p>
+                                                </span>
+                                            </td>
+                                        </tr>
+                                        <tr>
                                             <td class='ralign'>Daily Access Limit: </td>
                                             <td><input name='bss__daily_access_limit' size='5' value='{{$configs['bss.daily_access_limit']}}'> hits</td>
                                         </tr>
