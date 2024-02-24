@@ -31,7 +31,7 @@ class ProximitySearchTest extends TestCase {
         $Engine->setDefaultDataType('raw');
         $Engine->setDefaultPageAll(TRUE);
 
-        $results = $Engine->actionQuery(['bible' => 'kjv', 'search' => 'faith PROX(2) joy', 'search_type' => 'any']);
+        $results = $Engine->actionQuery(['bible' => 'kjv', 'search' => 'faith PROX(2) joy', 'search_type' => 'or']);
         $this->assertTrue($Engine->hasErrors());
         $errors = $Engine->getErrors();
         $this->assertCount(1, $errors);

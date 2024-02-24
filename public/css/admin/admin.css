@@ -149,6 +149,16 @@ title.h1 {
     top: 0px;
 }
 
+.info.right:hover p {
+    left: initial;
+    right: 25px;
+}
+
+.info.up:hover p {
+    top: initial;
+    bottom: 0px;
+}
+
 .info:hover div.container {
     display: block;
     position: absolute;

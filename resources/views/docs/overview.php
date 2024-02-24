@@ -1,5 +1,8 @@
 <div>
-    <?php echo trans('api.overview.description') ?>
+    <?php 
+        $limit = config('bss.daily_access_limit') ?: '(unlimited)';
+        echo trans('api.overview.description', ['limit' => $limit]); 
+    ?>
 </div>
 
 <?php

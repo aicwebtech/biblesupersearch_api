@@ -1,11 +1,14 @@
 Bible SuperSearch API Changelog
 
+= 5.5.0 / March ??, 2024
+* Downloads: Bibles are now grouped by language in the ZIP file.
+
 = 5.4.0 / December 20, 2023
 * Highlighting verses in context
 * Removing subdomain requirement 
 
 = 5.3.0 / November 11, 2023
-* Added Lavian Bible
+* Added Latvian Bible
 * Applying upstream security fixes and bug fixes
 
 = 5.1.4 / August 12, 2023

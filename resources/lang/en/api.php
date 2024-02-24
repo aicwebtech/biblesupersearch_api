@@ -47,7 +47,7 @@ return array(
     'overview' => array(
         'name' => 'Overview',
         'description' => 'This webservice API allows the Bible SuperSearch Bible search engine to be used seamlesly on any website or app. <br /><br />'
-            . 'There is no cost to use the API, however, your website will be limited to ' . config('bss.daily_access_limit') . ' hits per day.<br /><br />',
+            . 'There is no cost to use the API, however, your website will be limited to :limit hits per day.<br /><br />',
         'all_actions' => 'All API Actions',
         'see_in_action' => 'See API in action here',
         'bullets' => array(

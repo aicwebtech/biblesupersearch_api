@@ -13,7 +13,8 @@ use Validator;
 
 class BibleController extends Controller
 {
-    public function __construct() {
+    public function __construct() 
+    {
         parent::__construct();
         $this->middleware('install');
         $this->middleware('auth:100');
@@ -27,7 +28,8 @@ class BibleController extends Controller
      *
      * @return \Illuminate\Http\Response
      */
-    public function index() {
+    public function index() 
+    {
         Bible::populateBibleTable();
         $ImportManagerClass = Helpers::find('\App\ImportManager');
 
@@ -50,7 +52,8 @@ class BibleController extends Controller
         return view('admin.bibles', ['bootstrap' => $bootstrap]);
     }
 
-    public function grid(Request $request) {
+    public function grid(Request $request)
+    {
         $data = $request->toArray();
         $rows = $postfilters = [];
         $rows_per_page = (int) $data['rows'];
@@ -132,7 +135,8 @@ class BibleController extends Controller
         return response($resp, 200);
     }
 
-    public function languages(Request $request) {
+    public function languages(Request $request) 
+    {
         $Languages = Bible::select('languages.code', 'languages.name')
             ->leftJoin('languages', 'bibles.lang_short', 'languages.code')
             ->groupBy('languages.id')->orderBy('languages.name')->get();
@@ -140,7 +144,8 @@ class BibleController extends Controller
         return response(['languages' => $Languages], 200);
     }    
 
-    public function copyrights(Request $request) {
+    public function copyrights(Request $request) 
+    {
         $Languages = Bible::select('copyrights.id', 'copyrights.name')
             ->leftJoin('copyrights', 'bibles.copyright_id', 'copyrights.id')
             ->groupBy('copyrights.id')->orderBy('copyrights.name')->get();
@@ -439,6 +444,12 @@ class BibleController extends Controller
         ];
 
         $resp->messages = ['<b>Testing ' . $Bible->name . '</b>'];
+
+        $response = $Engine->actionStatistics(['bible' => $Bible->module, 'reference' => 'John 3:16']);
+
+        $resp->messages[] = 'Number of books: '     . $response[ $Bible->module ]['full']['num_books'];
+        $resp->messages[] = 'Number of chapters: '  . $response[ $Bible->module ]['full']['num_chapters'];
+        $resp->messages[] = 'Number of verses: '    . $response[ $Bible->module ]['full']['num_verses'];
 
         foreach($tests as $test) {
             $Engine->resetErrors();
