@@ -822,6 +822,8 @@ class Engine {
         $Access = \App\ApiAccessManager::lookUpByInput($input);
 
         $response = new \stdClass;
+        $response->mysql                    = config('database.mysql.server_version');
+        $response->regexp                    = config('database.mysql.new_regexp');
         $response->bibles                   = $this->actionBibles($input);
         $response->books                    = $this->actionBooks($input);
         $response->shortcuts                = $this->actionShortcuts($input);
