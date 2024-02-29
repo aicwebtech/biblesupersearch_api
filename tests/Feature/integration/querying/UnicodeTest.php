@@ -378,6 +378,10 @@ class UnicodeTest extends TestCase {
             $this->markTestSkipped('Bible bishops not installed or enabled');
         }
 
+        if(config('bss.parallel_search_different_languages') == 'never') {
+            $this->markTestSkipped('Searching across Bibles of different languages NOT enabled');
+        }
+
         $Engine = Engine::getInstance();
         $Engine->setDefaultDataType('raw');
         $Engine->setDefaultPageAll(TRUE);
@@ -396,6 +400,7 @@ class UnicodeTest extends TestCase {
         $results = $Engine->actionQuery($query);
 
         $this->assertTrue($Engine->hasErrors()); // No results in Bishups
+        $this->assertCount(2, $results);
         $this->assertCount(1, $results['synodal']);
         $this->assertCount(1, $results['bishops']);
 
@@ -403,8 +408,6 @@ class UnicodeTest extends TestCase {
         $this->assertStringContainsString('</high>', $results['synodal'][0]->text);
         $this->assertStringNotContainsString('<high>', $results['bishops'][0]->text);
         $this->assertStringNotContainsString('</high>', $results['bishops'][0]->text);
-
-
     }
 
     public function testFrenchLookup() {

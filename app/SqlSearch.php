@@ -502,8 +502,8 @@ class SqlSearch {
         }
 
         if(config('database.mysql.new_regexp')) {
-            $pre  = ($has_st_pct) ? '' : '\\\\b';
-            $post = ($has_en_pct) ? '' : '\\\\b';
+            $pre  = ($has_st_pct) ? '' : '\\b';
+            $post = ($has_en_pct) ? '' : '\\b';
         } else {
             $pre  = ($has_st_pct) ? '' : '([[:<:]]|[‹])';
             $post = ($has_en_pct) ? '' : '([[:>:]]|[›])';

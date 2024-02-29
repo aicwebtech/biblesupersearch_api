@@ -108,7 +108,11 @@ class SqlSearchTest extends TestCase
         list($sql, $binddata) = $Search->generateQuery();
         $this->assertEquals('(`text` LIKE :bd1 AND `text` REGEXP :bd2)', $sql);
         // $this->assertEquals(array(':bd1' => '%faith%', ':bd2' => '[[:<:]]faith[[:>:]]'), $binddata);
-        $this->assertEquals(array(':bd1' => '%faith%', ':bd2' => '([[:<:]]|[‹])faith([[:>:]]|[›])'), $binddata);
+        if(config('database.mysql.new_regexp')) {
+            $this->assertEquals(array(':bd1' => '%faith%', ':bd2' => '\\bfaith\\b'), $binddata);
+        } else {
+            $this->assertEquals(array(':bd1' => '%faith%', ':bd2' => '([[:<:]]|[‹])faith([[:>:]]|[›])'), $binddata);
+        }
 
         $Search = SqlSearch::parseSearch('faith% ', array('whole_words' => 'on'));
         list($sql, $binddata) = $Search->generateQuery();
@@ -116,7 +120,13 @@ class SqlSearchTest extends TestCase
         //$this->assertEquals(array(':bd1' => '[[:<:]]faith'), $binddata);
         $this->assertEquals('(`text` LIKE :bd1 AND `text` REGEXP :bd2)', $sql);
         // $this->assertEquals(array(':bd1' => '%faith%', ':bd2' => '[[:<:]]faith'), $binddata);
-        $this->assertEquals(array(':bd1' => '%faith%', ':bd2' => '([[:<:]]|[‹])faith'), $binddata);
+
+        if(config('database.mysql.new_regexp')) {
+            $this->assertEquals(array(':bd1' => '%faith%', ':bd2' => '\\bfaith'), $binddata);
+        } else {
+            $this->assertEquals(array(':bd1' => '%faith%', ':bd2' => '([[:<:]]|[‹])faith'), $binddata);
+        }
+
     }
 
     public function testAdvancedQuery() {

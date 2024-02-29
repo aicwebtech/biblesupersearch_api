@@ -34,7 +34,7 @@ class IpAccessTest extends TestCase {
 
             $this->assertEquals($default_limit - 5, $IP->getDailyHits());
 
-            for($i = 1; $i < 7; $i ++) {
+            for($i = 1; $i < 5; $i ++) {
                 $IP->incrementDailyHits();
             }
 

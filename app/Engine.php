@@ -822,8 +822,6 @@ class Engine {
         $Access = \App\ApiAccessManager::lookUpByInput($input);
 
         $response = new \stdClass;
-        $response->mysql                    = config('database.mysql.server_version');
-        $response->regexp                    = config('database.mysql.new_regexp');
         $response->bibles                   = $this->actionBibles($input);
         $response->books                    = $this->actionBooks($input);
         $response->shortcuts                = $this->actionShortcuts($input);
@@ -963,7 +961,9 @@ class Engine {
         }
 
         $Shortcuts = $namespaced_class::select('id', 'name', 'short1', 'short2', 'reference', 'display')
-            ->orderBy('id', 'ASC') -> get() -> all();
+            ->orderBy('id', 'ASC') 
+            ->where('display', 1) // remove in v 5.5 RE BSS-57
+            -> get() -> all();
         
         return $Shortcuts;
     }

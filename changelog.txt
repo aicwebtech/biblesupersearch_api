@@ -1,6 +1,9 @@
 Bible SuperSearch API Changelog
 
-= 5.5.0 / March ??, 2024
+= 5.4.1 / Feb 29, 2024
+* Fixed to work with MySLQ 8.0
+* Applying upstream security fixes and bug fixes
+* Added config to control whether to allow parallel searches across Bibles of different languages.
 * Downloads: Bibles are now grouped by language in the ZIP file.
 
 = 5.4.0 / December 20, 2023

@@ -139,6 +139,10 @@ class ApiKey extends Model implements AccessLogInterface
 
     public function getAccessLimit() 
     {
+        if($this->access_level_id == ApiAccessLevel::FULL) {
+            return 0;
+        }
+
         $limit_raw = $this->limit;
 
         if($limit_raw === null) {
