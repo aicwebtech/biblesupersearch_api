@@ -34,6 +34,12 @@ class LoadSoftConfiguration {
             $config_values = ConfigManager::getGlobalConfigs();
 
             // Set any other preset config values here
+
+            $mysql_version = $this->getMysqlVersion();
+
+            $config_values['database.mysql.server_version'] = $mysql_version;
+            $config_values['database.mysql.new_regexp'] = version_compare($mysql_version, '8.0.4', '>=');
+
             $config_values['app.premium'] = Helpers::isPremium();
 
             // Set global soft configs as application configs
@@ -43,5 +49,14 @@ class LoadSoftConfiguration {
             // DB Error, Do nothing
         }
 
+    }
+
+    private function getMysqlVersion() {
+        $pdo = DB::connection()->getPdo();
+        $version = $pdo->query('select version()')->fetchColumn();
+        preg_match("/^[0-9\.]+/", $version, $match);
+
+        $version = $match[0];
+        return $version;
     }
 }

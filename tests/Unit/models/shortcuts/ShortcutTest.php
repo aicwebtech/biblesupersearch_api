@@ -29,7 +29,7 @@ class ShortcutTest extends TestCase
         $this->assertEquals('Matthew - Revelation', $SC->reference);
         
         // Short3
-        $SC = $class_name::findByEnteredName('Old');
+        $SC = $class_name::findByEnteredName('OT');
         $this->assertInstanceOf('App\Models\Shortcuts\En', $SC);
         $this->assertEquals('Genesis - Malachi', $SC->reference);
     }

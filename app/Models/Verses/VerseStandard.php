@@ -130,6 +130,7 @@ class VerseStandard extends VerseAbstract {
             throw new \Exception($msg);
         }
 
+        // $Query->dump();
 
         if(config('app.debug_query')) {
             // $Query->dump();
