@@ -961,7 +961,9 @@ class Engine {
         }
 
         $Shortcuts = $namespaced_class::select('id', 'name', 'short1', 'short2', 'reference', 'display')
-            ->orderBy('id', 'ASC') -> get() -> all();
+            ->orderBy('id', 'ASC') 
+            ->where('display', 1) // remove in v 5.5 RE BSS-57
+            -> get() -> all();
         
         return $Shortcuts;
     }

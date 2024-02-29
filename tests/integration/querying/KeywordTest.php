@@ -24,7 +24,13 @@ class KeywordTest extends TestCase
         $Engine = new Engine();
         $Engine->setDefaultDataType('raw');
 
+        // var_dump(config('database.mysql.server_version'));
+        // var_dump(config('database.mysql.new_regexp'));
+
+
         $results = $Engine->actionQuery(['bible' => 'kjv', 'search' => 'faith%', 'whole_words' => TRUE, 'page_all' => TRUE]);
+
+        // print_r($Engine->getErrors());
         $this->assertFalse($Engine->hasErrors());
         $this->assertCount(336, $results['kjv']);
 

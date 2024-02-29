@@ -450,7 +450,6 @@ class SqlSearch {
         $is_phrase = $is_regexp = $is_strongs = $uses_regexp = FALSE;
         $term_inexact = '%' . trim($term, '%"`\'') . '%';
         $phrase_whitespace = ' ';
-        // $phrase_whitespace = '[[:>:]]\s|(\{.*\})[[:<:]]';
         $phrase_whitespace = '([^a-fi-zA-FI-Z]+)';  // General approximation (fails open - may pull MORE results than it should)
         // $phrase_whitespace = "\]?[ {]([^a-fi-zA-FI-Z]*)"; // This prefered whitespace separator works in navicat but not in this software?
 
@@ -502,10 +501,14 @@ class SqlSearch {
             return ($primary_only) ? $term : [$term];
         }
 
-        $pre  = ($has_st_pct) ? '' : '[[:<:]]';
-        $post = ($has_en_pct) ? '' : '[[:>:]]';
-        $pre  = ($has_st_pct) ? '' : '([[:<:]]|[‹])';
-        $post = ($has_en_pct) ? '' : '([[:>:]]|[›])';
+        if(config('database.mysql.new_regexp')) {
+            $pre  = ($has_st_pct) ? '' : '\\b';
+            $post = ($has_en_pct) ? '' : '\\b';
+        } else {
+            $pre  = ($has_st_pct) ? '' : '([[:<:]]|[‹])';
+            $post = ($has_en_pct) ? '' : '([[:>:]]|[›])';
+        }
+
         $regexp_term = ($is_phrase) ? str_replace(' ', $phrase_whitespace, $term) : str_replace('%', '.*', trim($term, '%'));
         $regexp_term = $pre . trim($regexp_term, '%') . $post;
 
@@ -522,7 +525,13 @@ class SqlSearch {
         //$preformat = ($whole_words) ? $preformat : trim($preformat, '%');
         $preformat = trim($preformat, '%./');
         // $preformat = str_replace(['[[:<:]]', '[[:>:]]'], '\b', $preformat);
-        $preformat = str_replace(['([[:<:]]|[‹])', '([[:>:]]|[›])'], '\b', $preformat);
+
+        if(config('database.mysql.new_regexp')) {
+            $preformat = str_replace('\\\\b', '\b', $preformat);
+        } else {
+            $preformat = str_replace(['([[:<:]]|[‹])', '([[:>:]]|[›])'], '\b', $preformat);
+        }
+
         $case_insensitive = ($exact_case) ? '' : 'i';
         $term_format = '/' . $preformat . '/' . $case_insensitive;
         return $term_format;
