@@ -39,6 +39,7 @@ return array(
     'strongs_not_found' => 'Strong\'s Number not found',
     'to_many_download' => 'Too many Bibles requested for download.  You can request a maximum of :maximum Bibles at once.',
     'bible_no_download' => 'Download of Bible not allowed: :module',
+    'common_words' => 'You cannot search for these common words: :wordlist',
     'action' => [
         'not_found' => 'Action Not Found',
         'not_allowed' => 'Action Not Allowed',

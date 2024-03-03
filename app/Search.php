@@ -137,10 +137,28 @@ class Search extends SqlSearch {
         }
 
         if($search_type != 'regexp' && strpos($search, '"') === FALSE && strpos($search, '`') === FALSE) {
+            $Language = Models\Language::findByCode($this->options['language']);
             $keywords = static::parseQueryTerms($search);
 
             if($search && empty($keywords)) {
                 return $this->addTransError('errors.invalid_search.general', ['search' => $search], 4);
+            }
+
+            // Check for disallowed words per language
+            if($Language) {
+                $banned_words = $Language->getCommonWordsAsArray();
+
+                $banned = [];
+
+                foreach($keywords as $k) {
+                    if(in_array($k, $banned_words)) {
+                        $banned[] = $k;
+                    }
+                }
+
+                if(count($banned) > 0) {
+                    return $this->addTransError('errors.common_words', ['wordlist' => implode(', ', $banned)], 4);
+                }
             }
             
             // Check for invalid characters
