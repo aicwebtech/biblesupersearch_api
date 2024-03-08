@@ -48,7 +48,7 @@ class Language extends Model {
 
     public function getCommonWordsAsArray()
     {
-        return preg_split("/\r\n|\n|\r/", $this->common_words);
+        return preg_split("/\r\n|\n|\r/", strtolower($this->common_words));
     }
 
     public function formatEnglishName()

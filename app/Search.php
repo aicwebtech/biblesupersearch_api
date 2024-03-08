@@ -137,22 +137,38 @@ class Search extends SqlSearch {
         }
 
         if($search_type != 'regexp' && strpos($search, '"') === FALSE && strpos($search, '`') === FALSE) {
-            $Language = Models\Language::findByCode($this->options['language']);
             $keywords = static::parseQueryTerms($search);
 
             if($search && empty($keywords)) {
                 return $this->addTransError('errors.invalid_search.general', ['search' => $search], 4);
             }
 
-            // Check for disallowed words per language
-            if($Language) {
-                $banned_words = $Language->getCommonWordsAsArray();
+            if($search_type != 'phrase') {                
+                // Check for disallowed words per language
+                $languages = $this->languages;
+
+                if($this->options['language']) {
+                    $languages[] = $this->options['language'];
+                }
+
+                $languages = array_unique($languages);
+                $languages = array_filter($languages);
 
                 $banned = [];
 
-                foreach($keywords as $k) {
-                    if(in_array($k, $banned_words)) {
-                        $banned[] = $k;
+                foreach($languages as $lang) {
+                    $Language = Models\Language::findByCode($lang);
+                    
+                    if($Language) {
+                        $banned_words = $Language->getCommonWordsAsArray();
+
+                        foreach($keywords as $k) {
+                            $k = strtolower($k);
+
+                            if(in_array($k, $banned_words)) {
+                                $banned[] = $k;
+                            }
+                        }
                     }
                 }
 
@@ -163,7 +179,6 @@ class Search extends SqlSearch {
             
             // Check for invalid characters
             // $invalid_chars = preg_replace('/[\p{L}\(\)|!&^ "\'0-9%]+/u', '', $search); // Original
-
             $invalid_chars = preg_match('/[^' . static::$term_base_regexp . '|!&^ "\'0-9%()*+]/u', $search, $matches);
 
             if(!empty($invalid_chars)) {

@@ -56,7 +56,9 @@ function fetchLanguage(lang) {
 
         success: function(data, statux, xhr) {
             // Dialogs.set('loadingShowing', false);
-            // console.log(data);
+            console.log('loadSuccess', data);
+            console.log('commonWords', data.Language.common_words);
+            $('#common_words').html('');
             $('#common_words').html(data.Language.common_words || '');
             hasChanges = false;
         },
@@ -83,7 +85,7 @@ function saveLanguage(fetchLang) {
             // $('#rendered_space_used').html(data.space_used);
         },
         error: function(xhr, status, error) {
-            Dialogs.set('loadingShowing', false);
+            // Dialogs.set('loadingShowing', false);
             // alert('An error has occurred');
         }
     });

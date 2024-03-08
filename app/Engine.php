@@ -294,7 +294,6 @@ class Engine {
             //
         }
 
-
         $input = $this->_sanitizeInput($input, $parsing);
         $this->setDefaultLanguage($input['language']);
         !empty($input['bible']) && $this->setBibles($input['bible']);
