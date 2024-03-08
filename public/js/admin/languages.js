@@ -7,13 +7,15 @@ $( function() {
     });
 
     $('#submit').click(function(e) {
-        // e.preventDefault();
+        e.preventDefault();
         saveLanguage();
     });
 
     $('.form_element').change(function() {
         hasChanges = true;
     });
+
+    languageChanged();
 });
 
 function languageChanged()
@@ -41,6 +43,7 @@ function languageChanged()
     }
 
     // Load language info
+    clearLanguage();
     fetchLanguage(language);
 }
 
@@ -58,8 +61,8 @@ function fetchLanguage(lang) {
             // Dialogs.set('loadingShowing', false);
             console.log('loadSuccess', data);
             console.log('commonWords', data.Language.common_words);
-            $('#common_words').html('');
-            $('#common_words').html(data.Language.common_words || '');
+            $('#common_words').val('');
+            $('#common_words').val(data.Language.common_words || '');
             hasChanges = false;
         },
         error: function(xhr, status, error) {
@@ -69,8 +72,11 @@ function fetchLanguage(lang) {
     });
 }
 
+function clearLanguage() {
+    $('#common_words').val('');
+}
+
 function saveLanguage(fetchLang) {
-    
     console.log('saveLanguage');
 
     $.ajax({
@@ -82,11 +88,17 @@ function saveLanguage(fetchLang) {
         success: function(data, statux, xhr) {
             hasChanges = false;
             // Dialogs.set('loadingShowing', false);
-            // $('#rendered_space_used').html(data.space_used);
+            if(data.success) {
+                alert('Language saved successfully!');
+                $('#language').val('0');
+                languageChanged();
+            } else {
+                alert('An unknown error has occurred');
+            }
         },
         error: function(xhr, status, error) {
             // Dialogs.set('loadingShowing', false);
-            // alert('An error has occurred');
+            alert('An error has occurred');
         }
     });
 }
