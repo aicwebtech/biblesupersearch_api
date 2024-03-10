@@ -215,7 +215,12 @@
                                             </td>
                                         </tr>
                                         <tr>
-                                            <td class='ralign'>Allow Parallel Search Across<br />Bibles of Differing Languages: </td>
+                                            <td colspan = '2' class='ralign'>&nbsp; </td>
+                                        </tr>
+                                        <tr>
+                                            <td class='ralign' style='vertical-align: top;'>
+                                                Allow Parallel Search Across<br />Bibles of Differing Languages: 
+                                            </td>
                                             <td>
                                                 <a id='parallel_search_different_languages' />
                                                 <input 
@@ -251,6 +256,53 @@
                                                     </p>
                                                 </span>
                                             </td>
+                                        </tr>      
+                                        <tr>
+                                            <td colspan = '2' class='ralign'>&nbsp; </td>
+                                        </tr>                                  
+                                        <tr>
+                                            <td class='ralign' style='vertical-align: top;'>
+                                                Allow Searching for Common Words: <br /><br />
+                                                <small>Note: Common words are configured by<br />language on the language tab.</small>
+                                            </td>
+                                            <td style='vertical-align: top;'>
+                                                <a id='search_common_words' />
+                                                <input 
+                                                    type='radio' name='bss__search_common_words' value='always' 
+                                                    id='search_common_words_always' 
+                                                    @if($configs['bss.search_common_words'] == 'always')checked='checked'@endif 
+                                                />
+                                                <label for='search_common_words_always'>Yes</label>
+                                                <br />
+                                                
+                                                <input 
+                                                    type='radio' name='bss__search_common_words' value='never' 
+                                                    id='search_common_words_never' 
+                                                    @if($configs['bss.search_common_words'] == 'never')checked='checked'@endif 
+                                                />                                                
+                                                <label for='search_common_words_never'>No</label>
+                                                <br />
+
+                                                <input 
+                                                    type='radio' name='bss__search_common_words' value='exact' 
+                                                    id='search_common_words_search_type' 
+                                                    @if($configs['bss.search_common_words'] == 'exact')checked='checked'@endif 
+                                                />
+                                                <label for='search_common_words_languages_search_type'>
+                                                    Yes, <small>if search query includes other words</small>
+                                                </label>
+
+<!--                                                 <input 
+                                                    type='radio' name='bss__search_common_words' value='search_type' 
+                                                    id='search_common_words_search_type' 
+                                                    @if($configs['bss.search_common_words'] == 'search_type')checked='checked'@endif 
+                                                />
+                                                <label for='search_common_words_languages_search_type'>Depends on Search Type</label> -->
+                                                <br />
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td colspan = '2' class='ralign'>&nbsp; </td>
                                         </tr>
                                         <tr>
                                             <td class='ralign'>Daily Access Limit: </td>

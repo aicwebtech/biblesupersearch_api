@@ -9,6 +9,47 @@ use App\Models\Language;
 
 class CommonWordTest extends TestCase 
 {
+    protected $EN;
+    protected $LV;
+    protected $config_cache;
+    protected $en_cache;
+    protected $lv_cache;
+
+    public function construct()
+    {
+        parent::construct();
+    }
+
+    public function setUp() :void
+    {
+        parent::setUp();
+
+        if(!$this->EN) {
+            $this->EN = Language::findByCode('en');
+        }
+
+        if(!$this->LV) {
+            $this->LV = Language::findByCode('lv');
+        }
+
+        $this->config_cache = config('bss.search_common_words');
+        config(['bss.search_common_words' => 'never']);
+        
+        $this->en_cache = $this->EN->common_words;
+        $this->lv_cache = $this->LV->common_words;
+    }
+
+    public function tearDown() :void
+    {
+        config(['bss.search_common_words' => $this->config_cache]);
+
+        $this->EN->common_words = $this->en_cache;
+        $this->EN->save();        
+
+        $this->LV->common_words = $this->lv_cache;
+        $this->LV->save();
+    }
+
     public function testSave() 
     {
         $Language = Language::findByCode('mh');
@@ -56,12 +97,20 @@ class CommonWordTest extends TestCase
         // No errors, because no common words
         $this->assertFalse($Engine->hasErrors());
 
-        $Language->common_words = "a\nan\nand\nthe\nor";
+        $Language->common_words = "and"; // single word
         $Language->save();
 
         $results = $Engine->actionQuery(['bible' => 'kjv', 'search' => 'and','language' => 'en', 'page_limit' => 30]);
 
         // Has errors, because and on word list
+        $this->assertTrue($Engine->hasErrors());        
+
+        $Language->common_words = "a\nan\nand\nthe\nor";
+        $Language->save();
+
+        $results = $Engine->actionQuery(['bible' => 'kjv', 'search' => 'and','language' => 'en', 'page_limit' => 30]);
+
+        // Has errors, because and IN word list
         $this->assertTrue($Engine->hasErrors());
 
         $results = $Engine->actionQuery(['bible' => 'kjv', 'search' => 'hope and faith','language' => 'en', 'page_limit' => 30]);
