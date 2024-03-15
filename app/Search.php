@@ -177,7 +177,7 @@ class Search extends SqlSearch {
                     }
                 }
 
-                if($allow_common_words == 'never' && $has_banned || $allow_common_words == 'exact' && !$has_allowed) {
+                if($allow_common_words == 'never' && $has_banned || $allow_common_words == 'exact' && !$has_allowed && $has_banned) {
                     return $this->addTransError('errors.common_words', [
                         'wordlist' => implode(', ', array_unique($banned))
                     ], 4);
