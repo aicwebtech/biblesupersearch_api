@@ -9,7 +9,9 @@ class Language extends Model {
     public $timestamps = FALSE;
 
     protected $fillable = [
-        'name', 'iso_name', 'code', 'native_name', 'iso_endonym', 'rtl', 'family', 'iso_639_1', 'iso_639_2', 'iso_639_2_b', 'iso_639_3', 'iso_639_3_raw', 'notes'
+        'name', 'iso_name', 'code', 'native_name', 'iso_endonym', 'rtl', 'family', 
+        'iso_639_1', 'iso_639_2', 'iso_639_2_b', 'iso_639_3', 'iso_639_3_raw', 'notes',
+        'common_words',
     ];
 
     public function rtl() {
@@ -44,6 +46,25 @@ class Language extends Model {
         }
     }
 
+    public function getCommonWordsAsArray()
+    {
+        return preg_split("/\r\n|\n|\r/", strtolower($this->common_words));
+    }
+
+    public function formatEnglishName()
+    {
+        if($this->name == $this->native_name) {
+            return $this->name;
+        } else {
+            return $this->native_name . ' (' . $this->name . ')';
+        }
+    }
+
+    public function formatNameCode() 
+    {
+        return $this->name . ' (' . strtoupper($this->code) . ')';
+    }
+
     public static function migrateFromCsv() {
         $map = [
             'name', 'native_name', 'iso_name', 'code', 'iso_endonym', 'rtl', 'family', 'iso_639_1', 'iso_639_2', 'iso_639_2_b', 'iso_639_3_raw', 'notes'
@@ -70,8 +91,13 @@ class Language extends Model {
         return (bool) $Language->rtl;
     }
 
-    public static function findByCode($code) {
-        $Language = static::where('code', $code)->first();
+    public static function findByCode($code, $fail = false) {
+        if($fail) {
+            $Language = static::where('code', $code)->firstOrFail();
+        } else {
+            $Language = static::where('code', $code)->first();
+        }
+
         return $Language ?: NULL;
     }
 }

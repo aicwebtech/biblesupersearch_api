@@ -150,11 +150,16 @@ class Passage {
 
         }
 
+        // print_r($rand);
+
         $cb_raw = $this->raw_chapter_verse;
         $this->setBookById($rand['book_id']);
         $this->setChapterVerse($rand['chapter_verse']);
+        // $this->raw_book = $this->Book->name;
+        // $this->raw_chapter_verse = $rand['chapter_verse'];
+        
         $this->raw_chapter_verse = $cb_raw;
-        $this->is_random = TRUE;
+        $this->is_random = true;
     }
 
     /**

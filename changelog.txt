@@ -1,5 +1,9 @@
 Bible SuperSearch API Changelog
 
+= 5.5.0 / Mar 23, 2024
+* Ability to prevent common words from being used as keywords
+* Ability to prevent searching across Bibles of different languages
+
 = 5.4.1 / Feb 29, 2024
 * Fixed to work with MySLQ 8.0
 * Applying upstream security fixes and bug fixes
