@@ -87,6 +87,11 @@ Route::get('/admin/bibles/unique', 'Admin\BibleController@uniqueCheck');
 Route::post('/admin/bibles/importcheck', 'Admin\BibleController@importCheck');
 Route::post('/admin/bibles/import', 'Admin\BibleController@import');
 
+Route::get('/admin/languages', 'Admin\LanguageConfigController@index')->name('admin.languages');
+Route::post('/admin/languages', 'Admin\LanguageConfigController@index');
+Route::get('/admin/languages/fetch/{id}', 'Admin\LanguageConfigController@fetch');
+Route::post('/admin/languages/save', 'Admin\LanguageConfigController@save');
+
 Route::get('/admin/tos', 'Admin\PostConfigController@tos')->name('admin.tos')->middleware('install');
 Route::post('/admin/tos', 'Admin\PostConfigController@saveTos');
 Route::get('/admin/privacy', 'Admin\PostConfigController@privacy')->name('admin.privacy')->middleware('install');

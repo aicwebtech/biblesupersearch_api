@@ -1,0 +1,3 @@
+git push bitbucket --tags
+git push sourceforge --tags
+git push github --tags

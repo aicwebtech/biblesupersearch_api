@@ -294,7 +294,6 @@ class Engine {
             //
         }
 
-
         $input = $this->_sanitizeInput($input, $parsing);
         $this->setDefaultLanguage($input['language']);
         !empty($input['bible']) && $this->setBibles($input['bible']);
@@ -390,17 +389,17 @@ class Engine {
 
             if($search_valid) {
                 $Search->sanitize();
-            }
+                
+                $strongs = Search::parseStrongs($keywords);
 
-            $strongs = Search::parseStrongs($keywords);
+                if(!empty($strongs)) {
+                    $Strongs = \App\Models\StrongsDefinition::whereIn('number', $strongs)
+                        ->orderBy('number', 'asc')
+                        ->get();
 
-            if(!empty($strongs)) {
-                $Strongs = \App\Models\StrongsDefinition::whereIn('number', $strongs)
-                    ->orderBy('number', 'asc')
-                    ->get();
-
-                foreach($Strongs as $Str) {
-                    $this->metadata->strongs[] = $this->_formatStrongs($Str->toArray());
+                    foreach($Strongs as $Str) {
+                        $this->metadata->strongs[] = $this->_formatStrongs($Str->toArray());
+                    }
                 }
             }
 

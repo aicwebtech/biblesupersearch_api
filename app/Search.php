@@ -126,6 +126,7 @@ class Search extends SqlSearch {
     protected function _validateHelper($search, $search_type) {
         // Check for misplaced reference by parsing the search as a passage reference
         $Passages = Passage::parseReferences($search, $this->languages, 2);
+        $allow_common_words = config('bss.search_common_words');
 
         if(is_array($Passages)) {
             foreach($Passages as $Passage) {
@@ -142,10 +143,49 @@ class Search extends SqlSearch {
             if($search && empty($keywords)) {
                 return $this->addTransError('errors.invalid_search.general', ['search' => $search], 4);
             }
+
+            if($search_type != 'phrase' && $allow_common_words != 'always') {                
+                // Check for disallowed words per language
+                $has_banned = $has_allowed = false;
+                $languages = $this->languages;
+
+                if($this->options['language']) {
+                    $languages[] = $this->options['language'];
+                }
+
+                $languages = array_unique($languages);
+                $languages = array_filter($languages);
+
+                $banned = [];
+
+                foreach($languages as $lang) {
+                    $Language = Models\Language::findByCode($lang);
+                    
+                    if($Language) {
+                        $banned_words = $Language->getCommonWordsAsArray();
+
+                        foreach($keywords as $k) {
+                            $k = strtolower($k);
+
+                            if(in_array($k, $banned_words)) {
+                                $banned[] = $k;
+                                $has_banned = true;
+                            } else {
+                                $has_allowed = true;
+                            }
+                        }
+                    }
+                }
+
+                if($allow_common_words == 'never' && $has_banned || $allow_common_words == 'exact' && !$has_allowed && $has_banned) {
+                    return $this->addTransError('errors.common_words', [
+                        'wordlist' => implode(', ', array_unique($banned))
+                    ], 4);
+                }
+            }
             
             // Check for invalid characters
             // $invalid_chars = preg_replace('/[\p{L}\(\)|!&^ "\'0-9%]+/u', '', $search); // Original
-
             $invalid_chars = preg_match('/[^' . static::$term_base_regexp . '|!&^ "\'0-9%()*+]/u', $search, $matches);
 
             if(!empty($invalid_chars)) {
