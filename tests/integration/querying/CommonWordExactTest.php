@@ -7,6 +7,9 @@ use Illuminate\Foundation\Testing\DatabaseTransactions;
 use App\Engine;
 use App\Models\Language;
 
+/**
+ * @depends CommonWordTest
+ */
 class CommonWordExactTest extends TestCase 
 {
     protected $EN;
