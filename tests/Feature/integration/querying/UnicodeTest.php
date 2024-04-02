@@ -246,6 +246,69 @@ class UnicodeTest extends TestCase {
         $results = $Engine->actionQuery($query);
         $this->assertFalse($Engine->hasErrors());
         $errors = $Engine->getErrors();
+
+        // Test highlight
+        $search_hl = 'saulē';
+        $search_hl_safe = 'saulē';
+
+        $this->assertEquals($search_hl_safe, \App\Search::removeUnsafeCharacters($search_hl));
+
+        $results = $Engine->actionQuery([
+            'bible'  => 'lv_gluck_8',
+            'search' => $search_hl, // has softening
+            'highlight' => TRUE, 
+            'highlight_tag' => 'span',
+            // 'whole_words' => true,
+        ]);
+
+        $this->assertFalse($Engine->hasErrors());
+        // print_r($results['lv_gluck_8']);
+
+        foreach($results['lv_gluck_8'] as $v) {
+            $this->assertStringContainsString('<span>', $v->text, $v->book . ' ' . $v->chapter . ':' . $v->verse);
+        }
+
+        $results = $Engine->actionQuery([
+            'bible'  => 'lv_gluck_8',
+            'search' => 'saule', // no softening
+            'highlight' => TRUE, 
+            'highlight_tag' => 'span',
+            // 'whole_words' => true,
+        ]);
+
+        $this->assertFalse($Engine->hasErrors());
+        // print_r($results['lv_gluck_8']);
+
+        foreach($results['lv_gluck_8'] as $v) {
+            $this->assertStringContainsString('<span>', $v->text, $v->book . ' ' . $v->chapter . ':' . $v->verse);
+        }
+
+        // $st = 'Tad izgāja Sodomas ķēniņš un Gomoras ķēniņš un Adamas ķēniņš un Ceboīma ķēniņš un Belas, tas ir Coāras, ķēniņš, un taisījās pret tiem kauties Sidim ielejā,';
+
+        // // $pattern = '/[ķk][ēe][ņn][īi][ņn][šs]/iu';
+        // // // $pattern = '/[ķk][ēe][ņn][īi]/ui';
+        // // // $pattern = '/[ņn][šs]/i';
+        // $pattern = '/kenins/iu';
+
+        // preg_match_all($pattern, $st, $matches);
+
+        // print_r($matches);
+
+
+        $results = $Engine->actionQuery([
+            'bible'  => 'lv_gluck_8',
+            'search' => 'kenins',
+            'highlight' => TRUE, 
+            'highlight_tag' => 'span',
+            // 'whole_words' => true,
+        ]);
+
+        // print_r($Engine->getErrors());
+        // $this->assertFalse($Engine->hasFatalErrors());
+
+        foreach($results['lv_gluck_8'] as $idx => $v) {
+            $this->assertStringContainsString('<span>', $v->text, 'kenins ' . $idx . ' ' . $v->book . ' ' . $v->chapter . ':' . $v->verse);
+        }
     }
 
     public function testRussian() {

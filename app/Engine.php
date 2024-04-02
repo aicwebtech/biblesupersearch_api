@@ -11,7 +11,9 @@ use App\Helpers;
 use Illuminate\Support\Arr;
 use Illuminate\Pagination\LengthAwarePaginator as Paginator;
 
-class Engine {
+class Engine 
+{
+
     use Traits\Error {
         resetErrors as traitResetErrors;
     }

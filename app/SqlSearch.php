@@ -520,7 +520,41 @@ class SqlSearch {
         return $terms;
     }
 
-    protected function _termFormatForHighlight($term, $exact_case = FALSE, $whole_words = FALSE) {
+    protected function _termFormatForHighlight($term, $exact_case = FALSE, $whole_words = FALSE, $language = null) 
+    {
+        if($language == 'lv') {
+            $term = str_replace('ā', 'a', $term);
+            $term = str_replace('a', '[āa]', $term);
+
+            $term = str_replace('č', 'c', $term);
+            $term = str_replace('c', '[čc]', $term);
+
+            $term = str_replace('ē', 'e', $term);
+            $term = str_replace('e', '[ēe]', $term);                        
+
+            $term = str_replace('ī', 'i', $term);
+            $term = str_replace('i', '[īi]', $term);                        
+
+            $term = str_replace('ķ', 'k', $term);
+            $term = str_replace('k', '[ķk]', $term);      
+
+            $term = str_replace('ļ', 'l', $term);
+            $term = str_replace('l', '[ļl]', $term);     
+
+            $term = str_replace('ņ', 'n', $term);
+            $term = str_replace('n', '[ņn]', $term);    
+
+            $term = str_replace('š', 's', $term);
+            $term = str_replace('s', '[šs]', $term);    
+
+            $term = str_replace('ū', 'u', $term);
+            $term = str_replace('u', '[ūu]', $term);
+
+            $term = str_replace('ž', 'z', $term);
+            $term = str_replace('z', '[žz]', $term); 
+        }
+
+
         $preformat = $this->_termFormat($term, FALSE, $whole_words);
         //$preformat = ($whole_words) ? $preformat : trim($preformat, '%');
         $preformat = trim($preformat, '%./');
@@ -533,7 +567,8 @@ class SqlSearch {
         }
 
         $case_insensitive = ($exact_case) ? '' : 'i';
-        $term_format = '/' . $preformat . '/' . $case_insensitive;
+        // $case_insensitive = '';
+        $term_format = '/' . $preformat . '/u' . $case_insensitive; // u for unicode
         return $term_format;
     }
 
@@ -995,6 +1030,8 @@ class SqlSearch {
         }
 
         foreach($results as $bible => &$verses) {
+            $Bible = \App\Models\Bible::findByModule($bible);
+
             foreach($verses as &$verse) {
                 if(isset($verse->_unmatched) && $verse->_unmatched) {
                     continue;
@@ -1002,6 +1039,10 @@ class SqlSearch {
 
                 foreach($terms_fmt as $key => $term_fmt) {
                     $term = $terms[$key];
+
+                    if($Bible->lang_short == 'lv') {
+                        $term_fmt = $this->_termFormatForHighlight($term, $exact_case, $whole_word, 'lv');  
+                    }
 
                     $verse->text = preg_replace_callback($term_fmt, function($matches) use ($pre, $post) {
                         return $pre . $matches[0] . $post;
