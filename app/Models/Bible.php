@@ -14,6 +14,8 @@ use App\Traits\Error;
 class Bible extends Model {
     use Error;
 
+    static $_cache = [];
+
     static public function getUpdateRules($bible_id = NULL) {
         $bible_id = (int) $bible_id;
 
