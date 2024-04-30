@@ -4,7 +4,8 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 
-class Language extends Model {
+class Language extends Model 
+{
 
     public $timestamps = FALSE;
 
@@ -14,27 +15,32 @@ class Language extends Model {
         'common_words',
     ];
 
-    public function rtl() {
+    public function rtl() 
+    {
         return (bool) $this->rtl;
         // return static::isRtl($this->code);
     }
 
-    public function setRtlAttribute($value) {
+    public function setRtlAttribute($value) 
+    {
         $lv = strtolower($value);
         $this->attributes['rtl'] = ($value && $lv != 'false' && $lv != 'no') ? 1 : 0;
     }
 
-    public function setIso6393RawAttribute($value) {
+    public function setIso6393RawAttribute($value) 
+    {
         $value = trim($value);
         $this->attributes['iso_639_3_raw'] = $value;
         $this->attributes['iso_639_3']     = substr($value, 0, 3);
     }
 
-    public function getNativeNameAttribute($value) {
+    public function getNativeNameAttribute($value) 
+    {
         return ucwords($value);
     }
     
-    public function _setIso6391Attribute($value) {
+    public function _setIso6391Attribute($value) 
+    {
         $value = trim($value);    
         $this->attributes['iso_639_1'] = $value;
         $this->_defaultSetCode($value);
@@ -65,15 +71,18 @@ class Language extends Model {
         return $this->name . ' (' . strtoupper($this->code) . ')';
     }
 
-    public static function migrateFromCsv() {
+    public static function migrateFromCsv() 
+    {
         $map = [
-            'name', 'native_name', 'iso_name', 'code', 'iso_endonym', 'rtl', 'family', 'iso_639_1', 'iso_639_2', 'iso_639_2_b', 'iso_639_3_raw', 'notes'
+            'name', 'native_name', 'iso_name', 'code', 'iso_endonym', 'rtl', 'family',
+            'iso_639_1', 'iso_639_2', 'iso_639_2_b', 'iso_639_3_raw', 'notes'
         ];
 
         \App\Importers\Database::importCSV('languages.csv', $map, '\\' . get_called_class(), 'code');
     }    
 
-    public static function migrateFromCsv2() {
+    public static function migrateFromCsv2() 
+    {
         $map = [
             'code', 'name', 'native_name', 'iso_name', 'iso_639_2', 'rtl', 'notes'
         ];

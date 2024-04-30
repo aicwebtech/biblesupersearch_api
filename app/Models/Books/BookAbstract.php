@@ -14,7 +14,8 @@ class BookAbstract extends Model
      * @param  array  $attributes
      * @return void
      */
-    public function __construct(array $attributes = []) {
+    public function __construct(array $attributes = []) 
+    {
         if(empty($this->language)) {
             $class = explode('\\', get_called_class());
             $this->language = strtolower(array_pop($class));
@@ -33,7 +34,8 @@ class BookAbstract extends Model
      * @param string $language
      * @return string the class name
      */
-    public static function getClassNameByLanguageRaw($language) {
+    public static function getClassNameByLanguageRaw($language) 
+    {
         $class_name = __NAMESPACE__ . '\\' . studly_case(strtolower($language));
         return $class_name;
     }
@@ -44,7 +46,8 @@ class BookAbstract extends Model
      * @param string $language
      * @return string the class name
      */
-    public static function getClassNameByLanguage($language) {
+    public static function getClassNameByLanguage($language) 
+    {
         $class_name = static::getClassNameByLanguageRaw($language);
 
 
@@ -59,7 +62,8 @@ class BookAbstract extends Model
         return $class_name;
     }
 
-    public static function getLanguage() {
+    public static function getLanguage() 
+    {
         return strtolower(get_called_class());
     }
 
@@ -67,7 +71,8 @@ class BookAbstract extends Model
      *
      * @param string|int $name
      */
-    public static function findByEnteredName($name, $language = NULL, $multiple = FALSE) {
+    public static function findByEnteredName($name, $language = NULL, $multiple = FALSE) 
+    {
         if(empty($name)) {
             return FALSE;
         }
@@ -183,11 +188,13 @@ class BookAbstract extends Model
         return $Book;
     }
 
-    static public function getSupportedLanguages() {
+    static public function getSupportedLanguages() 
+    {
         return ['ar', 'de', 'en', 'es', 'fr', 'hu', 'it', 'nl', 'ro', 'ru', 'zh', 'hi', 'pt', 'ja', 'zh_CN', 'zh_TW'];
     }
 
-    static public function isSupportedLanguage($lang_code) {
+    static public function isSupportedLanguage($lang_code) 
+    {
         return in_array($lang_code, static::getSupportedLanguages());
     }
 }

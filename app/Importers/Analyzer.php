@@ -2,6 +2,7 @@
 
 namespace App\Importers;
 use App\Models\Bible;
+use App\Models\Books\BookAbstract As Book;
 use ZipArchive;
 use SQLite3;
 use \DB; //Todo - something is wrong with namespaces here, shouldn't this be automatically avaliable??
@@ -94,7 +95,15 @@ class Analyzer extends ImporterAbstract {
             $ref_arr = explode(' ', $row['ref']);
 
             if($ref_arr[0] != $last_book_name) {
-                $book ++;
+                // Attempt to match book str to English book name
+                $Book = Book::findByEnteredName($ref_arr[0], 'en');
+
+                if($Book) {
+                    $book = $Book->id;
+                } else {
+                    $book ++; // fallback - just increment book number
+                }
+
                 $last_book_name = $ref_arr[0];
             }
 
