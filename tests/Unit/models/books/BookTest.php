@@ -27,6 +27,36 @@ class BookTest extends TestCase
         $this->assertInstanceOf('App\Models\Books\Es', $Book);
     }
 
+    public function testBookListImportCSV()
+    {
+        $test_language = 'test'; // NOT a valid language code!
+        Book::dropBookTable($test_language);
+
+        $class_name = Book::getClassNameByLanguageRaw($test_language);
+        $this->assertEquals('App\Models\Books\Test', $class_name);
+        $this->assertFalse(class_exists($class_name));
+        
+        Book::makeClassByLanguage($test_language);
+
+        // Table doesn't exist, so class still won't exist
+        $this->assertFalse(class_exists($class_name));
+
+        $this->assertTrue(Book::createBookTable($test_language));
+
+        Book::makeClassByLanguage($test_language);
+
+        // Table exist, so class still will exist noew
+        $this->assertTrue(class_exists($class_name));
+
+        // Test actual import
+        Book::migrateFromCsv($test_language);
+        $this->assertEquals(66, $class_name::count());
+
+
+        // Drop table before exiting
+        // Book::dropBookTable($test_language);
+    }
+
     public function testMethodFindByEnteredName() {
         // Exact name
         $Book = Book::findByEnteredName('Matthew');

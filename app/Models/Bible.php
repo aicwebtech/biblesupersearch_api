@@ -740,7 +740,8 @@ class Bible extends Model {
      * @param string $module
      * @return string $class_name;
      */
-    public static function getVerseClassNameByModule($module) {
+    public static function getVerseClassNameByModule($module) 
+    {
         if(!static::validateModule($module)) {
             return FALSE;
         }

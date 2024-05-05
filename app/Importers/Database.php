@@ -83,7 +83,8 @@ class Database {
         }
     }
 
-    static public function importCSV($file, $map, $model_class, $id_field = 'id', $dir = NULL, $direct_insert_threshold = 0) {
+    static public function importCSV($file, $map, $model_class, $id_field = 'id', $dir = NULL, $direct_insert_threshold = 0) 
+    {
         $default_dir = ($dir) ? FALSE : TRUE;
         $dir = ($dir) ? $dir : dirname(__FILE__) . '/../../database/dumps';
         $path = $dir . '/' . $file;

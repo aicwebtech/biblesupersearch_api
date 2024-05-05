@@ -1,0 +1,67 @@
+id,name,shortname,matching1,matching2
+1,Genesis,Gen,Gn,
+2,Exodus,Ex,Exo,Exod
+3,Leviticus,Lev,Lv,Le
+4,Numbers,Num,Nm,Nu
+5,Deuteronomy,Deut,Dt,
+6,Joshua,Josh,Jos,Jsh
+7,Judges,Judg,Jdg,Jdgs
+8,Ruth,Ru,Rth,
+9,1 Samuel,1 Sam,1Samuel 1Sm 1 Sm I Samuel First Samuel I Sm 1st Sm,1st Samuel
+10,2 Samuel,2 Sam,2Samuel 2Sm 2 Sm II Samuel Second Samuel II Sm 2nd Sm,2nd Samuel
+11,1 Kings,1 Ki,1Kings 1Kgs 1 Kgs First Kings I Kings 1st Ki,1st Kings
+12,2 Kings,2 Ki,2Kings 2Kgs 2 Kgs Second Kings II Kings 2nd Ki,2nd Kings
+13,1 Chronicles,1 Chron,1Chronicles First Chronicles 1st Chron,1st Chronicles
+14,2 Chronicles,2 Chron,2Chronicles Second Chronicles 2nd Chron,2nd Chronicles
+15,Ezra,Ezra,Ezr,
+16,Nehemiah,Neh,Ne,
+17,Esther,Esth,Est,Es
+18,Job,Job,Jb,
+19,Psalms,Ps,Ps,
+20,Proverbs,Prov,Prv,
+21,Ecclesiastes,Ecc,Ec,
+22,Song of Solomon,SOS,Song of Songs,Canticle of Canticles
+23,Isaiah,Isa,Is,
+24,Jeremiah,Jer,Je,Jr
+25,Lamentations,Lam,La,
+26,Ezekiel,Eze,Ezek,Ezk
+27,Daniel,Dan,Dn,Da
+28,Hosea,Hos,Ho,
+29,Joel,Joel,Joe,Jl
+30,Amos,Amos,Ams,Am
+31,Obadiah,Obad,Ob,
+32,Jonah,Jon,Jnh,
+33,Micah,Micah,Mch,Mic
+34,Nahum,Nah,Nhm,Na
+35,Habakkuk,Hab,Hb,
+36,Zephaniah,Zeph,Zep,Zp
+37,Haggai,Hag,Hg,
+38,Zechariah,Zech,Zec,Zc
+39,Malachi,Mal,Ml,
+40,Matthew,Matt,Mt,
+41,Mark,Mark,Mk,Mr
+42,Luke,Luke,Lk,Lu
+43,John,John,Jn,Jhn
+44,Acts,Acts,Ac,
+45,Romans,Rom,Rm,Ro
+46,1 Corinthians,1 Cor,1Corinthians First Corinthians I Corinthians,1st Corinthians
+47,2 Corinthians,2 Cor,2Corinthians Second Corinthians II Corinthians,2nd Corinthians
+48,Galatians,Gal,Ga,
+49,Ephesians,Eph,Ephes,
+50,Philippians,Phil,Php,
+51,Colossians,Col,Col,
+52,1 Thessalonians,1 Thess,1Thessalonians First Thessalonians I Thessalonians,1st Thessalonians
+53,2 Thessalonians,2 Thess,2Thessalonians Second Thessalonians II Thessalonians,2nd Thessalonians
+54,1 Timothy,1 Tim,1Timothy First Timothy I Timothy,1st Timothy
+55,2 Timothy,2 Tim,2Timothy Second Timothy II Timothy,2nd Timothy
+56,Titus,Titus,Tit,
+57,Philemon,Phm,Phlm,Philem
+58,Hebrews,Heb,Hbr,
+59,James,Jas,Jm,
+60,1 Peter,1 Pet,1Peter 1Pt 1 Pt 1st Pt I Peter First Peter,1st Peter
+61,2 Peter,2 Pet,2Peter 2Pt 2 Pt 2nd Pt II Peter Second Peter,2nd Peter
+62,1 John,1 John,1Jn 1 Jn 1John 1st Jn I John First John,1st John
+63,2 John,2 John,2Jn 2 Jn 2John 2nd Jn II John Second John,2nd John
+64,3 John,3 John,3Jn 3 Jn 3John 3rd Jn III John Third John,3rd John
+65,Jude,Jude,Jde,Jud
+66,Revelation,Rev,Rv Apocalypse,The Revelation

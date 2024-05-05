@@ -46,7 +46,8 @@ class Passage {
         // Do something?
     }
 
-    public function setBookById($book_id) {
+    public function setBookById($book_id) 
+    {
         $language = (is_array($this->languages) && count($this->languages)) ? $this->languages[0] : config('bss.defaults.language_short');
         $book_class = Book::getClassNameByLanguage($language);
         $Book = $book_class::find($book_id);

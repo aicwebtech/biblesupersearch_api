@@ -3,6 +3,9 @@
 namespace App\Models\Books;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
+use Database\Seeders\DatabaseSeeder;
 
 class BookAbstract extends Model
 {
@@ -46,10 +49,13 @@ class BookAbstract extends Model
      * @param string $language
      * @return string the class name
      */
-    public static function getClassNameByLanguage($language) 
+    public static function getClassNameByLanguage($language, $make = true) 
     {
         $class_name = static::getClassNameByLanguageRaw($language);
 
+        if(!class_exists($class_name) && $make) {
+            static::makeClassByLanguage($language);
+        }
 
         if(!class_exists($class_name)) {
             $class_name = static::getClassNameByLanguageRaw(config('app.locale'));
@@ -60,6 +66,49 @@ class BookAbstract extends Model
         }
 
         return $class_name;
+    }
+
+    public static function makeClassByLanguage($language)
+    {
+        $model_class = studly_case(strtolower($language));
+        $namespace = __NAMESPACE__;
+        $class_name = $namespace . '\\' . $model_class;
+
+        if (!class_exists($class_name)) {
+            $table = 'books_' . strtolower($language);
+            $perm_file = (func_num_args() >= 2) ? func_get_arg(1) : FALSE;
+            
+            if(!Schema::hasTable($table)) {
+                return;
+            }
+
+            $code = '
+                namespace ' . $namespace . ';
+                class ' . $model_class . ' extends BookAbstract 
+                {
+                    protected $hasClass = false;
+                    protected $table = \'' . $table . '\';
+                }
+            ';
+
+            if($perm_file && is_writable(dirname(__FILE__))) {
+                // Create permanent class file and include it
+                $filepath = dirname(__FILE__) . '/' . $model_class . '.php';
+                file_put_contents($filepath, '<?php ' . $code);
+                include($filepath);
+            }
+            else if(is_writable(sys_get_temp_dir())) {
+                // Create temp class file, include it, then delete it
+                $tempfile = tempnam(sys_get_temp_dir(), $model_class . '.php');
+                file_put_contents($tempfile, '<?php ' . $code);
+                include($tempfile);
+                unlink($tempfile);
+            }
+            else {
+                // Fallback to eval
+                eval($code); // Need this working on live server.
+            }
+        }
     }
 
     public static function getLanguage() 
@@ -186,6 +235,83 @@ class BookAbstract extends Model
         }
 
         return $Book;
+    }
+
+    public static function migrateFromCsv($language = null)
+    {
+        $language = $language ?: static::getLanguage();
+        $lang_lc = strtolower($language);
+        $tn = 'books_' . $lang_lc;
+        $csv_file = 'bible_books/' . $lang_lc . '.csv';
+
+        // read in all CSV
+        $map = ['id', 'name', 'shortname', 'matching1', 'matching2'];
+
+        Model::unguard();
+        \App\Importers\Database::importCSV($csv_file, $map, static::getClassNameByLanguage($language));
+        Model::reguard();
+    }
+
+    public static function createBookTables() 
+    {
+        $languages = static::getSupportedLanguages();
+        
+        foreach($languages as $lang) {
+            if(!static::createBookTable($lang)) {
+                continue;
+            }
+
+            $lang_lc = strtolower($lang);
+
+            $csv_file = 'bible_books/' . $lang_lc . '.csv';
+            $sql_file  = 'bible_books_' . $lang_lc . '.sql';
+
+            if(is_file('' . $csv_file)) {
+                static::migrateFromCsv($lang);
+            } else {                
+                // Fallback to legacy SQL file?
+                DatabaseSeeder::importSqlFile($sql_file);
+            }
+
+            DatabaseSeeder::setCreatedUpdated($tn);
+        }
+    }
+
+    public static function createBookTable($language)
+    {
+        $lang_lc = strtolower($language);
+        $tn = 'books_' . $lang_lc;
+
+        if(Schema::hasTable($tn)) {
+            return false;
+        }
+
+        Schema::create($tn, function (Blueprint $table) {
+            $table->increments('id');
+            $table->string('name');
+            $table->string('shortname')->nullable();
+            $table->string('matching1')->nullable();
+            $table->string('matching2')->nullable();
+            $table->timestamps();
+        });
+
+        return true;
+    }
+
+    public static function dropBookTables()
+    {
+        $languages = static::getSupportedLanguages();
+
+        foreach($languages as $lang) {
+            $tn = 'books_' . strtolower($lang);
+            Schema::dropifExists($tn);
+        }
+    }    
+
+    public static function dropBookTable($language)
+    {
+        $tn = 'books_' . strtolower($language);
+        Schema::dropifExists($tn);
     }
 
     static public function getSupportedLanguages() 
