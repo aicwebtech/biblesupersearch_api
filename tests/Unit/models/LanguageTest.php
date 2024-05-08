@@ -8,7 +8,8 @@ use App\Models\Language;
 
 class LanguageTest extends TestCase
 {
-    public function testRtlCheck() {
+    public function testRtlCheck() 
+    {
         $this->assertTrue( Language::isRtl('he') );
         $this->assertTrue( Language::isRtl('ar') );
         $this->assertFalse( Language::isRtl('en') );

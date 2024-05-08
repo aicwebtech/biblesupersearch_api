@@ -524,7 +524,10 @@ class Passage {
         return $parsed;
     }
 
-    public function getAdjustedChapterVerse() {
+    public function getAdjustedChapterVerse() 
+    {
+        //return $this->chapter_verse;
+
         $adjusted = $pre = [];
         $chapter_only = $this->isChapterOnly();
 
@@ -551,10 +554,12 @@ class Passage {
                 foreach($verses as $verse => $s) {
                     $first_verse = ($first_verse) ? $first_verse : $verse;
 
-                    if($last_verse && $verse != $last_verse + 1) {
-                        $v[] = ($first_verse == $last_verse) ? $first_verse : $first_verse . ' - ' . $verse;
-                        $first_verse = $verse;
-                    }
+                    // Causing issues when Bible missing a verse
+                    // Commented out, and all unit tests pass so just leaving it commented out
+                    // if($last_verse && $verse != $last_verse + 1) {
+                    //     $v[] = ($first_verse == $last_verse) ? $first_verse : $first_verse . ' - ' . $verse;
+                    //     $first_verse = $verse;
+                    // }
 
                     $last_verse = $verse;
                 }

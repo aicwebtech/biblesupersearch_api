@@ -83,7 +83,7 @@ class Database {
         }
     }
 
-    static public function importCSV($file, $map, $model_class, $id_field = 'id', $dir = NULL, $direct_insert_threshold = 0) 
+    static public function importCSV($file, $map, $model_class, $id_field = 'id', $dir = NULL, $direct_insert_threshold = 100) 
     {
         $default_dir = ($dir) ? FALSE : TRUE;
         $dir = ($dir) ? $dir : dirname(__FILE__) . '/../../database/dumps';
@@ -118,10 +118,22 @@ class Database {
                 $mapped = [];
                 $raw = array_values(str_getcsv($line));
 
-                foreach($map as $mkey => $l) {
+                foreach($map as $mkey => $lr) {
+                    $lr = explode('|', $lr);
+                    $l = $lr[0];
+                    $format = array_key_exists(1, $lr) ? $lr[1] : 'null';
+
                     if(array_key_exists($mkey, $raw)) {
                         $mapped[$l] = $raw[$mkey];
-                        $mapped[$l] = ($mapped[$l] == '') ? NULL : $mapped[$l]; 
+
+                        switch($format) {
+                            case 'boolstr':
+                                $v = strtolower($mapped[$l]);
+                                $mapped[$l] = $v && $v != 'no' && $v != 'false' ? 1 : 0;
+                                break;
+                            default:    
+                                $mapped[$l] = ($mapped[$l] == '') ? NULL : $mapped[$l]; 
+                        }
                     }
                     else if($force_null) {
                         $mapped[$l] = NULL;
@@ -145,14 +157,15 @@ class Database {
             catch (\Exception $ex) {
                 // Ignore db errors?
                 // echo $ex->getMessage() . PHP_EOL . PHP_EOL;
-                throw new \Exception($ex->getMessage());
+                throw $ex;
             }
         }
 
         static::_directInsertPush();
     }
 
-    static protected function _directInsert($model_class, $mapped, $insert_threshold) {
+    static protected function _directInsert($model_class, $mapped, $insert_threshold) 
+    {
         static::$insertable[] = $mapped;
         static::$insert_count ++;
         static::$insert_model = $model_class;
@@ -162,7 +175,8 @@ class Database {
         }
     }
 
-    static protected function _directInsertPush() {
+    static protected function _directInsertPush() 
+    {
         if(static::$insert_model) {
             $model_class = static::$insert_model;
             $model_class::insertOrIgnore(static::$insertable);
@@ -173,7 +187,8 @@ class Database {
         static::$insert_model = NULL;
     }   
 
-    static public function setCreatedUpdated($db_table) {
+    static public function setCreatedUpdated($db_table) 
+    {
         $sql_date = date('Y-m-d H:i:s');
 
         \DB::table($db_table)

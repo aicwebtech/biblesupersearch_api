@@ -24,18 +24,8 @@ class CreateBooksTableHindi extends Migration
                 continue;
             }
 
-            Schema::create($table, function (Blueprint $table) {
-                $table->increments('id');
-                $table->string('name');
-                $table->string('shortname');
-                $table->string('matching1')->nullable();
-                $table->string('matching2')->nullable();
-                $table->timestamps();
-            });
-
-            $file  = 'bible_books_' . $lang . '.sql';
-            DatabaseSeeder::importSqlFile($file);
-            DatabaseSeeder::setCreatedUpdated($table);
+            Book::createBookTable($lang);
+            Book::migrateFromCsv($lang);
         }
     }
 
@@ -46,8 +36,6 @@ class CreateBooksTableHindi extends Migration
      */
     public function down()
     {
-        foreach($this->languages as $lang) {
-            Schema::dropIfExists('books_' . $lang);
-        }
+        // Do nothing, handled by main books migration
     }
 }

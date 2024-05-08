@@ -39,6 +39,7 @@ class Kernel extends ConsoleKernel
         Commands\UserCreate::class,
         Commands\UserPassword::class,
         Commands\MigrateModuleFiles::class,
+        Commands\MigrationSquash::class,
     ];
 
     /**

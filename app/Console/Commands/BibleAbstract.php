@@ -98,12 +98,13 @@ abstract class BibleAbstract extends Command {
         $Bar->setFormatDefinition('custom', ' %current%/%max% [%bar%] %percent:3s%% %elapsed:6s%/%estimated:-6s% -- %message%                     ' . PHP_EOL);
         $Bar->setFormat('custom');
 
-        foreach(Bible::all() as $Bible) {
-            $this->_handleSingleBible($Bible);
+        foreach($Bibles as $Bible) {
             $Bar->setMessage($Bible->name);
+            $this->_handleSingleBible($Bible);
             $Bar->advance();
         }
 
+        $Bar->setMessage('');
         $Bar->finish();
     }
 

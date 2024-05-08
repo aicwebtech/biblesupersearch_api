@@ -158,6 +158,7 @@ class BookAbstract extends Model
             $class_name = $default_class_name;
         }
 
+        // var_dump($name);
         // var_dump($language);
         // var_dump($class_name);
 
@@ -250,6 +251,8 @@ class BookAbstract extends Model
         Model::unguard();
         \App\Importers\Database::importCSV($csv_file, $map, static::getClassNameByLanguage($language));
         Model::reguard();
+
+        DatabaseSeeder::setCreatedUpdated($tn);
     }
 
     public static function createBookTables() 
@@ -262,18 +265,19 @@ class BookAbstract extends Model
             }
 
             $lang_lc = strtolower($lang);
-
+            $tn = 'books_' . $lang_lc;
             $csv_file = 'bible_books/' . $lang_lc . '.csv';
-            $sql_file  = 'bible_books_' . $lang_lc . '.sql';
+            $sql_file = 'bible_books_' . $lang_lc . '.sql';
 
-            if(is_file('' . $csv_file)) {
+
+            //if(is_file('' . $csv_file)) {
                 static::migrateFromCsv($lang);
-            } else {                
+            //} else {                
                 // Fallback to legacy SQL file?
-                DatabaseSeeder::importSqlFile($sql_file);
-            }
+                // DatabaseSeeder::importSqlFile($sql_file);
+                // DatabaseSeeder::setCreatedUpdated($tn);
+            // }
 
-            DatabaseSeeder::setCreatedUpdated($tn);
         }
     }
 
