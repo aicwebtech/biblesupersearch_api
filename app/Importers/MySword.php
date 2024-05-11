@@ -126,7 +126,8 @@ class MySword extends ImporterAbstract {
         return TRUE;
     }
 
-    protected function _formatText($text) {
+    protected function _formatText($text) 
+    {
         $text    = $this->_preFormatText($text);
         $text    = $this->_formatStrongs($text);
         $text    = $this->_formatItalics($text);

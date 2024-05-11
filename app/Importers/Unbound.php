@@ -34,7 +34,8 @@ use Illuminate\Http\UploadedFile;
  *      To use one of these Bibles, download it's zip file and place in <document root>/bibles/unbound
  */
 
-class Unbound extends ImporterAbstract {
+class Unbound extends ImporterAbstract 
+{
     // protected $required = ['module', 'lang', 'lang_short']; // Array of required fields
 
     protected $italics_st   = '[';
@@ -50,7 +51,8 @@ class Unbound extends ImporterAbstract {
 
     protected $has_gui = TRUE;
 
-    protected function _importHelper(Bible &$Bible) {
+    protected function _importHelper(Bible &$Bible) 
+    {
         if(config('app.env') != 'testing') {
             ini_set("memory_limit", "50M");
         }

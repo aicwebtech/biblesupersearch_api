@@ -6,7 +6,8 @@ use Illuminate\Console\Command;
 use App\Models\Bible;
 use App\Models\Language;
 
-abstract class ImportBible extends Command {
+abstract class ImportBible extends Command 
+{
     /**
      * The name and signature of the console command.
      * @var string
@@ -43,7 +44,8 @@ abstract class ImportBible extends Command {
      * Create a new command instance.
      * @return void
      */
-    public function __construct() {
+    public function __construct() 
+    {
         // Auto-add the arguments and options
         //$this->signature .= ' {file} {module} {--name=} {--shortname=} {--lang=} {--lang_short=} {--overwrite}';
 //        $this->signature .= ' {--file=} {--module=} {--name=} {--shortname=} {--lang=} {--lang_short=} {--overwrite} {--list}';
@@ -54,7 +56,8 @@ abstract class ImportBible extends Command {
                 . '{--lang= : This Bible\'s language, full name} '
                 . '{--lang_short= : This Bible\'s language as a 2 character ISO 639-1 code} '
                 . '{--overwrite : whether to overwrite the existing Bible of the module name, if it exists} '
-                . '{--list : lists all avaliable files for this importer}';
+                . '{--list : lists all avaliable files for this importer}'
+                . '{--debug : Attempt to debug importer using preseleted Bible and module name  }';
         //$this->description .= '';
 
         if($this->require_file && $this->import_dir) {
@@ -82,11 +85,13 @@ abstract class ImportBible extends Command {
      * Execute the console command.
      * @return mixed
      */
-    public function handle() {
+    public function handle() 
+    {
         //
     }
 
-    protected function _handleHelper($Importer) {
+    protected function _handleHelper($Importer) 
+    {
         //$file       = $this->argument('file');
         //$module     = $this->argument('module');
         $file       = $this->option('file');
@@ -94,9 +99,17 @@ abstract class ImportBible extends Command {
         $overwrite  = $this->option('overwrite');
         $attributes = array();
         $autopopulate   = FALSE;
+        $debug = false;
 
         if($this->option('list')) {
             return $this->_displayFileList();
+        }
+
+        if($this->option('debug')) {
+            $debug = true;
+            $Importer->debug = true;
+            $this->require_file = false;
+            $module = 'auto_' . time();
         }
 
         if($this->require_file && !$file) {
@@ -133,7 +146,7 @@ abstract class ImportBible extends Command {
             $autopopulate = $this->confirm('Use existing Bible attributes? [y|N]');
         }
 
-        if(!$autopopulate) {
+        if(!$autopopulate && !$debug) {
             foreach($this->options as $option) {
                 $attributes[$option] = $this->option($option);
             }
@@ -207,15 +220,18 @@ abstract class ImportBible extends Command {
      * Returns the fully qualified import directory
      * @return type
      */
-    public function getImportDir() {
+    public function getImportDir() 
+    {
         return dirname(__FILE__) . '/../../../bibles/' . $this->import_dir;
     }
 
-    public function getImportDirReadable() {
+    public function getImportDirReadable() 
+    {
         return getcwd() . '/bibles/' . $this->import_dir;
     }
 
-    protected function _displayFileList() {
+    protected function _displayFileList() 
+    {
         $list = $this->_getFileList();
         $tab = '    ';
 
@@ -240,7 +256,8 @@ abstract class ImportBible extends Command {
         return;
     }
 
-    protected function _getFileList() {
+    protected function _getFileList() 
+    {
         $dir = $this->getImportDir();
         $list = array();
 
@@ -256,14 +273,23 @@ abstract class ImportBible extends Command {
                     continue;
                 }
 
-                $list[] = $item;
+                if($this->_filterFileItem($item)) {
+                    $list[] = $item;
+                }
             }
         }
 
         return $list;
     }
 
-    private function _handleErrors($Importer) {
+    // Hook / filter for file list items to verify they are good for this importer
+    protected function _filterFileItem($item)
+    {
+        return true;
+    }
+
+    private function _handleErrors($Importer) 
+    {
         if($Importer->hasErrors()) {
             foreach($Importer->getErrors() as $error) {
                 echo($error . PHP_EOL);

@@ -3,26 +3,25 @@
 namespace App\Console\Commands;
 
 use Illuminate\Console\Command;
-use App\Importers\Analyzer as Importer;
+use App\Importers\Usfm as Importer;
 
-class ImportBibleAnalyzer extends ImportBible 
+class ImportBibleUsfm extends ImportBible 
 {
     /**
      * The name and signature of the console command.
      * @var string
      */
-    protected $signature = 'bible:import-analyzer';
-    protected $import_dir = 'analyzer';
-    protected $file_extension = 'bib';
+    protected $signature = 'bible:import-usfm';
+    protected $import_dir = 'usfm';
+    protected $file_extension = 'zip';
 
     /**
      * The console command description.
      * @var string
      */
-    protected $description = 'Import a Bible from a SQLite database in the Bible Analyzer .bib format
-                              http://www.bibleanalyzer.com/download.htm';
+    protected $description = 'Import a Bible in the USFM format';
 
-    protected $name = 'Bible Analyser .bib';
+    protected $name = 'USFM .zip';
     
     /**
      * Create a new command instance.
@@ -37,7 +36,8 @@ class ImportBibleAnalyzer extends ImportBible
      * Execute the console command.
      * @return mixed
      */
-    public function handle() {
+    public function handle() 
+    {
         $Importer = new Importer();
         $this->_handleHelper($Importer);
     }

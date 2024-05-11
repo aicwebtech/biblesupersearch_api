@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use App\Models\Books\BookAbstract as Book;
 
 class Language extends Model 
 {
@@ -69,6 +70,12 @@ class Language extends Model
     public function formatNameCode() 
     {
         return $this->name . ' (' . strtoupper($this->code) . ')';
+    }
+
+    public function initLanguage()
+    {
+        Book::createBookTable($this->code);
+        Book::migrateFromCsv($this->code);
     }
 
     public static function migrateFromCsv() 

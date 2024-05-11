@@ -320,7 +320,15 @@ class BookAbstract extends Model
 
     static public function getSupportedLanguages() 
     {
-        return ['ar', 'de', 'en', 'es', 'fr', 'hu', 'it', 'nl', 'ro', 'ru', 'zh', 'hi', 'pt', 'ja', 'zh_CN', 'zh_TW'];
+        return [
+            // Languages supported prior to v 5.6
+            'ar', 'de', 'en', 'es', 'fr', 'hu', 'it', 'nl', 'ro', 'ru', 'zh', 'hi', 'pt', 'ja', 'zh_CN', 'zh_TW'
+
+            // Languages with book lists (and UI translations) added in v5.6
+            // 'id', 'sw', 'vi', 'ko', 'tl', 'pl', 'fa', 'tr', 'sq', 'th', 'he', 'mi', 'af', 'cs', 'lt',
+
+            // Language support completely added in v5.6
+        ];
     }
 
     static public function isSupportedLanguage($lang_code) 

@@ -18,6 +18,7 @@ vendor.zip
 /bibles/analyzer/*.bib
 /bibles/evening/*
 /bibles/mysword/*
+/bibles/usfm/*
 /bibles/misc/*
 /bibles/rendered/*
 /app/Premium

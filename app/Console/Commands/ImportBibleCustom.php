@@ -7,14 +7,15 @@ use App\Importers\Unbound;
 
 // Note: Comment out in Kernel when not actively using.
 // Not intended for the public's use
-class ImportBibleCustom extends ImportBible {
+class ImportBibleCustom extends ImportBible 
+{
     /**
      * The name and signature of the console command.
      * @var string
      */
     protected $signature = 'bible:import-custom {importer}';
     protected $import_dir = 'misc';
-    protected $valid = ['rvg', 'irv'];
+    protected $valid = ['rvg', 'irv', 'usfm'];
 
     /**
      * The console command description.
@@ -27,7 +28,8 @@ class ImportBibleCustom extends ImportBible {
      * Create a new command instance.
      * @return void
      */
-    public function __construct() {
+    public function __construct() 
+    {
         parent::__construct();
     }
 
@@ -35,7 +37,8 @@ class ImportBibleCustom extends ImportBible {
      * Execute the console command.
      * @return mixed
      */
-    public function handle() {
+    public function handle() 
+    {
         $importer = $this->argument('importer');
         $class_name = 'App\Importers\\' . ucfirst($importer);
 

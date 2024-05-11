@@ -5,7 +5,8 @@ namespace App\Console\Commands;
 use Illuminate\Console\Command;
 use App\Models\Bible;
 
-abstract class BibleAbstract extends Command {
+abstract class BibleAbstract extends Command 
+{
     protected $signature   = '';
     protected $description = '';
     protected $append_signature = TRUE;

@@ -20,13 +20,15 @@ use Illuminate\Support\Facades\Storage;
  *  ?? - PARAGRAPH??
  *  «,» - Chapter titles in Psalms
  */
-abstract class ImporterAbstract {
+abstract class ImporterAbstract 
+{
     use \App\Traits\Error;
 
     public $test_mode = FALSE;
 
     protected $bible_attributes = [];
     protected $default_dir;
+    protected $debug = false;
     protected $file; // File name (no dir)
     protected $module;
     protected $enable = TRUE; // Whether to enable the Bible for use after it has been imported
@@ -65,7 +67,8 @@ abstract class ImporterAbstract {
     // What do do whith Strongs numbers in parentheses: retain, trim, discard
     protected $strongs_parentheses = 'retain';
 
-    public function __construct() {
+    public function __construct() 
+    {
         $this->resetBibleAttributes();
         
         if($this->has_dedicated_dir === NULL) {
@@ -77,7 +80,8 @@ abstract class ImporterAbstract {
      *   Imports the Bible based on the current set of settings
      *   @return bool $success
      */
-    public function import() {
+    public function import() 
+    {
         $Bible = $this->_getBible($this->module);
 
         if(!$this->overwrite && $this->_existing && $this->insert_into_bible_table) {
@@ -109,11 +113,13 @@ abstract class ImporterAbstract {
      */
     abstract public function checkUploadedFile(UploadedFile $File);
 
-    public function getImportDir() {
+    public function getImportDir() 
+    {
         return dirname(__FILE__) . '/../../bibles/' . $this->path_short . '/';
     }
 
-    public function acceptUploadedFile(UploadedFile $File) {
+    public function acceptUploadedFile(UploadedFile $File) 
+    {
         if(!$this->checkUploadedFile($File)) {
             return FALSE;
         }
@@ -135,7 +141,8 @@ abstract class ImporterAbstract {
         return TRUE;
     }
 
-    public function mapMetaToAttributes($meta, $preserve_attributes = FALSE, $map = NULL) {
+    public function mapMetaToAttributes($meta, $preserve_attributes = FALSE, $map = NULL) 
+    {
         $map = (!$map || !is_array($map)) ? $this->attribute_map : $map;
         $attr = $old_attr = [];
 
@@ -178,11 +185,13 @@ abstract class ImporterAbstract {
         $this->bible_attributes = $attr;
     }
 
-    public function setBibleAttributes($att) {
+    public function setBibleAttributes($att) 
+    {
         $this->bible_attributes = $att;
     }   
 
-    public function resetBibleAttributes() {
+    public function resetBibleAttributes() 
+    {
         $this->bible_attributes = [
             'name'          => NULL,
             'shortname'     => NULL,
@@ -192,11 +201,13 @@ abstract class ImporterAbstract {
         ];
     } 
 
-    public function getBibleAttributes() {
+    public function getBibleAttributes() 
+    {
         return $this->bible_attributes;
     }
 
-    public function setFile($file) {
+    public function setFile($file) 
+    {
         $this->file = $file;
     }
 
@@ -207,7 +218,8 @@ abstract class ImporterAbstract {
      * @param bool $map_to_internal_properties - todo - pull internal properties (file, module, overwrite) from the settings array
      * @return bool TRUE if successful, FALSE if not
      */
-    public function setSettings($settings, $map_to_internal_properties = FALSE) {
+    public function setSettings($settings, $map_to_internal_properties = FALSE) 
+    {
         $this->settings = $settings;
 
         return $this->_setSettingsHelper();
@@ -218,7 +230,8 @@ abstract class ImporterAbstract {
      * 
      * @return bool TRUE if valid, FALSE if not
      */
-    protected function _setSettingsHelper() {
+    protected function _setSettingsHelper() 
+    {
         return TRUE;
     }
 
@@ -226,7 +239,8 @@ abstract class ImporterAbstract {
      * Used by the CLI importers
      * Not intended to be used by anything else
      */
-    public function setProperties($file, $module, $overwrite, $attributes, $autopopulate) {
+    public function setProperties($file, $module, $overwrite, $attributes, $autopopulate) 
+    {
         $this->file      = $file;
         $this->module    = $module;
         $this->overwrite = (bool) $overwrite;
@@ -241,7 +255,7 @@ abstract class ImporterAbstract {
             $attributes['rank'] = 9999;
         }
 
-        if(!($overwrite && $autopopulate)) {
+        if(!($overwrite && $autopopulate) && !$this->debug) {
             foreach($this->required as $item) {
                 if(empty($attributes[$item])) {
                     $this->addError($item . ' is required', 4);
@@ -253,7 +267,8 @@ abstract class ImporterAbstract {
         return ($this->has_errors) ? FALSE : TRUE;
     }
 
-    protected function _addVerse($book, $chapter, $verse, $text, $format_text = FALSE) {
+    protected function _addVerse($book, $chapter, $verse, $text, $format_text = FALSE) 
+    {
         $book    = intval($book);
         $chapter = intval($chapter);
         $verse   = intval($verse);
@@ -285,7 +300,8 @@ abstract class ImporterAbstract {
         }
     }
 
-    protected function _insertVerses() {
+    protected function _insertVerses() 
+    {
         DB::table($this->_table)->insert($this->_insertable);
         $this->_insertable = [];
     }
@@ -296,7 +312,8 @@ abstract class ImporterAbstract {
      * Psalm titles (future?)
      * Pauline postscripts (future?)
      */
-    protected function _formatText($text) {
+    protected function _formatText($text) 
+    {
         $text    = $this->_preFormatText($text);
         $text    = $this->_formatItalics($text);
         $text    = $this->_formatStrongs($text);
@@ -307,11 +324,13 @@ abstract class ImporterAbstract {
         return $text;
     }
 
-    protected function _preFormatText($text) {
+    protected function _preFormatText($text) 
+    {
         return trim($text);
     }
 
-    protected function _postFormatText($text) {
+    protected function _postFormatText($text) 
+    {
         $text = strip_tags($text);
         $text = preg_replace('/\s+/', ' ', $text);
         $text = preg_replace('/\s+([?,.!:;])/', '$1', $text);
@@ -319,7 +338,8 @@ abstract class ImporterAbstract {
         return $text;
     }
 
-    protected function _formatStrongs($text) {
+    protected function _formatStrongs($text) 
+    {
         if(!$this->strongs_st || !$this->strongs_en) {
             return $text;
         }
@@ -352,13 +372,15 @@ abstract class ImporterAbstract {
         return $text;
     }
 
-    protected function _formatItalics($text) {
+    protected function _formatItalics($text) 
+    {
         $find = [$this->italics_st, $this->italics_en];
         $rep  = ['[', ']'];
         return $this->_replaceTagsIfNeeded($find, $rep, $text);
     }
 
-    protected function _formatRedLetter($text) {
+    protected function _formatRedLetter($text) 
+    {
         $find = [$this->redletter_st, $this->redletter_en];
         $rep = ['‹','›'];  // NOT <>!, U+2039, U+203A
         $text = $this->_replaceTagsIfNeeded($find, $rep, $text);
@@ -373,7 +395,8 @@ abstract class ImporterAbstract {
         return $text;
     }
 
-    protected function _formatParagraph($text) {
+    protected function _formatParagraph($text) 
+    {
         if($this->paragraph_at_verse_end && $this->paragraph) {
             if($this->_paragraph_next_verse) {
                 $text = '¶ ' . $text;
@@ -393,7 +416,8 @@ abstract class ImporterAbstract {
         return $text;
     }
 
-    protected function _removeUnusedTags($text) {
+    protected function _removeUnusedTags($text) 
+    {
         foreach($this->unused_tags as $tag) {
             $regexp = '/<' . $tag . '>[^>]*>/';
             $text = preg_replace($regexp, '', $text);
@@ -410,7 +434,8 @@ abstract class ImporterAbstract {
         return str_replace($src, $dest, $text);
     }
 
-    protected function _getBible($module) {
+    protected function _getBible($module) 
+    {
         $Bible  = Bible::findByModule($module);
         $this->_existing = (bool) $Bible;
         $Bible  = ($Bible) ? $Bible : new Bible;
@@ -424,20 +449,23 @@ abstract class ImporterAbstract {
 
     }
 
-    protected function _processBibleAttributes($attr) {
+    protected function _processBibleAttributes($attr) 
+    {
 
     }
 
-    public function __get($name) {
-        $gettable = ['required', 'save_bible', 'overwrite', 'module', 'file', 'insert_into_bible_table', 'enable', 'settings', 'has_gui', 'has_cli'];
+    public function __get($name) 
+    {
+        $gettable = ['required', 'save_bible', 'overwrite', 'module', 'file', 'insert_into_bible_table', 'enable', 'settings', 'has_gui', 'has_cli', 'debug'];
 
         if(in_array($name, $gettable)) {
             return $this->$name;
         }
     }    
 
-    public function __set($name, $value) {
-        $bool = ['required', 'save_bible', 'overwrite', 'insert_into_bible_table', 'enable'];
+    public function __set($name, $value) 
+    {
+        $bool = ['required', 'save_bible', 'overwrite', 'insert_into_bible_table', 'enable', 'debug'];
         $str = ['module', 'file'];
 
         if(in_array($name, $bool)) {
@@ -449,7 +477,8 @@ abstract class ImporterAbstract {
         }
     }
 
-    protected function _validateTextEncoding($text) {
+    protected function _validateTextEncoding($text) 
+    {
         $allowed = ['UTF-8'];
 
         $detected = mb_detect_encoding($text, $allowed, TRUE);
