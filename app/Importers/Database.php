@@ -8,7 +8,8 @@ use \DB;
  * Generic importer for importing database dumps
  */
 
-class Database {
+class Database 
+{
     public static $use_queue = FALSE;
     protected static $queue = [];
     protected static $processing_queue = FALSE;
@@ -19,7 +20,8 @@ class Database {
     protected static $insert_count = 0;
     protected static $insert_model = NULL;
 
-    static public function processQueue() {
+    static public function processQueue() 
+    {
         static::$processing_queue = TRUE;
 
         foreach (static::$queue as $call) {
@@ -30,7 +32,8 @@ class Database {
         static::$processing_queue = FALSE;
     }
 
-    static public function importSqlFile($file, $dir = NULL, $db_table = NULL) {
+    static public function importSqlFile($file, $dir = NULL, $db_table = NULL) 
+    {
         $default_dir = ($dir) ? FALSE : TRUE;
         $dir = ($dir) ? $dir : dirname(__FILE__) . '/../../database/dumps';
         $path = $dir . '/' . $file;

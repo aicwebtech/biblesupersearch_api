@@ -64,6 +64,10 @@ abstract class ImporterAbstract
     protected $paragraph_at_verse_end = FALSE; // Whether the paragraph flag is at the end of the verse (it's usually at the beginning)
     protected $_paragraph_next_verse = FALSE;
 
+    protected $_before_import_bible;
+    protected $_on_add_verse;
+    protected $_after_import_bible;
+
     // What do do whith Strongs numbers in parentheses: retain, trim, discard
     protected $strongs_parentheses = 'retain';
 
@@ -88,8 +92,16 @@ abstract class ImporterAbstract
             // return $this->addError('Module already exists: \'' . $module . '\' Use --overwrite to overwrite it.', 4);
         }
 
+        if(is_callable($this->_before_import_bible)) {
+            call_user_func($this->_before_import_bible, $Bible);
+        }
+
         if(!$this->_importHelper($Bible)) {
             return FALSE;
+        }
+
+        if(is_callable($this->_after_import_bible)) {
+            call_user_func($this->_after_import_bible, $Bible);
         }
 
         if($this->enable) {
@@ -99,11 +111,26 @@ abstract class ImporterAbstract
         return TRUE;
     }
 
+    public function setBeforeImportBible(callable $func)
+    {
+        $this->_before_import_bible = $func;
+    }    
+
+    public function setAfterImportBible(callable $func)
+    {
+        $this->_after_import_bible = $func;
+    }    
+
+    public function setOnAddVerse(callable $func)
+    {
+        $this->_on_add_verse = $func;
+    }
+
     /**
      *   Helper method that does the actual import work
      *   @return bool $success
      */
-    abstract protected function _importHelper(Bible &$Bible);
+    abstract protected function _importHelper(Bible &$Bible): bool;
 
     /**
      *   Checks the uploaded file to make sure it works with the specific importer.
@@ -111,7 +138,7 @@ abstract class ImporterAbstract
      *   @param Illuminate\Http\UploadedFile $File - the file to import
      *   @return bool $success
      */
-    abstract public function checkUploadedFile(UploadedFile $File);
+    abstract public function checkUploadedFile(UploadedFile $File): bool;
 
     public function getImportDir() 
     {
@@ -286,6 +313,10 @@ abstract class ImporterAbstract
         }
        
         $text    = $this->_formatText($text);
+
+        if(is_callable($this->_on_add_verse)) {
+            call_user_func($this->_on_add_verse, $book, $chapter, $verse, $text);
+        }
 
         $this->_insertable[] = array(
             'book'             => $book,
@@ -490,7 +521,8 @@ abstract class ImporterAbstract
         return TRUE;
     }
 
-    public static function generateUniqueModuleName($shortname) {
+    public static function generateUniqueModuleName($shortname) 
+    {
         $module = trim( strtolower($shortname) );
         $module = preg_replace("/\s+/", ' ', $module);
         $module = str_replace(' ', '_', $module);
@@ -509,14 +541,16 @@ abstract class ImporterAbstract
         return $module_suggestion;
     }
 
-    public static function sanitizeFileName($file_name) {
+    public static function sanitizeFileName($file_name) 
+    {
         $file_name = trim($file_name);
         $file_name = mb_ereg_replace("([^\w\s\d\-_~,;\[\]\(\).])", '', $file_name);
         $file_name = mb_ereg_replace("([\.]{2,})", '', $file_name);
         return $file_name;
     }
 
-    public static function getLanguageCode($language) {
+    public static function getLanguageCode($language) 
+    {
         if(!$language) {
             return NULL;
         }

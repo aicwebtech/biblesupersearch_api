@@ -31,7 +31,7 @@ class Usfm extends ImporterAbstract
     protected $paragraph    = NULL;
     protected $path_short   = 'usfm';
 
-    protected function _importHelper(Bible &$Bible) 
+    protected function _importHelper(Bible &$Bible): bool
     {
         ini_set("memory_limit", "500M");
 
@@ -42,7 +42,8 @@ class Usfm extends ImporterAbstract
         $attr = $this->bible_attributes;
 
         if($this->debug) {
-            $file = 'eng-kjv2006_usfm.zip';
+            // $file = 'eng-kjv2006_usfm.zip';
+            $file = 'eng-kjv_usfm_apoc.zip';
             $module = 'usfm_' . time();
             $attr['lang_short'] = 'en';
             $attr['lang'] = 'English';
@@ -94,6 +95,8 @@ class Usfm extends ImporterAbstract
         }
 
         $this->_insertVerses();
+
+        return true;
     }
 
     private function _zipImportHelper(&$Zip, $filename) 
@@ -105,11 +108,15 @@ class Usfm extends ImporterAbstract
             return FALSE;
         }
 
-        if($pseudo_book < 70) {
+        if($pseudo_book >= 2 && $pseudo_book <= 40) {
+            // Old Testament book
             $book = $pseudo_book - 1;
-        }
-        else {
+        } else if($pseudo_book >= 70) {
+            // New Testament book
             $book = $pseudo_book - 30;
+        } else {
+            // Apocryphal book, not supported
+            return false;
         }
 
         $next_line_para = FALSE;
@@ -148,7 +155,7 @@ class Usfm extends ImporterAbstract
 
             // $text = str_replace('*', '', $text);
 
-            // if($book == 43 && $chapter == 3 && $verse == 3) {
+            // if($book == 19 && $chapter == 23 && $verse == 1) {
                 // var_dump($text);
                 $this->_addVerse($book, $chapter, $verse, $text, TRUE);
             // }
@@ -159,7 +166,7 @@ class Usfm extends ImporterAbstract
         return TRUE;
     }
 
-    public function checkUploadedFile(UploadedFile $File) 
+    public function checkUploadedFile(UploadedFile $File): bool 
     {
         return TRUE;
     }
@@ -255,15 +262,22 @@ class Usfm extends ImporterAbstract
             'f'
         ];
 
-        // var_dump($text);
+        $text = str_replace("\+", "\\", $text);
 
         foreach($remove_contents as $c) {
             $pattern = "/\\\\$c (.+?)\\\\$c\*/";
             $text = preg_replace($pattern, '', $text);
         }
 
-        // var_dump($text);
+        // remove any other formatting
+        $text = preg_replace('/\\\\[a-z]+\*?/', '', $text);
 
+        // Check to see if we got everything
+        // comment out or remove in production
+        if(strpos($text, '\\') !== false) {
+            die('BAD FORMAT: ' . $text);
+        }
+        
         return parent::_postFormatText($text);
     }
 

@@ -18,7 +18,8 @@ use Illuminate\Http\UploadedFile;
  *  [,] - strongs
  */
 
-class Analyzer extends ImporterAbstract {
+class Analyzer extends ImporterAbstract 
+{
     // protected $required = ['module', 'lang', 'lang_short']; // Array of required fields
 
     protected $italics_st   = '<i>';
@@ -36,7 +37,8 @@ class Analyzer extends ImporterAbstract {
     // Where did you get this Bible?
     protected $source = "This Bible imported from Bible Analyzer <a href='http://www.bibleanalyzer.com/download.htm'>http://www.bibleanalyzer.com/download.htm</a>";
 
-    protected function _importHelper(Bible &$Bible) {
+    protected function _importHelper(Bible &$Bible): bool 
+    {
         if(config('app.env') != 'testing') {
             ini_set("memory_limit", "50M");
         }
@@ -133,7 +135,8 @@ class Analyzer extends ImporterAbstract {
         return TRUE;
     }
 
-    protected function _formatText($text) {
+    protected function _formatText($text) 
+    {
         $text    = $this->_preFormatText($text);
         $text    = $this->_formatStrongs($text);
         $text    = $this->_formatItalics($text);
@@ -144,7 +147,8 @@ class Analyzer extends ImporterAbstract {
         return $text;
     }
 
-    public function checkUploadedFile(UploadedFile $File) {
+    public function checkUploadedFile(UploadedFile $File): bool 
+    {
         $path = $File->getPathname();
 
         try {

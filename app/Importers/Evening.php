@@ -21,7 +21,8 @@ use Illuminate\Http\UploadedFile;
  *  {,} - strongs
  */
 
-class Evening extends ImporterAbstract {
+class Evening extends ImporterAbstract 
+{
     protected $required = ['module', 'lang', 'lang_short']; // Array of required fields
 
     protected $italics_st   = '[';
@@ -34,7 +35,8 @@ class Evening extends ImporterAbstract {
     protected $path_short   = 'evening';
     protected $file_extensions = ['.dat'];
 
-    protected function _importHelper(Bible &$Bible) {
+    protected function _importHelper(Bible &$Bible): bool  
+    {
         ini_set("memory_limit", "50M");
 
         // Script settings
@@ -139,7 +141,8 @@ class Evening extends ImporterAbstract {
         }
     }
 
-    public function checkUploadedFile(UploadedFile $File) {
+    public function checkUploadedFile(UploadedFile $File): bool  
+    {
         return TRUE;
     }
 }

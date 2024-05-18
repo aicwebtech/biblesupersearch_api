@@ -9,9 +9,11 @@ use App\Models\Bible;
 use \DB; //Todo - something is wrong with namespaces here, shouldn't this be automatically avaliable??
 use Illuminate\Http\UploadedFile;
 
-class Csv extends SpreadsheetAbstract {
+class Csv extends SpreadsheetAbstract 
+{
     
-    public function checkUploadedFile(UploadedFile $File) {
+    public function checkUploadedFile(UploadedFile $File): bool  
+    {
         $file_data = file($File->getPathname());
 
         if(!$file_data) {
@@ -35,7 +37,8 @@ class Csv extends SpreadsheetAbstract {
         return $this->_checkParsedFile($tmp_data);
     }
 
-    protected function _importFromSpreadsheet($file_path) {
+    protected function _importFromSpreadsheet($file_path) 
+    {
         $file_data = file($file_path);
 
         if(!$file_data) {

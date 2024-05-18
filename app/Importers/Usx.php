@@ -7,7 +7,7 @@ use ZipArchive;
 use Illuminate\Http\UploadedFile;
 
 /*
- * USX importer
+ * USX importer (STUB, NOT WORKING YET!!!!)
  *
  *
  * Incoming markup / meta is as follows:
@@ -38,7 +38,7 @@ class Usx extends ImporterAbstract
 
     protected $path_short   = 'misc';
 
-    protected function _importHelper(Bible &$Bible) 
+    protected function _importHelper(Bible &$Bible): bool 
     {
     
         // todo implement this!
@@ -98,9 +98,11 @@ class Usx extends ImporterAbstract
         }
 
         $this->_insertVerses();
+        return true;
     }
 
-    private function _zipImportHelper(&$Zip, $filename) {
+    private function _zipImportHelper(&$Zip, $filename) 
+    {
         $pseudo_book = intval($filename);
         $chapter = $verse = NULL;
 
@@ -156,7 +158,8 @@ class Usx extends ImporterAbstract
         return TRUE;
     }
 
-    public function checkUploadedFile(UploadedFile $File) {
+    public function checkUploadedFile(UploadedFile $File): bool  
+    {
         // $path = $file_tmp_name ?: $file_name;
         $zipfile = $File->getPathname();
 

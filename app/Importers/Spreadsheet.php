@@ -10,10 +10,12 @@ use \DB; //Todo - something is wrong with namespaces here, shouldn't this be aut
 use Illuminate\Http\UploadedFile;
 use PhpOffice\PhpSpreadsheet\Spreadsheet as PhpSpreadsheet;
 
-class Spreadsheet extends SpreadsheetAbstract {
+class Spreadsheet extends SpreadsheetAbstract 
+{
     protected $Spreadsheet;
 
-    public function checkUploadedFile(UploadedFile $File) {
+    public function checkUploadedFile(UploadedFile $File): bool 
+    {
         if(!$this->_openSpreadsheetFile($File->getPathname())) {
             return FALSE;
         }
@@ -32,7 +34,8 @@ class Spreadsheet extends SpreadsheetAbstract {
         return $this->_checkParsedFile($tmp_data);
     }
 
-    protected function _importFromSpreadsheet($file_path) {
+    protected function _importFromSpreadsheet($file_path) 
+    {
         if(!$this->_openSpreadsheetFile($file_path)) {
             return FALSE;
         }
@@ -49,7 +52,8 @@ class Spreadsheet extends SpreadsheetAbstract {
         return TRUE;
     }
 
-    protected function _openSpreadsheetFile($file_path) {
+    protected function _openSpreadsheetFile($file_path) 
+    {
         try {
             $reader = \PhpOffice\PhpSpreadsheet\IOFactory::createReaderForFile($file_path);
         }
@@ -62,7 +66,8 @@ class Spreadsheet extends SpreadsheetAbstract {
         return TRUE;
     }
 
-    protected function _readSpreadsheet($row_limit = NULL) {
+    protected function _readSpreadsheet($row_limit = NULL) 
+    {
         if(!$this->Spreadsheet) {
             return FALSE;
         }

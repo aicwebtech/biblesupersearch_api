@@ -37,7 +37,8 @@ class ImportBibleAnalyzer extends ImportBible
      * Execute the console command.
      * @return mixed
      */
-    public function handle() {
+    public function handle() 
+    {
         $Importer = new Importer();
         $this->_handleHelper($Importer);
     }

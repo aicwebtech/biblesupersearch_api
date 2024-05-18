@@ -10,7 +10,8 @@ use ZipArchive;
 use \DB; //Todo - something is wrong with namespaces here, shouldn't this be automatically avaliable??
 use Illuminate\Http\UploadedFile;
 
-class BibleSuperSearch extends ImporterAbstract {
+class BibleSuperSearch extends ImporterAbstract 
+{
     // protected $required = ['module', 'lang', 'lang_short']; // Array of required fields
 
     protected $italics_st   = '[';
@@ -25,7 +26,8 @@ class BibleSuperSearch extends ImporterAbstract {
     protected $source = ""; // Where did you get this Bible?
 
     // Completely replaces parent 
-    public function import() {
+    public function import() 
+    {
         ini_set("memory_limit", "50M");
 
         $Bible = Bible::createFromModuleFile($this->module);
@@ -51,9 +53,13 @@ class BibleSuperSearch extends ImporterAbstract {
         return TRUE;
     }
 
-    protected function _importHelper(Bible &$Bible) { return TRUE; } // not used
+    protected function _importHelper(Bible &$Bible): bool 
+    { 
+        return TRUE; 
+    } 
 
-    public function checkUploadedFile(UploadedFile $File) {
+    public function checkUploadedFile(UploadedFile $File): bool  
+    {
         $zipfile    = $File->getPathname();
         $file       = static::sanitizeFileName( $File->getClientOriginalName() );
         $Zip        = new ZipArchive();

@@ -414,7 +414,8 @@ class BibleController extends Controller
         return new Response($resp, 200);
     }
 
-    public function test(Request $request, $id) {
+    public function test(Request $request, $id) 
+    {
         $Bible = Bible::findOrFail($id);
         $Engine = new \App\Engine;
         $Engine->allow_disabled_bibles = TRUE;
@@ -431,14 +432,18 @@ class BibleController extends Controller
         //     return new Response($resp, 200);
         // }
 
+        $lb = '<br />';
+
         // Tests a Bible to make sure it has data
         // Only ONE test has to pass for it to be successful
         $tests = [
             ['label' => 'First Verse', 'ref' => 'Genesis 1:1'],
-            ['label' => 'Chapter', 'ref' => 'Psalm 23'],
+            ['label' => 'OT Chapter', 'ref' => 'Psalm 23'],
+            ['label' => 'OT Book', 'ref' => 'Obadiah'],
             ['label' => 'Last verse of OT', 'ref' => 'Malachi 4:6'],
             ['label' => 'First verse of NT', 'ref' => 'Matthew 1:1'],
-            ['label' => 'Book', 'ref' => '2 John'],
+            ['label' => 'NT Chapter', 'ref' => 'Philippians 3'],
+            ['label' => 'NT Book', 'ref' => '2 John'],
             ['label' => 'Last Verse', 'ref' => 'Revelation 22:21'],
         ];
 
@@ -449,6 +454,7 @@ class BibleController extends Controller
         $resp->messages[] = 'Number of books: '     . $response[ $Bible->module ]['full']['num_books'];
         $resp->messages[] = 'Number of chapters: '  . $response[ $Bible->module ]['full']['num_chapters'];
         $resp->messages[] = 'Number of verses: '    . $response[ $Bible->module ]['full']['num_verses'];
+        $resp->messages[] = $lb;
 
         foreach($tests as $test) {
             $Engine->resetErrors();
@@ -462,6 +468,8 @@ class BibleController extends Controller
                     $resp->messages[] = $verse->text;
                 }
             }
+
+            $resp->messages[] = $lb;
         }
 
         if(!$resp->success) {

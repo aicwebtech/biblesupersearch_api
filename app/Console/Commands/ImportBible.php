@@ -5,6 +5,7 @@ namespace App\Console\Commands;
 use Illuminate\Console\Command;
 use App\Models\Bible;
 use App\Models\Language;
+use App\Models\Books\En as Book;
 
 abstract class ImportBible extends Command 
 {
@@ -25,6 +26,7 @@ abstract class ImportBible extends Command
     protected $import_dir = ''; // Subdirectory of bibles
     protected $file_extension = ''; // Used for filtering file list
     protected $require_file = TRUE;
+    protected $ProgressBar = null;
 
     protected $hints = array(
         'lang' => [
@@ -100,6 +102,10 @@ abstract class ImportBible extends Command
         $attributes = array();
         $autopopulate   = FALSE;
         $debug = false;
+
+        $Importer->setBeforeImportBible([$this, 'importStart']);
+        $Importer->setOnAddVerse([$this, 'importVerseAdd']);
+        $Importer->setAfterImportBible([$this, 'importEnd']);
 
         if($this->option('list')) {
             return $this->_displayFileList();
@@ -228,6 +234,32 @@ abstract class ImportBible extends Command
     public function getImportDirReadable() 
     {
         return getcwd() . '/bibles/' . $this->import_dir;
+    }
+
+    public function importStart(Bible $Bible)
+    {
+        $this->ProgressBar = $this->output->createProgressBar(31102);
+        $this->ProgressBar->setFormatDefinition('custom', ' %current%/%max% [%bar%] %percent:3s%% %elapsed:6s%/%estimated:-6s% -- %message%                     ' . PHP_EOL);
+        $this->ProgressBar->setFormat('custom');
+        $this->_book = 0;
+        $this->_chapter = 0;
+    }    
+
+    public function importEnd(Bible $Bible)
+    {
+        $this->ProgressBar->setMessage('');
+        $this->ProgressBar->finish();
+    }    
+
+    public function importVerseAdd($book, $chapter, $verse, $text)
+    {
+        if($this->_book != $book) {
+            $this->_book = $book;
+            $this->_Book = Book::find($book);
+        }
+            // $Book = Book::find($book);
+            $this->ProgressBar->setMessage($this->_Book->name .  ' ' . $chapter . ':' . $verse );
+            $this->ProgressBar->advance();
     }
 
     protected function _displayFileList() 
