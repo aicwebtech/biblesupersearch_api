@@ -120,7 +120,7 @@ class BookAbstract extends Model
      *
      * @param string|int $name
      */
-    public static function findByEnteredName($name, $language = NULL, $multiple = FALSE) 
+    public static function findByEnteredName($name, $language = NULL, $multiple = FALSE, $loose = false) 
     {
         if(empty($name)) {
             return FALSE;
@@ -178,7 +178,7 @@ class BookAbstract extends Model
             }
         }
 
-        // Attempt 1: Direct matching
+        // Attempt 1: Direct, exact matching
         $Query = $class_name::where('name', $name)
                 -> orwhere('shortname', $name)
                 -> orwhere('matching1', $name)
@@ -203,7 +203,9 @@ class BookAbstract extends Model
 
         $Book = ($multiple) ? $Query->get()->all() : $Query->first();
 
-        if($Book) {
+        // $loose = true;
+
+        if($Book || !$loose) {
             return $Book;
         }
 

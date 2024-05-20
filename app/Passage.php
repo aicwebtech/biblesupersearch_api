@@ -85,8 +85,8 @@ class Passage {
             $book_st = array_shift($books);
             $book_en = array_pop($books);
             $book_en = ($book_en) ? $book_en : $book_st;
-            $Book_St = $this->findBook( $book_st );
-            $Book_En = $this->findBook( $book_en );
+            $Book_St = $this->findBook( $book_st, true );
+            $Book_En = $this->findBook( $book_en, true );
 
             if($Book_St && $Book_En) {
                 $this->is_book_range = TRUE;
@@ -101,7 +101,7 @@ class Passage {
         }
         else {
             $this->is_book_range = FALSE;
-            $Book = $this->findBook($book);
+            $Book = $this->findBook($book, true);
 
             if($Book) {
                 $this->Book = $Book;
@@ -168,11 +168,11 @@ class Passage {
      * @param string $book
      * @return Book $Book
      */
-    public function findBook($book) {
-        return static::findBookByNameAndLanguage($book, $this->languages);
+    public function findBook($book, $loose = false) {
+        return static::findBookByNameAndLanguage($book, $this->languages, false, $loose);
     }
 
-    public static function findBookByNameAndLanguage($book, $languages = [], $multiple = FALSE) {
+    public static function findBookByNameAndLanguage($book, $languages = [], $multiple = FALSE, $loose = false) {
         $found = FALSE;
         $primary_language = NULL;
 
@@ -182,7 +182,7 @@ class Passage {
                     $primary_language = $lang;
                 }
 
-                $Book = Book::findByEnteredName($book, $lang, $multiple);
+                $Book = Book::findByEnteredName($book, $lang, $multiple, $loose);
 
                 if($Book) {
                     $found = TRUE;
@@ -192,7 +192,7 @@ class Passage {
         }
 
         if(!$found) {
-            $Book = Book::findByEnteredName($book, NULL, $multiple);
+            $Book = Book::findByEnteredName($book, NULL, $multiple, $loose);
         }
 
         if(!$multiple && $Book && $Book->getLanguage() != $primary_language && $primary_language != config('bss.defaults.language_short')) {
