@@ -9,6 +9,7 @@ use \DB;
 class CompareBibles extends BibleAbstract
 {
     protected $append_signature = FALSE;
+    protected $quiet = false;
 
     /**
      * The name and signature of the console command.
@@ -63,6 +64,44 @@ class CompareBibles extends BibleAbstract
             return $this->_listBibles();
         }
 
+        return $this->handleHelper($Bible1, $Bible2);
+    }
+
+
+    protected function handleHelper($Bible1, $Bible2)
+    {
+        $module1 = $Bible1->module;
+        $module2 = $Bible2->module;
+
+        if(!$this->quiet) {            
+            $Engine = \App\Engine::getInstance();
+            $response = $Engine->actionStatistics(['bible' => [$module1, $module2], 'reference' => 'John 3:16']);
+
+            echo $module1 . PHP_EOL;
+
+            echo 'Number of books: '     . $response[ $module1 ]['full']['num_books'] . PHP_EOL;
+            echo 'Number of chapters: '  . $response[ $module1 ]['full']['num_chapters'] . PHP_EOL;
+            echo 'Number of verses: '    . $response[ $module1 ]['full']['num_verses'] . PHP_EOL;
+
+            echo PHP_EOL;
+
+            echo $module2 . PHP_EOL;
+
+            echo 'Number of books: '     . $response[ $module2 ]['full']['num_books'] . PHP_EOL;
+            echo 'Number of chapters: '  . $response[ $module2 ]['full']['num_chapters'] . PHP_EOL;
+            echo 'Number of verses: '    . $response[ $module2 ]['full']['num_verses'] . PHP_EOL;
+
+            echo PHP_EOL;
+
+            echo 'difference' . PHP_EOL;
+
+            echo 'Number of books: '     . $response[ $module2 ]['full']['num_books']    - $response[ $module1 ]['full']['num_books'] . PHP_EOL;
+            echo 'Number of chapters: '  . $response[ $module2 ]['full']['num_chapters'] - $response[ $module1 ]['full']['num_chapters'] . PHP_EOL;
+            echo 'Number of verses: '    . $response[ $module2 ]['full']['num_verses']   - $response[ $module1 ]['full']['num_verses'] . PHP_EOL;
+
+            echo PHP_EOL;
+        }
+
         $tb1 = $Bible1->verses()->getTable();
         $tb2 = $Bible2->verses()->getTable();
 
@@ -71,10 +110,15 @@ class CompareBibles extends BibleAbstract
         $results = !$this->_queryResults($tb2, $tb1, 'plus')  ? false : $results;
 
         if($results) {
-            echo PHP_EOL . 'No verse numbering differences found between Bibles.' . PHP_EOL;
+            if(!$this->quiet) {
+                echo PHP_EOL . 'No verse numbering differences found between Bibles.' . PHP_EOL;
+            }
         } else {
-            echo PHP_EOL . 'Verse numbering differences found!' . PHP_EOL;
+            echo PHP_EOL . $module1 . ' <=> ' . $module2 . ': Verse numbering differences found!' . PHP_EOL;
         }
+
+        echo PHP_EOL;
+        echo PHP_EOL;
     }
 
     private function _queryResults($tb1, $tb2, $status)
@@ -91,23 +135,29 @@ class CompareBibles extends BibleAbstract
         $Query->whereNull('tb2.id');
 
         $results = $Query->get();
+        $count = count($results);
 
-        if($results && count($results)) {
+        if(!$this->quiet || $count) {            
+            echo $status . ' count: ' . count($results) . PHP_EOL;
             echo PHP_EOL;
+        }
 
-            foreach($results as $row) {
-                echo str_pad($row->book, 3);
-                echo str_pad($row->book_name, 20);
-                echo str_pad($row->chapter, 4);
-                echo str_pad($row->verse, 4);
-                echo str_pad($status, 30);
+        if($results && $count) {
+            if($this->option('verbose')) {                
+                echo PHP_EOL;
+
+                foreach($results as $row) {
+                    echo str_pad($row->book, 3);
+                    echo str_pad($row->book_name, 20);
+                    echo str_pad($row->chapter, 4);
+                    echo str_pad($row->verse, 4);
+                    echo str_pad($status, 30);
+                    echo PHP_EOL;
+                }
+
                 echo PHP_EOL;
             }
 
-            echo PHP_EOL;
-            echo $status . ' count: ' . count($results) . PHP_EOL;
-
-            echo PHP_EOL;
             return false;
         } else {
             return true;

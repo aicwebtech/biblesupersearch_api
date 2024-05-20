@@ -51,7 +51,6 @@ class Irv extends ImporterAbstract
 
         $overwrite_existing         = $this->overwrite;
 
-        $Bible    = $this->_getBible($module);
         $existing = $this->_existing;
 
         if(!$overwrite_existing && $this->_existing) {

@@ -38,15 +38,16 @@ class Usfm extends ImporterAbstract
         $dir    = $this->getImportDir();
         $file   = $this->file;   // File name, minus extension
         $module = $this->module; // Module and db name
-        $module = $this->module;
-        $attr = $this->bible_attributes;
+        $attr   = $this->bible_attributes;
 
         if($this->debug) {
             // $file = 'eng-kjv2006_usfm.zip';
-            $file = 'eng-kjv_usfm_apoc.zip';
+            // $file = 'eng-kjv_usfm_apoc.zip';
+            $file = 'engwebu_usfm.zip';
             $module = 'usfm_' . time();
             $attr['lang_short'] = 'en';
             $attr['lang'] = 'English';
+            $Bible = $this->_getBible($module);
         }
 
         $zipfile = $dir . $file;
@@ -56,10 +57,9 @@ class Usfm extends ImporterAbstract
 
         $overwrite_existing  = $this->overwrite;
 
-        $Bible    = $this->_getBible($module);
         $existing = $this->_existing;
 
-        if(!$overwrite_existing && $this->_existing) {
+        if(!$overwrite_existing && $this->_existing && $this->insert_into_bible_table) {
             return $this->addError('Module already exists: \'' . $module . '\' Use --overwrite to overwrite it.', 4);
         }
 
@@ -126,8 +126,10 @@ class Usfm extends ImporterAbstract
         foreach($bib as $line) {
 
             if(strpos($line, '\c') === 0) {
-                preg_match('/([0-9]+)/', $line, $matches);
-                $chapter = (int) $matches[1];
+                if(preg_match('/([0-9]+)/', $line, $matches)) {
+                    $chapter = (int) $matches[1];
+                }
+
                 continue;
             }            
             if(strpos($line, '\p') === 0) {
@@ -143,75 +145,76 @@ class Usfm extends ImporterAbstract
             $verse = (int) $matches[1];
             $text  = $matches[2];
 
-            if(preg_match('/[0-9]+:[0-9]+/', $text)) {
-                $lpp = strrpos($text, '(');
-                $text = substr($text, 0, $lpp);
-            }
+            // Moved
+            // if(preg_match('/[0-9]+:[0-9]+/', $text)) {
+            //     $lpp = strrpos($text, '(');
+            //     $text = substr($text, 0, $lpp);
+            // }
 
             if($next_line_para) {
                 $text = '¶ ' . $text;
                 $next_line_para = FALSE;
             }
 
-            // $text = str_replace('*', '', $text);
-
-            // if($book == 19 && $chapter == 23 && $verse == 1) {
-                // var_dump($text);
-                $this->_addVerse($book, $chapter, $verse, $text, TRUE);
-            // }
-
-            // if($verse == 4) {die('dead');}
+            $this->_addVerse($book, $chapter, $verse, $text, true);
         }
 
-        return TRUE;
+        return true;
     }
 
     public function checkUploadedFile(UploadedFile $File): bool 
     {
-        return TRUE;
+        
+        $zipfile    = $File->getPathname();
+        $file       = static::sanitizeFileName( $File->getClientOriginalName() );
+        $Zip        = new ZipArchive();
+
+        if(stripos($file, 'usfm') === false) {
+            return $this->addError('Does not appear to be a USFM file; filename does not contain "usfm".');
+        }
+
+        $allowed = [
+            'copr.htm',
+            'keys.asc',
+            'signature.txt.asc',
+        ];
+
+        if($Zip->open($zipfile) == true) {
+            for ($i = 0; $i < $Zip->numFiles; $i++) {
+                $filename = $Zip->getNameIndex($i);
+                $spl = explode('.', $filename);
+                $ext = array_pop($spl);
+
+                if(!in_array($filename, $allowed) && $ext != 'usfm' && $ext != 'css') {
+                    return $this->addError('ZIP file contains a file with a non-standard extension: ' . $filename);
+                }
+            }
+        }
+
+        return true;
     }
 
     protected function _formatStrongs($text)
     {
-        //\w beginning|strong="H7225"\w*
-
-        // var_dump($text);
-
         // Currently included:
         // \p{L}: any kind of letter from any language.
         // \p{M}: a character intended to be combined with another character (e.g. accents, umlauts, enclosing boxes, etc.).
         // \p{N}: any kind of numeric character in any script.
 
-        // Other punctuation: 
-        // \p{P}: any kind of punctuation character.
-        // \p{Pd}: any kind of hyphen or dash.
-        // \p{Ps}: any kind of opening bracket.
-        // \p{Pe}: any kind of closing bracket.
-        // \p{Pi}: any kind of opening quote.
-        // \p{Pf}: any kind of closing quote.
-        // \p{Po}: Other:  any kind of punctuation character that is not a dash, bracket, quote
         $repeater_1 = '\p{L}\p{M}';
         // $repeater_2 = '\p{L}\p{M}0-9="';
         $repeater_2 = '.';
 
-        $text = str_replace('\+w', '\w', $text);
+        // clean up to handle strongs within red-letter words
+        $text = str_replace('\+w', '\w', $text); 
         $text = str_replace('\+w*', '\w*', $text);
 
-        // \v 3  \w Jesus|strong="G2424"\w* \w answered|strong="G0611"\w* \w and|strong="G2532"\w* \w said|strong="G2036"\w* unto \w him|strong="G0846"\w*, \wj  \+w Verily|strong="G0281"\+w*, \+w verily|strong="G0281"\+w*, \+w I say|strong="G3004"\+w* \+w unto thee|strong="G4671"\+w*, \+w Except|strong="G3361"\+w* \+w a man|strong="G5100"\+w* \+w be born|strong="G1080"\+w* \+w again|strong="G0509"\+w*, he \+w can|strong="G1410"\+w*\+w not|strong="G3756"\+w* \+w see|strong="G1492"\+w* \+w the kingdom|strong="G0932"\+w* \+w of God|strong="G2316"\+w*.\wj* 
-
         // custom strongs handling here
-        // $pattern = "/\\\w ([" . $repeater_1 . "]+?)\|([" . $repeater_2 . "]+?)\\\w\*/";
         $pattern = "/\\\w (.+?)\\\w\*/"; // works for non-red words
-        // $pattern = "/\\\+w (.+?)\\\+w\*/";
-        // $pattern = "/wwww(.*)/";
 
         $text = preg_replace_callback($pattern, function($matches) {
             // Note: strong is the only word attribute we use, we discard all others!
             list($word, $attr) = explode('|', $matches[1]);
-
-            // print_r($matches);
-            // var_dump($word);
-            // var_dump($attr);
 
             $strong_pos = strpos($attr, 'strong');
 
@@ -221,30 +224,10 @@ class Usfm extends ImporterAbstract
 
             $strong_num_st = $strong_pos + 8;
             $strong_num_en = strpos($attr, '"', $strong_num_st) - 1;
-
             $strong_num = substr($attr, $strong_num_st, $strong_num_en - $strong_num_st + 1);
 
-            // var_dump($strong_num);
             return $word . '{' . $strong_num . '}';
         }, $text);
-
-        // Strip these tags AND content
-
-        // Strip these tags, retain content
-
-        // die('wonkey');
-        // \v 4 And \w God|strong="H0430"\w* \w saw|strong="H7200"\w* the \w light|strong="H0216"\w*, \w that|strong="H3588"\w* \add it was\add* \w good|strong="H2896"\w*: and \w God|strong="H0430"\w* \w divided|strong="H0914"\w* the \w light|strong="H0216"\w* \w from|strong="H0996"\w* the \w darkness|strong="H2822"\w*.\f + \fr 1.4  \ft the light from…: Heb. between the light and between the darkness\f* 
-
-        // \w God|strong="H0430"\w*
-        // \w saw|strong="H7200"\w*
-        // \w light|strong="H0216"\w*
-        // \w that|strong="H3588"\w*
-        // \w good|strong="H2896"\w*
-        // \w God|strong="H0430"\w*
-        // \w divided|strong="H0914"\w*
-        // \w light|strong="H0216"\w*
-        // \w from|strong="H0996"\w*
-        // \w darkness|strong="H2822"\w*
 
         return $text;
     }
@@ -258,8 +241,11 @@ class Usfm extends ImporterAbstract
 
     protected function _postFormatText($text) 
     {
+        // Remove unsupported special content
         $remove_contents = [
-            'f'
+            'f',    // footnotes
+            'ef',   // extended footnotes
+            'ex',   // extended cross references
         ];
 
         $text = str_replace("\+", "\\", $text);
@@ -269,15 +255,20 @@ class Usfm extends ImporterAbstract
             $text = preg_replace($pattern, '', $text);
         }
 
-        // remove any other formatting
+        // Remove any other formatting
         $text = preg_replace('/\\\\[a-z]+\*?/', '', $text);
 
+        if(preg_match('/[0-9]+:[0-9]+/', $text)) {
+            $lpp = strrpos($text, '(');
+            $text = substr($text, 0, $lpp);
+        }
+        
         // Check to see if we got everything
         // comment out or remove in production
         if(strpos($text, '\\') !== false) {
             die('BAD FORMAT: ' . $text);
         }
-        
+
         return parent::_postFormatText($text);
     }
 

@@ -35,7 +35,7 @@ abstract class ImporterAbstract
     protected $overwrite = FALSE;
     protected $save_bible = TRUE;
     protected $insert_into_bible_table = TRUE; // Whether to insert / update record in Bibles table
-    protected $_existing = FALSE;
+    protected $_existing = null;
     protected $_table = NULL;
     protected $has_cli = TRUE; // Whether there is a command-line interface access to this importer
     protected $has_gui = FALSE; // Whether there is a user interface access (via the Bible manager) to this importer
@@ -468,7 +468,11 @@ abstract class ImporterAbstract
     protected function _getBible($module) 
     {
         $Bible  = Bible::findByModule($module);
-        $this->_existing = (bool) $Bible;
+        
+        if($this->_existing === null) {
+            $this->_existing = (bool) $Bible;
+        }
+
         $Bible  = ($Bible) ? $Bible : new Bible;
         $Bible->module = $module;
         $Verses = $Bible->verses();

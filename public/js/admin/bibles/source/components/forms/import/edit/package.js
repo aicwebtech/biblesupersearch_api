@@ -1,6 +1,7 @@
 enyo.depends(
     'Base.js',
     'Usx.js',
+    'Usfm.js',
     'BibleSuperSearch.js',
     'Spreadsheet.js',
     'Unbound.js',

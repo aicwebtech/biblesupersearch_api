@@ -34,6 +34,7 @@ class Kernel extends ConsoleKernel
         Commands\InstallBible::class,
         Commands\UninstallBible::class,
         Commands\CompareBibles::class,
+        Commands\CompareBiblesAll::class,
         Commands\GenerateModule::class,
         Commands\BibleRefresh::class,
         Commands\TempMigrateStrongs::class,
