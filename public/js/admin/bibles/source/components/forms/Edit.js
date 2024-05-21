@@ -13,7 +13,7 @@ enyo.kind({
     formPk: null, // binding use only
     debugBindings: false,
     copyrightConfirmed: false,
-    debugBindings: false,
+    debugBindings: true,
 
     components: [
         {classes: 'form_section', components: [
@@ -261,6 +261,10 @@ enyo.kind({
             if(dir == 1 && this.$description) {
                 this.$description.setData(value); // feed it to the CKEDITOR
             }
+
+            // if(!this.$description) {
+            //     this.log('ckeditor not found', this.$description);
+            // }
             
             return value;
         }},
@@ -525,7 +529,9 @@ enyo.kind({
                 console.error( error );
             } );
 
-
+        // // Init ckeditor values
+        // this.$description.setData(this.formData.description); 
+        // this.$copyrightStatement.setData(this.formData.copyright_statement); 
     }, 
 
     _checkUnique: function(field, value, label) {

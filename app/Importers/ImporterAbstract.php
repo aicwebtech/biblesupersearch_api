@@ -35,6 +35,7 @@ abstract class ImporterAbstract
     protected $overwrite = FALSE;
     protected $save_bible = TRUE;
     protected $insert_into_bible_table = TRUE; // Whether to insert / update record in Bibles table
+    protected $raw_format = false; // If true, most text formatting will be skipped
     protected $_existing = null;
     protected $_table = NULL;
     protected $has_cli = TRUE; // Whether there is a command-line interface access to this importer
@@ -345,6 +346,10 @@ abstract class ImporterAbstract
      */
     protected function _formatText($text) 
     {
+        if($this->raw_format) {
+            return trim($text);
+        }
+
         $text    = $this->_preFormatText($text);
         $text    = $this->_formatItalics($text);
         $text    = $this->_formatStrongs($text);
@@ -500,7 +505,7 @@ abstract class ImporterAbstract
 
     public function __set($name, $value) 
     {
-        $bool = ['required', 'save_bible', 'overwrite', 'insert_into_bible_table', 'enable', 'debug'];
+        $bool = ['required', 'save_bible', 'overwrite', 'insert_into_bible_table', 'enable', 'debug', 'raw_format'];
         $str = ['module', 'file'];
 
         if(in_array($name, $bool)) {

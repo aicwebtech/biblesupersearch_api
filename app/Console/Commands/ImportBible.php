@@ -49,8 +49,6 @@ abstract class ImportBible extends Command
     public function __construct() 
     {
         // Auto-add the arguments and options
-        //$this->signature .= ' {file} {module} {--name=} {--shortname=} {--lang=} {--lang_short=} {--overwrite}';
-//        $this->signature .= ' {--file=} {--module=} {--name=} {--shortname=} {--lang=} {--lang_short=} {--overwrite} {--list}';
         $this->signature .= ' {--file= : File to import} '
                 . '{--module= : Module name - internal, unique identifer for this Bible, ie NIV2011} '
                 . '{--name= : Full text name of this Bible, ie "New International Version"} '
@@ -59,6 +57,7 @@ abstract class ImportBible extends Command
                 . '{--lang_short= : This Bible\'s language as a 2 character ISO 639-1 code} '
                 . '{--overwrite : whether to overwrite the existing Bible of the module name, if it exists} '
                 . '{--list : lists all avaliable files for this importer}'
+                . '{--r|rawtext : Do not format Bible text}'
                 . '{--debug : Attempt to debug importer using preseleted Bible and module name  }';
         //$this->description .= '';
 
@@ -106,6 +105,7 @@ abstract class ImportBible extends Command
         $Importer->setBeforeImportBible([$this, 'importStart']);
         $Importer->setOnAddVerse([$this, 'importVerseAdd']);
         $Importer->setAfterImportBible([$this, 'importEnd']);
+        $Importer->raw_format = $this->option('rawtext');
 
         if($this->option('list')) {
             return $this->_displayFileList();

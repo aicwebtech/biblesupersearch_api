@@ -43,7 +43,8 @@ class Usfm extends ImporterAbstract
         if($this->debug) {
             // $file = 'eng-kjv2006_usfm.zip';
             // $file = 'eng-kjv_usfm_apoc.zip';
-            $file = 'engwebu_usfm.zip';
+            // $file = 'engwebu_usfm.zip';
+            $file = 'engkjvcpb_usfm.zip';
             $module = 'usfm_' . time();
             $attr['lang_short'] = 'en';
             $attr['lang'] = 'English';
@@ -76,7 +77,14 @@ class Usfm extends ImporterAbstract
         if($Zip->open($zipfile) === TRUE) {
             // Not importing any metadata at this time!
             if($this->insert_into_bible_table) {
-                // $attr['description'] = $desc . '<br /><br />' . $source;
+                
+                $desc  = $Zip->getFromName('copr.htm');
+
+                if(!$desc) {
+                    return $this->addError('Could not open file copr.htm inside of Zip file.<br />Is this a valid USFM file?');
+                }
+
+                $attr['description'] = $desc ?: null;
                 $Bible->fill($attr);
                 $Bible->save();
             }
@@ -122,8 +130,12 @@ class Usfm extends ImporterAbstract
         $next_line_para = FALSE;
         $bib = $Zip->getFromName($filename);
         $bib = preg_split("/\\r\\n|\\r|\\n/", $bib);
+        $text = null;
+        $end_of_verse = false;
 
-        foreach($bib as $line) {
+        foreach($bib as $key => $line) {
+            $line = trim($line);
+            $line_lookahead = isset($bib[$key + 1]) ? trim($bib[$key + 1]) : null;
 
             if(strpos($line, '\c') === 0) {
                 if(preg_match('/([0-9]+)/', $line, $matches)) {
@@ -132,18 +144,29 @@ class Usfm extends ImporterAbstract
 
                 continue;
             }            
+            
             if(strpos($line, '\p') === 0) {
                 $next_line_para = TRUE;
-                continue;
+                // continue;
             }
 
-            if(strpos($line, '\v') === FALSE) {
-                continue;
+            if(strpos($line, '\v') === 0) {
+                preg_match('/([0-9]+) (.+)/', $line, $matches);
+                $verse = (int) $matches[1];
+                $text  = $matches[2];
+
+                if($next_line_para) {
+                    $text = '¶ ' . $text;
+                    $next_line_para = FALSE;
+                }
+            } else if($text) {
+                $text .= $line;
             }
 
-            preg_match('/([0-9]+) (.+)/', $line, $matches);
-            $verse = (int) $matches[1];
-            $text  = $matches[2];
+            if(!$line_lookahead || strpos($line_lookahead, '\c') === 0 || strpos($line_lookahead, '\v') === 0) {
+                $end_of_verse = true;
+            }
+
 
             // Moved
             // if(preg_match('/[0-9]+:[0-9]+/', $text)) {
@@ -151,12 +174,18 @@ class Usfm extends ImporterAbstract
             //     $text = substr($text, 0, $lpp);
             // }
 
-            if($next_line_para) {
-                $text = '¶ ' . $text;
-                $next_line_para = FALSE;
+            // if($next_line_para) {
+            //     $text = '¶ ' . $text;
+            //     $next_line_para = FALSE;
+            // }
+
+            if($end_of_verse) {
+                $this->_addVerse($book, $chapter, $verse, $text, true);
+                $end_of_verse = false;
+                $text = null;
+                $verse = null;
             }
 
-            $this->_addVerse($book, $chapter, $verse, $text, true);
         }
 
         return true;
@@ -186,10 +215,20 @@ class Usfm extends ImporterAbstract
                 $ext = array_pop($spl);
 
                 if(!in_array($filename, $allowed) && $ext != 'usfm' && $ext != 'css') {
-                    return $this->addError('ZIP file contains a file with a non-standard extension: ' . $filename);
+                    return $this->addError('Does not appear to be a USFM file; ZIP file contains a file with a non-standard extension: ' . $filename);
                 }
             }
         }
+
+        $desc  = $Zip->getFromName('copr.htm');
+
+        if(!$desc) {
+            return $this->addError('Could not open file copr.htm inside of Zip file.<br />Is this a valid USFM file?');
+        }
+
+        $this->bible_attributes = [
+            'description' => 'bacon'
+        ];
 
         return true;
     }
@@ -255,8 +294,8 @@ class Usfm extends ImporterAbstract
             $text = preg_replace($pattern, '', $text);
         }
 
-        // Remove any other formatting
-        $text = preg_replace('/\\\\[a-z]+\*?/', '', $text);
+        // Remove any other formatting markup
+        $text = preg_replace('/\\\\[a-z][a-z0-9]*\*?/', '', $text);
 
         if(preg_match('/[0-9]+:[0-9]+/', $text)) {
             $lpp = strrpos($text, '(');
