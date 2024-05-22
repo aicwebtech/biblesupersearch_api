@@ -44,8 +44,10 @@ class Usfm extends ImporterAbstract
             // $file = 'eng-kjv2006_usfm.zip';
             // $file = 'eng-kjv_usfm_apoc.zip';
             // $file = 'engwebu_usfm.zip';
-            $file = 'engkjvcpb_usfm.zip';
-            $module = 'usfm_' . time();
+            // $file = 'engkjvcpb_usfm.zip';
+            $file = 'tg_tgk_usfm.zip';
+            // $module = $this->module = 'usfm_' . time();
+            $attr['name'] = $this->module;
             $attr['lang_short'] = 'en';
             $attr['lang'] = 'English';
             $Bible = $this->_getBible($module);
@@ -126,6 +128,8 @@ class Usfm extends ImporterAbstract
             // Apocryphal book, not supported
             return false;
         }
+
+        var_dump($pseudo_book, $book);
 
         $next_line_para = FALSE;
         $bib = $Zip->getFromName($filename);
@@ -227,7 +231,7 @@ class Usfm extends ImporterAbstract
         }
 
         $this->bible_attributes = [
-            'description' => 'bacon'
+            'description' => $desc,
         ];
 
         return true;

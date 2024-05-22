@@ -478,8 +478,12 @@ abstract class ImporterAbstract
             $this->_existing = (bool) $Bible;
         }
 
-        $Bible  = ($Bible) ? $Bible : new Bible;
-        $Bible->module = $module;
+        if(!$Bible) {
+            $Bible = new Bible;
+            $Bible->module = $module;
+            // $Bible->save();
+        }
+
         $Verses = $Bible->verses();
         $this->_table = $Verses->getTable();
         return $Bible;

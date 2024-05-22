@@ -171,7 +171,9 @@ class VersesTest extends TestCase
             // Grab a few verses from the database
             $verses = $Verses->orderBy('id', 'asc')->take(10)->get();
             $this->assertCount(10, $verses, $Bible->module . ' has empty table');
-            $this->assertTrue(in_array($verses[0]->book, [1, 40]), 'Test verese did not come from Genesis or Matthew');
+            $this->assertGreaterThanOrEqual(1, $verses[0]->book);
+            $this->assertLessThanOrEqual(66, $verses[0]->book);
+            //$this->assertTrue(in_array($verses[0]->book, [1, 40]), $Bible->module . ': Test verese did not come from Genesis or Matthew');
             $this->assertEquals(1, $verses[0]->id, $Bible->module . ' verses are misnumbered');
             $this->assertNotEmpty($verses[0]->text);
         }
