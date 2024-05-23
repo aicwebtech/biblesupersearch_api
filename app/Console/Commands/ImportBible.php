@@ -115,7 +115,7 @@ abstract class ImportBible extends Command
             $debug = true;
             $Importer->debug = true;
             $this->require_file = false;
-            $module = 'auto_' . time();
+            $module = 'auto_' . date('Ymd_Hi');
         }
 
         if($this->require_file && !$file) {

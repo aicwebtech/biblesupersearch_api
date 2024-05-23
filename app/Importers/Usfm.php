@@ -31,6 +31,77 @@ class Usfm extends ImporterAbstract
     protected $paragraph    = NULL;
     protected $path_short   = 'usfm';
 
+    protected $book_map = [
+        'GEN' => 1,
+        'EXO' => 2,
+        'LEV' => 3,
+        'NUM' => 4,
+        'DEU' => 5,
+        'JOS' => 6,
+        'JDG' => 7,
+        'RUT' => 8,
+        '1SA' => 9,
+        '2SA' => 10,
+        '1KI' => 11,
+        '2KI' => 12,
+        '1CH' => 13,
+        '2CH' => 14,
+        'EZR' => 15,
+        'NEH' => 16,
+        'EST' => 17,
+        'JOB' => 18,
+        'PSA' => 19,
+        'PRO' => 20,
+        'ECC' => 21,
+        'SNG' => 22,
+        'ISA' => 23,
+        'JER' => 24,
+        'LAM' => 25,
+        'EZK' => 26,
+        'DAN' => 27,
+        'HOS' => 28,
+        'JOL' => 29,
+        'AMO' => 30,
+        'OBA' => 31,
+        'JON' => 32,
+        'MIC' => 33,
+        'NAM' => 34,
+        'HAB' => 35,
+        'ZEP' => 36,
+        'HAG' => 37,
+        'ZEC' => 38,
+        'MAL' => 39,
+        'MAT' => 40,
+        'MRK' => 41,
+        'LUK' => 42,
+        'JHN' => 43,
+        'ACT' => 44,
+        'ROM' => 45,
+        '1CO' => 46,
+        '2CO' => 47,
+        'GAL' => 48,
+        'EPH' => 49,
+        'PHP' => 50,
+        'COL' => 51,
+        '1TH' => 52,
+        '2TH' => 53,
+        '1TI' => 54,
+        '2TI' => 55,
+        'TIT' => 56,
+        'PHM' => 57,
+        'HEB' => 58,
+        'JAS' => 59,
+        '1PE' => 60,
+        '2PE' => 61,
+        '1JN' => 62,
+        '2JN' => 63,
+        '3JN' => 64,
+        'JUD' => 65,
+        'REV' => 66,
+    ];
+
+    protected $book_metas = [];
+
     protected function _importHelper(Bible &$Bible): bool
     {
         ini_set("memory_limit", "500M");
@@ -45,7 +116,8 @@ class Usfm extends ImporterAbstract
             // $file = 'eng-kjv_usfm_apoc.zip';
             // $file = 'engwebu_usfm.zip';
             // $file = 'engkjvcpb_usfm.zip';
-            $file = 'tg_tgk_usfm.zip';
+            $file = 'bn_irv_usfm.zip';
+            // $file = 'tg_tgk_usfm.zip';
             // $module = $this->module = 'usfm_' . time();
             $attr['name'] = $this->module;
             $attr['lang_short'] = 'en';
@@ -58,11 +130,7 @@ class Usfm extends ImporterAbstract
         // Where did you get this Bible?
         $source = "";
 
-        $overwrite_existing  = $this->overwrite;
-
-        $existing = $this->_existing;
-
-        if(!$overwrite_existing && $this->_existing && $this->insert_into_bible_table) {
+        if(!$this->overwrite && $this->_existing && $this->insert_into_bible_table) {
             return $this->addError('Module already exists: \'' . $module . '\' Use --overwrite to overwrite it.', 4);
         }
 
@@ -104,6 +172,8 @@ class Usfm extends ImporterAbstract
             return $this->addError('Unable to open ' . $zipfile, 4);
         }
 
+        //print_r($this->book_metas);
+
         $this->_insertVerses();
 
         return true;
@@ -118,24 +188,43 @@ class Usfm extends ImporterAbstract
             return FALSE;
         }
 
-        if($pseudo_book >= 2 && $pseudo_book <= 40) {
-            // Old Testament book
-            $book = $pseudo_book - 1;
-        } else if($pseudo_book >= 70) {
-            // New Testament book
-            $book = $pseudo_book - 30;
-        } else {
-            // Apocryphal book, not supported
-            return false;
-        }
+        // if($pseudo_book >= 2 && $pseudo_book <= 40) {
+        //     // Old Testament book
+        //     $book = $pseudo_book - 1;
+        // } else if($pseudo_book >= 70) {
+        //     // New Testament book
+        //     $book = $pseudo_book - 30;
+        // } else {
+        //     // Apocryphal book, not supported
+        //     return false;
+        // }
 
-        var_dump($pseudo_book, $book);
 
         $next_line_para = FALSE;
         $bib = $Zip->getFromName($filename);
         $bib = preg_split("/\\r\\n|\\r|\\n/", $bib);
+
+        $id_line = array_shift($bib);
+        $book_str = substr($id_line, 4, 3);
+
+        // var_dump($book_str);
+
+        if(!isset($this->book_map[$book_str])) {
+            var_dump('skipped: ' . $book_str);
+            return; // Apocryphal book, not supported
+        }
+
+        $book = $this->book_map[$book_str];
+        // var_dump($book);
+
         $text = null;
         $end_of_verse = false;
+
+        $book_meta = [
+            'name_long' => null,
+            'name'      => null,
+            'shortname' => null,
+        ];
 
         foreach($bib as $key => $line) {
             $line = trim($line);
@@ -148,6 +237,21 @@ class Usfm extends ImporterAbstract
 
                 continue;
             }            
+
+            if(strpos($line, '\toc1') === 0) {
+                $book_meta['name_long'] = substr($line, 6);
+                continue;
+            }            
+
+            if(strpos($line, '\toc2') === 0) {
+                $book_meta['name'] = substr($line, 6);
+                continue;
+            }            
+
+            if(strpos($line, '\toc3') === 0) {
+                $book_meta['shortname'] = substr($line, 6);
+                continue;
+            }
             
             if(strpos($line, '\p') === 0) {
                 $next_line_para = TRUE;
@@ -191,6 +295,8 @@ class Usfm extends ImporterAbstract
             }
 
         }
+
+        $this->book_metas[$book] = $book_meta;
 
         return true;
     }
