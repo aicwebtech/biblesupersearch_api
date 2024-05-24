@@ -158,7 +158,8 @@ class BibleController extends Controller
      *
      * @return \Illuminate\Http\Response
      */
-    public function create() {
+    public function create() 
+    {
         return response('Not Implemented', 501);
     }
 
@@ -168,7 +169,8 @@ class BibleController extends Controller
      * @param  \Illuminate\Http\Request  $request
      * @return \Illuminate\Http\Response
      */
-    public function store(Request $request) {
+    public function store(Request $request) 
+    {
         $this->_save($request, NULL);
     }
 
@@ -178,7 +180,8 @@ class BibleController extends Controller
      * @param  int  $id
      * @return \Illuminate\Http\Response
      */
-    public function show($id) {
+    public function show($id) 
+    {
         $Bible = Bible::findOrFail($id);
 
         $resp = new \stdClass();
@@ -195,7 +198,8 @@ class BibleController extends Controller
      * @param  int  $id
      * @return \Illuminate\Http\Response
      */
-    public function edit($id) {
+    public function edit($id) 
+    {
         $Bible = Bible::findByModule($id);
 
         if(!$Bible) {
@@ -205,11 +209,13 @@ class BibleController extends Controller
         return $this->editHelper($Bible->id);
     }
 
-    public function editHash() {
+    public function editHash() 
+    {
         return $this->editHelper(0);
     }
 
-    protected function editHelper($bibleId = null) {
+    protected function editHelper($bibleId = null) 
+    {
         Bible::populateBibleTable();
         $ImportManagerClass = Helpers::find('\App\ImportManager');
 
@@ -241,7 +247,8 @@ class BibleController extends Controller
      * @param  int  $id
      * @return \Illuminate\Http\Response
      */
-    public function update(Request $request, $id) {
+    public function update(Request $request, $id) 
+    {
         return $this->_save($request, $id);
     }
 
@@ -252,7 +259,8 @@ class BibleController extends Controller
      * @param  int  $id
      * @return \Illuminate\Http\Response
      */
-    public function destroy($id) {
+    public function destroy($id) 
+    {
         $Bible = Bible::findOrFail($id);
 
         $resp = new \stdClass();
@@ -283,7 +291,8 @@ class BibleController extends Controller
         return new Response($resp, 200);
     }
 
-    protected function _save(Request $request, $id = NULL) {
+    protected function _save(Request $request, $id = NULL) 
+    {
         $resp = new \stdClass();
 
         $BibleClass = Helpers::find('\App\Models\Bible');
@@ -317,7 +326,8 @@ class BibleController extends Controller
         return new Response($resp, 200);
     }
 
-    public function enable(Request $request, $id) {
+    public function enable(Request $request, $id) 
+    {
         $Bible = Bible::findOrFail($id);
         $Bible->enabled = 1;
         $Bible->save();
@@ -333,7 +343,8 @@ class BibleController extends Controller
         return new Response($resp, 200);
     }
 
-    public function disable(Request $request, $id) {
+    public function disable(Request $request, $id) 
+    {
         $Bible = Bible::findOrFail($id);
         $resp = new \stdClass;
         $resp->success = TRUE;
@@ -351,7 +362,8 @@ class BibleController extends Controller
         return new Response($resp, 200);
     }
 
-    public function install(Request $request, $id) {
+    public function install(Request $request, $id) 
+    {
         $Bible = Bible::findOrFail($id);
         $data  = $request->toArray();
         $enable = (array_key_exists('enable', $data) && $data['enable']);
@@ -368,7 +380,8 @@ class BibleController extends Controller
         return new Response($resp, 200);
     }    
 
-    public function updateModule(Request $request, $id) {
+    public function updateModule(Request $request, $id) 
+    {
         $Bible  = Bible::findOrFail($id);
         $resp = new \stdClass();
         $resp->success = TRUE;
@@ -393,7 +406,8 @@ class BibleController extends Controller
         return new Response($resp, 200);
     }
 
-    public function uninstall(Request $request, $id) {
+    public function uninstall(Request $request, $id) 
+    {
         $Bible = Bible::findOrFail($id);
         $resp  = new \stdClass();
         $resp->success = TRUE;
@@ -484,7 +498,8 @@ class BibleController extends Controller
         return new Response($resp, 200);
     }
 
-    public function export(Request $request, $id) {
+    public function export(Request $request, $id) 
+    {
         $Bible = Bible::findOrFail($id);
 
         if($Bible->official) {
@@ -507,7 +522,8 @@ class BibleController extends Controller
         return new Response($resp, 200);
     }
 
-    public function meta(Request $request, $id) {
+    public function meta(Request $request, $id) 
+    {
         $Bible  = Bible::findOrFail($id);
         $data   = $request->toArray();
         $create = (array_key_exists('create_new', $data) && $data['create_new']);
@@ -524,7 +540,8 @@ class BibleController extends Controller
         return new Response($resp, 200);
     }    
 
-    public function revert(Request $request, $id) {
+    public function revert(Request $request, $id) 
+    {
         $Bible  = Bible::findOrFail($id);
         $data   = $request->toArray();
         $Bible->revertMetaInfo();
@@ -540,7 +557,8 @@ class BibleController extends Controller
         return new Response($resp, 200);
     }
 
-    public function research(Request $request, $id) {
+    public function research(Request $request, $id) 
+    {
         $Bible  = Bible::findOrFail($id);
         $Bible->research = 1;
         $Bible->save();
@@ -556,7 +574,8 @@ class BibleController extends Controller
         return new Response($resp, 200);
     }   
 
-    public function unresearch(Request $request, $id) {
+    public function unresearch(Request $request, $id) 
+    {
         $Bible  = Bible::findOrFail($id);
         $Bible->research = 0;
         $Bible->save();
@@ -572,7 +591,8 @@ class BibleController extends Controller
         return new Response($resp, 200);
     }
 
-    public function uniqueCheck(Request $request) {
+    public function uniqueCheck(Request $request) 
+    {
         $data  = $request->toArray();
 
         $valid_fields = ['name', 'shortname', 'module'];
@@ -599,7 +619,8 @@ class BibleController extends Controller
         return new Response($resp, $resp->success ? 200 : 401);
     }
 
-    public function importCheck(Request $request) {
+    public function importCheck(Request $request) 
+    {
         $resp = new \stdClass();
         $resp->success = TRUE;
         $resp->errors  = [];
@@ -619,7 +640,8 @@ class BibleController extends Controller
         return new Response($resp, $Manager->getHttpStatus());
     }
 
-    public function import(Request $request) {
+    public function import(Request $request) 
+    {
         $resp = new \stdClass();
         $resp->success = TRUE;
 

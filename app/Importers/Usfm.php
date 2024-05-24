@@ -100,8 +100,6 @@ class Usfm extends ImporterAbstract
         'REV' => 66,
     ];
 
-    protected $book_metas = [];
-
     protected function _importHelper(Bible &$Bible): bool
     {
         ini_set("memory_limit", "500M");
@@ -109,21 +107,24 @@ class Usfm extends ImporterAbstract
         $dir    = $this->getImportDir();
         $file   = $this->file;   // File name, minus extension
         $module = $this->module; // Module and db name
-        $attr   = $this->bible_attributes;
 
         if($this->debug) {
             // $file = 'eng-kjv2006_usfm.zip';
             // $file = 'eng-kjv_usfm_apoc.zip';
             // $file = 'engwebu_usfm.zip';
             // $file = 'engkjvcpb_usfm.zip';
-            $file = 'bn_irv_usfm.zip';
+            // $file = 'bn_irv_usfm.zip';
+            // $file = 'gu_irv_2017_usfm.zip';
+            $file = 'kn_irv_usfm.zip';
             // $file = 'tg_tgk_usfm.zip';
             // $module = $this->module = 'usfm_' . time();
-            $attr['name'] = $this->module;
-            $attr['lang_short'] = 'en';
-            $attr['lang'] = 'English';
-            $Bible = $this->_getBible($module);
+            $this->bible_attributes['name'] = $this->module;
+            $this->bible_attributes['lang_short'] = 'kn';
+            $this->bible_attributes['lang'] = 'gu';
+            $Bible = $this->_getBible($this->module);
         }
+
+        $attr   = $this->bible_attributes;
 
         $zipfile = $dir . $file;
 
@@ -263,6 +264,21 @@ class Usfm extends ImporterAbstract
                 $verse = (int) $matches[1];
                 $text  = $matches[2];
 
+                // var_dump($verse);
+
+                $vs = strpos($line, ' ') + 1;
+                $ts = strpos($line, ' ', $vs) + 1;
+
+                $verse_str = substr($line, $vs, $ts - $vs - 1);
+                $verse = (int)$verse_str;
+
+                $text = substr($line, $ts);
+
+                // var_dump($verse_str);
+                // var_dump($verse);
+                // var_dump($text);
+                // die();
+
                 if($next_line_para) {
                     $text = '¶ ' . $text;
                     $next_line_para = FALSE;
@@ -395,7 +411,10 @@ class Usfm extends ImporterAbstract
             'f',    // footnotes
             'ef',   // extended footnotes
             'ex',   // extended cross references
+            'va',   // Alternate verse number
         ];
+
+        // We KEEP vp - published verse number
 
         $text = str_replace("\+", "\\", $text);
 

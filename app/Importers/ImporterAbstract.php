@@ -3,6 +3,7 @@
 namespace App\Importers;
 
 use App\Models\Bible;
+use App\Models\Books\BookAbstract as Book;
 use App\Models\Language;
 use PhpSpec\Exception\Exception;
 use \DB;
@@ -42,10 +43,10 @@ abstract class ImporterAbstract
     protected $has_gui = FALSE; // Whether there is a user interface access (via the Bible manager) to this importer
     protected $path_short = 'misc';  // Path (inside /bibles) to where import files are located
     protected $has_dedicated_dir = NULL; // Whether or not $path_short is dedicated to this specific importer.  Defaults to TRUE if $path_short is 'misc' and FALSE otherwise
+    
     protected $file_extensions = []; // White list of allowable file extensions
-
     protected $settings = []; // User-selectible settings, specific to each importer
-
+    protected $book_metas = []; // Book info, if able to import book list 
     protected $attribute_map = [];
 
     protected $required = ['module', 'lang_short']; // Array of required fields (for specific importer type);
@@ -101,6 +102,8 @@ abstract class ImporterAbstract
             return FALSE;
         }
 
+        $this->saveBookList();
+
         if(is_callable($this->_after_import_bible)) {
             call_user_func($this->_after_import_bible, $Bible);
         }
@@ -110,6 +113,50 @@ abstract class ImporterAbstract
         }
 
         return TRUE;
+    }
+
+    public function saveBookList()
+    {
+        $lang = $this->bible_attributes['lang_short'] ?: null;
+        $book_count = count($this->book_metas);
+        $ncount = 0;
+        $min = 66;
+        $tn = 'books_' . strtolower($lang);
+
+        if(!$lang || $book_count < $min) {
+            return false;
+        }
+
+        foreach($this->book_metas as $m) {
+            $ncount += (isset($m['name']) && $m['name']) ? 1 : 0;
+        }
+
+        if($ncount !== $book_count) {
+            return false;
+        }
+
+        $Class = Book::getClassNameByLanguage($lang, true, true);
+
+        if(\Schema::hasTable($tn)) {
+            $ecount = $Class::count();
+
+            if($ecount) {
+                // don't attempt to import if any books already exit for the language.
+                return false;
+            }
+        }
+
+        Book::createBookTable($lang);
+
+        foreach($this->book_metas as $key => $m) {
+            $Book = new $Class;
+            $Book->id = $key;
+            $Book->name = $m['name'];
+            $Book->shortname = $m['shortname'];
+            $Book->save();
+        }
+
+        return true;
     }
 
     public function setBeforeImportBible(callable $func)

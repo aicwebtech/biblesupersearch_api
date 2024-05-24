@@ -11,6 +11,10 @@ class BookAbstract extends Model
 {
     protected $language;
 
+    protected $fillable = [
+        'name', 'shortname', 'matching1', 'matching2',
+    ];
+
     /**
      * Create a new Eloquent model instance.
      *
@@ -49,12 +53,12 @@ class BookAbstract extends Model
      * @param string $language
      * @return string the class name
      */
-    public static function getClassNameByLanguage($language, $make = true) 
+    public static function getClassNameByLanguage($language, $make = true, $perm = false) 
     {
         $class_name = static::getClassNameByLanguageRaw($language);
 
         if(!class_exists($class_name) && $make) {
-            static::makeClassByLanguage($language);
+            static::makeClassByLanguage($language, $perm);
         }
 
         if(!class_exists($class_name)) {
@@ -83,6 +87,7 @@ class BookAbstract extends Model
             }
 
             $code = '
+                // Auto-generated class
                 namespace ' . $namespace . ';
                 class ' . $model_class . ' extends BookAbstract 
                 {
@@ -93,6 +98,15 @@ class BookAbstract extends Model
 
             if($perm_file && is_writable(dirname(__FILE__))) {
                 // Create permanent class file and include it
+                $code = '
+                    // Auto-generated class
+                    namespace ' . $namespace . ';
+                    class ' . $model_class . ' extends BookAbstract 
+                    {
+                        protected $table = \'' . $table . '\';
+                    }
+                ';
+
                 $filepath = dirname(__FILE__) . '/' . $model_class . '.php';
                 file_put_contents($filepath, '<?php ' . $code);
                 include($filepath);
