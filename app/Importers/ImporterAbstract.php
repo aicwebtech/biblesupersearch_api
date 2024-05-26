@@ -117,13 +117,17 @@ abstract class ImporterAbstract
 
     public function saveBookList()
     {
-        $lang = $this->bible_attributes['lang_short'] ?: null;
+        $lang = isset($this->bible_attributes['lang_short']) ? $this->bible_attributes['lang_short'] : null;
         $book_count = count($this->book_metas);
         $ncount = 0;
         $min = 66;
         $tn = 'books_' . strtolower($lang);
 
-        if(!$lang || $book_count < $min) {
+        $book_csv_filename = Book::getCsvFileName($lang);
+
+        if(
+            !$lang || $book_count < $min || \App\Importers\Database::importFileExists($book_csv_filename)
+        ) {
             return false;
         }
 
@@ -135,18 +139,16 @@ abstract class ImporterAbstract
             return false;
         }
 
+        Book::createBookTable($lang);
+
         $Class = Book::getClassNameByLanguage($lang, true, true);
 
-        if(\Schema::hasTable($tn)) {
-            $ecount = $Class::count();
+        $ecount = $Class::count();
 
-            if($ecount) {
-                // don't attempt to import if any books already exit for the language.
-                return false;
-            }
+        if($ecount) {
+            // don't attempt to import if any books already exit for the language.
+            return false;
         }
-
-        Book::createBookTable($lang);
 
         foreach($this->book_metas as $key => $m) {
             $Book = new $Class;
@@ -154,6 +156,10 @@ abstract class ImporterAbstract
             $Book->name = $m['name'];
             $Book->shortname = $m['shortname'];
             $Book->save();
+        }
+
+        if(config('bss.dev_tools')) {
+            Book::exportToCsv($lang);
         }
 
         return true;

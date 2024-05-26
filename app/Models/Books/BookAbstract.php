@@ -271,6 +271,20 @@ class BookAbstract extends Model
         DatabaseSeeder::setCreatedUpdated($tn);
     }
 
+    public static function exportToCsv($language = null)
+    {
+        $csv_file = static::getCsvFileName($language);
+        $map = ['id', 'name', 'shortname', 'matching1', 'matching2'];
+
+        \App\Importers\Database::exportCSV($csv_file, $map, static::getClassNameByLanguage($language));
+    }
+
+    public static function getCsvFileName($language = null)
+    {   
+        $language = $language ?: static::getLanguage();
+        return 'bible_books/' . strtolower($language) . '.csv';
+    }
+
     public static function createBookTables() 
     {
         $languages = static::getSupportedLanguages();

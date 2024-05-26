@@ -148,7 +148,6 @@ class Usfm extends ImporterAbstract
         if($Zip->open($zipfile) === TRUE) {
             // Not importing any metadata at this time!
             if($this->insert_into_bible_table) {
-                
                 $desc  = $Zip->getFromName('copr.htm');
 
                 if(!$desc) {
@@ -173,8 +172,6 @@ class Usfm extends ImporterAbstract
             return $this->addError('Unable to open ' . $zipfile, 4);
         }
 
-        //print_r($this->book_metas);
-
         $this->_insertVerses();
 
         return true;
@@ -189,18 +186,6 @@ class Usfm extends ImporterAbstract
             return FALSE;
         }
 
-        // if($pseudo_book >= 2 && $pseudo_book <= 40) {
-        //     // Old Testament book
-        //     $book = $pseudo_book - 1;
-        // } else if($pseudo_book >= 70) {
-        //     // New Testament book
-        //     $book = $pseudo_book - 30;
-        // } else {
-        //     // Apocryphal book, not supported
-        //     return false;
-        // }
-
-
         $next_line_para = FALSE;
         $bib = $Zip->getFromName($filename);
         $bib = preg_split("/\\r\\n|\\r|\\n/", $bib);
@@ -208,15 +193,11 @@ class Usfm extends ImporterAbstract
         $id_line = array_shift($bib);
         $book_str = substr($id_line, 4, 3);
 
-        // var_dump($book_str);
-
         if(!isset($this->book_map[$book_str])) {
-            var_dump('skipped: ' . $book_str);
             return; // Apocryphal book, not supported
         }
 
         $book = $this->book_map[$book_str];
-        // var_dump($book);
 
         $text = null;
         $end_of_verse = false;
@@ -253,6 +234,8 @@ class Usfm extends ImporterAbstract
                 $book_meta['shortname'] = substr($line, 6);
                 continue;
             }
+
+            continue; // debugging
             
             if(strpos($line, '\p') === 0) {
                 $next_line_para = TRUE;
@@ -260,11 +243,9 @@ class Usfm extends ImporterAbstract
             }
 
             if(strpos($line, '\v') === 0) {
-                preg_match('/([0-9]+) (.+)/', $line, $matches);
-                $verse = (int) $matches[1];
-                $text  = $matches[2];
-
-                // var_dump($verse);
+                // preg_match('/([0-9]+) (.+)/', $line, $matches);
+                // $verse = (int) $matches[1];
+                // $text  = $matches[2];
 
                 $vs = strpos($line, ' ') + 1;
                 $ts = strpos($line, ' ', $vs) + 1;
@@ -273,11 +254,6 @@ class Usfm extends ImporterAbstract
                 $verse = (int)$verse_str;
 
                 $text = substr($line, $ts);
-
-                // var_dump($verse_str);
-                // var_dump($verse);
-                // var_dump($text);
-                // die();
 
                 if($next_line_para) {
                     $text = '¶ ' . $text;
@@ -291,25 +267,12 @@ class Usfm extends ImporterAbstract
                 $end_of_verse = true;
             }
 
-
-            // Moved
-            // if(preg_match('/[0-9]+:[0-9]+/', $text)) {
-            //     $lpp = strrpos($text, '(');
-            //     $text = substr($text, 0, $lpp);
-            // }
-
-            // if($next_line_para) {
-            //     $text = '¶ ' . $text;
-            //     $next_line_para = FALSE;
-            // }
-
             if($end_of_verse) {
                 $this->_addVerse($book, $chapter, $verse, $text, true);
                 $end_of_verse = false;
                 $text = null;
                 $verse = null;
             }
-
         }
 
         $this->book_metas[$book] = $book_meta;

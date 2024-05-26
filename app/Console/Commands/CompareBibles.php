@@ -75,6 +75,7 @@ class CompareBibles extends BibleAbstract
 
         if(!$this->quiet) {            
             $Engine = \App\Engine::getInstance();
+            $Engine->allow_disabled_bibles = true;
             $response = $Engine->actionStatistics(['bible' => [$module1, $module2], 'reference' => 'John 3:16']);
 
             echo $module1 . PHP_EOL;
@@ -100,6 +101,7 @@ class CompareBibles extends BibleAbstract
             echo 'Number of verses: '    . $response[ $module2 ]['full']['num_verses']   - $response[ $module1 ]['full']['num_verses'] . PHP_EOL;
 
             echo PHP_EOL;
+            $Engine->allow_disabled_bibles = false;
         }
 
         $tb1 = $Bible1->verses()->getTable();

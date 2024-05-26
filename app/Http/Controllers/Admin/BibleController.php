@@ -479,7 +479,7 @@ class BibleController extends Controller
                 $resp->messages[] = $test['ref'] . ' (' . $test['label'] . ')';
 
                 foreach($results[$Bible->module] as $verse) {
-                    $resp->messages[] = $verse->text;
+                    $resp->messages[] = $verse->verse . ')) ' . $verse->text;
                 }
             }
 

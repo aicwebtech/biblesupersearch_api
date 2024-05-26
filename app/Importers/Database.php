@@ -2,6 +2,7 @@
 namespace App\Importers;
 
 use Illuminate\Support\Facades\Schema;
+use Illuminate\Database\Eloquent\Collection;
 use \DB;
 
 /*
@@ -30,6 +31,13 @@ class Database
         }
         
         static::$processing_queue = FALSE;
+    }
+
+    static public function importFileExists($file, $dir = null)
+    {
+        $dir = ($dir) ? $dir : dirname(__FILE__) . '/../../database/dumps';
+        $path = $dir . '/' . $file;
+        return file_exists($path);
     }
 
     static public function importSqlFile($file, $dir = NULL, $db_table = NULL) 
@@ -84,6 +92,65 @@ class Database
                 //echo $ex->getMessage() . PHP_EOL . PHP_EOL;
             }
         }
+    }
+
+    static public function exportCSV($file, $map, $model_class, $id_field = 'id', $dir = NULL, $overwrite = false)
+    {
+        $default_dir = ($dir) ? FALSE : TRUE;
+        $dir = ($dir) ? $dir : dirname(__FILE__) . '/../../database/dumps';
+        $path = $dir . '/' . $file;
+        $display_path = ($default_dir) ? '<app_dir>/database/dumps/' . $file : $path;
+        $file_exists = is_file($path);
+
+        if(!$overwrite) {
+            if($file_exists) {
+                throw new \Exception('CSV export file already exists: ' . $display_path);
+                return false;
+            }
+        } else {
+            if($file_exists && !is_writable($path)) {
+                throw new \Exception('CSV export file is not writeable: ' . $display_path);
+                return false;
+            }
+        }
+
+        $fp = fopen($path, 'w'); // w option truncates file to 0 length
+        fputcsv($fp, $map); // use map as header row in CSV
+
+        $model_class::chunk(500, function(Collection $Objects) use ($fp, $map) {
+            foreach($Objects as $Object) {
+                $raw = $Object->attributesToArray();
+                $mapped = [];
+
+                foreach($map as $mkey => $lr) {
+                    $lr = explode('|', $lr);
+                    $l = $lr[0];
+                    $format = array_key_exists(1, $lr) ? $lr[1] : 'null';
+
+                    if(array_key_exists($l, $raw)) {
+                        $val = $raw[$l];
+
+                        switch($format) {
+                            case 'boolstr':
+                                $val = $val && $val != 'no' && $val != 'false' ? 'yes' : 'no';
+                                break;
+                            default:    
+                                $val = $val ?: '';
+                        }
+                    }
+                    else {
+                        $val = '';
+                    }
+
+                    $mapped[] = $val;
+                }
+
+                fputcsv($fp, $mapped);
+            }
+        });
+
+        fclose($fp);
+        return true;
     }
 
     static public function importCSV($file, $map, $model_class, $id_field = 'id', $dir = NULL, $direct_insert_threshold = 100) 
