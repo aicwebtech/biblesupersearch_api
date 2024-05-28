@@ -147,6 +147,7 @@ class CompareBibles extends BibleAbstract
         if($results && $count) {
             if($this->option('verbose')) {                
                 echo PHP_EOL;
+                echo 'Details:' . PHP_EOL;
 
                 foreach($results as $row) {
                     echo str_pad($row->book, 3);

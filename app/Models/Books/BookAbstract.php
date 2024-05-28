@@ -72,6 +72,27 @@ class BookAbstract extends Model
         return $class_name;
     }
 
+    /**
+     * Gets the class name for the book list model for the given language
+     * Does NOT fall back to default language
+     * @param string $language
+     * @return string|bool the class name or false if class not found and not createable
+     */
+    public static function getClassNameByLanguageStrict($language, $make = true, $perm = false) 
+    {
+        $class_name = static::getClassNameByLanguageRaw($language);
+
+        if(!class_exists($class_name) && $make) {
+            static::makeClassByLanguage($language, $perm);
+        }
+
+        if(!class_exists($class_name)) {
+            return false;
+        }
+
+        return $class_name;
+    }
+
     public static function makeClassByLanguage($language)
     {
         $model_class = studly_case(strtolower($language));
@@ -352,12 +373,13 @@ class BookAbstract extends Model
     {
         return [
             // Languages supported prior to v 5.6
-            'ar', 'de', 'en', 'es', 'fr', 'hu', 'it', 'nl', 'ro', 'ru', 'zh', 'hi', 'pt', 'ja', 'zh_CN', 'zh_TW'
+            'ar', 'de', 'en', 'es', 'fr', 'hu', 'it', 'nl', 'ro', 'ru', 'zh', 'hi', 'pt', 'ja', 'zh_CN', 'zh_TW',
 
             // Languages with book lists (and UI translations) added in v5.6
             // 'id', 'sw', 'vi', 'ko', 'tl', 'pl', 'fa', 'tr', 'sq', 'th', 'he', 'mi', 'af', 'cs', 'lt',
 
             // Language support completely added in v5.6
+            'gu',
         ];
     }
 

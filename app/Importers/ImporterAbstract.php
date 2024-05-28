@@ -7,6 +7,7 @@ use App\Models\Books\BookAbstract as Book;
 use App\Models\Language;
 use PhpSpec\Exception\Exception;
 use \DB;
+use Illuminate\Support\Facades\DB AS BDB;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
 
@@ -117,7 +118,14 @@ abstract class ImporterAbstract
 
     public function saveBookList()
     {
-        $lang = isset($this->bible_attributes['lang_short']) ? $this->bible_attributes['lang_short'] : null;
+        $Bible = Bible::findByModule($this->module);
+
+        $lang = $Bible ? $Bible->lang_short : null;
+
+        if(!$lang) {
+            $lang = isset($this->bible_attributes['lang_short']) ? $this->bible_attributes['lang_short'] : null;
+        }
+
         $book_count = count($this->book_metas);
         $ncount = 0;
         $min = 66;
@@ -139,28 +147,34 @@ abstract class ImporterAbstract
             return false;
         }
 
-        Book::createBookTable($lang);
+        //BDB::transaction(function() use ($lang) {
+            Book::createBookTable($lang);
 
-        $Class = Book::getClassNameByLanguage($lang, true, true);
+            $Class = Book::getClassNameByLanguageStrict($lang, true, true);
 
-        $ecount = $Class::count();
+            if(!$Class) {
+                throw new \Exception('Class not found for language ' . $lang);
+            }
 
-        if($ecount) {
-            // don't attempt to import if any books already exit for the language.
-            return false;
-        }
+            $ecount = $Class::count();
 
-        foreach($this->book_metas as $key => $m) {
-            $Book = new $Class;
-            $Book->id = $key;
-            $Book->name = $m['name'];
-            $Book->shortname = $m['shortname'];
-            $Book->save();
-        }
+            if($ecount) {
+                // don't attempt to import if any books already exit for the language.
+                return false;
+            }
 
-        if(config('bss.dev_tools')) {
-            Book::exportToCsv($lang);
-        }
+            foreach($this->book_metas as $key => $m) {
+                $Book = new $Class;
+                $Book->id = $key;
+                $Book->name = $m['name'];
+                $Book->shortname = $m['shortname'];
+                $Book->save();
+            }
+
+            if(config('bss.dev_tools')) {
+                Book::exportToCsv($lang);
+            }
+        //});
 
         return true;
     }

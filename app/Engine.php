@@ -799,10 +799,16 @@ class Engine
         $Books = $namespaced_class::select('id', 'name', 'shortname')->orderBy('id', 'ASC') -> get() -> all();
         $Bible = Bible::findByModule(config('bss.defaults.bible'));
         $cvc   = $Bible->getChapterVerseCount();
+
         $books = [];
 
         foreach($Books as $Book) {
             $attr = $Book->getAttributes();
+
+            if($Book->id > 66) {
+                continue; // Apoc books not currently supported; will cause breakage because we don't have chapter/verse counts for them
+            }
+
             $attr['chapters']       = $cvc[$Book->id]['chapters'];
             $attr['chapter_verses'] = $cvc[$Book->id]['chapter_verses'];
             $books[] = $attr;
