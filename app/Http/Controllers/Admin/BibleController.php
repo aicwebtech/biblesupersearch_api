@@ -456,6 +456,7 @@ class BibleController extends Controller
             ['label' => 'OT Book', 'ref' => 'Obadiah'],
             ['label' => 'Last verse of OT', 'ref' => 'Malachi 4:6'],
             ['label' => 'First verse of NT', 'ref' => 'Matthew 1:1'],
+            ['label' => 'Red Letter Test (note: text won\'t actually be red here)', 'ref' => 'Matthew 5:3-5'],
             ['label' => 'NT Chapter', 'ref' => 'Philippians 3'],
             ['label' => 'NT Book', 'ref' => '2 John'],
             ['label' => 'Last Verse', 'ref' => 'Revelation 22:21'],

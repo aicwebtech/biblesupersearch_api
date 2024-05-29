@@ -114,13 +114,13 @@ class Usfm extends ImporterAbstract
             // $file = 'engwebu_usfm.zip';
             // $file = 'engkjvcpb_usfm.zip';
             $file = 'bn_irv_usfm.zip';
-            $file = 'ha_con_usfm.zip';
+            // $file = 'mr_irv_usfm.zip';
             // $file = 'gu_irv_2017_usfm.zip';
             // $file = 'kn_irv_usfm.zip';
             // $file = 'tg_tgk_usfm.zip';
             // $module = $this->module = 'usfm_' . time();
             $this->bible_attributes['name'] = $this->module;
-            $this->bible_attributes['lang_short'] = 'ha';
+            $this->bible_attributes['lang_short'] = 'bn';
             $this->bible_attributes['lang'] = 'gu';
             $Bible = $this->_getBible($this->module);
         }
@@ -264,7 +264,15 @@ class Usfm extends ImporterAbstract
                 $text .= $line;
             }
 
-            if(!$line_lookahead || strpos($line_lookahead, '\c') === 0 || strpos($line_lookahead, '\v') === 0) {
+            if(!$line_lookahead || 
+                strpos($line_lookahead, '\c') === 0 || 
+                strpos($line_lookahead, '\v') === 0 ||
+                strpos($line_lookahead, '\s') === 0 ||
+                strpos($line_lookahead, '\mt') === 0 ||
+                strpos($line_lookahead, '\ms') === 0 ||
+                strpos($line_lookahead, '\r') === 0 ||
+                strpos($line_lookahead, '\d') === 0
+             ) {
                 $end_of_verse = true;
             }
 
@@ -376,6 +384,8 @@ class Usfm extends ImporterAbstract
             'ef',   // extended footnotes
             'ex',   // extended cross references
             'va',   // Alternate verse number
+            'rq',   // Inline quotation reference(s).
+            'x',    // Cross references
         ];
 
         // We KEEP vp - published verse number
