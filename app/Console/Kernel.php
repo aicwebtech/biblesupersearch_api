@@ -23,7 +23,7 @@ class Kernel extends ConsoleKernel
         Commands\RenderExtras::class,
         Commands\ImportBibleUnbound::class,
         Commands\ImportBibleAnalyzer::class,
-        Commands\ImportBibleEvening::class,
+        // Commands\ImportBibleEvening::class, // Obsolete
         Commands\ImportBibleMySword::class,
         Commands\ImportBibleUsfm::class,
         // Commands\ImportBibleCustom::class,  // DEV TOOL: Comment out when not using
@@ -62,7 +62,8 @@ class Kernel extends ConsoleKernel
         })->weekly();
     }
 
-    public function __construct(\Illuminate\Contracts\Foundation\Application $app, \Illuminate\Contracts\Events\Dispatcher $events) {
+    public function __construct(\Illuminate\Contracts\Foundation\Application $app, \Illuminate\Contracts\Events\Dispatcher $events) 
+    {
         $this->bootstrappers[] = \App\Http\Bootstrap\LoadSoftConfiguration::class;
 
         parent::__construct($app, $events);

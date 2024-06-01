@@ -14,6 +14,8 @@ class Passage {
 
     use Traits\Error;
 
+    static public $allow_book_range_without_search = false;
+
     // REGEXP pattern to match any passage reference
     // This should match ALL valid references.  However, it will match some invalid ones, too
     // Attempted to make unicode safe but not working ...
@@ -77,7 +79,7 @@ class Passage {
 
         if(strpos($book, '-') !== FALSE) {
             // handle book ranges
-            if(!$this->is_search) {
+            if(!$this->is_search && !static::$allow_book_range_without_search) {
                 return $this->_addBookError(trans('errors.book.multiple_without_search'));
             }
 
@@ -256,7 +258,8 @@ class Passage {
          */
     }
 
-    public function setChapterVerse($chapter_verse) {
+    public function setChapterVerse($chapter_verse) 
+    {
         if($this->is_random) {
             return;
         }
@@ -267,14 +270,14 @@ class Passage {
         $chapter_verse = preg_replace('/,+/', ',', $chapter_verse); // Replace repeated , with one ,
         $chapter_verse = preg_replace('/-+/', '-', $chapter_verse); // Replace repeated - with one -
         $chapter_verse = preg_replace('/:+/', ':', $chapter_verse); // Replace repeated : with one :
-        $chapter_verse = (!$this->is_search && empty($chapter_verse)) ? '1' : $chapter_verse;
+        $chapter_verse = (!$this->is_search && !$this->is_book_range && empty($chapter_verse)) ? '1' : $chapter_verse;
         $this->chapter_verse = $chapter_verse;
 
         $preparsed = $matches = $counts = $parsed = $chapters = [];
         $counts['number'] = preg_match_all('/[0-9]+/', $chapter_verse, $matches['number'], PREG_OFFSET_CAPTURE | PREG_SET_ORDER);
 
         if(!$counts['number']) {
-            $this->chapter_verse_parsed = ($this->is_search) ? [] : array( array('c' => 1, 'v' => NULL, 'type' => 'single') );
+            $this->chapter_verse_parsed = ($this->is_search || $this->is_book_range) ? [] : array( array('c' => 1, 'v' => NULL, 'type' => 'single') );
             return;
         }
 
@@ -1019,9 +1022,6 @@ class Passage {
         $Passages   = [];
         $pre_parsed = static::explodeReferences($reference);
 
-        // var_dump($reference);
-        // var_dump($pre_parsed);
-        // var_dump($languages);
         $def_language = config('bss.defaults.language_short');
 
 
@@ -1037,8 +1037,6 @@ class Passage {
             unset($ref);
         }
 
-        // var_dump($languages);
-        // die('dead');
         $mid_parsed = implode(';', $pre_parsed);
         $parsed = static::explodeReferences($mid_parsed, TRUE);
 

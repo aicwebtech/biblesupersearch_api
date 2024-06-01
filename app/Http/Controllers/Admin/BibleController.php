@@ -471,6 +471,20 @@ class BibleController extends Controller
         $resp->messages[] = 'Number of verses: '    . $response[ $Bible->module ]['full']['num_verses'];
         $resp->messages[] = $lb;
 
+        $response = $Engine->actionStatistics(['bible' => $Bible->module, 'reference' => '01B-39B']);
+
+        $resp->messages[] = 'Number of OT books: '     . $response[ $Bible->module ]['book']['num_books'];
+        $resp->messages[] = 'Number of OT chapters: '  . $response[ $Bible->module ]['book']['num_chapters'];
+        $resp->messages[] = 'Number of OT verses: '    . $response[ $Bible->module ]['book']['num_verses'];
+        $resp->messages[] = $lb;        
+
+        $response = $Engine->actionStatistics(['bible' => $Bible->module, 'reference' => '40B-66B']);
+
+        $resp->messages[] = 'Number of NT books: '     . $response[ $Bible->module ]['book']['num_books'];
+        $resp->messages[] = 'Number of NT chapters: '  . $response[ $Bible->module ]['book']['num_chapters'];
+        $resp->messages[] = 'Number of NT verses: '    . $response[ $Bible->module ]['book']['num_verses'];
+        $resp->messages[] = $lb;
+
         foreach($tests as $test) {
             $Engine->resetErrors();
             $results = $Engine->actionQuery(['reference' => $test['ref'], 'bible' => $Bible->module, 'data_format' => 'minimal']);

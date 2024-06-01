@@ -891,8 +891,12 @@ class Engine
             return false;
         }
 
+        Passage::$allow_book_range_without_search = true;
+
         // Passage parsing and validation
         $Passages = Passage::parseReferences($references . ' ', $this->languages, $is_search, $this->Bibles, $input);
+        
+        Passage::$allow_book_range_without_search = false;
 
         if(is_array($Passages)) {
             foreach($Passages as $key => $Passage) {
@@ -1007,7 +1011,12 @@ class Engine
         $strongs = strip_tags(trim($input['strongs']));
 
         if(preg_match_all('/[GHgh][0-9]+/', $strongs, $matches)) {
-            foreach($matches[0] as $clean) {
+            foreach($matches[0] as $raw) {
+                // Remove padding zeros
+                $t = $raw[0];
+                $n = (string)(int) substr($raw, 1);
+                $clean = $t . $n;
+
                 $Def = \App\Models\StrongsDefinition::where('number', $clean)->first();
 
                 if(!$Def) {

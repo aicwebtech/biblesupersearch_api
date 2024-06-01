@@ -113,14 +113,15 @@ class Usfm extends ImporterAbstract
             // $file = 'eng-kjv_usfm_apoc.zip';
             // $file = 'engwebu_usfm.zip';
             // $file = 'engkjvcpb_usfm.zip';
-            $file = 'bn_irv_usfm.zip';
+            // $file = 'bn_irv_usfm.zip';
+            $file = 'ne_ulb_npiulb_usfm.zip';
             // $file = 'mr_irv_usfm.zip';
             // $file = 'gu_irv_2017_usfm.zip';
             // $file = 'kn_irv_usfm.zip';
             // $file = 'tg_tgk_usfm.zip';
             // $module = $this->module = 'usfm_' . time();
             $this->bible_attributes['name'] = $this->module;
-            $this->bible_attributes['lang_short'] = 'bn';
+            $this->bible_attributes['lang_short'] = 'ne';
             $this->bible_attributes['lang'] = 'gu';
             $Bible = $this->_getBible($this->module);
         }
@@ -397,12 +398,16 @@ class Usfm extends ImporterAbstract
             $text = preg_replace($pattern, '', $text);
         }
 
-        // Remove any other formatting markup
+        // // Remove any other formatting markup
         $text = preg_replace('/\\\\[a-z][a-z0-9]*\*?/', '', $text);
 
+        /// ??? what was this for?  Came from pre-existing IRV iporter
         if(preg_match('/[0-9]+:[0-9]+/', $text)) {
             $lpp = strrpos($text, '(');
-            $text = substr($text, 0, $lpp);
+
+            if($lpp !== false) {
+                $text = substr($text, 0, $lpp);
+            }
         }
         
         // Check to see if we got everything
