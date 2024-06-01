@@ -136,13 +136,13 @@ enyo.kind({
                 {tag: 'tr', components: [
                     {tag: 'td', classes: 'form_label right', content: 'Copyright Owner: '},
                     {tag: 'td', classes: 'form_label right', components: [
-                        {kind: 'enyo.Input', name: 'owner'}
+                        {kind: 'enyo.Input', name: 'owner', classes: 'wide'}
                     ]},
                 ]},            
                 {tag: 'tr', components: [
                     {tag: 'td', classes: 'form_label right', content: 'Publisher Name: '},
                     {tag: 'td', classes: 'form_label right', components: [
-                        {kind: 'enyo.Input', name: 'publisher'}
+                        {kind: 'enyo.Input', name: 'publisher', classes: 'wide'}
                     ]},
                 ]},
                 {tag: 'tr', components: [

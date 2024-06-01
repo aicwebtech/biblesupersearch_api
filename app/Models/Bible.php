@@ -11,12 +11,14 @@ use Illuminate\Support\Arr;
 use ZipArchive;
 use App\Traits\Error;
 
-class Bible extends Model {
+class Bible extends Model 
+{
     use Error;
 
     static $_cache = [];
 
-    static public function getUpdateRules($bible_id = NULL) {
+    static public function getUpdateRules($bible_id = NULL) 
+    {
         $bible_id = (int) $bible_id;
 
         $rules = array(
@@ -111,11 +113,13 @@ class Bible extends Model {
      * @param  array  $attributes
      * @return void
      */
-    public function __construct(array $attributes = []) {
+    public function __construct(array $attributes = []) 
+    {
         parent::__construct($attributes);
     }
 
-    public function language() {
+    public function language() 
+    {
         return $this->hasOne('App\Models\Language', 'code', 'lang_short');
     }
 
@@ -124,7 +128,8 @@ class Bible extends Model {
      * 'One to TABLE' relationship
      * Each Bible record points to an entire DB table
      */
-    public function verses($force = FALSE) {
+    public function verses($force = FALSE) 
+    {
         if(!$this->module) {
             throw new \Exception('Module required on Bible model to access verses model');
         }
@@ -155,7 +160,8 @@ class Bible extends Model {
      * @param array $parameters Search parameters - user input
      * @return array $Verses array of Verses instances (found verses)
      */
-    public function getSearch($Passages = NULL, $Search = NULL, $parameters = array()) {
+    public function getSearch($Passages = NULL, $Search = NULL, $parameters = array()) 
+    {
         return $this->verses()->getSearch($Passages, $Search, $parameters);
     }
 
@@ -166,15 +172,18 @@ class Bible extends Model {
      * @param array $parameters Search parameters - user input
      * @return array $Verses array of Verses instances (found verses)
      */
-    public function getStatistics($Passages = NULL, $parameters = []) {
+    public function getStatistics($Passages = NULL, $parameters = []) 
+    {
         return $this->verses()->getStatistics($Passages, $parameters);
     }
 
-    public function getVersesByBCV($bcv) {
+    public function getVersesByBCV($bcv) 
+    {
         return $this->verses()->getVersesByBCV($bcv);
     }
 
-    public function install($structure_only = FALSE, $enable = FALSE) {
+    public function install($structure_only = FALSE, $enable = FALSE) 
+    {
         if (!$this->installed) {
             $success = $this->verses()->install($structure_only);
 
@@ -200,7 +209,8 @@ class Bible extends Model {
         }
     }
 
-    public function uninstall() {
+    public function uninstall() 
+    {
         if ($this->installed) {
             $this->verses()->uninstall();
             $this->installed = 0;
@@ -214,7 +224,8 @@ class Bible extends Model {
         }
     }
 
-    public function export($overwrite = FALSE) {
+    public function export($overwrite = FALSE) 
+    {
         $path = $this->getModuleFilePath();
 
         if(!$overwrite && is_file($path)) {
@@ -284,7 +295,8 @@ class Bible extends Model {
         return ($res === TRUE);
     }
 
-    protected function _getExportInfo() {
+    protected function _getExportInfo() 
+    {
         $info = Arr::except($this->attributes, $this->do_not_export);
         $info['delimiter'] = static::getExportDelimiter(); // Store this in case we change it in the future
         $info['fields']    = static::getExportFields();
@@ -292,16 +304,19 @@ class Bible extends Model {
         return $info;
     }
 
-    public function getInfo() {
+    public function getInfo() 
+    {
         return Arr::except($this->attributes, $this->do_not_export);
     }
 
-    public function getMeta() {
+    public function getMeta() 
+    {
         $exclude = array_merge($this->do_not_export, $this->do_not_meta);
         return Arr::except($this->attributes, $exclude);
     }
 
-    public function isDownloadable() {
+    public function isDownloadable() 
+    {
         if($this->restrict || !$this->copyright_id) {
             return FALSE;
         }
@@ -313,27 +328,31 @@ class Bible extends Model {
         return TRUE;
     }
 
-    public function setCopyrightStatementAttribute($value) {
+    public function setCopyrightStatementAttribute($value) 
+    {
         $this->attributes['copyright_statement'] = trim($value);
     }
 
-    public function getCopyrightStatement() {
+    public function getCopyrightStatement() 
+    {
         if($this->copyright_statement) {
             return $this->copyright_statement;
         }
 
         if($this->copyright_id && $this->copyrightInfo) {
-            return $this->copyrightInfo->getProcessedCopyrightStatement();
+            return $this->copyrightInfo->getProcessedCopyrightStatement($this);
         }
 
         return $this->description;
     }
 
-    public function copyrightInfo() {
+    public function copyrightInfo() 
+    {
         return $this->hasOne('App\Models\Copyright', 'id', 'copyright_id');
     }
 
-    public function updateMetaInfo($create_if_needed = FALSE) {
+    public function updateMetaInfo($create_if_needed = FALSE) 
+    {
         $path = $this->getModuleFilePath();
 
         if(!$create_if_needed && !is_file($path)) {
@@ -370,7 +389,8 @@ class Bible extends Model {
         return ($res === TRUE);
     }    
 
-    public function revertMetaInfo() {
+    public function revertMetaInfo() 
+    {
         $path = $this->getModuleFilePath();
 
         if(!is_file($path)) {
@@ -396,7 +416,8 @@ class Bible extends Model {
         return ($res === TRUE);
     }
 
-    public function migrateModuleFile($dry_run = FALSE) {
+    public function migrateModuleFile($dry_run = FALSE) 
+    {
         $path_of = static::getModulePath();
         $path_un = static::getUnofficialModulePath();
 
@@ -434,7 +455,8 @@ class Bible extends Model {
         }
     }
 
-    public function deleteModuleFile($include_official = FALSE) {
+    public function deleteModuleFile($include_official = FALSE) 
+    {
         $path_of = static::getModulePath();
         $path_un = static::getUnofficialModulePath();
 
