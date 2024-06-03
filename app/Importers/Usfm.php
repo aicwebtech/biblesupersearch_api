@@ -241,14 +241,9 @@ class Usfm extends ImporterAbstract
             
             if(strpos($line, '\p') === 0) {
                 $next_line_para = TRUE;
-                // continue;
             }
 
             if(strpos($line, '\v') === 0) {
-                // preg_match('/([0-9]+) (.+)/', $line, $matches);
-                // $verse = (int) $matches[1];
-                // $text  = $matches[2];
-
                 $vs = strpos($line, ' ') + 1;
                 $ts = strpos($line, ' ', $vs) + 1;
 
@@ -292,7 +287,6 @@ class Usfm extends ImporterAbstract
 
     public function checkUploadedFile(UploadedFile $File): bool 
     {
-        
         $zipfile    = $File->getPathname();
         $file       = static::sanitizeFileName( $File->getClientOriginalName() );
         $Zip        = new ZipArchive();
@@ -338,10 +332,6 @@ class Usfm extends ImporterAbstract
         // \p{L}: any kind of letter from any language.
         // \p{M}: a character intended to be combined with another character (e.g. accents, umlauts, enclosing boxes, etc.).
         // \p{N}: any kind of numeric character in any script.
-
-        $repeater_1 = '\p{L}\p{M}';
-        // $repeater_2 = '\p{L}\p{M}0-9="';
-        $repeater_2 = '.';
 
         // clean up to handle strongs within red-letter words
         $text = str_replace('\+w', '\w', $text); 
@@ -390,7 +380,6 @@ class Usfm extends ImporterAbstract
         ];
 
         // We KEEP vp - published verse number
-
         $text = str_replace("\+", "\\", $text);
 
         foreach($remove_contents as $c) {
@@ -412,9 +401,9 @@ class Usfm extends ImporterAbstract
         
         // Check to see if we got everything
         // comment out or remove in production
-        if(strpos($text, '\\') !== false) {
-            die('BAD FORMAT: ' . $text);
-        }
+        // if(strpos($text, '\\') !== false) {
+        //     die('BAD FORMAT: ' . $text);
+        // }
 
         return parent::_postFormatText($text);
     }

@@ -68,14 +68,14 @@ class ImportManager {
             'kind'  => 'Unbound',
             'class' => \App\Importers\Unbound::class,
         ],           
-        'usfm' => [
-            'name'  => 'USFM',
-            'desc'  => 'Imports a Bible in the USFM Bible Format. These can be downloaded from ebible.com, however, make sure to select the USFM format option.',
-            'url'   => 'https://ebible.org/download.php',
-            'ext'   => ['zip'],
-            'kind'  => 'Usfm',
-            'class' => \App\Importers\Usfm::class,
-        ],           
+        // 'usfm' => [
+        //     'name'  => 'USFM',
+        //     'desc'  => 'Imports a Bible in the USFM Bible Format. These can be downloaded from ebible.com, however, make sure to select the USFM format option.',
+        //     'url'   => 'https://ebible.org/download.php',
+        //     'ext'   => ['zip'],
+        //     'kind'  => 'Usfm',
+        //     'class' => \App\Importers\Usfm::class,
+        // ],           
         // 'usx' => [
         //     'name'  => 'USX',
         //     'desc'  => 'Imports a Bible in the (zipped XML) USX Bible Format',
