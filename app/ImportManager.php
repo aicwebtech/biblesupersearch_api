@@ -68,14 +68,23 @@ class ImportManager {
             'kind'  => 'Unbound',
             'class' => \App\Importers\Unbound::class,
         ],           
-        // 'usfm' => [
-        //     'name'  => 'USFM',
-        //     'desc'  => 'Imports a Bible in the USFM Bible Format. These can be downloaded from ebible.com, however, make sure to select the USFM format option.',
-        //     'url'   => 'https://ebible.org/download.php',
-        //     'ext'   => ['zip'],
-        //     'kind'  => 'Usfm',
-        //     'class' => \App\Importers\Usfm::class,
-        // ],           
+        'usfm' => [
+            'name'  => 'USFM',
+            'desc'  => [
+                'Imports a Bible in the <a href=\'https://paratext.org/usfm/\' target=\'_NEW\'>Unified Standard Format Markers (USFM)</a> ', 
+                'Bible Format. <br /><br />Bibles in this format can be downloaded from ebible.com,',
+                ' however, please make sure to select the USFM format option.<br /><br />',
+                'Note: we only support the following markup features, everything else will be ignored:<ol>',
+                '<li>Italiced (added in translation) words</li>',
+                '<li>Words of Christ in Red</li>',
+                '<li>Strong\'s numbers</li>',
+                '</ol><br />',
+            ],
+            'url'   => 'https://ebible.org/download.php',
+            'ext'   => ['zip'],
+            'kind'  => 'Usfm',
+            'class' => \App\Importers\Usfm::class,
+        ],           
         // 'usx' => [
         //     'name'  => 'USX',
         //     'desc'  => 'Imports a Bible in the (zipped XML) USX Bible Format',
@@ -103,6 +112,10 @@ class ImportManager {
         $importers = [];
 
         foreach(static::$type_map as $type => $info) {
+            if(is_array($info['desc'])) {
+                $info['desc'] = implode(PHP_EOL , $info['desc']);
+            }
+
             $info['type'] = $type;
             unset($info['class']);
             $importers[]  = $info;
