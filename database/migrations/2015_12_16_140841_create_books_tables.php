@@ -6,6 +6,10 @@ use Database\Seeders\DatabaseSeeder;
 
 class CreateBooksTables extends Migration
 {
+    // This migration is obsolete
+    // Book tables are now added when a Bible in given language is installed or imported!
+
+
     /**
      * Run the migrations.
      *
@@ -14,7 +18,7 @@ class CreateBooksTables extends Migration
     public function up()
     {
         
-        \App\Models\Books\BookAbstract::createBookTables();
+        //\App\Models\Books\BookAbstract::createBookTables();
         
 
         // $languages = \App\Models\Books\BookAbstract::getSupportedLanguages();
@@ -45,7 +49,7 @@ class CreateBooksTables extends Migration
      */
     public function down()
     {
-        \App\Models\Books\BookAbstract::dropBookTables();
+        // \App\Models\Books\BookAbstract::dropBookTables();
 
 
         // $languages = \App\Models\Books\BookAbstract::getSupportedLanguages();

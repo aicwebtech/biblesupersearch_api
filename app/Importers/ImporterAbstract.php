@@ -113,6 +113,9 @@ abstract class ImporterAbstract
             $Bible->enable();
         }
 
+        $Language = Language::findByCode($Bible->lang_short, true);
+        $Language->initLanguage();
+
         return TRUE;
     }
 

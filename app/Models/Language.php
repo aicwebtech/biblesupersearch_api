@@ -72,10 +72,51 @@ class Language extends Model
         return $this->name . ' (' . strtoupper($this->code) . ')';
     }
 
+    public function getAllCodes()
+    {
+        return ($this->code == 'zh') ? ['zh', 'zh_cn', 'zh_tw'] : [$this->code];
+    }
+
     public function initLanguage()
     {
-        Book::createBookTable($this->code);
-        Book::migrateFromCsv($this->code);
+        $attr = $this->getAttrAll();
+        $codes = $this->getAllCodes();
+
+        if(!isset($attr['book_list'])) {
+            $added = false;
+
+            foreach($codes as $code) {
+                $added = Book::createTableAndMigrateFromCsv($code) ? true : $added;
+            }
+
+            if($added) {
+                $this->setAttr('book_list', '1');
+            }
+        }
+    }
+
+    public function denitLanguage()
+    {
+        foreach($this->getAllCodes() as $code) {
+            Book::dropBookTable($code);
+        }
+    }
+
+    public function getAttrAll()
+    {
+        $raw = LanguageAttr::where('code', $this->code)->get()->all();
+
+        return array_column($raw, 'value', 'attribute');
+    }
+
+    public function setAttr($attribute, $value)
+    {
+        LanguageAttr::updateOrCreate([
+            'code'      => $this->code, 
+            'attribute' => $attribute
+        ], [
+            'value'     => $value,
+        ]);
     }
 
     public static function migrateFromCsv() 

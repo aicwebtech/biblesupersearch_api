@@ -14,20 +14,20 @@ return new class extends Migration
      */
     public function up()
     {
-        if(Schema::hasTable('books_zh_cn')) {
-            return; // skip if we already have these new tables
-        }
+        // if(Schema::hasTable('books_zh_cn')) {
+        //     return; // skip if we already have these new tables
+        // }
 
-        $languages = ['zh_CN', 'zh_TW'];
+        // $languages = ['zh_CN', 'zh_TW'];
 
-        // Nuke existing bible_books_zh and repopulate it
-        DB::table('books_zh')->truncate();
-        Book::migrateFromCsv('zh');
+        // // Nuke existing bible_books_zh and repopulate it
+        // DB::table('books_zh')->truncate();
+        // Book::migrateFromCsv('zh');
 
-        foreach($languages as $lang) {
-            Book::createBookTable($lang);
-            Book::migrateFromCsv($lang);
-        }
+        // foreach($languages as $lang) {
+        //     Book::createBookTable($lang);
+        //     Book::migrateFromCsv($lang);
+        // }
     }
 
     /**

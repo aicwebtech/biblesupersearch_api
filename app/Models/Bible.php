@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Validation\Rule;
 use App\Models\Verses\VerseStandard As StandardVerses;
+use App\Models\Language;
 use App\Passage;
 use App\Search;
 use Illuminate\Support\Arr;
@@ -202,6 +203,9 @@ class Bible extends Model
                 }
 
                 $this->save();
+
+                $Lang = Language::findByCode($this->lang_short);
+                $Lang && $Lang->initLanguage();
             }
         }
         else {

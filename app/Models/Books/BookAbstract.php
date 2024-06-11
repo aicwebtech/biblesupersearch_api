@@ -275,6 +275,32 @@ class BookAbstract extends Model
         return $Book;
     }
 
+    public static function createTableAndMigrateFromCsv($language = null)
+    {
+        $language = $language ?: static::getLanguage();
+        $lang_lc = strtolower($language);
+        $tn = 'books_' . $lang_lc;
+        $csv_file = 'bible_books/' . $lang_lc . '.csv';
+
+        // read in all CSV
+        $map = ['id', 'name', 'shortname', 'matching1', 'matching2'];
+
+        if(!\App\Importers\Database::importFileExists($csv_file)) {
+            return false;
+        }
+
+        if(!static::createBookTable($language)) {
+            return true; // This has been successful previously
+        }
+
+        Model::unguard();
+        \App\Importers\Database::importCSV($csv_file, $map, static::getClassNameByLanguage($language));
+        Model::reguard();
+
+        DatabaseSeeder::setCreatedUpdated($tn);
+        return true;
+    }
+
     public static function migrateFromCsv($language = null)
     {
         $language = $language ?: static::getLanguage();
@@ -285,11 +311,16 @@ class BookAbstract extends Model
         // read in all CSV
         $map = ['id', 'name', 'shortname', 'matching1', 'matching2'];
 
+        if(!\App\Importers\Database::importFileExists($csv_file)) {
+            return false;
+        }
+
         Model::unguard();
         \App\Importers\Database::importCSV($csv_file, $map, static::getClassNameByLanguage($language));
         Model::reguard();
 
         DatabaseSeeder::setCreatedUpdated($tn);
+        return true;
     }
 
     public static function exportToCsv($language = null)
@@ -320,15 +351,7 @@ class BookAbstract extends Model
             $csv_file = 'bible_books/' . $lang_lc . '.csv';
             $sql_file = 'bible_books_' . $lang_lc . '.sql';
 
-
-            //if(is_file('' . $csv_file)) {
-                static::migrateFromCsv($lang);
-            //} else {                
-                // Fallback to legacy SQL file?
-                // DatabaseSeeder::importSqlFile($sql_file);
-                // DatabaseSeeder::setCreatedUpdated($tn);
-            // }
-
+            static::migrateFromCsv($lang);
         }
     }
 
