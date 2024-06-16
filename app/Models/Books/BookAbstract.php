@@ -193,10 +193,6 @@ class BookAbstract extends Model
             $class_name = $default_class_name;
         }
 
-        // var_dump($name);
-        // var_dump($language);
-        // var_dump($class_name);
-
         if(!is_string($name)) {
             return $class_name::find(intval($name));
         }
@@ -337,6 +333,7 @@ class BookAbstract extends Model
         return 'bible_books/' . strtolower($language) . '.csv';
     }
 
+    /* OBSOLETE */
     public static function createBookTables() 
     {
         $languages = static::getSupportedLanguages();
@@ -376,6 +373,7 @@ class BookAbstract extends Model
         return true;
     }
 
+    /* OBSOLETE */
     public static function dropBookTables()
     {
         $languages = static::getSupportedLanguages();
@@ -408,6 +406,6 @@ class BookAbstract extends Model
 
     static public function isSupportedLanguage($lang_code) 
     {
-        return in_array($lang_code, static::getSupportedLanguages());
+        return \App\Models\Language::hasBookSupport($lang_code);
     }
 }

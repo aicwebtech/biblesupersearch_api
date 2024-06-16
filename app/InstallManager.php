@@ -22,6 +22,17 @@ class InstallManager {
         return FALSE;
     }
 
+    static function modRewriteEnabled()
+    {
+        $enabled = true;
+
+        if(function_exists('apache_get_modules')) {
+            $enabled = in_array('mod_rewrite', apache_get_modules());
+        } 
+
+        return $enabled;
+    }
+
     static function install(Request $request) {
         $start_time = time();
 

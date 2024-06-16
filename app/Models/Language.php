@@ -109,6 +109,30 @@ class Language extends Model
         return array_column($raw, 'value', 'attribute');
     }
 
+    public static function getLanguageAttr($lang, $attr, $default = null) 
+    {
+        $raw = LanguageAttr::where('code', $lang) 
+                -> where('attribute', $attr)
+                -> value('value');
+
+        return $raw === null ? $default : $raw;
+    }
+
+    public static function hasBookSupport($lang)
+    {
+        return (bool)static::getLanguageAttr($lang, 'book_list');
+    }
+
+    public static function haveBookSupport()
+    {
+        return static::haveSupport('book_list');
+    }
+
+    public static function haveSupport($attribute)
+    {
+        LanguageAttr::where('attribute', $attribute)->pluck('code');
+    }
+
     public function setAttr($attribute, $value)
     {
         LanguageAttr::updateOrCreate([

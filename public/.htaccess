@@ -13,4 +13,8 @@
     RewriteCond %{REQUEST_FILENAME} !-d
     RewriteCond %{REQUEST_FILENAME} !-f
     RewriteRule ^ index.php [L]
+
+    # Script install/index.php exists to inform that mod_rewrite is NOT enabled
+    # When enabled, make it point to index.php even though the file exists
+    RewriteRule install/index.php index.php [L]
 </IfModule>

@@ -4,6 +4,7 @@ namespace App;
 
 use App\User;
 use App\Models\Bible;
+use App\Models\Language;
 use App\Passage;
 use App\Search;
 use App\CacheManager;
@@ -766,7 +767,8 @@ class Engine
         return TRUE;
     }
 
-    public function actionDownloadlist($input) {
+    public function actionDownloadlist($input) 
+    {
         return \App\RenderManager::getRendererList();
     }
 
@@ -774,15 +776,18 @@ class Engine
      * API Action query for getting the list of books for the specified language.
      * @param array $input
      */
-    public function actionBooks($input) {
+    public function actionBooks($input) 
+    {
         $language = (!empty($input['language'])) ? $input['language'] : config('bss.defaults.language_short');
 
         if($language == 'ALL') {
-            $list = \App\Models\Books\BookAbstract::getSupportedLanguages();
+            $list = \App\Models\Language::haveBookSupport();
             $books_by_lang = [];
 
             foreach($list as $lang) {
-                $namespaced_class = 'App\Models\Books\\' . ucfirst($lang);
+                $namespaced_class = \App\Models\Books\BookAbstract::getClassNameByLanguageStrict($lang);
+
+                // $namespaced_class = 'App\Models\Books\\' . ucfirst($lang);
                 $books_by_lang[$lang] = $namespaced_class::select('id', 'name', 'shortname')->orderBy('id', 'ASC') -> get() -> all();
             }
 
@@ -792,11 +797,13 @@ class Engine
             list($language, $locale) = explode('_', $language);
         }
 
-        $namespaced_class = 'App\Models\Books\\' . ucfirst($language);
+        $namespaced_class = \App\Models\Books\BookAbstract::getClassNameByLanguage($language);
 
-        if(!class_exists($namespaced_class)) {
-            $namespaced_class = 'App\Models\Books\\' . ucfirst( config('bss.defaults.language_short') );
-        }
+        // $namespaced_class = 'App\Models\Books\\' . ucfirst($language);
+
+        // if(!class_exists($namespaced_class)) {
+        //     $namespaced_class = 'App\Models\Books\\' . ucfirst( config('bss.defaults.language_short') );
+        // }
 
         $Books = $namespaced_class::select('id', 'name', 'shortname')->orderBy('id', 'ASC') -> get() -> all();
         $Bible = Bible::findByModule(config('bss.defaults.bible'));
@@ -819,8 +826,9 @@ class Engine
         return $books;
     }
 
-    public function languageHasBookSupport($lang) {
-        return in_array($lang, \App\Models\Books\BookAbstract::getSupportedLanguages());
+    public function languageHasBookSupport($lang) 
+    {
+        return Language::hasBookSupport($lang);
     }
 
     /**
@@ -1133,7 +1141,8 @@ class Engine
         return $results;
     }
 
-    protected function _parallelUnmatchedVerses($results, $Search) {
+    protected function _parallelUnmatchedVerses($results, $Search) 
+    {
         $bibles = $agg = array();
         $has_missing = FALSE;
 
@@ -1202,7 +1211,8 @@ class Engine
         return $results_new;
     }
 
-    protected function _getCleanPagingData(\Illuminate\Pagination\LengthAwarePaginator $Paginator) {
+    protected function _getCleanPagingData(\Illuminate\Pagination\LengthAwarePaginator $Paginator) 
+    {
         $paging = $Paginator->toArray();
         unset($paging['data']);
         unset($paging['next_page_url']);
@@ -1210,13 +1220,15 @@ class Engine
         return $paging;
     }
 
-    protected function _canPaginate($data_format) {
+    protected function _canPaginate($data_format) 
+    {
         $data_format = strtolower($data_format);
         $allowed     = ['passage', 'lite'];
         return in_array($data_format, $allowed);
     }
 
-    protected function _buildPaginator($data, $per_page, $current_page) {
+    protected function _buildPaginator($data, $per_page, $current_page) 
+    {
         $total = count($data);
         $offset = $per_page * ($current_page - 1);
         $data = array_slice($data, $offset, $per_page);
@@ -1224,7 +1236,8 @@ class Engine
         return $Paginator;
     }
 
-    protected function _sanitizeInput($input, $parsing) {
+    protected function _sanitizeInput($input, $parsing) 
+    {
         $clean = array();
 
         foreach($parsing as $index => $s) {
@@ -1268,16 +1281,19 @@ class Engine
         return $clean;
     }
 
-    public function setDefaultDataType($type) {
+    public function setDefaultDataType($type) 
+    {
         $this->default_data_format = $type;
     }
 
-    public function setDefaultPageAll($value) {
+    public function setDefaultPageAll($value) 
+    {
         $this->default_page_all = (bool) $value;
     }
 
     // Detect and error for cases when there is an input, but it's effectively empty
-    protected function checkSemiEmpty($value, $as = 'request') {
+    protected function checkSemiEmpty($value, $as = 'request') 
+    {
         $value_org = $value;
         $value = trim($value);
         $value = str_replace('_', ' ', $value);
@@ -1310,7 +1326,8 @@ class Engine
         return $this->addTransError($tstr, $prop, 4);
     }
 
-    public static function getHardcodedVersion() {
+    public static function getHardcodedVersion() 
+    {
         $app_configs = include(base_path('config/app.php'));
         return $app_configs['version'];
     }
@@ -1320,7 +1337,8 @@ class Engine
      * Used for checking for updates
      * @return type
      */
-    public static function getUpstreamVersion($verbose = FALSE) {
+    public static function getUpstreamVersion($verbose = FALSE) 
+    {
         if(!config('app.phone_home')) {
             return FALSE;
         }
@@ -1362,11 +1380,13 @@ class Engine
         return $verbose ? $results->results : $results->results->version;
     }
 
-    public static function triggerInvalidConfigError() {
+    public static function triggerInvalidConfigError() 
+    {
         
     }
 
-    public static function isBibleEnabled($module) {
+    public static function isBibleEnabled($module) 
+    {
         $Bible = Bible::findByModule($module);
         return($Bible && $Bible->installed && $Bible->enabled);
     }

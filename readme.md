@@ -24,6 +24,7 @@ You also have the option to build  your own.
 ### Server Requirements:
 * PHP >= 8.0.2
 * MySQL
+* mod_rewrite (Apache2) or equivalent
 * BCMath PHP Extension
 * Ctype PHP Extension
 * Fileinfo PHP extension
