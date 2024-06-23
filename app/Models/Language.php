@@ -162,7 +162,8 @@ class Language extends Model
         \App\Importers\Database::importCSV('languages_2.csv', $map, '\\' . get_called_class(), 'code', null, 100);
     }
 
-    public static function isRtl($lang) {
+    public static function isRtl($lang) 
+    {
         $Language = static::where('code', $lang)->first();
 
         if(!$Language) {

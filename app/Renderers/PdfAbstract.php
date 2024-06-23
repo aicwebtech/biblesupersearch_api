@@ -15,6 +15,8 @@ abstract class PdfAbstract extends RenderAbstract {
     protected static $pdf_red_word_tag  = 'red';     // HTML tag for words of Christ.  'red' colors them with traditional red
 
     protected static $name_include_format = FALSE;  // Temporary? Until I find time to rebuild renderers with user options
+
+    protected static $render_est_time = 450;
     
     protected $pdf_orientation          = 'P';
     protected $pdf_unit                 = 'mm';

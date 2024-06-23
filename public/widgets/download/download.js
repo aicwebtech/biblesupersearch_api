@@ -224,6 +224,11 @@ function bibleDownloadProcessNext() {
                     return;
                 }
 
+                // if(xhr && xhr.status == 504) {
+                //     _bibleDownloadItemDone();
+                //     return;
+                // }
+
                 bibleDownloadAlert('An error has occurred, please try again later.');
                 bibleRenderQueueProcess = false;
                 return;

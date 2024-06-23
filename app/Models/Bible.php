@@ -228,9 +228,9 @@ class Bible extends Model
         }
     }
 
-    public function export($overwrite = FALSE) 
+    public function export($overwrite = FALSE, $path = null) 
     {
-        $path = $this->getModuleFilePath();
+        $path = $path ?: $this->getModuleFilePath();
 
         if(!$overwrite && is_file($path)) {
             $this->addError('Cannot export, file already exists', 4);

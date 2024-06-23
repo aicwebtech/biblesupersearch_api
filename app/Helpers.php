@@ -7,7 +7,8 @@ class Helpers {
     /*
      * Sorts an array of strings by string length
      */
-    public static function sortStringsByLength(&$array, $dir = 'DESC') {
+    public static function sortStringsByLength(&$array, $dir = 'DESC') 
+    {
         return usort($array, function($a, $b) use ($dir) {
             $comp = strlen($a) <=> strlen($b);
             $comp = ($dir == 'DESC') ? $comp * -1 : $comp;
@@ -18,7 +19,8 @@ class Helpers {
     /* 
      * Check to see if premium code is present and enabled
      */
-    public static function isPremium() {
+    public static function isPremium() 
+    {
         if(config('app.premium_disabled')) {
             return FALSE;
         }
@@ -29,7 +31,8 @@ class Helpers {
     /* 
      * Check to see if premium code is present and enabled
      */
-    public static function premiumCodePresent() {
+    public static function premiumCodePresent() 
+    {
 
         // List of classes with known premium versions
         $classes = [
@@ -47,12 +50,14 @@ class Helpers {
         return TRUE;
     }
 
-    public static function make($class_name) {
+    public static function make($class_name) 
+    {
         $new_class_name = static::find($class_name);
         return new $new_class_name();
     }
 
-    public static function find($class_name) {
+    public static function find($class_name) 
+    {
         $new_class_name = static::transformClassName($class_name);
 
         if(class_exists($new_class_name)) {
@@ -65,7 +70,8 @@ class Helpers {
         return FALSE;
     }
 
-    public static function transformClassName($class_name) {
+    public static function transformClassName($class_name) 
+    {
         $imp = \App\InstallManager::getImportableDir()[2];
         $class_name_imp = str_replace("App\\", "App\\" . $imp . "\\", $class_name);
         
@@ -76,7 +82,8 @@ class Helpers {
         return config('app.premium') ? str_replace("App\\", "App\Premium\\", $class_name) : $class_name;
     }
 
-    public static function ordinal($number) {
+    public static function ordinal($number) 
+    {
         $ends = ['th','st','nd','rd','th','th','th','th','th','th'];
         
         if ((($number % 100) >= 11) && (($number % 100) <= 13)) {
@@ -87,7 +94,8 @@ class Helpers {
         }
     }
 
-    public static function isCommonWord($word, $lang) {
+    public static function isCommonWord($word, $lang) 
+    {
         $common_en = ['a', 'and', 'the', 'or', 'but'];
 
         if($lang == 'en' && in_array($word, $common_en)) {
@@ -97,7 +105,8 @@ class Helpers {
         return FALSE;
     }
 
-    public static function maxUploadSize($format = TRUE) {
+    public static function maxUploadSize($format = TRUE) 
+    {
         $max = \Illuminate\Http\UploadedFile::getMaxFilesize();
         $max_fmt = NULL;
 
@@ -123,7 +132,31 @@ class Helpers {
         return ($format === 'both') ? ['raw' => $max, 'fmt' => $max_fmt] : $max_fmt;
     }
 
-    public static function isAuthorized($access_level) {
+    public static function sizeStringToInt($size_str)
+    {
+        $size_int = (int)$size_str;
+
+        if(is_string($size_str)) {
+            $char = substr($size_str, -1);
+
+            $size_int = match($char) {
+                'G' => $size_int * 1024 ** 3,
+                'M' => $size_int * 1024 ** 2,
+                'k' => $size_int * 1024,
+                default => $size_int,
+            };
+        }
+
+        return $size_int;
+    }
+
+    public static function compareSize($size1, $size2) 
+    {
+        return static::sizeStringToInt($size1) <=> static::sizeStringToInt($size2);
+    }
+
+    public static function isAuthorized($access_level) 
+    {
 
     }
 
@@ -133,7 +166,8 @@ class Helpers {
      * @param $data response data
      * @param $Query Laravel query builder
      */
-    public static function buildGridSearchQuery(&$data, \Illuminate\Database\Eloquent\Builder &$Query, $field_map = []) {
+    public static function buildGridSearchQuery(&$data, \Illuminate\Database\Eloquent\Builder &$Query, $field_map = []) 
+    {
         $val = $data['searchString'];
         $op  = NULL;
         $data['_post_filters'] = [];
@@ -156,7 +190,8 @@ class Helpers {
         }
     }
 
-    public static function buildGridSearchMuiltiQuery(&$data, \Illuminate\Database\Eloquent\Builder &$Query, $field_map = []) {
+    public static function buildGridSearchMuiltiQuery(&$data, \Illuminate\Database\Eloquent\Builder &$Query, $field_map = []) 
+    {
         if(!array_key_exists('filters', $data) || !$data['filters']) {
             return;
         }
@@ -208,7 +243,8 @@ class Helpers {
         }
     }
 
-    protected static function _mapSearchOperator($search_op, $val) {
+    protected static function _mapSearchOperator($search_op, $val) 
+    {
         $op = NULL;
         $special = NULL;
 
