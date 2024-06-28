@@ -175,7 +175,7 @@ class UnicodeTest extends TestCase {
         $results = $Engine->actionQuery($query);
         $this->assertFalse($Engine->hasErrors());
         $errors = $Engine->getErrors();
-        $this->assertNotContains('System Error. Please contact site adminstrator.', $errors);
+        $this->assertNotContains('System Error. Please contact site administrator.', $errors);
         $this->assertNotContains('DATABASE ERROR:', $errors);
 
         $query['search_type'] = 'any_word';
