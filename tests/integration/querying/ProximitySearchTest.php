@@ -158,7 +158,7 @@ class ProximitySearchTest extends TestCase {
         $Engine->setDefaultDataType('raw');
         $Engine->setDefaultPageAll(TRUE);
 
-        $results = $Engine->actionQuery(['bible' => 'kjv', 'search' => 'faith PROX(2) joy PROX(5) love', 'search_type' => 'boolean']);
+        $results = $Engine->actionQuery(['bible' => 'kjv', 'search' => 'faith PROX(2) joy PROX(5) love;', 'search_type' => 'boolean']);
         $this->assertFalse($Engine->hasErrors());
 
         $query = "
@@ -183,6 +183,11 @@ class ProximitySearchTest extends TestCase {
             )";
 
         //$test_count = VerseStandard::proximityQueryTest($query);  // returns 37
+        $this->assertCount(37, $results['kjv']);
+
+        // Same test, but using request field
+        $results = $Engine->actionQuery(['bible' => 'kjv', 'request' => 'faith PROX(2) joy PROX(5) love;', 'search_type' => 'boolean']);
+        $this->assertFalse($Engine->hasErrors());
         $this->assertCount(37, $results['kjv']);
     }
 

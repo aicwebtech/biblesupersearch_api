@@ -5,6 +5,7 @@ namespace App;
 use App\Models\Books\BookAbstract as Book;
 use App\Models\Shortcuts\ShortcutAbstract as Shortcut;
 use App\Models\Bible;
+use App\Helpers;
 
 /**
  * Class for parsing and handling of Bible passage references
@@ -1259,10 +1260,27 @@ class Passage {
      * @param array $Bibles
      * @return array containing $keywords and $reference
      */
-    public static function mapRequest($input, $languages, $Bibles) {
-        $reference  = empty($input['reference']) ? NULL : $input['reference'];
-        $keywords   = empty($input['search'])    ? NULL : $input['search'];
-        $request    = empty($input['request'])   ? NULL : $input['request'];
+    public static function mapRequest($input, $languages, $Bibles) 
+    {
+        $reference  = empty($input['reference']) ? NULL : Helpers::trimRequest($input['reference']);
+        $keywords   = empty($input['search'])    ? NULL : Helpers::trimRequest($input['search']);
+        $request    = empty($input['request'])   ? NULL : Helpers::trimRequest($input['request']);
+
+        // var_dump($keywords);
+        // var_dump($reference);
+
+        // $reference = trim($reference);
+        // $reference = trim($reference, ',;');
+
+        // var_dump($reference);
+
+        // var_dump($request);
+
+        // $request = trim($request);
+        // $request = trim($request, ',;');
+
+        // var_dump($request);
+
         $disambiguation = [];
         $has_disambiguation_book = FALSE;
 

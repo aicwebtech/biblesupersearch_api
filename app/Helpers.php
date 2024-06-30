@@ -160,6 +160,14 @@ class Helpers {
 
     }
 
+    public static function trimRequest($request)
+    {
+        $request = trim($request);
+        $request = trim($request, ';,');
+        $request = trim($request);
+        return $request;
+    }
+
     /**
      * Builds Laravel query from jqgrid search data
      * 
