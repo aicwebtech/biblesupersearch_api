@@ -1013,7 +1013,7 @@ class SqlSearch {
 
         $terms = $this->terms;
         $terms_fmt = [];
-        $pre = '&';     // Regex safe, reused search alias
+        $pre = '&&';    // Regex safe, reused search alias
         $post = '%';    // Regex safe, reused search wildcard
         $pre_tag  = '<'  . $highlight_tag . '>';
         $post_tag = '</' . $highlight_tag . '>';

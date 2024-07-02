@@ -1266,21 +1266,6 @@ class Passage {
         $keywords   = empty($input['search'])    ? NULL : Helpers::trimRequest($input['search']);
         $request    = empty($input['request'])   ? NULL : Helpers::trimRequest($input['request']);
 
-        // var_dump($keywords);
-        // var_dump($reference);
-
-        // $reference = trim($reference);
-        // $reference = trim($reference, ',;');
-
-        // var_dump($reference);
-
-        // var_dump($request);
-
-        // $request = trim($request);
-        // $request = trim($request, ',;');
-
-        // var_dump($request);
-
         $disambiguation = [];
         $has_disambiguation_book = FALSE;
 
