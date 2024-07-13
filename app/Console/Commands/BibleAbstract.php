@@ -5,12 +5,14 @@ namespace App\Console\Commands;
 use Illuminate\Console\Command;
 use App\Models\Bible;
 
-abstract class BibleAbstract extends Command {
+abstract class BibleAbstract extends Command 
+{
     protected $signature   = '';
     protected $description = '';
     protected $append_signature = TRUE;
 
-    public function __construct() {
+    public function __construct() 
+    {
         if($this->append_signature) {
             $this->signature .= '{--module=} {--all} {--list}';
         }
@@ -18,7 +20,8 @@ abstract class BibleAbstract extends Command {
         parent::__construct();
     }
 
-    public function handle() {
+    public function handle() 
+    {
         if($this->option('list')) {
             $this->_listBibles();
             return;
@@ -34,7 +37,8 @@ abstract class BibleAbstract extends Command {
         }
     }
 
-    protected function _getBible() {
+    protected function _getBible() 
+    {
         $module = $this->option('module');
 
         if(!$module) {
@@ -57,7 +61,8 @@ abstract class BibleAbstract extends Command {
         return $Bible;
     }
 
-    protected function _listBibles() {
+    protected function _listBibles() 
+    {
         Bible::populateBibleTable();
         $Bibles = Bible::orderBy('rank')->get();
         $module_len = 25;
@@ -89,25 +94,29 @@ abstract class BibleAbstract extends Command {
         return;
     }
 
-    protected function _getAllBibles() {
+    protected function _getAllBibles() 
+    {
         return Bible::all();
     }
 
-    protected function _handleMultipleBibles($Bibles) {
+    protected function _handleMultipleBibles($Bibles) 
+    {
         $Bar = $this->output->createProgressBar(count($Bibles));
         $Bar->setFormatDefinition('custom', ' %current%/%max% [%bar%] %percent:3s%% %elapsed:6s%/%estimated:-6s% -- %message%                     ' . PHP_EOL);
         $Bar->setFormat('custom');
 
-        foreach(Bible::all() as $Bible) {
-            $this->_handleSingleBible($Bible);
+        foreach($Bibles as $Bible) {
             $Bar->setMessage($Bible->name);
+            $this->_handleSingleBible($Bible);
             $Bar->advance();
         }
 
+        $Bar->setMessage('');
         $Bar->finish();
     }
 
-    protected function _handleSingleBible(Bible $Bible) {
+    protected function _handleSingleBible(Bible $Bible) 
+    {
         // Extend and do simething here
     }
 }

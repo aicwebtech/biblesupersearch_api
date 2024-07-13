@@ -117,7 +117,7 @@ class RequestTest extends TestCase {
     }
 
     public function testDisambiguation() {
-        $Engine = new Engine();
+        $Engine = Engine::getInstance();
         $Engine->setDefaultDataType('raw');
         $results = $Engine->actionQuery(['bible' => 'kjv', 'request' => 'Romans']);
         $this->assertFalse($Engine->hasErrors());
@@ -126,13 +126,24 @@ class RequestTest extends TestCase {
         $this->assertCount(1, $metadata->disambiguation);
         $this->assertEquals('Romans', $metadata->disambiguation[0]['simple']);
 
-        $results = $Engine->actionQuery(['bible' => 'kjv', 'request' => 'kings']);
-        $this->assertFalse($Engine->hasErrors());
-        $metadata = $Engine->getMetadata();
+        // No longer treated as a disambuation situation (BSS-104)
+        // $results = $Engine->actionQuery(['bible' => 'kjv', 'request' => 'kings']);
+        // $this->assertFalse($Engine->hasErrors());
+        // $metadata = $Engine->getMetadata();
 
-        $this->assertCount(2, $metadata->disambiguation);
-        $this->assertEquals('1 Kings', $metadata->disambiguation[0]['simple']);
-        $this->assertEquals('2 Kings', $metadata->disambiguation[1]['simple']);
+        // $this->assertCount(2, $metadata->disambiguation);
+        // $this->assertEquals('1 Kings', $metadata->disambiguation[0]['simple']);
+        // $this->assertEquals('2 Kings', $metadata->disambiguation[1]['simple']);
+
+        // This should be a keyword search, with NO disambiguation
+        $results = $Engine->actionQuery(['bible' => 'kjv', 'request' => 'Eve', 'whole_words' => true]);
+        $this->assertFalse($Engine->hasErrors());
+        $this->assertEquals(1, $results['kjv'][0]->book);
+        $this->assertEquals(3, $results['kjv'][0]->chapter);
+        $this->assertEquals(20, $results['kjv'][0]->verse);
+
+        $metadata = $Engine->getMetadata();
+        $this->assertCount(0, $metadata->disambiguation);
     }
 
     public function testDisambiguationWithPassageLimit() {

@@ -20,7 +20,8 @@ use \DB; //Todo - something is wrong with namespaces here, shouldn't this be aut
 //
 //«brackets»  are for the Titles in the Book  of Psalms.
 
-class Rvg extends ImporterAbstract {
+class Rvg extends ImporterAbstract 
+{
     protected $required = ['module', 'lang', 'lang_short']; // Array of required fields
 
     protected $italics_st   = '[';
@@ -31,7 +32,8 @@ class Rvg extends ImporterAbstract {
     protected $strongs_en   = NULL;
     protected $paragraph    = NULL;
 
-    protected function _importHelper(Bible &$Bible) {
+    protected function _importHelper(Bible &$Bible): bool  
+    {
         ini_set("memory_limit", "500M");
 
         // Script settings
@@ -97,5 +99,6 @@ class Rvg extends ImporterAbstract {
         }
 
         $this->_insertVerses();
+        return true;
     }
 }

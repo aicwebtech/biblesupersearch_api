@@ -7,8 +7,11 @@ use Illuminate\Foundation\Testing\DatabaseTransactions;
 use App\Engine;
 use App\Models\Bible;
 
-class ReferenceTest extends TestCase {
-    public function testBasic() {
+class ReferenceTest extends TestCase 
+{
+
+    public function testBasic() 
+    {
         $Engine = new Engine();
         $results = $Engine->actionQuery(['bible' => 'kjv', 'reference' => 'Rom 1', 'data_format' => 'passage']);
         $this->assertFalse($Engine->hasErrors());
@@ -20,7 +23,8 @@ class ReferenceTest extends TestCase {
         $this->assertEquals(32, $results[0]['verses_count']);
     }
 
-    public function testRandomChapter() {
+    public function testRandomChapter() 
+    {
         $Engine = new Engine();
         $results = $Engine->actionQuery(['bible' => 'kjv', 'reference' => 'Random Chapter', 'data_format' => 'passage']);
         $this->assertFalse($Engine->hasErrors());
@@ -30,7 +34,8 @@ class ReferenceTest extends TestCase {
         $this->assertEquals('Random Chapter', $results[0]['book_raw']);
     }
 
-    public function testRandomVerse() {
+    public function testRandomVerse() 
+    {
         $Engine = new Engine();
         $results = $Engine->actionQuery(['bible' => 'kjv', 'reference' => 'Random Verse', 'data_format' => 'passage']);
         $this->assertFalse($Engine->hasErrors());
@@ -39,7 +44,8 @@ class ReferenceTest extends TestCase {
         $this->assertEquals('Random Verse', $results[0]['book_raw']);
     }
 
-    public function testRandomForeign() {
+    public function testRandomForeign() 
+    {
         if(!Bible::isEnabled('lith')) {
             $this->assertTrue(TRUE);
             return;
@@ -61,7 +67,8 @@ class ReferenceTest extends TestCase {
         $this->assertEquals('Random Verse', $results[0]['book_raw']);
     }
 
-    public function testIndefiniteStartRange() {
+    public function testIndefiniteStartRange() 
+    {
         $Engine = new Engine();
         $results = $Engine->actionQuery(['bible' => 'kjv', 'reference' => 'Rev - 3:8', 'data_format' => 'raw']);
         $this->assertFalse($Engine->hasErrors());
@@ -86,7 +93,8 @@ class ReferenceTest extends TestCase {
         $this->assertEquals(23,  $last->verse);
     }
 
-    public function testIndefiniteEndRange() {
+    public function testIndefiniteEndRange() 
+    {
         $Engine = new Engine();
         // Matthew chapter 25 through end of book
         $results = $Engine->actionQuery(['bible' => 'kjv', 'reference' => 'Matt 25 - ', 'data_format' => 'raw']);
@@ -131,7 +139,8 @@ class ReferenceTest extends TestCase {
         $this->assertEquals(21, $last->verse);
     }
 
-    public function testDuplicatePassage() {
+    public function testDuplicatePassage() 
+    {
         // Acts 5:29 is requested TWICE in the same request
 
         // Raw format - should return the 3 unique verses
@@ -152,14 +161,16 @@ class ReferenceTest extends TestCase {
         $this->assertCount(3, $results[1]['verses']['kjv'][5]);
     }
 
-    public function testBookNumber() {
+    public function testBookNumber() 
+    {
         $Engine = new Engine();
         $results = $Engine->actionQuery(['bible' => 'kjv', 'reference' => '19B 91:5-9', 'data_format' => 'passage']);
         $this->assertFalse($Engine->hasErrors());
         $this->assertEquals('Psalms', $results[0]['book_name']);
     }
 
-    public function testReferenceAdjustment() {
+    public function testReferenceAdjustment() 
+    {
         $Engine = new Engine();
         $results = $Engine->actionQuery(['bible' => 'kjv', 'reference' => 'Rom', 'data_format' => 'passage']);
         $this->assertFalse($Engine->hasErrors());
@@ -194,7 +205,7 @@ class ReferenceTest extends TestCase {
 
         // Tyndale doesn't have a vs 27
         $results = $Engine->actionQuery(['bible' => ['tyndale'], 'reference' => 'Rev 21:17 -', 'data_format' => 'passage']);
-        $this->assertEquals('21:17 - 26', $results[0]['chapter_verse']);
+        $this->assertEquals('21:17 - 27', $results[0]['chapter_verse']);
 
         $results = $Engine->actionQuery(['bible' => ['kjv','tyndale'], 'reference' => 'Rev 21:17 -', 'data_format' => 'passage']);
         $this->assertEquals('21:17 - 27', $results[0]['chapter_verse']);

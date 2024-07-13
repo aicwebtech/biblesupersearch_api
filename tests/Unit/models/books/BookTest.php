@@ -27,6 +27,36 @@ class BookTest extends TestCase
         $this->assertInstanceOf('App\Models\Books\Es', $Book);
     }
 
+    public function testBookListImportCSV()
+    {
+        $test_language = 'test'; // NOT a valid language code!
+        Book::dropBookTable($test_language);
+
+        $class_name = Book::getClassNameByLanguageRaw($test_language);
+        $this->assertEquals('App\Models\Books\Test', $class_name);
+        $this->assertFalse(class_exists($class_name));
+        
+        Book::makeClassByLanguage($test_language);
+
+        // Table doesn't exist, so class still won't exist
+        $this->assertFalse(class_exists($class_name));
+
+        $this->assertTrue(Book::createBookTable($test_language));
+
+        Book::makeClassByLanguage($test_language);
+
+        // Table exist, so class still will exist noew
+        $this->assertTrue(class_exists($class_name));
+
+        // Test actual import
+        Book::migrateFromCsv($test_language);
+        $this->assertEquals(66, $class_name::count());
+
+
+        // Drop table before exiting
+        // Book::dropBookTable($test_language);
+    }
+
     public function testMethodFindByEnteredName() {
         // Exact name
         $Book = Book::findByEnteredName('Matthew');
@@ -41,31 +71,31 @@ class BookTest extends TestCase
         $this->assertEquals(27, $Book->id);
 
         // Loose matching
-        $Book = Book::findByEnteredName('1 Pt'); // 1 Peter
+        $Book = Book::findByEnteredName('1 Pt', null, false, true); // 1 Peter
         $this->assertEquals(60, $Book->id);
-        $Book = Book::findByEnteredName('2Pt'); // 2 Peter
+        $Book = Book::findByEnteredName('2Pt', null, false, true); // 2 Peter
         $this->assertEquals(61, $Book->id);
-        $Book = Book::findByEnteredName('1John'); // 1 John
+        $Book = Book::findByEnteredName('1John', null, false, true); // 1 John
         $this->assertEquals(62, $Book->id);
-        $Book = Book::findByEnteredName('II Sam'); // 2 Samuel
+        $Book = Book::findByEnteredName('II Sam', null, false, true); // 2 Samuel
         $this->assertEquals(10, $Book->id);
-        $Book = Book::findByEnteredName('1st Sam'); // 1 Samuel
+        $Book = Book::findByEnteredName('1st Sam', null, false, true); // 1 Samuel
         $this->assertEquals(9, $Book->id);
-        $Book = Book::findByEnteredName('First Sam'); // 1 Samuel
+        $Book = Book::findByEnteredName('First Sam', null, false, true); // 1 Samuel
         $this->assertEquals(9, $Book->id);
-        $Book = Book::findByEnteredName('Third John');
+        $Book = Book::findByEnteredName('Third John', null, false, true);
         $this->assertEquals(64, $Book->id);
-        $Book = Book::findByEnteredName('III John');
+        $Book = Book::findByEnteredName('III John', null, false, true);
         $this->assertEquals(64, $Book->id);
-        $Book = Book::findByEnteredName('II Corin');
+        $Book = Book::findByEnteredName('II Corin', null, false, true);
         $this->assertEquals(47, $Book->id);
-        $Book = Book::findByEnteredName('2nd Pet');
+        $Book = Book::findByEnteredName('2nd Pet', null, false, true);
         $this->assertEquals(61, $Book->id);
-        $Book = Book::findByEnteredName('2nd Pet');
+        $Book = Book::findByEnteredName('2nd Pet', null, false, true);
         $this->assertEquals(61, $Book->id);
 
         // No match
-        $Book = Book::findByEnteredName('Jdsd'); // Looking for 'Judges' but won't match
+        $Book = Book::findByEnteredName('Jdsd', null, false, true); // Looking for 'Judges' but won't match
         $this->assertNull($Book);
         $Book = Book::findByEnteredName('faith'); // Attempting to search for 'faith' from reference input - no match!
         $this->assertNull($Book);

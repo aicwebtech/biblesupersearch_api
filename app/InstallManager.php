@@ -3,6 +3,8 @@
 namespace App;
 use Illuminate\Http\Request;
 use App\Models\Bible;
+use App\Models\Language;
+use App\Models\LanguageAttr;
 use Artisan;
 use App\ConfigManager;
 
@@ -18,6 +20,17 @@ class InstallManager {
         }
 
         return FALSE;
+    }
+
+    static function modRewriteEnabled()
+    {
+        $enabled = true;
+
+        if(function_exists('apache_get_modules')) {
+            $enabled = in_array('mod_rewrite', apache_get_modules());
+        } 
+
+        return $enabled;
     }
 
     static function install(Request $request) {
@@ -350,6 +363,14 @@ class InstallManager {
         foreach($InstalledBibles as $B) {
             $B->uninstall();
             $success = ($B->hasErrors()) ? FALSE : $success;
+        }
+
+        // Remove all language-specific tables
+        $languages = LanguageAttr::groupBy('code')->pluck('code');
+
+        foreach($languages as $l) {
+            $Lang = Language::findByCode($l);
+            $Lang && $Lang->denitLanguage();
         }
 
         $exit_code = Artisan::call('migrate:reset', array('--force' => TRUE)); // Roll back ALL DB migrations

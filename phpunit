@@ -1,1 +1,1 @@
-./vendor/phpunit/phpunit/phpunit
+php artisan test --parallel

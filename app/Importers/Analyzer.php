@@ -2,6 +2,7 @@
 
 namespace App\Importers;
 use App\Models\Bible;
+use App\Models\Books\BookAbstract As Book;
 use ZipArchive;
 use SQLite3;
 use \DB; //Todo - something is wrong with namespaces here, shouldn't this be automatically avaliable??
@@ -17,7 +18,8 @@ use Illuminate\Http\UploadedFile;
  *  [,] - strongs
  */
 
-class Analyzer extends ImporterAbstract {
+class Analyzer extends ImporterAbstract 
+{
     // protected $required = ['module', 'lang', 'lang_short']; // Array of required fields
 
     protected $italics_st   = '<i>';
@@ -35,7 +37,8 @@ class Analyzer extends ImporterAbstract {
     // Where did you get this Bible?
     protected $source = "This Bible imported from Bible Analyzer <a href='http://www.bibleanalyzer.com/download.htm'>http://www.bibleanalyzer.com/download.htm</a>";
 
-    protected function _importHelper(Bible &$Bible) {
+    protected function _importHelper(Bible &$Bible): bool 
+    {
         if(config('app.env') != 'testing') {
             ini_set("memory_limit", "50M");
         }
@@ -94,7 +97,15 @@ class Analyzer extends ImporterAbstract {
             $ref_arr = explode(' ', $row['ref']);
 
             if($ref_arr[0] != $last_book_name) {
-                $book ++;
+                // Attempt to match book str to English book name
+                $Book = Book::findByEnteredName($ref_arr[0], 'en');
+
+                if($Book) {
+                    $book = $Book->id;
+                } else {
+                    $book ++; // fallback - just increment book number
+                }
+
                 $last_book_name = $ref_arr[0];
             }
 
@@ -124,7 +135,8 @@ class Analyzer extends ImporterAbstract {
         return TRUE;
     }
 
-    protected function _formatText($text) {
+    protected function _formatText($text) 
+    {
         $text    = $this->_preFormatText($text);
         $text    = $this->_formatStrongs($text);
         $text    = $this->_formatItalics($text);
@@ -135,7 +147,8 @@ class Analyzer extends ImporterAbstract {
         return $text;
     }
 
-    public function checkUploadedFile(UploadedFile $File) {
+    public function checkUploadedFile(UploadedFile $File): bool 
+    {
         $path = $File->getPathname();
 
         try {

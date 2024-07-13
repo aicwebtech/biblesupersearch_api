@@ -10,8 +10,9 @@ class InstallBible extends BibleAbstract
     /**
      * The name and signature of the console command.
      */
-    protected $signature = 'bible:install {--module=} {--all} {--enable} {--list}';
-    protected $append_signature = FALSE;
+    protected $signature = 'bible:install {--module=} {--all} {--enable} {--list} {--testing}';
+    protected $append_signature = false;
+    protected $force_enable = false;
 
     /**
      * The console command description.
@@ -23,7 +24,8 @@ class InstallBible extends BibleAbstract
      *
      * @return mixed
      */
-    public function handle() {
+    public function handle() 
+    {
         if($this->option('list')) {
             return $this->_listBibles();
         }
@@ -31,6 +33,16 @@ class InstallBible extends BibleAbstract
         if($this->option('all')) {
             Bible::populateBibleTable();
             $Bibles = Bible::all();
+            $this->_handleMultipleBibles($Bibles);
+            return;
+        }        
+
+        // Installs and enables ALL Bibles needed for PHPUnit testing
+        if($this->option('testing')) {
+            Bible::populateBibleTable();
+            $this->force_enable = true;
+            $list = config('bible.testing');
+            $Bibles = Bible::whereIn('module', $list)->get();
             $this->_handleMultipleBibles($Bibles);
             return;
         }
@@ -48,7 +60,7 @@ class InstallBible extends BibleAbstract
     protected function _handleSingleBible(Bible $Bible) {
         $Bible->install();
         
-        if($this->option('enable')) {
+        if($this->force_enable || $this->option('enable')) {
             $Bible->enabled = 1;
             $Bible->save();
         }

@@ -1,3 +1,4 @@
+-- THIS FILE IS OBSOLETE!!!
 INSERT INTO `%slanguages` (`id`, `name`, `code`) VALUES ('1', 'Afrikanns', 'af');
 INSERT INTO `%slanguages` (`id`, `name`, `code`) VALUES ('2', 'Arabic', 'ar');
 INSERT INTO `%slanguages` (`id`, `name`, `code`) VALUES ('3', 'Chinese', 'zh');

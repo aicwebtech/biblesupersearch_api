@@ -13,23 +13,25 @@ class BibleBooksZh extends Migration
      */
     public function up()
     {
-        $tn = 'books_zh';
+        // This migration is obsolete
 
-        if(!Schema::hasTable($tn)) {
-            Schema::create($tn, function (Blueprint $table) {
-                $table->increments('id');
-                $table->string('name');
-                $table->string('shortname');
-                $table->string('matching1')->nullable();
-                $table->string('matching2')->nullable();
-                $table->timestamps();
-            });
+        // $tn = 'books_zh';
 
-            // Now, we call the seed as part of the migration
-            Artisan::call('db:seed', [
-                '--class' => BookListSeeder::class,
-            ]);
-        }
+        // if(!Schema::hasTable($tn)) {
+        //     Schema::create($tn, function (Blueprint $table) {
+        //         $table->increments('id');
+        //         $table->string('name');
+        //         $table->string('shortname');
+        //         $table->string('matching1')->nullable();
+        //         $table->string('matching2')->nullable();
+        //         $table->timestamps();
+        //     });
+
+        //     // Now, we call the seed as part of the migration
+        //     Artisan::call('db:seed', [
+        //         '--class' => BookListSeeder::class,
+        //     ]);
+        // }
     }
 
     /**

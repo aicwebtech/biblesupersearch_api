@@ -17,7 +17,8 @@ use Illuminate\Http\UploadedFile;
  *
  */
 
-class MySword extends ImporterAbstract {
+class MySword extends ImporterAbstract 
+{
     // protected $required = ['module', 'lang', 'lang_short']; // Array of required fields
 
     protected $italics_st   = '<FI>';
@@ -55,7 +56,8 @@ class MySword extends ImporterAbstract {
     // Where did you get this Bible?
     protected $source = "This Bible imported from MySword <a href='https://mysword.info/download-mysword/bibles'>https://mysword.info/download-mysword/bibles</a>";
 
-    protected function _importHelper(Bible &$Bible) {
+    protected function _importHelper(Bible &$Bible): bool 
+    {
         if(config('app.env') != 'testing') {
             ini_set("memory_limit", "50M");
         }
@@ -94,7 +96,10 @@ class MySword extends ImporterAbstract {
             $desc = $info['Comments'];
             $attr = $this->bible_attributes;
             $attr['description'] = $desc . '<br /><br />' . $this->source;
-            $attr['year'] = date('Y', strtotime($attr['year']));
+            
+            if(array_key_exists('year', $attr)) {
+                $attr['year'] = date('Y', strtotime($attr['year']));
+            }
 
             $Bible->fill($attr);
             $Bible->save();
@@ -126,7 +131,8 @@ class MySword extends ImporterAbstract {
         return TRUE;
     }
 
-    protected function _formatText($text) {
+    protected function _formatText($text) 
+    {
         $text    = $this->_preFormatText($text);
         $text    = $this->_formatStrongs($text);
         $text    = $this->_formatItalics($text);
@@ -137,7 +143,8 @@ class MySword extends ImporterAbstract {
         return $text;
     }
 
-    protected function _formatStrongs($text) {
+    protected function _formatStrongs($text) 
+    {
         $parentheses = $this->strongs_parentheses;
         $subpattern  = ($parentheses == 'trim') ? '/[GHgh][0-9]+/' : '/\(?[GHgh][0-9]+\)?/';
 
@@ -167,7 +174,8 @@ class MySword extends ImporterAbstract {
         return $text;
     }
 
-    public function checkUploadedFile(UploadedFile $File) {
+    public function checkUploadedFile(UploadedFile $File): bool  
+    {
         // $path = $file_tmp_name ?: $file_name;
         $path = $File->getPathname();
 
@@ -217,12 +225,14 @@ class MySword extends ImporterAbstract {
         return TRUE;
     }
 
-    public function mapMetaToAttributes($meta, $preserve_attributes = FALSE, $map = NULL) {
+    public function mapMetaToAttributes($meta, $preserve_attributes = FALSE, $map = NULL) 
+    {
         parent::mapMetaToAttributes($meta, $preserve_attributes, $map);
         $this->bible_attributes['year'] = date('Y', strtotime($this->bible_attributes['year']));
     }
 
-    private function _getSQLite($path, $orig_filename) {
+    private function _getSQLite($path, $orig_filename) 
+    {
         $path_lc = strtolower($orig_filename);
         $temp_fn = tempnam(sys_get_temp_dir(), 'mybib');
         $dir = $this->getImportDir();

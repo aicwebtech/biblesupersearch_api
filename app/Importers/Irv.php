@@ -24,7 +24,8 @@ use Illuminate\Http\UploadedFile;
 //
 //«brackets»  are for the Titles in the Book  of Psalms.
 
-class Irv extends ImporterAbstract {
+class Irv extends ImporterAbstract 
+{
     protected $required = ['module', 'lang', 'lang_short']; // Array of required fields
 
     protected $italics_st   = '[';
@@ -35,7 +36,8 @@ class Irv extends ImporterAbstract {
     protected $strongs_en   = NULL;
     protected $paragraph    = NULL;
 
-    protected function _importHelper(Bible &$Bible) {
+    protected function _importHelper(Bible &$Bible): bool  
+    {
         ini_set("memory_limit", "500M");
 
         // Script settings
@@ -49,7 +51,6 @@ class Irv extends ImporterAbstract {
 
         $overwrite_existing         = $this->overwrite;
 
-        $Bible    = $this->_getBible($module);
         $existing = $this->_existing;
 
         if(!$overwrite_existing && $this->_existing) {
@@ -91,9 +92,11 @@ class Irv extends ImporterAbstract {
         }
 
         $this->_insertVerses();
+        return true;
     }
 
-    private function _zipImportHelper(&$Zip, $filename) {
+    private function _zipImportHelper(&$Zip, $filename) 
+    {
         $pseudo_book = intval($filename);
         $chapter = $verse = NULL;
 
@@ -149,7 +152,8 @@ class Irv extends ImporterAbstract {
         return TRUE;
     }
 
-    public function checkUploadedFile(UploadedFile $File) {
+    public function checkUploadedFile(UploadedFile $File): bool  
+    {
         return TRUE;
     }
 }

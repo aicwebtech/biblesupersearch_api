@@ -7,8 +7,10 @@ use Illuminate\Foundation\Testing\DatabaseTransactions;
 use App\Engine;
 use App\Models\Bible;
 
-class ErrorTest extends TestCase {
-    public function testNoQuery() {
+class ErrorTest extends TestCase 
+{
+    public function testNoQuery() 
+    {
         $Engine = new Engine();
         $results = $Engine->actionQuery([]);
         $this->assertTrue($Engine->hasErrors());
@@ -17,7 +19,8 @@ class ErrorTest extends TestCase {
         $this->assertEquals( trans('errors.no_query'), $errors[0]);
     }
 
-    public function testNoResults() {
+    public function testNoResults() 
+    {
         $Engine = new Engine();
         $results = $Engine->actionQuery(['bible' => 'kjv', 'search' => 'bacon']);
         $this->assertTrue($Engine->hasErrors());
@@ -26,7 +29,8 @@ class ErrorTest extends TestCase {
         $this->assertEquals( trans('errors.no_results'), $errors[0]);
     }    
 
-    public function testNoKeywords() {
+    public function testNoKeywords() 
+    {
         $Engine = new Engine();
         $results = $Engine->actionQuery(['bible' => 'kjv', 'search' => '']);
         $this->assertTrue($Engine->hasErrors());
@@ -34,10 +38,16 @@ class ErrorTest extends TestCase {
         $this->assertCount(1, $errors);
         $this->assertEquals( trans('errors.no_query'), $errors[0]);
 
+        $Engine = new Engine();
+        $results = $Engine->actionQuery(['bible' => 'kjv', 'search' => '   ']);
+        $this->assertTrue($Engine->hasErrors());
+        $errors = $Engine->getErrors();
+        $this->assertCount(1, $errors);
+        $this->assertEquals( trans('errors.no_query'), $errors[0]);
     }
 
     public function testIllegalCharacters() {
-        $list = ['*', ' * ', ' + ', ' ', ' " "', "  "];
+        $list = ['*', ' * ', ' + ',  ' " "'];
         $list[] = '"' . chr(32) . '"';
 
         $Engine = Engine::getInstance();
@@ -66,6 +76,7 @@ class ErrorTest extends TestCase {
             $errors = $Engine->getErrors();
             $this->assertCount(1, $errors);
             $this->assertEquals( trans('errors.invalid_search.general', ['search' => $qu_tr]), $errors[0]);            
+            
             // Search, type = boolean
             $results = $Engine->actionQuery(['bible' => 'kjv', 'request' => $qu, 'search_type' => 'boolean']);
             $this->assertTrue($Engine->hasErrors());
@@ -82,7 +93,8 @@ class ErrorTest extends TestCase {
         }
     }
 
-    public function testParallelLookupNoResults() {
+    public function testParallelLookupNoResults() 
+    {
         $Engine = new Engine();
         $Engine->setDefaultDataType('raw');
 

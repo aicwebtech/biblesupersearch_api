@@ -131,7 +131,7 @@ class SqlSearch {
     }
 
     /**
-     * SAnitized the search term(s)
+     * Sanitize the search term(s)
      */
     public function sanitize() {
         $this->search = $this->_sanitizeHelper($this->search, $this->search_type);
@@ -152,7 +152,6 @@ class SqlSearch {
                 return $search; //
                 break;
             default:
-                // return preg_match('/[^' . static::$term_base_regexp . '|!&^ "\'0-9%()*+]/u', '', $search);
                 return static::removeUnsafeCharacters($search);
         }
     }
@@ -420,13 +419,8 @@ class SqlSearch {
     }
 
     protected function _termOperator($term, $exact_phrase = FALSE, $whole_words = FALSE, $primary_only = TRUE) {
-        $is_regexp   = ($this->_isRegexpSearch($term));
-
+        $is_regexp  = $this->_isRegexpSearch($term);
         $is_strongs = $this->_isStrongsSearch($term);
-
-        if($is_strongs) {
-
-        }
 
         // Other searches that use REGEXP
         $uses_regexp = ($this->_isPhraseSearch($term) || $whole_words || $is_strongs);
@@ -457,6 +451,7 @@ class SqlSearch {
 
         // Regexp
         if($this->_isRegexpSearch($term)) {
+
             $term = trim($term, '`');
             $is_regexp = TRUE;
             $uses_regexp = TRUE;
@@ -668,10 +663,10 @@ class SqlSearch {
                 $query = static::buildTwoOrMoreQuery($full, $limit);
                 break;
             case 'regexp':
-                $query = '`' . $query . '`';
+                $query = '`' . trim($query, '"`\'') . '`';
                 break;
             case 'phrase':
-                $query = '"' . $query . '"';
+                $query = '"' . trim($query, '"`\'') . '"';
                 break;
             case 'xor':
             case 'one_word':
@@ -1013,7 +1008,7 @@ class SqlSearch {
 
         $terms = $this->terms;
         $terms_fmt = [];
-        $pre = '&';     // Regex safe, reused search alias
+        $pre = '&&';    // Regex safe, reused search alias
         $post = '%';    // Regex safe, reused search wildcard
         $pre_tag  = '<'  . $highlight_tag . '>';
         $post_tag = '</' . $highlight_tag . '>';

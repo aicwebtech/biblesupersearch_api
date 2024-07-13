@@ -290,7 +290,8 @@ class VerseStandard extends VerseAbstract {
     }
 
     // Todo - prevent installation if already installed!
-    public function install($structure_only = FALSE) {
+    public function install($structure_only = FALSE) 
+    {
         $in_console = (strpos(php_sapi_name(), 'cli') !== FALSE);
 
         if (Schema::hasTable($this->table)) {
@@ -356,9 +357,11 @@ class VerseStandard extends VerseAbstract {
             $insertable[] = $map;
             $ins_count ++;
 
-            // Chunk size of 100 has proven to be the most efficient
-            // if(count($insertable) >= 100) {
-            if($ins_count >= 100) {
+            // Historically, chunk size of 100 has proven to be the most efficient
+            // Each verse includes 7 field placeholders, total limit is 65535 so max chunk sizze is 9362 
+            // 65535 / 7 = 9,362.143
+
+            if($ins_count >= 1000) {
                 DB::table($table)->insert($insertable);
                 $insertable = [];
                 $ins_count = 0;

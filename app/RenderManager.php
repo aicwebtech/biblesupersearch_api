@@ -28,8 +28,8 @@ class RenderManager {
         ],
         'database' => [
             'name'      => 'Databases',
-            'desc'      => 'Databases and database dumps.  Ready to import into your own software',
-            'formats'   => ['json', 'sqlite3', 'mysql'],
+            'desc'      => 'Databases and database dumps.  Ready to import into your own software.',
+            'formats'   => ['json', 'sqlite3', 'mysql', 'biblesupersearch'],
         ],
     ];
 
@@ -44,9 +44,11 @@ class RenderManager {
         'mr_text'           => \App\Renderers\MachineReadableText::class,
         'csv'               => \App\Renderers\Csv::class,
         'xlsx'              => \App\Renderers\Excel::class,
+        // 'xlsx'              => \App\Renderers\ExcelFromCsv::class,
         'json'              => \App\Renderers\Json::class,
         'sqlite3'           => \App\Renderers\SQLite3::class,
         'mysql'             => \App\Renderers\MySQL::class,
+        'biblesupersearch'  => \App\Renderers\BibleSuperSearch::class,
     ];
 
     protected $Bibles = [];
@@ -316,7 +318,12 @@ class RenderManager {
 
                     foreach($this->Bibles as $Bible) {
                         $Renderer = new $CLASS($Bible);
-                        $filepath = $Renderer->getRenderFilePath();
+                        $filepath = $Renderer->getDownloadFilePath();
+
+                        if(!$filepath) {
+                            continue;
+                        }
+
                         $lang = trim($Bible->language->native_name);
                         $lang .= ($Bible->language->name != $Bible->language->native_name) ? ' (' . $Bible->language->name . ')' : '';
                         $display_name = $Bible->name;
@@ -392,7 +399,7 @@ class RenderManager {
             $CLASS      = static::$register[$format];
             $Renderer   = new $CLASS($Bible);
             $Renderer->incrementHitCounter();
-            $download_file_path = $Renderer->getRenderFilePath();
+            $download_file_path = $Renderer->getDownloadFilePath();
             $download_file_name = basename($download_file_path);
 
             // Send file to browser as download

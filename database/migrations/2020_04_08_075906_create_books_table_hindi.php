@@ -8,6 +8,10 @@ use Database\Seeders\DatabaseSeeder;
 
 class CreateBooksTableHindi extends Migration
 {
+    // This migration is obsolete
+    // Book tables are now added when a Bible in given language is installed or imported!
+
+
     private $languages = ['hi', 'pt', 'ja'];
 
     /**
@@ -17,26 +21,16 @@ class CreateBooksTableHindi extends Migration
      */
     public function up()
     {
-        foreach($this->languages as $lang) {
-            $table = 'books_' . $lang;
+        // foreach($this->languages as $lang) {
+        //     $table = 'books_' . $lang;
 
-            if(Schema::hasTable($table)) {
-                continue;
-            }
+        //     if(Schema::hasTable($table)) {
+        //         continue;
+        //     }
 
-            Schema::create($table, function (Blueprint $table) {
-                $table->increments('id');
-                $table->string('name');
-                $table->string('shortname');
-                $table->string('matching1')->nullable();
-                $table->string('matching2')->nullable();
-                $table->timestamps();
-            });
-
-            $file  = 'bible_books_' . $lang . '.sql';
-            DatabaseSeeder::importSqlFile($file);
-            DatabaseSeeder::setCreatedUpdated($table);
-        }
+        //     Book::createBookTable($lang);
+        //     Book::migrateFromCsv($lang);
+        // }
     }
 
     /**
@@ -46,8 +40,6 @@ class CreateBooksTableHindi extends Migration
      */
     public function down()
     {
-        foreach($this->languages as $lang) {
-            Schema::dropIfExists('books_' . $lang);
-        }
+        // Do nothing, handled by main books migration
     }
 }

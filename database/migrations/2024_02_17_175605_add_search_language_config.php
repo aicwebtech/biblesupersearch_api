@@ -11,7 +11,7 @@ return new class extends Migration
         [
             'key'       => 'bss.parallel_search_different_languages',
             'descr'     => 'Parallel Search Across Bibles of Differing Languages',
-            'default'   => 'never',
+            'default'   => 'search_type',
             'global'    => 1,
             'type'      => 'string',
         ],        

@@ -112,6 +112,7 @@ class LookupLanguagesTest extends TestCase
         $Engine->setDefaultDataType('passage');
 
         $results = $Engine->actionQuery(['bible' => 'chinese_union_trad', 'reference' => '歷代志下', 'whole_words' => FALSE]);
+        
         $this->assertFalse($Engine->hasErrors());        
 
         $results = $Engine->actionQuery(['bible' => 'chinese_union_trad', 'reference' => '歷代志下 5', 'whole_words' => FALSE]);

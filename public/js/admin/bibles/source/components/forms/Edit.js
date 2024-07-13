@@ -136,13 +136,13 @@ enyo.kind({
                 {tag: 'tr', components: [
                     {tag: 'td', classes: 'form_label right', content: 'Copyright Owner: '},
                     {tag: 'td', classes: 'form_label right', components: [
-                        {kind: 'enyo.Input', name: 'owner'}
+                        {kind: 'enyo.Input', name: 'owner', classes: 'wide'}
                     ]},
                 ]},            
                 {tag: 'tr', components: [
                     {tag: 'td', classes: 'form_label right', content: 'Publisher Name: '},
                     {tag: 'td', classes: 'form_label right', components: [
-                        {kind: 'enyo.Input', name: 'publisher'}
+                        {kind: 'enyo.Input', name: 'publisher', classes: 'wide'}
                     ]},
                 ]},
                 {tag: 'tr', components: [
@@ -261,6 +261,10 @@ enyo.kind({
             if(dir == 1 && this.$description) {
                 this.$description.setData(value); // feed it to the CKEDITOR
             }
+
+            // if(!this.$description) {
+            //     this.log('ckeditor not found', this.$description);
+            // }
             
             return value;
         }},
@@ -421,16 +425,40 @@ enyo.kind({
 
     rendered: function() {
         this.inherited(arguments);
+        this.initCkeditors();
+    }, 
+
+    initCkeditors: function() {
+        
+        // if(!this.standalone && !this.quick) {            
+        //     this.$description = CKEDITOR.replace('description', {
+        //         height: 300,
+        //         width: 750,
+        //     });
+
+        //     this.$description.on('change', enyo.bind(this, function() {
+        //         this.$.description.set('value', this.$description.getData());
+        //     }));
+
+        //     return;
+        // }
+
         t = this;
 
-        // this.$description = CKEDITOR.replace('description', {
-        //     height: 300,
-        //     width: 750,
-        // });
 
-        // this.$description.on('change', enyo.bind(this, function() {
-        //     this.$.description.set('value', this.$description.getData());
-        // }));
+        // if(!this.standalone) {
+        //     return;
+        // }
+
+        if(this.$description) {
+            this.$description.destroy();
+            this.$description = undefined;
+        }        
+
+        if(this.$copyrightStatement) {
+            this.$copyrightStatement.destroy();
+            this.$copyrightStatement = undefined;
+        }
 
         ClassicEditor
             .create( this.$.description.hasNode(), {
@@ -468,6 +496,10 @@ enyo.kind({
             } )
             .then( newEditor => {
                 t.$description = newEditor;
+
+                if(t.formData && t.formData.description) {
+                    t.$description.setData(t.formData.description);
+                }
 
                 t.$description.model.document.on('change:data', enyo.bind(t, function() {
                     console.log('desciption changed');
@@ -516,6 +548,10 @@ enyo.kind({
             .then( newEditor => {
                 t.$copyrightStatement = newEditor;
 
+                if(t.formData && t.formData.copyright_statement) {
+                    t.$copyrightStatement.setData(t.formData.copyright_statement);
+                }
+
                 t.$copyrightStatement.model.document.on('change:data', enyo.bind(t, function() {
                     console.log('copyright statement changed');
                     t.$.copyright_statement.set('value', t.$copyrightStatement.getData());
@@ -526,7 +562,10 @@ enyo.kind({
             } );
 
 
-    }, 
+        // // Init ckeditor values
+        // this.$description.setData(this.formData.description); 
+        // this.$copyrightStatement.setData(this.formData.copyright_statement); 
+    },
 
     _checkUnique: function(field, value, label) {
         var postData = {

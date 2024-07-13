@@ -16,4 +16,24 @@ return [
         'nlt'           => 'New Living Translation',
         'csb'           => 'Christian Standard Bible',
     ],
+    
+    // Bible modules needed installed and enabled for complete PHPUnit testing
+    'testing' => [
+        'kjv',
+        'tyndale',
+        'bishops',
+        'luther',
+        'tr',
+        'web',
+        'lith',
+        'rvg',
+        'diodati',
+        'wlc',
+        'svd',
+        'thaikjv',
+        'lv_gluck_8',
+        'synodal',
+        'martin',
+        'chinese_union_trad',
+    ],
 ];
