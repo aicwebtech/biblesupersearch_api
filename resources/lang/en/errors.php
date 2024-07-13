@@ -11,8 +11,8 @@ return array(
     'parallel_bible_no_results' => 'Your search produced no results in \':module\'. However, verses from this Bible have been included for comparison.',
     'passage_not_found' => 'Your request for :passage produced no results.',
     'bible_no_exist' => 'Bible text not found: \':module\'',
-    'no_bible_enabled' => 'No Bibles are enabled. Please contact site adminstrator.',
-    '500' => 'System Error. Please contact site adminstrator.',
+    'no_bible_enabled' => 'No Bibles are enabled. Please contact site administrator.',
+    '500' => 'System Error. Please contact site administrator.',
     'invalid_search' => array(
         'reference' => 'Your search for \':search\' is invalid, and appears to be a passage reference.',
         'general' => 'Your search for \':search\' is invalid.',

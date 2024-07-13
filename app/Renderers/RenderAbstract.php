@@ -7,7 +7,8 @@ use App\Models\Rendering;
 use DB;
 use App;
 
-abstract class RenderAbstract {
+abstract class RenderAbstract 
+{
     use \App\Traits\Error;
 
     static public $name;
@@ -46,8 +47,10 @@ abstract class RenderAbstract {
     protected $chunk_data = [];
 
     protected $Rendering = NULL;
+    protected $overwrite = false;
 
-    public function __construct($module) {
+    public function __construct($module) 
+    {
         $this->Bible = ($module instanceof Bible) ? $module : Bible::findByModule($module);
 
         if(!$this->Bible) {
@@ -59,16 +62,24 @@ abstract class RenderAbstract {
         }
     }
 
+    public static function renderStrongs($lang)
+    {
+        return in_array($lang, ['en', 'es', 'zh']);
+    }
+
     /**
      * Generates the output file and saves it to disk
      * @return boolean
      */
-    public function render($overwrite = FALSE, $suppress_overwrite_error = FALSE) {
+    public function render($overwrite = FALSE, $suppress_overwrite_error = FALSE) 
+    {
         if($this->hasErrors()) {
             return FALSE;
         }
 
+        set_time_limit(static::$render_est_time + 120);
         $file_path = $this->getRenderFilePath();
+        $this->overwrite = $overwrite;
 
         if(!$overwrite && is_file($file_path)) {
             if($suppress_overwrite_error) {
@@ -90,34 +101,9 @@ abstract class RenderAbstract {
         }
 
         $this->_beforeVerseRender();
-        $Verses = $this->Bible->verses();
-        $table  = $Verses->getTable();
-        $Query  = DB::table( $table )->select($table . '.id','book','chapter','verse','text');
-
-        if($this->include_special) {
-            $Query->addSelect('italics');
-            $Query->addSelect('strongs');
-        }
-
-        if($this->include_book_name) {
-            $book_table = $this->_getBookTable();
-            $Query->join($book_table, $table . '.book', $book_table . '.id');
-            $Query->addSelect($book_table . '.' . $this->book_name_field . ' AS book_name');
-        }
-
-        $closure = function($rows) {
-            foreach($rows as $row) {
-                $this->_renderSingleVerse($row);
-            }
-
-            $this->_renderVerseChunk();
-            $this->chunk_data = [];
-        };
-
-        $Query->orderBy($table . '.id');
-        $Query->chunk($this->chunk_size, $closure);
-
+        $this->_verseRender();
         $this->_afterVerseRender();
+
         $success = $this->_renderFinish();
 
         App::setLocale($locale_cache);
@@ -145,7 +131,8 @@ abstract class RenderAbstract {
         return (bool) $success;
     }
 
-    public function isRenderNeeded($ignore_cache = FALSE) {
+    public function isRenderNeeded($ignore_cache = FALSE) 
+    {
         $file_path = $this->getRenderFilePath();
 
         if(!is_file($file_path)) {
@@ -169,7 +156,8 @@ abstract class RenderAbstract {
      * If render file does not exist or output has changed, generates the output file and saves it to disk
      * @return boolean
      */
-    public function renderIfNeeded() {
+    public function renderIfNeeded() 
+    {
         if($this->isRenderNeeded()) {
             return $this->render(TRUE, TRUE);
         }
@@ -177,7 +165,8 @@ abstract class RenderAbstract {
         return TRUE;
     }
 
-    public function deleteRenderFile() {
+    public function deleteRenderFile() 
+    {
         $Rendering = $this->_getRenderingRecord();
         $file_path = $this->getRenderFilePath();
 
@@ -193,8 +182,54 @@ abstract class RenderAbstract {
      * This initializes the file, and does other pre-rendering work
      * @param bool $overwrite
      */
-    protected function _renderStart() {
+    protected function _renderStart() 
+    {
         return TRUE;
+    }
+
+    protected function _verseRender()
+    {
+        $Verses = $this->Bible->verses();
+        $table  = $Verses->getTable();
+        $Query  = DB::table( $table )->select($table . '.id','book','chapter','verse','text');
+
+        if($this->include_special) {
+            $Query->addSelect('italics');
+            $Query->addSelect('strongs');
+        }
+
+        if($this->include_book_name) {
+            $book_table = $this->_getBookTable();
+            $Query->join($book_table, $table . '.book', $book_table . '.id');
+            $Query->addSelect($book_table . '.' . $this->book_name_field . ' AS book_name');
+        }
+
+        $closure = function($rows) {
+            foreach($rows as $row) {
+                $row->text = $this->_formatText($row->text);
+                $this->_renderSingleVerse($row);
+            }
+
+            unset($rows);
+            $this->_renderVerseChunk();
+            $this->chunk_data = [];
+        };
+
+        $Query->orderBy($table . '.id');
+        $Query->chunk($this->chunk_size, $closure);
+        return true;
+    }
+
+    protected function _formatText($text)
+    {
+        if(!static::renderStrongs($this->Bible->lang_short)) {
+            $text = preg_replace('/\} \{/', '', $text);
+            $text = preg_replace('/\{[^\}]+\}/', '', $text);
+        }
+
+        $text = trim($text);
+
+        return $text;
     }
 
     /**
@@ -220,7 +255,8 @@ abstract class RenderAbstract {
         }
     }
 
-    protected function _renderVerseChunk() {
+    protected function _renderVerseChunk() 
+    {
 
     }
 
@@ -229,7 +265,8 @@ abstract class RenderAbstract {
      *
      * @return bool $success
      */
-    protected function _renderFinish() {
+    protected function _renderFinish() 
+    {
         return TRUE;
     }
 
@@ -245,7 +282,8 @@ abstract class RenderAbstract {
      */
     protected function _afterVerseRender() { }
 
-    protected function _getBookTable() {
+    protected function _getBookTable() 
+    {
         if($this->book_name_language_force) {
             return 'books_' . $this->book_name_language_force;
         }
@@ -274,7 +312,8 @@ abstract class RenderAbstract {
         return $meta_string;
     }
 
-    protected function _getCopyrightStatement($plain_text = FALSE, $line_break_replacement = NULL) {
+    protected function _getCopyrightStatement($plain_text = FALSE, $line_break_replacement = NULL) 
+    {
         $cr_statement = $this->Bible->getCopyrightStatement();
 
         if(config('download.derivative_copyright_statement')) {
@@ -295,7 +334,8 @@ abstract class RenderAbstract {
         return ($plain_text) ? $this->_htmlToPlainText($cr_statement, $line_break_replacement) : $cr_statement;
     }
 
-    public function _getRenderingRecord($ignore_cache = FALSE) {
+    public function _getRenderingRecord($ignore_cache = FALSE) 
+    {
         if(!$this->Rendering || $ignore_cache) {
             $renderer = static::getRendererId();
             $this->Rendering = Rendering::firstOrCreate(['renderer' => $renderer, 'module' => $this->Bible->module]);
@@ -304,7 +344,8 @@ abstract class RenderAbstract {
         return $this->Rendering;
     }
 
-    protected function _htmlToPlainText($html, $line_break_replacement = NULL) {
+    protected function _htmlToPlainText($html, $line_break_replacement = NULL) 
+    {
         $line_break_replacement = $line_break_replacement ?: PHP_EOL;
         $line_break_replacement_double = $line_break_replacement . $line_break_replacement;
         $text = $html;
@@ -317,7 +358,8 @@ abstract class RenderAbstract {
         return $text;
     }
 
-    public function getRenderFilePath($create_dir = FALSE) {
+    public function getRenderFilePath($create_dir = FALSE) 
+    {
         if($this->hasErrors()) {
             return FALSE;
         }
@@ -336,30 +378,41 @@ abstract class RenderAbstract {
         return $path;
     }
 
-    public function incrementHitCounter() {
+    public function getDownloadFilePath()
+    {
+        return $this->getRenderFilePath();
+    }
+
+    public function incrementHitCounter() 
+    {
         $Rendering = $this->_getRenderingRecord();
         $Rendering->hits ++;
         $Rendering->downloaded_at = date('Y-m-d H:i:s');
         $Rendering->save();
     }
 
-    public static function getRenderBasePath() {
+    public static function getRenderBasePath() 
+    {
         return dirname(__FILE__) . '/../../bibles/rendered/';
     }
 
-    public static function getRenderBiblesLimit() {
+    public static function getRenderBiblesLimit() 
+    {
         return static::$render_bibles_limit;
     }
 
-    public static function getName() {
+    public static function getName() 
+    {
         return static::$name;
     }    
 
-    public static function getDescription() {
+    public static function getDescription() 
+    {
         return static::$description;
     }
 
-    public static function getRendererId($settings = array()) {
+    public static function getRendererId($settings = array()) 
+    {
         $cl = explode('\\', get_called_class());
         $cl = array_pop($cl);
         return $cl;

@@ -5,7 +5,8 @@ namespace App\Console\Commands;
 use Illuminate\Console\Command;
 use App\Importers\Analyzer as Importer;
 
-class ImportBibleAnalyzer extends ImportBible {
+class ImportBibleAnalyzer extends ImportBible 
+{
     /**
      * The name and signature of the console command.
      * @var string
@@ -27,7 +28,8 @@ class ImportBibleAnalyzer extends ImportBible {
      * Create a new command instance.
      * @return void
      */
-    public function __construct() {
+    public function __construct() 
+    {
         parent::__construct();
     }
 
@@ -35,7 +37,8 @@ class ImportBibleAnalyzer extends ImportBible {
      * Execute the console command.
      * @return mixed
      */
-    public function handle() {
+    public function handle() 
+    {
         $Importer = new Importer();
         $this->_handleHelper($Importer);
     }

@@ -14,34 +14,20 @@ return new class extends Migration
      */
     public function up()
     {
-        if(Schema::hasTable('books_zh_cn')) {
-            return; // skip if we already have these new tables
-        }
+        // if(Schema::hasTable('books_zh_cn')) {
+        //     return; // skip if we already have these new tables
+        // }
 
-        $languages = ['zh_CN', 'zh_TW'];
+        // $languages = ['zh_CN', 'zh_TW'];
 
-        // Nuke existing bible_books_zh and repopulate it
-        DB::table('books_zh')->truncate();
-        DatabaseSeeder::importSqlFile('bible_books_zh.sql');
-        DatabaseSeeder::setCreatedUpdated('books_zh');
-        
-        foreach($languages as $lang) {
-            $lang_lc = strtolower($lang);
-            $tn = 'books_' . $lang_lc;
+        // // Nuke existing bible_books_zh and repopulate it
+        // DB::table('books_zh')->truncate();
+        // Book::migrateFromCsv('zh');
 
-            Schema::create($tn, function (Blueprint $table) {
-                $table->increments('id');
-                $table->string('name');
-                $table->string('shortname');
-                $table->string('matching1')->nullable();
-                $table->string('matching2')->nullable();
-                $table->timestamps();
-            });
-
-            $file  = 'bible_books_' . $lang_lc . '.sql';
-            DatabaseSeeder::importSqlFile($file);
-            DatabaseSeeder::setCreatedUpdated($tn);
-        }
+        // foreach($languages as $lang) {
+        //     Book::createBookTable($lang);
+        //     Book::migrateFromCsv($lang);
+        // }
     }
 
     /**

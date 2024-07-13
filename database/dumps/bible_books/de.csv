@@ -1,0 +1,67 @@
+id,name,shortname,matching1,matching2
+1,1 Mose,,,1Mose
+2,2 Mose,,,2Mose
+3,3 Mose,,,3Mose
+4,4 Mose,,,4Mose
+5,5 Mose,,,5Mose
+6,Josua,,,
+7,Richter,,,
+8,Rut,,,
+9,1 Samuel,,,1Samuel
+10,2 Samuel,,,2Samuel
+11,1 Koenige,,,1Koenige
+12,2 Koenige,,,2Koenige
+13,1 Chronik,,,1Chronik
+14,2 Chronik,,,2Chroni
+15,Esra,,,
+16,Nehemia,,,
+17,Ester,,,
+18,Job,,,
+19,Psalm,,,
+20,Sprueche,,,
+21,Prediger,,,
+22,Hohelied,,,
+23,Jesaja,,,
+24,Jeremia,,,
+25,Klagelieder,,,
+26,Hesekiel,,,
+27,Daniel,,,
+28,Hosea,,,
+29,Joel,,,
+30,Amos,,,
+31,Obadja,,,
+32,Jona,,,
+33,Mica,,,
+34,Nahum,,,
+35,Habakuk,,,
+36,Zephanja,,,
+37,Haggai,,,
+38,Sacharja,,,
+39,Maleachi,,,
+40,Matthaeus,,,
+41,Markus,,,
+42,Lukas,,,
+43,Johannes,,,
+44,Apostelgeschichte,,,
+45,Roemers,,,
+46,1 Korinther,,,1Korinther
+47,2 Korinther,,,2Korinther
+48,Galater,,,
+49,Epheser,,,
+50,Philipper,,,
+51,Kolosser,,,
+52,1 Thessalonicher,,,1Thessalonicher
+53,2 Thessalonicher,,,2Thessalonicher
+54,1 Timotheus,,,1Timotheus
+55,2 Timotheus,,,2Timotheus
+56,Titus,,,
+57,Philemon,,,
+58,Hebraeer,,,
+59,Jakobus,,,
+60,1 Petrus,,,1Petrus
+61,2 Petrus,,,2Petrus
+62,1 Johannes,,,1Johannes
+63,2 Johannes,,,2Johannes
+64,3 Johannes,,,3Johannes
+65,Judas,,,
+66,Offenbarung,,,

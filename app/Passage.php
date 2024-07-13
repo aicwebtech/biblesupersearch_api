@@ -5,6 +5,7 @@ namespace App;
 use App\Models\Books\BookAbstract as Book;
 use App\Models\Shortcuts\ShortcutAbstract as Shortcut;
 use App\Models\Bible;
+use App\Helpers;
 
 /**
  * Class for parsing and handling of Bible passage references
@@ -13,6 +14,8 @@ use App\Models\Bible;
 class Passage {
 
     use Traits\Error;
+
+    static public $allow_book_range_without_search = false;
 
     // REGEXP pattern to match any passage reference
     // This should match ALL valid references.  However, it will match some invalid ones, too
@@ -46,7 +49,8 @@ class Passage {
         // Do something?
     }
 
-    public function setBookById($book_id) {
+    public function setBookById($book_id) 
+    {
         $language = (is_array($this->languages) && count($this->languages)) ? $this->languages[0] : config('bss.defaults.language_short');
         $book_class = Book::getClassNameByLanguage($language);
         $Book = $book_class::find($book_id);
@@ -76,7 +80,7 @@ class Passage {
 
         if(strpos($book, '-') !== FALSE) {
             // handle book ranges
-            if(!$this->is_search) {
+            if(!$this->is_search && !static::$allow_book_range_without_search) {
                 return $this->_addBookError(trans('errors.book.multiple_without_search'));
             }
 
@@ -84,8 +88,8 @@ class Passage {
             $book_st = array_shift($books);
             $book_en = array_pop($books);
             $book_en = ($book_en) ? $book_en : $book_st;
-            $Book_St = $this->findBook( $book_st );
-            $Book_En = $this->findBook( $book_en );
+            $Book_St = $this->findBook( $book_st, true );
+            $Book_En = $this->findBook( $book_en, true );
 
             if($Book_St && $Book_En) {
                 $this->is_book_range = TRUE;
@@ -100,7 +104,7 @@ class Passage {
         }
         else {
             $this->is_book_range = FALSE;
-            $Book = $this->findBook($book);
+            $Book = $this->findBook($book, true);
 
             if($Book) {
                 $this->Book = $Book;
@@ -167,11 +171,11 @@ class Passage {
      * @param string $book
      * @return Book $Book
      */
-    public function findBook($book) {
-        return static::findBookByNameAndLanguage($book, $this->languages);
+    public function findBook($book, $loose = false) {
+        return static::findBookByNameAndLanguage($book, $this->languages, false, $loose);
     }
 
-    public static function findBookByNameAndLanguage($book, $languages = [], $multiple = FALSE) {
+    public static function findBookByNameAndLanguage($book, $languages = [], $multiple = FALSE, $loose = false) {
         $found = FALSE;
         $primary_language = NULL;
 
@@ -181,7 +185,7 @@ class Passage {
                     $primary_language = $lang;
                 }
 
-                $Book = Book::findByEnteredName($book, $lang, $multiple);
+                $Book = Book::findByEnteredName($book, $lang, $multiple, $loose);
 
                 if($Book) {
                     $found = TRUE;
@@ -191,7 +195,7 @@ class Passage {
         }
 
         if(!$found) {
-            $Book = Book::findByEnteredName($book, NULL, $multiple);
+            $Book = Book::findByEnteredName($book, NULL, $multiple, $loose);
         }
 
         if(!$multiple && $Book && $Book->getLanguage() != $primary_language && $primary_language != config('bss.defaults.language_short')) {
@@ -255,7 +259,8 @@ class Passage {
          */
     }
 
-    public function setChapterVerse($chapter_verse) {
+    public function setChapterVerse($chapter_verse) 
+    {
         if($this->is_random) {
             return;
         }
@@ -266,14 +271,14 @@ class Passage {
         $chapter_verse = preg_replace('/,+/', ',', $chapter_verse); // Replace repeated , with one ,
         $chapter_verse = preg_replace('/-+/', '-', $chapter_verse); // Replace repeated - with one -
         $chapter_verse = preg_replace('/:+/', ':', $chapter_verse); // Replace repeated : with one :
-        $chapter_verse = (!$this->is_search && empty($chapter_verse)) ? '1' : $chapter_verse;
+        $chapter_verse = (!$this->is_search && !$this->is_book_range && empty($chapter_verse)) ? '1' : $chapter_verse;
         $this->chapter_verse = $chapter_verse;
 
         $preparsed = $matches = $counts = $parsed = $chapters = [];
         $counts['number'] = preg_match_all('/[0-9]+/', $chapter_verse, $matches['number'], PREG_OFFSET_CAPTURE | PREG_SET_ORDER);
 
         if(!$counts['number']) {
-            $this->chapter_verse_parsed = ($this->is_search) ? [] : array( array('c' => 1, 'v' => NULL, 'type' => 'single') );
+            $this->chapter_verse_parsed = ($this->is_search || $this->is_book_range) ? [] : array( array('c' => 1, 'v' => NULL, 'type' => 'single') );
             return;
         }
 
@@ -523,7 +528,10 @@ class Passage {
         return $parsed;
     }
 
-    public function getAdjustedChapterVerse() {
+    public function getAdjustedChapterVerse() 
+    {
+        //return $this->chapter_verse;
+
         $adjusted = $pre = [];
         $chapter_only = $this->isChapterOnly();
 
@@ -550,10 +558,12 @@ class Passage {
                 foreach($verses as $verse => $s) {
                     $first_verse = ($first_verse) ? $first_verse : $verse;
 
-                    if($last_verse && $verse != $last_verse + 1) {
-                        $v[] = ($first_verse == $last_verse) ? $first_verse : $first_verse . ' - ' . $verse;
-                        $first_verse = $verse;
-                    }
+                    // Causing issues when Bible missing a verse
+                    // Commented out, and all unit tests pass so just leaving it commented out
+                    // if($last_verse && $verse != $last_verse + 1) {
+                    //     $v[] = ($first_verse == $last_verse) ? $first_verse : $first_verse . ' - ' . $verse;
+                    //     $first_verse = $verse;
+                    // }
 
                     $last_verse = $verse;
                 }
@@ -1013,9 +1023,6 @@ class Passage {
         $Passages   = [];
         $pre_parsed = static::explodeReferences($reference);
 
-        // var_dump($reference);
-        // var_dump($pre_parsed);
-        // var_dump($languages);
         $def_language = config('bss.defaults.language_short');
 
 
@@ -1031,8 +1038,6 @@ class Passage {
             unset($ref);
         }
 
-        // var_dump($languages);
-        // die('dead');
         $mid_parsed = implode(';', $pre_parsed);
         $parsed = static::explodeReferences($mid_parsed, TRUE);
 
@@ -1255,10 +1260,12 @@ class Passage {
      * @param array $Bibles
      * @return array containing $keywords and $reference
      */
-    public static function mapRequest($input, $languages, $Bibles) {
-        $reference  = empty($input['reference']) ? NULL : $input['reference'];
-        $keywords   = empty($input['search'])    ? NULL : $input['search'];
-        $request    = empty($input['request'])   ? NULL : $input['request'];
+    public static function mapRequest($input, $languages, $Bibles) 
+    {
+        $reference  = empty($input['reference']) ? NULL : Helpers::trimRequest($input['reference']);
+        $keywords   = empty($input['search'])    ? NULL : Helpers::trimRequest($input['search']);
+        $request    = empty($input['request'])   ? NULL : Helpers::trimRequest($input['request']);
+
         $disambiguation = [];
         $has_disambiguation_book = FALSE;
 

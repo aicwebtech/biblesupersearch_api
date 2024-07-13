@@ -2,7 +2,8 @@
 
 namespace App\Renderers;
 
-class Csv extends RenderAbstract {
+class Csv extends RenderAbstract 
+{
     static public $name = 'CSV';
     static public $description = 'Comma separated values.  UTF-8 encoding.';
 
@@ -15,7 +16,8 @@ class Csv extends RenderAbstract {
      * This initializes the file, and does other pre-rendering work
      * @param bool $overwrite
      */
-    protected function _renderStart() {
+    protected function _renderStart() 
+    {
         $filepath = $this->getRenderFilePath(TRUE);
         
         if(is_file($filepath)) {
@@ -31,11 +33,13 @@ class Csv extends RenderAbstract {
         return TRUE;
     }
 
-    protected function _renderSingleVerse($verse) {
+    protected function _renderSingleVerse($verse) 
+    {
         fputcsv($this->handle, [$verse->id, $verse->book_name, $verse->book, $verse->chapter, $verse->verse, $verse->text]);
     }
 
-    protected function _renderFinish() {
+    protected function _renderFinish() 
+    {
         fclose($this->handle);
         return TRUE;
     }

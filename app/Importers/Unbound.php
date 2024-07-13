@@ -34,7 +34,8 @@ use Illuminate\Http\UploadedFile;
  *      To use one of these Bibles, download it's zip file and place in <document root>/bibles/unbound
  */
 
-class Unbound extends ImporterAbstract {
+class Unbound extends ImporterAbstract 
+{
     // protected $required = ['module', 'lang', 'lang_short']; // Array of required fields
 
     protected $italics_st   = '[';
@@ -50,7 +51,8 @@ class Unbound extends ImporterAbstract {
 
     protected $has_gui = TRUE;
 
-    protected function _importHelper(Bible &$Bible) {
+    protected function _importHelper(Bible &$Bible): bool  
+    {
         if(config('app.env') != 'testing') {
             ini_set("memory_limit", "50M");
         }
@@ -152,14 +154,16 @@ class Unbound extends ImporterAbstract {
         return TRUE;
     }
 
-    protected function _preFormatText($text) {
+    protected function _preFormatText($text) 
+    {
         $text = parent::_preFormatText($text);
         $text = str_replace(['‹‹', '››'], '"', $text);
         $text = str_replace(['‹', '›'], '\'', $text);
         return $text;
     }
 
-    private function _parseAttributes($desc, $clear_existing = FALSE) {
+    private function _parseAttributes($desc, $clear_existing = FALSE) 
+    {
         $attr = $this->bible_attributes ?: [];
         $attr = $clear_existing ? [] : $attr;
         $lang = NULL;
@@ -191,7 +195,8 @@ class Unbound extends ImporterAbstract {
         return $attr;
     }
 
-    public function checkUploadedFile(UploadedFile $File) {
+    public function checkUploadedFile(UploadedFile $File): bool  
+    {
         $zipfile = $File->getPathname();
 
         $file = static::sanitizeFileName( $File->getClientOriginalName() );

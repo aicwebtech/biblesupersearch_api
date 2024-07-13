@@ -11,7 +11,8 @@ use \DB;
 use Illuminate\Http\UploadedFile;
 use Validator;
 
-abstract class SpreadsheetAbstract extends ImporterAbstract {
+abstract class SpreadsheetAbstract extends ImporterAbstract
+{
     // protected $required = ['module', 'lang', 'lang_short']; // Array of required fields
 
     protected $italics_st   = '[';
@@ -45,7 +46,8 @@ abstract class SpreadsheetAbstract extends ImporterAbstract {
 
     protected $row_errors = [];
 
-    protected function _importHelper(Bible &$Bible) {
+    protected function _importHelper(Bible &$Bible): bool  
+    {
         ini_set("memory_limit", "150M"); // TODO - need to test this with LARGE UNICODE BIBLES to make sure it doesn't break!
             // Confirmed working with thaikjv .xls AND .csv (10+ MB files)
 
@@ -83,7 +85,8 @@ abstract class SpreadsheetAbstract extends ImporterAbstract {
 
     abstract protected function _importFromSpreadsheet($file_path);
 
-    protected function _mapSpreadsheetRow($row) {
+    protected function _mapSpreadsheetRow($row) 
+    {
         $this->row_errors = array_fill_keys(array_keys($row), NULL);
         $row = array_values($row);
 
@@ -178,7 +181,8 @@ abstract class SpreadsheetAbstract extends ImporterAbstract {
         return $mapped;
     }
 
-    protected function _checkParsedFile($rowdata) {
+    protected function _checkParsedFile($rowdata) 
+    {
         $required = [
             'book'      => 'Either book number or book name',
             'chapter'   => 'Chapter number',
@@ -285,7 +289,8 @@ abstract class SpreadsheetAbstract extends ImporterAbstract {
      * 
      * @return bool TRUE if valid, FALSE if not
      */
-    protected function _setSettingsHelper() {
+    protected function _setSettingsHelper() 
+    {
         $set = $this->settings;
         $this->column_map = [];
         ksort($set);
@@ -367,7 +372,8 @@ abstract class SpreadsheetAbstract extends ImporterAbstract {
         return $this->hasErrors() ? FALSE : TRUE;
     }
 
-    protected function _numberToColumn($num) {
+    protected function _numberToColumn($num) 
+    {
         $num = (int) $num;
 
         if($num < 1 || $num > 26) {

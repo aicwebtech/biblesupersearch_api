@@ -15,7 +15,8 @@ use Illuminate\Http\UploadedFile;
  *
  */
 
-class MySword extends ImporterAbstract {
+class MySword extends ImporterAbstract 
+{
     // protected $required = ['module', 'lang', 'lang_short']; // Array of required fields
 
     protected $italics_st   = '<i>';
@@ -53,7 +54,8 @@ class MySword extends ImporterAbstract {
     // Where did you get this Bible?
     protected $source = "This Bible imported from MyBible";
 
-    protected function _importHelper(Bible &$Bible) {
+    protected function _importHelper(Bible &$Bible): bool  
+    {
         ini_set("memory_limit", "50M");
 
         // Script settings
@@ -123,7 +125,8 @@ class MySword extends ImporterAbstract {
         return TRUE;
     }
 
-    protected function _formatText($text) {
+    protected function _formatText($text) 
+    {
         $text    = $this->_preFormatText($text);
         $text    = $this->_formatStrongs($text);
         $text    = $this->_formatItalics($text);
@@ -134,7 +137,8 @@ class MySword extends ImporterAbstract {
         return $text;
     }
 
-    protected function _formatStrongs_UNUSED($text) {
+    protected function _formatStrongs_UNUSED($text) 
+    {
         $parentheses = $this->strongs_parentheses;
         $subpattern  = ($parentheses == 'trim') ? '/[GHgh][0-9]+/' : '/\(?[GHgh][0-9]+\)?/';
 
@@ -147,7 +151,8 @@ class MySword extends ImporterAbstract {
         return $text;
     }
 
-    public function checkUploadedFile(UploadedFile $File) {
+    public function checkUploadedFile(UploadedFile $File): bool  
+    {
         // $path = $file_tmp_name ?: $file_name;
         $path = $File->getPathname();
 
@@ -184,7 +189,8 @@ class MySword extends ImporterAbstract {
         return TRUE;
     }
 
-    private function _getMeta(SQLite3 $SQLITE) {
+    private function _getMeta(SQLite3 $SQLITE) 
+    {
         $res_desc = $SQLITE->query('SELECT * FROM info');
         $info = [];
 

@@ -7,6 +7,8 @@ use App\Models\Books\Es as Books;
 
 class FixEsBibleRuth extends Migration
 {
+    // Obsolete
+
     /**
      * Run the migrations.
      *
@@ -14,12 +16,12 @@ class FixEsBibleRuth extends Migration
      */
     public function up()
     {
-        $Book = Books::find(8);
+        // $Book = Books::find(8);
 
-        if($Book) {        
-            $Book->name = 'Rut';
-            $Book->save();
-        }
+        // if($Book) {        
+        //     $Book->name = 'Rut';
+        //     $Book->save();
+        // }
     }   
 
     /**
@@ -29,11 +31,11 @@ class FixEsBibleRuth extends Migration
      */
     public function down()
     {
-        $Book = Books::find(8);
+        // $Book = Books::find(8);
 
-        if($Book) {        
-            $Book->name = 'Ruth';
-            $Book->save();
-        }
+        // if($Book) {        
+        //     $Book->name = 'Ruth';
+        //     $Book->save();
+        // }
     }
 }

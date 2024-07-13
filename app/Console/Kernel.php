@@ -23,8 +23,9 @@ class Kernel extends ConsoleKernel
         Commands\RenderExtras::class,
         Commands\ImportBibleUnbound::class,
         Commands\ImportBibleAnalyzer::class,
-        Commands\ImportBibleEvening::class,
+        // Commands\ImportBibleEvening::class, // Obsolete
         Commands\ImportBibleMySword::class,
+        Commands\ImportBibleUsfm::class,
         // Commands\ImportBibleCustom::class,  // DEV TOOL: Comment out when not using
         // Commands\BibleOfficial::class, // DEV TOOL: Mark Bible official, Comment out when not using
         Commands\ListBibles::class,
@@ -32,6 +33,8 @@ class Kernel extends ConsoleKernel
         Commands\DisableBible::class,
         Commands\InstallBible::class,
         Commands\UninstallBible::class,
+        Commands\CompareBibles::class,
+        Commands\CompareBiblesAll::class,
         Commands\GenerateModule::class,
         Commands\BibleRefresh::class,
         Commands\TempMigrateStrongs::class,
@@ -39,6 +42,7 @@ class Kernel extends ConsoleKernel
         Commands\UserCreate::class,
         Commands\UserPassword::class,
         Commands\MigrateModuleFiles::class,
+        Commands\MigrationSquash::class,
     ];
 
     /**
@@ -58,7 +62,8 @@ class Kernel extends ConsoleKernel
         })->weekly();
     }
 
-    public function __construct(\Illuminate\Contracts\Foundation\Application $app, \Illuminate\Contracts\Events\Dispatcher $events) {
+    public function __construct(\Illuminate\Contracts\Foundation\Application $app, \Illuminate\Contracts\Events\Dispatcher $events) 
+    {
         $this->bootstrappers[] = \App\Http\Bootstrap\LoadSoftConfiguration::class;
 
         parent::__construct($app, $events);

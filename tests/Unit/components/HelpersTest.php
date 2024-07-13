@@ -64,4 +64,37 @@ class HelpersTest extends TestCase
         $this->assertEquals($test, $both['raw']);
         $this->assertNotEmpty($both['fmt']);
     }
+
+    public function testSizeStringToInt()
+    {
+        $this->assertEquals(450, Helpers::sizeStringToInt('450'));
+        $this->assertEquals(450, Helpers::sizeStringToInt(450));
+        $this->assertEquals(1024, Helpers::sizeStringToInt('1k'));
+        $this->assertEquals(1024, Helpers::sizeStringToInt('1Gk'));
+        $this->assertEquals(51200, Helpers::sizeStringToInt('50k'));
+        $this->assertEquals(134217728, Helpers::sizeStringToInt('128M'));
+        $this->assertEquals(536870912, Helpers::sizeStringToInt('512M'));
+        $this->assertEquals(2147483648, Helpers::sizeStringToInt('2G'));
+        $this->assertEquals(34359738368, Helpers::sizeStringToInt('32G'));
+    }
+
+    public function testCompareSize()
+    {
+        $this->assertEquals(0, Helpers::compareSize(1024, '1k'));
+        $this->assertEquals(0, Helpers::compareSize('1G', '1024M'));
+        $this->assertEquals(0, Helpers::compareSize('450', '450'));
+        $this->assertEquals(0, Helpers::compareSize('450', 450));
+        $this->assertEquals(0, Helpers::compareSize(450, '450'));
+        $this->assertEquals(0, Helpers::compareSize(450, 450));
+
+        $this->assertEquals(-1, Helpers::compareSize('1G', '2048M'));
+        $this->assertEquals(-1, Helpers::compareSize('100M', '4G'));
+        $this->assertEquals(-1, Helpers::compareSize('8k', 10240));
+        $this->assertEquals(-1, Helpers::compareSize('512k', '16M'));
+
+        $this->assertEquals(1, Helpers::compareSize(10240, '8k'));
+        $this->assertEquals(1, Helpers::compareSize('16M', '512k'));
+        $this->assertEquals(1, Helpers::compareSize('2048M', '1G'));
+        $this->assertEquals(1, Helpers::compareSize('4G', '100M'));
+    }
 }
