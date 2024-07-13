@@ -1,6 +1,6 @@
 Bible SuperSearch API Changelog
 
-= 5.6.0.pre
+= 5.6.0.pre 5
 * Fixed highlight issue when text contained &
 * Adding book lists for many lanugages
 * Rebuilding book lists to load when Bible is installed
