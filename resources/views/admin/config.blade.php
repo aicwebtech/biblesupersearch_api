@@ -306,7 +306,29 @@
                                         </tr>
                                         <tr>
                                             <td class='ralign'>Daily Access Limit: </td>
-                                            <td><input name='bss__daily_access_limit' size='5' value='{{$configs['bss.daily_access_limit']}}'> hits</td>
+                                            <td>
+                                                <input name='bss__daily_access_limit' size='5' value='{{$configs['bss.daily_access_limit']}}'> 
+                                                hits <small>(0 = unlimited access)</small>
+                                            </td>
+                                        </tr>                                        
+                                        <tr>
+                                            <td class='ralign' style='vertical-align: top;'>
+                                                Daily Access Whitelist: <br /><br />
+
+                                                <small>
+                                                    Add IP addresses 
+                                                    and/or domain names <br />
+                                                    to grant unlimited access.<br />
+                                                    One domain name or IP per line.<br />
+                                                    Ex: mydomain.com<br />
+                                                    Ex: 32.221.41.1<br />
+                                                </small>
+                                            </td>
+                                            <td>
+                                                <textarea 
+                                                    name='bss__daily_access_whitelist' style='width: 100%; height: 150px'
+                                                >{{$configs['bss.daily_access_whitelist']}}</textarea>
+                                            </td>
                                         </tr>
                                     </table>
                                 </div>

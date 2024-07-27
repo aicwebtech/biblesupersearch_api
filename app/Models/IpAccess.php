@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use App\Interfaces\AccessLogInterface;
+use App\ApiAccessManager;
 
 class IpAccess extends Model implements AccessLogInterface 
 {
@@ -31,13 +32,16 @@ class IpAccess extends Model implements AccessLogInterface
             $ip_address = (array_key_exists('REMOTE_ADDR', $_SERVER))  ? $_SERVER['REMOTE_ADDR']  : '127.0.0.1';
         }
 
-        $domain = static::parseDomain($host);
+        $domain = ApiAccessManager::parseDomain($host);
 
         if($domain) {
             $IP = static::firstOrNew(['domain' => $domain]);
-            $IP->ip_address = $ip_address;
-            $IP->limit = ($ip_address == '127.0.0.1' || $ip_address == '::1') ? 0 : null;
-            $IP->save();
+      
+            if(!$IP->id) {
+                $IP->ip_address = $ip_address;
+                $IP->limit = ($ip_address == '127.0.0.1' || $ip_address == '::1') ? 0 : null;
+                $IP->save();
+            }
         }
         else {
             $IP = static::firstOrCreate(['ip_address' => $ip_address, 'domain' => null]);
@@ -48,37 +52,39 @@ class IpAccess extends Model implements AccessLogInterface
 
     static public function parseDomain($host) 
     {
-        if(empty($host)) {
-            return null;
-        }
+        return ApiAccessManager::parseDomain($host);
 
-        $host = str_replace(array('http:','https:'), '', $host);
-        $host = trim($host);
-        $host = trim($host, '/');
-        $pieces = explode('/', $host);
-        $domain = $pieces[0];
+        // if(empty($host)) {
+        //     return null;
+        // }
 
-        if(strpos($domain, 'www.') === 0) {
-            $domain = substr($domain, 4);
-        }
+        // $host = str_replace(array('http:','https:'), '', $host);
+        // $host = trim($host);
+        // $host = trim($host, '/');
+        // $pieces = explode('/', $host);
+        // $domain = $pieces[0];
 
-        $col_pos = strpos($domain, ':');
+        // if(strpos($domain, 'www.') === 0) {
+        //     $domain = substr($domain, 4);
+        // }
 
-        if($col_pos !== FALSE) {
-            $domain = substr($domain, 0, $col_pos);
-        }
+        // $col_pos = strpos($domain, ':');
 
-        $hash_pos = strpos($domain, '#');
+        // if($col_pos !== FALSE) {
+        //     $domain = substr($domain, 0, $col_pos);
+        // }
 
-        if($hash_pos !== FALSE) {
-            $domain = substr($domain, 0, $hash_pos);
-        }
+        // $hash_pos = strpos($domain, '#');
 
-        if($domain == 'localhost') {
-            return null;
-        }
+        // if($hash_pos !== FALSE) {
+        //     $domain = substr($domain, 0, $hash_pos);
+        // }
 
-        return $domain;
+        // if($domain == 'localhost') {
+        //     return null;
+        // }
+
+        // return $domain;
     }
 
     public function accessLevel()
@@ -162,7 +168,11 @@ class IpAccess extends Model implements AccessLogInterface
                 $current_domain = $_SERVER['SERVER_NAME'];
             }
             
-            $current_domain = static::parseDomain($current_domain);
+            if(ApiAccessManager::isWhitelisted($this->ip_address, $this->domain)) {
+                return 0;
+            }
+
+            $current_domain = ApiAccessManager::parseDomain($current_domain);
 
             if($current_domain == $this->domain) {
                 return 0;
