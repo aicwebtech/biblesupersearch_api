@@ -13,18 +13,22 @@ use Illuminate\Contracts\Auth\Guard;
  * Component class for managing soft configs
  * both global and user-specific
  */
-class ConfigManager {
+class ConfigManager 
+{
 
-    static function getGlobalConfigs() {
+    static function getGlobalConfigs() 
+    {
         return self::getConfigs(0);
     }
 
-    static function getUserConfigs(Guard $Guard) {
+    static function getUserConfigs(Guard $Guard) 
+    {
         // Todo - implement!
         var_dump($Guard->user->user_id);
     }
 
-    static function getConfigs($user_id = 0, $return_models = FALSE) {
+    static function getConfigs($user_id = 0, $return_models = FALSE) 
+    {
         $ConfigValues = ConfigValue::where('user_id', $user_id)->with('config')->get();
         $config_values = [];
 
@@ -39,11 +43,13 @@ class ConfigManager {
         return $config_values;
     }
 
-    static function getConfigItems($is_global = FALSE) {
+    static function getConfigItems($is_global = FALSE) 
+    {
         $Configs = Config::where('global', ($is_global) ? 1 : 0)->get();
     }
 
-    static function addConfigItem($attributes) {
+    static function addConfigItem($attributes) 
+    {
         $attrs = ['key', 'descr', 'default', 'global', 'type'];
 
         foreach($attrs as $attr) {
@@ -80,13 +86,15 @@ class ConfigManager {
         }
     }
 
-    static function addConfigItems($items) {
+    static function addConfigItems($items) 
+    {
         foreach($items as $item) {
             self::addConfigItem($item);
         }
     }
 
-    static function removeConfigItems($items) {
+    static function removeConfigItems($items) 
+    {
         foreach($items as $item) {
             if(is_array($item)) {
                 $key = array_key_exists('key', $item) ? $item['key'] : NULL;
@@ -101,19 +109,23 @@ class ConfigManager {
         }
     }
 
-    static function removeConfigItem($key) {
+    static function removeConfigItem($key) 
+    {
         // Todo
     }
 
-    static function setGlobalConfigs($config_values) {
+    static function setGlobalConfigs($config_values) 
+    {
         self::setConfigs($config_values, 0);
     }
 
-    static function setUserConfigs($config_values) {
+    static function setUserConfigs($config_values) 
+    {
 
     }
 
-    static function setConfigs($config_values, $user_id = 0) {
+    static function setConfigs($config_values, $user_id = 0) 
+    {
         $ConfigValues = self::getConfigs($user_id, TRUE);
         $config_values['app.configs_updated_at'] = time();
 
@@ -127,11 +139,13 @@ class ConfigManager {
         }
     }
 
-    static function setConfig($config_name, $config_value, $user_id = 0) {
+    static function setConfig($config_name, $config_value, $user_id = 0) 
+    {
         static::setConfigs([$config_name => $config_value], $user_id);
     }
 
-    static public function getValueAttribute($value, $type) {
+    static public function getValueAttribute($value, $type) 
+    {
         switch($type) {
             case 'int':
                 $val = (int) $value;
@@ -157,7 +171,8 @@ class ConfigManager {
         return $val;
     }
 
-    static public function setValueAttribute($value, $type) {
+    static public function setValueAttribute($value, $type) 
+    {
         switch($type) {
             case 'int':
                 $val = (int) $value;
@@ -179,7 +194,8 @@ class ConfigManager {
         return $val;
     }
 
-    static public function getValueConfig($usr_id = 0, $config = NULL) {
+    static public function getValueConfig($usr_id = 0, $config = NULL) 
+    {
         $ConfigValues = ConfigValue::where('user_id', $user_id)->where('key', $config)->with('config')->first();
 
         if(!$ConfigValues && !$config) {
