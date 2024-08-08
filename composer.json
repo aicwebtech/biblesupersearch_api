@@ -19,7 +19,9 @@
         "laravel/ui" : "^3.0",
         "nunomaduro/collision" : "^6.0",
         "spatie/laravel-ignition": "^1.0",
-        "fruitcake/laravel-cors": "^2.0"
+        "fruitcake/laravel-cors": "^2.0",
+        "sebastian/diff": "^4.0",
+        "davechild/textstatistics": "1.*"
     },
     "require-dev": {
         "fzaninotto/faker": "~1.4",
