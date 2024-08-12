@@ -94,7 +94,7 @@ $( function() {
                         bibleDownloadAlert(response.errors.join('<br>'));
                     }
                     else {
-                        bibleNeedsRender = Array.isArray(response.results.bibles_needing_render) ? response.results.bibles_needing_render : null;
+                        bibleNeedsRender = Array.isArray(data.results.bibles_needing_render) ? data.results.bibles_needing_render : null;
                         bibleDownloadInitProcess();
                     }
                 }
@@ -113,6 +113,9 @@ $( function() {
                      bibleDownloadAlert('An unknown error has occurred');
                 }
                 else if(response.results.separate_process_supported) {
+                    bibleDownloadAlert(response.errors.join('<br>'));
+                }
+                else if (!response.success) {
                     bibleDownloadAlert(response.errors.join('<br>'));
                 }
                 else {
