@@ -177,4 +177,27 @@ class HighlightTest extends TestCase {
             }
         }
     }
+
+    public function testAmpersandIssue()
+    {
+        if(!\App\Models\Bible::isEnabled('geneva')) {
+            $this->markTestSkipped();
+        }
+
+        $Engine = Engine::getInstance();
+        $Engine->setDefaultDataType('raw');
+
+        $results = $Engine->actionQuery([
+            'bible'         => 'geneva', 
+            'reference'     => 'Exodus', 
+            'search'        => 'coast',
+            'highlight'     => true, 
+            'whole_words'   => false,
+        ]);
+
+        $this->assertFalse($Engine->hasErrors());   
+
+        // Make sure & is still in text after highlighing ...
+        $this->assertStringContainsString('&', $results['geneva'][1]->text);
+    }
 }

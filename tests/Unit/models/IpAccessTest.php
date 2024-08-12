@@ -97,7 +97,7 @@ class IpAccessTest extends TestCase {
 
     public function testDomainCustomLimit() {
         $ip = $this->_fakeIp();
-        $IP = IpAccess::findOrCreateByIpOrDomain($ip, 'example.com');
+        $IP = IpAccess::findOrCreateByIpOrDomain($ip, 'testdomaincustomlimit.com');
         $limit = 125;
         $IP->limit = $limit;
         $IP->save();
@@ -147,12 +147,12 @@ class IpAccessTest extends TestCase {
     }
 
     public function testSameDomain() {
-        $domain = 'http://www.example.com';
+        $domain = 'http://www.testsamedomain.com';
 
         $IP = IpAccess::findOrCreateByIpOrDomain($this->_fakeIp(), $domain);
         $this->assertEquals($IP->getAccessLimit(), config('bss.daily_access_limit'));
 
-        $_SERVER['HTTP_HOST'] = $_SERVER['SERVER_NAME'] = 'www.example.com';
+        $_SERVER['HTTP_HOST'] = $_SERVER['SERVER_NAME'] = 'www.testsamedomain.com';
         $this->assertEquals($IP->getAccessLimit(), 0);
 
         $IP->delete();

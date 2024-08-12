@@ -29,6 +29,28 @@ class ApiAccessLevel extends Model
         return $this->id == static::NONE || $this->limit < 0;
     }
 
+    /**
+     * Get the limit
+     *
+     * @return \Illuminate\Database\Eloquent\Casts\Attribute
+     */
+    protected function limit(): Attribute
+    {
+        return Attribute::make(
+            get: function($value, $attributes) {
+                if($this->id == static::NONE) {
+                    return -1;
+                }
+
+                if($this->id == static::FULL) {
+                    return 0;
+                }
+
+                return $value;
+            }
+        );
+    }
+
     public function hasActionAccess($action) 
     {
         if($this->id == static::FULL) {

@@ -55,6 +55,7 @@ return new class extends Migration
                 'id' => 4, 
                 'name' => 'Full', 
                 'system_name' => 'full', 
+                'limit' => 0,
                 'statistics' => 1, 
                 'commentaries' => 1, 
                 'dictionaries' => 1,
