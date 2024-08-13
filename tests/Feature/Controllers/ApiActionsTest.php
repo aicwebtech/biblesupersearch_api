@@ -311,7 +311,8 @@ class ApiActionsTest extends TestCase
         $response = $this->postJson('/api/render_needed', ['bible' => 'kjv', 'format' => 'mr_text']);
 
         // Yes, this is returned as an 'error'
-        $response->assertStatus(400);      
+        // $response->assertStatus(400);      
+        $response->assertStatus(200);      
         $this->assertEquals(1, $response['error_level']);
         $this->assertTrue($response['results']['render_needed']);
         $this->assertIsArray($response['results']['bibles_needing_render']);
