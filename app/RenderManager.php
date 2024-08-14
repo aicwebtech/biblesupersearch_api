@@ -192,7 +192,7 @@ class RenderManager {
             // create detatched process on 'php artisan queue:work --once ONLY' if jobs table is EMPTY
             // $this->_createDetatchedProcess($format, $Bibles_Needing_Render, $overwrite);
             $this->needs_process = TRUE;
-            $this->addError('The requested Bibles will take a while to render.  Please come back in an hour and try your download again.' . $limit);
+            $this->addError('The requested Bibles will take a while to render.  Please come back in an hour and try your download again.');
         }
 
         return $Bibles_Needing_Render;

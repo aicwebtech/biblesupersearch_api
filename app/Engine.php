@@ -721,6 +721,10 @@ class Engine
                     $response->bibles_needing_render[] = $Bible->module;
                 }
             }
+
+            if(!$success) {
+                $this->addError('Render needed', 1);
+            }
         }
         else {
             // if($bypass_limit) {
