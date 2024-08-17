@@ -153,6 +153,16 @@ abstract class RenderAbstract
     }
 
     /**
+     * If for any reason the  given format cannot be rendered using the given Bible
+     * This will add an error messge and return false
+     * (Note: we already check if the given Bible is able to be rendered into any format)
+     */ 
+    public function canRenderAndDownload()
+    {
+        return true;
+    }
+
+    /**
      * If render file does not exist or output has changed, generates the output file and saves it to disk
      * @return boolean
      */

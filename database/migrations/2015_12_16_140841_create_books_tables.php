@@ -49,7 +49,8 @@ class CreateBooksTables extends Migration
      */
     public function down()
     {
-        // \App\Models\Books\BookAbstract::dropBookTables();
+
+        \App\Models\Books\BookAbstract::dropBookTables();
 
 
         // $languages = \App\Models\Books\BookAbstract::getSupportedLanguages();

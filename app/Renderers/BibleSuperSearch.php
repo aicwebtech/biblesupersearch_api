@@ -47,6 +47,16 @@ class BibleSuperSearch extends RenderAbstract
         return $this->Bible->export($this->overwrite, null);
     }
 
+    /**
+     * If for any reason the  given format cannot be rendered using the given Bible
+     * This will add an error messge and return false
+     * (Note: we already check if the given Bible is able to be rendered into any format)
+     */ 
+    public function canRenderAndDownload()
+    {
+        return $this->Bible->hasModuleFile();
+    }
+
     public function isRenderNeeded($ignore_cache = FALSE) 
     {
         return false; // This doesn't actually render
