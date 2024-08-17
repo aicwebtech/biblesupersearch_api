@@ -1,10 +1,38 @@
 Bible SuperSearch API Changelog
 
-= 5.6.0.pre
-* Fixed highlight issue when text contained &
-* Adding book lists for many lanugages
+= 5.6.0
 * Rebuilding book lists to load when Bible is installed
 * Error message when installing if not has mod_rewrite
+* Fixed highlight issue when text contained &
+* Adding Bibles and/or book lists for several lanugages
+** Albanian
+** Arabic
+** Bengali
+** Burmese
+** Dutch/Flemish
+** Hausa
+** Hebrew (Modern)
+** Indonesian
+** Gujarti
+** Kannada
+** Korean
+** Marathi
+** Nepali
+** Persian
+** Polish
+** Punjabi
+** Somali
+** Swahili
+** Tagalog
+** Tajiki / Tajik
+** Tamil
+** Telugu
+** Tibetan
+** Urdu
+** Uyghur
+** Vietnamese
+** Wolof
+
 
 = 5.5.0 / Mar 23, 2024
 * Ability to prevent common words from being used as keywords

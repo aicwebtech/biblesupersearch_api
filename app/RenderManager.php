@@ -60,7 +60,8 @@ class RenderManager {
     protected $needs_process = FALSE;
     public $include_extras = FALSE;
 
-    public function __construct($modules, $format, $zip = FALSE) {
+    public function __construct($modules, $format, $zip = FALSE) 
+    {
         $this->multi_bibles = ($modules == 'ALL' || count($modules) > 1);
         $this->multi_format = ($format  == 'ALL' || count($format)  > 1);
         $this->zip = ($this->multi_bibles && $this->multi_format) ? TRUE : $zip;
@@ -106,6 +107,10 @@ class RenderManager {
                     continue;
                 }
 
+                if(!$this->_checkBibleFormat($Bible)) {
+                    continue;
+                }
+
                 $this->Bibles[] = $Bible;
             }
         }
@@ -113,6 +118,31 @@ class RenderManager {
         if(config('download.bible_limit') && count($this->modules) > config('download.bible_limit')) {
             $this->addError( trans('errors.to_many_download', ['maximum' => config('download.bible_limit')]) );
         }
+    }
+
+    protected function _checkBibleFormat($Bible)
+    {
+        $success = true;
+
+        foreach($this->format as $format) {
+            $CLASS = static::$register[$format];
+            $Renderer = new $CLASS($Bible);
+
+            if(!$Renderer->canRenderAndDownload()) {
+                $success = false;
+
+                if($Renderer->hasErrors()) {
+                    $this->addErrors($Renderer->getErrors());
+                } else {
+                    $this->addError( trans('errors.download.bible_format_not_ava', [
+                        'name'   => $Bible->name,
+                        'format' => $CLASS::$name
+                    ]) );
+                }
+            }
+        }
+
+        return $success;
     }
 
     protected function _selectAllBibles() {
@@ -139,6 +169,7 @@ class RenderManager {
         $CLASS = static::$register[$format];
         $limit = isset($limit_override) ? $limit_override : $CLASS::getRenderBiblesLimit();
         $CLASS::$load_fonts = FALSE;
+        $limit = $limit == 0 ? true : $limit;
 
         if($overwrite) {
             $Bibles_Needing_Render = $this->Bibles;
