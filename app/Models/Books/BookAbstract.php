@@ -373,7 +373,9 @@ class BookAbstract extends Model
         return true;
     }
 
-    /* OBSOLETE */
+    /* SEMI-OBSOLETE */
+    // still used to clean up book lists when uninistalling
+    // but this needs to change!
     public static function dropBookTables()
     {
         $languages = static::getSupportedLanguages();
