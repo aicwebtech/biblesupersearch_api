@@ -1,11 +1,13 @@
 Bible SuperSearch API Changelog
 
+= 5.6.1
+* Updated / Corrected Arabic book list
 
 = 5.6.0
 * Rebuilding book lists to load when Bible is installed
 * Error message when installing if not has mod_rewrite
 * Fixed highlight issue when text contained &
-* Adding Bibles and/or book lists for several lanugages
+* Adding Bibles and/or book lists for several languages
 ** Albanian
 ** Arabic
 ** Bengali
@@ -14,7 +16,7 @@ Bible SuperSearch API Changelog
 ** Hausa
 ** Hebrew (Modern)
 ** Indonesian
-** Gujarti
+** Gujarati
 ** Kannada
 ** Korean
 ** Marathi
