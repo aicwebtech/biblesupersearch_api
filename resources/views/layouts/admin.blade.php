@@ -25,6 +25,10 @@ if(isset($include_enyo) && $include_enyo) {
     $javascripts[] = '/js/bin/enyo/2.5.1.1/enyo.js';
 }
 
+if(isset($include_vue) && $include_vue) {
+    $javascripts[] = '/js/bin/vue/vue.3.5.8.js';
+}
+
 if(!config('download.enable') || !config('download.tab_enable')) {
     unset($buttons['exports']);
 }
@@ -73,6 +77,9 @@ $u = url('');
         <title>{{ config('app.name', 'Bible SuperSearch API') }} - Manager</title>
     </head>
     <body>
+        
+        <div id='vuetest'></div>
+
         <div id='header'>
             <h1>{{ config('app.name', 'Bible SuperSearch API') }} Manager</h1>
             @if(!$hide_menus)

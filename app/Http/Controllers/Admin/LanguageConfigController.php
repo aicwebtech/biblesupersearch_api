@@ -28,10 +28,15 @@ class LanguageConfigController extends Controller
 
         $Post = Post::where('key', 'tos')->firstOrFail();
 
-        return view('admin.languages', [
+        return view('admin.languages_new', [
             'Languages' => $Languages,
             'bootstrap' => true,
-        ]);
+        ]);        
+
+        // return view('admin.languages', [
+        //     'Languages' => $Languages,
+        //     'bootstrap' => true,
+        // ]);
     }
 
     // todo, have an actual grid here
