@@ -1,6 +1,21 @@
+import LanguageGrid from './LanguageGrid.vue.js';
+import StrongsGrid from './StrongsGrid.vue.js';
+import CrossRefGrid from './CrossReferenceGrid.vue.js';
+
 export default {
-  data() {
+    data() {
     return { count: 1 }
-  },
-  template: `<div>Count is: {{ count }}</div>`
+    },
+    components: {
+        LanguageGrid,
+        StrongsGrid,
+        CrossRefGrid
+    },
+    template: `<div>
+        Count is: {{ count }}
+            <LanguageGrid />
+            <StrongsGrid />
+            <CrossRefGrid />
+      </div>
+  `
 }
