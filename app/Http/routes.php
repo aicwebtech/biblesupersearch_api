@@ -90,6 +90,7 @@ Route::post('/admin/bibles/import', 'Admin\BibleController@import');
 Route::get('/admin/languages', 'Admin\LanguageConfigController@index')->name('admin.languages');
 Route::post('/admin/languages', 'Admin\LanguageConfigController@index');
 Route::get('/admin/languages/fetch/{id}', 'Admin\LanguageConfigController@fetch');
+Route::get('/admin/languages/grid', 'Admin\LanguageConfigController@grid');
 Route::post('/admin/languages/save', 'Admin\LanguageConfigController@save');
 
 Route::get('/admin/tos', 'Admin\PostConfigController@tos')->name('admin.tos')->middleware('install');

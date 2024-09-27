@@ -7,7 +7,9 @@ use App\Http\Responses\Response;
 use App\Http\Controllers\Controller;
 use App\Models\Post;
 use App\Models\Language;
+use App\Models\Bible;
 use App\Models\Shortcuts\ShortcutAbstract;
+use Illuminate\Support\Facades\DB;
 
 class LanguageConfigController extends Controller
 {
@@ -43,24 +45,33 @@ class LanguageConfigController extends Controller
     public function grid(Request $request)
     {
         $data = $request->toArray();
+
         $rows = $postfilters = [];
         $rows_per_page = (int) $data['rows'];
         $page          = (int) $_REQUEST['page'];
 
-        if($data['sidx'] == 'lang') {
-            $data['sidx'] = 'languages.name';
-        }        
-        else if($data['sidx'] == 'copy') {
-            $data['sidx'] = 'copyrights.name';
-        }
-        else {
-            $data['sidx'] = 'bibles.' . $data['sidx'];
-        }
+        // if($data['sidx'] == 'lang') {
+        //     $data['sidx'] = 'languages.name';
+        // }        
+        // else if($data['sidx'] == 'copy') {
+        //     $data['sidx'] = 'copyrights.name';
+        // }
+        // else {
+        //     $data['sidx'] = 'bibles.' . $data['sidx'];
+        // }
 
-        $Query = Bible::select('bibles.*', 'languages.name AS lang', 'copyrights.name AS copy')
-            ->leftJoin('languages', 'bibles.lang_short', 'languages.code')
-            ->leftJoin('copyrights', 'bibles.copyright_id', 'copyrights.id')
-            ->orderBy($data['sidx'], $data['sord']);
+        // $Query = Bible::select('bibles.*', 'languages.name AS lang', 'copyrights.name AS copy')
+        //     ->leftJoin('languages', 'bibles.lang_short', 'languages.code')
+        //     ->leftJoin('copyrights', 'bibles.copyright_id', 'copyrights.id')
+        //     ->orderBy($data['sidx'], $data['sord']);
+
+        // $Query = Language::select('languages.*', DB::raw('COUNT(bibles.id) AS bible') )
+        // $Query = Language::select('languages.*', 'COUNT(bibles.id) AS bible')
+        $Query = Language::select('languages.*', 'bibles.id AS has_bibles')
+                    ->leftJoin('bibles', 'bibles.lang_short', 'languages.code')
+                    ->whereNotNull('bibles.id')
+                    ->groupBy('languages.id')
+                    ->orderBy( $data['sidx'], $data['sord'] );
 
         // if(array_key_exists('_search', $data) && $data['_search'] == 'true') {
         //     Helpers::buildGridSearchQuery($data, $Query, [
@@ -77,21 +88,11 @@ class LanguageConfigController extends Controller
         $has_post_filter = empty($postfilters) ? FALSE : TRUE;
         $has_file_filter = NULL;
 
-        if(array_key_exists('has_module_file', $postfilters) && $postfilters['has_module_file'] != '_no_rest_') {
-            $has_file_filter = (int) $postfilters['has_module_file'];
-        }
+        $Languages = ($has_post_filter) ? $Query->get() : $Query->paginate($rows_per_page);
 
-        $Bibles = ($has_post_filter) ? $Query->get() : $Query->paginate($rows_per_page);
-
-        foreach($Bibles as $Bible) {
-            $row = $Bible->getAttributes();
-            unset($row['description']);
-            $row['has_module_file'] = $Bible->hasModuleFile() ? 1 : 0;
-            $row['needs_update']    = $Bible->needsUpdate()   ? 1 : 0;
-
-            if($has_file_filter === 1 && $row['has_module_file'] == 0 || $has_file_filter === 0 && $row['has_module_file'] == 1) {
-                continue;
-            }
+        foreach($Languages as $Language) {
+            $row = $Language->getAttributes();
+            $row['has_bibles'] = $row['has_bibles'] ? 1 : 0;
 
             $rows[] = $row;
         }
@@ -112,10 +113,10 @@ class LanguageConfigController extends Controller
         }
         else {
             $resp = [
-                'total'     => $Bibles->lastPage(),
-                'page'      => $Bibles->currentPage(),
+                'total'     => $Languages->lastPage(),
+                'page'      => $Languages->currentPage(),
                 'rows'      => $rows,
-                'records'   => $Bibles->total(),
+                'records'   => $Languages->total(),
                 'post'      => FALSE,
             ];
         }
