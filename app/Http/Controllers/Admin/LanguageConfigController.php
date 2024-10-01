@@ -65,13 +65,27 @@ class LanguageConfigController extends Controller
         //     ->leftJoin('copyrights', 'bibles.copyright_id', 'copyrights.id')
         //     ->orderBy($data['sidx'], $data['sord']);
 
+        $pf = DB::getTablePrefix();
+
+        // todo - rebuild this to use raw query
         // $Query = Language::select('languages.*', DB::raw('COUNT(bibles.id) AS bible') )
         // $Query = Language::select('languages.*', 'COUNT(bibles.id) AS bible')
-        $Query = Language::select('languages.*', 'bibles.id AS has_bibles')
+        $Query = Language::select('languages.*', 'bibles.id AS has_bibles', 
+                                    DB::raw('IF(' . $pf . 'book_list.value = 1,1,0) AS book_list'),
+                                    DB::raw('COUNT(' . $pf . 'bibles.id) AS bibles')
+
+                                )
                     ->leftJoin('bibles', 'bibles.lang_short', 'languages.code')
-                    ->whereNotNull('bibles.id')
+                    ->leftJoin('language_attr AS book_list', function($join) {
+                        $join -> on('book_list.code', 'languages.code')
+                              -> where('book_list.attribute', 'book_list');
+                    })
                     ->groupBy('languages.id')
                     ->orderBy( $data['sidx'], $data['sord'] );
+
+        if(!isset($data['all_languages']) || !$data['all_languages']) {
+            $Query->whereNotNull('bibles.id');
+        }
 
         // if(array_key_exists('_search', $data) && $data['_search'] == 'true') {
         //     Helpers::buildGridSearchQuery($data, $Query, [

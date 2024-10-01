@@ -1,17 +1,37 @@
 const template = `<div>
             <h1>Language Grid</h1>
-            <v-data-table 
+            Total rows: {{totalRows}}
+            <v-switch
+                label='Include Languages Without Bibles'
+                v-model='gridData.all_languages'
+                @update:modelValue='refetchGrid'
+                true-value='1'
+                false-value='0'
+            </v-switch>
+
+            <v-data-table-server
                 :headers="headers"
                 :items="gridRows"
                 :items-length='totalRows'
+                :page='gridData.page'
+                show-current-page
                 v-model:items-per-page="gridData.rows"
+                :items-per-page-options='itemsPerPageOptions'
                 :loading='loading'
                 @update:options="paginateGrid"
                 fixed-header
                 single-select
                 hover
                 density='compact'
-            ></v-data-table>
+            >
+
+            <template v-slot:item.book_list={item}>
+                <v-chip
+                    :text="item.book_list == '1' ? 'Yes' : 'No'"
+                ></v-chip>
+            </template>
+
+            </v-data-table-server>
         </div>`;
 
 export default {
@@ -20,13 +40,15 @@ export default {
             totalRows: 1,
             gridData: {
                 page: 1,
-                rows: 20,
+                rows: 10,
                 sidx: 'name',
                 sord: 'ASC',
-                start: null
+                start: null,
+                all_languages: 0
             },
             loading: false,
-            gridRows: []
+            gridRows: [],
+            itemsPerPageOptions: [5, 10, 25, 50, 100, {value: -1, title: '$vuetify.dataFooter.itemsPerPageAll'}],
         }
     },
     template: template, 
@@ -38,9 +60,9 @@ export default {
                 {title: 'Native Name', key: 'native_name'},
                 {title: 'Family', key: 'family'},
                 // todo
-                {title: '# Bibles', key: 'num_bibles'},
+                {title: '# Bibles', key: 'bibles'},
                 {title: 'Book List', key: 'book_list'},
-                {title: 'Strong\s', key: 'strongs'},
+                // {title: 'Strong\s', key: 'strongs'},
             ];
         },
     },
@@ -59,8 +81,14 @@ export default {
                 t.loading = false;
             });
         },
+        refetchGrid() {
+            this.gridData.page = 1;
+            this.fetchGridRows();
+        },
         paginateGrid(options) {
             // do something
+            console.log('paginateGrid', options);
+
             this.gridData.page = options.page;
             this.gridData.rows = options.itemsPerPage;
             this.gridData.start = this.gridData.page * this.gridData.rows - this.gridData.rows;
