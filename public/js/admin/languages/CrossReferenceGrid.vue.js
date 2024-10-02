@@ -3,7 +3,7 @@ export default {
     return { count: 1 }
   },
   template: `<div>
-        <h1>Cross Reference Grid</h1>
+        <h2>Cross Reference Lists</h2>
 
     </div>`
 }

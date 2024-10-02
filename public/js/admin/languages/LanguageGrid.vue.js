@@ -1,6 +1,8 @@
+import EditDialog from './LanguageEditDialog.vue.js';
+
 const template = `<div>
-            <h1>Language Grid</h1>
-            Total rows: {{totalRows}}
+            <h2>Languages</h2>
+            
             <v-switch
                 label='Include Languages Without Bibles'
                 v-model='gridData.all_languages'
@@ -25,16 +27,32 @@ const template = `<div>
                 density='compact'
             >
 
-            <template v-slot:item.book_list={item}>
-                <v-chip
-                    :text="item.book_list == '1' ? 'Yes' : 'No'"
-                ></v-chip>
-            </template>
+                <template v-slot:item.book_list={item}>
+                    <v-chip
+                        :text="item.book_list == '1' ? 'Yes' : 'No'"
+                    ></v-chip>
+                </template>            
+
+                <template v-slot:item.actions={item}>
+                    <v-chip
+                        text='Edit'
+                        @click='clickEdit(item)'
+                    ></v-chip>
+                </template>
 
             </v-data-table-server>
+
+        <EditDialog 
+            v-model='editing'
+
+        ></EditDialog>
         </div>`;
 
 export default {
+    
+    components: {
+        EditDialog
+    },
     data() {
         return { 
             totalRows: 1,
@@ -46,7 +64,12 @@ export default {
                 start: null,
                 all_languages: 0
             },
+            sortDefault: {
+                sidx: 'name',
+                sord: 'ASC',
+            },
             loading: false,
+            editing: false,
             gridRows: [],
             itemsPerPageOptions: [5, 10, 25, 50, 100, {value: -1, title: '$vuetify.dataFooter.itemsPerPageAll'}],
         }
@@ -56,13 +79,14 @@ export default {
         headers() {
             return [
                 {title: 'Code', key: 'code'},
+                {title: 'Name', key: 'native_name'},
                 {title: 'English Name', key: 'name'},
-                {title: 'Native Name', key: 'native_name'},
                 {title: 'Family', key: 'family'},
                 // todo
                 {title: '# Bibles', key: 'bibles'},
                 {title: 'Book List', key: 'book_list'},
                 // {title: 'Strong\s', key: 'strongs'},
+                {title: 'Actions', key: 'actions'},
             ];
         },
     },
@@ -94,14 +118,18 @@ export default {
             this.gridData.start = this.gridData.page * this.gridData.rows - this.gridData.rows;
 
             var sorting = (options.sortBy[0]) ? options.sortBy[0] : {
-                key: this.gridData.sidx,
-                order: this.gridData.sord,
+                key: this.sortDefault.sidx,
+                order: this.sortDefault.sord,
             };
 
             this.gridData.sidx = sorting.key;
             this.gridData.sord = sorting.order;
 
             this.fetchGridRows();
+        },
+        clickEdit(item) {
+            console.log('clickEdit', item);
+            this.editing = true;
         }
     }
 }

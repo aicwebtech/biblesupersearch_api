@@ -3,7 +3,7 @@ export default {
     return { count: 1 }
   },
   template: `<div>
-        <h1>Strongs Grid</h1>
+        <h2>Strong's Definitions</h2>
 
         </div>`
 }

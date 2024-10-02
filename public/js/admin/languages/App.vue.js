@@ -4,7 +4,7 @@ import CrossRefGrid from './CrossReferenceGrid.vue.js';
 
 export default {
     data() {
-    return { count: 1 }
+        return {  }
     },
     components: {
         LanguageGrid,
@@ -12,7 +12,6 @@ export default {
         CrossRefGrid
     },
     template: `<div>
-        Count is: {{ count }}
             <LanguageGrid />
             <StrongsGrid />
             <CrossRefGrid />
