@@ -43,8 +43,11 @@ const template = `<div>
             </v-data-table-server>
 
         <EditDialog 
-            v-model='editing'
-
+            :showing='editing'
+            :recordId='editingId'
+            loadRecord
+            @onClose='closeEdit'
+            url='/admin/bibles/languages'
         ></EditDialog>
         </div>`;
 
@@ -70,6 +73,7 @@ export default {
             },
             loading: false,
             editing: false,
+            editingId: null,
             gridRows: [],
             itemsPerPageOptions: [5, 10, 25, 50, 100, {value: -1, title: '$vuetify.dataFooter.itemsPerPageAll'}],
         }
@@ -129,7 +133,12 @@ export default {
         },
         clickEdit(item) {
             console.log('clickEdit', item);
+            this.editingId = item.id;
             this.editing = true;
+        },
+        closeEdit() {
+            console.log('closeEdit');
+            this.editing = false;
         }
     }
 }

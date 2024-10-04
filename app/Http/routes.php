@@ -99,6 +99,7 @@ Route::get('/admin/privacy', 'Admin\PostConfigController@privacy')->name('admin.
 Route::post('/admin/privacy', 'Admin\PostConfigController@savePrivacy');
 
 Route::resource('/admin/bibles', 'Admin\BibleController', ['as' => 'admin']);
+Route::resource('/admin/bibles/languages', 'Admin\LanguageConfigController', ['as' => 'admin']);
 
 // Route::resource('/admin/bibles', 'Admin\BibleController', ['as' => 'admin', 'except' => [
 //     'create', 'edit'// , 'update'

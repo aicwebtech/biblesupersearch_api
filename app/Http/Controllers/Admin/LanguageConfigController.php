@@ -138,6 +138,17 @@ class LanguageConfigController extends Controller
         return response($resp, 200);
     }
 
+    public function show($id) 
+    {   
+        $Language = Language::find($id);
+
+        $resp = new \stdClass();
+        $resp->success  = true;
+        $resp->Language = $Language->attributesToArray();
+
+        return new Response($resp, 200);
+    }    
+
     public function fetch($lang) 
     {   
         $Language = Language::findByCode($lang, true);
