@@ -6,7 +6,7 @@ const template = `
 
     >
         <template v-slot:default="{ isActive }">
-            <v-card title='Edit Language'>
+            <v-card :title='title'>
                 <v-card-text>
                     Form elements go here ....
                     Stuffs<br />
@@ -39,10 +39,10 @@ export default {
             type: String,
             required: true
         },
-        showing: {
-            type: Boolean,
-            default: false
-        },
+        // showing: {
+        //     type: Boolean,
+        //     default: false
+        // },
         recordId: {
             type: Number,
             default: null
@@ -51,10 +51,10 @@ export default {
             type: Object,
             default: {}
         },
-        loadRecord: {
-            type: Boolean,
-            default: false
-        },        
+        recordType: {
+            type: String,
+            default: 'Item',
+        },
         loadRecord: {
             type: Boolean,
             default: false
@@ -63,7 +63,7 @@ export default {
     template: template,
     data() {
         return { 
-            // showing: true
+            showing: false,
             recordInternal: {},
             loading: false,
         }
@@ -74,6 +74,13 @@ export default {
             // do something here?
         },
         recordId(newValue, oldValue) {
+            if(newValue === false || newValue === null) {
+                this.showing = false;
+                return;
+            }
+
+            this.newRecord = (newValue == '' || newValue == '-1');
+
             if(newValue && newValue != '') {
                 // Editing existing record
                 if(this.loadRecord) {
@@ -82,11 +89,18 @@ export default {
                     axios.request({
                         url: this.url + '/' + newValue,
                         method: 'GET',
+                        headers: {'X-Requested-With': 'XMLHttpRequest'},
                         params: []
                     }).then(function(response) {
-                        console.log(response);
                         t.recordInternal = response.data.Language;
                         t.loading = false;
+                        t.showing = true;
+                    }).catch(function(error) {
+                        if(error.response.data.message) {
+                            alert(error.response.data.message);
+                        } else {
+                            alert('An unknown error has occurred');
+                        }
                     });
                 } else {
                     // do something?
@@ -101,9 +115,13 @@ export default {
         recording() {
             return this.loadRecord && this.recordId ? this.recordInternal : this.record;
         },
+        title() {
+            return (this.newRecord ? 'New' : 'Update') + ' ' + this.recordType;
+        }
     },
     methods: {
         handleCancel() {
+            this.showing = false;
             this.$emit('onClose');
             // alert('cancel');
         },

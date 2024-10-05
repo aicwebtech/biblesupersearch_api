@@ -21,7 +21,8 @@ class Authenticate
      * @param  Guard  $auth
      * @return void
      */
-    public function __construct(Guard $auth) {
+    public function __construct(Guard $auth) 
+    {
         $this->auth = $auth;
     }
 
@@ -33,7 +34,8 @@ class Authenticate
      * @param integer $access_level minimal access level to view
      * @return mixed
      */
-    public function handle($request, Closure $next, $access_level = 1) {
+    public function handle($request, Closure $next, $access_level = 1) 
+    {
         if ($this->auth->guest()) {
 
             if ($request->ajax()) {

@@ -43,7 +43,7 @@ const template = `<div>
             </v-data-table-server>
 
         <EditDialog 
-            :showing='editing'
+            :showing__='editing'
             :recordId='editingId'
             loadRecord
             @onClose='closeEdit'
@@ -115,8 +115,6 @@ export default {
         },
         paginateGrid(options) {
             // do something
-            console.log('paginateGrid', options);
-
             this.gridData.page = options.page;
             this.gridData.rows = options.itemsPerPage;
             this.gridData.start = this.gridData.page * this.gridData.rows - this.gridData.rows;
@@ -134,11 +132,12 @@ export default {
         clickEdit(item) {
             console.log('clickEdit', item);
             this.editingId = item.id;
-            this.editing = true;
+            // this.editing = true;
         },
         closeEdit() {
             console.log('closeEdit');
-            this.editing = false;
+            this.editingId = null;
+            // this.editing = false;
         }
     }
 }
