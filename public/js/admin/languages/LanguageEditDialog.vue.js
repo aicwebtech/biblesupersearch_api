@@ -3,16 +3,47 @@ const template = `
     <v-dialog 
         v-model='showing'
         max-width='600' 
-
     >
         <template v-slot:default="{ isActive }">
             <v-card :title='title'>
+                
                 <v-card-text>
-                    Form elements go here ....
-                    Stuffs<br />
                     recording.name: {{recording.name}} <br />
                     record.name: {{record.name}} <br />
                     recordInternal.name: {{recordInternal.name}}
+
+                    <v-text-field 
+                        label='Name' 
+                        v-model='recording.native_name'
+                        density='compact'
+                    ></v-text-field>
+
+                    <v-text-field 
+                        label='Default Name' 
+                        v-model='recording.iso_endonym'
+                        readonly
+                        density='compact'
+                    ></v-text-field>
+
+                    <v-text-field 
+                        label='English Name' 
+                        v-model='recording.name'
+                        density='compact'
+                    ></v-text-field>                    
+
+                    <v-text-field 
+                        label='Default English Name' 
+                        v-model='recording.iso_name'
+                        readonly
+                        density='compact'
+                    ></v-text-field>
+
+                    <v-textarea 
+                        label='Common Words' 
+                        v-model='recording.common_words'
+                        density='compact'
+                    ></v-textarea>
+
                 </v-card-text>
 
                 <v-card-actions>
@@ -63,8 +94,8 @@ export default {
     template: template,
     data() {
         return { 
-            showing: false,
             recordInternal: {},
+            showing: false,
             loading: false,
         }
     },
@@ -121,12 +152,39 @@ export default {
     },
     methods: {
         handleCancel() {
-            this.showing = false;
-            this.$emit('onClose');
+            this.closeDialog();
             // alert('cancel');
         },
         handleSave() {
+            var record = this.recording,
+                url = this.newRecord ? this.url : this.url + '/' + this.recordId,
+                method = this.newRecord ? 'POST' : 'PUT',
+                t = this;
+
+            this.loading = true;
+
+            axios.request({
+                url: url,
+                method: method,
+                headers: {'X-Requested-With': 'XMLHttpRequest'},
+                data: this.recording
+            }).then(function(response) {
+                t.loading = false;
+                t.$emit('onSave');
+                t.closeDialog();
+            }).catch(function(error) {
+                if(error.response.data.message) {
+                    alert(error.response.data.message);
+                } else {
+                    alert('An unknown error has occurred');
+                }
+            });
+
             this.handleCancel();
+        }, 
+        closeDialog() {
+            this.showing = false;
+            this.$emit('onClose');
         }
     }
 }

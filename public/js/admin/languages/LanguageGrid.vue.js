@@ -46,7 +46,9 @@ const template = `<div>
             :showing__='editing'
             :recordId='editingId'
             loadRecord
+            recordType='Language'
             @onClose='closeEdit'
+            @onSave='refreshGrid'
             url='/admin/bibles/languages'
         ></EditDialog>
         </div>`;
@@ -111,6 +113,10 @@ export default {
         },
         refetchGrid() {
             this.gridData.page = 1;
+            this.fetchGridRows();
+        },
+        refreshGrid() {
+            console.log('refreshGrid');
             this.fetchGridRows();
         },
         paginateGrid(options) {

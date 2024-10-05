@@ -175,4 +175,62 @@ class LanguageConfigController extends Controller
         return new Response($resp, 200);
     }
 
+    /**
+     * Store a newly created resource in storage.
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @return \Illuminate\Http\Response
+     */
+    public function store(Request $request) 
+    {
+        $this->_save($request, null);
+    }
+
+    /**
+     * Update the specified resource in storage.
+     * Use PUT verb
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @param  int  $id
+     * @return \Illuminate\Http\Response
+     */
+    public function update(Request $request, $id) 
+    {
+        return $this->_save($request, $id);
+    }
+
+    protected function _save(Request $request, $id = null) 
+    {
+        $resp = new \stdClass();
+
+        if($id) {
+            $Language = Language::findOrFail($id);
+        }
+        else {
+            $Language = new Language();
+        }
+
+        $safe = ['name', 'native_name', 'common_words'];
+
+        $data = $request->only($safe);
+
+        // $rules = $Language::getUpdateRules($id);
+        // $data  = $request->only(array_keys($rules));
+
+        // $v = Validator::make($data, $rules);
+
+        // if($v->fails()) {
+        //     $resp->success = FALSE;
+        //     $resp->errors = $v->errors();
+        //     return new Response($resp, 422);
+        // }
+
+        $Language->fill($data);
+        $Language->save();
+
+        $resp->success  = true;
+        $resp->Language = $Language->attributesToArray();
+
+        return new Response($resp, 200);
+    }
 }
