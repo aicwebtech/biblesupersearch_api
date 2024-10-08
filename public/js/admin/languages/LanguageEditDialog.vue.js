@@ -5,13 +5,11 @@ const template = `
         max-width='600' 
     >
         <template v-slot:default="{ isActive }">
-            <v-card :title='title'>
-                
-                <v-card-text>
-                    recording.name: {{recording.name}} <br />
-                    record.name: {{record.name}} <br />
-                    recordInternal.name: {{recordInternal.name}}
+            <v-card :_title='title' :loading='loading' _color='primary'>
 
+                    <v-card-title :text='title' >{{title}}</v-card-title>
+
+                <v-card-text class='vue_editdialog_body'>
                     <v-text-field 
                         label='Name' 
                         v-model='recording.native_name'
@@ -39,26 +37,31 @@ const template = `
                     ></v-text-field>
 
                     <v-textarea 
-                        label='Common Words' 
+                        label='Common Words - One word per line' 
                         v-model='recording.common_words'
                         density='compact'
                     ></v-textarea>
 
+                    <div>
+                        Add words to this list to prevent them from being used as search keywords.
+                        One word per line.
+                    </div>
+
                 </v-card-text>
 
-                <v-card-actions>
-                    <v-spacer></v-spacer>
+                    <v-card-actions>
+                        <v-spacer></v-spacer>
 
-                    <v-btn
-                        text='Cancel'
-                        @click='handleCancel()'
-                    ></v-btn>                    
+                        <v-btn
+                            text='Cancel'
+                            @click='handleCancel()'
+                        ></v-btn>                    
 
-                    <v-btn
-                        text='Save'
-                        @click='handleSave()'
-                    ></v-btn>
-                </v-card-actions>
+                        <v-btn
+                            text='Save'
+                            @click='handleSave()'
+                        ></v-btn>
+                    </v-card-actions>
             </v-card>
         </template>
     </v-dialog>

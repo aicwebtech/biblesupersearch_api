@@ -1,6 +1,6 @@
 import EditDialog from './LanguageEditDialog.vue.js';
 
-const template = `<div>
+const template = `<v-sheet>
             <h2>Languages</h2>
             
             <v-switch
@@ -19,17 +19,18 @@ const template = `<div>
                 show-current-page
                 v-model:items-per-page="gridData.rows"
                 :items-per-page-options='itemsPerPageOptions'
-                :loading='loading'
+                :loading='loading ? "primary-darken-1" : false'
                 @update:options="paginateGrid"
                 fixed-header
                 single-select
                 hover
                 density='compact'
+                color='#333333'
             >
-
                 <template v-slot:item.book_list={item}>
                     <v-chip
                         :text="item.book_list == '1' ? 'Yes' : 'No'"
+                        :color='bookListColor(item)'
                     ></v-chip>
                 </template>            
 
@@ -51,7 +52,7 @@ const template = `<div>
             @onSave='refreshGrid'
             url='/admin/bibles/languages'
         ></EditDialog>
-        </div>`;
+        </v-sheet>`;
 
 export default {
     
@@ -144,6 +145,13 @@ export default {
             console.log('closeEdit');
             this.editingId = null;
             // this.editing = false;
+        },
+        bookListColor(item) {
+            if(item.bibles == '0') {
+                return 'grey';
+            } else {
+                return item.book_list == '1' ? 'green' : 'red';
+            }
         }
     }
 }

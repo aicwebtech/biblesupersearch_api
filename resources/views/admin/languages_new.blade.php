@@ -12,6 +12,7 @@
        '/js/bin/vuetify/3.7.2/vuetify.min.css',
        'https://cdn.jsdelivr.net/npm/@mdi/font@5.x/css/materialdesignicons.min.css', // Works but remote
        //'/css/bin/mdi/5.x/materialdesignicons.min.css', // File loads, icons don't appear
+       '/css/vue/vue.css',
     ];
 @endphp
 
@@ -26,8 +27,19 @@
         const { createApp } = Vue
         const { createVuetify } = Vuetify
 
-        const vuetify = createVuetify()
+        import theme1 from '/css/vue/theme1.js';
+
+        const vuetify = createVuetify({
+            theme: {
+                defaultTheme: 'theme1', 
+                themes: {
+                    theme1
+                }
+            }
+        });
+
         import App from '/js/admin/languages/App.vue.js';
+        // import App from '/resources/App.vue';
         
         const app = createApp(App)
         app.use(vuetify)

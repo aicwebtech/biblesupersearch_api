@@ -11,10 +11,11 @@ export default {
         StrongsGrid,
         CrossRefGrid
     },
-    template: `<div>
-            <LanguageGrid />
-            <StrongsGrid />
-            <CrossRefGrid />
-      </div>
-  `
+    template: `
+            <v-app>
+                <LanguageGrid />
+                <StrongsGrid />
+                <CrossRefGrid />
+            </v-app>
+        `
 }
