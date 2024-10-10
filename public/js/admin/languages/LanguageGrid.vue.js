@@ -1,4 +1,5 @@
 import EditDialog from './LanguageEditDialog.vue.js';
+import EditDialogExt from './LanguageEditDialogExt.vue.js';
 
 const template = `<v-sheet>
             <h2>Languages</h2>
@@ -38,6 +39,11 @@ const template = `<v-sheet>
                     <v-chip
                         text='Edit'
                         @click='clickEdit(item)'
+                    ></v-chip>                    
+
+                    <v-chip
+                        text='Edit EXT'
+                        @click='clickEditExt(item)'
                     ></v-chip>
                 </template>
 
@@ -51,13 +57,23 @@ const template = `<v-sheet>
             @onClose='closeEdit'
             @onSave='refreshGrid'
             url='/admin/bibles/languages'
-        ></EditDialog>
+        ></EditDialog>        
+
+        <EditDialogExt 
+            :recordId='editingIdExt'
+            loadRecord
+            recordType='Language'
+            @onClose='closeEdit'
+            @onSave='refreshGrid'
+            url='/admin/bibles/languages'
+        ></EditDialogExt>
         </v-sheet>`;
 
 export default {
     
     components: {
-        EditDialog
+        EditDialog,
+        EditDialogExt
     },
     data() {
         return { 
@@ -77,6 +93,7 @@ export default {
             loading: false,
             editing: false,
             editingId: null,
+            editingIdExt: null,
             gridRows: [],
             itemsPerPageOptions: [5, 10, 25, 50, 100, {value: -1, title: '$vuetify.dataFooter.itemsPerPageAll'}],
         }
@@ -140,10 +157,16 @@ export default {
             console.log('clickEdit', item);
             this.editingId = item.id;
             // this.editing = true;
+        },        
+        clickEditExt(item) {
+            console.log('clickEditExt', item);
+            this.editingIdExt = item.id;
+            // this.editing = true;
         },
         closeEdit() {
             console.log('closeEdit');
             this.editingId = null;
+            this.editingIdExt = null;
             // this.editing = false;
         },
         bookListColor(item) {

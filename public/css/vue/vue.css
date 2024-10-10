@@ -2,6 +2,7 @@
 
 h2 {
     color: rgb(var(--v-theme-secondary));
+    border-bottom: 5px solid rgb(var(--v-theme-secondary));;
 }
 
 .vue_editdialog_body {
