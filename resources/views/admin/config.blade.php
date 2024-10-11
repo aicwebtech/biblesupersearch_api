@@ -304,8 +304,26 @@
                                         <tr>
                                             <td colspan = '2' class='ralign'>&nbsp; </td>
                                         </tr>
+                                        
                                         <tr>
-                                            <td class='ralign'>Daily Access Limit: </td>
+                                            <td class='ralign'>Allow Public Access: </td>
+                                            <td>
+                                                <a id='public_access' />
+                                                <label for='public_access_1'>Yes</label>
+                                                <input type='radio' name='bss__public_access' value='1' id='public_access_1' @if($configs['bss.public_access'] == 1)checked='checked'@endif />
+                                                <label for='public_access_2'>No</label>
+                                                <input type='radio' name='bss__public_access' value='0' id='public_access_2' @if($configs['bss.public_access'] == 0)checked='checked'@endif />
+                                                <span class='info'>
+                                                    <span>i</span>
+                                                    <p>
+                                                        Allows any website to access the API.<br />
+                                                        When disabled, only websites in the Access Whitelist are allowed access.  
+                                                    </p>
+                                                </span>
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td class='ralign'><small>Public Daily Access Limit: </small></td>
                                             <td>
                                                 <input name='bss__daily_access_limit' size='5' value='{{$configs['bss.daily_access_limit']}}'> 
                                                 hits <small>(0 = unlimited access)</small>
@@ -313,12 +331,12 @@
                                         </tr>                                        
                                         <tr>
                                             <td class='ralign' style='vertical-align: top;'>
-                                                Daily Access Whitelist: <br /><br />
+                                                Access Whitelist: <br /><br />
 
                                                 <small>
                                                     Add IP addresses 
                                                     and/or domain names <br />
-                                                    to grant unlimited access.<br />
+                                                    to grant (unlimited) access.<br />
                                                     One domain name or IP per line.<br />
                                                     Ex: mydomain.com<br />
                                                     Ex: 32.221.41.1<br />
