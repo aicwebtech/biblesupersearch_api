@@ -131,10 +131,6 @@ class IpAccess extends Model implements AccessLogInterface
             return 0;
         }
 
-        if(!config('bss.public_access')) {
-            return -1;
-        }
-
         if($this->domain) {
             $current_domain = '';
 
@@ -145,12 +141,15 @@ class IpAccess extends Model implements AccessLogInterface
                 $current_domain = $_SERVER['SERVER_NAME'];
             }
             
-
             $current_domain = ApiAccessManager::parseDomain($current_domain);
 
             if($current_domain == $this->domain) {
                 return 0;
             }
+        }
+
+        if(!config('bss.public_access')) {
+            return -1;
         }
 
         if($limit_raw === null) {

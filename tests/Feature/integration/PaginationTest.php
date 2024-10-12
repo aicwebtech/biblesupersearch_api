@@ -87,8 +87,21 @@ class PaginationTest extends TestCase {
     }
 
     protected function _testViaApi($query) {
+        $config_cache = config('bss.public_access');
+        $config_value = 1;
+        $config_changed = false;
+
+        if($config_cache != $config_value) {
+            config(['bss.public_access' => $config_value]);
+            $config_changed = true;
+        }
+
         $response = $this->json('POST', '/api/query', $query);
         $response->assertStatus(200);
+
+        if($config_changed) {
+            config(['bss.public_access' => $config_cache]);
+        }
 
         return $response;
     }
