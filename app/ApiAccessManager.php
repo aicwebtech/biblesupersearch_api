@@ -56,6 +56,11 @@ class ApiAccessManager
         }
 
         $items = explode("\n", str_replace(["\r\n", "\r"], "\n", $whitelist));
+        
+        foreach($items as &$i) {
+            $i = self::parseDomain($i);
+        }
+        unset($i);
 
         if($ip && in_array($ip, $items) || $domain && in_array($domain, $items)) {
             return true;

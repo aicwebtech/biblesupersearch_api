@@ -14,6 +14,7 @@ return [
 
     'import_from_v2' => env('IMPORT_FROM_V2', FALSE),
     'daily_access_limit' => env('DAILY_ACCESS_LIMIT', 2000),
+    'public_access' => true,
 
     'dev_tools' => env('ENABLE_DEV_TOOLS', FALSE),
 

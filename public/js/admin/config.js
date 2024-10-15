@@ -31,6 +31,15 @@ $( function() {
         else {
             $('#retained_file_settings').hide();
         }
+    });    
+
+    $('input[name=bss__public_access]').click(function(e) {
+        if( $(this).val() == '1' ) {
+            $('.public_access').show();
+        }
+        else {
+            $('.public_access').hide();
+        }
     });
 
     $('#button_clear_all_rendered').click(function() {

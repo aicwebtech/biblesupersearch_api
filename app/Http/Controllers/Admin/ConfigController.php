@@ -11,7 +11,8 @@ use Illuminate\Support\Arr;
 
 class ConfigController extends Controller
 {
-    public function __construct() {
+    public function __construct() 
+    {
         parent::__construct();
         $this->middleware('auth:100');
         $this->middleware('migrate')->only('index');
@@ -22,7 +23,8 @@ class ConfigController extends Controller
      *
      * @return \Illuminate\Http\Response
      */
-    public function index() {
+    public function index() 
+    {
         $config_values = ConfigManager::getGlobalConfigs();
         $Bibles = \App\Models\Bible::where('enabled', 1)->where('installed', 1)->get();
         $render_writeable = \App\RenderManager::isRenderWritable();
@@ -54,7 +56,8 @@ class ConfigController extends Controller
      * @param  \Illuminate\Http\Request  $request
      * @return \Illuminate\Http\Response
      */
-    public function store(Request $request) {
+    public function store(Request $request) 
+    {
         $data = $request->toArray();
         ConfigManager::setGlobalConfigs($data);
 
@@ -73,11 +76,13 @@ class ConfigController extends Controller
      *
      * @return \Illuminate\Http\Response
      */
-    public function destroy() {
+    public function destroy() 
+    {
         // to do
     }
 
-    public function cleanUpDownloadFiles() {
+    public function cleanUpDownloadFiles() 
+    {
         \App\RenderManager::cleanUpTempFiles();
         $resp = new \stdClass();
         $resp->success = TRUE;
@@ -85,7 +90,8 @@ class ConfigController extends Controller
         return new Response($resp, 200);
     }
 
-    public function deleteAllDownloadFiles() {
+    public function deleteAllDownloadFiles() 
+    {
         \App\RenderManager::deleteAllFiles();
         $resp = new \stdClass();
         $resp->success = TRUE;
