@@ -1,7 +1,7 @@
 import EditDialog from '/js/bin/custom_vue/dialogs/EditDialog.vue.js';
 
 const template = `
-    <EditDialog 
+    <div 
         max-width='600' 
     >
         <v-text-field 
@@ -40,17 +40,18 @@ const template = `
             Add words to this list to prevent them from being used as search keywords.
             One word per line.
         </div>
-    </EditDialog>
+    </div>
 `;
 
 export default {
-    template: template,
-    components: {
-        EditDialog
-    },
-    computed: {
-        recording() {
-            return EditDialog.recording();
-        }
-    }
+    // template: template,
+    extends: EditDialog,
+    // components: {
+    //     EditDialog
+    // },
+    // computed: {
+    //     recording() {
+    //         return EditDialog.recording();
+    //     }
+    // }
 }

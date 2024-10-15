@@ -1,5 +1,6 @@
 import EditDialog from './LanguageEditDialog.vue.js';
-import EditDialogExt from './LanguageEditDialogExt.vue.js';
+// import EditDialogExt from './LanguageEditDialogExt.vue.js';
+import EditDialogExt from '/js/bin/custom_vue/dialogs/EditDialog.vue.js';
 
 const template = `<v-sheet>
             <h2>Languages</h2>
@@ -66,7 +67,15 @@ const template = `<v-sheet>
             @onClose='closeEdit'
             @onSave='refreshGrid'
             url='/admin/bibles/languages'
-        ></EditDialogExt>
+            v-slot='{data}'
+        >
+            {{data.native_name}}
+            <v-text-field 
+                label='Name' 
+                v-model='data.native_name'
+                density='compact'
+            ></v-text-field>
+        </EditDialogExt>
         </v-sheet>`;
 
 export default {

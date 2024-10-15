@@ -9,7 +9,7 @@ const template = `
                 <v-card-title :text='title' >{{title}}</v-card-title>
 
                 <v-card-text class='vue_editdialog_body'>
-                    <slot></slot>
+                    <slot :data='recording'></slot>
                 </v-card-text>
 
                 <v-card-actions>
