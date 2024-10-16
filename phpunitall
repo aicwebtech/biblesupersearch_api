@@ -14,3 +14,18 @@ echo 'php 8.1:';
 echo 'php 8.2:'; 
 /usr/bin/php8.2 -v | grep -E 'PHP [0-9]+\.[0-9]+\.[0-9]+'
 /usr/bin/php8.2 artisan test --parallel
+
+# brainium/paratest needs updates that require PHP 8.1 (or higher) in order to work with PHP 8.3/8.4
+# So, NOT doing parallel testing attm
+
+echo 'php 8.3:'; 
+echo 'Note: some test dependencies fail, this known issue will be resolved by version 6.0'
+/usr/bin/php8.3 -v | grep -E 'PHP [0-9]+\.[0-9]+\.[0-9]+'
+#/usr/bin/php8.3 artisan test --parallel
+/usr/bin/php8.3 ./vendor/bin/phpunit
+
+echo 'php 8.4:'; 
+echo 'Note: some test dependencies fail, this known issue will be resolved by version 6.0'
+/usr/bin/php8.4 -v | grep -E 'PHP [0-9]+\.[0-9]+\.[0-9]+'
+#/usr/bin/php8.4 artisan test --parallel
+/usr/bin/php8.4 ./vendor/bin/phpunit
