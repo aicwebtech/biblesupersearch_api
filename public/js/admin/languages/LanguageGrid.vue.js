@@ -1,5 +1,6 @@
 import EditDialog from './LanguageEditDialog.vue.js';
 // import EditDialogExt from './LanguageEditDialogExt.vue.js';
+import LanguageForm from './LanguageEditForm.vue.js';
 import EditDialogExt from '/js/bin/custom_vue/dialogs/EditDialog.vue.js';
 
 const template = `<v-sheet>
@@ -45,6 +46,10 @@ const template = `<v-sheet>
                     <v-chip
                         text='Edit EXT'
                         @click='clickEditExt(item)'
+                    ></v-chip>                    
+                    <v-chip
+                        text='Edit PRE'
+                        @click='clickEditPre(item)'
                     ></v-chip>
                 </template>
 
@@ -56,6 +61,7 @@ const template = `<v-sheet>
             loadRecord
             recordType='Language'
             @onClose='closeEdit'
+            @afterLeave='closeEdit'
             @onSave='refreshGrid'
             url='/admin/bibles/languages'
         ></EditDialog>        
@@ -65,16 +71,25 @@ const template = `<v-sheet>
             loadRecord
             recordType='Language'
             @onClose='closeEdit'
+            @afterLeave='closeEdit'
             @onSave='refreshGrid'
             url='/admin/bibles/languages'
             v-slot='{data}'
         >
-            {{data.native_name}}
-            <v-text-field 
-                label='Name' 
-                v-model='data.native_name'
-                density='compact'
-            ></v-text-field>
+            <LanguageForm :record='data'></LanguageForm>
+        </EditDialogExt>        
+
+        <EditDialogExt 
+            :recordId='editingIdPre'
+            :record='editingRecord'
+            recordType='Language'
+            @onClose='closeEdit'
+            @afterLeave='closeEdit'
+            @onSave='refreshGrid'
+            url='/admin/bibles/languages'
+            v-slot='{data}'
+        >
+            <LanguageForm :record='data'></LanguageForm>
         </EditDialogExt>
         </v-sheet>`;
 
@@ -82,7 +97,8 @@ export default {
     
     components: {
         EditDialog,
-        EditDialogExt
+        EditDialogExt,
+        LanguageForm
     },
     data() {
         return { 
@@ -103,6 +119,8 @@ export default {
             editing: false,
             editingId: null,
             editingIdExt: null,
+            editingIdPre: null,
+            editingRecord: {},
             gridRows: [],
             itemsPerPageOptions: [5, 10, 25, 50, 100, {value: -1, title: '$vuetify.dataFooter.itemsPerPageAll'}],
         }
@@ -163,20 +181,20 @@ export default {
             this.fetchGridRows();
         },
         clickEdit(item) {
-            console.log('clickEdit', item);
             this.editingId = item.id;
-            // this.editing = true;
         },        
         clickEditExt(item) {
-            console.log('clickEditExt', item);
             this.editingIdExt = item.id;
-            // this.editing = true;
+        },        
+        clickEditPre(item) {
+            this.editingIdPre = item.id;
+            this.editingRecord = item;
         },
         closeEdit() {
-            console.log('closeEdit');
             this.editingId = null;
             this.editingIdExt = null;
-            // this.editing = false;
+            this.editingIdPre = null;
+            this.editingRecord = {};
         },
         bookListColor(item) {
             if(item.bibles == '0') {

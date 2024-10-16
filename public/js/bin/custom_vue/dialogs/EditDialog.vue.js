@@ -63,7 +63,6 @@ export default {
     },
     watch: {
         showing(newValue, oldValue) {
-            console.log('showingChanged', newValue, oldValue);
             // do something here?
         },
         recordId(newValue, oldValue) {
@@ -97,6 +96,7 @@ export default {
                     });
                 } else {
                     // do something?
+                    this.showing = true;
                 }
             } else {
                 // Creating new record
@@ -115,7 +115,6 @@ export default {
     methods: {
         handleCancel() {
             this.closeDialog();
-            // alert('cancel');
         },
         handleSave() {
             var record = this.recording,
