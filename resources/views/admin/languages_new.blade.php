@@ -9,7 +9,7 @@
 
     $stylesheets = [
        '/js/bin/vuetify/3.7.2/vuetify.min.css',
-       'https://cdn.jsdelivr.net/npm/@mdi/font@5.x/css/materialdesignicons.min.css', // Works but remote
+       //'https://cdn.jsdelivr.net/npm/@mdi/font@5.x/css/materialdesignicons.min.css', // Works but remote
        '/css/bin/mdi/5.x/materialdesignicons.min.css', // File loads, icons don't appear
        '/css/vue/vue.css',
     ];

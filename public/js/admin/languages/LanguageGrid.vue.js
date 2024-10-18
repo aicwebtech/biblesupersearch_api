@@ -1,7 +1,5 @@
-import EditDialog from './LanguageEditDialog.vue.js';
-// import EditDialogExt from './LanguageEditDialogExt.vue.js';
 import LanguageForm from './LanguageEditForm.vue.js';
-import EditDialogExt from '/js/bin/custom_vue/dialogs/EditDialog.vue.js';
+import EditDialog from '/js/bin/custom_vue/dialogs/EditDialog.vue.js';
 
 const template = `<v-sheet>
             <h2>Languages</h2>
@@ -42,32 +40,17 @@ const template = `<v-sheet>
                         text='Edit'
                         @click='clickEdit(item)'
                     ></v-chip>                    
-
-                    <v-chip
-                        text='Edit EXT'
-                        @click='clickEditExt(item)'
-                    ></v-chip>                    
+                  
                     <v-chip
                         text='Edit PRE'
                         @click='clickEditPre(item)'
                     ></v-chip>
                 </template>
 
-            </v-data-table-server>
+            </v-data-table-server>     
 
-        <EditDialog 
-            :showing__='editing'
+        <EditDialog
             :recordId='editingId'
-            loadRecord
-            recordType='Language'
-            @onClose='closeEdit'
-            @afterLeave='closeEdit'
-            @onSave='refreshGrid'
-            url='/admin/bibles/languages'
-        ></EditDialog>        
-
-        <EditDialogExt 
-            :recordId='editingIdExt'
             loadRecord
             recordType='Language'
             @onClose='closeEdit'
@@ -77,9 +60,9 @@ const template = `<v-sheet>
             v-slot='{data}'
         >
             <LanguageForm :record='data'></LanguageForm>
-        </EditDialogExt>        
+        </EditDialog>        
 
-        <EditDialogExt 
+        <EditDialog
             :recordId='editingIdPre'
             :record='editingRecord'
             recordType='Language'
@@ -90,14 +73,13 @@ const template = `<v-sheet>
             v-slot='{data}'
         >
             <LanguageForm :record='data'></LanguageForm>
-        </EditDialogExt>
+        </EditDialog>
         </v-sheet>`;
 
 export default {
     
     components: {
         EditDialog,
-        EditDialogExt,
         LanguageForm
     },
     data() {
@@ -182,10 +164,7 @@ export default {
         },
         clickEdit(item) {
             this.editingId = item.id;
-        },        
-        clickEditExt(item) {
-            this.editingIdExt = item.id;
-        },        
+        },             
         clickEditPre(item) {
             this.editingIdPre = item.id;
             this.editingRecord = item;
