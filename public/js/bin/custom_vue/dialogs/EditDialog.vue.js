@@ -71,11 +71,13 @@ export default {
                 return;
             }
 
-            this.newRecord = (newValue == '' || newValue == '-1');
+            this.newRecord = (newValue == '-1' || newValue == -1);
 
-            if(newValue && newValue != '') {
+            if(!this.newRecord) {
                 // Editing existing record
                 if(this.loadRecord) {
+                    this.loading = true;
+                    this.showing = true;
                     var t = this;
 
                     axios.request({
@@ -100,6 +102,9 @@ export default {
                 }
             } else {
                 // Creating new record
+                this.recordInternal = {};
+                this.showing = true;
+                this.loading = false;
             }
 
         }

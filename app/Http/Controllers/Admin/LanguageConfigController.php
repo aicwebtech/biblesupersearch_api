@@ -183,6 +183,8 @@ class LanguageConfigController extends Controller
      */
     public function store(Request $request) 
     {
+        return new Response(null, 501);
+
         $this->_save($request, null);
     }
 
@@ -205,14 +207,24 @@ class LanguageConfigController extends Controller
 
         if($id) {
             $Language = Language::findOrFail($id);
+            $isNew = false;
         }
         else {
             $Language = new Language();
+            $isNew = true;
         }
 
         $safe = ['name', 'native_name', 'common_words'];
 
         $data = $request->only($safe);
+
+        // Note: Saving of new languages is basic and not complete
+        // New-saving functionality here just used to test editdialog
+        if($isNew) {
+            $data['code'] = $data['iso_639_3'] = substr(hash('md4', time()), 0, 3);
+            $data['iso_name'] = $data['name'];
+            $data['native_name'] = $data['name'];
+        }
 
         // $rules = $Language::getUpdateRules($id);
         // $data  = $request->only(array_keys($rules));

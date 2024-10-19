@@ -12,6 +12,15 @@ const template = `<v-sheet>
                 false-value='0'
             </v-switch>
 
+              <v-text-field
+                v-model="search"
+                label="Search"
+                prepend-inner-icon="mdi-magnify"
+                variant="outlined"
+                hide-details
+                single-line
+              ></v-text-field>
+
             <v-data-table-server
                 :headers="headers"
                 :items="gridRows"
@@ -27,7 +36,17 @@ const template = `<v-sheet>
                 hover
                 density='compact'
                 color='#333333'
+                :search='search'
             >
+                <template v-slot:header.actions={column}>
+                    <span>{{column.title}}</span>
+                    <v-chip
+                        text='New'
+                        @click='clickEdit()'
+                        class='ml-4'
+                    ></v-chip> 
+                </template>
+
                 <template v-slot:item.book_list={item}>
                     <v-chip
                         :text="item.book_list == '1' ? 'Yes' : 'No'"
@@ -84,6 +103,7 @@ export default {
     },
     data() {
         return { 
+            search: '',
             totalRows: 1,
             gridData: {
                 page: 1,
@@ -119,7 +139,7 @@ export default {
                 {title: '# Bibles', key: 'bibles'},
                 {title: 'Book List', key: 'book_list'},
                 // {title: 'Strong\s', key: 'strongs'},
-                {title: 'Actions', key: 'actions'},
+                {title: 'Actions', key: 'actions', sortable: false},
             ];
         },
     },
@@ -163,7 +183,11 @@ export default {
             this.fetchGridRows();
         },
         clickEdit(item) {
-            this.editingId = item.id;
+            if(item) {
+                this.editingId = item.id;
+            } else {
+                this.editingId = -1;
+            }
         },             
         clickEditPre(item) {
             this.editingIdPre = item.id;
