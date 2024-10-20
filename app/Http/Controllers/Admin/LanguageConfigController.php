@@ -22,6 +22,7 @@ class LanguageConfigController extends Controller
 
     public function index() 
     {
+        // ONLY pull languages WITH BIBLES
         $Languages = Language::join('bibles', 'bibles.lang_short', '=', 'languages.code')
                         ->select('languages.*')
                         ->distinct()
@@ -29,6 +30,11 @@ class LanguageConfigController extends Controller
                         ->get();
 
         $Post = Post::where('key', 'tos')->firstOrFail();
+
+        // Add book lists, ect for these language if not exists
+        foreach($Languages as $Lang) {
+            $Lang->initLanguage();
+        }
 
         return view('admin.languages_new', [
             'Languages' => $Languages,

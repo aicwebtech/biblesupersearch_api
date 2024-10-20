@@ -1,6 +1,8 @@
 import LanguageForm from './LanguageEditForm.vue.js';
 import EditDialog from '/js/bin/custom_vue/dialogs/EditDialog.vue.js';
 
+// todo - language book lists grid
+
 const template = `<v-sheet>
             <h2>Languages</h2>
             
