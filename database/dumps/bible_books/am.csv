@@ -1,0 +1,67 @@
+id,name,shortname,matching1,matching2,English name
+1,ኦሪት ዘፍጥረት,,,,Genesis
+2,ኦሪት ዘጸአት,,,,Exodus
+3,ኦሪት ዘሌዋውያን,,,,Leviticus
+4,ኦሪት ዘኍልቍ,,,,Numbers
+5,ኦሪት ዘዳግም,,,,Deuteronomy
+6,መጽሐፈ ኢያሱ ወልደ ነዌ,,,,Joshua
+7,መጽሐፈ መሣፍንት,,,,Judges
+8,መጽሐፈ ሩት,,,,Ruth
+9,መጽሐፈ ሳሙኤል ቀዳማዊ,,,,1 Samuel
+10,መጽሐፈ ሳሙኤል ካል,,,,2 Samuel
+11,መጽሐፈ ነገሥት ቀዳማዊ።,,,,1 Kings
+12,መጽሐፈ ነገሥት ካልዕ።,,,,2 Kings
+13,መጽሐፈ ዜና መዋዕል ቀዳማዊ።,,,,1 Chronicles
+14,መጽሐፈ ዜና መዋዕል ካልዕ።,,,,2 Chronicles
+15,መጽሐፈ ዕዝራ።,,,,Ezra
+16,መጽሐፈ ነህምያ።,,,,Nehemiah
+17,መጽሐፈ አስቴር።,,,,Esther
+18,መጽሐፈ ኢዮብ።,,,,Job
+19,መዝሙረ ዳዊት,,,,Psalms
+20,መጽሐፈ ምሳሌ,,,,Proverbs
+21,"መጽሐፈ መክብብ""",,,,Ecclesiastes
+22,መኃልየ መኃልይ ዘሰሎሞን,,,,Song of Solomon
+23,ትንቢተ ኢሳይያስ,,,,Isaiah
+24,ትንቢተ ኤርምያስ,,,,Jeremiah
+25,ሰቆቃው ኤርምያስ,,,,Lamentations
+26,ትንቢተ ሕዝቅኤል,,,,Ezekiel
+27,ትንቢተ ዳንኤል,,,,Daniel
+28,ትንቢተ ሆሴዕ,,,,Hosea
+29,ትንቢተ ኢዮኤል,,,,Joel
+30,ትንቢተ አሞጽ,,,,Amos
+31,ትንቢተ አብድዩ,,,,Obadiah
+32,ትንቢተ ዮናስ,,,,Jonah
+33,ትንቢተ ሚክያስ,,,,Micah
+34,ትንቢተ ናሆም,,,,Nahum
+35,ትንቢተ ዕንባቆም,,,,Habakkuk
+36,ትንቢተ ሶፎንያስ,,,,Zephaniah
+37,ትንቢተ ሐጌ,,,,Haggai
+38,ትንቢተ ዘካርያስ,,,,Zechariah
+39,ትንቢተ ሚልክያ,,,,Malachi
+40,የማቴዎስ ወንጌል,,,,Matthew
+41,የማርቆስ ወንጌል,,,,Mark
+42,የሉቃስ ወንጌል,,,,Luke
+43,የዮሐንስ ወንጌል,,,,John
+44,የሐዋርያት ሥራ,,,,Acts
+45,የሐዋርያት ሥራ,,,,Romans
+46,1ኛ ወደ ቆሮንቶስ ሰዎች,,,,1 Corinthians
+47,2ኛ ወደ ቆሮንቶስ ሰዎች,,,,2 Corinthians
+48,ወደ ገላትያ ሰዎች,,,,Galatians
+49,ወደ ኤፌሶን ሰዎች,,,,Ephesians
+50,ወደ ፊልጵስዩስ ሰዎች,,,,Philippians
+51,ወደ ቆላስይስ ሰዎች,,,,Colossians
+52,1ኛ ወደ ተሰሎንቄ ሰዎች,,,,1 Thessalonians
+53,2ኛ ወደ ተሰሎንቄ ሰዎች,,,,2 Thessalonians
+54,1ኛ ወደ ጢሞቴዎስ,,,,1 Timothy
+55,2ኛ ወደ ጢሞቴዎስ,,,,2 Timothy
+56,ወደ ቲቶ,,,,Titus
+57,ወደ ፊልሞና,,,,Philemon
+58,ወደ ዕብራውያን,,,,Hebrews
+59,የያዕቆብ መልእክት,,,,James
+60,1ኛ የጴጥሮስ መልእክት,,,,1 Peter
+61,2ኛ የጴጥሮስ መልእክት,,,,2 Peter
+62,1ኛ የዮሐንስ መልእክት,,,,1 John
+63,2ኛ የዮሐንስ መልእክት,,,,2 John
+64,3ኛ የዮሐንስ መልእክት,,,,3 John
+65,የይሁዳ መልእክት,,,,Jude
+66,የዮሐንስ ራእይ,,,,Revelation
