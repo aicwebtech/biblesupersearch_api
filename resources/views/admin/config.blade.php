@@ -120,6 +120,58 @@
                                         </tr>
                                     </table>
                                 </div>
+                                <div class='config_block'>
+                                    <h1>Access</h1>
+
+                                    <table>
+                                        <tr>
+                                            <td class='ralign' style='vertical-align: top;'>
+                                                Access Whitelist: <br /><br />
+
+                                                <small>
+                                                    Add IP addresses and/or domain names <br />
+                                                    to grant (unlimited) access.<br />
+                                                    One domain name or IP per line.<br />
+                                                    Ex: mydomain.com<br />
+                                                    Ex: 32.221.41.1<br />
+                                                </small>
+                                            </td>
+                                            <td>
+                                                <textarea 
+                                                    name='bss__daily_access_whitelist' style='width: 300px; height: 150px'
+                                                >{{$configs['bss.daily_access_whitelist']}}</textarea>
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td class='ralign'>Allow Public Access: </td>
+                                            <td>
+                                                <a id='public_access' />
+                                                <label for='public_access_1'>Yes</label>
+                                                <input type='radio' name='bss__public_access' value='1' id='public_access_1' @if($configs['bss.public_access'] == 1)checked='checked'@endif />
+                                                <label for='public_access_2'>No</label>
+                                                <input type='radio' name='bss__public_access' value='0' id='public_access_2' @if($configs['bss.public_access'] == 0)checked='checked'@endif />
+                                                <span class='info'>
+                                                    <span>i</span>
+                                                    <p>
+                                                        Allows any website or individual to access the API.<br />
+                                                        When disabled, only websites in the Access Whitelist are allowed access.  
+                                                    </p>
+                                                </span>
+                                            </td>
+                                        </tr>
+                                        <tr 
+                                            class='public_access'
+                                            @if($configs['bss.public_access'] == 0 || $configs['bss.public_access'] == 0)style='display:none'@endif 
+                                        >
+                                            <td class='ralign'><small>Public Daily Access Limit: </small></td>
+                                            <td>
+                                                <input name='bss__daily_access_limit' size='5' value='{{$configs['bss.daily_access_limit']}}'> 
+                                                hits <small>(0 = unlimited access)</small>
+                                            </td>
+                                        </tr>                                        
+
+                                    </table>
+                                </div>
                                 @if(config('app.premium'))
                                     <div class='config_block'>
                                         <h1>Premium</h1>
@@ -304,10 +356,8 @@
                                         <tr>
                                             <td colspan = '2' class='ralign'>&nbsp; </td>
                                         </tr>
-                                        <tr>
-                                            <td class='ralign'>Daily Access Limit: </td>
-                                            <td><input name='bss__daily_access_limit' size='5' value='{{$configs['bss.daily_access_limit']}}'> hits</td>
-                                        </tr>
+                                        
+
                                     </table>
                                 </div>
                                 <div style="clear:both"></div>
@@ -467,7 +517,10 @@
                                                 </td>
                                             </tr>
                                         </tbody>
-                                        <tbody id='retained_file_settings' @if($configs['download.retain'] == 0 || $configs['download.enable'] == 0)style='display:none'@endif >
+                                        <tbody 
+                                            id='retained_file_settings' 
+                                            @if($configs['download.retain'] == 0 || $configs['download.enable'] == 0)style='display:none'@endif 
+                                        >
                                             <tr>
                                                 <td colspan="2">&nbsp;</td>
                                             </tr>

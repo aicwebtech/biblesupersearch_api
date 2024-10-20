@@ -659,12 +659,22 @@ class Bible extends Model
      * the new module will be ignored.  If the pre-existing module is ever deleted, the official module
      * will appear in it's place.
      */
-    public static function populateBibleTable() {
+    public static function populateBibleTable() 
+    {
         $list = static::getListOfModuleFiles();
 
         foreach($list as $file) {
             $module = substr($file, 0, strlen($file) - 4);
             $Bible  = static::createFromModuleFile($module);
+        }
+    }
+
+    public static function updateNeedsUpdate()
+    {
+        $Bibles = static::all();
+        
+        foreach($Bibles as $Bible) {
+            $Bible->needsUpdate();
         }
     }
 
@@ -810,7 +820,8 @@ class Bible extends Model
         return $class_name;
     }
 
-    public static function validateModule($module) {
+    public static function validateModule($module) 
+    {
         if(empty($module)) {
             return FALSE;
         }
@@ -830,7 +841,8 @@ class Bible extends Model
      * Determine the class name for the Verses model for the current Bible instance
      * @return string $class_name;
      */
-    public function getVerseClassName() {
+    public function getVerseClassName() 
+    {
         return self::getVerseClassNameByModule($this->module);
     }
 
@@ -838,16 +850,19 @@ class Bible extends Model
      * Enabled mutator
      * @param string $value
      */
-    public function setEnabledAttribute($value) {
+    public function setEnabledAttribute($value) 
+    {
         $this->attributes['enabled'] = ($this->installed) ? $value : 0;
     }
 
-    public function enable() {
+    public function enable() 
+    {
         $this->enabled = 1;
         $this->save();
     }
 
-    public function disable() {
+    public function disable() 
+    {
         $this->enabled = 0;
         $this->save();
     }
@@ -856,22 +871,27 @@ class Bible extends Model
      * Module mutator
      * @param string $value
      */
-    public function setModuleAttribute($value) {
+    public function setModuleAttribute($value) 
+    {
         // $matched = preg_match('/^[a-zA-Z_\x7f-\xff][a-zA-Z0-9_\x7f-\xff]*$/', $value, $matches);
         $value = strtolower($value);
         $this->attributes['module'] = $value;
         // self::where('1','1')->get();
     }
 
-    public function needsUpdate() {
+    public function needsUpdate() 
+    {
         if(!$this->installed) {
             return FALSE;
         }
 
         if(!$this->module_version || version_compare($this->module_version, config('app.version')) >= 0) {
-            $this->module_version = config('app.version');
-            $this->needs_update = 0;
-            $this->save();
+            if($this->module_version != config('app.version') || $this->needs_update == 1) {  
+                $this->module_version = config('app.version');
+                $this->needs_update = 0;
+                $this->save();
+            }
+
             return FALSE;
         }
         else if($this->needs_update) {
@@ -888,14 +908,20 @@ class Bible extends Model
         $meta = json_decode($json, TRUE);
 
         if(array_key_exists('module_version', $meta) && version_compare($this->module_version, $meta['module_version']) == -1) {
-            $this->needs_update = 1;
-            $this->save();
+            if($this->needs_update == 0) {                
+                $this->needs_update = 1;
+                $this->save();
+            }
+
             return TRUE;
         }
         else {
-            $this->module_version = config('app.version');
-            $this->needs_update = 0;
-            $this->save();
+            if($this->module_version != config('app.version') || $this->needs_update == 1) {                
+                $this->module_version = config('app.version');
+                $this->needs_update = 0;
+                $this->save();
+            }
+
             return FALSE;
         }
     }

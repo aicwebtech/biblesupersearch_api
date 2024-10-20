@@ -5,10 +5,37 @@ use Illuminate\Foundation\Testing\DatabaseMigrations;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 use App\Models\IpAccess;
 
-class IpAccessTest extends TestCase {
+/* Use case: public API access is ENABLED */
+/* See also class IpAccessPrivateTest */
+class IpAccessTest extends TestCase 
+{
     protected $default_limit;
+    protected $config_cache;
+    protected $config_value = 1;
+    protected $config_changed = false;
 
-    public function testDefaultLimit() {
+    public function setUp() :void
+    {
+        parent::setUp();
+
+        $this->config_cache = config('bss.public_access');
+        $this->config_changed = false;
+
+        if($this->config_cache != $this->config_value) {
+            config(['bss.public_access' => $this->config_value]);
+            $this->config_changed = true;
+        }
+    }
+
+    public function tearDown() :void
+    {
+        if($this->config_changed) {
+            config(['bss.public_access' => $this->config_cache]);
+        }
+    }
+
+    public function testDefaultLimit() 
+    {
         $default_limit = config('bss.daily_access_limit');
 
         $no_limit = ($default_limit == 0);
@@ -69,7 +96,8 @@ class IpAccessTest extends TestCase {
         $IP->delete();
     }    
 
-    public function testCustomLimit() {
+    public function testCustomLimit() 
+    {
         $ip = $this->_fakeIp();
         $IP = IpAccess::findOrCreateByIpOrDomain($ip);
         $limit = 20;
@@ -95,9 +123,10 @@ class IpAccessTest extends TestCase {
         $IP->delete();
     }
 
-    public function testDomainCustomLimit() {
+    public function testDomainCustomLimit() 
+    {
         $ip = $this->_fakeIp();
-        $IP = IpAccess::findOrCreateByIpOrDomain($ip, 'example.com');
+        $IP = IpAccess::findOrCreateByIpOrDomain($ip, 'testdomaincustomlimit.com');
         $limit = 125;
         $IP->limit = $limit;
         $IP->save();
@@ -119,7 +148,8 @@ class IpAccessTest extends TestCase {
         $IP->delete();
     }
 
-    public function testHostParsing() {
+    public function testHostParsing() 
+    {
         $hosts = array(
             ['https://www.example.com/bible-search', 'example.com'],
             ['http://example.com/bible-search', 'example.com'],
@@ -146,19 +176,21 @@ class IpAccessTest extends TestCase {
         }
     }
 
-    public function testSameDomain() {
-        $domain = 'http://www.example.com';
+    public function testSameDomain() 
+    {
+        $domain = 'http://www.testsamedomain.com';
 
         $IP = IpAccess::findOrCreateByIpOrDomain($this->_fakeIp(), $domain);
         $this->assertEquals($IP->getAccessLimit(), config('bss.daily_access_limit'));
 
-        $_SERVER['HTTP_HOST'] = $_SERVER['SERVER_NAME'] = 'www.example.com';
+        $_SERVER['HTTP_HOST'] = $_SERVER['SERVER_NAME'] = 'www.testsamedomain.com';
         $this->assertEquals($IP->getAccessLimit(), 0);
 
         $IP->delete();
     }
 
-    protected function _fakeIp() {
+    protected function _fakeIp() 
+    {
         // Ip addresses intentionally invalid
         return rand(256,999) . '.' . rand(1,255) . '.' . rand(1,255) . '.' . rand(1,255);
     }

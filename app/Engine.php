@@ -627,7 +627,8 @@ class Engine
      * API action for rendering of a Bible
      * @param array $input
      */
-    public function actionRender($input) {    
+    public function actionRender($input) 
+    {    
         return $this->_renderDownloadHelper($input, 'render');
     }
     
@@ -635,7 +636,8 @@ class Engine
      * API action for checking if rendering is needed of a Bible
      * @param array $input
      */
-    public function actionRenderNeeded($input) {    
+    public function actionRenderNeeded($input) 
+    {    
         return $this->_renderDownloadHelper($input, 'render_needed');
     }
 
@@ -644,11 +646,13 @@ class Engine
      * This action, when successful, returns a file, and not a standard JSON output
      * @param array $input
      */
-    public function actionDownload($input) {
+    public function actionDownload($input) 
+    {
         return $this->_renderDownloadHelper($input, 'download');
     }
 
-    protected function _renderDownloadHelper($input, $action = 'render') {
+    protected function _renderDownloadHelper($input, $action = 'render') 
+    {
         $download = ($action == 'download');
 
         if(empty($input['bible'])) {
@@ -698,6 +702,13 @@ class Engine
         $response = new \stdClass;
         $Manager = new \App\RenderManager($modules, $format, $zip);
 
+        if($Manager->hasErrors()) {
+            $this->addErrors( $Manager->getErrors(), $Manager->getErrorLevel());
+            $response->success = FALSE;
+            $response->separate_process_supported = $Manager->separateProcessSupported();
+            return $response;
+        }
+
         if($action == 'render_needed') {
             $bibles_needing_render = $Manager->getBiblesNeedingRender(NULL, FALSE, FALSE, 0);
             $success = !($bibles_needing_render === FALSE || count($bibles_needing_render) > 0);
@@ -709,6 +720,10 @@ class Engine
                 foreach($bibles_needing_render as $Bible) {
                     $response->bibles_needing_render[] = $Bible->module;
                 }
+            }
+
+            if(!$success) {
+                $this->addError('Render needed', 1);
             }
         }
         else {
@@ -747,7 +762,8 @@ class Engine
         return $response;
     }
 
-    protected function _startQueueProcess($queue = 'default') {
+    protected function _startQueueProcess($queue = 'default') 
+    {
         $cmd = 'php ' . $_SERVER['DOCUMENT_ROOT'] . '../artisan queue:work --stop-when-empty'; 
 
         // $cmd .= ' > /dev/null 2>&1';

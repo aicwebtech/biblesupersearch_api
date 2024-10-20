@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use App\Interfaces\AccessLogInterface;
+use App\ApiAccessManager;
 
 class IpAccess extends Model implements AccessLogInterface 
 {
@@ -31,13 +32,16 @@ class IpAccess extends Model implements AccessLogInterface
             $ip_address = (array_key_exists('REMOTE_ADDR', $_SERVER))  ? $_SERVER['REMOTE_ADDR']  : '127.0.0.1';
         }
 
-        $domain = static::parseDomain($host);
+        $domain = ApiAccessManager::parseDomain($host);
 
         if($domain) {
             $IP = static::firstOrNew(['domain' => $domain]);
-            $IP->ip_address = $ip_address;
-            $IP->limit = ($ip_address == '127.0.0.1' || $ip_address == '::1') ? 0 : null;
-            $IP->save();
+      
+            if(!$IP->id) {
+                $IP->ip_address = $ip_address;
+                $IP->limit = ($ip_address == '127.0.0.1' || $ip_address == '::1') ? 0 : null;
+                $IP->save();
+            }
         }
         else {
             $IP = static::firstOrCreate(['ip_address' => $ip_address, 'domain' => null]);
@@ -48,37 +52,7 @@ class IpAccess extends Model implements AccessLogInterface
 
     static public function parseDomain($host) 
     {
-        if(empty($host)) {
-            return null;
-        }
-
-        $host = str_replace(array('http:','https:'), '', $host);
-        $host = trim($host);
-        $host = trim($host, '/');
-        $pieces = explode('/', $host);
-        $domain = $pieces[0];
-
-        if(strpos($domain, 'www.') === 0) {
-            $domain = substr($domain, 4);
-        }
-
-        $col_pos = strpos($domain, ':');
-
-        if($col_pos !== FALSE) {
-            $domain = substr($domain, 0, $col_pos);
-        }
-
-        $hash_pos = strpos($domain, '#');
-
-        if($hash_pos !== FALSE) {
-            $domain = substr($domain, 0, $hash_pos);
-        }
-
-        if($domain == 'localhost') {
-            return null;
-        }
-
-        return $domain;
+        return ApiAccessManager::parseDomain($host);
     }
 
     public function accessLevel()
@@ -95,12 +69,13 @@ class IpAccess extends Model implements AccessLogInterface
     /** BEGIN AccessLogInterface */
     public function incrementDailyHits() 
     {
-        if($this->isAccessRevoked()) {
+        $limit = $this->getAccessLimit();
+
+        if($this->isAccessRevoked($limit)) {
             return FALSE;
         }
 
         $Log = IpAccessLog::firstOrNew(['ip_id' => $this->id, 'date' => date('Y-m-d')]);
-        $limit = $this->getAccessLimit();
 
         if($Log->limit_reached && $limit > 0) {
             return FALSE;
@@ -152,6 +127,10 @@ class IpAccess extends Model implements AccessLogInterface
     {
         $limit_raw = $this->limit;
 
+        if(ApiAccessManager::isWhitelisted($this->ip_address, $this->domain)) {
+            return 0;
+        }
+
         if($this->domain) {
             $current_domain = '';
 
@@ -162,11 +141,15 @@ class IpAccess extends Model implements AccessLogInterface
                 $current_domain = $_SERVER['SERVER_NAME'];
             }
             
-            $current_domain = static::parseDomain($current_domain);
+            $current_domain = ApiAccessManager::parseDomain($current_domain);
 
             if($current_domain == $this->domain) {
                 return 0;
             }
+        }
+
+        if(!config('bss.public_access')) {
+            return -1;
         }
 
         if($limit_raw === null) {
@@ -189,13 +172,24 @@ class IpAccess extends Model implements AccessLogInterface
         return $this->getAccessLimit() === 0;
     }
 
-    public function isAccessRevoked() {
+    public function isAccessRevoked() 
+    {
         if($this->access_level_id == ApiAccessLevel::NONE) {
             return true;
         }
 
         return ($this->getAccessLimit() < 0);
-    }
+    }    
+
+    // public function isAccessRevoked($limit = null) 
+    // {
+    //     if($this->access_level_id == ApiAccessLevel::NONE) {
+    //         return true;
+    //     }
+
+    //     $limit = isset($limit) ? $limit : $this->getAccessLimit()
+    //     return ($limit < 0);
+    // }
     /** END AccessLogInterface */
 
 

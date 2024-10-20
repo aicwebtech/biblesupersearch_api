@@ -46,4 +46,61 @@ class ApiAccessManager
 
         return $Access ?: false;
     }
+
+    public static function isWhitelisted($ip = null, $domain = null)
+    {
+        $whitelist = config('bss.daily_access_whitelist');
+
+        if(!$whitelist || !$ip && !$domain) {
+            return false;
+        }
+
+        $items = explode("\n", str_replace(["\r\n", "\r"], "\n", $whitelist));
+        
+        foreach($items as &$i) {
+            $i = self::parseDomain($i);
+        }
+        unset($i);
+
+        if($ip && in_array($ip, $items) || $domain && in_array($domain, $items)) {
+            return true;
+        }
+
+        return false;
+    }
+
+    static public function parseDomain($host) 
+    {
+        if(empty($host)) {
+            return null;
+        }
+
+        $host = str_replace(array('http:','https:'), '', $host);
+        $host = trim($host);
+        $host = trim($host, '/');
+        $pieces = explode('/', $host);
+        $domain = $pieces[0];
+
+        if(strpos($domain, 'www.') === 0) {
+            $domain = substr($domain, 4);
+        }
+
+        $col_pos = strpos($domain, ':');
+
+        if($col_pos !== FALSE) {
+            $domain = substr($domain, 0, $col_pos);
+        }
+
+        $hash_pos = strpos($domain, '#');
+
+        if($hash_pos !== FALSE) {
+            $domain = substr($domain, 0, $hash_pos);
+        }
+
+        if($domain == 'localhost') {
+            return null;
+        }
+
+        return $domain;
+    }
 }

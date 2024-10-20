@@ -6,8 +6,34 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Foundation\Testing\WithFaker;
 //use Tests\TestCase;
 
+/* Always test with public access enabled */
+/* Difficult if not impossible to get these tests to work with public access disabled, so not doing that now ... */
 class ApiActionsTest extends TestCase
 {
+    protected $config_cache;
+    protected $config_value = 1;
+    protected $config_changed = false;
+
+    public function setUp() :void
+    {
+        parent::setUp();
+
+        $this->config_cache = config('bss.public_access');
+        $this->config_changed = false;
+
+        if($this->config_cache != $this->config_value) {
+            config(['bss.public_access' => $this->config_value]);
+            $this->config_changed = true;
+        }
+    }
+
+    public function tearDown() :void
+    {
+        if($this->config_changed) {
+            config(['bss.public_access' => $this->config_cache]);
+        }
+    }
+
     /**
      * Tests of the 'statics' action
      *
@@ -311,7 +337,7 @@ class ApiActionsTest extends TestCase
         $response = $this->postJson('/api/render_needed', ['bible' => 'kjv', 'format' => 'mr_text']);
 
         // Yes, this is returned as an 'error'
-        $response->assertStatus(400);      
+        $response->assertStatus(400);         
         $this->assertEquals(1, $response['error_level']);
         $this->assertTrue($response['results']['render_needed']);
         $this->assertIsArray($response['results']['bibles_needing_render']);

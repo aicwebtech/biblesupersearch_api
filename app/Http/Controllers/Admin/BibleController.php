@@ -30,6 +30,7 @@ class BibleController extends Controller
      */
     public function index() 
     {
+        Bible::updateNeedsUpdate();
         Bible::populateBibleTable();
         $ImportManagerClass = Helpers::find('\App\ImportManager');
 

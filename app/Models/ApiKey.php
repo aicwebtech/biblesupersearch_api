@@ -77,12 +77,13 @@ class ApiKey extends Model implements AccessLogInterface
     /** BEGIN AccessLogInterface */
     public function incrementDailyHits() 
     {
-        if($this->isAccessRevoked()) {
+        $limit = $this->getAccessLimit();
+
+        if($this->isAccessRevoked($limit)) {
             return FALSE;
         }
 
         $Log = ApiKeyAccessLog::firstOrNew(['key_id' => $this->id, 'date' => date('Y-m-d')]);
-        $limit = $this->getAccessLimit();
 
         if($Log->limit_reached && $limit > 0) {
             return FALSE;
@@ -165,12 +166,13 @@ class ApiKey extends Model implements AccessLogInterface
         return $this->getAccessLimit() === 0;
     }
 
-    public function isAccessRevoked() {
+    public function isAccessRevoked() 
+    {
         if($this->access_level_id == ApiAccessLevel::NONE) {
             return true;
         }
 
         return ($this->getAccessLimit() < 0);
-    }
+    }    
     /** END AccessLogInterface */
 }
