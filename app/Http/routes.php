@@ -93,6 +93,8 @@ Route::get('/admin/languages/fetch/{id}', 'Admin\LanguageConfigController@fetch'
 Route::get('/admin/languages/grid', 'Admin\LanguageConfigController@grid');
 Route::post('/admin/languages/save', 'Admin\LanguageConfigController@save');
 
+Route::get('/admin/biblebooks/grid/{lang}', 'Admin\LanguageConfigController@gridBookList');
+
 Route::get('/admin/tos', 'Admin\PostConfigController@tos')->name('admin.tos')->middleware('install');
 Route::post('/admin/tos', 'Admin\PostConfigController@saveTos');
 Route::get('/admin/privacy', 'Admin\PostConfigController@privacy')->name('admin.privacy')->middleware('install');

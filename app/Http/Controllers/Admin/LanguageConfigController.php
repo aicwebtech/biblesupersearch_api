@@ -11,6 +11,8 @@ use App\Models\Bible;
 use App\Models\Shortcuts\ShortcutAbstract;
 use Illuminate\Support\Facades\DB;
 
+use App\Models\Books\BookAbstract as Book;
+
 class LanguageConfigController extends Controller
 {
     public function __construct() 
@@ -47,7 +49,6 @@ class LanguageConfigController extends Controller
         // ]);
     }
 
-    // todo, have an actual grid here
     public function grid(Request $request)
     {
         $data = $request->toArray();
@@ -93,17 +94,52 @@ class LanguageConfigController extends Controller
             $Query->whereNotNull('bibles.id');
         }
 
-        // if(array_key_exists('_search', $data) && $data['_search'] == 'true') {
-        //     Helpers::buildGridSearchQuery($data, $Query, [
-        //         'lang' => 'bibles.lang_short', 
-        //         'copy' => 'bibles.copyright_id', 
-        //         'name' => 'bibles.name',
-        //         'rank' => 'bibles.rank',
-        //         'has_module_file' => 'POSTFILTER',
-        //     ]);
-            
-        //     $postfilters = $data['_post_filters'];
-        // }
+        $searchable = [
+            'code' => [
+                'field' => 'languages.code',
+                'type'  => 'str_start',
+            ],
+            'name' => [
+                'field' => 'languages.name',
+                'type'  => 'str_inside',
+            ],
+            'native_name' => [
+                'field' => 'languages.native_name',
+                'type'  => 'str_start',
+            ],
+            'family' => [
+                'field' => 'languages.family',
+                'type'  => 'str_inside',
+            ],            
+            'bibles_min' => [
+                'field' => 'bibles',
+                'type'  => 'int_min',
+            ],            
+            'bibles_max' => [
+                'field' => 'bibles',
+                'type'  => 'int_max',
+            ],
+        ];
+
+        foreach($searchable as $key => $f) {            
+            if(isset($data[$key]) && $data[$key]) {
+                
+                switch($f['type']) {
+                    case 'int_min':
+                        $Query->having($f['field'], '>', (int)$data[$key]);
+                        break;        
+                    case 'int_max':
+                        $Query->having($f['field'], '<', (int)$data[$key]);
+                        break;                
+                    case 'str_inside':
+                        $Query->where($f['field'], 'LIKE', '%' . $data[$key] . '%');
+                        break;
+                    case 'str_start':
+                    default:
+                        $Query->where($f['field'], 'LIKE', $data[$key] . '%');
+                }
+            }
+        }
 
         $has_post_filter = empty($postfilters) ? FALSE : TRUE;
         $has_file_filter = NULL;
@@ -140,6 +176,60 @@ class LanguageConfigController extends Controller
                 'post'      => FALSE,
             ];
         }
+
+        return response($resp, 200);
+    }
+
+    // todo, make a separate controller for book lists
+    public function gridBookList(string $lang, Request $request)
+    {
+        $data = $request->toArray();
+
+        $rows = $postfilters = [];
+        $rows_per_page = (int) $data['rows'];
+        $page          = (int) $_REQUEST['page'];
+
+        $pf = DB::getTablePrefix();
+        $table = 'books_' . $lang;
+        $table_en = 'books_en' ;
+
+        $BookClassEn = Book::getClassNameByLanguageStrict('en');
+        $BookClass = Book::getClassNameByLanguageStrict($lang);
+
+        if(!\Schema::hasTable($table) || !$BookClass) {
+            $resp = [
+                'total'     => 0,
+                'page'      => 0,
+                'rows'      => [],
+                'records'   => 0,
+                'post'      => FALSE,
+                'message'   => 'No book list for this language',
+            ];
+
+            return response($resp, 404);
+        }
+
+        $Query = $BookClassEn::select($table_en . '.name AS name_en', 'book.*')
+                    ->leftJoin($table . ' AS book', 'book.id', $table_en . '.id')
+                    ->orderBy( $data['sidx'], $data['sord'] );
+
+        $has_post_filter = empty($postfilters) ? FALSE : TRUE;
+        $has_file_filter = NULL;
+
+        $Books =  $Query->paginate($rows_per_page);
+
+        foreach($Books as $Book) {
+            $row = $Book->getAttributes();
+            $rows[] = $row;
+        }
+
+        $resp = [
+            'total'     => $Books->lastPage(),
+            'page'      => $Books->currentPage(),
+            'rows'      => $rows,
+            'records'   => $Books->total(),
+            'post'      => FALSE,
+        ];
 
         return response($resp, 200);
     }

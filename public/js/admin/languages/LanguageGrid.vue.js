@@ -1,4 +1,5 @@
 import LanguageForm from './LanguageEditForm.vue.js';
+import BooksDialog from './BookListDialog.vue.js';
 import EditDialog from '/js/bin/custom_vue/dialogs/EditDialog.vue.js';
 
 // todo - language book lists grid
@@ -13,15 +14,6 @@ const template = `<v-sheet>
                 true-value='1'
                 false-value='0'
             </v-switch>
-
-              <v-text-field
-                v-model="search"
-                label="Search"
-                prepend-inner-icon="mdi-magnify"
-                variant="outlined"
-                hide-details
-                single-line
-              ></v-text-field>
 
             <v-data-table-server
                 :headers="headers"
@@ -38,7 +30,7 @@ const template = `<v-sheet>
                 hover
                 density='compact'
                 color='#333333'
-                :search='search'
+                :search='gridSearch'
             >
                 <template v-slot:header.actions={column}>
                     <span>{{column.title}}</span>
@@ -49,10 +41,64 @@ const template = `<v-sheet>
                     ></v-chip> 
                 </template>
 
+                <template v-slot:thead>
+                    <tr>
+                        <td>
+                            <v-text-field 
+                                v-model="gridData.code" class="ma-2" 
+                                density="compact" placeholder="Search code..." 
+                                hide-details
+                            >
+                            </v-text-field>
+                        </td>                        
+                        <td>
+                            <v-text-field 
+                                v-model="gridData.native_name" class="ma-2" 
+                                density="compact" placeholder="Search Name..." 
+                                hide-details
+                            >
+                            </v-text-field>
+                        </td>                        
+                        <td>
+                            <v-text-field 
+                                v-model="gridData.name" class="ma-2" 
+                                density="compact" placeholder="Search English Name..." 
+                                hide-details
+                            >
+                            </v-text-field>
+                        </td>                        
+                        <td>
+                            <v-text-field 
+                                v-model="gridData.family" class="ma-2" 
+                                density="compact" placeholder="Search Family..." 
+                                hide-details
+                            >
+                            </v-text-field>
+                        </td>                          
+                        <td>
+                            <v-text-field 
+                                v-model="gridData.bibles_min" class="ma-2" 
+                                density="compact" placeholder="Min Bibles.." 
+                                hide-details
+                            >
+                            </v-text-field>
+                        </td>                         
+                        <td>
+                            <v-text-field 
+                                v-model="gridData.bibles_max" class="ma-2" 
+                                density="compact" placeholder="Max Bibles.." 
+                                hide-details
+                            >
+                            </v-text-field>
+                        </td>                        
+                  </tr>
+                </template>
+
                 <template v-slot:item.book_list={item}>
                     <v-chip
                         :text="item.book_list == '1' ? 'Yes' : 'No'"
                         :color='bookListColor(item)'
+                        @click='clickBookList(item)'
                     ></v-chip>
                 </template>            
 
@@ -95,25 +141,43 @@ const template = `<v-sheet>
         >
             <LanguageForm :record='data'></LanguageForm>
         </EditDialog>
+
+        <BooksDialog
+            :language = 'blLanguage'
+            :languageName = 'selectedLanguage.name'
+            @onClose='closeBookList'
+            @afterLeave='closeBookList'
+        ></BooksDialog>
+
         </v-sheet>`;
 
 export default {
     
     components: {
         EditDialog,
-        LanguageForm
+        LanguageForm,
+        BooksDialog
     },
     data() {
         return { 
             search: '',
             totalRows: 1,
+            gridSearch: '',
+            gridRows: [],
             gridData: {
                 page: 1,
                 rows: 10,
                 sidx: 'name',
                 sord: 'ASC',
                 start: null,
-                all_languages: 0
+                all_languages: 0,
+                // Searchab
+                code: '',
+                name: '',
+                native_name: '',
+                family: '',
+                bibles_min: '',
+                bibles_max: '',
             },
             sortDefault: {
                 sidx: 'name',
@@ -125,7 +189,8 @@ export default {
             editingIdExt: null,
             editingIdPre: null,
             editingRecord: {},
-            gridRows: [],
+            selectedLanguage: {},
+            blLanguage: null,
             itemsPerPageOptions: [5, 10, 25, 50, 100, {value: -1, title: '$vuetify.dataFooter.itemsPerPageAll'}],
         }
     },
@@ -144,6 +209,28 @@ export default {
                 {title: 'Actions', key: 'actions', sortable: false},
             ];
         },
+    },
+    watch: {
+        'gridData.code'(newValue, oldValue) {
+            // if(newValue.length == 0 || newValue.length >= 2) {
+                this.gridSearch = String(Date.now());
+            // }
+        },        
+        'gridData.name'(newValue, oldValue) {
+            this.gridSearch = String(Date.now());
+        },        
+        'gridData.native_name'(newValue, oldValue) {
+            this.gridSearch = String(Date.now());
+        },        
+        'gridData.family'(newValue, oldValue) {
+            this.gridSearch = String(Date.now());
+        },        
+        'gridData.bibles_min'(newValue, oldValue) {
+            this.gridSearch = String(Date.now());
+        },        
+        'gridData.bibles_max'(newValue, oldValue) {
+            this.gridSearch = String(Date.now());
+        }
     },
     methods: {
         fetchGridRows() {
@@ -165,11 +252,9 @@ export default {
             this.fetchGridRows();
         },
         refreshGrid() {
-            console.log('refreshGrid');
             this.fetchGridRows();
         },
         paginateGrid(options) {
-            // do something
             this.gridData.page = options.page;
             this.gridData.rows = options.itemsPerPage;
             this.gridData.start = this.gridData.page * this.gridData.rows - this.gridData.rows;
@@ -200,6 +285,18 @@ export default {
             this.editingIdExt = null;
             this.editingIdPre = null;
             this.editingRecord = {};
+        },
+        clickBookList(item) {
+            if(item.book_list == '0') {
+                return;
+            }
+
+            this.blLanguage = item.code;
+            this.selectedLanguage = item;
+        },
+        closeBookList() {
+            this.blLanguage = null;
+            this.selectedLanguage = {};
         },
         bookListColor(item) {
             if(item.bibles == '0') {

@@ -73,10 +73,6 @@ export default {
             type: String,
             required: true
         },
-        // showing: {
-        //     type: Boolean,
-        //     default: false
-        // },
         recordId: {
             type: Number,
             default: null
@@ -156,7 +152,6 @@ export default {
     methods: {
         handleCancel() {
             this.closeDialog();
-            // alert('cancel');
         },
         handleSave() {
             var record = this.recording,
