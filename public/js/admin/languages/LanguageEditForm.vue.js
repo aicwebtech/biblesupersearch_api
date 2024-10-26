@@ -6,6 +6,7 @@ const template = `
             label='Name' 
             v-model='record.native_name'
             density='compact'
+            hide-details='auto'
         ></v-text-field>
 
         <v-text-field 
@@ -13,12 +14,14 @@ const template = `
             v-model='record.iso_endonym'
             readonly
             density='compact'
+            hide-details='auto'
         ></v-text-field>
 
         <v-text-field 
             label='English Name' 
             v-model='record.name'
             density='compact'
+            hide-details='auto'
         ></v-text-field>                    
 
         <v-text-field 
@@ -26,12 +29,14 @@ const template = `
             v-model='record.iso_name'
             readonly
             density='compact'
+            hide-details='auto'
         ></v-text-field>
 
         <v-textarea 
             label='Common Words - One word per line' 
             v-model='record.common_words'
             density='compact'
+            hide-details='auto'
         ></v-textarea>
 
         <div>

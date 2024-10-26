@@ -46,7 +46,8 @@ const template = `<v-sheet>
                         <td>
                             <v-text-field 
                                 v-model="gridData.code" class="ma-2" 
-                                density="compact" placeholder="Search code..." 
+                                density="compact" 
+                                placeholder="Search code..." 
                                 hide-details
                             >
                             </v-text-field>
@@ -54,7 +55,8 @@ const template = `<v-sheet>
                         <td>
                             <v-text-field 
                                 v-model="gridData.native_name" class="ma-2" 
-                                density="compact" placeholder="Search Name..." 
+                                density="compact" 
+                                placeholder="Search Name..." 
                                 hide-details
                             >
                             </v-text-field>
@@ -62,7 +64,8 @@ const template = `<v-sheet>
                         <td>
                             <v-text-field 
                                 v-model="gridData.name" class="ma-2" 
-                                density="compact" placeholder="Search English Name..." 
+                                density="compact" 
+                                placeholder="Search English Name..." 
                                 hide-details
                             >
                             </v-text-field>
@@ -70,7 +73,8 @@ const template = `<v-sheet>
                         <td>
                             <v-text-field 
                                 v-model="gridData.family" class="ma-2" 
-                                density="compact" placeholder="Search Family..." 
+                                density="compact" 
+                                placeholder="Search Family..." 
                                 hide-details
                             >
                             </v-text-field>
@@ -78,7 +82,8 @@ const template = `<v-sheet>
                         <td>
                             <v-text-field 
                                 v-model="gridData.bibles_min" class="ma-2" 
-                                density="compact" placeholder="Min Bibles.." 
+                                density="compact" 
+                                placeholder="Min Bibles.." 
                                 hide-details
                             >
                             </v-text-field>
