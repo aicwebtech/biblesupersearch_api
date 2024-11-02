@@ -34,11 +34,14 @@ const template = `<v-sheet>
             >
                 <template v-slot:header.actions={column}>
                     <span>{{column.title}}</span>
-                    <v-chip
-                        text='New'
-                        @click='clickEdit()'
-                        class='ml-4'
-                    ></v-chip> 
+                    
+                    <!--
+                        <v-chip
+                            text='New'
+                            @click='clickEdit()'
+                            class='ml-4'
+                        ></v-chip>
+                    -->
                 </template>
 
                 <template v-slot:thead>
@@ -113,10 +116,12 @@ const template = `<v-sheet>
                         @click='clickEdit(item)'
                     ></v-chip>                    
                   
-                    <v-chip
-                        text='Edit PRE'
-                        @click='clickEditPre(item)'
-                    ></v-chip>
+                    <!--
+                        <v-chip
+                            text='Edit PRE'
+                            @click='clickEditPre(item)'
+                        ></v-chip>
+                    -->
                 </template>
 
             </v-data-table-server>     

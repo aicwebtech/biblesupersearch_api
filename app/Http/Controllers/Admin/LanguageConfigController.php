@@ -38,15 +38,10 @@ class LanguageConfigController extends Controller
             $Lang->initLanguage();
         }
 
-        return view('admin.languages_new', [
+        return view('admin.languages', [
             'Languages' => $Languages,
             'bootstrap' => true,
         ]);        
-
-        // return view('admin.languages', [
-        //     'Languages' => $Languages,
-        //     'bootstrap' => true,
-        // ]);
     }
 
     public function grid(Request $request)
@@ -57,26 +52,8 @@ class LanguageConfigController extends Controller
         $rows_per_page = (int) $data['rows'];
         $page          = (int) $_REQUEST['page'];
 
-        // if($data['sidx'] == 'lang') {
-        //     $data['sidx'] = 'languages.name';
-        // }        
-        // else if($data['sidx'] == 'copy') {
-        //     $data['sidx'] = 'copyrights.name';
-        // }
-        // else {
-        //     $data['sidx'] = 'bibles.' . $data['sidx'];
-        // }
-
-        // $Query = Bible::select('bibles.*', 'languages.name AS lang', 'copyrights.name AS copy')
-        //     ->leftJoin('languages', 'bibles.lang_short', 'languages.code')
-        //     ->leftJoin('copyrights', 'bibles.copyright_id', 'copyrights.id')
-        //     ->orderBy($data['sidx'], $data['sord']);
-
         $pf = DB::getTablePrefix();
 
-        // todo - rebuild this to use raw query
-        // $Query = Language::select('languages.*', DB::raw('COUNT(bibles.id) AS bible') )
-        // $Query = Language::select('languages.*', 'COUNT(bibles.id) AS bible')
         $Query = Language::select('languages.*', 'bibles.id AS has_bibles', 
                                     DB::raw('IF(' . $pf . 'book_list.value = 1,1,0) AS book_list'),
                                     DB::raw('COUNT(' . $pf . 'bibles.id) AS bibles')

@@ -1,6 +1,7 @@
 import LanguageGrid from './LanguageGrid.vue.js';
-import StrongsGrid from './StrongsGrid.vue.js';
-import CrossRefGrid from './CrossReferenceGrid.vue.js';
+// :todo future - add these (paid)
+// import StrongsGrid from './StrongsGrid.vue.js';
+// import CrossRefGrid from './CrossReferenceGrid.vue.js';
 
 export default {
     data() {
@@ -8,14 +9,12 @@ export default {
     },
     components: {
         LanguageGrid,
-        StrongsGrid,
-        CrossRefGrid
+        // StrongsGrid,
+        // CrossRefGrid
     },
     template: `
-            <v-app>
-                <LanguageGrid />
-                <StrongsGrid />
-                <CrossRefGrid />
-            </v-app>
-        `
+        <v-app>
+            <LanguageGrid />
+        </v-app>
+    `
 }
