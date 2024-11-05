@@ -1,8 +1,7 @@
 import LanguageForm from './LanguageEditForm.vue.js';
 import BooksDialog from './BookListDialog.vue.js';
 import EditDialog from '/js/bin/custom_vue/dialogs/EditDialog.vue.js';
-
-// todo - language book lists grid
+import { useGrid } from '/js/bin/custom_vue/composables/Grid.vue.js';
 
 const template = `<v-sheet>
             <h2>Languages</h2>
@@ -10,27 +9,29 @@ const template = `<v-sheet>
             <v-switch
                 label='Include Languages Without Bibles'
                 v-model='gridData.all_languages'
-                @update:modelValue='refetchGrid'
+                @update:modelValue='gridRefetch'
                 true-value='1'
                 false-value='0'
             </v-switch>
 
             <v-data-table-server
-                :headers="headers"
                 :items="gridRows"
                 :items-length='totalRows'
-                :page='gridData.page'
-                show-current-page
+                @update:options="gridPaginate"
                 v-model:items-per-page="gridData.rows"
+                :search='gridSearchDate'
                 :items-per-page-options='itemsPerPageOptions'
+                :page='gridData.page'
+                
+
+                :headers="headers"
+                show-current-page
                 :loading='loading ? "primary-darken-1" : false'
-                @update:options="paginateGrid"
                 fixed-header
                 single-select
                 hover
                 density='compact'
                 color='#333333'
-                :search='gridSearch'
             >
                 <template v-slot:header.actions={column}>
                     <span>{{column.title}}</span>
@@ -132,7 +133,7 @@ const template = `<v-sheet>
             recordType='Language'
             @onClose='closeEdit'
             @afterLeave='closeEdit'
-            @onSave='refreshGrid'
+            @onSave='gridRefresh'
             url='/admin/bibles/languages'
             v-slot='{data}'
         >
@@ -145,7 +146,7 @@ const template = `<v-sheet>
             recordType='Language'
             @onClose='closeEdit'
             @afterLeave='closeEdit'
-            @onSave='refreshGrid'
+            @onSave='gridRefresh'
             url='/admin/bibles/languages'
             v-slot='{data}'
         >
@@ -162,7 +163,23 @@ const template = `<v-sheet>
         </v-sheet>`;
 
 export default {
-    
+    setup(props) {
+        let data = {
+            url: '/admin/languages/grid',
+            gridData: {
+                rows: 10,
+                sidx: 'name',
+                sord: 'ASC',
+                start: null,
+                all_languages: 0,
+            },
+
+            // Grid searchable fields (will be added to gridData as strings if don't exist)
+            searchFields: ['code', 'name', 'native_name', 'family', 'bibles_min', 'bibles_max'],
+        };
+
+        return useGrid(data, props);
+    },
     components: {
         EditDialog,
         LanguageForm,
@@ -170,30 +187,29 @@ export default {
     },
     data() {
         return { 
-            search: '',
-            totalRows: 1,
-            gridSearch: '',
-            gridRows: [],
-            gridData: {
-                page: 1,
-                rows: 10,
-                sidx: 'name',
-                sord: 'ASC',
-                start: null,
-                all_languages: 0,
-                // Searchab
-                code: '',
-                name: '',
-                native_name: '',
-                family: '',
-                bibles_min: '',
-                bibles_max: '',
-            },
+            // totalRows: 1,
+            // gridRows: [],
+            // gridData: {
+            //     page: 1,
+            //     rows: 10,
+            //     sidx: 'name',
+            //     sord: 'ASC',
+            //     start: null,
+            //     all_languages: 0,
+                
+            //     // Searchable
+            //     code: '',
+            //     name: '',
+            //     native_name: '',
+            //     family: '',
+            //     bibles_min: '',
+            //     bibles_max: '',
+            // },
             sortDefault: {
                 sidx: 'name',
                 sord: 'ASC',
             },
-            loading: false,
+            // loading: false,
             editing: false,
             editingId: null,
             editingIdExt: null,
@@ -221,64 +237,65 @@ export default {
         },
     },
     watch: {
-        'gridData.code'(newValue, oldValue) {
-            // if(newValue.length == 0 || newValue.length >= 2) {
-                this.gridSearch = String(Date.now());
-            // }
-        },        
-        'gridData.name'(newValue, oldValue) {
-            this.gridSearch = String(Date.now());
-        },        
-        'gridData.native_name'(newValue, oldValue) {
-            this.gridSearch = String(Date.now());
-        },        
-        'gridData.family'(newValue, oldValue) {
-            this.gridSearch = String(Date.now());
-        },        
-        'gridData.bibles_min'(newValue, oldValue) {
-            this.gridSearch = String(Date.now());
-        },        
-        'gridData.bibles_max'(newValue, oldValue) {
-            this.gridSearch = String(Date.now());
-        }
+        // 'gridData.code'(newValue, oldValue) {
+        //     this.gridSearch();
+        // },        
+        // 'gridData.name'(newValue, oldValue) {
+        //     this.gridSearch();
+        // },        
+        // 'gridData.native_name'(newValue, oldValue) {
+        //     this.gridSearch();
+        // },        
+        // 'gridData.family'(newValue, oldValue) {
+        //     this.gridSearch();
+        // },        
+        // 'gridData.bibles_min'(newValue, oldValue) {
+        //     this.gridSearch();
+        // },        
+        // 'gridData.bibles_max'(newValue, oldValue) {
+        //     this.gridSearch();
+        // }
     },
     methods: {
-        fetchGridRows() {
-            this.loading = true;
-            var t = this;
+        /* Start Grid Methods */
+        // gridFetchRows() {
+        //     this.loading = true;
+        //     var t = this;
 
-            axios.request({
-                url: '/admin/languages/grid',
-                method: 'GET',
-                params: this.gridData
-            }).then(function(response) {
-                t.gridRows = response.data.rows;
-                t.totalRows = response.data.records;
-                t.loading = false;
-            });
-        },
-        refetchGrid() {
-            this.gridData.page = 1;
-            this.fetchGridRows();
-        },
-        refreshGrid() {
-            this.fetchGridRows();
-        },
-        paginateGrid(options) {
-            this.gridData.page = options.page;
-            this.gridData.rows = options.itemsPerPage;
-            this.gridData.start = this.gridData.page * this.gridData.rows - this.gridData.rows;
+        //     axios.request({
+        //         url: '/admin/languages/grid',
+        //         method: 'GET',
+        //         params: this.gridData
+        //     }).then(function(response) {
+        //         t.gridRows = response.data.rows;
+        //         t.totalRows = response.data.records;
+        //         t.loading = false;
+        //     });
+        // },
+        // gridRefetch() {
+        //     this.gridData.page = 1;
+        //     this.gridFetchRows();
+        // },
+        // gridRefresh() {
+        //     this.gridFetchRows();
+        // },
+        // gridPaginate(options) {
+        //     this.gridData.page = options.page;
+        //     this.gridData.rows = options.itemsPerPage;
+        //     this.gridData.start = this.gridData.page * this.gridData.rows - this.gridData.rows;
 
-            var sorting = (options.sortBy[0]) ? options.sortBy[0] : {
-                key: this.sortDefault.sidx,
-                order: this.sortDefault.sord,
-            };
+        //     var sorting = (options.sortBy[0]) ? options.sortBy[0] : {
+        //         key: this.sortDefault.sidx,
+        //         order: this.sortDefault.sord,
+        //     };
 
-            this.gridData.sidx = sorting.key;
-            this.gridData.sord = sorting.order;
+        //     this.gridData.sidx = sorting.key;
+        //     this.gridData.sord = sorting.order;
 
-            this.fetchGridRows();
-        },
+        //     this.gridFetchRows();
+        // },
+        /* End Grid Methods */
+        
         clickEdit(item) {
             if(item) {
                 this.editingId = item.id;
