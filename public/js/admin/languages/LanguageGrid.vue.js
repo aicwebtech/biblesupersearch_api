@@ -4,12 +4,12 @@ import EditDialog from '/js/bin/custom_vue/dialogs/EditDialog.vue.js';
 import { useGrid } from '/js/bin/custom_vue/composables/Grid.vue.js';
 
 const template = `<v-sheet>
-            <h2>Languages</h2>
+            <h2>Languages {{test}}</h2>
             
             <v-switch
                 label='Include Languages Without Bibles'
                 v-model='gridData.all_languages'
-                @update:modelValue='gridRefetch'
+                @update:modelValue='gridReset'
                 true-value='1'
                 false-value='0'
             </v-switch>
@@ -17,11 +17,11 @@ const template = `<v-sheet>
             <v-data-table-server
                 :items="gridRows"
                 :items-length='totalRows'
-                @update:options="gridPaginate"
-                v-model:items-per-page="gridData.rows"
+                :items-per-page="gridData.rows"
                 :search='gridSearchDate'
                 :items-per-page-options='itemsPerPageOptions'
                 :page='gridData.page'
+                @update:options="gridPaginate"
                 
 
                 :headers="headers"
@@ -173,6 +173,10 @@ export default {
                 start: null,
                 all_languages: 0,
             },
+            sortDefault: {
+                sidx: 'name',
+                sord: 'ASC',
+            },
 
             // Grid searchable fields (will be added to gridData as strings if don't exist)
             searchFields: ['code', 'name', 'native_name', 'family', 'bibles_min', 'bibles_max'],
@@ -187,29 +191,6 @@ export default {
     },
     data() {
         return { 
-            // totalRows: 1,
-            // gridRows: [],
-            // gridData: {
-            //     page: 1,
-            //     rows: 10,
-            //     sidx: 'name',
-            //     sord: 'ASC',
-            //     start: null,
-            //     all_languages: 0,
-                
-            //     // Searchable
-            //     code: '',
-            //     name: '',
-            //     native_name: '',
-            //     family: '',
-            //     bibles_min: '',
-            //     bibles_max: '',
-            // },
-            sortDefault: {
-                sidx: 'name',
-                sord: 'ASC',
-            },
-            // loading: false,
             editing: false,
             editingId: null,
             editingIdExt: null,
@@ -217,7 +198,7 @@ export default {
             editingRecord: {},
             selectedLanguage: {},
             blLanguage: null,
-            itemsPerPageOptions: [5, 10, 25, 50, 100, {value: -1, title: '$vuetify.dataFooter.itemsPerPageAll'}],
+            test: 'hahaha'
         }
     },
     template: template, 
@@ -236,66 +217,7 @@ export default {
             ];
         },
     },
-    watch: {
-        // 'gridData.code'(newValue, oldValue) {
-        //     this.gridSearch();
-        // },        
-        // 'gridData.name'(newValue, oldValue) {
-        //     this.gridSearch();
-        // },        
-        // 'gridData.native_name'(newValue, oldValue) {
-        //     this.gridSearch();
-        // },        
-        // 'gridData.family'(newValue, oldValue) {
-        //     this.gridSearch();
-        // },        
-        // 'gridData.bibles_min'(newValue, oldValue) {
-        //     this.gridSearch();
-        // },        
-        // 'gridData.bibles_max'(newValue, oldValue) {
-        //     this.gridSearch();
-        // }
-    },
-    methods: {
-        /* Start Grid Methods */
-        // gridFetchRows() {
-        //     this.loading = true;
-        //     var t = this;
-
-        //     axios.request({
-        //         url: '/admin/languages/grid',
-        //         method: 'GET',
-        //         params: this.gridData
-        //     }).then(function(response) {
-        //         t.gridRows = response.data.rows;
-        //         t.totalRows = response.data.records;
-        //         t.loading = false;
-        //     });
-        // },
-        // gridRefetch() {
-        //     this.gridData.page = 1;
-        //     this.gridFetchRows();
-        // },
-        // gridRefresh() {
-        //     this.gridFetchRows();
-        // },
-        // gridPaginate(options) {
-        //     this.gridData.page = options.page;
-        //     this.gridData.rows = options.itemsPerPage;
-        //     this.gridData.start = this.gridData.page * this.gridData.rows - this.gridData.rows;
-
-        //     var sorting = (options.sortBy[0]) ? options.sortBy[0] : {
-        //         key: this.sortDefault.sidx,
-        //         order: this.sortDefault.sord,
-        //     };
-
-        //     this.gridData.sidx = sorting.key;
-        //     this.gridData.sord = sorting.order;
-
-        //     this.gridFetchRows();
-        // },
-        /* End Grid Methods */
-        
+    methods: {        
         clickEdit(item) {
             if(item) {
                 this.editingId = item.id;

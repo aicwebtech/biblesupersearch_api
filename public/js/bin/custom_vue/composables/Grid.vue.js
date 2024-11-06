@@ -1,5 +1,3 @@
-// import { ref } from 'vue' // no worky
-
 /**
  * Grid composable
  * 
@@ -12,7 +10,6 @@ export function useGrid(data, props) {
         // Settings (with defaults)
 
         url: Vue.ref(data.url || null),
-        // url: ref(data.url || null), // alt,
 
         gridSortDefault: Vue.ref(data.gridSortDefault || {
             sidx: 'name',
@@ -28,6 +25,10 @@ export function useGrid(data, props) {
             start: null,
         }),
 
+        itemsPerPageOptions: Vue.ref(data.itemsPerPageOptions || [
+            5, 10, 20, 25, 50, 100 // :todo page all option?, {value: -1, title: '$vuetify.dataFooter.itemsPerPageAll'}
+        ]),
+
         // Internal properties
         gridRows: Vue.ref([]),
         totalRows: Vue.ref(0),
@@ -35,7 +36,7 @@ export function useGrid(data, props) {
         gridSearchDate: Vue.ref(null),
 
         // Methods
-        gridFetchRows() {
+        gridRefresh() {
             grid.loading.value = true;
 
             axios.request({
@@ -54,13 +55,6 @@ export function useGrid(data, props) {
                 // grid.loading = false;
             }.bind(grid));
         },
-        gridRefetch() {
-            grid.gridData.value.page = 1;
-            grid.gridFetchRows();
-        },
-        gridRefresh() {
-            grid.gridFetchRows();
-        },
         gridPaginate(options) { 
             grid.gridData.value.page = options.page || 1;
             grid.gridData.value.rows = options.itemsPerPage || 25;
@@ -74,7 +68,11 @@ export function useGrid(data, props) {
             grid.gridData.value.sidx = sorting.key;
             grid.gridData.value.sord = sorting.order;
 
-            grid.gridFetchRows();
+            grid.gridRefresh();
+        },
+        gridReset() {
+            grid.gridData.value.page = 1;
+            grid.gridRefresh();
         },
         // Triggers grid to do search
         gridSearch() {
@@ -88,6 +86,8 @@ export function useGrid(data, props) {
 
         for(const i in data.searchFields) {
             // console.log('grid Watch', data.searchFields[i]);
+
+            // :todo allow for objects with field / default value pair
 
             // Auto init field in gridData
             if(!grid.gridData.value[ data.searchFields[i] ]) {

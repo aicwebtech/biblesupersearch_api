@@ -51,6 +51,7 @@ class LanguageConfigController extends Controller
         $rows = $postfilters = [];
         $rows_per_page = (int) $data['rows'];
         $page          = (int) $_REQUEST['page'];
+        $show_all = $rows_per_page < 1;
 
         $pf = DB::getTablePrefix();
 
@@ -103,10 +104,10 @@ class LanguageConfigController extends Controller
                 
                 switch($f['type']) {
                     case 'int_min':
-                        $Query->having($f['field'], '>', (int)$data[$key]);
+                        $Query->having($f['field'], '>=', (int)$data[$key]);
                         break;        
                     case 'int_max':
-                        $Query->having($f['field'], '<', (int)$data[$key]);
+                        $Query->having($f['field'], '<=', (int)$data[$key]);
                         break;                
                     case 'str_inside':
                         $Query->where($f['field'], 'LIKE', '%' . $data[$key] . '%');
@@ -121,7 +122,7 @@ class LanguageConfigController extends Controller
         $has_post_filter = empty($postfilters) ? FALSE : TRUE;
         $has_file_filter = NULL;
 
-        $Languages = ($has_post_filter) ? $Query->get() : $Query->paginate($rows_per_page);
+        $Languages = ($has_post_filter || $show_all) ? $Query->get() : $Query->paginate($rows_per_page);
 
         foreach($Languages as $Language) {
             $row = $Language->getAttributes();
@@ -130,7 +131,7 @@ class LanguageConfigController extends Controller
             $rows[] = $row;
         }
 
-        if($has_post_filter) {
+        if($has_post_filter && !$show_all) {
             $page   = ($page < 1) ? 1 : $page;
             $offset = $rows_per_page * ($page - 1);
             $count  = count($rows);
@@ -143,8 +144,17 @@ class LanguageConfigController extends Controller
                 'records'   => $count,
                 'post'      => TRUE,
             ];
-        }
-        else {
+        } elseif($show_all) {
+            $count  = count($rows);
+
+            $resp = [
+                'total'     => $count,
+                'page'      => $page,
+                'rows'      => $rows,
+                'records'   => $count,
+                'post'      => TRUE,
+            ];
+        } else {
             $resp = [
                 'total'     => $Languages->lastPage(),
                 'page'      => $Languages->currentPage(),
