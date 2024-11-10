@@ -210,6 +210,10 @@ class Engine
                 'type'  => 'bool',
                 'default' => FALSE,
             ),
+            'results_list' => array(
+                'type'  => 'bool',
+                'default' => FALSE,
+            ),
             'data_format' => array(
                 'type'  => 'string',
                 //'default' => 'passage', // breaking!
@@ -440,7 +444,7 @@ class Engine
                     $results[$Bible->module] = $BibleResults->all();
                     $has_search_results = TRUE;
 
-                    if($paginate && !$input['multi_bibles']) {
+                    if($paginate && !$input['multi_bibles'] && !$input['results_list']) {
                         $paging = $this->_getCleanPagingData($BibleResults);
                     }
 
@@ -510,15 +514,19 @@ class Engine
             }
         }
 
+        if($input['results_list']) {
+            $this->metadata->list = $Search ? $this->_formatResultsList($results, $input['page_limit'], $input['page']) : [];
+        }
+
         $results = $this->_formatDataStructure($results, $input, $Passages, $Search);
 
-        if($input['multi_bibles'] && $paginate) {
+        if(($input['multi_bibles'] || $input['results_list']) && $paginate) {
             $results = array_slice($results, 0, config('bss.parallel_search_maximum_results'));
             $Paginator = $this->_buildPaginator($results, $input['page_limit'], $input['page']);
             $results = $Paginator->all();
             $paging = $this->_getCleanPagingData($Paginator);
         }
-        elseif($input['multi_bibles'] && !$paginate) {
+        elseif(($input['multi_bibles'] || $input['results_list']) && !$paginate) {
             $results = array_slice($results, 0, config('bss.global_maximum_results'));
         }
 
@@ -1120,6 +1128,45 @@ class Engine
 
         $Formatter = new $format_class($results, $Passages, $Search, $this->languages, $input);
         return $Formatter->format();
+    }
+
+    protected function _formatResultsList($results, $limit, $page)
+    {
+        $formatted = [];
+
+        foreach($results as $b => $vs) {
+            foreach($vs as $v) {
+                $idx  = str_pad($v->book, 2, '0', STR_PAD_LEFT);
+                $idx .= '_' . str_pad($v->chapter, 2, '0', STR_PAD_LEFT);
+                $idx .= '_' . str_pad($v->verse, 3, '0', STR_PAD_LEFT);
+
+                if(isset($formatted[$idx])) {
+                    continue;
+                }
+
+                $f = new \stdClass;
+                $f->book = $v->book;
+                $f->chapter = $v->chapter;
+                $f->verse = $v->verse;
+                $f->showing = false;
+
+                $formatted[$idx] = $f;
+            }
+        }
+
+        ksort($formatted);
+        $formatted = array_values($formatted);
+
+        $st_idx = $page * $limit - $limit; // ($page - 1) * $limit
+        $en_idx = $st_idx + $limit - 1;
+
+        for($i = $st_idx; $i <= $en_idx; $i ++) {
+            if(isset($formatted[$i])) {
+                $formatted[$i]->showing = true;
+            }
+        }
+
+        return $formatted;
     }
 
     protected function _highlightResults($results, $Search, $Passages, $input) 

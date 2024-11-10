@@ -78,7 +78,7 @@ class VerseStandard extends VerseAbstract {
         $binddata = !isset($binddata) ? [] : $binddata;
 
         try {
-            if($Search && !$parameters['multi_bibles'] && !$parameters['page_all']) {
+            if($Search && !$parameters['multi_bibles'] && !$parameters['page_all'] && !$parameters['results_list']) {
                 $page_limit = min( (int) $parameters['page_limit'], (int) config('bss.global_maximum_results'));
                     
                 if($reccommend_raw_query) {
