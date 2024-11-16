@@ -5,28 +5,45 @@
  * 
  */ 
 
+export const gridTemplateProps = `
+                :items="gridRows"
+                :items-length='totalRows'
+                :items-per-page="gridData.rows_per_page"
+                :search='gridSearchDate'
+                :items-per-page-options='itemsPerPageOptions'
+                :page='gridData.page'
+                @update:options="gridPaginate"
+                `;
+
 export function useGrid(data, props) {
+    var gridDataDefaults = {
+        page: 1,
+        rows_per_page: 25,
+        sidx: 'name',
+        sord: 'ASC',
+        start: null,
+    };
+
+    var gridDataProps = data.gridData || {};
+
+    var gridData = {...gridDataDefaults, ...gridDataProps};
+
+    gridData.rows = gridData.rows_per_page; // legacy, depricated
+
     let grid = {
         // Settings (with defaults)
 
         url: Vue.ref(data.url || null),
 
         gridSortDefault: Vue.ref(data.gridSortDefault || {
-            sidx: 'name',
-            sord: 'ASC'
+            sidx: gridData.sidx,
+            sord: gridData.sord
         }),
 
-        gridData: Vue.ref(data.gridData || {
-            page: 1,
-            itemsPerPage: 25,
-            sidx: 'name',
-            sord: 'ASC',
-            rows: 10,
-            start: null,
-        }),
+        gridData: Vue.ref(gridData),
 
         itemsPerPageOptions: Vue.ref(data.itemsPerPageOptions || [
-            5, 10, 20, 25, 50, 100 // :todo page all option?, {value: -1, title: '$vuetify.dataFooter.itemsPerPageAll'}
+            5, 10, 15, 20, 25, 50, 100 // :todo page all option?, {value: -1, title: '$vuetify.dataFooter.itemsPerPageAll'}
         ]),
 
         // Internal properties
@@ -57,7 +74,8 @@ export function useGrid(data, props) {
         },
         gridPaginate(options) { 
             grid.gridData.value.page = options.page || 1;
-            grid.gridData.value.rows = options.itemsPerPage || 25;
+            grid.gridData.value.rows_per_page = options.itemsPerPage || 25;
+            grid.gridData.value.rows = options.itemsPerPage || 25;  // 'rows' is rows_per_page alias (legacy)
             grid.gridData.value.start = grid.gridData.value.page * grid.gridData.value.rows - grid.gridData.value.rows;
 
             var sorting = (options.sortBy[0]) ? options.sortBy[0] : {
@@ -71,8 +89,13 @@ export function useGrid(data, props) {
             grid.gridRefresh();
         },
         gridReset() {
-            grid.gridData.value.page = 1;
+            grid.gridResetData();
             grid.gridRefresh();
+        },
+        gridResetData() {
+            grid.gridData.value.page = 1;
+            grid.totalRows.value = 0;
+            grid.gridRows.value = [];
         },
         // Triggers grid to do search
         gridSearch() {

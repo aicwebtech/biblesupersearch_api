@@ -1,7 +1,7 @@
 import LanguageForm from './LanguageEditForm.vue.js';
 import BooksDialog from './BookListDialog.vue.js';
 import EditDialog from '/js/bin/custom_vue/dialogs/EditDialog.vue.js';
-import { useGrid } from '/js/bin/custom_vue/composables/Grid.vue.js';
+import { gridTemplateProps, useGrid } from '/js/bin/custom_vue/composables/Grid.vue.js';
 
 const template = `<v-sheet>
             <h2>Languages {{test}}</h2>
@@ -15,15 +15,8 @@ const template = `<v-sheet>
             </v-switch>
 
             <v-data-table-server
-                :items="gridRows"
-                :items-length='totalRows'
-                :items-per-page="gridData.rows"
-                :search='gridSearchDate'
-                :items-per-page-options='itemsPerPageOptions'
-                :page='gridData.page'
-                @update:options="gridPaginate"
+                ` + gridTemplateProps + `
                 
-
                 :headers="headers"
                 show-current-page
                 :loading='loading ? "primary-darken-1" : false'
@@ -167,15 +160,10 @@ export default {
         let data = {
             url: '/admin/languages/grid',
             gridData: {
-                rows: 10,
                 sidx: 'name',
                 sord: 'ASC',
-                start: null,
+                rows_per_page: 10,
                 all_languages: 0,
-            },
-            sortDefault: {
-                sidx: 'name',
-                sord: 'ASC',
             },
 
             // Grid searchable fields (will be added to gridData as strings if don't exist)
@@ -189,6 +177,7 @@ export default {
         LanguageForm,
         BooksDialog
     },
+    template: template, 
     data() {
         return { 
             editing: false,
@@ -201,7 +190,6 @@ export default {
             test: 'hahaha'
         }
     },
-    template: template, 
     computed: {
         headers() {
             return [

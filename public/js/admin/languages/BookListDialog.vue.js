@@ -1,3 +1,5 @@
+import { gridTemplateProps, useGrid } from '/js/bin/custom_vue/composables/Grid.vue.js';
+
 const tpl = `
     <v-dialog 
         v-model='showing'
@@ -8,13 +10,9 @@ const tpl = `
                 <v-card-title>{{title}}</v-card-title>
                 <v-card-text>
                     <v-data-table-server
-                        :items-length='totalRows'
-                        :items="gridRows"
-                        :page='gridData.page'
+                        ` + gridTemplateProps + `
+
                         :headers="headers"
-                        :items-per-page="gridData.rows"
-                        :items-per-page-options='itemsPerPageOptions'
-                        @update:options="paginateGrid"
                         density='compact'
                         :loading='loading ? "primary-darken-1" : false'
                         fixed-header
@@ -49,23 +47,21 @@ export default {
             default: null,
         },
     },
+    setup(props) {
+        let data = {
+            url: '/admin/biblebooks/grid/',
+            gridData: {
+                rows_per_page: 10,
+                sidx: 'id',
+                sord: 'ASC',
+            },
+        };
+
+        return useGrid(data, props);
+    },
     data() {
         return {
-            totalRows: 1,
-            gridRows: [],
-            loading: false,
             showing: false,
-            gridData: {
-                page: 1,
-                rows: 11,
-                sidx: 'id',
-                sord: 'ASC',
-                start: null
-            },
-            sortDefault: {
-                sidx: 'id',
-                sord: 'ASC',
-            },
             headers: [
                 {title: 'ID', key: 'id'},
                 {title: 'English Name', key: 'name_en'},
@@ -91,58 +87,14 @@ export default {
                 return;
             }
 
+            // reset grid BEFORE changing URL
+            this.gridResetData();
+            // Changing URL will cause grid refresh (ie reactive)
+            this.url = '/admin/biblebooks/grid/' + newValue;
             this.showing = true;
-            this.refetchGrid();
         }
     },
     methods: {
-        fetchGridRows() {
-            this.loading = true;
-            var t = this;
-
-            axios.request({
-                url: '/admin/biblebooks/grid/' + this.language,
-                method: 'GET',
-                params: this.gridData
-            }).then(function(response) {
-                t.gridRows = response.data.rows;
-                t.totalRows = response.data.records;
-                t.loading = false;
-            }).catch(function(error) {
-                t.gridRows = [];
-                t.totalRows = 0;
-                t.loading = false;
-
-                if(error.response.data.message) {
-                    alert(error.response.data.message);
-                } else {
-                    alert('An unknown error has occurred');
-                }
-            });
-        },
-        refetchGrid() {
-            this.gridData.page = 1;
-            this.fetchGridRows();
-        },
-        refreshGrid() {
-            console.log('refreshGrid');
-            this.fetchGridRows();
-        },
-        paginateGrid(options) {
-            this.gridData.page = options.page;
-            this.gridData.rows = options.itemsPerPage;
-            this.gridData.start = this.gridData.page * this.gridData.rows - this.gridData.rows;
-
-            var sorting = (options.sortBy[0]) ? options.sortBy[0] : {
-                key: this.sortDefault.sidx,
-                order: this.sortDefault.sord,
-            };
-
-            this.gridData.sidx = sorting.key;
-            this.gridData.sord = sorting.order;
-
-            this.fetchGridRows();
-        },
         handleCancel() {
             this.closeDialog();
         },
