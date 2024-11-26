@@ -50,7 +50,17 @@ class BibleController extends Controller
 
         $bootstrap = json_encode($bootstrap);
 
-        return view('admin.bibles', ['bootstrap' => $bootstrap]);
+        return view('admin.bibles_old', ['bootstrap' => $bootstrap]);
+    }
+
+    public function indexNew()
+    {
+        // return $this->index();
+
+        Bible::updateNeedsUpdate();
+        Bible::populateBibleTable();
+
+        return view('admin.bibles');
     }
 
     public function grid(Request $request)
