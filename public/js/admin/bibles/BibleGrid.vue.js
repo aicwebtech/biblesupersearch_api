@@ -1,5 +1,6 @@
-// import LanguageForm from './LanguageEditForm.vue.js';
+// import BibleForm from './dialogs_forms/BibleEditForm.vue.js';
 import EditDialog from '/js/bin/custom_vue/dialogs/EditDialog.vue.js';
+import ActionDialog from './dialogs_forms/ActionDialog.vue.js';
 import { gridTemplateProps, useGrid } from '/js/bin/custom_vue/composables/Grid.vue.js';
 
 const template = `<v-sheet>
@@ -13,10 +14,14 @@ const template = `<v-sheet>
                 </v-col>
 
                 <v-col v-for='action in bulkActions'>
-
-                    <v-button >
+                    <v-btn 
+                        v-if="bootstrap.devToolsEnabled || !action.requireDevTools"
+                        @click="handleBulkAction(action.action, $event)"
+                    >
                         {{action.label}}
-                    </v-button>
+
+                        <span v-if='action.requireDevTools'>(Dev)</span>
+                    </v-btn>
                 </v-col>
 
             </v-row>
@@ -55,9 +60,12 @@ const template = `<v-sheet>
                 </template>                 
 
                 <template v-slot:item.enabled={item}>
-                    <v-chip
-                        :text="item.enabled == '1' ? 'Yes' : 'No'"
-                    ></v-chip>
+                    <v-chip v-if="item.enabled == '1'" @click="handleSingleAction('disable', item)">
+                        Yes
+                    </v-chip>
+                    <v-chip v-else @click="handleSingleAction('enable', item)">
+                        No
+                    </v-chip>
                 </template>                 
                 
                 <template v-slot:item.official={item}>
@@ -86,7 +94,16 @@ const template = `<v-sheet>
                     -->
                 </template>
 
-            </v-data-table-server>     
+            </v-data-table-server>    
+
+            <ActionDialog 
+                :action = 'selectedAction'
+                :actions = 'bulkActions'
+                :queue = 'actionQueue'
+                @onClose='closeActions'
+
+            ></ActionDialog>
+
         </v-sheet>`;
 
 /*
@@ -106,6 +123,7 @@ const template = `<v-sheet>
 */
 
 export default {
+    inject: ['bootstrap'],
     setup(props) {
         let data = {
             url: '/admin/bibles/grid',
@@ -123,6 +141,7 @@ export default {
     },
     components: {
         EditDialog,
+        ActionDialog
         // LanguageForm
     },
     template: template, 
@@ -130,89 +149,65 @@ export default {
         return { 
             editing: false,
             editingId: null,
+            selectedAction: null,
+            actionQueue: null,
             editingRecord: {},
             rowSelections: [],
-            blLanguage: null,
-            test: 'hahaha',
             bulkActions: [
                 {
                     action: 'install',
                     label: 'Install',
-                    tag: 'button',
-                    classes: 'button bulk',
-                    ontap: 'multiInstall',
                     actioning: 'Installing'
                 },
                 {
                     action: 'uninstall',
                     label: 'Uninstall',
-                    tag: 'button',
-                    classes: 'button bulk',
-                    ontap: 'multiUninstall',
                     actioning: 'Uninstalling'
                 },
                 {
                     action: 'enable',
                     label: 'Enable',
-                    tag: 'button',
-                    classes: 'button bulk',
-                    ontap: 'multiEnable',
                     actioning: 'Enabling'
                 },
                 {
                     action: 'disable',
                     label: 'Disable',
-                    tag: 'button',
-                    classes: 'button bulk',
-                    ontap: 'multiDisable',
                     actioning: 'Disabling'
                 },                
                 {
                     action: 'update',
                     label: 'Update',
-                    tag: 'button',
-                    classes: 'button bulk',
-                    ontap: 'multiUpdateModule',
                     actioning: 'Updating'
                 },
                 {
                     action: 'test',
                     label: 'Test',
                     tag: 'button',
-                    classes: 'button bulk',
-                    ontap: 'multiTest',
-                    actioning: 'Testing'
+                    autoConfirm: true,
                 },                
                 {
                     action: 'research',
                     label: 'Mark as "Research"',
-                    tag: 'button',
-                    classes: 'button bulk',
-                    ontap: 'multiFlagResearch',
+                    dialogTitle: 'Mark as "For Research Only"',
+                    confirmText: 'Are you sure that you want to mark these Bibles for research only?',
                     actioning: 'Marking'
                 },                
                 {
                     action: 'unresearch',
                     label: 'Unmark as "Research"',
-                    tag: 'button',
-                    classes: 'button bulk',
-                    ontap: 'multiUnflagResearch',
+                    dialogTitle: 'Unmark as "For Research Only"',
+                    confirmText: 'Are you sure that you want to unmark these Bibles for research only?',
                     actioning: 'Unmarking'
                 },                
                 {
                     action: 'revert',
                     label: 'Revert Changes',
-                    tag: 'button',
-                    classes: 'button bulk',
-                    ontap: 'multiRevert',
+                    confirmText: 'Are you sure that you want to revert all changes to the following Bibles?',
                     actioning: 'Reverting'
                 },               
                 {
-                    action: 'revert', // ????
+                    action: 'delete',
                     label: 'Delete',
-                    tag: 'button',
-                    classes: 'button bulk',
-                    ontap: 'multiDelete',
                     actioning: 'Deleting'
                 },
                 {
@@ -221,8 +216,6 @@ export default {
 
                     kind: 'BibleManager.Components.Elements.Button',
                     
-                    classes: 'button bulk',
-                    ontap: 'multiExport',
                     actioning: 'Exporting',
                     requireDevTools: true
                 },
@@ -232,8 +225,6 @@ export default {
 
                     kind: 'BibleManager.Components.Elements.Button',
 
-                    classes: 'button bulk',
-                    ontap: 'multiUpdate',
                     actioning: 'Updating Meta',
                     requireDevTools: true
                 },
@@ -294,9 +285,28 @@ export default {
             } else {
                 return item.book_list == '1' ? 'green' : 'red';
             }
+        },
+        handleBulkAction(action, event) {
+            console.log('handleBulkAction', arguments);
+            var s = this.rowSelections;
+            var queue = this.gridRows.filter(item => s.includes(item.id));
+            this.actionHelper(action, queue);
+        },
+        handleSingleAction(action, item) {
+            console.log('handleSingleAction', arguments);
+            var queue = [item];
+            this.actionHelper(action, queue);
+        },
+        actionHelper(action, queue) {
+            console.log('action', action);
+            console.log('queue', queue);
+
+            this.selectedAction = action || null;
+            this.actionQueue = queue || null;
+        },
+        closeActions() {
+            // this.gridRefresh();
+            this.selectedAction = null;
         }
     }
 }
-
-// vue-demi ?? for ??
-// vuedate (validation)

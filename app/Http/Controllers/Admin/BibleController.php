@@ -55,12 +55,27 @@ class BibleController extends Controller
 
     public function indexNew()
     {
-        // return $this->index();
-
         Bible::updateNeedsUpdate();
         Bible::populateBibleTable();
+        $ImportManagerClass = Helpers::find('\App\ImportManager');
 
-        return view('admin.bibles');
+        $bootstrap = new \stdClass;
+        $bootstrap->devToolsEnabled  = (bool) config('bss.dev_tools');
+        $bootstrap->premToolsEnabled = config('app.premium');
+        $bootstrap->maxUploadSize    = Helpers::maxUploadSize('both');
+        $bootstrap->languages  = \App\Models\Language::orderBy('name', 'asc')->get();
+        $bootstrap->copyrights = [];
+        $bootstrap->importers  = $ImportManagerClass::getImportersList();
+
+        foreacH(\App\Models\Copyright::all() as $Copyright) {
+            $data = $Copyright->getAttributes();
+            $data['copyright_statement_processed'] = $Copyright->getProcessedCopyrightStatement();
+            $bootstrap->copyrights[] = $data;
+        }
+
+        $bootstrap = json_encode($bootstrap);
+
+        return view('admin.bibles', ['bootstrap' => $bootstrap]);
     }
 
     public function grid(Request $request)

@@ -22,6 +22,10 @@
         <div id="app"></div>
     </div>
 
+    <script>
+        var bootstrap = @php echo $bootstrap @endphp;
+    </script>
+
     <script type='module'>
         const { createApp } = Vue
         const { createVuetify } = Vuetify
@@ -42,6 +46,7 @@
         
         const app = createApp(App)
         app.use(vuetify)
+        app.provide('bootstrap', bootstrap);
         app.mount('#app')
     </script>
 @endsection
