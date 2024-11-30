@@ -9,11 +9,10 @@ const tpl = `
                 <v-card-title>{{title}}</v-card-title>
                 <v-card-text>
 
-
                     <v-sheet v-if = '!confirmed'>
                         {{confirmText}} <br /><br />
 
-                        <ul>
+                        <ul class='pl-10'>
                             <li v-for='q in queue'>
                                 {{q.name}}
                             </li>

@@ -4,7 +4,7 @@ import EditDialog from '/js/bin/custom_vue/dialogs/EditDialog.vue.js';
 import { gridTemplateProps, useGrid } from '/js/bin/custom_vue/composables/Grid.vue.js';
 
 const template = `<v-sheet>
-            <h2>Languages {{test}}</h2>
+            <h2>Languages</h2>
             
             <v-switch
                 label='Include Languages Without Bibles'
@@ -186,8 +186,7 @@ export default {
             editingIdPre: null,
             editingRecord: {},
             selectedLanguage: {},
-            blLanguage: null,
-            test: 'hahaha'
+            blLanguage: null
         }
     },
     computed: {

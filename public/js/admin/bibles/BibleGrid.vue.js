@@ -4,27 +4,45 @@ import ActionDialog from './dialogs_forms/ActionDialog.vue.js';
 import { gridTemplateProps, useGrid } from '/js/bin/custom_vue/composables/Grid.vue.js';
 
 const template = `<v-sheet>
-            <h2>Bibles</h2>
+            <h2>
 
-            {{rowSelections}}
+            Bibles
 
-            <v-row v-if='hasRowSelections'>
-                <v-col>
-                With Selections:
-                </v-col>
+            </h2>
 
-                <v-col v-for='action in bulkActions'>
+            <v-sheet v-if='hasRowSelections' class='mt-3 mb-12'>
+                <span class='float-left'>
+                    With Selections:
+                </span>
+
+                <span v-for='action in bulkActions' class='float-left'>
                     <v-btn 
+                        xdensity='comfortable'
+                        size='small'
+                        class='ml-2'
                         v-if="bootstrap.devToolsEnabled || !action.requireDevTools"
                         @click="handleBulkAction(action.action, $event)"
+                        :prepend-icon='action.icon'
                     >
                         {{action.label}}
 
-                        <span v-if='action.requireDevTools'>(Dev)</span>
+                        <template v-slot:append v-if='action.requireDevTools'>
+                            <v-icon icon="mdi-flask-empty" color='warning'>
+                                <v-tooltip text='Bible Development Tool' activator='parent'>
+                            </v-tooltip>
+                            </v-icon>
+                        </template>
                     </v-btn>
-                </v-col>
-
-            </v-row>
+                </span>
+                <span class='clear-both'></span>
+            </v-sheet>
+            <v-sheet v-else class='mt-3 mb-12'>
+                <v-btn size='small' prepend-icon='mdi-book' class='float-right'>
+                    Import Bible
+                </v-btn>
+                <span class='float-right'>&nbsp;</span>
+                <span class='clear-both'></span>
+            </v-sheet>
             
             <v-data-table-server
                 ` + gridTemplateProps + `
@@ -157,76 +175,88 @@ export default {
                 {
                     action: 'install',
                     label: 'Install',
-                    actioning: 'Installing'
+                    actioning: 'Installing',
+                    icon: 'mdi-plus-box',
                 },
                 {
                     action: 'uninstall',
                     label: 'Uninstall',
-                    actioning: 'Uninstalling'
+                    actioning: 'Uninstalling',
+                    icon: 'mdi-minus-box',
                 },
                 {
                     action: 'enable',
                     label: 'Enable',
-                    actioning: 'Enabling'
+                    actioning: 'Enabling',
+                    icon: 'mdi-lock-open',
                 },
                 {
                     action: 'disable',
                     label: 'Disable',
-                    actioning: 'Disabling'
+                    actioning: 'Disabling',
+                    icon: 'mdi-lock',
                 },                
                 {
                     action: 'update',
                     label: 'Update',
-                    actioning: 'Updating'
+                    // :todo what does this actually do?  Controller action 'update' is for saving module meta (IE PUT)
+                    // dialogTitle: 'Update Bible Text from Module'
+                    actioning: 'Updating',
+                    icon: 'mdi-update',
                 },
                 {
                     action: 'test',
                     label: 'Test',
                     tag: 'button',
+                    icon: 'mdi-test-tube',
                     autoConfirm: true,
                 },                
                 {
                     action: 'research',
-                    label: 'Mark as "Research"',
+                    label: '"Research"',
                     dialogTitle: 'Mark as "For Research Only"',
                     confirmText: 'Are you sure that you want to mark these Bibles for research only?',
-                    actioning: 'Marking'
+                    actioning: 'Marking',
+                    icon: 'mdi-flag'
                 },                
                 {
                     action: 'unresearch',
-                    label: 'Unmark as "Research"',
+                    label: 'Not "Research"',
                     dialogTitle: 'Unmark as "For Research Only"',
                     confirmText: 'Are you sure that you want to unmark these Bibles for research only?',
-                    actioning: 'Unmarking'
+                    actioning: 'Unmarking',
+                    icon: 'mdi-flag-remove'
                 },                
                 {
                     action: 'revert',
                     label: 'Revert Changes',
-                    confirmText: 'Are you sure that you want to revert all changes to the following Bibles?',
-                    actioning: 'Reverting'
+                    dialogTitle: 'Revert Bible Changes',
+                    confirmText: 'Are you sure that you want to revert all settings changes to the following Bibles?',
+                    actioning: 'Reverting',
+                    icon: 'mdi-undo-variant'
                 },               
                 {
                     action: 'delete',
                     label: 'Delete',
-                    actioning: 'Deleting'
+                    actioning: 'Deleting',
+                    icon: 'mdi-trash-can'
                 },
                 {
                     action: 'export',
-                    label: 'Export Module File',
-
-                    kind: 'BibleManager.Components.Elements.Button',
-                    
+                    label: 'Export Module',
+                    dialogTitle: 'Export Module File',
                     actioning: 'Exporting',
-                    requireDevTools: true
+                    requireDevTools: true,
+                    icon: 'mdi-export'
                 },
                 {
                     action: 'meta',
-                    label: 'Update Module File',
-
-                    kind: 'BibleManager.Components.Elements.Button',
-
+                    label: 'Update Module',
+                    dialogTitle: 'Update Module File',
+                    confirmText: 'Are you sure that you want to save settings changes to these Bible module files?',
                     actioning: 'Updating Meta',
-                    requireDevTools: true
+                    requireDevTools: true,
+                    icon: 'mdi-update'
                 },
             ]
         }
