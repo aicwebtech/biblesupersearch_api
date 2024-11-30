@@ -11,5 +11,6 @@ export default {
         // 'primary-darken-1': '#333',
         'secondary': '#742d2d',
         'secondary-darken-1': '#0000ff',
-    }
+    },
+    'progress-linear-stream-animation': 'stream 2.5s infinite linear'
 };

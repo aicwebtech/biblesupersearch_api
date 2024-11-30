@@ -97,6 +97,12 @@ const template = `<v-sheet>
                         :text="item.research == '1' ? 'Yes' : 'No'"
                     ></v-chip>
                 </template>    
+                
+                <template 
+                    v-slot:item.updated_at={item}
+                >
+                    {{ formatDate(item.updated_at, "fullDateWithWeekday") }}
+                </template>    
 
                 <template v-slot:item.actions={item}>
                     <v-chip
@@ -119,6 +125,7 @@ const template = `<v-sheet>
                 :actions = 'bulkActions'
                 :queue = 'actionQueue'
                 @onClose='closeActions'
+                @onSave='gridRefresh'
 
             ></ActionDialog>
 
@@ -337,6 +344,16 @@ export default {
         closeActions() {
             // this.gridRefresh();
             this.selectedAction = null;
+        },
+        formatDate(datetime, format) {
+            console.log(arguments);
+            var pts = datetime.split(' ');
+            var date = new Date(datetime);
+
+            return date.toDateString() + ' ' + pts[1];
+
+
+            // return Vuetify.useDate(date, format);
         }
     }
 }
