@@ -1,4 +1,5 @@
 import BibleGrid from './BibleGrid.vue.js';
+// import '/css/main.scss';
 
 export default {
     data() {

@@ -1,5 +1,6 @@
 // import BibleForm from './dialogs_forms/BibleEditForm.vue.js';
 import EditDialog from '/js/bin/custom_vue/dialogs/EditDialog.vue.js';
+import TruncateTooltip from '/js/bin/custom_vue/components/Truncate.vue.js';
 import ActionDialog from './dialogs_forms/ActionDialog.vue.js';
 import { gridTemplateProps, useGrid } from '/js/bin/custom_vue/composables/Grid.vue.js';
 
@@ -70,30 +71,34 @@ const template = `<v-sheet>
                         ></v-chip>
                     -->
                 </template>
+   
+                <template v-slot:item.name={item}>
+                    <TruncateTooltip :text='item.name'></TruncateTooltip>
+                </template>                           
 
                 <template v-slot:item.installed={item}>
-                    <v-chip
+                    <v-chip :size='chipSize'
                         :text="item.installed == '1' ? 'Yes' : 'No'"
                     ></v-chip>
                 </template>                 
 
                 <template v-slot:item.enabled={item}>
-                    <v-chip v-if="item.enabled == '1'" @click="handleSingleAction('disable', item)">
+                    <v-chip v-if="item.enabled == '1'" @click="handleSingleAction('disable', item)" :size='chipSize'>
                         Yes
                     </v-chip>
-                    <v-chip v-else @click="handleSingleAction('enable', item)">
+                    <v-chip v-else @click="handleSingleAction('enable', item)" :size='chipSize'>
                         No
                     </v-chip>
                 </template>                 
                 
                 <template v-slot:item.official={item}>
-                    <v-chip
+                    <v-chip :size='chipSize'
                         :text="item.official == '1' ? 'Yes' : 'No'"
                     ></v-chip>
                 </template>                   
 
                 <template v-slot:item.research={item}>
-                    <v-chip
+                    <v-chip :size='chipSize'
                         :text="item.research == '1' ? 'Yes' : 'No'"
                     ></v-chip>
                 </template>    
@@ -101,21 +106,14 @@ const template = `<v-sheet>
                 <template 
                     v-slot:item.updated_at={item}
                 >
-                    {{ formatDate(item.updated_at, "fullDateWithWeekday") }}
+                    {{ formatDateTime(item.updated_at, "fullDateTime") }}
                 </template>    
 
                 <template v-slot:item.actions={item}>
-                    <v-chip
+                    <v-chip :size='chipSize'
                         text='Edit'
                         @click='clickEdit(item)'
                     ></v-chip>                    
-                  
-                    <!--
-                        <v-chip
-                            text='Edit PRE'
-                            @click='clickEditPre(item)'
-                        ></v-chip>
-                    -->
                 </template>
 
             </v-data-table-server>    
@@ -166,12 +164,15 @@ export default {
     },
     components: {
         EditDialog,
-        ActionDialog
+        ActionDialog,
+        TruncateTooltip
         // LanguageForm
     },
     template: template, 
     data() {
         return { 
+            chipSize: 'small',
+            chipDensity: 'default',
             editing: false,
             editingId: null,
             selectedAction: null,
@@ -271,21 +272,21 @@ export default {
     computed: {
         headers() {
             return [
-                {title: 'Name', key: 'name'},
-                {title: 'Short Name', key: 'shortname'},
-                {title: 'Module', key: 'module'},
-                {title: 'Has File', key: 'has_module_file'},
-                {title: 'Language', key: 'lang'},
-                {title: 'Copyright', key: 'copy'},
-                {title: 'Year', key: 'year'},
-                {title: 'Installed', key: 'installed'},
-                {title: 'Enabled', key: 'enabled'},
-                {title: 'Official', key: 'official'},
-                {title: 'Research **', key: 'research'},
-                {title: 'Updated', key: 'updated_at'},
-                {title: 'Rank', key: 'rank'},
+                {title: 'Name', key: 'name', width: 250, cellProps: {size: 'small', _class: 'd-inline-block text-truncate'}},
+                {title: 'Short Name', key: 'shortname', width: 150},
+                {title: 'Module', key: 'module', width: 150},
+                {title: 'Has File', key: 'has_module_file', width: 100},
+                {title: 'Language', key: 'lang', width: 150},
+                {title: 'Copyright', key: 'copy', width: 250},
+                {title: 'Year', key: 'year', width: 150},
+                {title: 'Installed', key: 'installed', width: 100},
+                {title: 'Enabled', key: 'enabled', width: 100},
+                {title: 'Official', key: 'official', width: 100},
+                {title: 'Research **', key: 'research', width: 100},
+                {title: 'Updated', key: 'updated_at', width: 150},
+                {title: 'Rank', key: 'rank', width: 100},
 
-                {title: 'Actions', key: 'actions', sortable: false},
+                {title: 'Actions', key: 'actions', sortable: false, width: 200},
             ];
         },
         hasRowSelections() {
@@ -345,13 +346,28 @@ export default {
             // this.gridRefresh();
             this.selectedAction = null;
         },
-        formatDate(datetime, format) {
-            console.log(arguments);
+        // truncateTooltip(text, maxLen) {
+        //     var len = text.length;
+
+        //     if(len <= maxLen) {
+        //         return text;
+        //     }
+
+        //     var short = text.substring(0, maxLen);
+
+        //     return short + 
+        //         `<v-tooltip activator='parent' location='bottom'>` + text + `</v-tooltip>`;
+        // },
+        formatDateTime(datetime, format) {
             var pts = datetime.split(' ');
-            var date = new Date(datetime);
+            var dpts = pts[0].split('-');
+            var tpts = pts[1].split(':');
 
-            return date.toDateString() + ' ' + pts[1];
+            var months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
+            var str = dpts[2] + ' ' + months[dpts[1] - 1] + ' ' + dpts[0] + ' ' + tpts[0] + ':' + tpts[1];
+
+            return str;
 
             // return Vuetify.useDate(date, format);
         }
