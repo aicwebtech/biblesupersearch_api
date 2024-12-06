@@ -2,7 +2,6 @@
 const template = `
         <span>
             {{truncatedText}}
-            {{needsToTruncate}}
             <v-tooltip 
                 activator='parent' 
                 location='bottom' 

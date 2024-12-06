@@ -57,6 +57,8 @@ const template = `<v-sheet>
                 density='compact'
                 color='#333333'
                 show-select
+                :cell-props='gridCellProps'
+                :header-props='gridCellProps'
                 item-value="id"
                 v-model='rowSelections'
             >
@@ -73,7 +75,11 @@ const template = `<v-sheet>
                 </template>
    
                 <template v-slot:item.name={item}>
-                    <TruncateTooltip :text='item.name'></TruncateTooltip>
+                    <TruncateTooltip :text='item.name' :maxLen='30'></TruncateTooltip>
+                </template>                   
+
+                <template v-slot:item.shortname={item}>
+                    <TruncateTooltip :text='item.shortname' :maxLen='10'></TruncateTooltip>
                 </template>                           
 
                 <template v-slot:item.installed={item}>
@@ -171,6 +177,7 @@ export default {
     template: template, 
     data() {
         return { 
+            gridCellProps: {class: 'pa-0'},
             chipSize: 'small',
             chipDensity: 'default',
             editing: false,
@@ -279,14 +286,14 @@ export default {
                 {title: 'Language', key: 'lang', width: 150},
                 {title: 'Copyright', key: 'copy', width: 250},
                 {title: 'Year', key: 'year', width: 150},
-                {title: 'Installed', key: 'installed', width: 100},
-                {title: 'Enabled', key: 'enabled', width: 100},
-                {title: 'Official', key: 'official', width: 100},
-                {title: 'Research **', key: 'research', width: 100},
+                {title: 'Installed', key: 'installed', width: 50},
+                {title: 'Enabled', key: 'enabled', width: 50},
+                {title: 'Official', key: 'official', width: 50},
+                {title: 'Research **', key: 'research', width: 50},
                 {title: 'Updated', key: 'updated_at', width: 150},
                 {title: 'Rank', key: 'rank', width: 100},
 
-                {title: 'Actions', key: 'actions', sortable: false, width: 200},
+                {title: 'Actions', key: 'actions', sortable: false, width: 100},
             ];
         },
         hasRowSelections() {
