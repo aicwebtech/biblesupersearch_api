@@ -1137,7 +1137,7 @@ class Engine
         foreach($results as $b => $vs) {
             foreach($vs as $v) {
                 $idx  = str_pad($v->book, 2, '0', STR_PAD_LEFT);
-                $idx .= '_' . str_pad($v->chapter, 2, '0', STR_PAD_LEFT);
+                $idx .= '_' . str_pad($v->chapter, 3, '0', STR_PAD_LEFT);
                 $idx .= '_' . str_pad($v->verse, 3, '0', STR_PAD_LEFT);
 
                 if(isset($formatted[$idx])) {
@@ -1157,14 +1157,14 @@ class Engine
         ksort($formatted);
         $formatted = array_values($formatted);
 
-        $st_idx = $page * $limit - $limit; // ($page - 1) * $limit
-        $en_idx = $st_idx + $limit - 1;
+        // $st_idx = $page * $limit - $limit; // ($page - 1) * $limit
+        // $en_idx = $st_idx + $limit - 1;
 
-        for($i = $st_idx; $i <= $en_idx; $i ++) {
-            if(isset($formatted[$i])) {
-                $formatted[$i]->showing = true;
-            }
-        }
+        // for($i = $st_idx; $i <= $en_idx; $i ++) {
+        //     if(isset($formatted[$i])) {
+        //         $formatted[$i]->showing = true;
+        //     }
+        // }
 
         return $formatted;
     }
