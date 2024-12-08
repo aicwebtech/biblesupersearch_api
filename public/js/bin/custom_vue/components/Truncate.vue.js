@@ -19,12 +19,23 @@ export default {
         maxLen: {
             type: Number,
             default: 30
+        },        
+        maxWords: {
+            type: Number,
+            default: 30
         },
     },
     template: template,
     computed: {
         truncatedText() {
-            return this.needsToTruncate ? this.text.substring(0, this.maxLen) : this.text;
+            if(!this.needsToTruncate) {
+                return this.text;
+            }
+
+            var text = this.text,
+                words = text.split(' ');
+
+            return this.text.substring(0, this.maxLen - 4) + ' ...';
         },
         needsToTruncate() {
             return this.text.length > this.maxLen;

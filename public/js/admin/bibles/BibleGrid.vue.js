@@ -11,6 +11,10 @@ const template = `<v-sheet>
 
             </h2>
 
+            <v-switch v-model='extraCols' label='Extra Columns'
+
+            ></v-switch>
+
             <v-sheet v-if='hasRowSelections' class='mt-3 mb-12'>
                 <span class='float-left'>
                     With Selections:
@@ -75,11 +79,18 @@ const template = `<v-sheet>
                 </template>
    
                 <template v-slot:item.name={item}>
-                    <TruncateTooltip :text='item.name' :maxLen='30'></TruncateTooltip>
+                    <TruncateTooltip 
+                        :text='item.name' 
+                        :maxLen='showExtraCols ? 30 : 50'>
+                    </TruncateTooltip>
                 </template>                   
 
                 <template v-slot:item.shortname={item}>
                     <TruncateTooltip :text='item.shortname' :maxLen='10'></TruncateTooltip>
+                </template>                          
+
+                <template v-slot:item.copy={item}>
+                    <TruncateTooltip :text='item.copy' :maxLen='20'></TruncateTooltip>
                 </template>                           
 
                 <template v-slot:item.installed={item}>
@@ -180,6 +191,7 @@ export default {
             gridCellProps: {class: 'pa-0'},
             chipSize: 'small',
             chipDensity: 'default',
+            extraCols: false,
             editing: false,
             editingId: null,
             selectedAction: null,
@@ -277,24 +289,49 @@ export default {
         }
     },
     computed: {
+        showExtraCols() {
+            return this.extraCols
+        },
         headers() {
-            return [
-                {title: 'Name', key: 'name', width: 250, cellProps: {size: 'small', _class: 'd-inline-block text-truncate'}},
-                {title: 'Short Name', key: 'shortname', width: 150},
-                {title: 'Module', key: 'module', width: 150},
-                {title: 'Has File', key: 'has_module_file', width: 100},
-                {title: 'Language', key: 'lang', width: 150},
-                {title: 'Copyright', key: 'copy', width: 250},
-                {title: 'Year', key: 'year', width: 150},
-                {title: 'Installed', key: 'installed', width: 50},
-                {title: 'Enabled', key: 'enabled', width: 50},
-                {title: 'Official', key: 'official', width: 50},
-                {title: 'Research **', key: 'research', width: 50},
-                {title: 'Updated', key: 'updated_at', width: 150},
-                {title: 'Rank', key: 'rank', width: 100},
+            if(this.showExtraCols) {
+                return [
+                    {title: 'Name', key: 'name', width: 250, cellProps: {size: 'small', _class: 'd-inline-block text-truncate'}},
+                    {title: 'Short Name', key: 'shortname', width: 150},
+                    {title: 'Module', key: 'module', width: 150},
+                    {title: 'Has File', key: 'has_module_file', width: 100},
+                    {title: 'Language', key: 'lang', width: 150},
+                    {title: 'Copyright', key: 'copy', width: 250},
+                    {title: 'Year', key: 'year', width: 150},
+                    {title: 'Installed', key: 'installed', width: 50},
+                    {title: 'Enabled', key: 'enabled', width: 50},
+                    {title: 'Official', key: 'official', width: 50},
+                    {title: 'Research **', key: 'research', width: 50},
+                    {title: 'Updated', key: 'updated_at', width: 150},
+                    {title: 'Rank', key: 'rank', width: 100},
 
-                {title: 'Actions', key: 'actions', sortable: false, width: 100},
-            ];
+                    {title: 'Actions', key: 'actions', sortable: false, width: 100},
+
+                ];                
+
+            } else {
+                return [
+                    {title: 'Name', key: 'name', width: 250, cellProps: {size: 'small', _class: 'd-inline-block text-truncate'}},
+                    {title: 'Short Name', key: 'shortname', width: 150},
+                    {title: 'Module', key: 'module', width: 150},
+                    // {title: 'Has File', key: 'has_module_file', width: 100},
+                    {title: 'Language', key: 'lang', width: 150},
+                    // {title: 'Copyright', key: 'copy', width: 250},
+                    {title: 'Year', key: 'year', width: 150},
+                    {title: 'Installed', key: 'installed', width: 50},
+                    {title: 'Enabled', key: 'enabled', width: 50},
+                    // {title: 'Official', key: 'official', width: 50},
+                    // {title: 'Research **', key: 'research', width: 50},
+                    // {title: 'Updated', key: 'updated_at', width: 150},
+                    {title: 'Rank', key: 'rank', width: 100},
+
+                    {title: 'Actions', key: 'actions', sortable: false, width: 100},
+                ];
+            }
         },
         hasRowSelections() {
             return this.rowSelections.length > 0;

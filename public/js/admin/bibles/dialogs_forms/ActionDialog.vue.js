@@ -16,9 +16,11 @@ const tpl = `
                                 {{q.name}}
                             </li>
                         </ul>
+
+                        <v-switch v-if='action == "install"' v-model='enable' label='Enable'></v-switch>
                     </v-sheet>
                     <v-sheet v-else-if='action=="test"'>
-
+                        <v-sheet v-for='t in testList'>{{t}}</v-sheet>
                     </v-sheet>
                     <v-sheet v-else>
                         {{actioningLabel}} {{queueItemCurrent.name}}
@@ -88,6 +90,8 @@ export default {
             queueProcessing: false,
             queueLoading: false,
             queueErrors: [],
+            testList: [],
+            enable: false,
         }
     },
     computed: {
@@ -179,17 +183,27 @@ export default {
 
             console.log('queueItemCurrent', this.queueItemCurrent.name);
 
+            var params = {};
+
+            if(this.action == 'install') {
+                params.enable = this.enable ? 1 : 0;
+            }
+
             axios.request({
                 url: '/admin/bibles/' + this.action + '/' + this.queueItemCurrent.id,
                 method: 'POST',
-                // params: grid.gridData.value
+                params: params
             })
             .then(function(response) {
                 this.queueLoading = false;
                 console.log(response);
 
                 if(response.data.success == false) {
-                    this.queueHandleError(response);
+                    this.queueHandleError(response.response || response);
+                }
+
+                if(this.action == 'test') {
+                    this.testList = this.testList.concat(response.data.messages);
                 }
 
                 this.queueItemsProcessed ++;
@@ -199,7 +213,7 @@ export default {
                 // :todo do something
                 this.queueLoading = false;
 
-                this.queueHandleError(response);
+                this.queueHandleError(response.response || response);
                 // this.closeDialogSave();
             }.bind(this));
         },
@@ -215,6 +229,8 @@ export default {
                 title: this.queueItemCurrent.name,
                 subtitle: response.data.errors.join('; ')
             });
+
+            this.queueProcessNext();
 
             // response.data.errors.forEach(function(item) {
             //     this.queueErrors.push(this.queueItemCurrent.name + ': ' + item);
