@@ -214,6 +214,10 @@ class Engine
                 'type'  => 'bool',
                 'default' => FALSE,
             ),
+            'results_list_cache_id' => array(
+                'type'  => 'string',
+                'default' => null
+            ),
             'data_format' => array(
                 'type'  => 'string',
                 //'default' => 'passage', // breaking!
@@ -284,7 +288,8 @@ class Engine
             'markup' => array(
                 'type'  => 'string',
                 'default' => 'none'
-            ),
+            ),            
+
         );
 
         $this->resetErrors();
@@ -295,6 +300,8 @@ class Engine
         $this->metadata = new \stdClass;
         $this->metadata->hash = $Cache->hash;
 
+        $paging = [];
+
         $test = [];
 
         if(!isset($test['search'])) {
@@ -302,6 +309,28 @@ class Engine
         }
 
         $input = $this->_sanitizeInput($input, $parsing);
+        
+        if($input['results_list_cache_id']) {
+            if($input['results_list_cache_id'] == $this->metadata->hash) {
+                $input['results_list'] = true;
+            } else {
+                $input['results_list'] = false;
+                $ListCache = $CacheManager->getCacheByHash($input['results_list_cache_id']);
+                $form_data = json_decode($ListCache->form_data, true);
+                $form_data['results_list'] = true;
+
+                $list_results = $this->actionQuery($form_data);
+                $list_meta    = $this->metadata;
+
+                // Reset some stuff (because of recursive actionQuery call)
+                $this->resetErrors();
+                $this->metadata = new \stdClass;
+                $this->metadata->hash = $Cache->hash;
+                $this->metadata->list = $list_meta->list;
+                // $paging = $list_meta->paging; // Maybe not a good idea?
+            }
+        }
+
         $this->setDefaultLanguage($input['language']);
         !empty($input['bible']) && $this->setBibles($input['bible']);
         $multi_bible_languages = $this->hasMultipleBibleLanguages();
@@ -315,6 +344,7 @@ class Engine
         $references = empty($input['reference']) ? NULL : $input['reference'];
         $keywords   = empty($input['search'])    ? NULL : $input['search'];
         $request    = empty($input['request'])   ? NULL : $input['request'];
+
         if($references && $keywords && $request) {
             $this->addError(trans('errors.triple_request'), 4);
             return FALSE;
@@ -336,8 +366,7 @@ class Engine
         $Search     = Search::parseSearch($keywords, $input);
         $is_search  = ($Search) ? TRUE : FALSE;
         $paginate   = ($is_search && !$input['page_all'] && (!$input['multi_bibles'] || $this->_canPaginate($input['data_format'])));
-        $paging     = [];
-
+        
         if(!$is_search && empty($references)) {
             $this->addError(trans('errors.no_query'), 4);
             return FALSE;
@@ -516,7 +545,7 @@ class Engine
 
         if($input['results_list']) {
             $this->metadata->list = $Search ? $this->_formatResultsList($results, $input['page_limit'], $input['page']) : [];
-        }
+        } 
 
         $results = $this->_formatDataStructure($results, $input, $Passages, $Search);
 
@@ -538,7 +567,8 @@ class Engine
      * API action query for getting a list of Bibles available to the user
      * @param array $input
      */
-    public function actionBibles($input) {
+    public function actionBibles($input) 
+    {
         $language_float = isset($input['language_float']) ? $input['language_float'] : null;
 
         $include_desc = FALSE;
