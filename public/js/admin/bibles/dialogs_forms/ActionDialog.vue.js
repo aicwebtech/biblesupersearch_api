@@ -7,7 +7,7 @@ const tpl = `
         <template v-slot:default="{ isActive }">
             <v-card>
                 <v-card-title>{{title}}</v-card-title>
-                <v-card-text>
+                <v-card-text class='vue_dialog_body'>
                     <v-sheet v-if = '!confirmed'>
                         {{confirmText}} <br /><br />
 
@@ -20,7 +20,8 @@ const tpl = `
                         <v-switch v-if='action == "install"' v-model='enable' label='Enable'></v-switch>
                     </v-sheet>
                     <v-sheet v-else-if='action=="test"'>
-                        <v-sheet v-for='t in testList'>{{t}}</v-sheet>
+                        <!-- :todo rebuild API to NOT send back HTML! -->
+                        <div v-for='t in testList' v-html='t' ></div>
                     </v-sheet>
                     <v-sheet v-else>
                         {{actioningLabel}} {{queueItemCurrent.name}}

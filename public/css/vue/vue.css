@@ -10,6 +10,11 @@ h2 {
     overflow-y: auto;
 }
 
+.vue_dialog_body {
+    max-height: 700px;
+    overflow-y: auto;
+}
+
 .accent_color {
     background-color: #ff0000;
 }

@@ -39,6 +39,9 @@ export default {
         },
         needsToTruncate() {
             return this.text.length > this.maxLen;
+        },
+        numberOfWords() {
+            return this.text.split().length;
         }
     }
 }
