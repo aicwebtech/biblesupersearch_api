@@ -4,10 +4,12 @@ namespace App;
 
 use App\Models\Cache;
 
-class CacheManager {
+class CacheManager 
+{
     protected $hash_size = 10;
 
-    public function createCache($form_data, $parsing = array()) {
+    public function createCache($form_data, $parsing = array()) 
+    {
         $processed = $this->processFormData($form_data, $parsing);
         // Attempt to find / reuse an existing cache - is this a good idea?
         $Cache = $this->_getCacheByProcessedFormData($processed);
@@ -25,20 +27,29 @@ class CacheManager {
     /**
      * Need a cron job to run this
      */
-    public function cleanUpCache() {
+    public function cleanUpCache() 
+    {
         $Caches = Cache::where('preserve', 0)->whereRaw('created_at + INTERVAL 1 MONTH < NOW()')->delete();
     }
 
-    public function getCacheByFormData($form_data) {
+    public function getCacheByHash($hash) 
+    {
+        return Cache::where('hash', $hash)->first();
+    }    
+
+    public function getCacheByFormData($form_data) 
+    {
         $processed = $this->processFormData($form_data);
         return $this->_getCacheByProcessedFormData($processed);
     }
 
-    protected function _getCacheByProcessedFormData($processed) {
+    protected function _getCacheByProcessedFormData($processed) 
+    {
         return Cache::where('form_data', $processed)->first();
     }
 
-    protected function _generateHash() {
+    protected function _generateHash() 
+    {
         $hash = $this->_generateHashHelper();
         $Cache = Cache::where('hash', $hash)->first();
 
@@ -50,7 +61,8 @@ class CacheManager {
         return $hash;
     }
 
-    private function _generateHashHelper() {
+    private function _generateHashHelper() 
+    {
         $hash = '';
 
         for($i = 1; $i <= $this->hash_size; $i ++) {
