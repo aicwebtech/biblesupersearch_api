@@ -2,9 +2,9 @@ enyo.depends(
     '/js/bin/ckeditor5/build/ckeditor.js',
     '/js/bin/custom/form',
     '/js/bin/custom/dialog',
-    '/js/admin/bibles/assets/style.css',
-    '/js/admin/bibles/assets/dialogs.css',
-    '/js/admin/bibles/source',
+    '/js/admin/bibles_old/assets/style.css',
+    '/js/admin/bibles_old/assets/dialogs.css',
+    '/js/admin/bibles_old/source',
     'view.js',
     'app.js'
 );

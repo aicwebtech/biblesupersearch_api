@@ -3,7 +3,7 @@
         '/js/bin/jqGrid-v4.6.0/js/jquery.jqGrid.js',
         '/js/bin/jqGrid-v4.6.0/js/i18n/grid.locale-en.js',
         '/js/bin/enyo/2.5.1.1/enyo.js',
-        '/js/admin/bibles/editor/package.js'
+        '/js/admin/bibles_old/editor/package.js'
     ];
 
     $stylesheets = [

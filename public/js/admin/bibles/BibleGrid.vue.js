@@ -1,4 +1,4 @@
-// import BibleForm from './dialogs_forms/BibleEditForm.vue.js';
+import EditForm from './dialogs_forms/BibleEditForm.vue.js';
 import EditDialog from '/js/bin/custom_vue/dialogs/EditDialog.vue.js';
 import TruncateTooltip from '/js/bin/custom_vue/components/Truncate.vue.js';
 import ActionDialog from './dialogs_forms/ActionDialog.vue.js';
@@ -144,23 +144,20 @@ const template = `<v-sheet>
 
             ></ActionDialog>
 
+            <EditDialog
+                :recordId='editingId'
+                loadRecord
+                recordType='Bible'
+                @onClose='closeEdit'
+                @afterLeave='closeEdit'
+                @onSave='gridRefresh'
+                url='/admin/bibles'
+                v-slot='{data}'
+            >
+                <EditForm :record='data'></EditForm>
+            </EditDialog>   
+
         </v-sheet>`;
-
-/*
-        <EditDialog
-            :recordId='editingId'
-            loadRecord
-            recordType='Language'
-            @onClose='closeEdit'
-            @afterLeave='closeEdit'
-            @onSave='gridRefresh'
-            url='/admin/bibles/languages'
-            v-slot='{data}'
-        >
-            <LanguageForm :record='data'></LanguageForm>
-        </EditDialog>   
-
-*/
 
 export default {
     inject: ['bootstrap'],
@@ -182,8 +179,8 @@ export default {
     components: {
         EditDialog,
         ActionDialog,
-        TruncateTooltip
-        // LanguageForm
+        TruncateTooltip,
+        EditForm
     },
     template: template, 
     data() {
