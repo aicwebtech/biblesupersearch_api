@@ -48,6 +48,10 @@ export default {
             type: String,
             default: 'Item',
         },
+        recordIndex: {
+            type: String,
+            default: 'Item',
+        },
         loadRecord: {
             type: Boolean,
             default: false
@@ -86,7 +90,7 @@ export default {
                         headers: {'X-Requested-With': 'XMLHttpRequest'},
                         params: []
                     }).then(function(response) {
-                        t.recordInternal = response.data.Language;
+                        t.recordInternal = response.data[t.recordIndex];
                         t.loading = false;
                         t.showing = true;
                     }).catch(function(error) {

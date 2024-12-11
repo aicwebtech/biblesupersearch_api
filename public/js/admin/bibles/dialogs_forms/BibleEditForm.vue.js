@@ -2,88 +2,73 @@ const template = `
     <div 
         max-width='600' 
     >
-        <v-container>
-            <v-row no-gutters>
-                <v-col>Full Display Name</v-col>
-                <v-col cols='4'>
-                    <v-text-field 
-                        label='Name' 
-                        v-model='record.name'
-                        density='compact'
-                        hide-details='auto'
-                    ></v-text-field>
-                </v-col>
-                <v-col>
-                    * Unique
-                </v-col>
-            </v-row>            
-            <v-row no-gutters>
-                <v-col>Short Display Name</v-col>
-                <v-col cols='4'>
-                    <v-text-field 
-                        label='Name' 
-                        v-model='record.shortname'
-                        density='compact'
-                        hide-details='auto'
-                    ></v-text-field>
-                </v-col>
-                <v-col>
-                    * Unique
-                </v-col>
-            </v-row>
-        </v-container>
-
-        <v-row>
-
-
-        </v-row>
-
         <v-text-field 
             label='Name' 
-            v-model='record.native_name'
-            density='compact'
-            hide-details='auto'
-        ></v-text-field>
-
-        <v-text-field 
-            label='Default Name' 
-            v-model='record.iso_endonym'
-            readonly
-            density='compact'
-            hide-details='auto'
-        ></v-text-field>
-
-        <v-text-field 
-            label='English Name' 
             v-model='record.name'
             density='compact'
             hide-details='auto'
-        ></v-text-field>                    
+        ></v-text-field>
 
         <v-text-field 
-            label='Default English Name' 
-            v-model='record.iso_name'
+            label='Short Name' 
+            v-model='record.shortname'
             readonly
             density='compact'
             hide-details='auto'
         ></v-text-field>
 
+        <v-text-field 
+            label='Module' 
+            v-model='record.module'
+            density='compact'
+            hide-details='auto'
+        ></v-text-field>      
+
+        <v-switch
+            v-model='record.enabled'
+            label='Enabled'
+            hide-details='auto'
+            hint='Whether the Bible is enabled for use'
+            :false-value="0"
+            :true-value="1"
+        ></v-switch>              
+        
+        <v-switch
+            v-model='record.research'
+            hide-details='auto'
+            label='Research'
+            :false-value="0"
+            :true-value="1"
+        ></v-switch>    
+
+        <v-text-field 
+            label='Rank' 
+            v-model='record.rank'
+            density='compact'
+            hide-details='auto'
+            hint='Customizable sort order.'
+        ></v-text-field>             
+
+        <v-autocomplete
+            :items='bootstrap.languages'
+            label='Language'
+            v-model='record.lang_short'
+            :item-props='languageItemProps'
+            clearable
+        ></v-autocomplete>
+
         <v-textarea 
-            label='Common Words - One word per line' 
-            v-model='record.common_words'
+            label='Description' 
+            v-model='record.description'
             density='compact'
             hide-details='auto'
         ></v-textarea>
-
-        <div>
-            Add words to this list to prevent them from being used as search keywords.
-            One word per line.
-        </div>
     </div>
 `;
 
 export default {
     template: template,
+    inject: ['bootstrap'],
 
     props: {
         record: {
@@ -91,4 +76,12 @@ export default {
             default: {}
         }
     },
+    methods: {
+        languageItemProps(item) {
+            return {
+                title: item.code.toUpperCase() + ' ' + item.name,
+                value: item.code
+            }
+        }
+    }
 }

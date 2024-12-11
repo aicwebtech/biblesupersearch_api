@@ -148,6 +148,7 @@ const template = `<v-sheet>
                 :recordId='editingId'
                 loadRecord
                 recordType='Bible'
+                recordIndex='Bible'
                 @onClose='closeEdit'
                 @afterLeave='closeEdit'
                 @onSave='gridRefresh'
@@ -155,6 +156,7 @@ const template = `<v-sheet>
                 v-slot='{data}'
             >
                 <EditForm :record='data'></EditForm>
+                
             </EditDialog>   
 
         </v-sheet>`;

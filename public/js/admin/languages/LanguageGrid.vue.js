@@ -124,6 +124,7 @@ const template = `<v-sheet>
             :recordId='editingId'
             loadRecord
             recordType='Language'
+            recordIndex='Language'
             @onClose='closeEdit'
             @afterLeave='closeEdit'
             @onSave='gridRefresh'
@@ -133,6 +134,16 @@ const template = `<v-sheet>
             <LanguageForm :record='data'></LanguageForm>
         </EditDialog>        
 
+        <BooksDialog
+            :language = 'blLanguage'
+            :languageName = 'selectedLanguage.name'
+            @onClose='closeBookList'
+            @afterLeave='closeBookList'
+        ></BooksDialog>
+
+        </v-sheet>`;
+
+        /*
         <EditDialog
             :recordId='editingIdPre'
             :record='editingRecord'
@@ -145,15 +156,7 @@ const template = `<v-sheet>
         >
             <LanguageForm :record='data'></LanguageForm>
         </EditDialog>
-
-        <BooksDialog
-            :language = 'blLanguage'
-            :languageName = 'selectedLanguage.name'
-            @onClose='closeBookList'
-            @afterLeave='closeBookList'
-        ></BooksDialog>
-
-        </v-sheet>`;
+        */
 
 export default {
     setup(props) {
