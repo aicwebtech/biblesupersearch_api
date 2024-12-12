@@ -1,3 +1,8 @@
+// import { Ckeditor } from '@ckeditor/ckeditor5-vue';
+import '/js/bin/ckeditor5/build/ckeditor.js';
+// import '/js/bin/ckeditor5/ckeditor5.css';
+// import { ClassicEditor } from 'ckeditor5';
+
 const template = `
     <div 
         max-width='600' 
@@ -22,6 +27,7 @@ const template = `
             v-model='record.module'
             density='compact'
             hide-details='auto'
+            :disabled='record.id > 0'
         ></v-text-field>      
 
         <v-switch
@@ -55,7 +61,59 @@ const template = `
             v-model='record.lang_short'
             :item-props='languageItemProps'
             clearable
+            density='compact'
+            hide-details='auto'
+        ></v-autocomplete>        
+
+        <v-autocomplete
+            :items='bootstrap.languages'
+            label='Language Code'
+            v-model='record.lang_short'
+            :item-props='languageCodeProps'
+            clearable
+            density='compact'
+            hide-details='auto'
         ></v-autocomplete>
+
+        <v-divider class='mt-2 mb-2 border-opacity-50'></v-divider>
+
+        <v-autocomplete
+            :items='bootstrap.copyrights'
+            label='Copyright'
+            v-model='record.copyright_id'
+            item-title='name'
+            item-value='id'
+            clearable
+            density='compact'
+            hide-details='auto'
+            @click:clear='eventTest("cl:clear", $event)'
+            @update:focused='eventTest("u:focused", $event)'
+            @update:menu='eventTest("u:menu", $event)'
+            @update:modelValue='copyRightChanged'
+        ></v-autocomplete>
+
+        <v-text-field 
+            label='Copyright Owner' 
+            v-model='record.owner'
+            density='compact'
+            hide-details='auto'
+        ></v-text-field>          
+
+        <v-text-field 
+            label='Publisher' 
+            v-model='record.publisher'
+            density='compact'
+            hide-details='auto'
+        ></v-text-field>          
+
+        <v-text-field 
+            label='Publication Year' 
+            v-model='record.year'
+            density='compact'
+            hide-details='auto'
+        ></v-text-field>    
+
+        <v-divider class='mt-2 mb-2 border-opacity-50'></v-divider>
 
         <v-textarea 
             label='Description' 
@@ -70,10 +128,30 @@ export default {
     template: template,
     inject: ['bootstrap'],
 
+    components: {
+        // Ckeditor
+    },
+
     props: {
         record: {
             type: Object,
             default: {}
+        }
+    },
+    data() {
+        return {
+            prevCopyrightId: null,
+        }
+    },
+    watch: {
+        'record.copyright_id'(is, was) {
+            this.prevCopyrightId = was || is;
+
+            console.log('copyright_id', is, was);
+
+            // if(!window.confirm('Please verify this is the correct copyright for this Bible')) {
+            //     this.record.copyright_id = was;
+            // }
         }
     },
     methods: {
@@ -82,6 +160,36 @@ export default {
                 title: item.code.toUpperCase() + ' ' + item.name,
                 value: item.code
             }
+        },        
+        languageCodeProps(item) {
+            return {
+                title: item.code.toUpperCase(),
+                value: item.code
+            }
+        },
+        copyRightChanged(event) {
+            console.log('new', event);
+            console.log('prev', this.prevCopyrightId);
+            var prev = this.prevCopyrightId;
+            var cr = bootstrap.copyrights.find((item) => item.id == event);
+
+            var msg = 'Please verify this is the correct copyright for this Bible\n\n';
+
+            msg += cr.name;
+
+            msg += '\n\nWarning: Selecting the wrong copyright may put you at risk of civil or criminal penalties!';
+
+            if(!window.confirm(msg)) {
+                this.record.copyright_id = prev;
+                this.prevCopyrightId = prev;
+            }
+        },
+
+        eventTest(type, event) {
+            // console.log(type, event);
+
+            // if(type == 'u:modelValue') {
+            // }
         }
     }
 }

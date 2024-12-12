@@ -67,7 +67,7 @@ class BibleController extends Controller
         $bootstrap->copyrights = [];
         $bootstrap->importers  = $ImportManagerClass::getImportersList();
 
-        foreacH(\App\Models\Copyright::all() as $Copyright) {
+        foreacH(\App\Models\Copyright::orderBy('name')->get() as $Copyright) {
             $data = $Copyright->getAttributes();
             $data['copyright_statement_processed'] = $Copyright->getProcessedCopyrightStatement();
             $bootstrap->copyrights[] = $data;
@@ -255,7 +255,7 @@ class BibleController extends Controller
 
         $bootstrap->bibleId = $bibleId;
         
-        foreacH(\App\Models\Copyright::all() as $Copyright) {
+        foreach(\App\Models\Copyright::all() as $Copyright) {
             $data = $Copyright->getAttributes();
             $data['copyright_statement_processed'] = $Copyright->getProcessedCopyrightStatement();
             $bootstrap->copyrights[] = $data;
