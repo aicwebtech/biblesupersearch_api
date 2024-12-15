@@ -2,6 +2,8 @@
 import '/js/bin/ckeditor5/build/ckeditor.js';
 // import '/js/bin/ckeditor5/ckeditor5.css';
 // import { ClassicEditor } from 'ckeditor5';
+import Ckeditor from '/js/bin/custom_vue/components/Ckeditor.vue.js';
+import '/js/bin/ckeditor5/build/ckeditor.js';
 
 const template = `
     <div 
@@ -115,12 +117,16 @@ const template = `
 
         <v-divider class='mt-2 mb-2 border-opacity-50'></v-divider>
 
-        <v-textarea 
+        <v-textarea id='description'
             label='Description' 
             v-model='record.description'
             density='compact'
             hide-details='auto'
         ></v-textarea>
+
+        <Ckeditor
+            v-model='record.description'
+        ></Ckeditor>
     </div>
 `;
 
@@ -129,7 +135,7 @@ export default {
     inject: ['bootstrap'],
 
     components: {
-        // Ckeditor
+        Ckeditor
     },
 
     props: {
