@@ -578,7 +578,7 @@ class Passage {
 
     public function highlightContext($results, $highlight_tag = null) 
     {
-        if(!$this->is_contextual) {
+        if(!$this->is_contextual || !str_contains($this->chapter_verse, ':')) {
             return $results;
         }
 

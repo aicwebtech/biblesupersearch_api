@@ -1187,14 +1187,14 @@ class Engine
         ksort($formatted);
         $formatted = array_values($formatted);
 
-        // $st_idx = $page * $limit - $limit; // ($page - 1) * $limit
-        // $en_idx = $st_idx + $limit - 1;
+        $st_idx = $page * $limit - $limit; // ($page - 1) * $limit
+        $en_idx = $st_idx + $limit - 1;
 
-        // for($i = $st_idx; $i <= $en_idx; $i ++) {
-        //     if(isset($formatted[$i])) {
-        //         $formatted[$i]->showing = true;
-        //     }
-        // }
+        for($i = $st_idx; $i <= $en_idx; $i ++) {
+            if(isset($formatted[$i])) {
+                $formatted[$i]->showing = true;
+            }
+        }
 
         return $formatted;
     }
