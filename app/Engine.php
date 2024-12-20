@@ -34,7 +34,8 @@ class Engine
     public $debug = FALSE;
     public $allow_disabled_bibles = FALSE;
 
-    public function __construct() {
+    public function __construct() 
+    {
         // Set the default Bible
         $default_bible = config('bss.defaults.bible');
         $this->addBible($default_bible);
@@ -42,7 +43,8 @@ class Engine
         $this->metadata = new \stdClass();
     }
 
-    public function setBibles($modules) {
+    public function setBibles($modules) 
+    {
         $this->Bibles = array();
         $this->languages = array();
         $this->primary_language = NULL;
@@ -70,7 +72,8 @@ class Engine
         }
     }
 
-    protected function _parseInputArray($input) {
+    protected function _parseInputArray($input) 
+    {
         if(is_string($input)) {
             $decoded = json_decode($input);
             $input = (json_last_error() == JSON_ERROR_NONE) ? $decoded : $input;
@@ -80,7 +83,8 @@ class Engine
         return $input;
     }
 
-    public function setPrimaryBible($module) {
+    public function setPrimaryBible($module) 
+    {
         if(!$module) {
             return FALSE;
         }
@@ -93,7 +97,8 @@ class Engine
         return TRUE;
     }
 
-    public function setDefaultLanguage($lang) {
+    public function setDefaultLanguage($lang) 
+    {
         if($this->languageHasBookSupport($lang)) {
             $this->default_language = $lang;
             $this->languages[] = $lang;
@@ -165,11 +170,13 @@ class Engine
         return $metadata;
     }
 
-    protected function setMetadata($data) {
+    protected function setMetadata($data) 
+    {
         $this->metadata = (object) $data;
     }
 
-    public function resetErrors() {
+    public function resetErrors() 
+    {
         $this->traitResetErrors();
         $this->metadata = new \stdClass;
     }
@@ -182,7 +189,8 @@ class Engine
      * @param array $input request data
      * @return array $results search / look up results.
      */
-    public function actionQuery($input) {
+    public function actionQuery($input) 
+    {
 
         // To do - add labels
         $parsing = array(
@@ -472,13 +480,15 @@ class Engine
                 if(!empty($BibleResults) && !$BibleResults->isEmpty()) {
                     $results[$Bible->module] = $BibleResults->all();
                     $has_search_results = TRUE;
+                    
+                    $parallel_limit = config('bss.parallel_search_maximum_results');
 
                     if($paginate && !$input['multi_bibles'] && !$input['results_list']) {
                         $paging = $this->_getCleanPagingData($BibleResults);
                     }
 
-                    if($parallel && $BibleResults->count() == config('bss.parallel_search_maximum_results')) {
-                        $this->addError( trans('errors.result_limit_reached', ['maximum' => config('bss.parallel_search_maximum_results')]), 3);
+                    if($parallel && $BibleResults->count() == $parallel_limit) {
+                        $this->addError( trans('errors.result_limit_reached', ['maximum' => $parallel_limit]), 3);
                     }
                     else if($BibleResults->count() == config('bss.global_maximum_results')) {
                         $this->addError( trans('errors.result_limit_reached', ['maximum' => config('bss.global_maximum_results')]), 3);
@@ -550,7 +560,10 @@ class Engine
         $results = $this->_formatDataStructure($results, $input, $Passages, $Search);
 
         if(($input['multi_bibles'] || $input['results_list']) && $paginate) {
-            $results = array_slice($results, 0, config('bss.parallel_search_maximum_results'));
+            if($input['multi_bibles']) {
+                $results = array_slice($results, 0, config('bss.parallel_search_maximum_results'));
+            }
+
             $Paginator = $this->_buildPaginator($results, $input['page_limit'], $input['page']);
             $results = $Paginator->all();
             $paging = $this->_getCleanPagingData($Paginator);
@@ -888,7 +901,8 @@ class Engine
     /**
      * returns data that the API needs to run
      */
-    public function actionStatics($input) {
+    public function actionStatics($input) 
+    {
         $domain = isset($input['domain']) ? $input['domain'] : null;
         $Access = \App\ApiAccessManager::lookUpByInput($input);
 
@@ -1007,11 +1021,13 @@ class Engine
         return $results;
     }
 
-    private function _getNameHash() {
+    private function _getNameHash() 
+    {
         return hash('sha256', config('app.name_static'));
     }
 
-    public function actionStaticsChanged($input) {
+    public function actionStaticsChanged($input) 
+    {
         $response = new \stdClass;
         $response->success = TRUE;
         $response->dates = new \stdClass;
@@ -1026,7 +1042,8 @@ class Engine
         return $response;
     }
 
-    public function actionShortcuts($input) {
+    public function actionShortcuts($input) 
+    {
         // Todo - multi language support
         $language = (!empty($input['language'])) ? $input['language'] : config('bss.defaults.language_short');
         $namespaced_class = 'App\Models\Shortcuts\\' . ucfirst($language);
@@ -1043,7 +1060,8 @@ class Engine
         return $Shortcuts;
     }
 
-    public function actionVersion($input) {
+    public function actionVersion($input) 
+    {
         $response = new \stdClass;
         $response->name         = config('app.name');
         $response->hash         = $this->_getNameHash();
@@ -1065,7 +1083,8 @@ class Engine
         return $response;
     }
 
-    public function actionStrongs($input) {
+    public function actionStrongs($input) 
+    {
         $response = [];
         
         if(!array_key_exists('strongs', $input) || empty($input['strongs'])) {
@@ -1095,14 +1114,16 @@ class Engine
         return $response;
     }
 
-    protected function _formatStrongs($attr) {
+    protected function _formatStrongs($attr) 
+    {
         $attr['tvm'] = preg_replace('/<b>Count:<\/b> [0-9]+.*?<br>/', '', $attr['tvm']); // Remove 'count' from TVM
         unset($attr['created_at']);
         unset($attr['updated_at']);
         return $attr;
     }
 
-    public function actionReadcache($input) {
+    public function actionReadcache($input) 
+    {
         if(!array_key_exists('hash', $input)) {
             $this->addError('hash is required', 4);
             return;
@@ -1120,7 +1141,8 @@ class Engine
         }
     }
 
-    protected function _formatDataStructure($results, $input, $Passages, $Search) {
+    protected function _formatDataStructure($results, $input, $Passages, $Search) 
+    {
         $format_type = (!empty($input['data_format'])) ? $input['data_format'] : $this->default_data_format;
         $parallel_unmatched_verses = TRUE;
 
