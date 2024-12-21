@@ -808,8 +808,13 @@ class Passage {
         return $verse_claimed;
     }
 
-    public function verseInPassage($verse) {
+    public function verseInPassage($verse) 
+    {
         $b = $verse->book;
+
+        if(!$this->Book) {
+            return false;
+        }
 
         // Check book
         if($this->is_book_range) {
