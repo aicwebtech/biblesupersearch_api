@@ -11,8 +11,10 @@ use App\Engine;
 class ApiController extends Controller 
 {
 
-    public function genericAction(Request $Request, $action = 'query') {
+    public function genericAction(Request $Request, $action = 'query') 
+    {
         $allowed_actions = ['query', 'bibles', 'books', 'statics', 'statics_changed', 'version', 'readcache', 'strongs'];
+        
         if(env('APP_ENV', 'production') != 'testing') {
             header("Access-Control-Allow-Origin: *");
         }
@@ -75,7 +77,8 @@ class ApiController extends Controller
             // -> header('Access-Control-Allow-Origin', '*');
     }
 
-    private function _prettyPrintErrors($input, $response) {
+    private function _prettyPrintErrors($input, $response) 
+    {
         return view('errors.pretty_print', [
             'input'    => $input,
             'response' => $response,

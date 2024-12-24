@@ -515,41 +515,8 @@ class SqlSearch {
         return $terms;
     }
 
-    protected function _termFormatForHighlight($term, $exact_case = FALSE, $whole_words = FALSE, $language = null) 
+    protected function _termFormatForHighlight($term, $exact_case = FALSE, $whole_words = FALSE) 
     {
-        if($language == 'lv') {
-            $term = str_replace('ā', 'a', $term);
-            $term = str_replace('a', '[āa]', $term);
-
-            $term = str_replace('č', 'c', $term);
-            $term = str_replace('c', '[čc]', $term);
-
-            $term = str_replace('ē', 'e', $term);
-            $term = str_replace('e', '[ēe]', $term);                        
-
-            $term = str_replace('ī', 'i', $term);
-            $term = str_replace('i', '[īi]', $term);                        
-
-            $term = str_replace('ķ', 'k', $term);
-            $term = str_replace('k', '[ķk]', $term);      
-
-            $term = str_replace('ļ', 'l', $term);
-            $term = str_replace('l', '[ļl]', $term);     
-
-            $term = str_replace('ņ', 'n', $term);
-            $term = str_replace('n', '[ņn]', $term);    
-
-            $term = str_replace('š', 's', $term);
-            $term = str_replace('s', '[šs]', $term);    
-
-            $term = str_replace('ū', 'u', $term);
-            $term = str_replace('u', '[ūu]', $term);
-
-            $term = str_replace('ž', 'z', $term);
-            $term = str_replace('z', '[žz]', $term); 
-        }
-
-
         $preformat = $this->_termFormat($term, FALSE, $whole_words);
         //$preformat = ($whole_words) ? $preformat : trim($preformat, '%');
         $preformat = trim($preformat, '%./');
@@ -567,7 +534,109 @@ class SqlSearch {
         return $term_format;
     }
 
-    protected function _assembleTermSql($field, $bind_index, $operator, $exact_case) {
+    protected function _termFormatForHighlightLanguage($term, $exact = FALSE, $whole = FALSE, $lang = null, $default = null)
+    {
+        // return $default;
+
+        $changes_made = false;
+
+        $term_orig = $term;
+        $accents = [];
+
+        $latin_alphabet = [
+            'bs', 'br', 'ca', 'kw', 'co', 'hr', 'da', 'nl', 'en', 'fo', 'fr', 'gl', 'de', 'ga', 'is', 'it', 'la', 
+            'lb', 'li', 'lt', 'gv', 'nb', 'nn', 'no', 'oc', 'pl', 'pt', 'rm', 'ro', 'gd', 'cy', 'sk', 'sl', 
+            'es', 'sv', 'wa', 'cy', 'fy', 'ak', 'bm', 'ny', 'ee', 'ff', 'hz', 'ig', 'ki', 'rw', 'kg', 'kj', 'lg', 
+            'ln', 'lu', 'nd', 'ng', 'nr', 'rn', 'sn', 'st', 'sw', 'ss', 'tn', 'ts', 'tw', 've', 'wo', 'xh', 'yo', 
+            'zu', 'kr', 'tr', 'et', 'fi', 'hu', 'se', 'cs', 'lv'
+        ];
+
+        if(in_array($lang, $latin_alphabet)) {
+            $accents['a'] = ['ä', 'ă', 'ā', 'ã', 'å', 'ą'];
+            $accents['c'] = ['ç', 'č', 'ć', 'ĉ', 'ċ'];
+            $accents['d'] = ['ď', 'đ'];
+            $accents['e'] = ['é','è', 'ê', 'ë', 'ē', 'ĕ', 'ė', 'ę', 'ě'];
+            $accents['g'] = ['ĝ', 'ğ', 'ġ', 'ģ'];
+            $accents['h'] = ['ĥ', 'ħ'];
+            $accents['i'] = ['ï', 'ĩ', 'ī', 'ĭ', 'į', 'ı'];
+            $accents['j'] = ['ĵ'];
+            $accents['k'] = ['ķ', 'ĸ'];
+            $accents['l'] = ['ĺ', 'ļ', 'ľ', 'ŀ', 'ł'];
+            $accents['n'] = ['ñ', 'ń', 'ņ', 'ň', 'ŉ'];
+            $accents['o'] = ['ŏ', 'ō', 'ő'];
+            $accents['r'] = ['ŕ', 'ŗ', 'ř'];
+            $accents['s'] = ['ş', 'ś', 'ŝ', 'ş', 'š'];
+            $accents['t'] = ['ţ', 'ť', 'ŧ'];
+            $accents['u'] = ['ŭ', 'ũ', 'ū', 'ŭ', 'ů', 'ű', 'ų'];
+            $accents['w'] = ['ŵ'];
+            $accents['y'] = ['ŷ'];
+            $accents['z'] = ['ž', 'ź', 'ż', 'ž'];
+
+            foreach($accents as $key => $l) {
+                $l = $a = array_unique($l);
+
+                $a[] = $key;
+
+                if($lang == 'lv') {
+                    // echo $term . PHP_EOL;
+                }
+
+
+
+                $term = str_replace($a, $key, $term);
+                $term = str_replace($key, '[' . implode('', $a) . ']', $term);
+
+                if($lang == 'lv') {
+                    // echo $term . PHP_EOL .PHP_EOL;
+                    // die();
+                }
+
+            }
+
+            $changes_made = $term != $term_orig;
+        }
+
+        if($lang == 'lv') {
+            // $term = str_replace('ā', 'a', $term);
+            // $term = str_replace('a', '[āa]', $term);
+
+            // $term = str_replace('č', 'c', $term);
+            // $term = str_replace('c', '[čc]', $term);
+
+            // $term = str_replace('ē', 'e', $term);
+            // $term = str_replace('e', '[ēe]', $term);                        
+
+            // $term = str_replace('ī', 'i', $term);
+            // $term = str_replace('i', '[īi]', $term);                        
+
+            // $term = str_replace('ķ', 'k', $term);
+            // $term = str_replace('k', '[ķk]', $term);      
+
+            // $term = str_replace('ļ', 'l', $term);
+            // $term = str_replace('l', '[ļl]', $term);     
+
+            // $term = str_replace('ņ', 'n', $term);
+            // $term = str_replace('n', '[ņn]', $term);    
+
+            // $term = str_replace('š', 's', $term);
+            // $term = str_replace('s', '[šs]', $term);    
+
+            // $term = str_replace('ū', 'u', $term);
+            // $term = str_replace('u', '[ūu]', $term);
+
+            // $term = str_replace('ž', 'z', $term);
+            // $term = str_replace('z', '[žz]', $term); 
+        }
+
+        if(!$changes_made) {
+            return $default;
+        }
+
+        return $this->_termFormatForHighlight($term, $exact, $whole);
+    }
+
+    protected function _assembleTermSql($field, $bind_index, $operator, $exact_case) 
+    {
         //$binding = ($this->use_named_bindings) ? $bind_index : '?';
 
         $binding = $bind_index;
@@ -575,7 +644,8 @@ class SqlSearch {
         return $binary . $field . ' ' . $operator . ' ' . $binding;
     }
 
-    protected function _isRegexpSearch($term = NULL) {
+    protected function _isRegexpSearch($term = NULL) 
+    {
         if($term && static::isTermRegexp($term)) {
             return TRUE;
         }
@@ -1033,11 +1103,10 @@ class SqlSearch {
                 }
 
                 foreach($terms_fmt as $key => $term_fmt) {
-                    $term = $terms[$key];
+                    $term_orig = $terms[$key];
 
-                    if($Bible->lang_short == 'lv') {
-                        $term_fmt = $this->_termFormatForHighlight($term, $exact_case, $whole_word, 'lv');  
-                    }
+                    // Apply language-specific term formatting, if any
+                    $term_fmt = $this->_termFormatForHighlightLanguage($term_orig, $exact_case, $whole_word, $Bible->lang_short, $term_fmt);  
 
                     $verse->text = preg_replace_callback($term_fmt, function($matches) use ($pre, $post) {
                         return $pre . $matches[0] . $post;
