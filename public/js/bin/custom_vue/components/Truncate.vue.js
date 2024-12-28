@@ -38,10 +38,10 @@ export default {
             return this.text.substring(0, this.maxLen - 4) + ' ...';
         },
         needsToTruncate() {
-            return this.text.length > this.maxLen;
+            return this.text ? this.text.length > this.maxLen : false;
         },
         numberOfWords() {
-            return this.text.split().length;
+            return this.text ? this.text.split().length : 0;
         }
     }
 }

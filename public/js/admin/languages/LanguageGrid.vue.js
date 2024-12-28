@@ -4,7 +4,7 @@ import EditDialog from '/js/bin/custom_vue/dialogs/EditDialog.vue.js';
 import { gridTemplateProps, useGrid } from '/js/bin/custom_vue/composables/Grid.vue.js';
 
 const template = `<v-sheet>
-            <h2>Languages</h2>
+            <h2 class='app'>Languages</h2>
             
             <v-switch
                 label='Include Languages Without Bibles'
@@ -12,6 +12,7 @@ const template = `<v-sheet>
                 @update:modelValue='gridReset'
                 true-value='1'
                 false-value='0'
+                color='primary'
             </v-switch>
 
             <v-data-table-server
@@ -93,7 +94,7 @@ const template = `<v-sheet>
                             >
                             </v-text-field>
                         </td>                        
-                  </tr>
+                    </tr>
                 </template>
 
                 <template v-slot:item.book_list={item}>

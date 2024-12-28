@@ -1,6 +1,6 @@
 /*Common CSS for all Vue.js*/
 
-h2 {
+h2.app {
     color: rgb(var(--v-theme-secondary));
     border-bottom: 5px solid rgb(var(--v-theme-secondary));;
 }

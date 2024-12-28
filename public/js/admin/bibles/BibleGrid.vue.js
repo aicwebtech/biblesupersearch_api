@@ -5,14 +5,16 @@ import ActionDialog from './dialogs_forms/ActionDialog.vue.js';
 import { gridTemplateProps, useGrid } from '/js/bin/custom_vue/composables/Grid.vue.js';
 
 const template = `<v-sheet>
-            <h2>
+            <h2 class='app'>
 
             Bibles
 
             </h2>
 
-            <v-switch v-model='extraCols' label='Extra Columns'
-
+            <v-switch 
+                v-model='extraCols' 
+                label='Extra Columns'
+                color='primary'
             ></v-switch>
 
             <v-sheet v-if='hasRowSelections' class='mt-3 mb-12'>
@@ -78,6 +80,25 @@ const template = `<v-sheet>
                     -->
                 </template>
    
+                <template v-slot:thead>
+                    <tr>
+                        <td>Search: </td>
+                        <td v-for='col in headers'>
+                            <component 
+                                :is="col.searchComponent || 'v-text-field'" 
+                                v-if='col.searchable != false'
+                                v-model="gridData[col.key]" 
+                                class="ma-2" 
+                                density="compact" 
+                                :placeholder="'Search ' + col.title + ' ...'" 
+                                hide-details
+                                v-bind='col.searchProps || null'
+                            >
+                            </component>
+                        </td>                     
+                    </tr>
+                </template>
+
                 <template v-slot:item.name={item}>
                     <TruncateTooltip 
                         :text='item.name' 
@@ -146,6 +167,7 @@ const template = `<v-sheet>
 
             <EditDialog
                 :recordId='editingId'
+                max-width='600'
                 loadRecord
                 recordType='Bible'
                 recordIndex='Bible'
@@ -167,13 +189,13 @@ export default {
         let data = {
             url: '/admin/bibles/grid',
             gridData: {
-                sidx: 'name',
+                sidx: 'rank',
                 sord: 'ASC',
                 rows_per_page: 10,
             },
 
             // Grid searchable fields (will be added to gridData as strings if don't exist)
-            // searchFields: ['code', 'name', 'native_name', 'family', 'bibles_min', 'bibles_max'],
+            searchFields: ['name', 'short_name', 'module'],
         };
 
         return useGrid(data, props);
@@ -298,18 +320,21 @@ export default {
                     {title: 'Short Name', key: 'shortname', width: 150},
                     {title: 'Module', key: 'module', width: 150},
                     {title: 'Has File', key: 'has_module_file', width: 100},
-                    {title: 'Language', key: 'lang', width: 150},
-                    {title: 'Copyright', key: 'copy', width: 250},
+                    {title: 'Language', key: 'lang', width: 150, searchComponent: 'v-autocomplete'},
+                    {title: 'Copyright', key: 'copy', width: 250, searchComponent: 'v-autocomplete', searchProps: {
+                        'items': bootstrap.copyrights,
+                        'item-title': 'name',
+                        'item-value': 'id'
+                    } },
                     {title: 'Year', key: 'year', width: 150},
                     {title: 'Installed', key: 'installed', width: 50},
                     {title: 'Enabled', key: 'enabled', width: 50},
                     {title: 'Official', key: 'official', width: 50},
                     {title: 'Research **', key: 'research', width: 50},
-                    {title: 'Updated', key: 'updated_at', width: 150},
-                    {title: 'Rank', key: 'rank', width: 100},
+                    {title: 'Updated', key: 'updated_at', width: 150, searchable: false},
+                    {title: 'Rank', key: 'rank', width: 100, searchable: false},
 
-                    {title: 'Actions', key: 'actions', sortable: false, width: 100},
-
+                    {title: 'Actions', key: 'actions', sortable: false, width: 100, searchable: false},
                 ];                
 
             } else {
@@ -319,16 +344,20 @@ export default {
                     {title: 'Module', key: 'module', width: 150},
                     // {title: 'Has File', key: 'has_module_file', width: 100},
                     {title: 'Language', key: 'lang', width: 150},
-                    // {title: 'Copyright', key: 'copy', width: 250},
-                    {title: 'Year', key: 'year', width: 150},
+                    {title: 'Copyright', key: 'copy', width: 250, searchComponent: 'v-autocomplete', searchProps: {
+                        ':items': 'bootstrap.copyrights',
+                        'item-title': 'name',
+                        'item-value': 'id',
+                        density: 'default'
+                    } },                    {title: 'Year', key: 'year', width: 150},
                     {title: 'Installed', key: 'installed', width: 50},
                     {title: 'Enabled', key: 'enabled', width: 50},
                     // {title: 'Official', key: 'official', width: 50},
                     // {title: 'Research **', key: 'research', width: 50},
                     // {title: 'Updated', key: 'updated_at', width: 150},
-                    {title: 'Rank', key: 'rank', width: 100},
+                    {title: 'Rank', key: 'rank', width: 100, searchable: false},
 
-                    {title: 'Actions', key: 'actions', sortable: false, width: 100},
+                    {title: 'Actions', key: 'actions', sortable: false, width: 100, searchable: false},
                 ];
             }
         },

@@ -1,13 +1,8 @@
-// import { Ckeditor } from '@ckeditor/ckeditor5-vue';
-import '/js/bin/ckeditor5/build/ckeditor.js';
-// import '/js/bin/ckeditor5/ckeditor5.css';
-// import { ClassicEditor } from 'ckeditor5';
-import Ckeditor from '/js/bin/custom_vue/components/Ckeditor.vue.js';
 import '/js/bin/ckeditor5/build/ckeditor.js';
 
 const template = `
     <div 
-        max-width='600' 
+        max-width='1000' 
     >
         <v-text-field 
             label='Name' 
@@ -19,7 +14,6 @@ const template = `
         <v-text-field 
             label='Short Name' 
             v-model='record.shortname'
-            readonly
             density='compact'
             hide-details='auto'
         ></v-text-field>
@@ -39,6 +33,7 @@ const template = `
             hint='Whether the Bible is enabled for use'
             :false-value="0"
             :true-value="1"
+            color='primary'
         ></v-switch>              
         
         <v-switch
@@ -47,6 +42,7 @@ const template = `
             label='Research'
             :false-value="0"
             :true-value="1"
+            color='primary'
         ></v-switch>    
 
         <v-text-field 
@@ -117,25 +113,81 @@ const template = `
 
         <v-divider class='mt-2 mb-2 border-opacity-50'></v-divider>
 
-        <v-textarea id='description'
+        <label>Copyright Statement / Short Description</label>&nbsp; &nbsp;
+        <small>Will be displayed with Bible on search results page.</small>
+
+        <textarea
+            ref='copyright_statement'
+            label='copyright_statement' 
+            v-model='record.copyright_statement'
+            density='compact'
+            hide-details='auto'
+        ></textarea>
+
+        <label v-if='showDefaultCopyright'>Default Copyright Statement</label>&nbsp; &nbsp;
+        <small v-if='showDefaultCopyright'>Will be displayed if copyright statement is left blank.</small>
+
+        <div 
+            class='default-copyright-statement'
+            v-html='defaultCopyrightStatement'
+            v-if='showDefaultCopyright'
+        ></div>
+
+        <v-divider class='mt-2 mb-2 border-opacity-50'></v-divider>
+
+        <label>Description</label>
+
+        <textarea id='description'
+            ref='description'
             label='Description' 
             v-model='record.description'
             density='compact'
             hide-details='auto'
-        ></v-textarea>
+        ></textarea>
 
-        <Ckeditor
-            v-model='record.description'
-        ></Ckeditor>
     </div>
 `;
+
+var ckeditorSettings = {
+    height: 300,
+    width: 600,
+    link: {
+        decorators: {
+            openInNewTab: {
+                mode: 'manual',
+                label: 'Open in a new tab',
+                attributes: {
+                    target: '_blank',
+                    rel: 'noopener noreferrer'
+                }
+            }
+        }
+    },
+    toolbar: {
+        items: [
+            'findAndReplace', 'selectAll', '|',
+            'heading', '|',
+            'bold', 'italic', 'strikethrough', 'underline', 'subscript', 'superscript', 'removeFormat', '|',
+            'bulletedList', 'numberedList', '|',
+            'outdent', 'indent', '|',
+            'undo', 'redo',
+            '-',
+            'fontSize', 'fontFamily', 'fontColor', 'fontBackgroundColor', 'highlight', '|',
+            'alignment', '|',
+            //'link', 'insertImage', 'blockQuote', 'insertTable', '|',
+            'specialCharacters', 'horizontalLine', 'pageBreak', '|',
+            'sourceEditing'
+        ],
+        shouldNotGroupWhenFull: true
+    },
+};
 
 export default {
     template: template,
     inject: ['bootstrap'],
 
     components: {
-        Ckeditor
+        // Ckeditor
     },
 
     props: {
@@ -147,6 +199,8 @@ export default {
     data() {
         return {
             prevCopyrightId: null,
+            // descriptionEditor: undefined, // Must NOT be reactive
+            // copyrightEditor: undefined // Must NOT be reactive
         }
     },
     watch: {
@@ -158,7 +212,63 @@ export default {
             // if(!window.confirm('Please verify this is the correct copyright for this Bible')) {
             //     this.record.copyright_id = was;
             // }
+        },
+        'record.description'(is, was) {
+            // this.descriptionEditor && this.descriptionEditor.setData(is);
+        },
+        'record.id'(is, was) {
+            console.log('record id', is, was);
+            this.descriptionEditor && this.descriptionEditor.setData(this.record.description || '');
+            this.copyrightEditor && this.copyrightEditor.setData(this.record.copyright_statement || '');
         }
+    },
+    mounted() {
+        // init ckeditors
+        var t = this,
+            dr = this.$refs.description,
+            cr = this.$refs.copyright_statement;
+
+        console.log('ckeditor ref dr', dr);
+
+        // return;
+
+        ClassicEditor
+            .create( dr, ckeditorSettings )
+            .then( newEditor => {
+                t.descriptionEditor = newEditor;
+                // t.descriptionEditor.setData(t.record.description);
+
+                t.descriptionEditor.model.document.on('change:data', function() {
+                    t.record.description = t.descriptionEditor.getData();
+                });
+            } )
+            .catch( error => {
+                console.error( error );
+            } );            
+
+        ClassicEditor
+            .create( cr, ckeditorSettings )
+            .then( newEditor => {
+                t.copyrightEditor = newEditor;
+                // t.copyrightEditor.setData(t.record.description);
+
+                t.copyrightEditor.model.document.on('change:data', function() {
+                    t.record.copyright_statement = t.copyrightEditor.getData();
+                });
+            } )
+            .catch( error => {
+                console.error( error );
+            } );
+    },
+    computed: {
+        showDefaultCopyright() {
+            var cs = this.record.copyright_statement;
+            return !cs || cs == ''; 
+        },
+        defaultCopyrightStatement() {
+            var cr = bootstrap.copyrights.find(element => element.id == this.record.copyright_id);
+            return cr ? cr.copyright_statement_processed : '';
+        },
     },
     methods: {
         languageItemProps(item) {

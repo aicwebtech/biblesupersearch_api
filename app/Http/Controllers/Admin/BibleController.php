@@ -110,6 +110,45 @@ class BibleController extends Controller
             ]);
             
             $postfilters = $data['_post_filters'];
+        } else {
+            $searchable = [
+                'name' => [
+                    'field' => 'bibles.name',
+                    'type'  => 'str_inside',
+                ],
+                'shortname' => [
+                    'field' => 'bibles.shortname',
+                    'type'  => 'str_start',
+                ],
+                'module' => [
+                    'field' => 'bibles.module',
+                    'type'  => 'str_inside',
+                ],                        
+                'year' => [
+                    'field' => 'bibles.year',
+                    'type'  => 'str_inside',
+                ],            
+            ];
+
+            foreach($searchable as $key => $f) {            
+                if(isset($data[$key]) && $data[$key]) {
+                    
+                    switch($f['type']) {
+                        case 'int_min':
+                            $Query->having($f['field'], '>=', (int)$data[$key]);
+                            break;        
+                        case 'int_max':
+                            $Query->having($f['field'], '<=', (int)$data[$key]);
+                            break;                
+                        case 'str_inside':
+                            $Query->where($f['field'], 'LIKE', '%' . $data[$key] . '%');
+                            break;
+                        case 'str_start':
+                        default:
+                            $Query->where($f['field'], 'LIKE', $data[$key] . '%');
+                    }
+                }
+            }
         }
 
         $has_post_filter = empty($postfilters) ? FALSE : TRUE;
