@@ -1,7 +1,9 @@
 import EditForm from './dialogs_forms/BibleEditForm.vue.js';
 import EditDialog from '/js/bin/custom_vue/dialogs/EditDialog.vue.js';
 import TruncateTooltip from '/js/bin/custom_vue/components/Truncate.vue.js';
+import YesNoSel from '/js/bin/custom_vue/components/YesNoSelector.vue.js';
 import ActionDialog from './dialogs_forms/ActionDialog.vue.js';
+import ImportDialog from './dialogs_forms/ImportDialog.vue.js';
 import { gridTemplateProps, useGrid } from '/js/bin/custom_vue/composables/Grid.vue.js';
 
 const template = `<v-sheet>
@@ -16,6 +18,8 @@ const template = `<v-sheet>
                 label='Extra Columns'
                 color='primary'
             ></v-switch>
+
+            {{gridData}}
 
             <v-sheet v-if='hasRowSelections' class='mt-3 mb-12'>
                 <span class='float-left'>
@@ -44,7 +48,7 @@ const template = `<v-sheet>
                 <span class='clear-both'></span>
             </v-sheet>
             <v-sheet v-else class='mt-3 mb-12'>
-                <v-btn size='small' prepend-icon='mdi-book' class='float-right'>
+                <v-btn size='small' prepend-icon='mdi-book' class='float-right' @click='openImport'>
                     Import Bible
                 </v-btn>
                 <span class='float-right'>&nbsp;</span>
@@ -82,16 +86,19 @@ const template = `<v-sheet>
    
                 <template v-slot:thead>
                     <tr>
-                        <td>Search: </td>
+                        <td>
+                            <v-chip text='Reset' @click='gridResetSearch'></v-chip>
+                        </td>
                         <td v-for='col in headers'>
                             <component 
                                 :is="col.searchComponent || 'v-text-field'" 
                                 v-if='col.searchable != false'
-                                v-model="gridData[col.key]" 
-                                class="ma-2" 
+                                v-model="gridData[col.searchField || col.key]" 
+                                class="ma-0 mr-1 pa-0" 
                                 density="compact" 
                                 :placeholder="'Search ' + col.title + ' ...'" 
                                 hide-details
+                                clearable
                                 v-bind='col.searchProps || null'
                             >
                             </component>
@@ -113,6 +120,12 @@ const template = `<v-sheet>
                 <template v-slot:item.copy={item}>
                     <TruncateTooltip :text='item.copy' :maxLen='20'></TruncateTooltip>
                 </template>                           
+
+                <template v-slot:item.has_module_file={item}>
+                    <v-chip :size='chipSize'
+                        :text="item.has_module_file == '1' ? 'Yes' : 'No'"
+                    ></v-chip>
+                </template>                        
 
                 <template v-slot:item.installed={item}>
                     <v-chip :size='chipSize'
@@ -163,7 +176,14 @@ const template = `<v-sheet>
                 @onClose='closeActions'
                 @onSave='gridRefresh'
 
-            ></ActionDialog>
+            ></ActionDialog>            
+
+            <ImportDialog 
+                :showing = 'importShowing'
+                @onClose='closeImport'
+                @onSave='gridRefresh'
+
+            ></ImportDialog>
 
             <EditDialog
                 :recordId='editingId'
@@ -192,10 +212,20 @@ export default {
                 sidx: 'rank',
                 sord: 'ASC',
                 rows_per_page: 10,
+                copyright_id: null,
+                installed: null,
+                enabled: null,
+                official: null,
+                research: null,
+                has_module_file: null,
+                lang: null
             },
 
             // Grid searchable fields (will be added to gridData as strings if don't exist)
-            searchFields: ['name', 'short_name', 'module'],
+            searchFields: [
+                'name', 'shortname', 'module', 'copyright_id', 'year', 'lang', 'installed', 'enabled', 'official', 
+                'research', 'has_module_file'
+            ],
         };
 
         return useGrid(data, props);
@@ -203,7 +233,9 @@ export default {
     components: {
         EditDialog,
         ActionDialog,
+        ImportDialog,
         TruncateTooltip,
+        YesNoSel,
         EditForm
     },
     template: template, 
@@ -217,6 +249,7 @@ export default {
             editingId: null,
             selectedAction: null,
             actionQueue: null,
+            importShowing: false,
             editingRecord: {},
             rowSelections: [],
             bulkActions: [
@@ -319,21 +352,24 @@ export default {
                     {title: 'Name', key: 'name', width: 250, cellProps: {size: 'small', _class: 'd-inline-block text-truncate'}},
                     {title: 'Short Name', key: 'shortname', width: 150},
                     {title: 'Module', key: 'module', width: 150},
-                    {title: 'Has File', key: 'has_module_file', width: 100},
-                    {title: 'Language', key: 'lang', width: 150, searchComponent: 'v-autocomplete'},
-                    {title: 'Copyright', key: 'copy', width: 250, searchComponent: 'v-autocomplete', searchProps: {
+                    {title: 'Language', key: 'lang', width: 150, searchComponent: 'v-autocomplete', searchProps: {
+                        'items': bootstrap.languages,
+                        'item-title': 'name',
+                        'item-value': 'code'
+                    }},
+                    {title: 'Copyright', key: 'copy', width: 250, searchComponent: 'v-autocomplete', searchField: 'copyright_id', searchProps: {
                         'items': bootstrap.copyrights,
                         'item-title': 'name',
                         'item-value': 'id'
                     } },
                     {title: 'Year', key: 'year', width: 150},
-                    {title: 'Installed', key: 'installed', width: 50},
-                    {title: 'Enabled', key: 'enabled', width: 50},
-                    {title: 'Official', key: 'official', width: 50},
-                    {title: 'Research **', key: 'research', width: 50},
+                    {title: 'Installed', key: 'installed', width: 50, searchComponent: 'YesNoSel'},
+                    {title: 'Enabled', key: 'enabled', width: 50, searchComponent: 'YesNoSel'},
+                    {title: 'Official', key: 'official', width: 50, searchComponent: 'YesNoSel'},
+                    {title: 'Research **', key: 'research', width: 50, searchComponent: 'YesNoSel'},
+                    {title: 'Has File', key: 'has_module_file', width: 100, searchComponent: 'YesNoSel'},
                     {title: 'Updated', key: 'updated_at', width: 150, searchable: false},
                     {title: 'Rank', key: 'rank', width: 100, searchable: false},
-
                     {title: 'Actions', key: 'actions', sortable: false, width: 100, searchable: false},
                 ];                
 
@@ -342,21 +378,15 @@ export default {
                     {title: 'Name', key: 'name', width: 250, cellProps: {size: 'small', _class: 'd-inline-block text-truncate'}},
                     {title: 'Short Name', key: 'shortname', width: 150},
                     {title: 'Module', key: 'module', width: 150},
-                    // {title: 'Has File', key: 'has_module_file', width: 100},
-                    {title: 'Language', key: 'lang', width: 150},
-                    {title: 'Copyright', key: 'copy', width: 250, searchComponent: 'v-autocomplete', searchProps: {
-                        ':items': 'bootstrap.copyrights',
+                    {title: 'Language', key: 'lang', width: 150, searchComponent: 'v-autocomplete', searchProps: {
+                        'items': bootstrap.languages,
                         'item-title': 'name',
-                        'item-value': 'id',
-                        density: 'default'
-                    } },                    {title: 'Year', key: 'year', width: 150},
-                    {title: 'Installed', key: 'installed', width: 50},
-                    {title: 'Enabled', key: 'enabled', width: 50},
-                    // {title: 'Official', key: 'official', width: 50},
-                    // {title: 'Research **', key: 'research', width: 50},
-                    // {title: 'Updated', key: 'updated_at', width: 150},
+                        'item-value': 'code'
+                    }},
+                    {title: 'Year', key: 'year', width: 150},
+                    {title: 'Installed', key: 'installed', width: 50, searchComponent: 'YesNoSel'},
+                    {title: 'Enabled', key: 'enabled', width: 50, searchComponent: 'YesNoSel'},
                     {title: 'Rank', key: 'rank', width: 100, searchable: false},
-
                     {title: 'Actions', key: 'actions', sortable: false, width: 100, searchable: false},
                 ];
             }
@@ -376,6 +406,12 @@ export default {
         closeEdit() {
             this.editingId = null;
             this.editingRecord = {};
+        },
+        openImport() {
+            this.importShowing = true;
+        },
+        closeImport() {
+            this.importShowing = false
         },
         clickBookList(item) {
             if(item.book_list == '0') {

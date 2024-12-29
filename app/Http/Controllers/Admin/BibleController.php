@@ -113,7 +113,7 @@ class BibleController extends Controller
         } else {
             $searchable = [
                 'name' => [
-                    'field' => 'bibles.name',
+                    // 'field' => 'bibles.name',
                     'type'  => 'str_inside',
                 ],
                 'shortname' => [
@@ -127,25 +127,59 @@ class BibleController extends Controller
                 'year' => [
                     'field' => 'bibles.year',
                     'type'  => 'str_inside',
+                ],                  
+                'lang' => [
+                    'field' => 'bibles.lang_short',
+                    'type'  => 'str_exact',
+                ],                    
+                'copyright_id' => [
+                    'field' => 'bibles.copyright_id',
+                    'type'  => 'int',
+                ],                   
+                'enabled' => [
+                    'field' => 'bibles.enabled',
+                    'type'  => 'int',
+                ],                
+                'installed' => [
+                    'field' => 'bibles.installed',
+                    'type'  => 'int',
+                ],                   
+                'official' => [
+                    'field' => 'bibles.official',
+                    'type'  => 'int',
+                ],                         
+                'research' => [
+                    'field' => 'bibles.research',
+                    'type'  => 'int',
+                ],                      
+                'has_module_file' => [
+                    'field' => 'bibles.official',
+                    'type'  => 'postfilter',
                 ],            
             ];
 
+            $postfilters = [];
+
             foreach($searchable as $key => $f) {            
-                if(isset($data[$key]) && $data[$key]) {
-                    
+                if(isset($data[$key]) && ($data[$key] || $data[$key] == 0)) {
+                    $field = $f['field'] ?? 'bibles.' . $key;
+
                     switch($f['type']) {
-                        case 'int_min':
-                            $Query->having($f['field'], '>=', (int)$data[$key]);
-                            break;        
-                        case 'int_max':
-                            $Query->having($f['field'], '<=', (int)$data[$key]);
-                            break;                
+                        case 'postfilter':
+                            $postfilters[$key] = $data[$key];
+                            break;           
                         case 'str_inside':
-                            $Query->where($f['field'], 'LIKE', '%' . $data[$key] . '%');
+                            $Query->where($field, 'LIKE', '%' . $data[$key] . '%');
+                            break;                        
+                        case 'int':
+                            $Query->where($field, (int)$data[$key]);
+                            break;                        
+                        case 'str_exact':
+                            $Query->where($field, $data[$key]);
                             break;
                         case 'str_start':
                         default:
-                            $Query->where($f['field'], 'LIKE', $data[$key] . '%');
+                            $Query->where($field, 'LIKE', $data[$key] . '%');
                     }
                 }
             }

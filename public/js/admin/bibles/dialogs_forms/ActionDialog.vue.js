@@ -166,6 +166,7 @@ export default {
             this.queueAbort = false;
             this.queueProcessing = true;
             this.queueErrors = [];
+            this.testList = [];
             this.queueProcessNext();
         },
         queueProcessNext() {
@@ -182,8 +183,6 @@ export default {
             this.queueItemCurrent = this.queue.shift();
             this.queueLoading = true;
 
-            console.log('queueItemCurrent', this.queueItemCurrent.name);
-
             var params = {};
 
             if(this.action == 'install') {
@@ -197,7 +196,6 @@ export default {
             })
             .then(function(response) {
                 this.queueLoading = false;
-                console.log(response);
 
                 if(response.data.success == false) {
                     this.queueHandleError(response.response || response);
@@ -224,18 +222,12 @@ export default {
             // this.closeDialogSave();
         },
         queueHandleError(response) {
-            console.log(response);
-
             this.queueErrors.push({
                 title: this.queueItemCurrent.name,
                 subtitle: response.data.errors.join('; ')
             });
 
             this.queueProcessNext();
-
-            // response.data.errors.forEach(function(item) {
-            //     this.queueErrors.push(this.queueItemCurrent.name + ': ' + item);
-            // }, this);
         },
         closeDialog() {
             this.showing = false;

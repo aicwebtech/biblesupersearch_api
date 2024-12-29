@@ -52,6 +52,10 @@ export function useGrid(data, props) {
         loading: Vue.ref(false),
         gridSearchDate: Vue.ref(null),
 
+        // Non-reactive properties
+        gridSearchDefaults: {},
+        gridPreventSearch: false,
+
         // Methods
         gridRefresh() {
             grid.loading.value = true;
@@ -97,9 +101,26 @@ export function useGrid(data, props) {
             grid.totalRows.value = 0;
             grid.gridRows.value = [];
         },
+        gridResetSearch() {
+            grid.gridClearSearch();
+            grid.gridReset();
+        },
         // Triggers grid to do search
         gridSearch() {
-            grid.gridSearchDate.value = String(Date.now());
+            console.log('search');
+            if(!grid.gridPreventSearch) {
+                grid.gridSearchDate.value = String(Date.now());
+            }
+        },
+        
+        gridClearSearch() {
+            grid.gridPreventSearch = true;
+
+            for(const i in grid.gridSearchDefaults) {
+                grid.gridData.value[i] = grid.gridSearchDefaults[i];
+            }
+            
+            grid.gridPreventSearch = false;
         }
     };
 
@@ -108,20 +129,22 @@ export function useGrid(data, props) {
         var watch = [];
 
         for(const i in data.searchFields) {
-            // console.log('grid Watch', data.searchFields[i]);
-
-            // :todo allow for objects with field / default value pair
+            var f = data.searchFields[i];
 
             // Auto init field in gridData
-            if(!grid.gridData.value[ data.searchFields[i] ]) {
-               grid.gridData.value[ data.searchFields[i] ] = ''; 
+            if(typeof grid.gridData.value[ data.searchFields[i] ] == 'undefined') {
+               grid.gridData.value[ data.searchFields[i] ]  = ''; 
             }
+
+            grid.gridSearchDefaults[f] = grid.gridData.value[f];
 
             Vue.watch(
                 () => grid.gridData.value[ data.searchFields[i] ], // Using a getter func to watch obj prop per docs
                 () => grid.gridSearch()
             );
         }
+
+        // grid.gridClearSearch();
     }
 
     return grid;
