@@ -12,7 +12,8 @@ use Illuminate\Support\Facades\Redirect;
 
 class AdminController extends Controller
 {
-    public function __construct() {
+    public function __construct() 
+    {
         parent::__construct();
         $this->middleware('auth:100')->except('uninstalled');
         $this->middleware(['install', 'migrate'])->except(['softwareUninstall', 'uninstalled']);
@@ -29,15 +30,18 @@ class AdminController extends Controller
         // return view('admin.main');
     }
 
-    public function todo() {
+    public function todo() 
+    {
         return view('admin.todo');
     }
 
-    public function help() {
+    public function help() 
+    {
         return view('admin.help');
     }    
 
-    public function debug() {
+    public function debug() 
+    {
         phpinfo();
     }
 
@@ -66,11 +70,13 @@ class AdminController extends Controller
         return view('admin.update', $vars);
     }
 
-    public function uninstallPage(Request $request) {
+    public function uninstallPage(Request $request) 
+    {
         return view('admin.uninstall');
     }
 
-    public function softwareUninstall(Request $request) {
+    public function softwareUninstall(Request $request) 
+    {
         $confirm = $request->input('confirm');
         $confirm_bool = ($confirm && $confirm != 'No' && $confirm != 'false');
 
@@ -86,7 +92,8 @@ class AdminController extends Controller
         }
     }
 
-    public function uninstalled(Request $request) {
+    public function uninstalled(Request $request) 
+    {
         return view('admin.uninstall_success');
     }
 
