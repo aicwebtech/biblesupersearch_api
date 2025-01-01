@@ -38,10 +38,12 @@ class DatabaseSeeder extends Seeder
         Model::reguard();
     }
 
-    static public function importSqlFile($file, $dir = NULL, $threshold = 100) {
+    static public function importSqlFile($file, $dir = NULL, $threshold = 100) 
+    {
         $default_dir = ($dir) ? FALSE : TRUE;
         $dir = ($dir) ? $dir : dirname(__FILE__) . '/../dumps';
-        $prefix = config('database.prefix');
+
+        $prefix = DB::getTablePrefix();
         $path = $dir . '/' . $file;
         $display_path = ($default_dir) ? '<app_dir>/database/dumps/' . $file : $path;
 
