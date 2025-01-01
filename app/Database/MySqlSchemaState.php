@@ -9,6 +9,28 @@ class MySqlSchemaState extends Base
 {
     public function dump(Connection $connection, $path)
     {
-        die('no dump for you');
+        parent::dump($connection, $path);
+
+        foreach(config('database.dump_tables') as $table) {
+            $this->appendTableData($path, $connection->getTablePrefix() . $table);
+        }
+    }
+
+    /**
+     * Append table data to the schema dump.
+     *
+     * @param  string  $path
+     * @param  string  $table
+     * @return void
+     */
+    protected function appendTableData(string $path, string $table)
+    {
+        $process = $this->executeDumpProcess($this->makeProcess(
+            $this->baseDumpCommand().' '.$table.' --no-create-info --skip-extended-insert --skip-routines --compact'
+        ), null, array_merge($this->baseVariables($this->connection->getConfig()), [
+            //
+        ]));
+
+        $this->files->append($path, $process->getOutput());
     }
 }

@@ -33,7 +33,8 @@ class InstallManager {
         return $enabled;
     }
 
-    static function install(Request $request) {
+    static function install(Request $request) 
+    {
         $start_time = time();
 
         // Ensures that this installer can run even when not on CLI
@@ -90,7 +91,8 @@ class InstallManager {
         return TRUE;
     }
 
-    static function checkSettings() {
+    static function checkSettings() 
+    {
         // Read in composer settings
         $composer_txt = file_get_contents(base_path() . '/composer.json');
         $composer     = json_decode($composer_txt);
@@ -326,7 +328,8 @@ class InstallManager {
         return array($checklist, $success);
     }
 
-    static function getServerUrl() {
+    static function getServerUrl() 
+    {
         if(array_key_exists('HTTP_HOST', $_SERVER)) {
             $current_domain = $_SERVER['HTTP_HOST'];
         }
@@ -342,7 +345,8 @@ class InstallManager {
         return $server;
     }
 
-    static function getImportableDir() {
+    static function getImportableDir() 
+    {
         return [
             'Models\Books',
             'Models\Verses',
@@ -352,7 +356,8 @@ class InstallManager {
         ];
     }
 
-    static function uninstall(Request $request) {
+    static function uninstall(Request $request) 
+    {
         if(!defined('STDIN')) {
             define('STDIN', fopen('php://stdin', 'r'));
         }

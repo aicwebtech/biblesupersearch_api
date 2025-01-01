@@ -45,7 +45,7 @@ class Database
         $default_dir = ($dir) ? FALSE : TRUE;
         $dir = ($dir) ? $dir : dirname(__FILE__) . '/../../database/dumps';
         $path = $dir . '/' . $file;
-        $prefix = config('database.prefix');
+        $prefix = DB::getTablePrefix();
         $display_path = ($default_dir) ? '<app_dir>/database/dumps/' . $file : $path;
 
         if(static::$use_queue && !static::$processing_queue) {

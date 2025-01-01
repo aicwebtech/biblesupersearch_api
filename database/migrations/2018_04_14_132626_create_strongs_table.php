@@ -26,7 +26,6 @@ class CreateStrongsTable extends Migration
 
         DB::table('strongs_definitions')->truncate();
 
-        // DatabaseImport::importSqlFile('strongs_definitions_en.sql');
         Model::migrateFromCsv();
     }
 

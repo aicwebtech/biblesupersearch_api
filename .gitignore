@@ -23,4 +23,7 @@ vendor.zip
 /bibles/rendered/*
 /app/Premium
 
+#temp
+/database/schema/* 
+
 .~lock*

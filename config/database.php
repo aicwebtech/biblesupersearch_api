@@ -27,6 +27,7 @@ return [
     */
 
     'default' => env('DB_CONNECTION', 'mysql'),
+    'template' => env('DB_CONNECTION_TEMPLATE', 'mysql_template'),
 
     'prefix'  => env('DB_PREFIX', ''),
 
@@ -57,6 +58,7 @@ return [
         'mysql' => [
             'driver'    => 'mysql',
             'host'      => env('DB_HOST', 'localhost'),
+            'port'      => env('DB_PORT', '3306'),
             'database'  => env('DB_DATABASE', 'forge'),
             'username'  => env('DB_USERNAME', 'forge'),
             'password'  => env('DB_PASSWORD', ''),
@@ -64,9 +66,25 @@ return [
             'collation' => 'utf8_unicode_ci',
             'prefix'    => env('DB_PREFIX', ''),
             'strict'    => false,
-            'options'   => array(
+            'options'   => [
                 //PDO::ATTR_EMULATE_PREPARES => TRUE,
-            )
+            ]
+        ],        
+
+        'mysql_template' => [
+            'driver'    => 'mysql',
+            'host'      => env('DB_HOST', 'localhost'),
+            'port'      => env('DB_PORT', '3306'),
+            'database'  => env('DB_DATABASE_TEMPLATE', 'bss_api_template'),
+            'username'  => env('DB_USERNAME', 'forge'),
+            'password'  => env('DB_PASSWORD', ''),
+            'charset'   => 'utf8',
+            'collation' => 'utf8_unicode_ci',
+            'prefix'    => 'bssapi_',
+            'strict'    => false,
+            'options'   => [
+                //PDO::ATTR_EMULATE_PREPARES => TRUE,
+            ]
         ],
 
         'pgsql' => [
@@ -104,6 +122,21 @@ return [
     */
 
     'migrations' => 'migrations',
+
+
+
+    // List of tables to include DATA in the schema dump
+    'dump_tables' => [
+        'copyrights',
+        'shortcuts_en',
+        //'strongs_definitions', // temp
+        'configs',
+        'config_values',
+        'bibles', // ??
+        'posts',
+        'api_access_levels',
+        'languages',
+    ],
 
     /*
     |--------------------------------------------------------------------------
