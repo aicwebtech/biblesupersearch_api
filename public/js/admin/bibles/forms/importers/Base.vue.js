@@ -15,9 +15,18 @@ export default {
             hasContent: false
         }
     },
+    props: {
+        settings: {
+            type: Object,
+            default: {},
+        },        
+    },
     methods: {
         reset() {
             console.log('Base.reset');
+        },
+        getSettings() {
+            return {bacon: true};
         }
     }
 };

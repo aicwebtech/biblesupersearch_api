@@ -19,7 +19,7 @@ const tpl = `
             <v-card>
                 <v-card-title>{{title}}</v-card-title>
                 <v-card-text class='vue_dialog_body'>
-                    {{importerComponent}}
+                    <div v-for='e in errors' color='error'>{{e}}</div>
 
                     <v-select
                         label='Importer'
@@ -37,14 +37,15 @@ const tpl = `
                     <v-file-input
                         v-model='file'
                         density='compact'
+                        :hide-details='false'
 
                         :hint="'Maximum upload size of ' + bootstrap.maxUploadSize.fmt + 'B'"
                     ></v-file-input>
 
-                    <component ref='ImportComponent' :is='importerComponent'></component>
+                    <component ref='ImportComponent' :is='importerComponent' :settings='settings'></component>
 
+                        
                     <v-sheet v-if = '!confirmed'>
-
 
                     </v-sheet>
                     <v-sheet v-if='confirmed && errors.length > 0' background-color='warn' class='mt-10'>
@@ -110,6 +111,7 @@ export default {
             // showing: false,
             importer: null,
             file: null,
+            settings: {},
             errors: [],
         }
     },
@@ -141,7 +143,48 @@ export default {
             this.closeDialog();
         },
         handleOk() {
-            this.confirmed = true;
+            // this.confirmed = true;
+
+            this.loading = true;
+            this.errors = [];
+            var t = this;
+
+            axios.request({
+                url: '/admin/bibles/importcheck',
+                method: 'POST',
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'Content-Type': 'multipart/form-data'
+                },
+                data: {
+                    ...{                        
+                        _token: laravelCsrfToken,
+                        file: this.file,
+                        importer: this.importer,
+                    },
+
+                    ...this.settings
+                    // ...this.$refs.ImporterComponent.getSettings()
+                }
+            }).then(function(response) {
+                t.loading = false;
+                t.$emit('onSave');
+                t.closeDialog();
+            }).catch(function(error) {
+                console.log('error', error);
+
+                if(error.response.data.errors) {
+                    t.errors = error.response.data.errors;
+                }
+
+                if(error.response.data.message) {
+                    t.errors.unshift(error.response.data.message);
+                } 
+
+                if(t.errors.length == 0) {
+                    t.errors.push('An unknown error has occurred');
+                }
+            });
         },
         closeDialog() {
             // this.showing = false;

@@ -305,6 +305,7 @@ abstract class SpreadsheetAbstract extends ImporterAbstract
 
         $found = array_fill_keys(array_keys($required), FALSE);
 
+        // Extract spreadsheet collumn settings and place them in the map
         foreach($set as $key => $value) {
             if(substr($key, 0, 3) == 'col') {
                 $value = ($value && $value != 'null') ? $value : NULL;

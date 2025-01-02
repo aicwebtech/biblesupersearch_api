@@ -166,8 +166,8 @@ class ImportManager {
     {
         ini_set('memory_limit', '256M');
 
-        if(!$this->setType($data['importer'])) {
-            return FALSE;
+        if(!isset($data['importer']) || !$this->setType($data['importer'])) {
+            return $this->addError('Importer is missing or invalid');
         }
 
         $Importer = new $this->import_class();
@@ -175,10 +175,10 @@ class ImportManager {
         $type_info = static::$type_map[$this->type];
         
         if(!$Importer->setSettings($data)) {
-            return $this->addErrors($Importer->getErrors(), $Importer->getErrorLevel());
+            $this->addErrors($Importer->getErrors(), $Importer->getErrorLevel());
         }
 
-        if($data['file']->isValid()) {
+        if(isset($data['file']) && $data['file']->isValid()) {
             $fileinfo = pathinfo( trim($data['file']->getClientOriginalName()) );
 
             if(is_array($type_info['ext']) && !empty($type_info['ext'])) {
@@ -193,10 +193,10 @@ class ImportManager {
 
                 if(!$matches_ext) {
                     if(count($type_info['ext']) > 1) {
-                        $msg .= 'Extension must be one of the following: .' . implode(', .', $type_info['ext']);
+                        $msg = 'Extension must be one of the following: .' . implode(', .', $type_info['ext']);
                     }
                     else {
-                        $msg .= 'This importer requires an extension of .' . $type_info['ext'][0];
+                        $msg = 'This importer requires an extension of .' . $type_info['ext'][0];
                     }
 
                     return $this->addError($msg, 4);
@@ -204,11 +204,11 @@ class ImportManager {
             }
 
             if(!$Importer->acceptUploadedFile($data['file'])) {
-                return $this->addErrors($Importer->getErrors(), $Importer->getErrorLevel());
+                $this->addErrors($Importer->getErrors(), $Importer->getErrorLevel());
             }
         }
         else {
-            return $this->addError('File missing or invalid.  Please note, the maximum upload filesize is ' . Helpers::maxUploadSize());
+            $this->addError('File missing or invalid.  Please note, the maximum upload filesize is ' . Helpers::maxUploadSize());
         }
 
         $this->sanitized_filename = $Importer->file;

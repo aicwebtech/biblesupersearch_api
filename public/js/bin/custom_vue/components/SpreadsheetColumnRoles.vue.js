@@ -1,20 +1,20 @@
 var tpl = `
     <v-sheet>
-        <v-input label='First Row of Data' v-model='firstRow'></v-input>
+        <v-text-field 
+            label='First Row of Data' 
+            v-model='formData.first_row_data'
+            density='compact'
+        ></v-text-field>
 
         <h4>Please select the role for each column</h4>
 
-        {{columnRoles}}
-
         <v-select
             v-for='n in showingColumns'
-            :label="'Column ' + intToLetter(n)"
+            :label="'Column ' + intToLetter(n, true)"
             :items='roles'
             density='compact'
-            v-model = 'columnRoles[n]'
+            v-model = 'formData["col_" + intToLetter(n)]'
         </v-select>
-
-
 
         <v-chip
             @click='showingColumns ++'
@@ -22,27 +22,6 @@ var tpl = `
         ></v-chip>
     </v-sheet>
 `;
-
-/*
-        <table>
-            <tr>
-                <td>Column</td>
-                <td>Role</td>
-            </tr>
-            <tr
-                v-for='n in showingColumns'
-
-            >
-                <td></td>
-                <td>
-                    <v-select
-                        :items='roles'
-                    ></v-select>
-                </td>
-            </tr>
-        </table>
-
-*/
 
 export default {
     template: tpl,
@@ -54,6 +33,10 @@ export default {
         initColumns: {
             type: Number,
             default: 4,
+        },        
+        formData: {
+            type: Object,
+            default: {},
         },
     },
     data() {
@@ -67,21 +50,19 @@ export default {
         reset() {
             this.showingColumns = this.initColumns;
         },
-        intToLetter(int) {
+        intToLetter(int, upperCase) {
             var charCode = int + 96,
             letter = String.fromCharCode(charCode);
-            return letter.toUpperCase();
+            return upperCase ? letter.toUpperCase() : letter;
         }
     },
     watch: {
         initColumns: {
             handler(is, was) {
+                console.log('init showing Columns');
                 this.showingColumns = is;
             },
             immediate: true
         }
     }
 };
-
-//var charCode = i + 96,
-// letter = String.fromCharCode(charCode);

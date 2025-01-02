@@ -2,12 +2,10 @@ import Base from './Base.vue.js';
 import Roles from '/js/bin/custom_vue/components/SpreadsheetColumnRoles.vue.js';
 
 var tpl = `
-    <h2>{{name}}</h2>
-    <h3>{{msg}}</h3>
-
     <Roles
         :roles='columnRoles'
-
+        :formData='settings'
+        :initColumns='6'
     ></Roles>
 `;
 
@@ -44,7 +42,6 @@ export default {
         reset() {
             // ...Base.reset();
             Base.reset();
-
             console.log('Spreadsheet.reset');
         }
     }
