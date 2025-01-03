@@ -37,7 +37,7 @@ const tpl = `
                     <v-file-input
                         v-model='file'
                         density='compact'
-                        :hide-details='false'
+                        persistent-hint
 
                         :hint="'Maximum upload size of ' + bootstrap.maxUploadSize.fmt + 'B'"
                     ></v-file-input>

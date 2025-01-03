@@ -1,7 +1,8 @@
 var tpl = `
     <v-sheet>
         <v-text-field 
-            label='First Row of Data' 
+            :label='firstRowLabel' 
+            :hint='firstRowHint'
             v-model='formData.first_row_data'
             density='compact'
         ></v-text-field>
@@ -14,6 +15,7 @@ var tpl = `
             :items='roles'
             density='compact'
             v-model = 'formData["col_" + intToLetter(n)]'
+            hide-details='auto'
         </v-select>
 
         <v-chip
@@ -37,13 +39,19 @@ export default {
         formData: {
             type: Object,
             default: {},
+        },        
+        firstRowLabel: {
+            type: String,
+            default: 'First Row of Data',
+        },        
+        firstRowHint: {
+            type: String,
+            default: 'Typically, Row 1 contains column headers and Row 2 is the first row of data.',
         },
     },
     data() {
         return {
-            showingColumns: 0,
-            firstRow: 2,
-            columnRoles: {}
+            showingColumns: 0
         }
     },
     methods: {
@@ -61,6 +69,7 @@ export default {
             handler(is, was) {
                 console.log('init showing Columns');
                 this.showingColumns = is;
+                this.formData.firstRow = 2;
             },
             immediate: true
         }

@@ -1,9 +1,6 @@
 import Base from './Base.vue.js';
 
-var tpl = `
-    <h2>{{name}}</h2>
-    <h3>{{msg}}</h3>
-`;
+var tpl = ``;
 
 export default {
     template: tpl,
