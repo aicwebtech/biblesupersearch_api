@@ -72,6 +72,10 @@ class ImportManager {
             'name'  => 'USFM',
             'desc'  => [
                 'Imports a Bible in the <a href=\'https://paratext.org/usfm/\' target=\'_NEW\'>Unified Standard Format Markers (USFM)</a> ', 
+                'Bible Format. <br /><br />',
+            ],            
+            'desc_old'  => [
+                'Imports a Bible in the <a href=\'https://paratext.org/usfm/\' target=\'_NEW\'>Unified Standard Format Markers (USFM)</a> ', 
                 'Bible Format. <br /><br />Bibles in this format can be downloaded from ebible.com,',
                 ' however, please make sure to select the USFM format option.<br /><br />',
                 'Note: we only support the following markup features, everything else will be ignored:<ol>',

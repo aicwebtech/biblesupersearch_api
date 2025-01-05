@@ -8,9 +8,7 @@ import { gridTemplateProps, useGrid } from '/js/bin/custom_vue/composables/Grid.
 
 const template = `<v-sheet>
             <h2 class='app'>
-
-            Bibles
-
+                Bibles
             </h2>
 
             <v-switch 
@@ -18,8 +16,6 @@ const template = `<v-sheet>
                 label='Extra Columns'
                 color='primary'
             ></v-switch>
-
-            {{gridData}}
 
             <v-sheet v-if='hasRowSelections' class='mt-3 mb-12'>
                 <span class='float-left'>

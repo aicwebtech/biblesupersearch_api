@@ -43,6 +43,11 @@ h2.app {
     color: rgb(var(--v-theme-on-primary));
 }
 
+.normal_list {
+    margin-left: 20px;
+}
+
 /*.v-data-table__thead {
     background-color: green;
 }
+
