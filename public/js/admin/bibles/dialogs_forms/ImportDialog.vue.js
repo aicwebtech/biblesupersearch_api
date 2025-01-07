@@ -109,6 +109,10 @@ export default {
         showing: {
             type: Boolean,
             default: false,
+        },         
+        replace: {
+            type: Number,
+            default: null,
         },        
     },
     data() {
@@ -136,6 +140,9 @@ export default {
         },
         importerComponent() {
             return this.selectedImporter ? this.selectedImporter.kind : null;
+        },
+        replacing() {
+            return this.replace > 0;
         }
     },
     watch: {
@@ -227,6 +234,7 @@ export default {
                         _token: laravelCsrfToken,
                         file: this.file,
                         importer: this.importer,
+                        bible_id: this.replace || null
                     },
 
                     ...this.settings
@@ -237,7 +245,7 @@ export default {
                 t.bibleRecord = response.data.bible;
                 t.fileSanitized = response.data.file;
                 
-                alert(
+                t.$refs.ConfirmDialog.alert(
                     'This file is ready to import.  Please fill out the rest of' +
                     'the information for this Bible, then click \'Import File.\''
                 );
@@ -285,11 +293,15 @@ export default {
                 },
                 data: postData
             }).then(function(response) {
-                alert('Bible has imported successfully!');
-
                 t.loading = false;
-                t.$emit('onSave');
-                t.closeDialog();
+                t.$emit('onSave'); // Cause grid to refresh immediately
+                var msg = 'Bible has imported successfully!  \n Would you like to test it?';
+
+                t.$refs.ConfirmDialog.confirmSingle(msg, function(confirmed) {                    
+                    console.log('confirmed', confirmed);
+                    t.closeDialog();
+                    confirmed && t.$emit('onTest', response.data.bible);
+                });
             }).catch(function(error) {
                 t.loading = false;
                 console.log('error', error);

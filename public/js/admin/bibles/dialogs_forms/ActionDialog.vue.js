@@ -116,6 +116,13 @@ export default {
         actioningLabel() {
             return this.selectedAction ? this.selectedAction.actioning : null;
         },
+        autoConfirm() {
+            if(this.selectedAction) {
+                return this.selectedAction.autoConfirm || false;
+            } 
+
+            return false;
+        },
         confirmText() {
             if(!this.selectedAction) {
                 return null;
@@ -146,6 +153,10 @@ export default {
             }
 
             this.showing = true;
+
+            if(this.autoConfirm) {
+                this.handleOk();
+            }
         }
     },
     methods: {

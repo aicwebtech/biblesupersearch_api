@@ -17,6 +17,7 @@ const template = `
                     <v-spacer></v-spacer>
 
                     <v-btn
+                        v-if='mode != "alert"'
                         :text='cancelOption'
                         @click='handleCancel()'
                     ></v-btn>                    
@@ -32,12 +33,7 @@ const template = `
 `;
 
 export default {
-    props: {
-        // message: {
-        //     type: String,
-        //     required: false,
-        //     default: null
-        // },         
+    props: {     
         title: {
             type: String,
             required: false,
@@ -57,8 +53,9 @@ export default {
         return { 
             showing: false,
             message: null,
+            callback: null,
             okCallback: null,
-            cancelCallback: null
+            cancelCallback: null,
         }
     },
     watch: {
@@ -70,15 +67,32 @@ export default {
 
     },
     methods: {
+        /* Public Methods */
+
+        alert(message) {
+            this.resetData();
+            this.modeInit('alert', message);
+        },
         confirm(message, okCallback, cancelCallback) {
+            this.resetData();
             this.okCallback = okCallback || null;
             this.cancelCallback = cancelCallback || null;
-            this.message = message;
-            this.showing = true;
+            this.modeInit('confirm', message);
         },
+        confirmSingle(message, callback) {
+            this.resetData();
+            this.callback = callback || null;
+            this.modeInit('confirm', message);
+        },
+        
+        /* Private Methods */
         handleCancel() {
             if(typeof this.cancelCallback == 'function') {
                 this.cancelCallback();
+            }
+
+            if(typeof this.callback == 'function') {
+                this.callback(false);
             }
 
             this.$emit('onCancel');
@@ -89,12 +103,26 @@ export default {
                 this.okCallback();
             }
 
+            if(typeof this.callback == 'function') {
+                this.callback(true);
+            }
+
             this.$emit('onOk');
             this.closeDialog();
         },
         closeDialog() {
             this.showing = false;
             this.$emit('onClose');
+        },
+        resetData() {
+            this.okCallback = null;
+            this.cancelCallback = null;
+            this.callback = null;
+        },
+        modeInit(mode, message) {
+            this.mode = mode;
+            this.message = message;
+            this.showing = true;
         }
     }
 }

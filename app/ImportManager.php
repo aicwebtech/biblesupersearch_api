@@ -3,6 +3,7 @@
 namespace App;
 
 use Illuminate\Http\Request;
+use \App\Models\Bible;
 use App\Helpers;
 
 class ImportManager {
@@ -128,11 +129,11 @@ class ImportManager {
         return $importers;
     }
 
-    public static function getImportRules() 
+    public static function getImportRules($bible_id = null) 
     {
         $BibleClass = Helpers::find('\App\Models\Bible');
 
-        $rules = $BibleClass::getUpdateRules(NULL);
+        $rules = $BibleClass::getUpdateRules($bible_id);
 
         foreach(static::$import_rules as $key => $rule) {
             $rules[$key] = $rule;
@@ -177,6 +178,8 @@ class ImportManager {
         $Importer = new $this->import_class();
         $Importer->test_mode = (bool) $this->test_mode;
         $type_info = static::$type_map[$this->type];
+
+
         
         if(!$Importer->setSettings($data)) {
             $this->addErrors($Importer->getErrors(), $Importer->getErrorLevel());
@@ -225,6 +228,11 @@ class ImportManager {
         }
         unset($value);
 
+        if(isset($data['bible_id'])) {
+            $Bible = Bible::find($data['bible_id']);
+            $this->parsed_attributes = array_replace($this->parsed_attributes, $Bible->attributesToArray());
+        }
+
         return $this->hasErrors() ? FALSE : TRUE;
     }
 
@@ -232,7 +240,7 @@ class ImportManager {
       * Imports a Bible for a given file and importer 
       * 
       */
-    public function importFile($data) 
+    public function importFile($data, Bible $Bible = null) 
     {
         ini_set('memory_limit', '256M');
 
@@ -252,9 +260,12 @@ class ImportManager {
         if(!$use_mod && !$this->_checkModule($data['module'])) {
             return FALSE;
         }
+
+        if(!$Bible) {            
+            $BibleClass = \App\Helpers::find('\App\Models\Bible');
+            $Bible      = new $BibleClass();
+        }
         
-        $BibleClass = \App\Helpers::find('\App\Models\Bible');
-        $Bible      = new $BibleClass();
         $Importer   = new $this->import_class();
 
         $Bible->fill($data);

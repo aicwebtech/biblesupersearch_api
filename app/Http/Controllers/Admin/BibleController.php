@@ -762,8 +762,20 @@ class BibleController extends Controller
 
         $ManagerClass   = Helpers::find('\App\ImportManager');
         $Manager        = new $ManagerClass();
+        $bible_id       = $request->input('id', null);
+        $Bible          = null;
 
-        $rules = $ManagerClass::getImportRules();
+        if($bible_id) {
+            $Bible = Bible::findOrFail($bible_id);
+
+            if($Bible->official) {
+                $resp->success = FALSE;
+                $resp->errors = ['Cannot overwrite official Bibles'];
+                return new Response($resp, 422);
+            }
+        }
+
+        $rules = $ManagerClass::getImportRules($bible_id);
         $data  = $request->only(array_keys($rules));
 
         $v = Validator::make($data, $rules);
@@ -774,10 +786,9 @@ class BibleController extends Controller
             return new Response($resp, 422);
         }
 
-        if($Manager->importFile($data)) {
+        if($Manager->importFile($data, $Bible)) {
             $resp->bible = $Manager->parsed_attributes ?: [];
-        }
-        else {
+        } else {
             $resp->success = FALSE;
             $resp->errors = $Manager->getErrors();
         }

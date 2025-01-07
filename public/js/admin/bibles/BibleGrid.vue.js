@@ -160,7 +160,14 @@ const template = `<v-sheet>
                     <v-chip :size='chipSize'
                         text='Edit'
                         @click='clickEdit(item)'
-                    ></v-chip>                    
+                    ></v-chip> 
+
+                    <v-chip 
+                        v-if='item.official == "0"'
+                        :size='chipSize'
+                        text='Replace Text'
+                        @click='clickReplace(item)'
+                    ></v-chip>                   
                 </template>
 
             </v-data-table-server>    
@@ -176,7 +183,9 @@ const template = `<v-sheet>
 
             <ImportDialog 
                 :showing = 'importShowing'
+                :replace = 'importReplace'
                 @onClose='closeImport'
+                @onTest='testBible'
                 @onSave='gridRefresh'
 
             ></ImportDialog>
@@ -246,6 +255,7 @@ export default {
             selectedAction: null,
             actionQueue: null,
             importShowing: false,
+            importReplace: null,
             editingRecord: {},
             rowSelections: [],
             bulkActions: [
@@ -406,8 +416,13 @@ export default {
         openImport() {
             this.importShowing = true;
         },
+        clickReplace(item) {
+            this.importReplace = item.id;
+            this.importShowing = true;
+        },
         closeImport() {
-            this.importShowing = false
+            this.importShowing = false;
+            this.importReplace = false;
         },
         clickBookList(item) {
             if(item.book_list == '0') {
@@ -428,6 +443,10 @@ export default {
                 return item.book_list == '1' ? 'green' : 'red';
             }
         },
+        testBible(item) {
+            console.log('test Bible', item);
+            this.handleSingleAction('test', item);
+        },
         handleBulkAction(action, event) {
             console.log('handleBulkAction', arguments);
             var s = this.rowSelections;
@@ -440,9 +459,6 @@ export default {
             this.actionHelper(action, queue);
         },
         actionHelper(action, queue) {
-            console.log('action', action);
-            console.log('queue', queue);
-
             this.selectedAction = action || null;
             this.actionQueue = queue || null;
         },
@@ -450,18 +466,6 @@ export default {
             // this.gridRefresh();
             this.selectedAction = null;
         },
-        // truncateTooltip(text, maxLen) {
-        //     var len = text.length;
-
-        //     if(len <= maxLen) {
-        //         return text;
-        //     }
-
-        //     var short = text.substring(0, maxLen);
-
-        //     return short + 
-        //         `<v-tooltip activator='parent' location='bottom'>` + text + `</v-tooltip>`;
-        // },
         formatDateTime(datetime, format) {
             var pts = datetime.split(' ');
             var dpts = pts[0].split('-');
@@ -472,8 +476,6 @@ export default {
             var str = dpts[2] + ' ' + months[dpts[1] - 1] + ' ' + dpts[0] + ' ' + tpts[0] + ':' + tpts[1];
 
             return str;
-
-            // return Vuetify.useDate(date, format);
         }
     }
 }
