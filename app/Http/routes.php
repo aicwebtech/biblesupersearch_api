@@ -64,6 +64,7 @@ Route::get('/admin/update', 'AdminController@softwareUpdate')->name('admin.updat
 Route::get('/admin/uninstall', 'AdminController@uninstallPage')->name('admin.uninstall')->middleware('install');
 Route::post('/admin/uninstall', 'AdminController@softwareUninstall')->name('admin.douninstall');
 Route::get('/admin/uninstalled', 'AdminController@uninstalled')->name('admin.uninstalled'); //->middleware('install');
+Route::get('/admin/phpinfo', 'AdminController@debug')->name('admin.phpinfo'); 
 
 Route::get('/admin/bibles/grid', 'Admin\BibleController@grid');
 Route::get('/admin/bibles/languages', 'Admin\BibleController@languages');

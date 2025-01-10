@@ -10,8 +10,9 @@ use Illuminate\Database\Events\SchemaDumped;
 use Illuminate\Filesystem\Filesystem;
 use Illuminate\Support\Facades\Config;
 use Symfony\Component\Console\Attribute\AsCommand;
+use Illuminate\Database\Console\DumpCommand;
 
-class MigrationSquash extends Command
+class MigrationSquash extends DumpCommand
 {
     /**
      * The console command name.
@@ -20,7 +21,8 @@ class MigrationSquash extends Command
      */
     protected $signature = 'migration:squash
                 {--database= : The database connection to use}
-                {--path= : The path where the schema dump file should be stored}';
+                {--path= : The path where the schema dump file should be stored}
+                {--prune : Delete all existing migration files}';
 
     /**
      * The name of the console command.
@@ -38,29 +40,7 @@ class MigrationSquash extends Command
      *
      * @var string
      */
-    protected $description = 'Dump the given database schema, with data';
-
-    /**
-     * Execute the console command.
-     *
-     * @param  \Illuminate\Database\ConnectionResolverInterface  $connections
-     * @param  \Illuminate\Contracts\Events\Dispatcher  $dispatcher
-     * @return int
-     */
-    public function handle(ConnectionResolverInterface $connections, Dispatcher $dispatcher)
-    {
-        $connection = $connections->connection($database = $this->input->getOption('database'));
-
-        $this->schemaState($connection)->dump(
-            $connection, $path = $this->path($connection)
-        );
-
-        $dispatcher->dispatch(new SchemaDumped($connection, $path));
-
-        $info = 'Database schema dumped';
-
-        $this->components->info($info.' successfully.');
-    }
+    protected $description = 'Dump the given database schema, including data from specific tables (extends schema:dump)';
 
     /**
      * Create a schema state instance for the given connection.
@@ -90,17 +70,4 @@ class MigrationSquash extends Command
                     $this->output->write($buffer);
                 });
     }
-
-    /**
-     * Get the path that the dump should be written to.
-     *
-     * @param  \Illuminate\Database\Connection  $connection
-     */
-    protected function path(Connection $connection)
-    {
-        return tap($this->option('path') ?: database_path('schema/'.$connection->getName().'-schema.sql'), function ($path) {
-            (new Filesystem)->ensureDirectoryExists(dirname($path));
-        });
-    }
-
 }

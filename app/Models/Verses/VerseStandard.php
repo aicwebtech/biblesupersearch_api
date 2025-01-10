@@ -15,7 +15,8 @@ use DB;
  * Base model class for all Bibles stored on local DB using standard format
  */
 
-class VerseStandard extends VerseAbstract {
+class VerseStandard extends VerseAbstract 
+{
     protected static $special_table = 'bible';
 
     /**
@@ -26,7 +27,8 @@ class VerseStandard extends VerseAbstract {
      * @param array $parameters Search parameters - user input
      * @return array $Verses array of Verses instances (found verses)
      */
-    public static function getSearch($Passages = NULL, $Search = NULL, $parameters = array()) {
+    public static function getSearch($Passages = NULL, $Search = NULL, $parameters = array()) 
+    {
         $Verse = new static;
         $table = $Verse->getTable();
         $passage_query = $search_query = NULL;
@@ -78,7 +80,7 @@ class VerseStandard extends VerseAbstract {
         $binddata = !isset($binddata) ? [] : $binddata;
 
         try {
-            if($Search && !$parameters['multi_bibles'] && !$parameters['page_all']) {
+            if($Search && !$parameters['multi_bibles'] && !$parameters['page_all'] && !$parameters['results_list']) {
                 $page_limit = min( (int) $parameters['page_limit'], (int) config('bss.global_maximum_results'));
                     
                 if($reccommend_raw_query) {
@@ -109,9 +111,10 @@ class VerseStandard extends VerseAbstract {
                     $met = 600;
                     $lim = config('bss.parallel_search_maximum_results');
                 }
-
+                // var_dump($lim);
+                // die(__LINE__ . '');
                 ini_set('max_execution_time', $met);
-                $lim && $Query->limit( $lim);
+                $lim && $Query->limit($lim);
 
                 if($reccommend_raw_query) {
                     $verses = collect( DB::select($Query->toSql(), $binddata) );
@@ -145,7 +148,8 @@ class VerseStandard extends VerseAbstract {
         return (empty($verses)) ? FALSE : $verses;
     }
 
-    protected static function _buildPassageQuery($Passages, $table = '', $parameters = array()) {
+    protected static function _buildPassageQuery($Passages, $table = '', $parameters = array()) 
+    {
         if(empty($Passages)) {
             return FALSE;
         }
@@ -192,7 +196,8 @@ class VerseStandard extends VerseAbstract {
         return '(' . implode(') OR (', $query) . ')';
     }
 
-    protected static function _buildSearchQuery($Search, $parameters) {
+    protected static function _buildSearchQuery($Search, $parameters) 
+    {
         if(empty($Search)) {
             return '';
         }
@@ -201,7 +206,8 @@ class VerseStandard extends VerseAbstract {
         return $Search->generateQuery();
     }
 
-    protected static function _buildSpecialSearchQuery($Search, $parameters, $lookup_query = NULL) {
+    protected static function _buildSpecialSearchQuery($Search, $parameters, $lookup_query = NULL) 
+    {
         $joins = $binddata = $selects = $results = array();
         $Verse = new static;
         $table = DB::getTablePrefix() . $Verse->getTable();
@@ -245,7 +251,8 @@ class VerseStandard extends VerseAbstract {
         return (empty($results)) ? FALSE : '`id` IN (' . implode(',', $results) . ')';
     }
 
-    static function proximityQueryTest($query) {
+    static function proximityQueryTest($query) 
+    {
         $results_raw = DB::select($query);
         $results = [];
 
@@ -259,7 +266,8 @@ class VerseStandard extends VerseAbstract {
         return count($results);
     }
 
-    protected static function _buildSpecialSearchJoin($table, $alias, $operator, $alias2, $parameters, $on_clause) {
+    protected static function _buildSpecialSearchJoin($table, $alias, $operator, $alias2, $parameters, $on_clause) 
+    {
         $join  = 'INNER JOIN ' . $table . ' AS ' . $alias . ' ON ';
         $join .= $alias . '.book = ' . $alias2 . '.book';
         $operator = trim($operator);
@@ -372,7 +380,8 @@ class VerseStandard extends VerseAbstract {
         return TRUE;
     }
 
-    public function uninstall() {
+    public function uninstall() 
+    {
         if (Schema::hasTable($this->table)) {
             Schema::drop($this->table);
         }
@@ -380,7 +389,8 @@ class VerseStandard extends VerseAbstract {
         return TRUE;
     }
 
-    public function exportData() {
+    public function exportData() 
+    {
         $data = array();
 
         $closure = function($rows) use (&$data) {
@@ -393,7 +403,8 @@ class VerseStandard extends VerseAbstract {
         return $data;
     }
 
-    public function getRandomReference($random_mode) {
+    public function getRandomReference($random_mode) 
+    {
         switch($random_mode) {
             case 'book':
                 $verse = static::select('book','chapter')->where('chapter', '=', 1)->where('verse', '=', 1)->inRandomOrder()->first();
@@ -421,7 +432,8 @@ class VerseStandard extends VerseAbstract {
      * @param array|int $bcv
      * @return array $Verses array of Verses instances (found verses)
      */
-    public function getVersesByBCV($bcv) {
+    public function getVersesByBCV($bcv) 
+    {
         $bcv = (is_array($bcv)) ? $bcv : array($bcv);
         $Query = DB::table($this->getTable() . ' AS tb')->select('id','book','chapter','verse','text');
         $Query->orderBy('book', 'ASC')->orderBy('chapter', 'ASC')->orderBy('verse', 'ASC');
@@ -656,7 +668,8 @@ class VerseStandard extends VerseAbstract {
         return $sub;
     }
 
-    public function getChapterVerseCount($verbose = false) {
+    public function getChapterVerseCount($verbose = false) 
+    {
         $counts = [];
 
         // We use MAX instead of COUNT because of missing verses in Critical Text 'Bibles' that will throw off the numbers

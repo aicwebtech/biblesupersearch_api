@@ -244,7 +244,7 @@
                                         <tr>
                                             <td class='ralign'>Overall Maximum Verses: </td>
                                             <td>
-                                                <input name='bss__global_maximum_results' size='5' value='{{$configs['bss.global_maximum_results']}}'>
+                                                <input name='bss__global_maximum_results' size='5' value="{{$configs['bss.global_maximum_results']}}">
                                                 <span class='info'>
                                                     <span>i</span>
                                                     <p>
@@ -255,13 +255,18 @@
                                             </td>
                                         </tr>                                        
                                         <tr>
-                                            <td class='ralign'>Parallel Search Maximum Results: </td>
+                                            <td class='ralign'>
+                                                <small>
+                                                    Parallel Search Limit: 
+                                                </small>
+                                            </td>
                                             <td>
-                                                <input name='bss__parallel_search_maximum_results' size='5' value='{{$configs['bss.parallel_search_maximum_results']}}'>
+                                                <input name='bss__parallel_search_maximum_results' size='5' value="{{$configs['bss.parallel_search_maximum_results']}}">
                                                 <span class='info'>
                                                     <span>i</span>
                                                     <p>
-                                                        Maximum number of verses discoverable by a parallel Bible Search. &nbsp;The number of verses actually returned is still limited by 'Overall Maximum Verses' above. &nbsp;This number should be GREATER that that one.  
+                                                        Maximum number of verses discoverable by a parallel Bible Search. &nbsp;The number of verses actually returned is still limited by 'Overall Maximum Verses' above. &nbsp;This number should be GREATER that that one; If not, 'Overall Maximum Verses' will be used instead. &nbsp;
+                                                        This helps prevent overload of your server.
                                                     </p>
                                                 </span>
                                             </td>
