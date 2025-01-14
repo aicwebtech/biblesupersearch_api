@@ -219,7 +219,7 @@ const template = `<v-sheet>
 
             <EditDialog
                 :recordId='editingId'
-                max-width='600'
+                max-width='800'
                 loadRecord
                 recordType='Bible'
                 recordIndex='Bible'

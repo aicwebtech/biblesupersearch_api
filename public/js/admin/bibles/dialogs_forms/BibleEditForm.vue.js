@@ -11,67 +11,88 @@ const template = `
             hide-details='auto'
         ></v-text-field>
 
-        <v-text-field 
-            label='Short Name' 
-            v-model='record.shortname'
-            density='compact'
-            hide-details='auto'
-        ></v-text-field>
 
-        <v-text-field 
-            label='Module' 
-            v-model='record.module'
-            density='compact'
-            hide-details='auto'
-            :disabled='record.id > 0'
-        ></v-text-field>      
+                <v-text-field 
+                    label='Short Name' 
+                    v-model='record.shortname'
+                    density='compact'
+                    hide-details='auto'
+                ></v-text-field>
 
-        <v-switch
-            v-model='record.enabled'
-            label='Enabled'
-            hide-details='auto'
-            hint='Whether the Bible is enabled for use'
-            :false-value="0"
-            :true-value="1"
-            color='primary'
-        ></v-switch>              
-        
-        <v-switch
-            v-model='record.research'
-            hide-details='auto'
-            label='Research'
-            :false-value="0"
-            :true-value="1"
-            color='primary'
-        ></v-switch>    
+                <v-text-field 
+                    label='Module' 
+                    v-model='record.module'
+                    density='compact'
+                    hide-details='auto'
+                    :disabled='record.id > 0'
+                ></v-text-field> 
 
-        <v-text-field 
-            label='Rank' 
-            v-model='record.rank'
-            density='compact'
-            hide-details='auto'
-            hint='Customizable sort order.'
-        ></v-text-field>             
+        <v-row>
+            <v-col>
+                <v-text-field 
+                    label='Rank' 
+                    v-model='record.rank'
+                    density='compact'
+                    hide-details='auto'
+                    hint='Customizable sort order.'
+                ></v-text-field>             
+            </v-col>
+            <v-col>Customizable sort order.</v-col>
+        </v-row>
 
-        <v-autocomplete
-            :items='bootstrap.languages'
-            label='Language'
-            v-model='record.lang_short'
-            :item-props='languageItemProps'
-            clearable
-            density='compact'
-            hide-details='auto'
-        ></v-autocomplete>        
+        <v-row>
+            <v-col>
+            <v-autocomplete
+                :items='bootstrap.languages'
+                label='Language'
+                v-model='record.lang_short'
+                :item-props='languageItemProps'
+                clearable
+                density='compact'
+                hide-details='auto'
+            ></v-autocomplete>    
+            </v-col>
+            <v-col>
+                <v-text-field 
+                    label='Language Code' 
+                    v-model='record.lang_short'
+                    density='compact'
+                    hide-details='auto'
+                    hint='2 or 3 characters'
+                    @update:modelValue='langCodeChanged'
+                ></v-text-field>  
+            </v-col>
+        </v-row>    
 
-        <v-autocomplete
-            :items='bootstrap.languages'
-            label='Language Code'
-            v-model='record.lang_short'
-            :item-props='languageCodeProps'
-            clearable
-            density='compact'
-            hide-details='auto'
-        ></v-autocomplete>
+        <v-divider class='mt-2 mb-2 border-opacity-50'></v-divider>
+
+        <v-row>
+            <v-col></v-col>
+            <v-col cols='2'>
+                <v-switch
+                    v-model='record.enabled'
+                    label='Enabled'
+                    hide-details='auto'
+                    hint='Whether the Bible is enabled for use'
+                    :false-value="0"
+                    :true-value="1"
+                    color='primary'
+                    density='compact'
+                ></v-switch>    
+            </v-col>
+            <v-col cols='2'>
+                <v-switch
+                    v-model='record.research'
+                    hide-details='auto'
+                    label='Research'
+                    :false-value="0"
+                    :true-value="1"
+                    color='primary'
+                    density='compact'
+                ></v-switch>   
+            </v-col>
+            <v-col></v-col>
+        </v-row>
 
         <v-divider class='mt-2 mb-2 border-opacity-50'></v-divider>
 
@@ -147,6 +168,18 @@ const template = `
 
     </div>
 `;
+
+/*
+        <v-autocomplete
+            :items='bootstrap.languages'
+            label='Language Code'
+            v-model='record.lang_short'
+            :item-props='languageCodeProps'
+            clearable
+            density='compact'
+            hide-details='auto'
+        ></v-autocomplete>
+        */
 
 var ckeditorSettings = {
     height: 300,
@@ -228,10 +261,6 @@ export default {
             dr = this.$refs.description,
             cr = this.$refs.copyright_statement;
 
-        console.log('ckeditor ref dr', dr);
-
-        // return;
-
         ClassicEditor
             .create( dr, ckeditorSettings )
             .then( newEditor => {
@@ -272,16 +301,19 @@ export default {
     },
     methods: {
         languageItemProps(item) {
-            return {
+            return item && item.code ? {
                 title: item.code.toUpperCase() + ' ' + item.name,
                 value: item.code
-            }
+            } : {};
         },        
         languageCodeProps(item) {
-            return {
+            return item && item.code ? {
                 title: item.code.toUpperCase(),
                 value: item.code
-            }
+            } : {};
+        },
+        langCodeChanged() {
+            
         },
         copyRightChanged(event) {
             console.log('new', event);
