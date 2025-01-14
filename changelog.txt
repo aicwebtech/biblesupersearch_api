@@ -1,8 +1,10 @@
 Bible SuperSearch API Changelog
 
-= 5.7
+= 5.6.10
 * Fixed issues with Access Whitelist
 * Added Public Access option that allows only whitelisted sites access when disabled.
+* Added support for results list summary
+* Ignoring accent/softening marks for highlighting (Latin languages)
 
 = 5.6.1
 * Updated / Corrected Arabic book list

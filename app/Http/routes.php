@@ -11,13 +11,18 @@
 |
 */
 
+$api_middleware = env('APP_ENV', 'production') == 'local' ? 'api_testing' : 'api';
+
+// 'api_testing' middleware has higher access rate allowance, for testing purposes
+
 /* Routes for the API  */
-Route::get('/api/{action?}' , 'ApiController@genericAction')->middleware('api'); // 'Action' defaults to 'query'
-Route::post('/api/{action?}', 'ApiController@genericAction')->middleware('api'); // 'Action' defaults to 'query'
+Route::get('/api/{action?}' , 'ApiController@genericAction')->middleware($api_middleware); // 'Action' defaults to 'query'
+Route::post('/api/{action?}', 'ApiController@genericAction')->middleware($api_middleware); // 'Action' defaults to 'query'
 
 /* Route for Documentation UI */
 Route::get('/', 'DocumentationController')->name('docs');
 Route::get('/documentation', 'DocumentationController');
+
 
 
 /* EVERYTHING BELOW PERTAINS TO BACKEND ADMINISTRATION */

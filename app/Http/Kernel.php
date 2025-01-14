@@ -61,10 +61,17 @@ class Kernel extends HttpKernel
            'throttle:60,1',
            // 'auth:api',
            'api.access',
+       ],     
+
+       'api_testing' => [
+           'throttle:6000,1',
+           // 'auth:api',
+           'api.access',
        ],
    ];
 
-   public function __construct(\Illuminate\Contracts\Foundation\Application $app, \Illuminate\Routing\Router $router) {
+   public function __construct(\Illuminate\Contracts\Foundation\Application $app, \Illuminate\Routing\Router $router) 
+   {
        $this->bootstrappers[] = \App\Http\Bootstrap\LoadSoftConfiguration::class;
 
        parent::__construct($app, $router);
