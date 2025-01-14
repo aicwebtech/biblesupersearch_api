@@ -46,6 +46,9 @@ const template = `<v-sheet>
             <v-sheet v-else class='mt-3 mb-12'>
                 <v-btn size='small' prepend-icon='mdi-book' class='float-right' @click='openImport'>
                     Import Bible
+                </v-btn>                
+                <v-btn size='small' prepend-icon='mdi-plus' class='float-right' @click='clickEdit'>
+                    Add Bible
                 </v-btn>
                 <span class='float-right'>&nbsp;</span>
                 <span class='clear-both'></span>
@@ -124,18 +127,33 @@ const template = `<v-sheet>
                 </template>                        
 
                 <template v-slot:item.installed={item}>
-                    <v-chip :size='chipSize'
-                        :text="item.installed == '1' ? 'Yes' : 'No'"
-                    ></v-chip>
+                    <v-chip 
+                        v-if="item.installed == '1'" 
+                        @click="handleSingleAction('uninstall', item)" 
+                        :size='chipSize'
+                        text='Yes'
+                    />
+                    <v-chip 
+                        v-else 
+                        @click="handleSingleAction('install', item)" 
+                        :size='chipSize'
+                        text='No'
+                    />
                 </template>                 
 
                 <template v-slot:item.enabled={item}>
-                    <v-chip v-if="item.enabled == '1'" @click="handleSingleAction('disable', item)" :size='chipSize'>
-                        Yes
-                    </v-chip>
-                    <v-chip v-else @click="handleSingleAction('enable', item)" :size='chipSize'>
-                        No
-                    </v-chip>
+                    <v-chip 
+                        v-if="item.enabled == '1'" 
+                        @click="handleSingleAction('disable', item)" 
+                        :size='chipSize'
+                        text='Yes'
+                    />
+                    <v-chip 
+                        v-else 
+                        @click="handleSingleAction('enable', item)" 
+                        :size='chipSize'
+                        text='No'
+                    />
                 </template>                 
                 
                 <template v-slot:item.official={item}>
@@ -145,9 +163,18 @@ const template = `<v-sheet>
                 </template>                   
 
                 <template v-slot:item.research={item}>
-                    <v-chip :size='chipSize'
-                        :text="item.research == '1' ? 'Yes' : 'No'"
-                    ></v-chip>
+                    <v-chip 
+                        v-if="item.research == '1'" 
+                        @click="handleSingleAction('unresearch', item)" 
+                        :size='chipSize'
+                        text='Yes'
+                    />
+                    <v-chip 
+                        v-else 
+                        @click="handleSingleAction('research', item)" 
+                        :size='chipSize'
+                        text='No'
+                    />
                 </template>    
                 
                 <template 
@@ -422,7 +449,7 @@ export default {
         },
         closeImport() {
             this.importShowing = false;
-            this.importReplace = false;
+            this.importReplace = null;
         },
         clickBookList(item) {
             if(item.book_list == '0') {

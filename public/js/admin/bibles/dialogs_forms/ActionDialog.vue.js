@@ -17,13 +17,20 @@ const tpl = `
                             </li>
                         </ul>
 
-                        <v-switch v-if='action == "install"' v-model='enable' label='Enable'></v-switch>
+                        <v-switch v-if='action == "install"' v-model='enable' label='Enable' color='primary' />
                     </v-sheet>
                     <v-sheet v-else-if='action=="test"'>
                         <!-- :todo rebuild API to NOT send back HTML! -->
+                        <v-sheet 
+                            style='width: 100px; margin: auto; padding: 10px' 
+                            v-if='testList.length == 0'
+                        >
+                            <img src='/images/Spinner.gif'></img>
+                        </v-sheet>
+
                         <div v-for='t in testList' v-html='t' ></div>
                     </v-sheet>
-                    <v-sheet v-else>
+                    <v-sheet v-else-if='queueProcessing'>
                         {{actioningLabel}} {{queueItemCurrent.name}}
 
                         <v-progress-linear 
@@ -90,6 +97,7 @@ export default {
             queueAbort: false,
             queueProcessing: false,
             queueLoading: false,
+            queueFinished: false,
             queueErrors: [],
             testList: [],
             enable: false,
@@ -176,6 +184,7 @@ export default {
             this.queueItemsProcessed = 0;
             this.queueAbort = false;
             this.queueProcessing = true;
+            this.queueFinished = false;
             this.queueErrors = [];
             this.testList = [];
             this.queueProcessNext();
@@ -229,8 +238,13 @@ export default {
         },
         queueProcessEnd() {
             this.queueProcessing = false;
+            this.queueFinished = true;
             this.$emit('onSave');
             // this.closeDialogSave();
+
+            if(this.queueErrors.length == 0 && this.action != 'test') {
+                this.closeDialog();
+            }
         },
         queueHandleError(response) {
             this.queueErrors.push({
