@@ -47,7 +47,7 @@ const template = `<v-sheet>
                 <v-btn size='small' prepend-icon='mdi-book' class='float-right' @click='openImport'>
                     Import Bible
                 </v-btn>                
-                <v-btn size='small' prepend-icon='mdi-plus' class='float-right' @click='clickEdit'>
+                <v-btn size='small' prepend-icon='mdi-plus' class='float-right' @click='clickEdit()'>
                     Add Bible
                 </v-btn>
                 <span class='float-right'>&nbsp;</span>
@@ -189,12 +189,87 @@ const template = `<v-sheet>
                         @click='clickEdit(item)'
                     ></v-chip> 
 
-                    <v-chip 
-                        v-if='item.official == "0"'
-                        :size='chipSize'
-                        text='Replace Text'
-                        @click='clickReplace(item)'
-                    ></v-chip>                   
+                    <v-menu>
+                        <template v-slot:activator="{ props }">
+                            <v-btn icon="mdi-dots-vertical" variant="text" v-bind="props"></v-btn>
+                        </template>
+
+                        <v-list density='compact'>
+                            <v-list-item @click="clickEdit(item)">
+                                <template v-slot:prepend>
+                                    <v-icon icon="mdi-pencil"></v-icon>
+                                </template>
+                                <v-list-item-title>Edit</v-list-item-title>
+                            </v-list-item>
+
+                            <v-list-item v-if='item.official == "0"' @click='clickReplace(item)'>
+                                <template v-slot:prepend>
+                                    <v-icon icon="mdi-book-arrow-left"></v-icon>
+                                </template>
+                                <v-list-item-title>Replace Text</v-list-item-title>
+                            </v-list-item>
+                            
+                            <v-list-item @click="handleSingleAction('test', item)">
+                                <template v-slot:prepend>
+                                    <v-icon icon="mdi-test-tube"></v-icon>
+                                </template>
+                                <v-list-item-title>Test</v-list-item-title>
+                            </v-list-item>
+                            
+                            <v-list-item v-if='item.installed == "0"' @click="handleSingleAction('install', item)">
+                                <template v-slot:prepend>
+                                    <v-icon icon="mdi-plus-box"></v-icon>
+                                </template>
+                                <v-list-item-title>Install</v-list-item-title>
+                            </v-list-item>
+                            <v-list-item v-else @click="handleSingleAction('uninstall', item)">
+                                <template v-slot:prepend>
+                                    <v-icon icon="mdi-minus-box"></v-icon>
+                                </template>
+                                <v-list-item-title>Unistall</v-list-item-title>
+                            </v-list-item>
+
+                            <v-list-item 
+                                v-if='item.installed == "1" && item.enabled == "0"' 
+                                @click="handleSingleAction('enable', item)"
+                            >
+                                <template v-slot:prepend>
+                                    <v-icon icon="mdi-lock-open"></v-icon>
+                                </template>
+                                <v-list-item-title>Enable</v-list-item-title>
+                            </v-list-item>
+                            <v-list-item 
+                                v-else-if='item.installed == "1" && item.enabled == "1"' 
+                                @click="handleSingleAction('disable', item)"
+                            >
+                                <template v-slot:prepend>
+                                    <v-icon icon="mdi-lock"></v-icon>
+                                </template>
+                                <v-list-item-title>Disable</v-list-item-title>
+                            </v-list-item>
+
+                            <v-list-item 
+                                v-if='bootstrap.devToolsEnabled' 
+                                @click="handleSingleAction('export', item)"
+                            >
+                                <template v-slot:prepend>
+                                    <v-icon icon="mdi-export"></v-icon>
+                                </template>
+                                <v-list-item-title>Export Module</v-list-item-title>
+                            </v-list-item>
+
+                            <v-list-item 
+                                v-if='bootstrap.devToolsEnabled' 
+                                @click="handleSingleAction('meta', item)"
+                            >
+                                <template v-slot:prepend>
+                                    <v-icon icon="mdi-book-sync"></v-icon>
+                                </template>
+                                <v-list-item-title>Update Module</v-list-item-title>
+                            </v-list-item>
+
+                        </v-list>
+                    </v-menu>
                 </template>
 
             </v-data-table-server>    
@@ -370,7 +445,7 @@ export default {
                     confirmText: 'Are you sure that you want to save settings changes to these Bible module files?',
                     actioning: 'Updating Meta',
                     requireDevTools: true,
-                    icon: 'mdi-update'
+                    icon: 'mdi-book-sync'
                 },
             ]
         }
@@ -402,7 +477,7 @@ export default {
                     {title: 'Research **', key: 'research', width: 50, searchComponent: 'YesNoSel'},
                     {title: 'Has File', key: 'has_module_file', width: 100, searchComponent: 'YesNoSel'},
                     {title: 'Updated', key: 'updated_at', width: 150, searchable: false},
-                    {title: 'Rank', key: 'rank', width: 100, searchable: false},
+                    {title: 'Rank', key: 'rank', width: 50, searchable: false},
                     {title: 'Actions', key: 'actions', sortable: false, width: 100, searchable: false},
                 ];                
 
@@ -419,7 +494,7 @@ export default {
                     {title: 'Year', key: 'year', width: 150},
                     {title: 'Installed', key: 'installed', width: 50, searchComponent: 'YesNoSel'},
                     {title: 'Enabled', key: 'enabled', width: 50, searchComponent: 'YesNoSel'},
-                    {title: 'Rank', key: 'rank', width: 100, searchable: false},
+                    {title: 'Rank', key: 'rank', width: 50, searchable: false},
                     {title: 'Actions', key: 'actions', sortable: false, width: 100, searchable: false},
                 ];
             }
@@ -430,6 +505,8 @@ export default {
     },
     methods: {        
         clickEdit(item) {
+            console.log('clickEdit', item);
+
             if(item) {
                 this.editingId = item.id;
             } else {
