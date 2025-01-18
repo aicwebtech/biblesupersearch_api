@@ -3,7 +3,13 @@
 version=$(php artisan app:version)
 gitbranch=$(git branch | grep \*)
 filename="biblesupersearch_api_$version.zip"
-filepath="../releases/api/$filename";
+filepath="../releases/api/$filename"
+
+filename_nobi="biblesupersearch_api_${version}_nobibles.zip"
+filepath_nobi="../releases/api/$filename_nobi"
+
+filename_lite="biblesupersearch_api_${version}_lite.zip"
+filepath_lite="../releases/api/$filename_lite"
 
 # files to be deleted / excluded from the release 
 delfiles=(
@@ -111,4 +117,30 @@ then
 
     echo ''
     echo "Success!  File created at $filepath"
+
+    # Create 'no Bibles' version
+    cp $filepath $filepath_nobi
+
+    zip --delete -q $filepath_nobi 'bibles/modules/*.zip'
+    #zip -r -q $filepath_nobi bibles/modules/readme.txt
+
+    echo ''
+    echo "Success!  File created at $filepath_nobi"
+
+    # Create 'lite' version
+    cp $filepath_nobi $filepath_lite
+
+    # Selected public domain Bibles
+    zip -r -q $filepath_lite 'bibles/modules/kjv.zip' #English KJV
+    zip -r -q $filepath_lite 'bibles/modules/chinese_union_trad.zip'
+    # Hindi - no public domain Bibles 
+    zip -r -q $filepath_lite 'bibles/modules/sagradas.zip' #Spanish
+    zip -r -q $filepath_lite 'bibles/modules/martin.zip' # French
+    zip -r -q $filepath_lite 'bibles/modules/svd.zip' #Arabic Smith Van Dyke
+    zip -r -q $filepath_lite 'bibles/modules/tr.zip'  #Greek TR
+    zip -r -q $filepath_lite 'bibles/modules/he_modern.zip' #Hebrew
+
+    echo ''
+    echo "Success!  File created at $filepath_lite"
+
 fi
