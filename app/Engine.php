@@ -297,7 +297,10 @@ class Engine
                 'type'  => 'string',
                 'default' => 'none'
             ),            
-
+            'parallel_search_error_suppress' => [
+                'type'   => 'bool',
+                'default' => false,
+            ],
         );
 
         $this->resetErrors();
@@ -497,13 +500,16 @@ class Engine
                 else {
                     if($Search) {
                         $results[$Bible->module] = [];
-                        $tr = ($parallel) ? 'errors.parallel_bible_no_results' : 'errors.bible_no_results';
+                        $ptr = $input['parallel_search_error_suppress'] ? null : 'errors.parallel_bible_no_results';
+                        $tr = ($parallel) ? $ptr : 'errors.bible_no_results';
                     }
                     else {
                         $tr = 'errors.bible_no_results';
                     }
                     
-                    $bible_no_results[] = trans($tr, ['module' => $Bible->name]);
+                    if($tr) {
+                        $bible_no_results[] = trans($tr, ['module' => $Bible->name]);
+                    }
                 }
 
                 unset($BibleResults);
@@ -1435,7 +1441,7 @@ class Engine
             $prop = ['passage' => $value_org];
         } else {
             $tstr = 'errors.invalid_search.general';
-            $prop = ['search' => $value_org];
+            $prop = ['search' => $value_org, 'loc' => 'EN 1'];
         }
 
         return $this->addTransError($tstr, $prop, 4);
