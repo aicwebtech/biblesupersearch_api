@@ -31,6 +31,7 @@ class Engine
     protected $default_page_all = FALSE;
     protected $metadata = NULL;
     protected $multi_bibles = FALSE;
+    protected $chapter_verse_counts = NULL;
     public $debug = FALSE;
     public $allow_disabled_bibles = FALSE;
 
@@ -879,8 +880,7 @@ class Engine
         // }
 
         $Books = $namespaced_class::select('id', 'name', 'shortname')->orderBy('id', 'ASC') -> get() -> all();
-        $Bible = Bible::findByModule(config('bss.defaults.bible'));
-        $cvc   = $Bible->getChapterVerseCount();
+        $cvc = $this->getChapterVerseCounts(false);
 
         $books = [];
 
@@ -899,6 +899,64 @@ class Engine
         return $books;
     }
 
+    public function getChapterVerseCounts($return_diffs = false) 
+    {
+        // We use the KJV as the baseline, however if it's not enabled, we use the default Bible
+        $Bible = Bible::findByModule('kjv'); 
+
+        if(!$Bible || !$Bible->enabled) {
+            $Bible = Bible::findByModule(config('bss.defaults.bible'));
+        }
+
+        if(!isset($this->chapter_verse_counts)) {
+            $this->chapter_verse_counts = $Bible->getChapterVerseCount();
+        }
+
+        if(!$return_diffs) {
+            return $this->chapter_verse_counts;
+        }
+
+        $Bibles = Bible::where('enabled', 1)->get();
+        $diffs = [];
+
+        foreach($Bibles as $B) {
+            if($B->module == $Bible->module) {
+                continue;
+            }
+
+            $b_same = true;
+            $b_cvc = [];
+            $cvc_diff = $B->getChapterVerseCount();
+
+            foreach($cvc_diff as $book_id => $book) {
+                if($book['chapters'] != $this->chapter_verse_counts[$book_id]['chapters']) {
+                    $b_same = false;
+                    $b_cvc[$book_id]['chapters'] = $book['chapters'];
+                }
+                
+                foreach($book['chapter_verses'] as $chapter => $verses) {
+                    if(!isset($this->chapter_verse_counts[$book_id]['chapter_verses'][$chapter])) {
+                        //$b_same = false;
+                        //$b_cvc[$book_id]['chapter_verses'][$chapter] = $verses;
+                        //echo('Missing chapter ' . $chapter . ' in ' . $book_id . 'in ' . $B->module);
+                        continue;
+                    }
+                    
+                    if($verses != $this->chapter_verse_counts[$book_id]['chapter_verses'][$chapter]) {
+                        $b_same = false;
+                        $b_cvc[$book_id]['chapter_verses'][$chapter] = $verses;
+                    }
+                }
+            }
+
+            if(!$b_same) {
+                $diffs[$B->module] = $b_cvc;
+            }
+        }
+
+        return $diffs;
+    }
+
     public function languageHasBookSupport($lang) 
     {
         return Language::hasBookSupport($lang);
@@ -915,6 +973,7 @@ class Engine
         $response = new \stdClass;
         $response->bibles                   = $this->actionBibles($input);
         $response->books                    = $this->actionBooks($input);
+        //$response->books_count_diffs        = $this->getChapterVerseCounts(true);
         $response->shortcuts                = $this->actionShortcuts($input);
         $response->download_enabled         = (bool) config('download.enable');
         $response->download_limit           = config('download.enable') ? config('download.bible_limit') : FALSE;
