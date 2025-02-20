@@ -213,5 +213,11 @@ return array(
             'default' => '(none)',
             'description' => 'For an advanced search form, this is the input for searching for a given boolean expression.',
         ),
+        'parallel_search_error_suppress' => [
+            'type'   => 'Boolean',
+            'name'   => 'Parallel Search Error Surpress',
+            'default' => 'false',
+            'description' => 'When true, the "verses from this Bible have been included for comparison" errors won\'t show.'
+        ],
     )
 );

@@ -48,6 +48,7 @@
         'keyword_limit',
         'proximity_limit',
         'markup',
+        'parallel_search_error_suppress',
     );
 
     $advanced_params = array(
