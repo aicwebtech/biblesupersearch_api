@@ -85,15 +85,24 @@ abstract class VerseAbstract extends Model {
     abstract public function getVersesByBCV($bcv);
 
     /**
+     * Fetches verse count (MAX) by book and chapter
+     * @param bool $verbose
+     * @return array veres count grouped by book and chapter
+     */
+    abstract public function getChapterVerseCount($verbose = false);
+
+    /**
      * Gets the table name by the module
      * @param string $module
      * @return string $table_name
      */
-    public static function getTableByModule($module) {
+    public static function getTableByModule($module) 
+    {
         return 'verses_' . $module;
     }
 
-    public function getRandomReferences($random_mode) {
+    public function getRandomReferences($random_mode) 
+    {
         return FALSE;
     }
 }
