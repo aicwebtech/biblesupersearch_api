@@ -84,6 +84,11 @@ div.code {
     color: #eee;
 }
 
+.parameters tr td {
+    font-size: 0.90em;
+    font-family: monospace;
+}
+
 img.linking {
     margin: 0 auto;
     /*text-align: center;*/

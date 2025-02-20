@@ -156,7 +156,8 @@ class SqlSearch {
         }
     }
 
-    public static function removeUnsafeCharacters($search) {
+    public static function removeUnsafeCharacters($search) 
+    {
         // Need to ALLOW some punctuation but not others
 
         // \p{P}: any kind of punctuation character.
@@ -169,6 +170,10 @@ class SqlSearch {
 
         $search = preg_replace_callback('/\p{P}/', function($matches) {
             $p = $matches[0];
+
+            // if(in_array($p, ['!','.','?',','])) {
+            //     return $p; // BSS-193
+            // }
 
             if(in_array($p, ['—','.',',',':',';','\'','"','!','-','?','(',')','[',']'])) {
                 return ' ';
@@ -960,7 +965,7 @@ class SqlSearch {
         // Handles operator aliases    
         $and = [' AND ', '&&', '&'];
         $or  = [' OR ', '||', '|'];
-        $not = ['NOT ', '!'];
+        $not = ['NOT ', '!']; // BSS-193
         $xor = [' XOR ', '^^', '^'];
 
         $wildcard = ['*'];

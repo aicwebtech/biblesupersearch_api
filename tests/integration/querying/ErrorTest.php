@@ -114,7 +114,8 @@ class ErrorTest extends TestCase
         $this->assertArrayNotHasKey('tyndale', $results);
     }    
 
-    public function testParallelSearchNoResults() {
+    public function testParallelSearchNoResults() 
+    {
         $Engine = new Engine();
         $Engine->setDefaultDataType('raw');
 
@@ -129,9 +130,30 @@ class ErrorTest extends TestCase
         $this->assertEquals( trans('errors.parallel_bible_no_results', ['module' => 'World English Bible']), $errors[0]);
         $this->assertNotEmpty($results['kjv']);
         $this->assertNotEmpty($results['web']); // Back-populated results that don't include the keyword.
+    }    
+
+    public function testParallelSearchNoResultsSuppressed() 
+    {
+        $Engine = new Engine();
+        $Engine->setDefaultDataType('raw');
+
+        if(!Bible::isEnabled('web')) {
+            $this->markTestSkipped('Bible web not installed or enabled');
+        }
+
+        $results = $Engine->actionQuery([
+            'bible' => array('kjv', 'web'), 
+            'search' => 'cometh',
+            'parallel_search_error_suppress' => true
+        ]);
+        
+        $this->assertFalse($Engine->hasErrors());
+        $this->assertNotEmpty($results['kjv']);
+        $this->assertNotEmpty($results['web']); // Back-populated results that don't include the keyword.
     }
 
-    public function testFalseBible() {
+    public function testFalseBible() 
+    {
         $Engine = new Engine();
         $Engine->addBible('aaaa_9876'); // Fictitious Bible module
         $this->assertTrue($Engine->hasErrors());
