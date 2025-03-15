@@ -6,7 +6,8 @@ use \DB;
 use \Schema;
 use Illuminate\Database\Schema\Blueprint;
 
-class SQLite3 extends RenderAbstract {
+class SQLite3 extends RenderAbstract 
+{
     static public $name = 'SQLite';
     static public $description = 'SQLite 3 database';
 
@@ -30,7 +31,8 @@ class SQLite3 extends RenderAbstract {
     /**
      * This initializes the file, and does other pre-rendering work
      */
-    protected function _renderStart() {
+    protected function _renderStart() 
+    {
         $filepath = $this->getRenderFilePath(TRUE);
         
         if(file_exists($filepath)) {
@@ -40,19 +42,22 @@ class SQLite3 extends RenderAbstract {
         touch($filepath);
 
         // Dynamically create 'render' as a DB connection
-        config(['database.connections.render' => [
+        $cn = $this->createDbConnection('render', [
             'driver'   => 'sqlite',
             'database' => $filepath,
             'prefix'   => '',
-        ]]);
+        ]);
 
-        Schema::connection('render')->create('meta', function(Blueprint $table) {
+        Schema::connection($cn)->dropIfExists('meta');
+        Schema::connection($cn)->dropIfExists('verses');
+
+        Schema::connection($cn)->create('meta', function(Blueprint $table) {
             $table->string('field', 255);
             $table->text('value')->nullable();
             $table->primary('field');
         });
 
-        Schema::connection('render')->create('verses', function(Blueprint $table) {
+        Schema::connection($cn)->create('verses', function(Blueprint $table) {
             $table->integer('id', TRUE);
             $table->tinyInteger('book')->unsigned();
             $table->tinyInteger('chapter')->unsigned();
@@ -72,15 +77,17 @@ class SQLite3 extends RenderAbstract {
             $meta[] = ['field' => $field, 'value' => $value];
         }
 
-        DB::connection('render')->table('meta')->insert($meta);
+        DB::connection($cn)->table('meta')->insert($meta);
         return TRUE;
     }
 
-    protected function _renderVerseChunk() {
-        DB::connection('render')->table('verses')->insert($this->chunk_data);
+    protected function _renderVerseChunk() 
+    {
+        DB::connection( $this->getDbConnectionName('render') )->table('verses')->insert($this->chunk_data);
     }
 
-    protected function _renderFinish() {
+    protected function _renderFinish() 
+    {
         return TRUE;
     }
 }

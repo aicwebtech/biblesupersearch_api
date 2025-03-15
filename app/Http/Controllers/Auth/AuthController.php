@@ -98,6 +98,32 @@ class AuthController extends Controller
     }
 
     /**
+     * Attempt to log the user into the application.
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @return bool
+     */
+    protected function attemptLogin(Request $request)
+    {
+        $success = $this->guard()->attempt(
+            $this->credentials($request), $request->boolean('remember')
+        );
+
+        // Determine if user exists
+        $user = User::where($this->username(), $request->input( $this->username() ))->first();
+
+        // Log the attempt
+        $attempt = new \App\Models\LoginAttempt;
+        $attempt->ip_address = $request->ip();
+        $attempt->username = $request->input( $this->username() );
+        $attempt->success = $success ? 1 : 0;
+        $attempt->user_exists = $user ? 1 : 0;
+        $attempt->save();       
+
+        return $success;
+    }
+
+    /**
      * The user has been authenticated.
      * Redirect based on user's role
      *

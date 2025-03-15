@@ -127,10 +127,10 @@ class IpAccessTest extends TestCase
     {
         $ip = $this->_fakeIp();
         $IP = IpAccess::findOrCreateByIpOrDomain($ip, 'testdomaincustomlimit.com');
-        $limit = 125;
+        $limit = 25;
         $IP->limit = $limit;
         $IP->save();
-
+        
         $this->assertEquals($limit, $IP->getAccessLimit());
         $this->assertEquals(0, $IP->getDailyHits());
 

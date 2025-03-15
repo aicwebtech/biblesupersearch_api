@@ -4,7 +4,8 @@ namespace App\Renderers\Extras;
 
 Use App\Models\Language;
 
-class ExtrasAbstract {
+class ExtrasAbstract 
+{
     use \App\Traits\Error;
 
     protected $overwrite = FALSE;

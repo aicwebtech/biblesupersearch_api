@@ -37,7 +37,8 @@ class BibleRender extends Command
      *
      * @return mixed
      */
-    public function handle() {
+    public function handle() 
+    {
         // if (posix_getpid() != posix_getsid(getmypid())) {
         //     posix_setsid();
         // }
@@ -46,11 +47,12 @@ class BibleRender extends Command
         $bible      = $this->argument('bible');
         $overwrite  = $this->option('overwrite');
         $extras     = $this->option('extras');
-        $bible      = ($bible == 'ALL') ? $bible : explode(',', $bible);
+        $bible      = ($bible == 'ALL' || $bible == 'OFFICIAL') ? $bible : explode(',', $bible);
 
-        $Manager = new RenderManager($bible, $format, FALSE);
+        $Manager = new RenderManager($bible, $format, FALSE, $this->output);
         $Manager->include_extras = $extras;
         $Manager->render($overwrite, TRUE, TRUE);
+        $Manager->download(TRUE, TRUE, TRUE);
 
         if($Manager->hasErrors()) {
             echo('Errors have occurred:' . PHP_EOL);

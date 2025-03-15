@@ -2,9 +2,11 @@
 
 namespace App\Renderers\Extras;
 
-class MySQL extends ExtrasAbstract {
+class MySQL extends ExtrasAbstract 
+{
     
-    protected function _renderBibleBookListSingle($lang_code) {
+    protected function _renderBibleBookListSingle($lang_code) 
+    {
         $header = <<<HEAD
 
 DROP TABLE IF EXISTS `bible_books_{$lang_code}`;
@@ -40,7 +42,8 @@ HEAD;
         return $dst_file;
     }
 
-    protected function _renderBibleShortcutsSingle($lang_code) {
+    protected function _renderBibleShortcutsSingle($lang_code) 
+    {
         $header = <<<HEAD
 
 DROP TABLE IF EXISTS `bible_shortcuts_{$lang_code}`;
@@ -76,19 +79,22 @@ HEAD;
         return $dst_file;
     }
 
-    protected function _renderStrongsDefinitionsHelper() {
+    protected function _renderStrongsDefinitionsHelper() 
+    {
         $filepath = $this->getRenderFileDir() . 'strongs_definitions.sql';
         $this->_dumpMysqlGeneric('strongs_definitions', 'bible_strongs_definitions', $filepath);
         return $filepath;
     }
 
-    protected function _renderLanguagesHelper() {
+    protected function _renderLanguagesHelper() 
+    {
         $filepath = $this->getRenderFileDir() . 'languages.sql';
         $this->_dumpMysqlGeneric('languages', 'bible_languages', $filepath);
         return $filepath;
     }
 
-    private function _dumpMysqlGeneric($db_table, $bk_table, $filepath) {
+    private function _dumpMysqlGeneric($db_table, $bk_table, $filepath) 
+    {
         $db_table = env('DB_PREFIX') . $db_table;
         $ignore_fields = ['created_at', 'updated_at'];
 

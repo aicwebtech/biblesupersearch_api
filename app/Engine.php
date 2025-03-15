@@ -312,6 +312,8 @@ class Engine
         $this->metadata = new \stdClass;
         $this->metadata->hash = $Cache->hash;
 
+        \App\RenderManager::cleanUpTempZipFiles();
+
         $paging = [];
 
         $test = [];
@@ -969,6 +971,8 @@ class Engine
     {
         $domain = isset($input['domain']) ? $input['domain'] : null;
         $Access = \App\ApiAccessManager::lookUpByInput($input);
+
+        \App\RenderManager::cleanUpTempZipFiles();
 
         $response = new \stdClass;
         $response->bibles                   = $this->actionBibles($input);

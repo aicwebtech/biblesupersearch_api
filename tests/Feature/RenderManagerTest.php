@@ -6,6 +6,7 @@
 use Illuminate\Foundation\Testing\WithFaker;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use App\RenderManager;
+use App\Models\RenderLog;
 
 // php ./vendor/phpunit/phpunit/phpunit --filter=RenderManagerTest
 
@@ -22,6 +23,66 @@ class RenderManagerTest extends TestCase {
         $this->assertArrayHasKey('name', $list['pdf']);
         $this->assertArrayHasKey('desc', $list['text']);
         $this->assertArrayHasKey('desc', $list['pdf']);
+    }
+
+    public function testZipFileCleanup()
+    {
+        $deleted = RenderManager::cleanUpTempZipFiles(true);
+
+        $base_path = \App\Renderers\RenderAbstract::getRenderBasePath();
+
+        $threshold = 3600;
+
+        $this->assertIsArray($deleted);
+
+        foreach($deleted as $file) {
+            $this->assertMatchesRegularExpression('/^truth_\d{8}_\d{6}_\d{6}\.zip$/', $file);
+            $mtime = filectime($base_path . $file);
+            $this->assertLessThanOrEqual(time() - $threshold, $mtime);
+        }
+
+        $threshold = 300;
+        $fake_ip = '275.999.123.456';
+
+        $lts = [
+            strtotime('-400 seconds'),
+            strtotime('-200 seconds'),
+            strtotime('-' . rand(0, 1000) . ' seconds'),
+            strtotime('-' . rand(0, 1000) . ' seconds'),
+            strtotime('-' . rand(0, 1000) . ' seconds'),
+        ];
+
+        foreach($lts as $ts) {
+            $L = new RenderLog();
+            $L->ip_address = $fake_ip;
+            $L->module = 'ALL';
+            $L->filename = 'truth_' . date('Ymd_His_u', $ts) . '.zip';
+            $L->created_at = date('Y-m-d H:i:s', $ts);
+            $L->save();
+        }
+
+        $deleted = RenderLog::deleteByIp($fake_ip, 300, true);
+
+        $this->assertIsArray($deleted);
+
+        foreach($deleted as $file) {
+            $this->assertMatchesRegularExpression('/^truth_\d{8}_\d{6}_\d{6}\.zip$/', $file);
+
+            preg_match('/^truth_(\d{8})_(\d{6})_\d{6}\.zip$/', $file, $matches);
+
+            $ts = strtotime($matches[1] . ' ' . $matches[2]);
+
+            $this->assertLessThanOrEqual(time() - $threshold, $ts);
+            
+            if(!is_file($base_path . $file)) {
+                continue; // Already deleted
+            }
+            
+            $mtime = filectime($base_path . $file);
+            $this->assertLessThanOrEqual(time() - $threshold, $mtime);
+        }
+
+        RenderLog::deleteByIp($fake_ip, 0); // Clean up
     }
 
     public function testFileCleanUpCalcs() {
@@ -96,6 +157,13 @@ class RenderManagerTest extends TestCase {
         $TextRender = new \App\Renderers\PlainText('kjv');
         $success = $TextRender->renderIfNeeded();        
         $this->assertTrue($success);
+
+        $TextRender->deleteRenderFile();
+        $this->assertTrue($TextRender->isRenderNeeded(TRUE), 'file deleted, should need render here');
+
+        $success = $TextRender->renderIfNeeded();
+        $this->assertTrue($success);
+
         $this->assertFalse($TextRender->isRenderNeeded(TRUE), 'Already rendered, shoudnt need it here ' . __LINE__);
         
         $file_path = $TextRender->getRenderFilePath();
