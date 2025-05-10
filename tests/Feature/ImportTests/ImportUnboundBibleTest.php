@@ -14,7 +14,8 @@ use Illuminate\Http\UploadedFile;
 use App\Engine;
 use App\ImportManager;
 
-class ImportUnboundBibleTest extends Base {
+class ImportUnboundBibleTest extends Base 
+{
     protected $file_name = 'norwegian.zip';
     protected $importer = 'unbound';
 }

@@ -13,8 +13,67 @@ use App\ConfigManager;
  *
  * @author Computer
  */
-class InstallManager {
-    static function isInstalled() {
+class InstallManager 
+{
+    static protected $checklist = [
+        'php_version' => null, // Pulled from composer.json
+        'php_extensions_required' => [
+            'OpenSSL',
+            'PDO',
+            'Mbstring',
+            'Tokenizer',
+            'XML',
+            'Zip',
+            'Ctype',
+            'JSON',
+            'BCMath',
+            'gd',
+            'Fileinfo',
+            'SQLite3',
+        ],
+        'php_extensions_recommended' => [],
+        'database' => [
+            'mysql'  => 'MySQL',
+            // 'sqlite' => 'SQLite', // not supported
+            // 'sqlsrv' => 'Microsoft SQL Server / SQL Azure', // not supported
+            // 'pgsql'  => 'PostgreSQL' // not supported
+        ],
+
+        // These directories and files need to be writable
+        'writable' => [
+            'storage/app', 
+            'storage/framework', 
+            'storage/logs', 
+            'storage/logs/laravel.log', 
+            'bootstrap/cache', 
+            'bibles', 
+            'bibles/modules', 
+            'bibles/unofficial', 
+            'bibles/rendered', 
+            'bibles/misc',
+            // 'public/index.php', // For future use (Automatic Upgrades)
+        ]
+    ];
+
+    static protected $checklist_init = false;
+    
+    static function getChecklist() 
+    {
+        if(!static::$checklist_init) {
+            static::$checklist_init = true;
+
+            // Read in composer settings
+            $composer_txt = file_get_contents(base_path() . '/composer.json');
+            $composer     = json_decode($composer_txt);
+            static::$checklist['php_version'] = substr($composer->require->php, 2);
+        }
+        
+        
+        return static::$checklist;
+    }
+    
+    static function isInstalled() 
+    {
         if(config('app.installed')) {
             return TRUE;
         }
@@ -93,12 +152,11 @@ class InstallManager {
 
     static function checkSettings() 
     {
-        // Read in composer settings
-        $composer_txt = file_get_contents(base_path() . '/composer.json');
-        $composer     = json_decode($composer_txt);
-
-        $php_version = substr($composer->require->php, 2);
-        $php_success = (version_compare(phpversion(), $php_version, '>=') == -1);
+        $checklist_raw = static::getChecklist();
+        
+        // Check PHP version
+        $php_version = $checklist_raw['php_version'];
+        $php_success = (version_compare(phpversion(), $checklist_raw['php_version'], '>=') == -1);
         $conname = config('database.default');
         $db_info = config('database.connections.' . $conname);
         $sqlite_required = ($db_info['driver'] == 'sqlite');
@@ -167,22 +225,18 @@ class InstallManager {
 
 
         $checklist[] = ['type' => 'header', 'label' => 'Software'];
-        $checklist[] = ['type' => 'item', 'label' => 'PHP Version >= ' . $php_version . ' (' . $installed_php . ')', 'success' => $php_success];
+        $checklist[] = ['type' => 'item', 'label' => 'PHP Version >= ' . $php_version . ' (Current = ' . $installed_php . ')', 'success' => $php_success];
 
-        $extensions = ['OpenSSL', 'PDO', 'Mbstring', 'Tokenizer', 'XML', 'Zip', 'Ctype', 'JSON', 'BCMath', 'gd', 'Fileinfo'];
-        $rec_extensions = [];
+        // $extensions = ['OpenSSL', 'PDO', 'Mbstring', 'Tokenizer', 'XML', 'Zip', 'Ctype', 'JSON', 'BCMath', 'gd', 'Fileinfo'];
+        // $rec_extensions = [];
 
-        if($sqlite_required) {
-            $extensions[] = 'SQLite3';
-        }
-        else {
-            $rec_extensions[] = 'SQLite3';
-        }
+        $req_extensions = $checklist_raw['php_extensions_required'];
+        $rec_extensions = $checklist_raw['php_extensions_recommended'];
 
-        sort($extensions);
+        sort($req_extensions);
         sort($rec_extensions);
 
-        foreach($extensions as $ext) {
+        foreach($req_extensions as $ext) {
             $checklist[] = ['type' => 'item', 'label' => 'PHP Extension: ' . $ext, 'success' => extension_loaded($ext)];
         }
 
@@ -193,19 +247,13 @@ class InstallManager {
         $checklist[] = ['type' => 'hr'];
         $checklist[] = ['type' => 'header', 'label' => 'Database'];
 
-
         if(empty($db_info)) {
             $checklist[] = ['type' => 'item', 'label' => 'Unknown DB_CONNECTION: ' . $conname, 'success' => FALSE];
         }
 
         $pdo_driver = 'PDO_' . strtoupper($db_info['driver']);
 
-        $db_type_map = [
-            'mysql'  => 'MySQL',
-            // 'sqlite' => 'SQLite',
-            // 'sqlsrv' => 'Microsoft SQL Server / SQL Azure',
-            // 'pgsql'  => 'PostgreSQL'
-        ];
+        $db_type_map = $checklist_raw['database'];
 
         if(isset($db_type_map[$db_info['driver']])) {
             $checklist[] = ['type' => 'item', 'label' => 'Selected Database Type: ' . $db_type_map[$db_info['driver']], 'success' => TRUE];
@@ -283,19 +331,7 @@ class InstallManager {
 
         @touch( base_path('storage/logs/laravel.log') ); // Create the log file if it doesn't exist.
 
-        $dir = [
-            'storage/app', 
-            'storage/framework', 
-            'storage/logs', 
-            'storage/logs/laravel.log', 
-            'bootstrap/cache', 
-            'bibles', 
-            'bibles/modules', 
-            'bibles/unofficial', 
-            'bibles/rendered', 
-            'bibles/misc',
-            // 'public/index.php', // For future use (Automatic Upgrades)
-        ];
+        $dir = $checklist_raw['writable'];
 
         foreach($dir as $d) {
            $checklist[] = ['type' => 'item', 'label' => 'Is Writable: ' . $d, 'success' => is_writable(base_path($d))];

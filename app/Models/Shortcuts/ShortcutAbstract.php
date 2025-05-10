@@ -45,7 +45,7 @@ class ShortcutAbstract extends Model
         if($language) {
             $class_name = self::getClassNameByLanguage($language);
         }
-        elseif(get_called_class() != get_class()) {
+        elseif(get_called_class() != __CLASS__) {
             $class_name = get_called_class();
         }
         else {

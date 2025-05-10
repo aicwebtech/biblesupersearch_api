@@ -17,7 +17,7 @@ class Copyright extends Model
         return $this->belongsTo('App\Models\Bible');
     }
 
-    public function getProcessedCopyrightStatement(Bible &$Bible = null) 
+    public function getProcessedCopyrightStatement(?Bible &$Bible = null) 
     {
         $cr = $this->default_copyright_statement;
         $include_year_pub = false;

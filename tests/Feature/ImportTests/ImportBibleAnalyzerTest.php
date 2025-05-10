@@ -14,7 +14,8 @@ use Illuminate\Http\UploadedFile;
 use App\Engine;
 use App\ImportManager;
 
-class ImportBibleAnalyzerTest extends Base {
+class ImportBibleAnalyzerTest extends Base 
+{
     protected $file_name = 'analyzer.bib';
     protected $importer = 'analyzer';
 }

@@ -13,10 +13,10 @@ class ApiController extends Controller
 
     public function genericAction(Request $Request, $action = 'query') 
     {
-        $allowed_actions = ['query', 'bibles', 'books', 'statics', 'statics_changed', 'version', 'readcache', 'strongs'];
+        $allowed_actions = ['query', 'bibles', 'books', 'statics', 'statics_changed', 'version', 'readcache', 'strongs', 'requirements'];
         
         if(env('APP_ENV', 'production') != 'testing') {
-            header("Access-Control-Allow-Origin: *");
+            // header("Access-Control-Allow-Origin: *");
         }
 
         if(config('download.enable')) {
@@ -29,7 +29,7 @@ class ApiController extends Controller
         $_SESSION['debug'] = [];
 
         if(!in_array($action, $allowed_actions)) {
-            return new Response('Action not found', 404);
+            return $this->_makeResponse('Action not found', 404);
         }
 
         $input = $Request->input();
@@ -38,9 +38,7 @@ class ApiController extends Controller
         $actionMethod = 'action' . \Illuminate\Support\Str::studly($action);
 
         if($debug_input) {
-            // header("Access-Control-Allow-Origin: *"); // Enable for debugging
-            print_r($input);
-            die();
+            return $this->_makeResponse(json_encode($input), 200);
         }
 
         try {
@@ -56,9 +54,7 @@ class ApiController extends Controller
         }
         catch (Exception $ex) {        
             if( env('APP_ENV', 'production') == 'production') {
-                return (new Response($ex->getMessage(), 500))
-                    -> header('Content-Type', 'application/json; charset=utf-8');
-                    // -> header('Access-Control-Allow-Origin', '*');
+                return $this->_makeResponse($ex->getMessage(), 500);
             }
 
             throw $ex;
@@ -72,9 +68,14 @@ class ApiController extends Controller
             return $this->_prettyPrintErrors($input, $response);
         }
 
-        return (new Response(json_encode($response), $code))
-            -> header('Content-Type', 'application/json; charset=utf-8');
-            // -> header('Access-Control-Allow-Origin', '*');
+        return $this->_makeResponse(json_encode($response), $code);
+    }
+
+    private function _makeResponse($content, $code)
+    {
+        return (new Response($content, $code))
+            -> header('Content-Type', 'application/json; charset=utf-8')
+            -> header('Access-Control-Allow-Origin', '*');
     }
 
     private function _prettyPrintErrors($input, $response) 

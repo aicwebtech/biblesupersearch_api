@@ -30,19 +30,19 @@ class Language extends Model
 
     public function setIso6393RawAttribute($value) 
     {
-        $value = trim($value);
+        $value = trim((string)$value);
         $this->attributes['iso_639_3_raw'] = $value;
         $this->attributes['iso_639_3']     = substr($value, 0, 3);
     }
 
     public function getNativeNameAttribute($value) 
     {
-        return ucwords($value);
+        return is_string($value) ? ucwords($value) : null;
     }
     
     public function _setIso6391Attribute($value) 
     {
-        $value = trim($value);    
+        $value = trim((string)$value);    
         $this->attributes['iso_639_1'] = $value;
         $this->_defaultSetCode($value);
     }

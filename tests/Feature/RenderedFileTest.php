@@ -11,11 +11,14 @@ class RenderedFileTest extends TestCase
 
     protected $kjvcm = 'NOTICE: The RenderedFile tests assume that the end user has NOT changed any metadata on the KJV (Authorized King James Version) module';
 
+    protected $csvesc = "\\"; //:todo, csv escape should be a config or ""
+
     /**
      * Testing the output of the CSV render
      * 
      */ 
-    public function testRenderedCsv() {
+    public function testRenderedCsv() 
+    {
         $Renderer = new \App\Renderers\Csv('kjv');
         $success = $Renderer->renderIfNeeded();        
         $this->assertTrue($success);
@@ -29,30 +32,30 @@ class RenderedFileTest extends TestCase
         $this->assertIsArray($file_data);
         $this->assertNotEmpty($file_data);
 
-        $row = str_getcsv($file_data[0]);
+        $row = str_getcsv($file_data[0], escape: $this->csvesc);
         $this->assertEquals('Authorized King James Version', $row[0], $this->kjvcm);
         
         // Blank rows
-        $row = str_getcsv($file_data[1]);
+        $row = str_getcsv($file_data[1], escape: $this->csvesc);
         $this->assertEmpty($row[0]);        
-        $row = str_getcsv($file_data[2]);
+        $row = str_getcsv($file_data[2], escape: $this->csvesc);
         $this->assertEmpty($row[0]);
 
         // Copyright
-        $row = str_getcsv($file_data[3]);
+        $row = str_getcsv($file_data[3], escape: $this->csvesc);
         $this->assertStringContainsString('Public Domain in most parts of the world', $row[0], $this->kjvcm);
         $this->assertStringContainsString('Crown copyright', $row[0], $this->kjvcm);
 
         // Blank row
-        $row = str_getcsv($file_data[4]);
+        $row = str_getcsv($file_data[4], escape: $this->csvesc);
         $this->assertEmpty($row[0]);
 
         // Column headers
-        $row = str_getcsv($file_data[5]);
+        $row = str_getcsv($file_data[5], escape: $this->csvesc);
         $this->assertEquals(['Verse ID','Book Name', 'Book Number', 'Chapter', 'Verse', 'Text'], $row);
 
         // First Verse, Genesis 1:1
-        $row = str_getcsv($file_data[6]);
+        $row = str_getcsv($file_data[6], escape: $this->csvesc);
         $this->assertEquals(1, $row[0]);
         $this->assertEquals('Genesis', $row[1]);
         $this->assertEquals(1, $row[2]);
@@ -61,7 +64,7 @@ class RenderedFileTest extends TestCase
         $this->assertStringContainsString('In the beginning God', $row[5]);
 
         // Last Verse, Revelation 22:21
-        $row = str_getcsv($file_data[31107]);
+        $row = str_getcsv($file_data[31107], escape: $this->csvesc);
         $this->assertEquals(31102, $row[0]);
         $this->assertEquals('Revelation', $row[1]);
         $this->assertEquals(66, $row[2]);
@@ -77,7 +80,8 @@ class RenderedFileTest extends TestCase
     /**
      *  @depen_ds testRenderedCsv
      */ 
-    public function testRenderedCopyright() {
+    public function testRenderedCopyright() 
+    {
         // Cache the existing config value
         $cache_deriv_cr = config('download.derivative_copyright_statement');
         $cache_bss_link = config('download.bss_link_enable');
@@ -111,7 +115,7 @@ class RenderedFileTest extends TestCase
         $this->assertIsArray($file_data);
         $this->assertArrayHasKey(3, $file_data);
 
-        $cr = str_getcsv($file_data[3])[0];
+        $cr = str_getcsv($file_data[3], escape: $this->csvesc)[0];
 
         $this->assertStringNotContainsString($find_deriv_cr, $cr);
         $this->assertStringNotContainsString($find_bss_url, $cr);
@@ -137,7 +141,7 @@ class RenderedFileTest extends TestCase
         $this->assertIsArray($file_data);
         $this->assertArrayHasKey(3, $file_data);
 
-        $cr = str_getcsv($file_data[3])[0];
+        $cr = str_getcsv($file_data[3], escape: $this->csvesc)[0];
 
         $this->assertStringNotContainsString($find_deriv_cr, $cr);
         $this->assertStringNotContainsString($find_bss_url, $cr);
@@ -162,7 +166,7 @@ class RenderedFileTest extends TestCase
         $this->assertIsArray($file_data);
         $this->assertArrayHasKey(3, $file_data);
 
-        $cr = str_getcsv($file_data[3])[0];
+        $cr = str_getcsv($file_data[3], escape: $this->csvesc)[0];
 
         $this->assertStringNotContainsString($find_deriv_cr, $cr);
         $this->assertStringContainsString($find_bss_url, $cr);
@@ -180,7 +184,7 @@ class RenderedFileTest extends TestCase
         $this->assertIsArray($file_data);
         $this->assertArrayHasKey(3, $file_data);
 
-        $cr = str_getcsv($file_data[3])[0];
+        $cr = str_getcsv($file_data[3], escape: $this->csvesc)[0];
 
         $this->assertStringContainsString($find_deriv_cr, $cr);
         $this->assertStringContainsString($find_bss_url, $cr);
@@ -201,7 +205,7 @@ class RenderedFileTest extends TestCase
         $this->assertIsArray($file_data);
         $this->assertArrayHasKey(3, $file_data);
 
-        $cr = str_getcsv($file_data[3])[0];
+        $cr = str_getcsv($file_data[3], escape: $this->csvesc)[0];
 
         if($cache_deriv_cr) {
             $this->assertStringNotContainsString($cache_deriv_cr, $cr);
@@ -222,7 +226,8 @@ class RenderedFileTest extends TestCase
         }
     }
 
-    public function testRenderedJson() {
+    public function testRenderedJson() 
+    {
         $Renderer = new \App\Renderers\Json('kjv');
         $success = $Renderer->renderIfNeeded();        
         $this->assertTrue($success);
@@ -259,7 +264,8 @@ class RenderedFileTest extends TestCase
         $this->assertStringContainsString('Amen', $file_data->verses[31101]->text);
     }
 
-    public function testMachineReadablePlainText() {
+    public function testMachineReadablePlainText() 
+    {
         $Renderer = new \App\Renderers\MachineReadableText('kjv');
         $success = $Renderer->renderIfNeeded();        
         $this->assertTrue($success);
@@ -309,7 +315,8 @@ class RenderedFileTest extends TestCase
         $this->assertStringContainsString('Amen', $verse['text']);
     }
 
-    public function testSqlite() {
+    public function testSqlite() 
+    {
         $Renderer = new \App\Renderers\SQLite3('kjv');
         $success = $Renderer->renderIfNeeded();        
         $this->assertTrue($success);
@@ -359,7 +366,8 @@ class RenderedFileTest extends TestCase
         $this->assertStringContainsString('Amen', $verse->text);
     }
 
-    private function _parsePlainText($row) {
+    private function _parsePlainText($row) 
+    {
         // First, find chapter:verse
         preg_match('/[0-9]+:[0-9]+/', $row, $matches);
 

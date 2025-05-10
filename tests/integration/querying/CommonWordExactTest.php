@@ -3,6 +3,8 @@
 use Illuminate\Foundation\Testing\WithoutMiddleware;
 use Illuminate\Foundation\Testing\DatabaseMigrations;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
+use PHPUnit\Framework\Attributes\Depends;
+use PHPUnit\Framework\Attributes\DependsExternal;
 
 use App\Engine;
 use App\Models\Language;
@@ -10,6 +12,7 @@ use App\Models\Language;
 /**
  * @depends CommonWordTest
  */
+
 class CommonWordExactTest extends TestCase 
 {
     protected $EN;
@@ -26,10 +29,6 @@ class CommonWordExactTest extends TestCase
     public function setUp() :void
     {
         parent::setUp();
-
-        if(version_compare(PHP_VERSION, '8.3.0') >= 0) {
-            $this->markTestSkipped('Test not currently supported in PHP 8.3+');
-        }
 
         if(!$this->EN) {
             $this->EN = Language::findByCode('en');
@@ -57,12 +56,9 @@ class CommonWordExactTest extends TestCase
         $this->LV->save();
     }
 
+    //#[DependsExternal('\CommonWordTest', 'testQueryEn')]
     public function testQueryEn()
     {
-        
-        if(version_compare(PHP_VERSION, '8.3.0') >= 0) {
-            $this->markTestSkipped('Test not currently supported in PHP 8.3+');
-        }
 
         $Engine = new Engine(); // Need new instance because this test is colliding with others
 
@@ -132,14 +128,9 @@ class CommonWordExactTest extends TestCase
         $Language->save();
     }    
 
+    // #[Depends('testQueryEn')]
     public function testQueryEnCapital() 
     {
-        
-        
-        if(version_compare(PHP_VERSION, '8.3.0') >= 0) {
-            $this->markTestSkipped('Test not currently supported in PHP 8.3+');
-        }  
-
 
         $Engine = new Engine(); // Need new instance because this test is colliding with others
 
@@ -217,12 +208,9 @@ class CommonWordExactTest extends TestCase
         $Language->save();
     }
 
+    // #[Depends('testQueryEnCapital')]
     public function testQueryEnSearchType()
     {
-        if(version_compare(PHP_VERSION, '8.3.0') >= 0) {
-            $this->markTestSkipped('Test not currently supported in PHP 8.3+');
-        }
-
         $Engine = new Engine(); // Need new instance because this test is colliding with others
 
         $Language = Language::findByCode('en');
@@ -256,11 +244,9 @@ class CommonWordExactTest extends TestCase
     }
 
     // RE: Ran into conflichts with common words when highlighting search keywords
+    // #[Depends('testQueryEnSearchType')]
     public function testQueryEnHighlight()
     {
-        if(version_compare(PHP_VERSION, '8.3.0') >= 0) {
-            $this->markTestSkipped('Test not currently supported in PHP 8.3+');
-        }
 
         $Engine = new Engine(); // Need new instance because this test is colliding with others
 
@@ -311,13 +297,9 @@ class CommonWordExactTest extends TestCase
         $Language->save();
     }
     
+    // #[Depends('testQueryEnHighlight')]
     public function testLanguageMismatch()
     {
-        var_dump(PHP_VERSION);
-
-        if(version_compare(PHP_VERSION, '8.3.0') >= 0) {
-            $this->markTestSkipped('Test not currently supported in PHP 8.3+');
-        }
 
         $Engine = new Engine(); // Need new instance because this test is colliding with others
 

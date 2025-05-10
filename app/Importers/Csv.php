@@ -11,7 +11,8 @@ use Illuminate\Http\UploadedFile;
 
 class Csv extends SpreadsheetAbstract 
 {
-    
+    protected $escape = "\\";
+
     public function checkUploadedFile(UploadedFile $File): bool  
     {
         $file_data = file($File->getPathname());
@@ -27,7 +28,7 @@ class Csv extends SpreadsheetAbstract
                 continue;
             }
             
-            $tmp_data[] = str_getcsv($csv_row); 
+            $tmp_data[] = str_getcsv($csv_row, escape: $this->escape); 
 
             if($key > 200) {
                 break;
@@ -50,7 +51,7 @@ class Csv extends SpreadsheetAbstract
                 continue;
             }
             
-            $row = str_getcsv($row); 
+            $row = str_getcsv($row, escape: $this->escape); 
             $m = $this->_mapSpreadsheetRow($row);
             $this->_addVerse($m['book'], $m['chapter'], $m['verse'], $m['text']);
         }

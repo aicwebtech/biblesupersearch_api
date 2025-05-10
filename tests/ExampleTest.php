@@ -7,7 +7,8 @@ use App\Models\Bible;
 
 class ExampleTest extends TestCase
 {
-    public function testFirst() {
+    public function testFirst() 
+    {
         $success = TRUE;
         $KJV = Bible::findByModule('kjv');
 

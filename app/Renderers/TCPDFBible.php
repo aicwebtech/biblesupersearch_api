@@ -6,12 +6,21 @@ use \TCPDF;
 use \TCPDF_STATIC;
 use \TCPDF_FONTS;
 
-class TCPDFBible extends TCPDF {
+if(!defined('K_TCPDF_EXTERNAL_CONFIG')) {
+    define('K_TCPDF_EXTERNAL_CONFIG', true);
+}
+
+require_once( dirname(__FILE__) . '/tcpdf_config.php');
+
+
+class TCPDFBible extends TCPDF 
+{
     
     public $current_book;
     public $current_chapter;
     public $current_verse;
     public $toc_bookmark_level = 1;
+    public $allow_bold = true;
 
     protected $start_book;
     protected $start_chapter;    
@@ -20,7 +29,8 @@ class TCPDFBible extends TCPDF {
     protected $outlines_cache = [];
     protected $bible_page_count = 0;
 
-    public function Header() {
+    public function Header() 
+    {
         // This doesn't actually generate a header!
         $this->bible_page_count ++;
         $this->start_book    = NULL;
@@ -28,7 +38,8 @@ class TCPDFBible extends TCPDF {
         $this->swapMargins();
     }
 
-    public function Footer() {
+    public function Footer() 
+    {
         // Position 'footer' at TOP of page 
         $this->SetY(0);
         $this->SetFontSize(8);
@@ -38,6 +49,8 @@ class TCPDFBible extends TCPDF {
 
         
         if($this->start_book && $this->prev_book) {
+            
+            
             $st = $this->start_book   . ' ' . $this->start_chapter;
             $en = $this->prev_book    . ' ' . $this->prev_chapter;
 
@@ -69,11 +82,18 @@ class TCPDFBible extends TCPDF {
         $this->start_chapter = '';
     }
 
-    public function getBiblePageCount() {
+    public function getBiblePageCount() 
+    {
         return $this->bible_page_count;
     }
 
-    public function setCurrentVerse($verse) {
+    public function getCurrentFont()
+    {
+        return $this->CurrentFont;
+    }
+
+    public function setCurrentVerse($verse) 
+    {
         if($verse) {
             $this->prev_book        = $this->current_book;
             $this->prev_chapter     = $this->current_chapter;
@@ -97,17 +117,31 @@ class TCPDFBible extends TCPDF {
         }
     }
 
+    public function formatTitle($title) 
+    {
+        $oid = $this->_newobj();
+        $nltags = '/<br[\s]?\/>|<\/(blockquote|dd|dl|div|dt|h1|h2|h3|h4|h5|h6|hr|li|ol|p|pre|ul|tcpdf|table|tr|td)>/si';
+        // covert HTML title to string
+        $title = preg_replace($nltags, "\n", $title);
+        $title = preg_replace("/[\r]+/si", '', $title);
+        $title = preg_replace("/[\n]+/si", "\n", $title);
+        $title = strip_tags($title);
+        // $title = $this->stringTrim($title);
+        // $title = $this->_textstring($title, $oid);
 
+        return $title;
+    }
 
     // Customized TCPDF methods
 
     // Making this public
-    public function checkPageBreak($h=0, $y='', $addpage=true) {
+    public function checkPageBreak($h=0, $y='', $addpage=true) 
+    {
         return parent::checkPageBreak($h, $y, $addpage);
     }
 
     /**
-        CUSTOMIZED VERSION OF TCPDF::addTOC();
+     *   CUSTOMIZED VERSION OF TCPDF::addTOC();
 
      * Output a Table of Content Index (TOC).
      * This method must be called after all Bookmarks were set.
@@ -125,7 +159,10 @@ class TCPDFBible extends TCPDF {
      * @since 4.5.000 (2009-01-02)
      * @see addTOCPage(), endTOCPage(), addHTMLTOC()
      */
-    public function addTOC($page='', $numbersfont='', $filler='.', $toc_name='TOC', $style='', $color=array(0,0,0)) {
+    public function addTOC($page='', $numbersfont='', $filler='.', $toc_name='TOC', $style='', $color=array(0,0,0)) 
+    {
+        $bold = $this->allow_bold ? 'B' : ''; // custom
+
         $fontsize = $this->FontSizePt;
         $fontfamily = $this->FontFamily;
         $fontstyle = $this->FontStyle;
@@ -164,6 +201,8 @@ class TCPDFBible extends TCPDF {
             }
             // End custom code
 
+            //$outline['l'] = 0;
+
             // check for extra pages (used for attachments)
             if (($this->page > $page_first) AND ($outline['p'] >= $this->numpages)) {
                 $outline['p'] += ($this->page - $page_first);
@@ -176,7 +215,7 @@ class TCPDFBible extends TCPDF {
                 $alignnum = 'R';
             }
             if ($outline['l'] == 0) {
-                $this->SetFont($fontfamily, $outline['s'].'B', $fontsize);
+                $this->SetFont($fontfamily, $outline['s'].$bold, $fontsize); // custom
             } else {
                 $this->SetFont($fontfamily, $outline['s'], $fontsize - $outline['l']);
             }

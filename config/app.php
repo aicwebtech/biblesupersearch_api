@@ -23,7 +23,20 @@ return [
     |
     */
 
-    'version' => '5.6.21',
+    'version' => '6.0.0',
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | API Version
+    |--------------------------------------------------------------------------
+    |
+    |
+    */
+
+    'api_version' => 'v2',          // The current API version for this application
+
+    'api_version_list' => ['v2'],   // List of all API versions supported by this application
 
     /*
     |--------------------------------------------------------------------------

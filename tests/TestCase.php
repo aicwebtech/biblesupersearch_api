@@ -22,12 +22,13 @@ namespace {
         public function createApplication()
         {
             ini_set('memory_limit','512M');
+            set_exception_handler([new \Symfony\Component\ErrorHandler\ErrorHandler(), 'handleException']);
             $app = require __DIR__.'/../bootstrap/app.php';
 
             $app->make(Illuminate\Contracts\Console\Kernel::class)->bootstrap();
+            \Illuminate\Foundation\Bootstrap\HandleExceptions::flushState();
             $this->use_named_bindings = config('app.query_use_named_placeholders');
             $this->test_http = env('APP_TEST_HTTP', FALSE);
-
             return $app;
         }
 

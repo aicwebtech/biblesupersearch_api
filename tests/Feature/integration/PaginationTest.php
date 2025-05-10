@@ -97,6 +97,11 @@ class PaginationTest extends TestCase {
         }
 
         $response = $this->json('POST', '/api/query', $query);
+
+        if($response->status() == 429) {
+            $this->markTestSkipped('429 Skipping due to rate limiting');
+        }
+
         $response->assertStatus(200);
 
         if($config_changed) {

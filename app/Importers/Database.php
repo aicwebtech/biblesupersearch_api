@@ -21,6 +21,8 @@ class Database
     protected static $insert_count = 0;
     protected static $insert_model = NULL;
 
+    protected static $csvescape = "\\";
+
     static public function processQueue() 
     {
         static::$processing_queue = TRUE;
@@ -115,9 +117,10 @@ class Database
         }
 
         $fp = fopen($path, 'w'); // w option truncates file to 0 length
-        fputcsv($fp, $map); // use map as header row in CSV
+        fputcsv($fp, $map, escape: static::$csvescape); // use map as header row in CSV
+        $csvescape = static::$csvescape;
 
-        $model_class::chunk(500, function(Collection $Objects) use ($fp, $map) {
+        $model_class::chunk(500, function(Collection $Objects) use ($fp, $map, $csvescape) {
             foreach($Objects as $Object) {
                 $raw = $Object->attributesToArray();
                 $mapped = [];
@@ -145,7 +148,7 @@ class Database
                     $mapped[] = $val;
                 }
 
-                fputcsv($fp, $mapped);
+                fputcsv($fp, $mapped, escape: $csvescape);
             }
         });
 
@@ -186,7 +189,7 @@ class Database
 
             try {
                 $mapped = [];
-                $raw = array_values(str_getcsv($line));
+                $raw = array_values(str_getcsv($line, escape: self::$csvescape));
 
                 foreach($map as $mkey => $lr) {
                     $lr = explode('|', $lr);

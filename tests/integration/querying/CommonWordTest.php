@@ -3,6 +3,7 @@
 use Illuminate\Foundation\Testing\WithoutMiddleware;
 use Illuminate\Foundation\Testing\DatabaseMigrations;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
+use PHPUnit\Framework\Attributes\Depends;
 
 use App\Engine;
 use App\Models\Language;
@@ -93,6 +94,11 @@ class CommonWordTest extends TestCase
         $Language->save();
 
         $results = $Engine->actionQuery(['bible' => 'kjv', 'search' => 'and','language' => 'en', 'page_limit' => 30]);
+        
+        if($Engine->hasErrors()) {
+            var_dump($Language->common_words);
+            print_r($Engine->getErrors());
+        }
 
         // No errors, because no common words
         $this->assertFalse($Engine->hasErrors());
@@ -150,6 +156,7 @@ class CommonWordTest extends TestCase
         $Language->save();
     }    
 
+    // #[Depends('testQueryEn')]
     public function testQueryEnCapital() 
     {
         $Engine = new Engine(); // Need new instance because this test is colliding with others
@@ -211,6 +218,7 @@ class CommonWordTest extends TestCase
         $Language->save();
     }
 
+    // #[Depends('testQueryEnCapital')]
     public function testQueryEnSearchType()
     {
         $Engine = new Engine(); // Need new instance because this test is colliding with others
@@ -253,6 +261,7 @@ class CommonWordTest extends TestCase
     }
 
     // RE: Ran into conflichts with common words when highlighting search keywords
+    // #[Depends('testQueryEnSearchType')]
     public function testQueryEnHighlight()
     {
         $Engine = new Engine(); // Need new instance because this test is colliding with others
@@ -304,6 +313,7 @@ class CommonWordTest extends TestCase
         $Language->save();
     }
     
+    // #[Depends('testQueryEnHighlight')]
     public function testLanguageMismatch()
     {
         $Engine = new Engine(); // Need new instance because this test is colliding with others

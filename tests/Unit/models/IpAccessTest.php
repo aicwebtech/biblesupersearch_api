@@ -176,15 +176,22 @@ class IpAccessTest extends TestCase
         }
     }
 
+    /*
+        * Test that the domain is parsed correctly and the limit is set
+        * based on the domain
+        * @depends testDomainCustomLimit
+        */
     public function testSameDomain() 
     {
         $domain = 'http://www.testsamedomain.com';
 
+        $_SERVER['HTTP_HOST'] = $_SERVER['SERVER_NAME'] = 'www.example.com';
+
         $IP = IpAccess::findOrCreateByIpOrDomain($this->_fakeIp(), $domain);
-        $this->assertEquals($IP->getAccessLimit(), config('bss.daily_access_limit'));
+        $this->assertEquals($IP->getAccessLimit(false), config('bss.daily_access_limit'));
 
         $_SERVER['HTTP_HOST'] = $_SERVER['SERVER_NAME'] = 'www.testsamedomain.com';
-        $this->assertEquals($IP->getAccessLimit(), 0);
+        $this->assertEquals($IP->getAccessLimit(false), 0, $IP->domain . ' should = ' . $domain);
 
         $IP->delete();
     }

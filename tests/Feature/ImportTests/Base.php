@@ -9,20 +9,23 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use App\Engine;
 use App\ImportManager;
+use PHPUnit\Framework\Attributes\Depends;
 
-
-class Base extends TestCase {
+class Base extends TestCase 
+{
     protected $file_name = NULL;
     protected $importer = NULL;
     protected $run_in_production = false;
 
-    protected function _init() {
+    protected function _init() 
+    {
         if(!$this->run_in_production && config('app.env') == 'production') {
             $this->markTestSkipped('This test skipped in production');
         }
     }
 
-    public function testInit() {
+    public function testInit() 
+    {
         $this->_init();
 
         $this->assertNotNull($this->file_name);
@@ -33,10 +36,9 @@ class Base extends TestCase {
         return ['User' => $User];
     }
 
-    /**
-     * @depends testInit
-     */ 
-    public function testImportCheck(array $shared) {
+    #[Depends('testInit')]
+    public function testImportCheck(array $shared) 
+    {
     
         $data = [];
 
@@ -58,10 +60,9 @@ class Base extends TestCase {
         return $shared;
     }
 
-    /**
-     * @depends testImportCheck
-     */ 
-    public function testImport(array $shared) {        
+    #[Depends('testImportCheck')]
+    public function testImport(array $shared) 
+    {        
         $ts_u = microtime(TRUE);
         $ts = (int) $ts_u;
         $us =       ($ts_u - $ts) * 1000000;
@@ -94,10 +95,9 @@ class Base extends TestCase {
         return $shared;
     }
 
-    /**
-     * @depends testImport
-     */ 
-    public function testTest(array $shared) {
+    #[Depends('testImport')]
+    public function testTest(array $shared) 
+    {
         $module = $shared['Bible']->module;
 
         $response = $this->actingAs($shared['User'])
@@ -126,10 +126,9 @@ class Base extends TestCase {
         return $shared;
     }    
 
-    /**
-     * @depends testTest
-     */ 
-    public function testDelete(array $shared) {
+    #[Depends('testTest')]
+    public function testDelete(array $shared) 
+    {
 
         $response = $this->actingAs($shared['User'])
                     ->withSession(['banned' => FALSE])
@@ -150,13 +149,15 @@ class Base extends TestCase {
     }    
 
 
-    protected function _makeFakeImportTest($data) {
+    protected function _makeFakeImportTest($data) 
+    {
         $data['file'] = $this->_generateUploadedFile($this->file_name);
         $data['importer'] = $this->importer;
         return $data;
     }
 
-    protected function _generateUploadedFile($file_name) {
+    protected function _generateUploadedFile($file_name) 
+    {
         $file_path = dirname(__FILE__) . '/' . $file_name;
         return new UploadedFile($file_path, $file_name, NULL, NULL, TRUE);
     }

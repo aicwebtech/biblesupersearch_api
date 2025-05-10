@@ -14,7 +14,8 @@ use Illuminate\Http\UploadedFile;
 use App\Engine;
 use App\ImportManager;
 
-class ImportMySwordTest extends Base {
+class ImportMySwordTest extends Base 
+{
     protected $file_name = 'mysword.bbl.mybible.gz';
     protected $importer = 'mysword';
 }

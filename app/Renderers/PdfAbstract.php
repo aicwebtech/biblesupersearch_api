@@ -4,8 +4,10 @@ namespace App\Renderers;
 
 use App\Models\Bible;
 use App\Models\Language;
+use \TCPDF_FONTS;
 
-abstract class PdfAbstract extends RenderAbstract {
+abstract class PdfAbstract extends RenderAbstract 
+{
     protected $file_extension = 'pdf';
     protected $include_book_name = TRUE;
     protected $tcpdf_class              = TCPDFBible::class;
@@ -16,7 +18,7 @@ abstract class PdfAbstract extends RenderAbstract {
 
     protected static $name_include_format = FALSE;  // Temporary? Until I find time to rebuild renderers with user options
 
-    protected static $render_est_time = 450;
+    protected static $render_est_time = 4500;
     
     protected $pdf_orientation          = 'P';
     protected $pdf_unit                 = 'mm';
@@ -36,7 +38,7 @@ abstract class PdfAbstract extends RenderAbstract {
     protected $pdf_toc_title_size       = 16;
     protected $pdf_toc_size             = 12;
     protected $pdf_header_size          = 8;
-    protected $pdf_header_style         = 'B';    
+    protected $pdf_header_style         = 'B';    // Warning, some languages do not support Bold
     protected $pdf_book_size            = 12;
     protected $pdf_book_style           = 'B';    
     protected $pdf_book_align           = 'C';
@@ -49,12 +51,59 @@ abstract class PdfAbstract extends RenderAbstract {
     protected $pdf_break_new_testament  = NULL; // none, column, page
     protected $pdf_break_new_book       = NULL; // none, column, page
     protected $pdf_suppress_write_err   = FALSE;
+    protected $pdf_avoid_html           = false; // If TRUE, avoid using HTML tages in the text.
+    protected $pdf_allow_bold           = false; // If FALSE, do not use bold text in the PDF.  This is useful for some languages that do not support bold text.
+
+    protected $pdf_no_styles            = false; // If TRUE, do not use any styles (Bold, UL, red letter) in the PDF
+
+    protected $pdf_no_styles_defaults = [
+        'pdf_header_style'  => '',
+        'pdf_book_style'    => '',
+        'pdf_chapter_style' => '',
+        'pdf_allow_bold'    => false,
+        'pdf_brackets_to_italics' => false,
+        'pdf_avoid_html' => true,
+    ];
 
     protected $pdf_language_overrides = [
         'ar' => [
             // 'pdf_font_family'   => 'aefurat', // do not use
             'pdf_column_width'  => 45,
         ],
+        'bn' => [
+            'pdf_chapter_size' => 9,
+            'pdf_no_styles' => true,
+        ],
+        'te' => [
+            'pdf_no_styles' => true,
+            // 'pdf_font_family' => 'notoserifteluguvariablefont_wght',
+            // Font path is relative to resources/fonts 
+            // pdf_font_family is automatically set when the font is loaded
+            'font_path' => 'Noto_Serif_Telugu/static/NotoSerifTelugu-Regular.ttf',
+        ],
+        'pa' => [
+            'pdf_no_styles' => true,
+        ],
+        'gu' => ['pdf_no_styles' => true],
+        'bo' => [
+            'pdf_no_styles' => true,
+            'font_path' => 'Noto_Serif_Tibetan/static/NotoSerifTibetan-Regular.ttf',
+        ],
+        'ug' => ['pdf_no_styles' => true],
+        'ta' => ['pdf_no_styles' => true],
+        'kn' => [
+            'pdf_no_styles' => true,
+            'font_path' => 'Noto_Serif_Kannada/static/NotoSerifKannada-Regular.ttf',
+        ],
+        'my' => [
+            'pdf_no_styles' => true,
+            // 'font_path' => 'Noto_Serif_Myanmar/NotoSerifMyanmar-Regular.ttf', // The Noto Myanmar font breaks TCPDF
+            //'font_path' => 'myanmar/Pyidaungsu/Pyidaungsu-1.8.3_Regular.ttf', // mostly works?  (dashed circle characters?)
+            'font_path' => 'myanmar/Pyidaungsu/Myanmar3-2018.ttf',  // works
+        ],
+        'am' => ['pdf_no_styles' => true],
+        // 'gu' => ['pdf_no_styles' => true],
+        // 'gu' => ['pdf_no_styles' => true],
         'zh' => [
             'pdf_font_family' => 'msungstdlight',
         ],        
@@ -63,7 +112,6 @@ abstract class PdfAbstract extends RenderAbstract {
         ],        
         'ko' => [
             'pdf_font_family' => 'cid0kr',
-            // 'pdf_font_family' => 'cid0jp',
         ],
         'th' => [
             // 'pdf_columns' => 3,
@@ -88,7 +136,8 @@ abstract class PdfAbstract extends RenderAbstract {
     protected $toc_page = 5;
     protected $in_psalms = FALSE;
 
-    public function __construct($module) {
+    public function __construct($module) 
+    {
         parent::__construct($module);
 
         $this->_applyPdfLanguageOverride();
@@ -100,6 +149,19 @@ abstract class PdfAbstract extends RenderAbstract {
         $this->TCPDF  = new $this->tcpdf_class($this->pdf_orientation, $this->pdf_unit, $format);
         $this->TCPDF->setHeaderMargin(10);
         $this->TCPDF->setFooterMargin(0);
+        $this->TCPDF->allow_bold = $this->pdf_allow_bold;
+
+        //$res = TCPDF_FONTS::addTTFfont(__DIR__ . '/../../resources/fonts/noto_serif_telugu/NotoSerifTelugu-VariableFont_wght.ttf', 'TrueTypeUnicode', '', 96);
+
+        //var_dump(is_file( __DIR__ . '/../../resources/fonts/noto_serif_telugu/static/NotoSerifTelugu-Regular.ttf'));
+
+        // $res = $this->TCPDF->AddFont('bobski', '', __DIR__ . '/../../resources/fonts/noto_serif_telugu/NotoSerifTelugu-VariableFont_wght.ttf');
+        // $res = $this->TCPDF->AddFont('bobski', '', __DIR__ . '/../../resources/fonts/noto_serif_telugu/static/NotoSerifTelugu-Regular.ttf');
+        // // $res = $this->TCPDF->addTTFfont(__FILE__ . '/../../resources/fonts/noto_serif/telugu/NotoSerifTelugu-VariableFont_wght.ttf');
+
+        // print_r($res);
+        // var_dump($res);
+        // die();
         
         if(static::$load_fonts) {
             $this->_initiateFonts();
@@ -109,13 +171,20 @@ abstract class PdfAbstract extends RenderAbstract {
         $this->TCPDF->SetMargins($this->pdf_margin_inside, $this->pdf_top_margin, $this->pdf_margin_outside);
     }
 
-    protected function _initiateFonts() {
+    protected function _initiateFonts() 
+    {
         $this->TCPDF->setFont($this->pdf_font_family, '', $this->pdf_text_size);
         $this->TCPDF->setHeaderFont([$this->pdf_font_family, $this->pdf_header_style, $this->pdf_header_size]);
         $this->TCPDF->setFooterFont([$this->pdf_font_family, $this->pdf_header_style, $this->pdf_header_size]);
     }
 
-    protected function _renderStart() {
+    protected function _applyDefaultFont() 
+    {
+        $this->TCPDF->setFont($this->pdf_font_family, '', $this->pdf_text_size);
+    }
+
+    protected function _renderStart() 
+    {
         // todo: Set RTL based on Bible language
 
         $this->TCPDF->setTitle($this->Bible->name);
@@ -131,9 +200,9 @@ abstract class PdfAbstract extends RenderAbstract {
 
         $this->TCPDF->setFontSize($this->pdf_title_size);
         $this->TCPDF->setY($title_pos);
-        $this->TCPDF->Cell(0, $title_height, strtoupper(__('basic.holy_bible')),   0, 1, 'C');
+        $this->TCPDF->Cell(0, $title_height, $this->strtoupper(__('basic.holy_bible')),   0, 1, 'C');
         $this->TCPDF->setFontSize($this->pdf_bible_version_size);
-        $this->TCPDF->MultiCell(0, $title_height, strtoupper($this->Bible->name), 0, 'C');
+        $this->TCPDF->MultiCell(0, $title_height, $this->strtoupper($this->Bible->name), 0, 'C');
         $this->TCPDF->ln();
         $this->TCPDF->addPage();
         $this->TCPDF->addPage();
@@ -167,7 +236,8 @@ abstract class PdfAbstract extends RenderAbstract {
         return TRUE;
     }
 
-    protected function _renderSingleVerse($verse) {
+    protected function _renderSingleVerse($verse) 
+    {
 
         if($this->pdf_verses_paragraph === 'auto') {
             $this->pdf_verses_paragraph = (strpos($verse->text, '¶') !== FALSE);
@@ -203,14 +273,20 @@ abstract class PdfAbstract extends RenderAbstract {
         $this->last_render_chapter      = $verse->chapter;
     }
 
-    protected function _writeText($text = NULL, $text_pending_addl = '') {
+    protected function _writeText($text = NULL, $text_pending_addl = '') 
+    {
         if(!$text) {
             if(!$this->text_pending) {
                 return;
             }
 
             // Add paragraph indent - currently $this->text_pending is only used for paragraph rendering
-            $text = '<div style="text-indent:20px">' . $this->text_pending . $text_pending_addl . '</div>';
+            if($this->pdf_avoid_html) {
+                $text = $this->text_pending . $text_pending_addl;
+            } else {
+                $text = '<div style="text-indent:20px">' . $this->text_pending . $text_pending_addl . '</div>';
+            }
+
             $this->text_pending = '';
         }
 
@@ -250,7 +326,12 @@ abstract class PdfAbstract extends RenderAbstract {
         $find[] = '  ';
         $repl[] = '&nbsp;&nbsp;';
 
-        $html = str_replace(array('‹', '›', '[', ']', '  '), array($rl_st, $rl_en, '<i>', '</i>', '&nbsp;&nbsp;'), $text);
+        if($this->pdf_avoid_html) {
+            $html = str_replace(array('‹', '›', '[', ']'), '', $text);
+        } else {
+            $html = str_replace(array('‹', '›', '[', ']', '  '), array($rl_st, $rl_en, '<i>', '</i>', '&nbsp;&nbsp;'), $text);
+        }
+
         // $html = str_replace('  ', '&nbsp;&nbsp;', $text); // for some reason THIS takes 16 min for the KJV!
         // $html = $text;
         $this->TCPDF->setFont($this->pdf_font_family, '', $this->pdf_text_size);
@@ -296,7 +377,8 @@ abstract class PdfAbstract extends RenderAbstract {
         $this->TCPDF->Ln(); 
     }
 
-    protected function _renderFinish() {
+    protected function _renderFinish() 
+    {
         $this->_writeText();
 
         $this->TCPDF->setEqualColumns(0);
@@ -309,6 +391,7 @@ abstract class PdfAbstract extends RenderAbstract {
         $this->TCPDF->SetMargins($this->pdf_margin_inside, $this->pdf_top_margin, $this->pdf_margin_outside);
 
         // add a new page for TOC
+        
         $this->TCPDF->addTOCPage();
 
         // write the TOC title
@@ -332,6 +415,7 @@ abstract class PdfAbstract extends RenderAbstract {
         $this->TCPDF->setEqualColumns(0);
         // end of TOC page
         $this->TCPDF->endTOCPage();
+        
 
         $filepath = $this->getRenderFilePath(TRUE);
         $this->TCPDF->Output($filepath, 'F');
@@ -339,7 +423,8 @@ abstract class PdfAbstract extends RenderAbstract {
         return TRUE;
     }
 
-    protected function _renderNewBook($book, $book_name, $chapter = 1) {
+    protected function _renderNewBook($book, $book_name, $chapter = 1) 
+    {
         if($this->pdf_verses_paragraph && $this->text_pending) {
             // $this->text_pending .= '<br />';
         }
@@ -365,16 +450,30 @@ abstract class PdfAbstract extends RenderAbstract {
         $height_units = $this->TCPDF->pixelsToUnits($height_pixel);
         $this->TCPDF->checkPageBreak($height_units);
 
-        $this->TCPDF->Bookmark($book_name, 1);
-        $this->TCPDF->Write(0, strtoupper($book_name), '', FALSE, $this->pdf_book_align);
+        $this->TCPDF->Bookmark($this->strtoupper($book_name), 1);
+        $this->TCPDF->Write(0, $this->strPreFormat($book_name), '', FALSE, $this->pdf_book_align);
         $this->TCPDF->Ln();
         $this->_renderNewChapter($chapter);
     }
 
-    protected function _renderTestamentHeader($testament) {
+    protected function strtoupper($text) 
+    {
+        // $text = mb_strtoupper($text, 'UTF-8');
+        return $text;
+    }
+
+    protected function strPreFormat($text)
+    {
+        // $text = TCPDF_FONTS::UTF8ToUTF16BE($text, false, true, $this->TCPDF->getCurrentFont());
+        return $text;
+    }
+
+    protected function _renderTestamentHeader($testament) 
+    {
 
         if($this->pdf_break_new_testament == 'page') {
             $this->_addOddNumberedPage();
+            $this->_applyDefaultFont();
             $this->TCPDF->setFontSize($this->pdf_testement_size);
             $this->TCPDF->Bookmark($testament);
             $this->TCPDF->Cell(0, 20, $testament, 0, 1, 'L');
@@ -382,11 +481,13 @@ abstract class PdfAbstract extends RenderAbstract {
             $this->TCPDF->addPage();
         } 
         else {
+            // $testament = $this->TCPDF->formatTitle($testament);
             $this->TCPDF->Bookmark($testament);
         }
     }
 
-    protected function _renderNewChapter($chapter) {
+    protected function _renderNewChapter($chapter) 
+    {
         if($this->pdf_verses_paragraph && $this->text_pending) {
             // $this->text_pending .= '<br />';
         }
@@ -407,28 +508,51 @@ abstract class PdfAbstract extends RenderAbstract {
         $this->TCPDF->Write(0, $chapter_name, '', FALSE, $this->pdf_chapter_align);
         $this->TCPDF->Ln();
         $this->TCPDF->Ln();
-        $this->TCPDF->setFont($this->pdf_font_family, $this->pdf_text_size);
+        $this->_applyDefaultFont();
     }
 
-    protected function _enableColumns() {
+    protected function _enableColumns() 
+    {
         if($this->pdf_columns > 1) {
             $this->TCPDF->setEqualColumns($this->pdf_columns, $this->pdf_column_width);
         }
     }
 
-    protected function _disableColumns() {
+    protected function _disableColumns() 
+    {
         $this->TCPDF->setEqualColumns(0);
     }
 
-    protected function _applyPdfLanguageOverride() {
+    protected function _applyPdfLanguageOverride() 
+    {
         if(array_key_exists($this->Bible->lang_short, $this->pdf_language_overrides) && is_array($this->pdf_language_overrides[ $this->Bible->lang_short ])) {
-            foreach($this->pdf_language_overrides[ $this->Bible->lang_short ] as $key => $value) {
+            $ov = $this->pdf_language_overrides[ $this->Bible->lang_short ];
+
+            if(array_key_exists('font_path', $ov)) {
+                $full_path = __DIR__ . '/../../resources/fonts/' . $ov['font_path'];
+                $ov['pdf_font_family'] = TCPDF_FONTS::addTTFfont($full_path);
+
+                if(!$ov['pdf_font_family'] ) {
+                    die('Font not found: resources/fonts/' . $ov['font_path']);
+                }
+                
+                unset($ov['font_path']);
+            }
+            
+            foreach($ov as $key => $value) {
+                $this->$key = $value;
+            }
+        }
+
+        if($this->pdf_no_styles) {
+            foreach($this->pdf_no_styles_defaults as $key => $value) {
                 $this->$key = $value;
             }
         }
     }
 
-    protected function _setRtlByLanguage($enable = TRUE) {
+    protected function _setRtlByLanguage($enable = TRUE) 
+    {
         if($enable && Language::isRtl($this->Bible->lang_short)) {
             $this->TCPDF->setRTL(TRUE);
         }
@@ -440,7 +564,8 @@ abstract class PdfAbstract extends RenderAbstract {
     /**
      * Adds the next odd-numbered page
      */
-    protected function _addOddNumberedPage() {
+    protected function _addOddNumberedPage() 
+    {
         $page = $this->TCPDF->getBiblePageCount();
         $this->TCPDF->addPage();
 
@@ -450,7 +575,8 @@ abstract class PdfAbstract extends RenderAbstract {
         } 
     }
 
-    public static function getName() {
+    public static function getName() 
+    {
         if(!static::$name_include_format) {
             return static::$name;
         }
@@ -480,7 +606,8 @@ abstract class PdfAbstract extends RenderAbstract {
         return static::$name . ', ' . $format . $woc;
     }
 
-    public static function getDescription() {
+    public static function getDescription() 
+    {
         $desc = static::$description;
 
         if(static::$pdf_red_word_tag == 'u' || static::$pdf_red_word_tag == 'b') {

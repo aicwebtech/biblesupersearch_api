@@ -104,7 +104,7 @@ abstract class SpreadsheetAbstract extends ImporterAbstract
             }
 
             $value = $row[$key];
-            $value = trim($value);
+            $value = trim((string)$value);
             $value = preg_replace('/\s+/', ' ', $value);
 
             if($value && $value[0] == '=') {

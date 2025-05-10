@@ -19,8 +19,18 @@ class ParallelTest extends TestCase {
             $this->markTestSkipped('Bible tyndale not installed or enabled');
         }
 
+        $ov_max = min(
+            config('bss.global_maximum_results'),
+            config('bss.parallel_search_maximum_results')
+        );
+
+        if($ov_max < 341) {
+            $this->markTestSkipped('Global maximum results is less than 341');
+        }
+
         // KJV and Tyndales
         $results = $Engine->actionQuery(['bible' => ['kjv','tyndale'], 'search' => 'faith', 'whole_words' => FALSE, 'page_all' => TRUE]);
+
         $this->assertFalse($Engine->hasErrors());
 
         // 341 unique verses across both Bibles.
@@ -34,6 +44,15 @@ class ParallelTest extends TestCase {
 
         if(!Bible::isEnabled('bishops')) {
             $this->markTestSkipped('Bible bishops not installed or enabled');
+        }
+
+        $ov_max = min(
+            config('bss.global_maximum_results'),
+            config('bss.parallel_search_maximum_results')
+        );
+
+        if($ov_max < 354) {
+            $this->markTestSkipped('Global maximum results is less than 354');
         }
 
         // KJV and Bishops
@@ -50,6 +69,10 @@ class ParallelTest extends TestCase {
             $this->markTestSkipped('Bible bishops not installed or enabled');
         }
 
+        if(config('bss.parallel_search_maximum_results') < config('bss.global_maximum_results')) {
+            $this->markTestSkipped('Parallel search maximum results is overall maximum results, skipping');
+        }
+
         $Engine = new Engine();
         $results = $Engine->actionQuery(['bible' => ['kjv','bishops'], 'search' => 'God', 'whole_words' => FALSE, 'page_all' => TRUE]);
         $this->assertTrue($Engine->hasErrors());
@@ -59,6 +82,10 @@ class ParallelTest extends TestCase {
     public function testPagination() {
         if(!Bible::isEnabled('bishops')) {
             $this->markTestSkipped('Bible bishops not installed or enabled');
+        }
+
+        if(config('bss.parallel_search_maximum_results') < config('bss.global_maximum_results')) {
+            $this->markTestSkipped('Parallel search maximum results is overall maximum results, skipping');
         }
 
         $Engine = new Engine();

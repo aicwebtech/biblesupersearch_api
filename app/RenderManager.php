@@ -62,6 +62,7 @@ class RenderManager {
     protected $Output = NULL;
     protected $ProgressBar = NULL;
     public $include_extras = FALSE;
+    public $debug = FALSE;
 
     public function __construct($modules, $format, $zip = FALSE, $Output = NULL) 
     {
@@ -249,9 +250,15 @@ class RenderManager {
 
                 if($this->Output && count($Bibles_Needing_Render) > 0) {
                     $this->Output->write("Rendering bibles \n");
+
+                    if($this->debug) {
+                        $this->Output->write("DEBUG mode is on\n");
+                    }
+
                     $this->ProgressBar = $this->Output->createProgressBar(count($Bibles_Needing_Render));
                     $this->ProgressBar->setFormatDefinition('custom', ' %current%/%max% [%bar%] %percent:3s%% %elapsed:6s%/%estimated:-6s% -- %message%                     ' . PHP_EOL);
                     $this->ProgressBar->setFormat('custom');
+                    $this->ProgressBar->setMessage($Bibles_Needing_Render[0]->name);
                 }
                 
                 foreach($Bibles_Needing_Render as $Bible) {
@@ -263,11 +270,18 @@ class RenderManager {
                     $this->Output && $this->ProgressBar->setMessage($Bible->name);
 
                     $Renderer = new $CLASS($Bible);
+                    $Renderer->debug = $this->debug;
 
-                    if(!$Renderer->render(TRUE, $suppress_overwrite_error)) {
-                        $this->addErrors($Renderer->getErrors(), $Renderer->getErrorLevel());
+                    try {
+                        if(!$Renderer->render(TRUE, $suppress_overwrite_error)) {
+                            $this->addError('Error rendering ' . $Bible->name . ' (' . $Bible->module . ') in ' . $format . ' format');
+                            $this->addErrors($Renderer->getErrors(), $Renderer->getErrorLevel());
+                        }
+                    } catch (\Exception $e) {
+                        $this->addError('Error rendering ' . $Bible->name . ' (' . $Bible->module . ') in ' . $format . ' format');
+                        $this->addError($e->getMessage());
                     }
-                    
+
                     if($this->Output) {
                         $this->ProgressBar->advance();
                     }
@@ -325,10 +339,12 @@ class RenderManager {
         return FALSE;
     }
 
-    public function download($bypass_render_limit = FALSE, $make_file_only = false, $en_lang_name = false) 
+    public function download($bypass_render_limit = FALSE, $make_file_only = false, $en_lang_name = false, $prev_rendered_only = false) 
     {
 
-        if($this->hasErrors()) {
+        $prev_rendered_only = $this->multi_bibles ? $prev_rendered_only : false;
+
+        if(!$prev_rendered_only && $this->hasErrors()) {
             return FALSE;
         }
 
@@ -338,10 +354,12 @@ class RenderManager {
             return $this->addError('You can download a maximum of ' . $download_limit . ' Bibles at once.');
         }
 
-        $rs = $this->render(FALSE, TRUE, $bypass_render_limit);
+        if(!$prev_rendered_only) {
+            $rs = $this->render(FALSE, TRUE, $bypass_render_limit);
 
-        if(!$rs) {
-            return FALSE;
+            if(!$rs) {
+                return FALSE;
+            }
         }
 
         $download_file_path = NULL;
@@ -420,13 +438,12 @@ class RenderManager {
                         $Renderer = new $CLASS($Bible);
                         $filepath = $Renderer->getDownloadFilePath();
 
-                        if(!$filepath) {
+                        if(!$filepath || !file_exists($filepath)) {
                             continue;
                         }
 
                         if($this->Output) {
                             $this->ProgressBar->setMessage($Bible->name);
-
                         }
 
                         $lang = trim($Bible->language->native_name);

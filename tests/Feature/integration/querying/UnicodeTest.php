@@ -345,6 +345,10 @@ class UnicodeTest extends TestCase {
             $this->markTestSkipped('Bible lv_gluck_8 not installed or enabled');
         }
 
+        if(config('bss.parallel_search_different_languages') == 'never') {
+            $this->markTestSkipped('Searching across Bbiles of different languages is disabled');  
+        }
+
         $Engine = Engine::getInstance();
         $Engine->setDefaultDataType('passage');
 

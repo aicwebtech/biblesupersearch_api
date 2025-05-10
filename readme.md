@@ -22,7 +22,7 @@ You also have the option to build  your own.
 ## Official Documentation
 
 ### Server Requirements:
-* PHP >= 8.0.2
+* PHP >= 8.2.0
 * MySQL
 * mod_rewrite (Apache2) or equivalent
 * BCMath PHP Extension
@@ -37,7 +37,7 @@ You also have the option to build  your own.
 * Tokenizer PHP Extension
 * XML PHP Extension
 * Zip PHP Extension
-* SQLite3 PHP Extension (recommended)
+* SQLite3 PHP Extension
 * Composer
 
 

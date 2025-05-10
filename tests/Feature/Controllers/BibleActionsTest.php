@@ -7,6 +7,7 @@ use Illuminate\Foundation\Testing\WithFaker;
 use Illuminate\Http\UploadedFile;
 use App\User;
 use App\Models\Bible;
+use PHPUnit\Framework\Attributes\Depends;
 // use Tests\TestCase;
 
 /**
@@ -34,13 +35,14 @@ class BibleActionsTest extends TestCase
     protected $files = [];
     protected $UploadedFiles = [];
 
-    public function __construct() {
-        parent::__construct();
+    public function __construct() 
+    {
+        parent::__construct(...func_get_args());
         $this->files = ($this->quick_mode) ? $this->files_lite : $this->files_full;
     }
 
-
-    public function testInit() {
+    public function testInit() 
+    {
         if(!$this->test_http) {
             $this->markTestSkipped('The .env config APP_TEST_HTTP must be true to run these tests.');
         }
@@ -58,10 +60,9 @@ class BibleActionsTest extends TestCase
         return ['User' => $User];
     }
 
-    /**
-     * @depends testInit
-     */ 
-    public function testImportCheck(array $shared) {
+    #[Depends('testInit')]
+    public function testImportCheck(array $shared) 
+    {
         $data = [
             'first_row_data' => 9,
             'col_A' => NULL,
@@ -93,10 +94,9 @@ class BibleActionsTest extends TestCase
         return $shared;
     }
 
-    /**
-     * @depends testImportCheck
-     */ 
-    public function testImport(array $shared) {        
+    #[Depends('testImportCheck')]
+    public function testImport(array $shared) 
+    {        
         $ts = time();
 
         $data = $shared['last_response']['bible'];
@@ -126,10 +126,9 @@ class BibleActionsTest extends TestCase
         return $shared;
     }
 
-    /**
-     * @depends testImport
-     */ 
-    public function testTest(array $shared) {
+    #[Depends('testImport')]
+    public function testTest(array $shared) 
+    {
 
         $response = $this->actingAs($shared['User'])
                     ->withSession(['banned' => FALSE])
@@ -143,10 +142,9 @@ class BibleActionsTest extends TestCase
         return $shared;
     }    
 
-    /**
-     * @depends testTest
-     */ 
-    public function testDisable(array $shared) {
+    #[Depends('testTest')]
+    public function testDisable(array $shared) 
+    {
 
         $response = $this->actingAs($shared['User'])
                     ->withSession(['banned' => FALSE])
@@ -163,10 +161,9 @@ class BibleActionsTest extends TestCase
         return $shared;
     }    
 
-    /**
-     * @depends testDisable
-     */ 
-    public function testEnable(array $shared) {
+    #[Depends('testDisable')]
+    public function testEnable(array $shared) 
+    {
 
         $response = $this->actingAs($shared['User'])
                     ->withSession(['banned' => FALSE])
@@ -183,10 +180,9 @@ class BibleActionsTest extends TestCase
         return $shared;
     }    
 
-    /**
-     * @depends testEnable
-     */ 
-    public function testResearch(array $shared) {
+    #[Depends('testEnable')]
+    public function testResearch(array $shared) 
+    {
 
         $response = $this->actingAs($shared['User'])
                     ->withSession(['banned' => FALSE])
@@ -203,10 +199,9 @@ class BibleActionsTest extends TestCase
         return $shared;
     }     
 
-    /**
-     * @depends testResearch
-     */ 
-    public function testUnresearch(array $shared) {
+    #[Depends('testResearch')]
+    public function testUnresearch(array $shared) 
+    {
 
         $response = $this->actingAs($shared['User'])
                     ->withSession(['banned' => FALSE])
@@ -223,10 +218,9 @@ class BibleActionsTest extends TestCase
         return $shared;
     }    
 
-    /**
-     * @depends testUnresearch
-     */ 
-    public function testExport(array $shared) {
+    #[Depends('testUnresearch')]
+    public function testExport(array $shared) 
+    {
         $response = $this->actingAs($shared['User'])
                     ->withSession(['banned' => FALSE])
                     ->postJson('/admin/bibles/export/' . $shared['bible_id']);
@@ -241,10 +235,9 @@ class BibleActionsTest extends TestCase
         return $shared;
     }        
 
-    /**
-     * @depends testExport
-     */ 
-    public function testUninstall(array $shared) {
+    #[Depends('testExport')]
+    public function testUninstall(array $shared) 
+    {
 
         $response = $this->actingAs($shared['User'])
                     ->withSession(['banned' => FALSE])
@@ -262,10 +255,9 @@ class BibleActionsTest extends TestCase
         return $shared;
     }     
 
-    /**
-     * @depends testUninstall
-     */ 
-    public function testInstall(array $shared) {
+    #[Depends('testUninstall')]
+    public function testInstall(array $shared) 
+    {
 
         $response = $this->actingAs($shared['User'])
                     ->withSession(['banned' => FALSE])
@@ -283,10 +275,9 @@ class BibleActionsTest extends TestCase
         return $shared;
     }    
 
-    /**
-     * @depends testInstall
-     */ 
-    public function testEdit(array $shared) {
+    #[Depends('testInstall')]
+    public function testEdit(array $shared) 
+    {
         // Attempt to READ the Bible data
         $get_resp = $this->actingAs($shared['User'])
                     ->withSession(['banned' => FALSE])
@@ -327,10 +318,9 @@ class BibleActionsTest extends TestCase
         return $shared;
     }
 
-    /**
-     * @depends testEdit
-     */ 
-    public function testUpdate(array $shared) {
+    #[Depends('testEdit')]
+    public function testUpdate(array $shared) 
+    {
 
         $response = $this->actingAs($shared['User'])
                     ->withSession(['banned' => FALSE])
@@ -345,10 +335,9 @@ class BibleActionsTest extends TestCase
         return $shared;
     }    
 
-    /**
-     * @depends testUpdate
-     */ 
-    public function testUpdateModule(array $shared) {
+    #[Depends('testUpdate')]
+    public function testUpdateModule(array $shared) 
+    {
 
         $response = $this->actingAs($shared['User'])
                     ->withSession(['banned' => FALSE])
@@ -364,10 +353,9 @@ class BibleActionsTest extends TestCase
         return $shared;
     }        
 
-    /**
-     * @depends testUpdateModule
-     */ 
-    public function testRevert(array $shared) {
+    #[Depends('testUpdateModule')]
+    public function testRevert(array $shared) 
+    {
         $this->assertTrue(TRUE);
 
         // Since this is called after self::testUpdateModule, the metadata on the module file will match that on the Bible record
@@ -409,10 +397,9 @@ class BibleActionsTest extends TestCase
         return $shared;
     }        
 
-    /**
-     * @depends testRevert
-     */ 
-    public function testDelete(array $shared) {
+    #[Depends('testRevert')]
+    public function testDelete(array $shared) 
+    {
 
         $response = $this->actingAs($shared['User'])
                     ->withSession(['banned' => FALSE])
@@ -432,13 +419,15 @@ class BibleActionsTest extends TestCase
         return $shared;
     }    
 
-    protected function _makeFakeImportTest($importer, $data) {
+    protected function _makeFakeImportTest($importer, $data) 
+    {
         $data['file'] = $this->_generateUploadedFile($importer);
         $data['importer'] = array_key_exists($importer, $this->files) ? $importer : NULL;  
         return $data;
     }
 
-    protected function _generateUploadedFile($importer) {
+    protected function _generateUploadedFile($importer) 
+    {
         $file_name = $this->files[ $importer ];
         $file_path = dirname(__FILE__) . '/../test_spreadsheets/' . $file_name;
         return new UploadedFile($file_path, $file_name, NULL, NULL, TRUE);

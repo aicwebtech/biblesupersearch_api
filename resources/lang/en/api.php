@@ -53,7 +53,6 @@ return array(
         'bullets' => array(
             'format' => 'Return a JSON-encoded string',
             'cors' => 'Can be used cross-domain',
-            'cors_old' => 'Can be used cross-domain (By sending the CORS header: \'Access-Control-Allow-Origin: *\')',
             'jsonp' => 'Support JSONP via the \'callback\' parameter',
             'structure' => 'Return this basic structure',
             'method' => 'Should be called using GET',

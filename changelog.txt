@@ -1,5 +1,13 @@
 Bible SuperSearch API Changelog
 
+= 6.0.0
+** BREAKING CHANGES 
+* PHP version: Minimum 8.2
+* SQLite extension now Required
+* MySQL version: v 8.0 + recommended
+
+* PDF renderer: Added fonts, now supports all supported languages  
+
 = 5.6.20
 * Allowing ! and other punctuation in search keywords
 * Sending chapter and chapter/verse counts based on KJV (defaulting to default Bible only if KJV not enabled)

@@ -18,7 +18,7 @@ class KeyAccessTest extends TestCase
     public function testInvalidKey() 
     {
         if(!config('app.experimental')) {
-            $this->markTestSkipped();
+            $this->markTestSkipped('Experimental functionality, skipping tests.');
         }
 
         $key = ApiKey::generateKeyHash();
@@ -33,7 +33,7 @@ class KeyAccessTest extends TestCase
     public function testNoAccessKey() 
     {
         if(!config('app.experimental')) {
-            $this->markTestSkipped();
+            $this->markTestSkipped('Experimental functionality, skipping tests.');
         }
 
         $key = $this->_fakeKey(ApiAccessLevel::NONE);
@@ -58,7 +58,7 @@ class KeyAccessTest extends TestCase
     public function testDeletedKey() 
     {
         if(!config('app.experimental')) {
-            $this->markTestSkipped();
+            $this->markTestSkipped('Experimental functionality, skipping tests.');
         }
 
         $key = $this->_fakeKey(ApiAccessLevel::BASIC);
@@ -78,7 +78,7 @@ class KeyAccessTest extends TestCase
     public function testBasicKey() 
     {
         if(!config('app.experimental')) {
-            $this->markTestSkipped();
+            $this->markTestSkipped('Experimental functionality, skipping tests.');
         }
 
         $key = $this->_fakeKey(ApiAccessLevel::BASIC);
@@ -109,7 +109,7 @@ class KeyAccessTest extends TestCase
     public function testFullAccesssKey() 
     {
         if(!config('app.experimental')) {
-            $this->markTestSkipped();
+            $this->markTestSkipped('Experimental functionality, skipping tests.');
         }
 
         $key = $this->_fakeKey(ApiAccessLevel::FULL);
@@ -135,7 +135,7 @@ class KeyAccessTest extends TestCase
     public function testAccessLogs()
     {
         if(!config('app.experimental')) {
-            $this->markTestSkipped();
+            $this->markTestSkipped('Experimental functionality, skipping tests.');
         }
 
         // Generate our key

@@ -31,6 +31,8 @@ abstract class RenderAbstract
 
     static public $load_fonts = TRUE;
 
+    public $debug = false; // Debug rendering by only rendering handful of verses
+
     protected $file_extension;
 
     protected $Bible;
@@ -247,6 +249,10 @@ abstract class RenderAbstract
             $Query->addSelect($book_table . '.' . $this->book_name_field . ' AS book_name');
         }
 
+        if($this->debug) {
+            $Query->where($table . '.id', '<', 200);
+        }
+
         $closure = function($rows) {
             foreach($rows as $row) {
                 $row->text = $this->_formatText($row->text);
@@ -413,7 +419,7 @@ abstract class RenderAbstract
         $dir = $relative ? '' : static::getRenderBasePath();
         $dir .= $renderer;
 
-        if(!is_dir($dir) && $create_dir && !relative) {
+        if(!is_dir($dir) && $create_dir && !$relative) {
             mkdir($dir, 0775, TRUE);
             chmod($dir, 0775);
         }

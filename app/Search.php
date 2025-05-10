@@ -69,7 +69,7 @@ class Search extends SqlSearch {
 
     static public function containsProximityOperators($search) {
         $special_ops   = ['~p', '~c', '~b', '~l'];
-        $search = static::standardizeProximityOperators($search);
+        $search = (string)static::standardizeProximityOperators($search);
         $prox_found = FALSE;
 
         foreach($special_ops AS $op) {

@@ -7,13 +7,16 @@ use Illuminate\Foundation\Testing\WithFaker;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use App\RenderManager;
 use App\Models\RenderLog;
+use PHPUnit\Framework\Attributes\Depends;
 
 // php ./vendor/phpunit/phpunit/phpunit --filter=RenderManagerTest
 
-class RenderManagerTest extends TestCase {
+class RenderManagerTest extends TestCase 
+{
     private $skip_render_tests = TRUE;
 
-    public function testList() {
+    public function testList() 
+    {
         $list = RenderManager::getRendererList();
 
         $this->assertArrayHasKey('text', $list);
@@ -85,7 +88,8 @@ class RenderManagerTest extends TestCase {
         RenderLog::deleteByIp($fake_ip, 0); // Clean up
     }
 
-    public function testFileCleanUpCalcs() {
+    public function testFileCleanUpCalcs() 
+    {
         $verbose = FALSE;
 
         // Test 1: Current space exceeds MAXIMUM cache size max (temp + retained) needed render space exceeds temp cache size
@@ -143,7 +147,8 @@ class RenderManagerTest extends TestCase {
         $this->assertEquals(0, $results['space_needed_overall']);   
     }
 
-    public function testRetainConfigsInit() {
+    public function testRetainConfigsInit() 
+    {
         $test_space = 50;
         
         $test_params = [
@@ -184,9 +189,11 @@ class RenderManagerTest extends TestCase {
     /**
      * Testing max filesize.  Anything larger will be deleted
      * 
-     * @depends testRetainConfigsInit
      */ 
-    public function testRetainMaxFilesize($shared) {
+
+    #[Depends('testRetainConfigsInit')]
+    public function testRetainMaxFilesize($shared) 
+    {
         extract($shared);
 
         $Rendering->file_size = 10;
@@ -217,9 +224,10 @@ class RenderManagerTest extends TestCase {
     /**
      * Testing days to retain
      * 
-     * @depends testRetainMaxFilesize
      */ 
-    public function testRetainDays($shared) {
+    #[Depends('testRetainMaxFilesize')]
+    public function testRetainDays($shared) 
+    {
         extract($shared);
         
         // Not yet
@@ -260,9 +268,10 @@ class RenderManagerTest extends TestCase {
     /**
      * Testing Minimum rendering time
      * 
-     * @depends testRetainDays
      */ 
-    public function testRetainMinimumRenderTime($shared) {
+    #[Depends('testRetainDays')]
+    public function testRetainMinimumRenderTime($shared) 
+    {
         extract($shared);
         $cached = $Rendering->rendered_duration;
 
@@ -314,9 +323,10 @@ class RenderManagerTest extends TestCase {
     /**
      * Testing Minimum hits
      * 
-     * @depends testRetainMinimumRenderTime
      */ 
-    public function testRetainMinimumHits($shared) {
+    #[Depends('testRetainMinimumRenderTime')]
+    public function testRetainMinimumHits($shared) 
+    {
         extract($shared);
 
         $cached = $Rendering->hits; // this is prob 0 if non-production build
@@ -363,7 +373,8 @@ class RenderManagerTest extends TestCase {
         return $shared;
     }
 
-    public function testRenderNeeded() {
+    public function testRenderNeeded() 
+    {
 
         $TextRender = new \App\Renderers\PlainText('kjv');
         $Rendering0 = $TextRender->_getRenderingRecord();
@@ -416,7 +427,8 @@ class RenderManagerTest extends TestCase {
 
     /* Methods below are really slow, and should not be called in production */
 
-    public function testManagerRender() {
+    public function testManagerRender() 
+    {
 
         if($this->skip_render_tests) {
             $this->assertTrue(TRUE);

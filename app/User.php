@@ -50,4 +50,9 @@ class User extends Model implements AuthenticatableContract,
     {
         $this->notify(new CustomPasswordReset($this, $token));
     }
+
+    public function getAuthPasswordName()
+    {
+        return 'password';
+    }
 }

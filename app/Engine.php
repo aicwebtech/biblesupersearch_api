@@ -503,12 +503,13 @@ class Engine
                 else {
                     if($Search) {
                         $results[$Bible->module] = [];
-                        $ptr = $input['parallel_search_error_suppress'] ? null : 'errors.parallel_bible_no_results';
-                        $tr = ($parallel) ? $ptr : 'errors.bible_no_results';
-                    }
-                    else {
+                        // $ptr = $input['parallel_search_error_suppress'] ? null : 'errors.parallel_bible_no_results';
+                        $tr = ($parallel) ? 'errors.parallel_bible_no_results' : 'errors.bible_no_results';
+                    } else {
                         $tr = 'errors.bible_no_results';
                     }
+
+                    $tr = $input['parallel_search_error_suppress'] ? null : $tr;
                     
                     if($tr) {
                         $bible_no_results[] = trans($tr, ['module' => $Bible->name]);
@@ -986,6 +987,8 @@ class Engine
         $response->name                     = config('app.name');
         $response->hash                     = $this->_getNameHash();
         $response->version                  = config('app.version');
+        $response->api_version              = config('app.api_version');
+        $response->api_version_list         = config('app.api_version_list');
         $response->environment              = config('app.env');
         $response->research_desc            = config('bss.research_description');
         $response->parallel_lang_search     = config('bss.parallel_search_different_languages');
@@ -1132,10 +1135,12 @@ class Engine
     public function actionVersion($input) 
     {
         $response = new \stdClass;
-        $response->name         = config('app.name');
-        $response->hash         = $this->_getNameHash();
-        $response->version      = config('app.version');
-        $response->environment  = config('app.env');
+        $response->name             = config('app.name');
+        $response->hash             = $this->_getNameHash();
+        $response->version          = config('app.version');
+        $response->api_version      = config('app.api_version');
+        $response->api_version_list = config('app.api_version_list');
+        $response->environment      = config('app.env');
 
         // pher - unpublished property 'php version' checks against current required PHP version
         if(array_key_exists('pher', $input) && $input['pher']) {
@@ -1185,7 +1190,7 @@ class Engine
 
     protected function _formatStrongs($attr) 
     {
-        $attr['tvm'] = preg_replace('/<b>Count:<\/b> [0-9]+.*?<br>/', '', $attr['tvm']); // Remove 'count' from TVM
+        $attr['tvm'] = $attr['tvm'] ? preg_replace('/<b>Count:<\/b> [0-9]+.*?<br>/', '', $attr['tvm']) : null; // Remove 'count' from TVM
         unset($attr['created_at']);
         unset($attr['updated_at']);
         return $attr;
@@ -1208,6 +1213,11 @@ class Engine
             $cache['form_data'] = json_decode($cache['form_data'], TRUE);
             return $cache;
         }
+    }
+
+    public function actionRequirements($input)
+    {
+        return \App\InstallManager::getChecklist();
     }
 
     protected function _formatDataStructure($results, $input, $Passages, $Search) 
@@ -1478,6 +1488,11 @@ class Engine
     // Detect and error for cases when there is an input, but it's effectively empty
     protected function checkSemiEmpty($value, $as = 'request') 
     {
+        if(empty($value) || !is_string($value)) {
+            // If it's actually empty, no error. Re: we have separate checks for this
+            return true; 
+        }
+        
         $value_org = $value;
         $value = trim($value);
         $value = str_replace('_', ' ', $value);

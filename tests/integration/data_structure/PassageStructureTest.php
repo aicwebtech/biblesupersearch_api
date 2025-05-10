@@ -73,7 +73,7 @@ class PassageStructureTest extends TestCase {
             $this->assertEquals($expected_verse_index, $results[0]['verse_index']);
         }
 
-        if(Bible::isEnabled('tyndale')) {
+        if(Bible::isEnabled('luther')) {
             // Luther Bible may not have a Romans 14:6.  The verse index would be used to insure parallel passages are lined up correctly
             $expected_verse_index = array(14 => [5,6,7,8,9]);
             $Engine  = new Engine();

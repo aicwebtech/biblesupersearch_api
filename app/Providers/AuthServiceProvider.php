@@ -25,8 +25,6 @@ class AuthServiceProvider extends ServiceProvider
      */
     public function boot(GateContract $gate)
     {
-        $this->registerPolicies($gate);
-
         Gate::define('admin-access', function($User) {
             return ($User->access_level >= 100);
         });

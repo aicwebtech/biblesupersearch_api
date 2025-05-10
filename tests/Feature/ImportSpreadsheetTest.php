@@ -29,8 +29,9 @@ class ImportSpreadsheetTest extends TestCase {
     protected $files = [];
     protected $UploadedFiles = [];
 
-    public function __construct() {
-        parent::__construct();
+    public function __construct() 
+    {
+        parent::__construct(...func_get_args());
 
         $this->files = ($this->quick_mode) ? $this->files_lite : $this->files_full;
     }

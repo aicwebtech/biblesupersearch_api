@@ -19,15 +19,17 @@ class Kernel extends HttpKernel
         \Illuminate\Session\Middleware\StartSession::class,
         \Illuminate\View\Middleware\ShareErrorsFromSession::class,
         \App\Http\Middleware\VerifyCsrfToken::class,
-        \Fruitcake\Cors\HandleCors::class
+        \Illuminate\Http\Middleware\HandleCors::class
     ];
 
     /**
-     * The application's route middleware.
+     * The application's route middleware aliases.
+     * Note: In new Laravel options, this is now $middlewareAliases
+     * However, attempting to use that name here causes an error
      *
      * @var array
      */
-    protected $routeMiddleware = [
+    protected $routeMiddleware  = [
         'auth' => \App\Http\Middleware\Authenticate::class,
         'auth.basic' => \Illuminate\Auth\Middleware\AuthenticateWithBasicAuth::class,
         'guest' => \App\Http\Middleware\RedirectIfAuthenticated::class,

@@ -73,6 +73,17 @@ code=$?
 if [[ !($code = 0) ]]
 then
     echo ''
+    echo ''
+    echo 'Attempting serial tests'
+    echo '';
+    php ./vendor/bin/phpunit 
+
+    code=$?
+fi
+
+if [[ !($code = 0) ]]
+then
+    echo ''
     echo 'The tests found some errors'
     echo 'Please fix errors before continuing';
     exit

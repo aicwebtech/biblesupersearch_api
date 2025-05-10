@@ -228,7 +228,7 @@ class MySword extends ImporterAbstract
     public function mapMetaToAttributes($meta, $preserve_attributes = FALSE, $map = NULL) 
     {
         parent::mapMetaToAttributes($meta, $preserve_attributes, $map);
-        $this->bible_attributes['year'] = date('Y', strtotime($this->bible_attributes['year']));
+        $this->bible_attributes['year'] = $this->bible_attributes['year'] ? date('Y', strtotime($this->bible_attributes['year'])) : null;
     }
 
     private function _getSQLite($path, $orig_filename) 

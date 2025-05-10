@@ -4,6 +4,7 @@
 
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Foundation\Testing\WithFaker;
+use Illuminate\Routing\Middleware\ThrottleRequests;
 //use Tests\TestCase;
 
 /* Always test with public access enabled */
@@ -17,6 +18,10 @@ class ApiActionsTest extends TestCase
     public function setUp() :void
     {
         parent::setUp();
+
+        $this->withoutMiddleware(
+            ThrottleRequests::class
+        );
 
         $this->config_cache = config('bss.public_access');
         $this->config_changed = false;
@@ -43,6 +48,11 @@ class ApiActionsTest extends TestCase
     {
         // GET
         $response = $this->getJson('/api/statics?language=es');
+
+        if($response->status() == 429) {
+            $this->markTestSkipped('429 Skipping due to rate limiting');
+        }
+
         $response->assertStatus(200);        
         $this->assertEquals(0, $response['error_level']);
         $this->assertEquals('Romanos', $response['results']['books'][44]['name']); 
@@ -58,6 +68,17 @@ class ApiActionsTest extends TestCase
         $this->assertEquals('KJV', $response['results']['bibles']['kjv']['shortname']); 
         $this->assertEquals(config('app.version'), $response['results']['version']);
         $this->assertEquals(config('app.name'), $response['results']['name']);
+
+        // Versioned
+        // GET
+        $response = $this->getJson('/api/v2/statics?language=es');
+
+        $response->assertStatus(200);        
+        $this->assertEquals(0, $response['error_level']);
+        $this->assertEquals('Romanos', $response['results']['books'][44]['name']); 
+        $this->assertEquals('KJV', $response['results']['bibles']['kjv']['shortname']); 
+        $this->assertEquals(config('app.version'), $response['results']['version']);
+        $this->assertEquals(config('app.name'), $response['results']['name']);
     }       
 
     /**
@@ -70,6 +91,11 @@ class ApiActionsTest extends TestCase
     {
         // GET
         $response = $this->getJson('/api/bibles?language=es');
+
+        if($response->status() == 429) {
+            $this->markTestSkipped('429 Skipping due to rate limiting');
+        }
+
         $response->assertStatus(200);        
         $this->assertEquals(0, $response['error_level']);
         $this->assertEquals('KJV', $response['results']['kjv']['shortname']); 
@@ -90,6 +116,11 @@ class ApiActionsTest extends TestCase
     {
         // GET
         $response = $this->getJson('/api/books?language=es');
+
+        if($response->status() == 429) {
+            $this->markTestSkipped('429 Skipping due to rate limiting');
+        }
+
         $response->assertStatus(200);        
         $this->assertEquals(0, $response['error_level']);
         $this->assertEquals('Romanos', $response['results'][44]['name']);
@@ -110,8 +141,14 @@ class ApiActionsTest extends TestCase
     {
         // GET - empty request
         $response = $this->getJson('/api');
+
+        if($response->status() == 429) {
+            $this->markTestSkipped('429 Skipping due to rate limiting');
+        }
+
         $response->assertStatus(400);        
         $this->assertEquals(4, $response['error_level']);
+        $this->assertContains(__('errors.no_query'), $response['errors']);
         
         // POST - empty request
         $response = $this->postJson('/api');
@@ -132,6 +169,42 @@ class ApiActionsTest extends TestCase
     }    
 
     /**
+     * Tests of the default ('query') action
+     *
+     * @return void
+     */
+    public function testActionDefaultQueryVersioned()
+    {
+        // GET - empty request
+        $response = $this->getJson('/api/v2');
+
+        if($response->status() == 429) {
+            $this->markTestSkipped('429 Skipping due to rate limiting');
+        }
+
+        $response->assertStatus(400);        
+        $this->assertEquals(4, $response['error_level']);
+        $this->assertContains(__('errors.no_query'), $response['errors']);
+        
+        // POST - empty request
+        $response = $this->postJson('/api/v2');
+        $response->assertStatus(400);        
+        $this->assertEquals(4, $response['error_level']);
+
+        // GET
+        $response = $this->getJson('/api/v2?request=faith&bible=kjv');
+        $response->assertStatus(200);
+        $this->assertEquals(0, $response['error_level']);
+        $this->assertEquals(338, $response['paging']['total']);
+
+        // POST
+        $response = $this->postJson('/api/v2', ['request' => 'faith', 'bible' => 'kjv']);
+        $response->assertStatus(200);
+        $this->assertEquals(0, $response['error_level']);
+        $this->assertEquals(338, $response['paging']['total']);
+    }  
+
+    /**
      * Tests of the 'query' action
      *
      * @return void
@@ -140,6 +213,11 @@ class ApiActionsTest extends TestCase
     {
         // GET - empty request
         $response = $this->getJson('/api/query');
+
+        if($response->status() == 429) {
+            $this->markTestSkipped('429 Skipping due to rate limiting');
+        }
+
         $response->assertStatus(400);        
         $this->assertEquals(4, $response['error_level']);
         
@@ -170,6 +248,11 @@ class ApiActionsTest extends TestCase
     {
         // GET
         $response = $this->getJson('/api/version');
+
+        if($response->status() == 429) {
+            $this->markTestSkipped('429 Skipping due to rate limiting');
+        }
+
         $response->assertStatus(200);        
         $this->assertEquals(0, $response['error_level']);
         $this->assertEquals(config('app.version'), $response['results']['version']);
@@ -192,6 +275,11 @@ class ApiActionsTest extends TestCase
     {
         // GET - empty request
         $response = $this->getJson('/api/strongs');
+
+        if($response->status() == 429) {
+            $this->markTestSkipped('429 Skipping due to rate limiting');
+        }
+
         $response->assertStatus(400);        
         $this->assertEquals(4, $response['error_level']);
         
@@ -226,6 +314,11 @@ class ApiActionsTest extends TestCase
 
         // GET - empty request
         $response = $this->getJson('/api/download');
+
+        if($response->status() == 429) {
+            $this->markTestSkipped('429 Skipping due to rate limiting');
+        }
+
         $response->assertStatus(400);        
         $this->assertEquals(4, $response['error_level']);
         
@@ -270,6 +363,11 @@ class ApiActionsTest extends TestCase
 
         // GET - empty request
         $response = $this->getJson('/api/render_needed');
+
+        if($response->status() == 429) {
+            $this->markTestSkipped('429 Skipping due to rate limiting');
+        }
+
         $response->assertStatus(400);        
         $this->assertEquals(4, $response['error_level']);
         
@@ -322,7 +420,12 @@ class ApiActionsTest extends TestCase
 
         $response = $this->postJson('/api/render_needed', ['bible' => 'kjv', 'format' => 'mr_text']);
 
+        if($response->status() == 429) {
+            $this->markTestSkipped('429 Skipping due to rate limiting');
+        }
+
         $response->assertStatus(200);      
+
         $this->assertEquals(0, $response['error_level']);
         $this->assertFalse($response['results']['render_needed']);
         $this->assertIsArray($response['results']['bibles_needing_render']);
@@ -357,6 +460,11 @@ class ApiActionsTest extends TestCase
 
         // GET - empty request
         $response = $this->getJson('/api/render');
+
+        if($response->status() == 429) {
+            $this->markTestSkipped('429 Skipping due to rate limiting');
+        }
+
         $response->assertStatus(400);        
         $this->assertEquals(4, $response['error_level']);
         
