@@ -101,6 +101,11 @@ export function useGrid(data, props) {
             grid.totalRows.value = 0;
             grid.gridRows.value = [];
         },
+        
+        gridResetRows() {
+            grid.gridRows.value = [];
+            grid.gridRefresh();
+        },
         gridResetSearch() {
             grid.gridClearSearch();
             grid.gridReset();

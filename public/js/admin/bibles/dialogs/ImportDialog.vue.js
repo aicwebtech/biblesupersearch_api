@@ -1,4 +1,4 @@
-import EditForm from './BibleEditForm.vue.js';
+import EditForm from '../forms/BibleEditForm.vue.js';
 import Loading from '/js/bin/custom_vue/dialogs/LoadingDialog.vue.js';
 import Confirm from '/js/bin/custom_vue/dialogs/ConfirmDialog.vue.js';
 

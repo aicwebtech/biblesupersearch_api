@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use App\Models\Books\BookAbstract as Book;
 
 class Language extends Model 
@@ -15,6 +16,11 @@ class Language extends Model
         'iso_639_1', 'iso_639_2', 'iso_639_2_b', 'iso_639_3', 'iso_639_3_raw', 'notes',
         'common_words',
     ];
+
+    public function bibles(): HasMany
+    {
+        return $this->hasMany(App\Models\Bible::class, 'language_code', 'code');
+    }
 
     public function rtl() 
     {

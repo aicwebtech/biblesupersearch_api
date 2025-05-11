@@ -1,9 +1,9 @@
-import EditForm from './dialogs_forms/BibleEditForm.vue.js';
+import EditForm from './forms/BibleEditForm.vue.js';
 import EditDialog from '/js/bin/custom_vue/dialogs/EditDialog.vue.js';
 import TruncateTooltip from '/js/bin/custom_vue/components/Truncate.vue.js';
 import YesNoSel from '/js/bin/custom_vue/components/YesNoSelector.vue.js';
-import ActionDialog from './dialogs_forms/ActionDialog.vue.js';
-import ImportDialog from './dialogs_forms/ImportDialog.vue.js';
+import ActionDialog from './dialogs/ActionDialog.vue.js';
+import ImportDialog from './dialogs/ImportDialog.vue.js';
 import { gridTemplateProps, useGrid } from '/js/bin/custom_vue/composables/Grid.vue.js';
 
 const template = `<v-sheet>
@@ -279,7 +279,7 @@ const template = `<v-sheet>
                 :actions = 'bulkActions'
                 :queue = 'actionQueue'
                 @onClose='closeActions'
-                @onSave='gridRefresh'
+                @onSave='refreshGridRefreshWithExtras'
 
             ></ActionDialog>            
 
@@ -288,7 +288,7 @@ const template = `<v-sheet>
                 :replace = 'importReplace'
                 @onClose='closeImport'
                 @onTest='testBible'
-                @onSave='gridRefresh'
+                @onSave='refreshGridRefreshWithExtras'
 
             ></ImportDialog>
 
@@ -300,7 +300,7 @@ const template = `<v-sheet>
                 recordIndex='Bible'
                 @onClose='closeEdit'
                 @afterLeave='closeEdit'
-                @onSave='gridRefresh'
+                @onSave='refreshGridRefreshWithExtras'
                 url='/admin/bibles'
                 v-slot='{data}'
             >
@@ -346,6 +346,14 @@ export default {
         EditForm
     },
     template: template, 
+    watch: {
+        gridRows(is, was) {
+            this.init();
+        },
+        extraCols(is, was) {
+            !is && this.gridResetRows();
+        }
+    },
     data() {
         return { 
             gridCellProps: {class: 'pa-0'},
@@ -358,8 +366,10 @@ export default {
             actionQueue: null,
             importShowing: false,
             importReplace: null,
+            inited: false,
             editingRecord: {},
             rowSelections: [],
+            languagesWithBibles: bootstrap.languages,
             bulkActions: [
                 {
                     action: 'install',
@@ -461,7 +471,7 @@ export default {
                     {title: 'Short Name', key: 'shortname', width: 150},
                     {title: 'Module', key: 'module', width: 150},
                     {title: 'Language', key: 'lang', width: 150, searchComponent: 'v-autocomplete', searchProps: {
-                        'items': bootstrap.languages,
+                        'items': this.languagesWithBibles,
                         'item-title': 'name',
                         'item-value': 'code'
                     }},
@@ -475,7 +485,7 @@ export default {
                     {title: 'Enabled', key: 'enabled', width: 50, searchComponent: 'YesNoSel'},
                     {title: 'Official', key: 'official', width: 50, searchComponent: 'YesNoSel'},
                     {title: 'Research **', key: 'research', width: 50, searchComponent: 'YesNoSel'},
-                    {title: 'Has File', key: 'has_module_file', width: 100, searchComponent: 'YesNoSel'},
+                    {title: 'Has File', key: 'has_module_file', width: 100, sortable: false, searchComponent: 'YesNoSel'},
                     {title: 'Updated', key: 'updated_at', width: 150, searchable: false},
                     {title: 'Rank', key: 'rank', width: 50, searchable: false},
                     {title: 'Actions', key: 'actions', sortable: false, width: 100, searchable: false},
@@ -487,7 +497,7 @@ export default {
                     {title: 'Short Name', key: 'shortname', width: 150},
                     {title: 'Module', key: 'module', width: 150},
                     {title: 'Language', key: 'lang', width: 150, searchComponent: 'v-autocomplete', searchProps: {
-                        'items': bootstrap.languages,
+                        'items': this.languagesWithBibles,
                         'item-title': 'name',
                         'item-value': 'code'
                     }},
@@ -504,6 +514,11 @@ export default {
         }
     },
     methods: {        
+        refreshGridRefreshWithExtras() {
+            console.log('afterGridRefresh', arguments);
+            this.gridRefresh();
+            this.loadBibleLanguage();
+        },
         clickEdit(item) {
             console.log('clickEdit', item);
 
@@ -516,6 +531,21 @@ export default {
         closeEdit() {
             this.editingId = null;
             this.editingRecord = {};
+        },
+        init() {
+            if(this.inited) {
+                return;
+            }
+
+            this.inited = true;
+            this.loadBibleLanguage();
+        },
+        loadBibleLanguage() {
+            axios.get('/admin/bibles/languages').then(response => {
+                this.languagesWithBibles = response.data.languages;
+            }).catch(error => {
+                console.error('Error loading languages:', error);
+            });
         },
         openImport() {
             this.importShowing = true;
