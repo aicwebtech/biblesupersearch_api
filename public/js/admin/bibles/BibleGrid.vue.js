@@ -56,18 +56,9 @@ const template = `<v-sheet>
             
             <v-data-table-server
                 ` + gridTemplateProps + `
-                
+                                
                 :headers="headers"
-                show-current-page
-                :loading='loading ? "primary-darken-1" : false'
-                fixed-header
-                single-select
-                hover
-                density='compact'
-                color='#333333'
                 show-select
-                :cell-props='gridCellProps'
-                :header-props='gridCellProps'
                 item-value="id"
                 v-model='rowSelections'
             >
@@ -108,36 +99,52 @@ const template = `<v-sheet>
                 <template v-slot:item.name={item}>
                     <TruncateTooltip 
                         :text='item.name' 
-                        :maxLen='showExtraCols ? 30 : 50'>
+                        :maxLen='showExtraCols ? 40 : 70'>
                     </TruncateTooltip>
                 </template>                   
 
                 <template v-slot:item.shortname={item}>
-                    <TruncateTooltip :text='item.shortname' :maxLen='10'></TruncateTooltip>
+                    <TruncateTooltip :text='item.shortname' :maxLen='20'></TruncateTooltip>
                 </template>                          
 
                 <template v-slot:item.copy={item}>
-                    <TruncateTooltip :text='item.copy' :maxLen='20'></TruncateTooltip>
+                    <TruncateTooltip :text='item.copy' :maxLen='34'></TruncateTooltip>
                 </template>                           
 
                 <template v-slot:item.has_module_file={item}>
-                    <v-chip :size='chipSize'
-                        :text="item.has_module_file == '1' ? 'Yes' : 'No'"
-                    ></v-chip>
+                    <v-chip 
+                        v-if="item.has_module_file == '1'" 
+                        v-bind='chipProps'
+                        text='Yes'
+                        color='success'
+                        variant='flat'
+
+                    />
+                    <v-chip 
+                        v-else 
+                        @click="handleSingleAction('export', item)" 
+                        v-bind='chipProps'
+                        text='No'
+                        color='error'
+                    />
                 </template>                        
 
                 <template v-slot:item.installed={item}>
                     <v-chip 
                         v-if="item.installed == '1'" 
                         @click="handleSingleAction('uninstall', item)" 
-                        :size='chipSize'
+                        v-bind='chipProps'
                         text='Yes'
+                        color='success'
+                        variant='flat'
+
                     />
                     <v-chip 
                         v-else 
                         @click="handleSingleAction('install', item)" 
-                        :size='chipSize'
+                        v-bind='chipProps'
                         text='No'
+                        color='error'
                     />
                 </template>                 
 
@@ -145,20 +152,25 @@ const template = `<v-sheet>
                     <v-chip 
                         v-if="item.enabled == '1'" 
                         @click="handleSingleAction('disable', item)" 
-                        :size='chipSize'
+                        v-bind='chipProps'
                         text='Yes'
+                        variant='flat'
+                        color='success'
                     />
                     <v-chip 
                         v-else 
                         @click="handleSingleAction('enable', item)" 
-                        :size='chipSize'
+                        v-bind='chipProps'
                         text='No'
+                        color='error'
                     />
                 </template>                 
                 
                 <template v-slot:item.official={item}>
-                    <v-chip :size='chipSize'
+                    <v-chip v-bind='chipProps'
                         :text="item.official == '1' ? 'Yes' : 'No'"
+                        :color="item.official == '1' ? 'primary' : 'secondary'"
+                        :variant="item.official == '1' ? 'flat' : 'tonal'"
                     ></v-chip>
                 </template>                   
 
@@ -166,14 +178,17 @@ const template = `<v-sheet>
                     <v-chip 
                         v-if="item.research == '1'" 
                         @click="handleSingleAction('unresearch', item)" 
-                        :size='chipSize'
+                        v-bind='chipProps'
                         text='Yes'
+                        color='primary'
+                        variant='flat'
                     />
                     <v-chip 
                         v-else 
                         @click="handleSingleAction('research', item)" 
-                        :size='chipSize'
+                        v-bind='chipProps'
                         text='No'
+                        color='secondary'
                     />
                 </template>    
                 
@@ -183,15 +198,34 @@ const template = `<v-sheet>
                     {{ formatDateTime(item.updated_at, "fullDateTime") }}
                 </template>    
 
+                <template v-slot:item.attention={item}>
+                    <v-chip 
+                        v-if="item.has_module_file == '0'"
+                        @click="handleSingleAction('export', item)" 
+                        v-bind='chipProps'
+                        text='Export'
+                        variant='flat'
+                        color='error'
+                    />
+                    <v-chip 
+                        v-else-if="item.needs_update == '1' && bootstrap.devToolsEnabled"
+                        @click="handleSingleAction('update', item)" 
+                        v-bind='chipProps'
+                        text='Update'
+                        variant='flat'
+                        color='error'
+                    />
+                </template>  
+
                 <template v-slot:item.actions={item}>
-                    <v-chip :size='chipSize'
+                    <v-chip v-bind='chipProps'
                         text='Edit'
                         @click='clickEdit(item)'
                     ></v-chip> 
 
                     <v-menu>
                         <template v-slot:activator="{ props }">
-                            <v-btn icon="mdi-dots-vertical" variant="text" v-bind="props"></v-btn>
+                            <v-btn icon="mdi-dots-vertical" variant="text" v-bind="props" density='compact' size='small'></v-btn>
                         </template>
 
                         <v-list density='compact'>
@@ -318,7 +352,7 @@ export default {
             gridData: {
                 sidx: 'rank',
                 sord: 'ASC',
-                rows_per_page: 10,
+                rows_per_page: 20,
                 copyright_id: null,
                 installed: null,
                 enabled: null,
@@ -356,9 +390,11 @@ export default {
     },
     data() {
         return { 
-            gridCellProps: {class: 'pa-0'},
-            chipSize: 'small',
-            chipDensity: 'default',
+            // gridCellProps: {class: 'pa-0'},
+            chipProps: {
+                size: 'small',
+                density: 'comfortable'
+            },
             extraCols: false,
             editing: false,
             editingId: null,
@@ -481,13 +517,14 @@ export default {
                         'item-value': 'id'
                     } },
                     {title: 'Year', key: 'year', width: 150},
-                    {title: 'Installed', key: 'installed', width: 50, searchComponent: 'YesNoSel'},
-                    {title: 'Enabled', key: 'enabled', width: 50, searchComponent: 'YesNoSel'},
-                    {title: 'Official', key: 'official', width: 50, searchComponent: 'YesNoSel'},
-                    {title: 'Research **', key: 'research', width: 50, searchComponent: 'YesNoSel'},
-                    {title: 'Has File', key: 'has_module_file', width: 100, sortable: false, searchComponent: 'YesNoSel'},
-                    {title: 'Updated', key: 'updated_at', width: 150, searchable: false},
-                    {title: 'Rank', key: 'rank', width: 50, searchable: false},
+                    {title: 'Installed', key: 'installed', width: 50, searchComponent: 'YesNoSel', align: 'center'},
+                    {title: 'Enabled', key: 'enabled', width: 50, searchComponent: 'YesNoSel', align: 'center'},
+                    {title: 'Has File', key: 'has_module_file', width: 100, sortable: false, searchComponent: 'YesNoSel', align: 'center'},
+                    {title: 'Official*', key: 'official', width: 50, searchComponent: 'YesNoSel', align: 'center'},
+                    {title: 'Research**', key: 'research', width: 60, searchComponent: 'YesNoSel', align: 'center'},
+                    {title: 'Updated', key: 'updated_at', width: 150, searchable: false, align: 'center'},
+                    {title: 'Rank', key: 'rank', width: 50, searchable: false, align: 'center'},
+                    {title: 'Attention', key: 'attention', sortable: false, width: 100, searchable: false},
                     {title: 'Actions', key: 'actions', sortable: false, width: 100, searchable: false},
                 ];                
 
@@ -502,9 +539,10 @@ export default {
                         'item-value': 'code'
                     }},
                     {title: 'Year', key: 'year', width: 150},
-                    {title: 'Installed', key: 'installed', width: 50, searchComponent: 'YesNoSel'},
-                    {title: 'Enabled', key: 'enabled', width: 50, searchComponent: 'YesNoSel'},
-                    {title: 'Rank', key: 'rank', width: 50, searchable: false},
+                    {title: 'Installed', key: 'installed', width: 50, searchComponent: 'YesNoSel', align: 'center'},
+                    {title: 'Enabled', key: 'enabled', width: 50, searchComponent: 'YesNoSel', align: 'center'},
+                    {title: 'Rank', key: 'rank', width: 50, searchable: false, align: 'center'},
+                    {title: 'Attention', key: 'attention', sortable: false, width: 100, searchable: false},
                     {title: 'Actions', key: 'actions', sortable: false, width: 100, searchable: false},
                 ];
             }

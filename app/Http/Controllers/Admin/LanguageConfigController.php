@@ -31,8 +31,6 @@ class LanguageConfigController extends Controller
                         ->orderBy('languages.name', 'ASC')
                         ->get();
 
-        $Post = Post::where('key', 'tos')->firstOrFail();
-
         // Add book lists, ect for these language if not exists
         foreach($Languages as $Lang) {
             $Lang->initLanguage();
@@ -243,8 +241,11 @@ class LanguageConfigController extends Controller
         return new Response($resp, 200);
     }
 
+    // Redundant and deprecated, use resource store method
     public function save(Request $request) 
     {
+        throw new \Exception('Deprecated method, use store() instead');
+        
         $lang = $request->input('language');
         $Language = Language::findByCode($lang, true);
 

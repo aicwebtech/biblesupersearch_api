@@ -1,13 +1,15 @@
 
 const template = `
-        <span>
-            {{truncatedText}}
-            <v-tooltip 
-                activator='parent' 
-                location='bottom' 
-                v-if='needsToTruncate'
-            >{{text}}</v-tooltip>
-        </span>
+    <span @click='show = !show' :class='classes'>
+        {{truncatedText}}
+        <v-tooltip 
+            activator='parent' 
+            location='bottom' 
+            v-if='needsToTruncate'
+            v-model='show'
+            :open-delay='300'
+        >{{text}}</v-tooltip>
+    </span>
 `;
 
 export default {
@@ -24,11 +26,25 @@ export default {
             type: Number,
             default: 30
         },
+        cssTruncate: {
+            type: Boolean,
+            default: false
+        },
     },
     template: template,
+    data() {
+        return {
+            show: false
+        }
+    },
     computed: {
+        classes() {
+            return {
+                'truncate': this.cssTruncate,
+            }
+        },
         truncatedText() {
-            if(!this.needsToTruncate) {
+            if(!this.needsToTruncate || this.cssTruncate) {
                 return this.text;
             }
 
@@ -38,7 +54,7 @@ export default {
             return this.text.substring(0, this.maxLen - 4) + ' ...';
         },
         needsToTruncate() {
-            return this.text ? this.text.length > this.maxLen : false;
+            return this.text ? this.cssTruncate || this.text.length > this.maxLen : false;
         },
         numberOfWords() {
             return this.text ? this.text.split().length : 0;

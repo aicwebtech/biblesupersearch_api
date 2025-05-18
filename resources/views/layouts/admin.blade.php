@@ -3,7 +3,7 @@
         // ['label' => 'Dashboard', 'route' => 'admin.main', 'new_tab' => FALSE, 'hash' => ''],
         ['label' => 'Bibles', 'route' => 'admin.bibles.index', 'new_tab' => FALSE, 'hash' => ''],
         ['label' => 'Bibles (new)', 'route' => 'admin.bibles.indexNew', 'new_tab' => FALSE, 'hash' => ''],
-        ['label' => 'Languages', 'route' => 'admin.languages', 'new_tab' => FALSE, 'hash' => ''],
+        ['label' => 'Languages', 'route' => 'admin.languages.index', 'new_tab' => FALSE, 'hash' => ''],
         ['label' => 'Options', 'route' => 'admin.configs', 'new_tab' => FALSE, 'hash' => ''],
         ['label' => 'Terms of Service', 'route' => 'admin.tos', 'new_tab' => FALSE, 'hash' => ''],
         ['label' => 'Privacy Policy', 'route' => 'admin.privacy', 'new_tab' => FALSE, 'hash' => ''],

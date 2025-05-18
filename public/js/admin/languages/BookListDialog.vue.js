@@ -13,10 +13,6 @@ const tpl = `
                         ` + gridTemplateProps + `
 
                         :headers="headers"
-                        density='compact'
-                        :loading='loading ? "primary-darken-1" : false'
-                        fixed-header
-                        hover
                     ></v-data-table-server>  
                 </v-card-text>
 

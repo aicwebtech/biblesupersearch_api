@@ -270,7 +270,7 @@ class BibleController extends Controller
      */
     public function store(Request $request) 
     {
-        $this->_save($request, NULL);
+        return $this->_save($request, NULL);
     }
 
     /**
@@ -397,6 +397,8 @@ class BibleController extends Controller
 
         $BibleClass = Helpers::find('\App\Models\Bible');
 
+        $isNew = (bool) $id ? FALSE : TRUE;
+
         if($id) {
             $Bible = Bible::findOrFail($id);
         }
@@ -404,6 +406,7 @@ class BibleController extends Controller
             $Bible = new Bible();
         }
 
+        
         $rules = $BibleClass::getUpdateRules($id);
         $data  = $request->only(array_keys($rules));
 

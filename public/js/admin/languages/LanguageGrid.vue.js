@@ -1,6 +1,7 @@
 import LanguageForm from './LanguageEditForm.vue.js';
 import BooksDialog from './BookListDialog.vue.js';
 import EditDialog from '/js/bin/custom_vue/dialogs/EditDialog.vue.js';
+import YesNoSel from '/js/bin/custom_vue/components/YesNoSelector.vue.js';
 import { gridTemplateProps, useGrid } from '/js/bin/custom_vue/composables/Grid.vue.js';
 
 const template = `<v-sheet>
@@ -17,15 +18,7 @@ const template = `<v-sheet>
 
             <v-data-table-server
                 ` + gridTemplateProps + `
-                
                 :headers="headers"
-                show-current-page
-                :loading='loading ? "primary-darken-1" : false'
-                fixed-header
-                single-select
-                hover
-                density='compact'
-                color='#333333'
             >
                 <template v-slot:header.actions={column}>
                     <span>{{column.title}}</span>
@@ -41,59 +34,20 @@ const template = `<v-sheet>
 
                 <template v-slot:thead>
                     <tr>
-                        <td>
-                            <v-text-field 
-                                v-model="gridData.code" class="ma-2" 
+                        <td v-for='col in headers'>
+                            <component 
+                                :is="col.searchComponent || 'v-text-field'" 
+                                v-if='col.searchable != false'
+                                v-model="gridData[col.searchField || col.key]" 
+                                class="ma-0 mr-1 pa-0" 
                                 density="compact" 
-                                placeholder="Search code..." 
+                                :placeholder="'Search ' + col.title + ' ...'" 
                                 hide-details
+                                clearable
+                                v-bind='col.searchProps || null'
                             >
-                            </v-text-field>
-                        </td>                        
-                        <td>
-                            <v-text-field 
-                                v-model="gridData.native_name" class="ma-2" 
-                                density="compact" 
-                                placeholder="Search Name..." 
-                                hide-details
-                            >
-                            </v-text-field>
-                        </td>                        
-                        <td>
-                            <v-text-field 
-                                v-model="gridData.name" class="ma-2" 
-                                density="compact" 
-                                placeholder="Search English Name..." 
-                                hide-details
-                            >
-                            </v-text-field>
-                        </td>                        
-                        <td>
-                            <v-text-field 
-                                v-model="gridData.family" class="ma-2" 
-                                density="compact" 
-                                placeholder="Search Family..." 
-                                hide-details
-                            >
-                            </v-text-field>
-                        </td>                          
-                        <td>
-                            <v-text-field 
-                                v-model="gridData.bibles_min" class="ma-2" 
-                                density="compact" 
-                                placeholder="Min Bibles.." 
-                                hide-details
-                            >
-                            </v-text-field>
-                        </td>                         
-                        <td>
-                            <v-text-field 
-                                v-model="gridData.bibles_max" class="ma-2" 
-                                density="compact" placeholder="Max Bibles.." 
-                                hide-details
-                            >
-                            </v-text-field>
-                        </td>                        
+                            </component>
+                        </td>                     
                     </tr>
                 </template>
 
@@ -101,7 +55,9 @@ const template = `<v-sheet>
                     <v-chip
                         :text="item.book_list == '1' ? 'Yes' : 'No'"
                         :color='bookListColor(item)'
+                        :variant = "item.book_list == '1' ? 'flat' : 'tonal'"
                         @click='clickBookList(item)'
+                        v-bind="chipProps"
                     ></v-chip>
                 </template>            
 
@@ -109,12 +65,14 @@ const template = `<v-sheet>
                     <v-chip
                         text='Edit'
                         @click='clickEdit(item)'
+                        v-bind="chipProps"
                     ></v-chip>                    
                   
                     <!--
                         <v-chip
                             text='Edit PRE'
                             @click='clickEditPre(item)'
+                            v-bind="chipProps"
                         ></v-chip>
                     -->
                 </template>
@@ -129,7 +87,7 @@ const template = `<v-sheet>
             @onClose='closeEdit'
             @afterLeave='closeEdit'
             @onSave='gridRefresh'
-            url='/admin/bibles/languages'
+            url='/admin/languages'
             v-slot='{data}'
         >
             <LanguageForm :record='data'></LanguageForm>
@@ -166,7 +124,7 @@ export default {
             gridData: {
                 sidx: 'name',
                 sord: 'ASC',
-                rows_per_page: 10,
+                rows_per_page: 20,
                 all_languages: 0,
             },
 
@@ -179,7 +137,8 @@ export default {
     components: {
         EditDialog,
         LanguageForm,
-        BooksDialog
+        BooksDialog,
+        YesNoSel
     },
     template: template, 
     data() {
@@ -190,7 +149,11 @@ export default {
             editingIdPre: null,
             editingRecord: {},
             selectedLanguage: {},
-            blLanguage: null
+            blLanguage: null,
+            chipProps: {
+                size: 'small',
+                density: 'comfortable'
+            },
         }
     },
     computed: {
@@ -201,10 +164,10 @@ export default {
                 {title: 'English Name', key: 'name'},
                 {title: 'Family', key: 'family'},
                 // todo
-                {title: '# Bibles', key: 'bibles'},
-                {title: 'Book List', key: 'book_list'},
-                // {title: 'Strong\s', key: 'strongs'},
-                {title: 'Actions', key: 'actions', sortable: false},
+                {title: '# Bibles', key: 'bibles', align: 'end', searchable: false},
+                {title: 'Book List', key: 'book_list', align: 'center', searchable: false, searchComponent: 'YesNoSel'},
+                // {title: 'Strong\s', key: 'strongs', searchComponent: 'YesNoSel'},
+                {title: 'Actions', key: 'actions', sortable: false, align: 'center', searchable: false},
             ];
         },
     },

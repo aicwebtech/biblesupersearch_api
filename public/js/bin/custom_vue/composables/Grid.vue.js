@@ -13,6 +13,16 @@ export const gridTemplateProps = `
                 :items-per-page-options='itemsPerPageOptions'
                 :page='gridData.page'
                 @update:options="gridPaginate"
+
+                show-current-page
+                :loading='loading ? "primary-darken-1" : false'
+                fixed-header
+                single-select
+                hover
+                density="compact"
+                color="#333333"
+                :cell-props='gridCellProps'
+                :header-props='gridCellProps'
                 `;
 
 export function useGrid(data, props) {
@@ -46,7 +56,11 @@ export function useGrid(data, props) {
             5, 10, 15, 20, 25, 50, 100 // :todo page all option?, {value: -1, title: '$vuetify.dataFooter.itemsPerPageAll'}
         ]),
 
+
         // Internal properties
+        gridCellProps: Vue.ref({
+            class: 'pa-1'
+        }),
         gridRows: Vue.ref([]),
         totalRows: Vue.ref(0),
         loading: Vue.ref(false),
@@ -101,7 +115,6 @@ export function useGrid(data, props) {
             grid.totalRows.value = 0;
             grid.gridRows.value = [];
         },
-        
         gridResetRows() {
             grid.gridRows.value = [];
             grid.gridRefresh();
@@ -112,12 +125,10 @@ export function useGrid(data, props) {
         },
         // Triggers grid to do search
         gridSearch() {
-            console.log('search');
             if(!grid.gridPreventSearch) {
                 grid.gridSearchDate.value = String(Date.now());
             }
         },
-        
         gridClearSearch() {
             grid.gridPreventSearch = true;
 
