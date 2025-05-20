@@ -1,13 +1,13 @@
 import EditForm from './forms/BibleEditForm.vue.js';
-import EditDialog from '/js/bin/custom_vue/dialogs/EditDialog.vue.js';
+import EditDialog from '../../bin/custom_vue/dialogs/EditDialog.vue.js';
 import TruncateTooltip from '/js/bin/custom_vue/components/Truncate.vue.js';
-import YesNoSel from '/js/bin/custom_vue/components/YesNoSelector.vue.js';
+import YesNoSel from '../../bin/custom_vue/components/YesNoSelector.vue.js';
 import ChipAlert from '../../bin/custom_vue/components/ChipAlert.vue.js';
 import ChipBool from '../../bin/custom_vue/components/ChipBool.vue.js';
 import ChipBoolAlt from '../../bin/custom_vue/components/ChipBoolAlt.vue.js';
 import ActionDialog from './dialogs/ActionDialog.vue.js';
 import ImportDialog from './dialogs/ImportDialog.vue.js';
-import { gridTemplateProps, useGrid } from '/js/bin/custom_vue/composables/Grid.vue.js';
+import { gridTemplateProps, useGrid } from '../../bin/custom_vue/composables/Grid.vue.js';
 
 const template = `<v-sheet>
             <h2 class='app'>

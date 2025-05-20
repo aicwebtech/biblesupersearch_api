@@ -60,6 +60,9 @@ class BibleController extends Controller
         $ImportManagerClass = Helpers::find('\App\ImportManager');
 
         $bootstrap = new \stdClass;
+        $bootstrap->baseUrl = ''; //url('');
+
+        // :todo move these to an API endpoint ...
         $bootstrap->devToolsEnabled  = (bool) config('bss.dev_tools');
         $bootstrap->premToolsEnabled = config('app.premium');
         $bootstrap->maxUploadSize    = Helpers::maxUploadSize('both');

@@ -15,6 +15,8 @@
        '/js/admin/app/assets/style.css',
        '/js/admin/bibles/assets/style.css',
     ];
+
+    $u = url('');
 @endphp
 
 @extends('layouts.admin')
@@ -28,27 +30,5 @@
         var bootstrap = @php echo $bootstrap @endphp;
     </script>
 
-    <script type='module'>
-        const { createApp } = Vue
-        const { createVuetify } = Vuetify
-
-        import theme1 from '/css/vue/theme1.js';
-
-        const vuetify = createVuetify({
-            theme: {
-                defaultTheme: 'theme1', 
-                themes: {
-                    theme1
-                }
-            }
-        });
-
-        import App from '/js/admin/bibles/App.vue.js';
-        // import App from '@/App.vue';
-        
-        const app = createApp(App)
-        app.use(vuetify)
-        app.provide('bootstrap', bootstrap);
-        app.mount('#app')
-    </script>
+    <script type='module' src='{{$u}}/js/admin/bibles/Bootstrap.vue.js'></script>
 @endsection

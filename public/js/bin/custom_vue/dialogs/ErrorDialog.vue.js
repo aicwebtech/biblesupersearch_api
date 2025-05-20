@@ -25,7 +25,7 @@ const template = `
     </v-dialog>
 `;
 
-import ErrorPane from '/js/bin/custom_vue/components/ErrorPane.vue.js';
+import ErrorPane from '../components/ErrorPane.vue.js';
 
 export default {
     props: {

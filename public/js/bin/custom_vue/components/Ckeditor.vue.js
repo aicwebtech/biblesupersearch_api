@@ -1,13 +1,4 @@
-import '/js/bin/ckeditor5/build/ckeditor.js';
-
-// const template = `
-//     <template>
-//         <h2>this</h2>
-//         <v-textarea ref='ta' label='ckeditor'
-
-//         ></v-textarea>
-//     </template>
-// `;
+import '../../../bin/ckeditor5/build/ckeditor.js';
 
 const template = `
     <v-textarea ref='ta' label='ckeditor' id='thing'
@@ -21,7 +12,6 @@ export default {
     props: ['modelValue'],
     emits: ['update:modelValue'],
     mounted() {
-        console.log('ckeditor mounted');
         this.initEditor();
     },
     data() {

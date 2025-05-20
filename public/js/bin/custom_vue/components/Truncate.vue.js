@@ -1,4 +1,3 @@
-
 const template = `
     <span @click='show = !show' :class='classes'>
         {{truncatedText}}

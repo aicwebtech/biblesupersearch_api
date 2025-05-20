@@ -1,4 +1,4 @@
-import '/js/bin/ckeditor5/build/ckeditor.js';
+import '../../../../js/bin/ckeditor5/build/ckeditor.js';
 
 const template = `
     <div 

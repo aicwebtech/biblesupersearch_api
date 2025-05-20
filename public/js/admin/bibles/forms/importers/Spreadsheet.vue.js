@@ -1,5 +1,5 @@
 import Base from './Base.vue.js';
-import Roles from '/js/bin/custom_vue/components/SpreadsheetColumnRoles.vue.js';
+import Roles from '../../../../bin/custom_vue/components/SpreadsheetColumnRoles.vue.js';
 
 var tpl = `
     <Roles

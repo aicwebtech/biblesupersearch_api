@@ -1,8 +1,8 @@
 import EditForm from '../forms/BibleEditForm.vue.js';
-import Loading from '/js/bin/custom_vue/dialogs/LoadingDialog.vue.js';
-import Confirm from '/js/bin/custom_vue/dialogs/ConfirmDialog.vue.js';
-import ErrorDialog from '/js/bin/custom_vue/dialogs/ErrorDialog.vue.js';
-import ErrorPane from '/js/bin/custom_vue/components/ErrorPane.vue.js';
+import Loading from '../../../bin/custom_vue/dialogs/LoadingDialog.vue.js';
+import Confirm from '../../../bin/custom_vue/dialogs/ConfirmDialog.vue.js';
+import ErrorDialog from '../../../bin/custom_vue/dialogs/ErrorDialog.vue.js';
+import ErrorPane from '../../../bin/custom_vue/components/ErrorPane.vue.js';
 
 // Importer-specific forms
 import Analyzer from '../forms/importers/Analyzer.vue.js';
