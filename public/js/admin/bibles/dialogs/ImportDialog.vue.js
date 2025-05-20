@@ -1,6 +1,8 @@
 import EditForm from '../forms/BibleEditForm.vue.js';
 import Loading from '/js/bin/custom_vue/dialogs/LoadingDialog.vue.js';
 import Confirm from '/js/bin/custom_vue/dialogs/ConfirmDialog.vue.js';
+import ErrorDialog from '/js/bin/custom_vue/dialogs/ErrorDialog.vue.js';
+import ErrorPane from '/js/bin/custom_vue/components/ErrorPane.vue.js';
 
 // Importer-specific forms
 import Analyzer from '../forms/importers/Analyzer.vue.js';
@@ -19,59 +21,68 @@ const tpl = `
             <v-card>
                 <v-card-title>{{title}}</v-card-title>
                 <v-card-text class='vue_dialog_body'>
-                    <div v-for='e in errors' color='error'>{{e}}</div>
+                    <ErrorPane :errors='errors' color='error' />
 
-                    <v-select
-                        label='Importer'
-                        clearable
-                        v-model='importer'
-                        :items='bootstrap.importers'
-                        item-title='name'
-                        item-value='type'
-                        :disabled='confirmed'
-                        density='compact'
-                    ></v-select>
+                    <v-form ref='form' v-model='formValid' lazy-validation>
+                        <v-select
+                            label='Importer'
+                            clearable
+                            v-model='importer'
+                            :items='bootstrap.importers'
+                            item-title='name'
+                            item-value='type'
+                            :disabled='confirmed'
+                            density='compact'
+                            :rules='[v => !!v || "Importer is required"]'
+                        ></v-select>
 
-                    <v-sheet v-html='importDescription'></v-sheet>
+                        <v-sheet v-html='importDescription'></v-sheet>
 
-                    <v-file-input
-                        v-model='file'
-                        density='compact'
-                        persistent-hint
-                        :disabled='confirmed'
-                        :hint="'Maximum upload size of ' + bootstrap.maxUploadSize.fmt + 'B'"
-                    ></v-file-input>
+                        <v-file-input
+                            v-model='file'
+                            density='compact'
+                            persistent-hint
+                            :disabled='confirmed'
+                            :hint="'Maximum upload size of ' + bootstrap.maxUploadSize.fmt + 'B'"
+                            :rules='[v => !!file || "File is required", v => validateFileExtension(), v => validateFileSize()]'
+                        ></v-file-input>
 
-                    <component ref='ImportComponent' :is='importerComponent' :settings='settings'></component>
+                        <component ref='ImportComponent' :is='importerComponent' :settings='settings'></component>
 
-                    <Confirm ref='ConfirmDialog'></Confirm>    
-                    
-                    <v-sheet v-if = '!confirmed'>
+                        <Confirm ref='ConfirmDialog'></Confirm>    
+                        
+                        <v-sheet v-if = '!confirmed'>
 
-                    </v-sheet>
-                    
-                    <EditForm 
-                        :record='bibleRecord'
-                        v-if = 'confirmed'
-                    ></EditForm>
+                        </v-sheet>
+                        
+                        <EditForm 
+                            :record='bibleRecord'
+                            v-if = 'confirmed'
+                        ></EditForm>
 
-                    <v-sheet v-if='confirmed && errors.length > 0' background-color='warn' class='mt-10'>
-                        <h3>Errors:</h3> 
-                        <v-list :items='errors' hide-details> 
-                            <v-list-item v-for='e in errors'
-                                :title='e.title'
-                                :subtitle='e.subtitle'
-                            ></v-list-item>
-                        </v-list>
-                    </v-sheet>
+                        <v-sheet v-if='confirmed && errors.length > 0' background-color='warn' class='mt-10'>
+                            <h3>Errors:</h3> 
+                            <v-list :items='errors' hide-details> 
+                                <v-list-item v-for='e in errors'
+                                    :title='e.title'
+                                    :subtitle='e.subtitle'
+                                ></v-list-item>
+                            </v-list>
+                        </v-sheet>
+                    </v-form>
 
                     <Loading :showing='loading'></Loading>
+
+                    <ErrorDialog
+                        :errors='errors'
+                        :title="'Errors Importing Bible'"
+                    ></ErrorDialog>
                 </v-card-text>
 
                 <v-card-actions>
                     <v-spacer></v-spacer>
 
-                    <v-btn v-if='!confirmed'
+                    <v-btn v-if='!confirmed'e
                         text='Check File'
                         @click='handleCheckFile()'
                     ></v-btn>                       
@@ -98,6 +109,8 @@ export default {
         EditForm,
         Loading,
         Confirm,
+        ErrorDialog,
+        ErrorPane,
         Analyzer,
         BibleSuperSearch,
         MySword,
@@ -122,6 +135,7 @@ export default {
             importer: null,
             file: null,
             fileSanitized: null,
+            formValid: false,
             settings: {},
             bibleRecord: {},
             errors: [],
@@ -162,12 +176,19 @@ export default {
         handleCancel() {
             this.closeDialog();
         },
-        handleCheckFile() {
+        async handleCheckFile() {
             if(this.loading) {
                 return;
             }
 
+            const { valid } = await this.$refs.form.validate();
+
+            if (!valid) {
+                return;
+            }
+
             this.errors = [];
+
 
             // Experimental confirm dialog, seems to be working tho
             // console.log('conf', this.$refs.ConfirmDialog.confirm('bacon', 
@@ -268,8 +289,14 @@ export default {
                 }
             });
         },        
-        handleImport() {
+        async handleImport() {
             if(this.loading || !this.confirmed) {
+                return;
+            }
+
+            const { valid } = await this.$refs.form.validate();
+
+            if (!valid) {
                 return;
             }
 
@@ -326,6 +353,39 @@ export default {
         closeDialogSave() {
             this.closeDialog();
             this.$emit('onSave');
+        },
+        validateFileExtension() {
+            var importer = this.selectedImporter,
+                matchesExt = false;
+            
+            if(importer && importer.ext && importer.ext.length > 0 && this.file) {
+                for(var i in importer.ext) {
+                    var e = importer.ext[i];
+
+                    if(this.file.name.endsWith(e)) {
+                        matchesExt = true;
+                        break;
+                    }
+                }
+
+                if(!matchesExt) {
+                    if(importer.ext.length == 1) {
+                        return 'Invalid file extension. File must have .' + importer.ext[0] + ' extension';
+                    }
+                    else {
+                        return 'Invalid file extension. Extension must be one of the following: .' + importer.ext.join(', .');
+                    }
+                }
+            }
+
+            return true;
+        },
+        validateFileSize() {
+            if(this.file && this.file.size > bootstrap.maxUploadSize.raw) {
+                return 'File is too large.  Max upload file size is ' + bootstrap.maxUploadSize.fmt + 'B.';
+            }
+
+            return true;
         }
     }
 };

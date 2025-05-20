@@ -1,3 +1,5 @@
+import ErrorDialog from './ErrorDialog.vue.js';
+import ErrorPane from '../components/ErrorPane.vue.js';
 
 const template = `
     <v-dialog 
@@ -8,8 +10,17 @@ const template = `
             <v-card :loading='loading'>
                 <v-card-title :text='title' >{{title}}</v-card-title>
 
-                <v-card-text class='vue_editdialog_body'>
-                    <slot :data='recording'></slot>
+                <v-card-text class='vue_editdialog_body' ref='body'>
+                    <ErrorPane :errors='responseErrors' color='error' />
+                
+                    <v-form ref='form' v-model='formValid' lazy-validation>
+                        <slot :data='recording' :errors='responseErrors'></slot>
+                    </v-form>
+
+                    <ErrorDialog
+                        :errors='responseErrors'
+                        :title="'Errors Saving ' + this.recordType + ':'"
+                    />
                 </v-card-text>
 
                 <v-card-actions>
@@ -61,21 +72,26 @@ export default {
     data() {
         return { 
             recordInternal: {},
+            formValid: false,
             showing: false,
             loading: false,
+            responseErrors: null,
         }
+    },
+    components: {
+        ErrorDialog,
+        ErrorPane
     },
     watch: {
         showing(newValue, oldValue) {
             // do something here?
+            this.responseErrors = null;
         },
         recordId(newValue, oldValue) {
             if(newValue === false || newValue === null) {
                 this.showing = false;
                 return;
             }
-
-            this.newRecord = (newValue == '-1' || newValue == -1);
 
             if(!this.newRecord) {
                 // Editing existing record
@@ -94,6 +110,8 @@ export default {
                         t.loading = false;
                         t.showing = true;
                     }).catch(function(error) {
+                        t.loading = false;
+                        
                         if(error.response.data.message) {
                             alert(error.response.data.message);
                         } else {
@@ -110,12 +128,14 @@ export default {
                 this.showing = true;
                 this.loading = false;
             }
-
         }
     }, 
     computed: {
         recording() {
             return this.loadRecord && this.recordId ? this.recordInternal : this.record;
+        },
+        newRecord() {
+            return this.recordId == '-1' || this.recordId == -1;
         },
         title() {
             return (this.newRecord ? 'New' : 'Update') + ' ' + this.recordType;
@@ -125,7 +145,18 @@ export default {
         handleCancel() {
             this.closeDialog();
         },
-        handleSave() {
+        async handleSave() {
+            this.responseErrors = null;
+            
+            if(this.$refs.form) {
+                const { valid } = await this.$refs.form.validate();
+                console.log('form valid:', valid);
+                
+                if (!valid) {
+                    return;
+                }
+            }
+            
             var record = this.recording,
                 url = this.newRecord ? this.url : this.url + '/' + this.recordId,
                 method = this.newRecord ? 'POST' : 'PUT',
@@ -143,14 +174,17 @@ export default {
                 t.$emit('onSave');
                 t.closeDialog();
             }).catch(function(error) {
+                t.responseErrors = error?.response?.data?.errors || null;
+                t.loading = false;
+                
                 if(error.response.data.message) {
                     alert(error.response.data.message);
-                } else {
+                } else if(!error.response.data.errors) {
                     alert('An unknown error has occurred');
                 }
-            });
 
-            this.handleCancel();
+                t.$refs.form.validate();
+            });
         }, 
         closeDialog() {
             this.showing = false;

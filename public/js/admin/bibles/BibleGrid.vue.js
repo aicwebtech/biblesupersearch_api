@@ -2,6 +2,9 @@ import EditForm from './forms/BibleEditForm.vue.js';
 import EditDialog from '/js/bin/custom_vue/dialogs/EditDialog.vue.js';
 import TruncateTooltip from '/js/bin/custom_vue/components/Truncate.vue.js';
 import YesNoSel from '/js/bin/custom_vue/components/YesNoSelector.vue.js';
+import ChipAlert from '../../bin/custom_vue/components/ChipAlert.vue.js';
+import ChipBool from '../../bin/custom_vue/components/ChipBool.vue.js';
+import ChipBoolAlt from '../../bin/custom_vue/components/ChipBoolAlt.vue.js';
 import ActionDialog from './dialogs/ActionDialog.vue.js';
 import ImportDialog from './dialogs/ImportDialog.vue.js';
 import { gridTemplateProps, useGrid } from '/js/bin/custom_vue/composables/Grid.vue.js';
@@ -112,83 +115,44 @@ const template = `<v-sheet>
                 </template>                           
 
                 <template v-slot:item.has_module_file={item}>
-                    <v-chip 
-                        v-if="item.has_module_file == '1'" 
+                    <ChipBool
+                        :value="item.has_module_file == '1'"
                         v-bind='chipProps'
-                        text='Yes'
-                        color='success'
-                        variant='flat'
-
-                    />
-                    <v-chip 
-                        v-else 
-                        @click="handleSingleAction('export', item)" 
-                        v-bind='chipProps'
-                        text='No'
-                        color='error'
+                        @click-false="handleSingleAction('export', item)"
                     />
                 </template>                        
 
                 <template v-slot:item.installed={item}>
-                    <v-chip 
-                        v-if="item.installed == '1'" 
-                        @click="handleSingleAction('uninstall', item)" 
+                    <ChipBool
+                        :value="item.installed == '1'"
                         v-bind='chipProps'
-                        text='Yes'
-                        color='success'
-                        variant='flat'
-
-                    />
-                    <v-chip 
-                        v-else 
-                        @click="handleSingleAction('install', item)" 
-                        v-bind='chipProps'
-                        text='No'
-                        color='error'
+                        @click-true="handleSingleAction('uninstall', item)" 
+                        @click-false="handleSingleAction('install', item)"
                     />
                 </template>                 
 
                 <template v-slot:item.enabled={item}>
-                    <v-chip 
-                        v-if="item.enabled == '1'" 
-                        @click="handleSingleAction('disable', item)" 
+                    <ChipBool
+                        :value="item.enabled == '1'"
                         v-bind='chipProps'
-                        text='Yes'
-                        variant='flat'
-                        color='success'
-                    />
-                    <v-chip 
-                        v-else 
-                        @click="handleSingleAction('enable', item)" 
-                        v-bind='chipProps'
-                        text='No'
-                        color='error'
+                        @click-true="handleSingleAction('disable', item)" 
+                        @click-false="handleSingleAction('enable', item)" 
                     />
                 </template>                 
                 
                 <template v-slot:item.official={item}>
-                    <v-chip v-bind='chipProps'
-                        :text="item.official == '1' ? 'Yes' : 'No'"
-                        :color="item.official == '1' ? 'primary' : 'secondary'"
-                        :variant="item.official == '1' ? 'flat' : 'tonal'"
-                    ></v-chip>
+                    <ChipBoolAlt
+                        :value="item.official == '1'"
+                        v-bind='chipProps'
+                    />
                 </template>                   
 
                 <template v-slot:item.research={item}>
-                    <v-chip 
-                        v-if="item.research == '1'" 
-                        @click="handleSingleAction('unresearch', item)" 
+                    <ChipBoolAlt
+                        :value="item.research == '1'"
                         v-bind='chipProps'
-                        text='Yes'
-                        color='primary'
-                        variant='flat'
-                    />
-                    <v-chip 
-                        v-else 
-                        @click="handleSingleAction('research', item)" 
-                        v-bind='chipProps'
-                        text='No'
-                        color='secondary'
+                        @click-true="handleSingleAction('unresearch', item)"
+                        @click-false="handleSingleAction('research', item)"
                     />
                 </template>    
                 
@@ -199,21 +163,17 @@ const template = `<v-sheet>
                 </template>    
 
                 <template v-slot:item.attention={item}>
-                    <v-chip 
+                    <ChipAlert
                         v-if="item.has_module_file == '0'"
                         @click="handleSingleAction('export', item)" 
                         v-bind='chipProps'
                         text='Export'
-                        variant='flat'
-                        color='error'
                     />
-                    <v-chip 
+                    <ChipAlert
                         v-else-if="item.needs_update == '1' && bootstrap.devToolsEnabled"
                         @click="handleSingleAction('update', item)" 
                         v-bind='chipProps'
                         text='Update'
-                        variant='flat'
-                        color='error'
                     />
                 </template>  
 
@@ -336,9 +296,9 @@ const template = `<v-sheet>
                 @afterLeave='closeEdit'
                 @onSave='refreshGridRefreshWithExtras'
                 url='/admin/bibles'
-                v-slot='{data}'
+                v-slot='{data, errors}'
             >
-                <EditForm :record='data'></EditForm>
+                <EditForm :record='data' :errors='errors'></EditForm>
                 
             </EditDialog>   
 
@@ -377,6 +337,9 @@ export default {
         ImportDialog,
         TruncateTooltip,
         YesNoSel,
+        ChipAlert,
+        ChipBool,
+        ChipBoolAlt,
         EditForm
     },
     template: template, 

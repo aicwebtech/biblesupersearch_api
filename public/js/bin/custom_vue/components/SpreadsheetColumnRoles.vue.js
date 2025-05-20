@@ -5,6 +5,10 @@ var tpl = `
             :hint='firstRowHint'
             v-model='formData.first_row_data'
             density='compact'
+            :rules='[
+                (v) => !!v || "First row of data is required", 
+                (v) => /^[0-9]+$/.test(v) || "First row of data must be a positive integer"
+            ]'
         ></v-text-field>
 
         <h4>Please select the role for each column</h4>
@@ -16,6 +20,9 @@ var tpl = `
             density='compact'
             v-model = 'formData["col_" + intToLetter(n)]'
             hide-details='auto'
+            :rules='[
+                (v) => !!v || "Column role is required"
+            ]'
         </v-select>
 
         <v-chip

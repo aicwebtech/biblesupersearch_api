@@ -43,6 +43,12 @@ h2.app {
     color: rgb(var(--v-theme-on-primary));
 }
 
+.error-dialog .v-card-title, .error-dialog .v-card-actions {
+    background-color: rgb(var(--v-theme-error));
+    color: rgb(var(--v-theme-on-error));
+}
+
+
 .normal_list {
     margin-left: 20px;
 }

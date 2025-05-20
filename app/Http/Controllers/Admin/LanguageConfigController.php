@@ -10,6 +10,7 @@ use App\Models\Language;
 use App\Models\Bible;
 use App\Models\Shortcuts\ShortcutAbstract;
 use Illuminate\Support\Facades\DB;
+use Validator;
 
 use App\Models\Books\BookAbstract as Book;
 
@@ -269,7 +270,7 @@ class LanguageConfigController extends Controller
     {
         return new Response(null, 501);
 
-        $this->_save($request, null);
+        return $this->_save($request, null);
     }
 
     /**
@@ -292,15 +293,13 @@ class LanguageConfigController extends Controller
         if($id) {
             $Language = Language::findOrFail($id);
             $isNew = false;
-        }
-        else {
+        } else {
             $Language = new Language();
             $isNew = true;
         }
 
-        $safe = ['name', 'native_name', 'common_words'];
-
-        $data = $request->only($safe);
+        $rules = $Language::getUpdateRules($id);
+        $data  = $request->only(array_keys($rules));
 
         // Note: Saving of new languages is basic and not complete
         // New-saving functionality here just used to test editdialog
@@ -310,16 +309,13 @@ class LanguageConfigController extends Controller
             $data['native_name'] = $data['name'];
         }
 
-        // $rules = $Language::getUpdateRules($id);
-        // $data  = $request->only(array_keys($rules));
+        $v = Validator::make($data, $rules);
 
-        // $v = Validator::make($data, $rules);
-
-        // if($v->fails()) {
-        //     $resp->success = FALSE;
-        //     $resp->errors = $v->errors();
-        //     return new Response($resp, 422);
-        // }
+        if($v->fails()) {
+            $resp->success = FALSE;
+            $resp->errors = $v->errors();
+            return new Response($resp, 422);
+        }
 
         $Language->fill($data);
         $Language->save();

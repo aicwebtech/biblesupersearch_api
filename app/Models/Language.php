@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use App\Models\Books\BookAbstract as Book;
+use Illuminate\Validation\Rule;
 
 class Language extends Model 
 {
@@ -16,6 +17,34 @@ class Language extends Model
         'iso_639_1', 'iso_639_2', 'iso_639_2_b', 'iso_639_3', 'iso_639_3_raw', 'notes',
         'common_words',
     ];
+
+        static public function getUpdateRules($id = NULL) 
+    {
+        $id = (int) $id;
+
+        $rules = array(
+            'code'      => [
+                'required',
+                'alpha',
+                'min:2',
+                'max:3',
+                Rule::unique('languages')->ignore($id),
+            ],
+            'name'      => [
+                'required',
+                'max:255',
+                Rule::unique('languages')->ignore($id),
+            ],
+            'native_name' => [
+                'required',
+                'max:255',
+                Rule::unique('languages')->ignore($id),
+            ],
+            'common_words'      => 'nullable',
+        );    
+
+        return $rules;
+    }
 
     public function bibles(): HasMany
     {

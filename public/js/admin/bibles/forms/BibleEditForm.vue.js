@@ -9,23 +9,32 @@ const template = `
             v-model='record.name'
             density='compact'
             hide-details='auto'
+            :rules='[v=> !!v || "Name is required", v => errorShow("name")]'
+            @keydown='errorClear("name")'
         ></v-text-field>
 
+        <v-text-field 
+            label='Short Name' 
+            v-model='record.shortname'
+            density='compact'
+            hide-details='auto'
+            :rules='[v=> !!v || "Short Name is required", v => errorShow("shortname")]'
+            @keydown='errorClear("shortname")'
+        ></v-text-field>
 
-                <v-text-field 
-                    label='Short Name' 
-                    v-model='record.shortname'
-                    density='compact'
-                    hide-details='auto'
-                ></v-text-field>
-
-                <v-text-field 
-                    label='Module' 
-                    v-model='record.module'
-                    density='compact'
-                    hide-details='auto'
-                    :disabled='record.id > 0'
-                ></v-text-field> 
+        <v-text-field 
+            label='Module' 
+            v-model='record.module'
+            density='compact'
+            hide-details='auto'
+            :disabled='record.id > 0'
+            :rules='[
+                v=> !!v || "Module is required", 
+                v => /^[a-z]{2}([a-zA-Z0-9_]+)?$/.test(v) || "Module can contain only lowercase letters, numbers, and underscores. The first two characters must be letters",
+                v => errorShow("module")
+            ]'
+            @keydown='errorClear("module")'
+        ></v-text-field> 
 
         <v-row>
             <v-col>
@@ -35,6 +44,11 @@ const template = `
                     density='compact'
                     hide-details='auto'
                     hint='Customizable sort order.'
+                    :rules='[
+                        v => !v || /^-?[0-9]+$/.test(v) || "Rank must be an integer",  
+                        v => errorShow("rank")
+                    ]'
+                    @keydown='errorClear("rank")'
                 ></v-text-field>             
             </v-col>
             <v-col>Customizable sort order.</v-col>
@@ -47,6 +61,8 @@ const template = `
                 label='Language'
                 v-model='record.lang_short'
                 :item-props='languageItemProps'
+                :rules='[v=> !!v || "Language is required", v => errorShow("lang_short")]'
+                @keydown='errorClear("lang_short")'
                 clearable
                 density='compact'
                 hide-details='auto'
@@ -105,6 +121,7 @@ const template = `
             clearable
             density='compact'
             hide-details='auto'
+            :rules='[v=> !!v || "Copyright is required"]'
             @click:clear='eventTest("cl:clear", $event)'
             @update:focused='eventTest("u:focused", $event)'
             @update:menu='eventTest("u:menu", $event)'
@@ -227,13 +244,15 @@ export default {
         record: {
             type: Object,
             default: {}
+        },
+        errors: {
+            type: Object,
+            default: {}
         }
     },
     data() {
         return {
-            prevCopyrightId: null,
-            // descriptionEditor: undefined, // Must NOT be reactive
-            // copyrightEditor: undefined // Must NOT be reactive
+            prevCopyrightId: null
         }
     },
     watch: {
@@ -320,7 +339,6 @@ export default {
             console.log('prev', this.prevCopyrightId);
             var prev = this.prevCopyrightId;
             var cr = bootstrap.copyrights.find((item) => item.id == event);
-
             var msg = 'Please verify this is the correct copyright for this Bible\n\n';
 
             msg += cr.name;
@@ -332,7 +350,18 @@ export default {
                 this.prevCopyrightId = prev;
             }
         },
+        errorShow(field) {
+            if(!this.errors || !this.errors[field]) {
+                return true;
+            }
 
+            return this.errors[field].join(', ');
+        },
+        errorClear(field) {
+            if(this.errors && this.errors[field]) {
+                delete this.errors[field];
+            }
+        },
         eventTest(type, event) {
             // console.log(type, event);
 

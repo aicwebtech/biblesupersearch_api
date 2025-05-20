@@ -7,6 +7,10 @@ const template = `
             v-model='record.native_name'
             density='compact'
             hide-details='auto'
+            :rules="[
+                v => !!v || 'Name is required',
+                v => (v && v.length <= 255) || 'Name must be less than 255 characters'
+            ]"
         ></v-text-field>
 
         <v-text-field 
@@ -22,6 +26,10 @@ const template = `
             v-model='record.name'
             density='compact'
             hide-details='auto'
+            :rules="[
+                v => !!v || 'English Name is required',
+                v => (v && v.length <= 255) || 'English Name must be less than 255 characters'
+            ]"
         ></v-text-field>                    
 
         <v-text-field 
