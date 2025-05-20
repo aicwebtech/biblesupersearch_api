@@ -1,6 +1,6 @@
 import EditForm from './forms/BibleEditForm.vue.js';
 import EditDialog from '../../bin/custom_vue/dialogs/EditDialog.vue.js';
-import TruncateTooltip from '/js/bin/custom_vue/components/Truncate.vue.js';
+import TruncateTooltip from '../../bin/custom_vue/components/Truncate.vue.js';
 import YesNoSel from '../../bin/custom_vue/components/YesNoSelector.vue.js';
 import ChipAlert from '../../bin/custom_vue/components/ChipAlert.vue.js';
 import ChipBool from '../../bin/custom_vue/components/ChipBool.vue.js';
