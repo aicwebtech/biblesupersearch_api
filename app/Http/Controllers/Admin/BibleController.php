@@ -60,7 +60,7 @@ class BibleController extends Controller
         $ImportManagerClass = Helpers::find('\App\ImportManager');
 
         $bootstrap = new \stdClass;
-        $bootstrap->baseUrl = ''; //url('');
+        $bootstrap->baseURL = url('');
 
         // :todo move these to an API endpoint ...
         $bootstrap->devToolsEnabled  = (bool) config('bss.dev_tools');
@@ -70,7 +70,7 @@ class BibleController extends Controller
         $bootstrap->copyrights = [];
         $bootstrap->importers  = $ImportManagerClass::getImportersList();
 
-        foreacH(\App\Models\Copyright::orderBy('name')->get() as $Copyright) {
+        foreach(\App\Models\Copyright::orderBy('name')->get() as $Copyright) {
             $data = $Copyright->getAttributes();
             $data['copyright_statement_processed'] = $Copyright->getProcessedCopyrightStatement();
             $bootstrap->copyrights[] = $data;

@@ -79,6 +79,7 @@ Route::get('/admin/uninstall', 'AdminController@uninstallPage')->name('admin.uni
 Route::post('/admin/uninstall', 'AdminController@softwareUninstall')->name('admin.douninstall');
 Route::get('/admin/uninstalled', 'AdminController@uninstalled')->name('admin.uninstalled'); //->middleware('install');
 Route::get('/admin/phpinfo', 'AdminController@debug')->name('admin.phpinfo'); 
+Route::get('/admin/statics', 'Admin\AppController@statics');
 
 // Bible mannager routes
 Route::get('/admin/bibles/indexNew', 'Admin\BibleController@indexNew')->name('admin.bibles.indexNew'); // temp

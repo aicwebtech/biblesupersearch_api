@@ -1,6 +1,6 @@
 
 .default-copyright-statement {
-        width: calc(99% - 20px);
+    /* width: calc(99% - 20px); */
     height: 100%;
 /*    margin-top: 75px;*/
     padding: 10px;
@@ -9,4 +9,6 @@
     overflow-y: auto;
     position: relative;
     bottom: 0px;
+    text-align: justify;
+    font-size: smaller;
 }

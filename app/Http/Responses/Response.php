@@ -10,14 +10,16 @@ use Illuminate\Http\Response as ParentResponse;
  *
  * @author Computer
  */
-class Response extends ParentResponse {
+class Response extends ParentResponse 
+{
     /**
      * Determine if the given content should be turned into JSON.
      *
      * @param  mixed  $content
      * @return bool
      */
-    protected function shouldBeJson($content) {
+    protected function shouldBeJson($content) 
+    {
         if($content instanceof \stdClass) {
             return TRUE;
         }

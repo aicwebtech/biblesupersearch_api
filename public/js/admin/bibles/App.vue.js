@@ -1,5 +1,5 @@
 import BibleGrid from './BibleGrid.vue.js';
-// import '/css/main.scss';
+import DefaultProps from '../../bin/custom_vue/components/DefaultProps.vue.js';
 
 export default {
     data() {
@@ -7,6 +7,11 @@ export default {
     },
     components: {
         BibleGrid,
+    },
+    provide() {
+        return {
+            defaultProps: DefaultProps
+        }
     },
     template: `
         <v-app>

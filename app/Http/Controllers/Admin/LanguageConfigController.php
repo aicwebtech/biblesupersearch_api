@@ -37,9 +37,12 @@ class LanguageConfigController extends Controller
             $Lang->initLanguage();
         }
 
+        $bootstrap = new \stdClass();
+        $bootstrap->Languages = $Languages;
+        $bootstrap->baseURL = url('');
+
         return view('admin.languages', [
-            'Languages' => $Languages,
-            'bootstrap' => true,
+            'bootstrap' => json_encode($bootstrap),
         ]);        
     }
 

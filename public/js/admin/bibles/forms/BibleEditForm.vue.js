@@ -2,48 +2,60 @@ import '../../../../js/bin/ckeditor5/build/ckeditor.js';
 
 const template = `
     <div 
-        max-width='1000' 
+        max-width='600' 
     >
-        <v-text-field 
-            label='Name' 
-            v-model='record.name'
-            density='compact'
-            hide-details='auto'
-            :rules='[v=> !!v || "Name is required", v => errorShow("name")]'
-            @keydown='errorClear("name")'
-        ></v-text-field>
+    
+        <v-row v-bind='defaultProps.vrows'>
+            <v-col>
+                <v-text-field 
+                    label='Name'
+                    v-model='record.name'
+                    v-bind='defaultProps.texts'
+                    :rules='[v=> !!v || "Name is required", v => errorShow("name")]'
+                    @keydown='errorClear("name")'
+                    hint='Full display name of the Bible. It must be unique.'
+                ></v-text-field>
+            </v-col>
+        </v-row>
 
-        <v-text-field 
-            label='Short Name' 
-            v-model='record.shortname'
-            density='compact'
-            hide-details='auto'
-            :rules='[v=> !!v || "Short Name is required", v => errorShow("shortname")]'
-            @keydown='errorClear("shortname")'
-        ></v-text-field>
+        <v-row v-bind='defaultProps.vrows'>
+            <v-col>
+                <v-text-field 
+                    label='Short Name' 
+                    v-model='record.shortname'
+                    v-bind='defaultProps.texts'
+                    :rules='[v=> !!v || "Short Name is required", v => errorShow("shortname")]'
+                    @keydown='errorClear("shortname")'
+                    hint='Short display name of the Bible. It must be unique.'
+                ></v-text-field>
+            </v-col>
+        </v-row>
 
-        <v-text-field 
-            label='Module' 
-            v-model='record.module'
-            density='compact'
-            hide-details='auto'
-            :disabled='record.id > 0'
-            :rules='[
-                v=> !!v || "Module is required", 
-                v => /^[a-z]{2}([a-zA-Z0-9_]+)?$/.test(v) || "Module can contain only lowercase letters, numbers, and underscores. The first two characters must be letters",
-                v => errorShow("module")
-            ]'
-            @keydown='errorClear("module")'
-        ></v-text-field> 
+        <v-row v-bind='defaultProps.vrows'>
+            <v-col>
+                <v-text-field 
+                    label='Module' 
+                    v-model='record.module'
+                    v-bind='defaultProps.texts'
+                    :disabled='record.id > 0'
+                    hint='Module name is used to identify the Bible in the system. It must be unique.'
+                    :rules='[
+                        v=> !!v || "Module is required", 
+                        v => /^[a-z]{2}([a-zA-Z0-9_]+)?$/.test(v) || "Module can contain only lowercase letters, numbers, and underscores. The first two characters must be letters",
+                        v => errorShow("module")
+                    ]'
+                    @keydown='errorClear("module")'
+                ></v-text-field> 
+            </v-col>
+        </v-row>
 
-        <v-row>
+        <v-row v-bind='defaultProps.vrows'>
             <v-col>
                 <v-text-field 
                     label='Rank' 
                     v-model='record.rank'
-                    density='compact'
-                    hide-details='auto'
-                    hint='Customizable sort order.'
+                    v-bind='defaultProps.texts'
+                    hint='Customizable sort order, must be an integer number.'
                     :rules='[
                         v => !v || /^-?[0-9]+$/.test(v) || "Rank must be an integer",  
                         v => errorShow("rank")
@@ -51,129 +63,157 @@ const template = `
                     @keydown='errorClear("rank")'
                 ></v-text-field>             
             </v-col>
-            <v-col>Customizable sort order.</v-col>
         </v-row>
-
-        <v-row>
-            <v-col>
-            <v-autocomplete
-                :items='bootstrap.languages'
-                label='Language'
-                v-model='record.lang_short'
-                :item-props='languageItemProps'
-                :rules='[v=> !!v || "Language is required", v => errorShow("lang_short")]'
-                @keydown='errorClear("lang_short")'
-                clearable
-                density='compact'
-                hide-details='auto'
-            ></v-autocomplete>    
-            </v-col>
-            <v-col>
-                <v-text-field 
-                    label='Language Code' 
+        <v-row v-bind='defaultProps.vrows'>
+            <v-col cols='9'>
+                <v-autocomplete
+                    :items='bootstrap.languages'
+                    label='Language'
                     v-model='record.lang_short'
-                    density='compact'
-                    hide-details='auto'
-                    hint='2 or 3 characters'
+                    v-bind='defaultProps.selects'
+                    :item-props='languageItemProps'
+                    :rules='[v=> !!v || "Language is required", v => errorShow("lang_short")]'
+                    hint="Tip: entering a code will cause the language to be selected, and vice-versa."
+                    @keydown='errorClear("lang_short")'
+                ></v-autocomplete>    
+            </v-col>
+            <v-col cols='3'>
+                <v-text-field 
+                    label='Code' 
+                    v-model='record.lang_short'
+                    v-bind='defaultProps.texts'
+                    hint='ISO-639-1 code if exists, otherwise ISO 639-2 code'
                     @update:modelValue='langCodeChanged'
+                    :rules='[v => !v || /^[a-z]{2,3}$/.test(v) || "Must be 2 or 3 lowercase letters", v => errorShow("lang_short")]'
                 ></v-text-field>  
             </v-col>
         </v-row>    
 
-        <v-divider class='mt-2 mb-2 border-opacity-50'></v-divider>
+        <v-divider v-bind='defaultProps.dividers'></v-divider>
 
-        <v-row>
+        <v-row v-bind='defaultProps.vrows'>
+            <v-col>
+                <v-switch
+                    class='ml-3'
+                    v-model='record.enabled'
+                    label='Enabled - whether the Bible is enabled for use'
+                    v-bind='defaultProps.switches'
+                ></v-switch>    
+            </v-col>
+        </v-row>
+        <v-row v-bind='defaultProps.vrows'>
+            <v-col>
+                <v-switch
+                    class='ml-3'
+                    v-model='record.research'
+                    label="Research - select this if you don't reccomend this Bible for general use."
+                    v-bind='defaultProps.switches'
+                ></v-switch>    
+            </v-col>
+        </v-row>
+
+
+        <v-row v-bind='defaultProps.vrows' v-if='false'>
             <v-col></v-col>
-            <v-col cols='2'>
+            <v-col>
                 <v-switch
                     v-model='record.enabled'
                     label='Enabled'
-                    hide-details='auto'
                     hint='Whether the Bible is enabled for use'
-                    :false-value="0"
-                    :true-value="1"
-                    color='primary'
-                    density='compact'
+                    v-bind='defaultProps.switches'
                 ></v-switch>    
             </v-col>
-            <v-col cols='2'>
+            <v-col>
                 <v-switch
                     v-model='record.research'
-                    hide-details='auto'
                     label='Research'
-                    :false-value="0"
-                    :true-value="1"
-                    color='primary'
-                    density='compact'
+                    v-bind='defaultProps.switches'
                 ></v-switch>   
             </v-col>
             <v-col></v-col>
         </v-row>
 
-        <v-divider class='mt-2 mb-2 border-opacity-50'></v-divider>
+        <v-divider v-bind='defaultProps.dividers'></v-divider>
 
-        <v-autocomplete
-            :items='bootstrap.copyrights'
-            label='Copyright'
-            v-model='record.copyright_id'
-            item-title='name'
-            item-value='id'
-            clearable
-            density='compact'
-            hide-details='auto'
-            :rules='[v=> !!v || "Copyright is required"]'
-            @click:clear='eventTest("cl:clear", $event)'
-            @update:focused='eventTest("u:focused", $event)'
-            @update:menu='eventTest("u:menu", $event)'
-            @update:modelValue='copyRightChanged'
-        ></v-autocomplete>
+        <v-row v-bind='defaultProps.vrows'>
+            <v-col>
+                <v-autocomplete
+                    :items='bootstrap.copyrights'
+                    label='Copyright'
+                    v-model='record.copyright_id'
+                    v-bind='defaultProps.selects'
+                    :item-props='defaultProps.itemPropsFunction'
+                    item-title='name'
+                    item-value='id'
+                    :rules='[v=> !!v || "Copyright is required"]'
+                    @click:clear='eventTest("cl:clear", $event)'
+                    @update:focused='eventTest("u:focused", $event)'
+                    @update:menu='eventTest("u:menu", $event)'
+                    @update:modelValue='copyRightChanged'
+                ></v-autocomplete>
+            </v-col>
+        </v-row>
 
-        <v-text-field 
-            label='Copyright Owner' 
-            v-model='record.owner'
-            density='compact'
-            hide-details='auto'
-        ></v-text-field>          
+        <v-row v-bind='defaultProps.vrows'>
+            <v-col>
+                <v-text-field 
+                    label='Copyright Owner' 
+                    v-model='record.owner'
+                    v-bind='defaultProps.texts'
+                ></v-text-field>      
+            </v-col>
+        </v-row>    
 
-        <v-text-field 
-            label='Publisher' 
-            v-model='record.publisher'
-            density='compact'
-            hide-details='auto'
-        ></v-text-field>          
+        <v-row v-bind='defaultProps.vrows'>
+            <v-col>
+                <v-text-field 
+                    label='Publisher' 
+                    v-model='record.publisher'
+                    v-bind='defaultProps.texts'
+                ></v-text-field>    
+            </v-col>
+        </v-row>      
 
-        <v-text-field 
-            label='Publication Year' 
-            v-model='record.year'
-            density='compact'
-            hide-details='auto'
-        ></v-text-field>    
+        <v-row v-bind='defaultProps.vrows'>
+            <v-col>
+                <v-text-field 
+                    label='Publication Year' 
+                    v-model='record.year'
+                    v-bind='defaultProps.texts'
+                ></v-text-field>    
+            </v-col>
+        </v-row>
 
-        <v-divider class='mt-2 mb-2 border-opacity-50'></v-divider>
+        <v-divider v-bind='defaultProps.dividers'></v-divider>
 
-        <label>Copyright Statement / Short Description</label>&nbsp; &nbsp;
-        <small>Will be displayed with Bible on search results page.</small>
+        <label>Copyright Statement / Short Description</label><br />
+        <small>This will be displayed with Bible on search results page.</small>
+        <br />
 
         <textarea
             ref='copyright_statement'
             label='copyright_statement' 
             v-model='record.copyright_statement'
-            density='compact'
-            hide-details='auto'
+            v-bind='defaultProps.texts'
         ></textarea>
 
-        <label v-if='showDefaultCopyright'>Default Copyright Statement</label>&nbsp; &nbsp;
-        <small v-if='showDefaultCopyright'>Will be displayed if copyright statement is left blank.</small>
-
+        <v-spacer v-if='showDefaultCopyright' class='pt-2' />
+        <label v-if='showDefaultCopyright'>Default Copyright Statement</label>
+        <br v-if='showDefaultCopyright' />
+        <small v-if='showDefaultCopyright'>This will be displayed instead if copyright statement is left blank.</small>
+        <br v-if='showDefaultCopyright' />
+        
         <div 
             class='default-copyright-statement'
             v-html='defaultCopyrightStatement'
             v-if='showDefaultCopyright'
         ></div>
 
-        <v-divider class='mt-2 mb-2 border-opacity-50'></v-divider>
+        <v-divider v-bind='defaultProps.dividers'></v-divider>
 
-        <label>Description</label>
+        <label>Description</label><br />
+        <small>Full description of this Bible.</small>
+        <br />
 
         <textarea id='description'
             ref='description'
@@ -186,55 +226,9 @@ const template = `
     </div>
 `;
 
-/*
-        <v-autocomplete
-            :items='bootstrap.languages'
-            label='Language Code'
-            v-model='record.lang_short'
-            :item-props='languageCodeProps'
-            clearable
-            density='compact'
-            hide-details='auto'
-        ></v-autocomplete>
-        */
-
-var ckeditorSettings = {
-    height: 300,
-    width: 600,
-    link: {
-        decorators: {
-            openInNewTab: {
-                mode: 'manual',
-                label: 'Open in a new tab',
-                attributes: {
-                    target: '_blank',
-                    rel: 'noopener noreferrer'
-                }
-            }
-        }
-    },
-    toolbar: {
-        items: [
-            'findAndReplace', 'selectAll', '|',
-            'heading', '|',
-            'bold', 'italic', 'strikethrough', 'underline', 'subscript', 'superscript', 'removeFormat', '|',
-            'bulletedList', 'numberedList', '|',
-            'outdent', 'indent', '|',
-            'undo', 'redo',
-            '-',
-            'fontSize', 'fontFamily', 'fontColor', 'fontBackgroundColor', 'highlight', '|',
-            'alignment', '|',
-            //'link', 'insertImage', 'blockQuote', 'insertTable', '|',
-            'specialCharacters', 'horizontalLine', 'pageBreak', '|',
-            'sourceEditing'
-        ],
-        shouldNotGroupWhenFull: true
-    },
-};
-
 export default {
     template: template,
-    inject: ['bootstrap'],
+    inject: ['bootstrap', 'defaultProps'],
 
     components: {
         // Ckeditor
@@ -281,7 +275,7 @@ export default {
             cr = this.$refs.copyright_statement;
 
         ClassicEditor
-            .create( dr, ckeditorSettings )
+            .create( dr, this.defaultProps.ckeditor.settings )
             .then( newEditor => {
                 t.descriptionEditor = newEditor;
                 // t.descriptionEditor.setData(t.record.description);
@@ -295,7 +289,7 @@ export default {
             } );            
 
         ClassicEditor
-            .create( cr, ckeditorSettings )
+            .create( cr, this.defaultProps.ckeditor.settings )
             .then( newEditor => {
                 t.copyrightEditor = newEditor;
                 // t.copyrightEditor.setData(t.record.description);
@@ -321,16 +315,14 @@ export default {
     methods: {
         languageItemProps(item) {
             return item && item.code ? {
-                title: item.code.toUpperCase() + ' ' + item.name,
-                value: item.code
+                ...this.defaultProps.items,
+                ... {
+                    title: item.code.toUpperCase() + ' ' + item.name,
+                    value: item.code,
+                }
             } : {};
         },        
-        languageCodeProps(item) {
-            return item && item.code ? {
-                title: item.code.toUpperCase(),
-                value: item.code
-            } : {};
-        },
+
         langCodeChanged() {
             
         },

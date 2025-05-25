@@ -14,6 +14,8 @@
        '/css/vue/vue.css',
        '/js/admin/app/assets/style.css',
     ];
+
+    $u = url('');
 @endphp
 
 @extends('layouts.admin')
@@ -23,26 +25,9 @@
         <div id="app"></div>
     </div>
 
-    <script type='module'>
-        const { createApp } = Vue
-        const { createVuetify } = Vuetify
-
-        import theme1 from '/css/vue/theme1.js';
-
-        const vuetify = createVuetify({
-            theme: {
-                defaultTheme: 'theme1', 
-                themes: {
-                    theme1
-                }
-            }
-        });
-
-        import App from '/js/admin/languages/App.vue.js';
-        // import App from '@/App.vue';
-        
-        const app = createApp(App)
-        app.use(vuetify)
-        app.mount('#app')
+    <script>
+        var bootstrap = @php echo $bootstrap @endphp;
     </script>
+
+    <script type='module' src='{{$u}}/js/admin/languages/Bootstrap.vue.js'></script>
 @endsection
