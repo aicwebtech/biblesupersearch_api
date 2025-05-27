@@ -503,7 +503,6 @@ class Engine
                 else {
                     if($Search) {
                         $results[$Bible->module] = [];
-                        // $ptr = $input['parallel_search_error_suppress'] ? null : 'errors.parallel_bible_no_results';
                         $tr = ($parallel) ? 'errors.parallel_bible_no_results' : 'errors.bible_no_results';
                     } else {
                         $tr = 'errors.bible_no_results';
