@@ -102,6 +102,11 @@ class ApiActionsTest extends TestCase
 
         // POST
         $response = $this->postJson('/api/bibles', ['language' => 'es']);
+
+        if($response->status() == 429) {
+            $this->markTestSkipped('429 Skipping due to rate limiting');
+        }
+
         $response->assertStatus(200);
         $this->assertEquals(0, $response['error_level']);
         $this->assertEquals('KJV', $response['results']['kjv']['shortname']); 
