@@ -245,7 +245,7 @@ class ImportManager {
       * Imports a Bible for a given file and importer 
       * 
       */
-    public function importFile($data, Bible $Bible = null) 
+    public function importFile($data, ?Bible $Bible = null) 
     {
         ini_set('memory_limit', '256M');
 
