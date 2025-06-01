@@ -91,10 +91,11 @@ class SqlSearch {
     // Todo: Make Unicode safe by replacing with regexp \p{P}
     public $punctuation = array('.',',',':',';','\'','"','!','-','?','(',')','[',']');
 
-    public function __construct($search = NULL, $options = []) 
+    public function __construct($search = NULL, $options = [], $languages = []) 
     {
         $this->setSearch($search);
         $this->setOptions($options, TRUE);
+        $this->languages = $languages;
     }
 
     /**
@@ -103,7 +104,7 @@ class SqlSearch {
      * @param array $options
      * @return App\Search|boolean
      */
-    static public function parseSearch($search = NULL, $options = []) {
+    static public function parseSearch($search = NULL, $options = [], $languages = []) {
         if (empty($search)) {
             $has_search = FALSE;
 
@@ -119,7 +120,7 @@ class SqlSearch {
             }
         }
 
-        return new static($search, $options);
+        return new static($search, $options, $languages);
     }
 
     /**
