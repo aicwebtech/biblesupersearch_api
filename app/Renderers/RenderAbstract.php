@@ -112,10 +112,13 @@ abstract class RenderAbstract
 
         App::setLocale($locale_cache);
 
-        if(posix_getuid() == fileowner($file_path)) {
-            chmod($file_path, 0775);
+        if(function_exists('posix_getuid')) {
+            // Method DNE on Windows, so we only do this on POSIX systems        
+            if(posix_getuid() == fileowner($file_path)) {
+                chmod($file_path, 0775);
+            }
         }
-
+ 
         $file_size_bytes = filesize($this->getRenderFilePath());
         $file_size_mb    = round( $file_size_bytes / 1024 / 1024);
 

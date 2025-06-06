@@ -1,5 +1,8 @@
 Bible SuperSearch API Changelog
 
+= 6.0.3
+* Fixed filesystem bug on Window (note, we don't officially support Windows servers)
+
 = 6.0.0
 ** BREAKING CHANGES 
 * PHP version: Minimum 8.2

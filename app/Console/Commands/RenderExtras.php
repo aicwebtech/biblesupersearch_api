@@ -38,10 +38,6 @@ class RenderExtras extends Command
      * @return mixed
      */
     public function handle() {
-        // if (posix_getpid() != posix_getsid(getmypid())) {
-        //     posix_setsid();
-        // }
-
         $format     = [ $this->argument('format') ];
         $overwrite  = $this->option('overwrite');
 
