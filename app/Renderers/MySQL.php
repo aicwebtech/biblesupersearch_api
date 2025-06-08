@@ -3,12 +3,12 @@
 namespace App\Renderers;
 use \DB;
 
-class MySQL extends RenderAbstract {
+class MySQL extends TextAbstract 
+{
     static public $name = 'MySQL';
     static public $description = 'MySQL Database Dump';
     protected $file_extension = 'sql';
     protected $include_book_name = FALSE;
-    protected $handle;
 
     // Maximum number of Bibles to render with the given format before detatched process is required.   Set to TRUE to never require detatched process.
     static protected $render_bibles_limit = TRUE; 
@@ -27,10 +27,10 @@ class MySQL extends RenderAbstract {
     /**
      * This initializes the file, and does other pre-rendering work
      */
-    protected function _renderStart() {
+    protected function _renderStart() 
+    {
+        $this->_openFile();
         $this->mysql_table = 'bible_verses_' . $this->Bible->module;
-        $filepath = $this->getRenderFilePath(TRUE);
-        $this->handle = fopen($filepath, 'w');
         $copyright_statement = $this->_getCopyrightStatement(TRUE, "\n-- ");
 
         $header = <<<EOT
@@ -73,7 +73,8 @@ EOT;
         return TRUE;
     }
 
-    protected function _renderSingleVerse($verse) {
+    protected function _renderSingleVerse($verse) 
+    {
         $i = (int) $verse->id;
         $b = (int) $verse->book;
         $c = (int) $verse->chapter;
@@ -88,9 +89,10 @@ EOT;
         $this->current_chapter = $verse->chapter;
     }
 
-    protected function _renderFinish() {
+    protected function _renderFinish() 
+    {
         fwrite($this->handle, "\n\n");
-        fclose($this->handle);
+        $this->_closeFile();
         return TRUE;
     }
 }

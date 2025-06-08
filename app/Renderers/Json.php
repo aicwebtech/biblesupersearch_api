@@ -2,7 +2,8 @@
 
 namespace App\Renderers;
 
-class Json extends RenderAbstract {
+class Json extends TextAbstract 
+{
     static public $name = 'JSON';
     static public $description = 'JavaScript Object Notation';
 
@@ -22,13 +23,12 @@ class Json extends RenderAbstract {
     protected $include_book_name = TRUE;
 
     protected $data = NULL;
-    
-    protected $handle;
 
     /**
      * This initializes the file, and does other pre-rendering work
      */
-    protected function _renderStart() {
+    protected function _renderStart() 
+    {
         $this->data = [
             'metadata' => $this->Bible->getMeta(),
             'verses'   => [],
@@ -36,12 +36,12 @@ class Json extends RenderAbstract {
 
         $this->data['metadata']['copyright_statement'] = $this->_getCopyrightStatement(TRUE);
 
-        $filepath = $this->getRenderFilePath(TRUE);
-        $this->handle = fopen($filepath, 'w');
+        $this->_openFile();
         return TRUE;
     }
 
-    protected function _renderSingleVerse($verse) {
+    protected function _renderSingleVerse($verse) 
+    {
         $this->data['verses'][] = [
             'book_name' => $verse->book_name, // Adds an extra 1 MB per Bible
             'book'      => $verse->book,
@@ -54,9 +54,10 @@ class Json extends RenderAbstract {
         $this->current_chapter = $verse->chapter;
     }
 
-    protected function _renderFinish() {
+    protected function _renderFinish() 
+    {
         fwrite($this->handle, json_encode($this->data));
-        fclose($this->handle);
+        $this->_closeFile();
         return TRUE;
     }
 }

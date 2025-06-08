@@ -2,7 +2,8 @@
 
 namespace App\Renderers;
 
-class PlainText extends RenderAbstract {
+class PlainText extends TextAbstract 
+{
     static public $name = 'Plain Text';
     static public $description = 'Simple, plain text format';
 
@@ -21,21 +22,19 @@ class PlainText extends RenderAbstract {
     protected $file_extension = 'txt';
     protected $include_book_name = TRUE;
 
-    protected $text = '';
-    protected $handle;
-
     /**
      * This initializes the file, and does other pre-rendering work
      */
-    protected function _renderStart() {
-        $filepath = $this->getRenderFilePath(TRUE);
-        $this->handle = fopen($filepath, 'w');
+    protected function _renderStart() 
+    {
+        $this->_openFile();
         fwrite($this->handle, $this->Bible->name . PHP_EOL . PHP_EOL);
         fwrite($this->handle, $this->_wordwrap( $this->_getCopyrightStatement(TRUE) ) . PHP_EOL . PHP_EOL . PHP_EOL);
         return TRUE;
     }
 
-    protected function _renderSingleVerse($verse) {
+    protected function _renderSingleVerse($verse) 
+    {
         if($verse->book != $this->current_book) {
             $line_above = ($this->current_book) ? PHP_EOL . PHP_EOL : '';
             fwrite($this->handle, $line_above . $this->_wordwrap($verse->book_name) . PHP_EOL);
@@ -54,12 +53,8 @@ class PlainText extends RenderAbstract {
         $this->current_chapter = $verse->chapter;
     }
 
-    protected function _renderFinish() {
-        fclose($this->handle);
-        return TRUE;
-    }
-
-    protected function _wordwrap($text) {
+    protected function _wordwrap($text) 
+    {
         $wrap_chars = 80;
 
         if($this->Bible->lang_short == 'th') {
