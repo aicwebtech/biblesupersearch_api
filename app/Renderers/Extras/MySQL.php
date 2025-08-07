@@ -1,6 +1,7 @@
 <?php
 
 namespace App\Renderers\Extras;
+use App\Models\Books\BookAbstract AS Book;
 
 class MySQL extends ExtrasAbstract 
 {
@@ -13,12 +14,10 @@ DROP TABLE IF EXISTS `bible_books_{$lang_code}`;
 
 CREATE TABLE `bible_books_{$lang_code}` (
   `id` int(10) unsigned NOT NULL AUTO_INCREMENT,
-  `name` varchar(255) COLLATE utf8_unicode_ci NOT NULL,
-  `shortname` varchar(255) COLLATE utf8_unicode_ci NOT NULL,
-  `matching1` varchar(255) COLLATE utf8_unicode_ci DEFAULT NULL,
-  `matching2` varchar(255) COLLATE utf8_unicode_ci DEFAULT NULL,
-  `created_at` timestamp NULL DEFAULT NULL,
-  `updated_at` timestamp NULL DEFAULT NULL,
+  `name` varchar(255) CHARACTER SET utf8mb3 COLLATE utf8mb3_unicode_ci NOT NULL,
+  `shortname` varchar(255) CHARACTER SET utf8mb3 COLLATE utf8mb3_unicode_ci NULL DEFAULT NULL,
+  `matching1` varchar(255) CHARACTER SET utf8mb3 COLLATE utf8mb3_unicode_ci NULL DEFAULT NULL,
+  `matching2` varchar(255) CHARACTER SET utf8mb3 COLLATE utf8mb3_unicode_ci NULL DEFAULT NULL,
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 
@@ -30,11 +29,40 @@ HEAD;
         $src_file = $this->_getDBDumpDir()    . $filename;
         $dst_file = $this->getRenderFileDir() . $filename;
 
-        if(!file_exists($dst_file) || $this->overwrite) {
-            $find = '`%sbooks_' . $lang_code . '`';
-            $repl = '`bible_books_' . $lang_code . '`';
-            $contents = file_get_contents($src_file);
-            $contents = str_replace($find, $repl, $contents);
+        $contents = '';
+
+        $Book = Book::getClassNameByLanguageStrict($lang_code);
+
+        if(!$Book) {
+            return;
+        }
+
+        $has_results = false;
+
+        foreach($Book::orderBy('id')->get() as $Book) {
+            $has_results = true;
+
+            $arr = $Book->toArray();
+            unset($arr['created_at']);
+            unset($arr['updated_at']);
+
+            foreach($arr as $key => &$val) {
+                if(is_string($val)) {
+                    $val = '\'' . $val . '\'';
+                }
+                
+                if($val === null) {
+                    $val = 'NULL';
+                }
+            }
+            unset($val);
+
+            $contents .= 'INSERT INTO `bible_books_' . $lang_code . '` VALUES (' . implode(', ', $arr) . ');' . PHP_EOL;
+        }
+
+        $this->overwrite = true;
+
+        if($has_results && (!file_exists($dst_file) || $this->overwrite)) {
             $contents = $header . $contents;
             file_put_contents($dst_file, $contents);
         }

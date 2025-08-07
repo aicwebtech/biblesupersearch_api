@@ -66,7 +66,7 @@ class Kernel extends HttpKernel
        ],     
 
        'api_testing' => [
-           'throttle:6000,1',
+           'throttle:600000,1',
            // 'auth:api',
            'api.access',
        ],

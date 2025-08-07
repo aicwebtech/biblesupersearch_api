@@ -7,7 +7,8 @@ use Artisan;
 
 use \App\ConfigManager;
 
-class CheckMigration {
+class CheckMigration 
+{
 
     /**
      * Handle an incoming request.
@@ -16,7 +17,8 @@ class CheckMigration {
      * @param  \Closure  $next
      * @return mixed
      */
-    public function handle($request, Closure $next) {
+    public function handle($request, Closure $next) 
+    {
         $using_cache = config('app.config_cache');
         // todo this needs to check for any update then perform any needed tasks
 
@@ -39,40 +41,22 @@ class CheckMigration {
         return $next($request);
     }    
 
-    public function _handle($request, Closure $next) {
-        $using_cache = config('app.config_cache');
-        // todo this needs to check for any update then perform any needed tasks
-
-        if($using_cache) {
-            $soft_version = config('app.version');
-            $hard_version = \App\Engine::getHardcodedVersion();
-
-            if($soft_version != $hard_version) {
-                Artisan::call('view:clear'); // Force cached view templates to clear out because HTML may have changed
-                $this->_migrateIfNeeded();
-                Artisan::call('config:cache');
-            }
-        }
-        else {
-            $this->_migrateIfNeeded();
-        }
-
-        return $next($request);
-    }
-
-    private function _migrateIfNeeded($pretend = FALSE) {
+    private function _migrateIfNeeded($pretend = FALSE) 
+    {
         if($this->_migrationNeeded()) {
             $this->_migrate($pretend);
         }
     }
 
-    private function _migrate($pretend = FALSE) {
+    private function _migrate($pretend = FALSE) 
+    {
         Artisan::call('view:clear'); // Force cached view templates to clear out because HTML may have changed
         return Artisan::call('migrate', ['--force' => TRUE, '--pretend' => $pretend]);
         // return Artisan::call('migrate', ['--seed' => TRUE, '--force' => TRUE, '--pretend' => $pretend]);
     }
 
-    private function _migrationNeeded() {
+    private function _migrationNeeded() 
+    {
         $outCode = Artisan::call('migrate:status');
         $output = Artisan::output();
         $output_array = explode("\n", $output);

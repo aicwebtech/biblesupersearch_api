@@ -1,15 +1,13 @@
 <?php
 
-//namespace Tests\Feature;
+namespace Tests\Feature;
 
-//use Tests\TestCase;
+use Tests\TestCase;
 use Illuminate\Foundation\Testing\WithFaker;
-use Illuminate\Foundation\Testing\RefreshDatabase;
 use App\RenderManager;
 use App\Models\RenderLog;
 use PHPUnit\Framework\Attributes\Depends;
-
-// php ./vendor/phpunit/phpunit/phpunit --filter=RenderManagerTest
+use PHPUnit\Framework\Attributes\UseSeparatePhpProcess;
 
 class RenderManagerTest extends TestCase 
 {
@@ -147,6 +145,7 @@ class RenderManagerTest extends TestCase
         $this->assertEquals(0, $results['space_needed_overall']);   
     }
 
+    #[UseSeparatePhpProcess]
     public function testRetainConfigsInit() 
     {
         $test_space = 50;

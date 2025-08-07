@@ -194,135 +194,127 @@ class Engine
     {
 
         // To do - add labels
-        $parsing = array(
-            'reference' => array(
-                'type'  => 'string',
-            ),
-            'search' => array(
-                'type'  => 'string',
-            ),
-            'request' => array(
-                'type'  => 'string',
-            ),
-            'bible' => array(
-                'type'  => 'array_string',
-            ),
-            'whole_words' => array(
-                'type'  => 'bool',
-                'default' => FALSE,
-            ),
-            'whole_words_debug' => array(  // temp, for attempting to debug slowness here!
-                'type'  => 'bool',
-                'default' => FALSE,
-            ),
-            'exact_case' => array(
-                'type'  => 'bool',
-                'default' => FALSE,
-            ),
-            'results_list' => array(
-                'type'  => 'bool',
-                'default' => FALSE,
-            ),
-            'results_list_cache_id' => array(
-                'type'  => 'string',
-                'default' => null
-            ),
-            'data_format' => array(
-                'type'  => 'string',
-                //'default' => 'passage', // breaking!
-            ),
-            'highlight' => array(
-                'type'  => 'bool',
-                'default' => FALSE,
-            ),
-            'page' => array(
-                'type'  => 'int',
-                'default' => 1,
-            ),
-            'page_all' => array(
-                'type'  => 'bool',
-                'default' => $this->default_page_all,
-            ),            
-            'page_limit' => array(
-                'type'  => 'int_pos',
-                'default' => config('bss.pagination.limit'),
-            ),
-            'highlight_tag' => array(
-                'type'  => 'string',
-                //'default' => null,
-            ),
-            'search_type' => array(
-                'type'  => 'string',
-            ),
-            'proximity_limit' => array(
-                'type'  => 'int',
-            ),
-            'keyword_limit' => array(
-                'type'  => 'int',
-            ),
-            'callback' => array(
-                'type'  => 'string',
-            ),
-            'search_all' => array(
-                'type'  => 'string',
-            ),
-            'search_any' => array(
-                'type'  => 'string',
-            ),
-            'search_one' => array(
-                'type'  => 'string',
-            ),
-            'search_none' => array(
-                'type'  => 'string',
-            ),
-            'search_phrase' => array(
-                'type'  => 'string',
-            ),
-            'context' => array(
-                'type'   => 'bool',
-                'default' => FALSE,
-            ),
-            'group_passage_search_results' => array(
-                'type'   => 'bool',
-                'default' => FALSE,
-            ),
-            'context_range' => array(
-                'type'   => 'int',
-                'default' => config('bss.context.range'),
-            ),
-            'language' => [
+        $parsing = [
+            'reference' => [
                 'type' => 'string',
-                'default' => NULL,
             ],
-            'markup' => array(
-                'type'  => 'string',
-                'default' => 'none'
-            ),            
-            'parallel_search_error_suppress' => [
-                'type'   => 'bool',
+            'search' => [
+                'type' => 'string',
+            ],
+            'request' => [
+                'type' => 'string',
+            ],
+            'bible' => [
+                'type' => 'array_string',
+            ],
+            'whole_words' => [
+                'type' => 'bool',
                 'default' => false,
             ],
-        );
+            'whole_words_debug' => [  // temp, for attempting to debug slowness here!
+                'type' => 'bool',
+                'default' => false,
+            ],
+            'exact_case' => [
+                'type' => 'bool',
+                'default' => false,
+            ],
+            'results_list' => [
+                'type' => 'bool',
+                'default' => false,
+            ],
+            'results_list_cache_id' => [
+                'type' => 'string',
+                'default' => null,
+            ],
+            'data_format' => [
+                'type' => 'string',
+                //'default' => 'passage', // breaking!
+            ],
+            'highlight' => [
+                'type' => 'bool',
+                'default' => false,
+            ],
+            'page' => [
+                'type' => 'int',
+                'default' => 1,
+            ],
+            'page_all' => [
+                'type' => 'bool',
+                'default' => $this->default_page_all,
+            ],
+            'page_limit' => [
+                'type' => 'int_pos',
+                'default' => config('bss.pagination.limit'),
+            ],
+            'highlight_tag' => [
+                'type' => 'string',
+                //'default' => null,
+            ],
+            'search_type' => [
+                'type' => 'string',
+            ],
+            'proximity_limit' => [
+                'type' => 'int',
+            ],
+            'keyword_limit' => [
+                'type' => 'int',
+            ],
+            'callback' => [
+                'type' => 'string',
+            ],
+            'search_all' => [
+                'type' => 'string',
+            ],
+            'search_any' => [
+                'type' => 'string',
+            ],
+            'search_one' => [
+                'type' => 'string',
+            ],
+            'search_none' => [
+                'type' => 'string',
+            ],
+            'search_phrase' => [
+                'type' => 'string',
+            ],
+            'context' => [
+                'type' => 'bool',
+                'default' => false,
+            ],
+            'group_passage_search_results' => [
+                'type' => 'bool',
+                'default' => false,
+            ],
+            'context_range' => [
+                'type' => 'int',
+                'default' => config('bss.context.range'),
+            ],
+            'language' => [
+                'type' => 'string',
+                'default' => null,
+            ],
+            'markup' => [
+                'type' => 'string',
+                'default' => 'none',
+            ],
+            'parallel_search_error_suppress' => [
+                'type' => 'bool',
+                'default' => false,
+            ],
+        ];
 
         $this->resetErrors();
         $results = $bible_no_results = array();
-
+        
         $CacheManager = new CacheManager();
-        $Cache = $CacheManager->createCache($input, $parsing);
+        $Cache = $CacheManager->createCache($input, $parsing); // bottleneck (confirmed on live API)
+        
         $this->metadata = new \stdClass;
         $this->metadata->hash = $Cache->hash;
-
-        \App\RenderManager::cleanUpTempZipFiles();
-
-        $paging = [];
-
-        $test = [];
-
-        if(!isset($test['search'])) {
-            //
-        }
-
-        $input = $this->_sanitizeInput($input, $parsing);
+        $paging = $test = []; 
+        
+        $input = $this->_sanitizeInput($input, $parsing); // bottleneck?
         
         if($input['results_list_cache_id']) {
             if($input['results_list_cache_id'] == $this->metadata->hash) {
@@ -582,6 +574,7 @@ class Engine
         }
 
         $this->metadata->paging = $paging;
+
         return $results;
     }
 
@@ -727,6 +720,8 @@ class Engine
             return FALSE;
         }
 
+        RenderManager::cleanUpTempZipFiles();
+
         if($input['bible'] == 'ALL') {
             $modules = 'ALL';
         }
@@ -760,7 +755,7 @@ class Engine
         ];
 
         $response = new \stdClass;
-        $Manager = new \App\RenderManager($modules, $format, $zip);
+        $Manager = new RenderManager($modules, $format, $zip);
 
         if($Manager->hasErrors()) {
             $this->addErrors( $Manager->getErrors(), $Manager->getErrorLevel());
@@ -845,7 +840,7 @@ class Engine
 
     public function actionDownloadlist($input) 
     {
-        return \App\RenderManager::getRendererList();
+        return RenderManager::getRendererList();
     }
 
     /**
@@ -970,9 +965,9 @@ class Engine
     public function actionStatics($input) 
     {
         $domain = isset($input['domain']) ? $input['domain'] : null;
-        $Access = \App\ApiAccessManager::lookUpByInput($input);
+        $Access = ApiAccessManager::lookUpByInput($input);
 
-        \App\RenderManager::cleanUpTempZipFiles();
+        RenderManager::cleanUpTempZipFiles();
 
         $response = new \stdClass;
         $response->bibles                   = $this->actionBibles($input);
@@ -1216,7 +1211,7 @@ class Engine
 
     public function actionRequirements($input)
     {
-        return \App\InstallManager::getChecklist();
+        return InstallManager::getChecklist();
     }
 
     protected function _formatDataStructure($results, $input, $Passages, $Search) 

@@ -49,7 +49,7 @@ $( function() {
                 Dialogs.set('loadingShowing', true);
                 
                 $.ajax({
-                    url: '/admin/config/download/delete',
+                    url: baseAppUrl + '/admin/config/download/delete',
                     type: 'POST',
                     dataType: 'json',
 
@@ -76,7 +76,7 @@ $( function() {
                 Dialogs.set('loadingShowing', true);
 
                 $.ajax({
-                    url: '/admin/config/download/cleanup',
+                    url: baseAppUrl + '/admin/config/download/cleanup',
                     type: 'POST',
                     dataType: 'json',
 

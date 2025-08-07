@@ -19,7 +19,8 @@ use App\Models\Bible;
  * However, actual support for non-standard formats won't be implemented any time soon.
  */
 
-abstract class VerseAbstract extends Model {
+abstract class VerseAbstract extends Model 
+{
 
     protected $Bible;
     protected $module; // Module name
@@ -32,7 +33,8 @@ abstract class VerseAbstract extends Model {
      * @param  array  $attributes
      * @return void
     */
-    public function __construct(array $attributes = []) {
+    public function __construct(array $attributes = []) 
+    {
         if (empty($this->module)) {
             $class = explode('\\', get_called_class());
             $base_class   = array_pop($class);
@@ -45,7 +47,8 @@ abstract class VerseAbstract extends Model {
         parent::__construct($attributes);
     }
 
-    public function setBible(Bible &$Bible) {
+    public function setBible(Bible &$Bible) 
+    {
         $this->Bible = $Bible;
     }
 
@@ -57,7 +60,8 @@ abstract class VerseAbstract extends Model {
         }
     }
 
-    public function classFileExists() {
+    public function classFileExists() 
+    {
         return $this->hasClass;
     }
 
@@ -72,7 +76,8 @@ abstract class VerseAbstract extends Model {
      * @param array $parameters Search parameters - user input
      * @return array $Verses array of Verses instances (found verses)
      */
-    public static function getSearch($Passages = NULL, $Search = NULL, $parameters = array()) {
+    public static function getSearch($Passages = NULL, $Search = NULL, $parameters = []) 
+    {
         throw new StandardException('Must implement getSearch in child class!');
     }
 

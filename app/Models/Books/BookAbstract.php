@@ -234,8 +234,6 @@ class BookAbstract extends Model
 
         $Book = ($multiple) ? $Query->get()->all() : $Query->first();
 
-        // $loose = true;
-
         if($Book || !$loose) {
             return $Book;
         }

@@ -61,11 +61,22 @@ class ConfigController extends Controller
         $data = $request->toArray();
         ConfigManager::setGlobalConfigs($data);
 
-        if(array_key_exists('app__config_cache', $data) && $data['app__config_cache']) {
-            Artisan::call('config:cache');
+        $config_cache = config('app.config_cache', '0');
+        $config_cache_changed = array_key_exists('app__config_cache', $data) && $data['app__config_cache'] != $config_cache;
+
+        if($config_cache_changed) {
+            if($data['app__config_cache']) {
+                Artisan::call('config:cache');
+            } else {
+                Artisan::call('config:clear');
+            }
         }
-        else {
-            Artisan::call('config:clear');
+
+        // Workaround for the fact that Laravel's config cache does not update the APP_URL env var at runtime
+        // The URL is briefly set to whats in the .env file (as opposed to our soft config)
+        // If the soft config URL is different than the .env file, then we redirect back to the config page
+        if(config('app.url') != env('APP_URL')) {
+            return redirect()->back();
         }
 
         return redirect('admin/config');

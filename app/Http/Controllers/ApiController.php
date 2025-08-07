@@ -14,10 +14,6 @@ class ApiController extends Controller
     public function genericAction(Request $Request, $action = 'query') 
     {
         $allowed_actions = ['query', 'bibles', 'books', 'statics', 'statics_changed', 'version', 'readcache', 'strongs', 'requirements'];
-        
-        if(env('APP_ENV', 'production') != 'testing') {
-            // header("Access-Control-Allow-Origin: *");
-        }
 
         if(config('download.enable')) {
             $allowed_actions[] = 'render';
@@ -53,7 +49,7 @@ class ApiController extends Controller
             $code = ($Engine->hasErrors()) ? 400 : 200;
         }
         catch (Exception $ex) {        
-            if( env('APP_ENV', 'production') == 'production') {
+            if( config('app.env') == 'production') {
                 return $this->_makeResponse($ex->getMessage(), 500);
             }
 

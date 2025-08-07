@@ -282,7 +282,7 @@ class Search extends SqlSearch {
      * @return boolean
      */
     public static function isTermStrongs($term) {
-        return (preg_match('/^[GHgh][0-9]+$/', $term));
+        return (bool)preg_match('/^[GHgh][0-9]+$/', $term);
     }
 
     public static function getTermType($term) {

@@ -266,6 +266,7 @@ class Passage {
         }
 
         $this->clearChapterVerse();
+        $chapter_verse = $chapter_verse ?: '';
         $this->raw_chapter_verse = preg_replace('/\s+/', ' ', $chapter_verse);
         $chapter_verse = str_replace([';',' '], [',',''], $chapter_verse);
         $chapter_verse = preg_replace('/,+/', ',', $chapter_verse); // Replace repeated , with one ,
@@ -1021,15 +1022,16 @@ class Passage {
      * @param bool $is_search - whether the parser should interpret this as a search
      * @return array|bool $Passages - array of passage instances, or FALSE if nothing parsed
      */
-    public static function parseReferences($reference, $languages = [], $is_search = FALSE, $Bibles = [], $parameters = []) {
-        if(!is_string($reference)) {
+    public static function parseReferences($reference, $languages = [], $is_search = FALSE, $Bibles = [], $parameters = []) 
+    {
+        if(!is_string($reference) || empty($reference)) {
             return FALSE;
         }
+
         $Passages   = [];
         $pre_parsed = static::explodeReferences($reference);
 
         $def_language = config('bss.defaults.language_short');
-
 
         if(!in_array($def_language, $languages)) {
             $languages[] = $def_language;

@@ -1,5 +1,18 @@
 Bible SuperSearch API Changelog
 
+= 6.1.0
+* Optimization work on most renderings (except PDF).
+* Fixed issue with config caching option.
+* Optimized and improved query hash / cache storage.
+
+= 6.0.6
+* Fixed issues when enabling Config Caching if the app url in the .env file doesn't match the App URL in the (soft) config
+* Also, skipped some unit tests when this was the issue.  
+* For some reason, Laravel occasionally pulls the .env app url when configs are cached even though the soft config should be overriding it.
+
+= 6.0.5
+* Fixed issue deleting renderd files when not using a dedicated domain.
+
 = 6.0.4
 * Optimized text rendering
 

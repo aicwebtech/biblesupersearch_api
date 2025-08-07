@@ -51,7 +51,7 @@ abstract class PdfAbstract extends RenderAbstract
     protected $pdf_break_new_testament  = NULL; // none, column, page
     protected $pdf_break_new_book       = NULL; // none, column, page
     protected $pdf_suppress_write_err   = FALSE;
-    protected $pdf_avoid_html           = false; // If TRUE, avoid using HTML tages in the text.
+    protected $pdf_avoid_html           = false; // If TRUE, avoid using HTML tags in the text.
     protected $pdf_allow_bold           = false; // If FALSE, do not use bold text in the PDF.  This is useful for some languages that do not support bold text.
 
     protected $pdf_no_styles            = false; // If TRUE, do not use any styles (Bold, UL, red letter) in the PDF
@@ -150,18 +150,6 @@ abstract class PdfAbstract extends RenderAbstract
         $this->TCPDF->setHeaderMargin(10);
         $this->TCPDF->setFooterMargin(0);
         $this->TCPDF->allow_bold = $this->pdf_allow_bold;
-
-        //$res = TCPDF_FONTS::addTTFfont(__DIR__ . '/../../resources/fonts/noto_serif_telugu/NotoSerifTelugu-VariableFont_wght.ttf', 'TrueTypeUnicode', '', 96);
-
-        //var_dump(is_file( __DIR__ . '/../../resources/fonts/noto_serif_telugu/static/NotoSerifTelugu-Regular.ttf'));
-
-        // $res = $this->TCPDF->AddFont('bobski', '', __DIR__ . '/../../resources/fonts/noto_serif_telugu/NotoSerifTelugu-VariableFont_wght.ttf');
-        // $res = $this->TCPDF->AddFont('bobski', '', __DIR__ . '/../../resources/fonts/noto_serif_telugu/static/NotoSerifTelugu-Regular.ttf');
-        // // $res = $this->TCPDF->addTTFfont(__FILE__ . '/../../resources/fonts/noto_serif/telugu/NotoSerifTelugu-VariableFont_wght.ttf');
-
-        // print_r($res);
-        // var_dump($res);
-        // die();
         
         if(static::$load_fonts) {
             $this->_initiateFonts();
@@ -328,6 +316,7 @@ abstract class PdfAbstract extends RenderAbstract
 
         if($this->pdf_avoid_html) {
             $html = str_replace(array('‹', '›', '[', ']'), '', $text);
+            $html = strip_tags($html); // Remove all HTML tags
         } else {
             $html = str_replace(array('‹', '›', '[', ']', '  '), array($rl_st, $rl_en, '<i>', '</i>', '&nbsp;&nbsp;'), $text);
         }

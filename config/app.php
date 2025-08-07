@@ -23,7 +23,7 @@ return [
     |
     */
 
-    'version' => '6.0.4',
+    'version' => '6.1.0.pre',
 
 
     /*
@@ -104,6 +104,8 @@ return [
 
     'experimental' => env('APP_EXPERIMENTAL', false),
 
+    'test_http' => env('APP_TEST_HTTP', FALSE),
+
     'config_cache' => FALSE,
 
     'installed' => FALSE,
@@ -120,6 +122,8 @@ return [
     */
 
     'url' => env('APP_URL', 'http://localhost'),
+
+    'url_env' => env('APP_URL', 'http://localhost'),
 
     /*
     |--------------------------------------------------------------------------

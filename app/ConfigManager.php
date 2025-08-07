@@ -188,7 +188,7 @@ class ConfigManager
                 break;
 
             default:
-                $val = trim($value);
+                $val = $value ? trim($value) : null;
         }
 
         return $val;

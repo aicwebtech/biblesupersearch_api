@@ -25,7 +25,7 @@ return [
         'luther',
         'tr',
         'web',
-        'lith',
+        // 'lith',
         'rvg',
         'diodati',
         'wlc',
@@ -34,6 +34,7 @@ return [
         'lv_gluck_8',
         'synodal',
         'martin',
+        'geneva',
         'chinese_union_trad',
     ],
 ];

@@ -8,11 +8,13 @@ use App\Helpers;
  * Description of Singleton
  *
  */
-trait Singleton {
+trait Singleton 
+{
 
     protected static $instance = NULL;
 
-    public static function getInstance() {
+    public static function getInstance() 
+    {
         if(!static::$instance) {
             static::$instance = static::generateInstance();
         }
@@ -20,7 +22,14 @@ trait Singleton {
         return static::$instance;
     }
 
-    public static function generateInstance() {
+    public static function freshInstance() 
+    {
+        static::$instance = NULL;
+        return static::getInstance();
+    }
+
+    public static function generateInstance() 
+    {
         $Instance = NULL;
 
         if(config('app.premium')) {

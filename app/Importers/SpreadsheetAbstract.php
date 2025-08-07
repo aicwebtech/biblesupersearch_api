@@ -48,7 +48,7 @@ abstract class SpreadsheetAbstract extends ImporterAbstract
 
     protected function _importHelper(Bible &$Bible): bool  
     {
-        ini_set("memory_limit", "150M"); // TODO - need to test this with LARGE UNICODE BIBLES to make sure it doesn't break!
+        @ini_set("memory_limit", "150M"); // TODO - need to test this with LARGE UNICODE BIBLES to make sure it doesn't break!
             // Confirmed working with thaikjv .xls AND .csv (10+ MB files)
 
         // $Bible     = $this->_getBible($this->module);

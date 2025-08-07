@@ -950,10 +950,11 @@ class SqlSearch {
      * @param type $query
      * @return array $parsed
      */
-    public static function parseSimpleQueryTerms($query, $search_type = 'and') {
+    public static function parseSimpleQueryTerms($query, $search_type = 'and') 
+    {
         $parsed = $query ? explode(' ', $query) : [];
         $parsed = array_unique($parsed);
-        return $parsed;
+        return array_values($parsed);
     }
 
     /**
@@ -1181,9 +1182,4 @@ class SqlSearch {
         return $big_pieces;
     }
 
-    // Returns FALSE if is exact phrase or REGEXP search
-    // Returns TRUE otherwise
-    static public function isKeywordSearch($search_type) {
-
-    }
 }

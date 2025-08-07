@@ -8,7 +8,7 @@ class CacheManager
 {
     protected $hash_size = 10;
 
-    public function createCache($form_data, $parsing = array()) 
+    public function createCache($form_data, $parsing = []) 
     {
         $processed = $this->processFormData($form_data, $parsing);
         // Attempt to find / reuse an existing cache - is this a good idea?
@@ -17,6 +17,7 @@ class CacheManager
         if(!$Cache) {
             $Cache = new Cache();
             $Cache->hash = $this->_generateHash();
+            $Cache->hash_long = $this->_generateLongHash($processed);
             $Cache->form_data = $processed;
             $Cache->save();
         }
@@ -45,7 +46,8 @@ class CacheManager
 
     protected function _getCacheByProcessedFormData($processed) 
     {
-        return Cache::where('form_data', $processed)->first();
+        $hash_long = $this->_generateLongHash($processed);
+        return Cache::where('hash_long', $hash_long)->first();
     }
 
     protected function _generateHash() 
@@ -74,7 +76,13 @@ class CacheManager
         return $hash;
     }
 
-    protected function processFormData($form_data, $parsing = array()) {
+    protected function _generateLongHash($processed) 
+    {
+        return md5($processed);
+    }
+
+    protected function processFormData($form_data, $parsing = []) 
+    {
         $processed = array();
         $exclude   = ['page','page_all'];
 
@@ -84,8 +92,7 @@ class CacheManager
                     $processed[$key] = $form_data[$key];
                 }
             }
-        }
-        else {
+        } else {
             $processed = $form_data;
         }
 

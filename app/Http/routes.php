@@ -11,7 +11,7 @@
 |
 */
 
-$api_middleware = env('APP_ENV', 'production') == 'local' ? 'api_testing' : 'api';
+$api_middleware = in_array(env('APP_ENV', 'production'), ['local','testing']) ? 'api_testing' : 'api';
 
 // 'api_testing' middleware has higher access rate allowance, for testing purposes
 

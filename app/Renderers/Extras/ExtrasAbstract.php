@@ -22,7 +22,8 @@ class ExtrasAbstract
         ],
     ];
 
-    public function render($overwrite = FALSE) {
+    public function render($overwrite = FALSE) 
+    {
         $this->overwrite = TRUE; //$overwrite;
         $this->_renderBibleBookLists();
         $this->_renderLanguages();
@@ -34,16 +35,19 @@ class ExtrasAbstract
         return $this->hasErrors() ? FALSE : TRUE;
     }
 
-    public function getFileInfo() {
+    public function getFileInfo() 
+    {
         return $this->fileinfo;
     }    
 
-    public function getFileList() {
+    public function getFileList() 
+    {
         return $this->filelist;
     }
 
-    protected function _renderBibleBookLists() {
-        foreach( config('bss_table_languages.books') as $lang) {
+    protected function _renderBibleBookLists() 
+    {
+        foreach( Language::haveBookSupport() as $lang) {
             $Language = Language::findByCode($lang);
 
             if(!$Language) {
@@ -55,11 +59,13 @@ class ExtrasAbstract
         }
     }
 
-    protected function _renderBibleBookListSingle($lang_code) {
+    protected function _renderBibleBookListSingle($lang_code) 
+    {
         throw new \StandardException('Method Not Implemented!');
     }
 
-    protected function _renderBibleShortcuts() {
+    protected function _renderBibleShortcuts() 
+    {
         foreach( config('bss_table_languages.shortcuts') as $lang) {
             $Language = Language::findByCode($lang);
 
@@ -73,29 +79,35 @@ class ExtrasAbstract
         }
     }
 
-    protected function _renderBibleShortcutsSingle($lang_code) {
+    protected function _renderBibleShortcutsSingle($lang_code) 
+    {
         throw new \StandardException('Method Not Implemented!');
     }
 
-    protected function _renderStrongsDefinitions() {
+    protected function _renderStrongsDefinitions() 
+    {
         $filepath = $this->_renderStrongsDefinitionsHelper();
         $this->_pushFileInfo('misc', $filepath, 'Strong\'s Definitions');
     }
 
-    protected function _renderStrongsDefinitionsHelper() {
+    protected function _renderStrongsDefinitionsHelper() 
+    {
         throw new \StandardException('Method Not Implemented!');
     }
 
-    protected function _renderLanguages() {
+    protected function _renderLanguages() 
+    {
         $filepath = $this->_renderLanguagesHelper();
         $this->_pushFileInfo('misc', $filepath, 'Languages');
     }
 
-    protected function _renderLanguagesHelper() {
+    protected function _renderLanguagesHelper() 
+    {
         throw new \StandardException('Method Not Implemented!');
     }
 
-    protected function _pushFileInfo($list, $filepath, $filedesc) {
+    protected function _pushFileInfo($list, $filepath, $filedesc) 
+    {
         if(!array_key_exists($list, $this->fileinfo) || !$filepath || !$list) {
             return FALSE;
         }
@@ -109,11 +121,13 @@ class ExtrasAbstract
         $this->filelist[] = $filepath;
     }
 
-    protected function _getDBDumpDir() {
+    protected function _getDBDumpDir() 
+    {
         return dirname(__FILE__) . '/../../../database/dumps/';
     }
 
-    protected function _renderReadme() {
+    protected function _renderReadme() 
+    {
         $filepath = $this->getRenderFileDir() . 'readme.txt';
         $readme = 'Bible SuperSearch Extras';
 
@@ -130,7 +144,8 @@ class ExtrasAbstract
         $this->filelist[] = $filepath;
     }
 
-    public function getRenderFileDir($create_dir = TRUE) {
+    public function getRenderFileDir($create_dir = TRUE) 
+    {
         if($this->hasErrors()) {
             return FALSE;
         }
@@ -147,7 +162,8 @@ class ExtrasAbstract
         return $dir;
     }
 
-    public static function getRenderBasePath() {
+    public static function getRenderBasePath() 
+    {
         return dirname(__FILE__) . '/../../../bibles/rendered/extras';
     }
 }
