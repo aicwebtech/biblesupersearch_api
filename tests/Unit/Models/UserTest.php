@@ -4,7 +4,6 @@ namespace Tests\Unit\Models;
 
 use App\User;
 use App\Notifications\CustomPasswordReset;
-use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Support\Facades\Notification;
 use PHPUnit\Framework\TestCase;

@@ -4,6 +4,7 @@ Bible SuperSearch API Changelog
 * Optimization work on most renderings (except PDF).
 * Fixed issue with config caching option.
 * Optimized and improved query hash / cache storage.
+* Cleaned up some unneeded files that were causing issues pulling from GIT
 
 = 6.0.6
 * Fixed issues when enabling Config Caching if the app url in the .env file doesn't match the App URL in the (soft) config

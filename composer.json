@@ -37,10 +37,9 @@
     },
     "autoload-dev": {
         "classmap": [
-            "tests_legacy/TestCase.php"
+
         ],
         "psr-4": {
-            "TestsLegacy\\": "tests_legacy/",
             "Tests\\": "tests/"
         }
     },

@@ -2,13 +2,13 @@
     $mail_drivers = ["smtp", "mail", "sendmail", "mailgun", "mandrill", "ses", "log"];
 
     $javascripts = [
-        '/js/bin/enyo/2.5.1.1/enyo.js',
-        '/js/bin/custom/alert/package.js',
+        '/js/bin/custom-jquery/Dialogs.js',
         '/js/admin/config.js',
     ];
 
     $stylesheets = [
-       '/css/admin/config.css',
+        '/js/bin/custom-jquery/dialog.css',
+        '/css/admin/config.css',
     ];
 ?>
 
@@ -775,6 +775,29 @@
                 </div>
             </form>
             <div id='dialog_container'></div>
+
+            <div id='jquery_dialogs_alert' class='dialogCenterText'>
+                <div class='dialog_content'>
+                    <p id='jquery_dialogs_alert_message'></p>
+                </div>
+            </div>
+            <div id='jquery_dialogs_confirm' class='dialogCenterText'>
+                <div class='dialog_content'>
+                    <p id='jquery_dialogs_confirm_message'></p>
+                </div>
+                <div id='text_confirm_container' class='dialog_content'>
+                    Please type <strong><span id='text_confirm_word'></span></strong> to continue:
+                    <br /><br />                                    
+                    <input type='text' id='text_confirm_input' />
+                </div>
+            </div>
+            <div id='jquery_dialogs_loading'>
+                <div class='dialog_content'>
+                    <p id='jquery_dialogs_loading_message'>Loading...</p>
+                    <img src='{{ asset('images/Spinner.gif') }}' style='margin-top: 20px' />
+                </div>
+            </div>
+
         </div>
     </div>
 @endsection

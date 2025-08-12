@@ -24,22 +24,20 @@ return new class extends Migration
         Schema::create('cache', function (Blueprint $table) {
             $table->bigIncrements('id');
             $table->string('hash', 20);
-            $table->string('hash_long', 32);
+            $table->string('hash_long', 32); // new
             $table->text('form_data');
             $table->tinyInteger('preserve')->default(0)->unsigned();
             $table->timestamps();
             $table->unique('hash', 'idh');
-            $table->unique('hash_long', 'idh_long');
+            $table->unique('hash_long', 'idh_long'); // new
         });
+
         
         DB::update("UPDATE " . $pre . "cache_old SET hash_long = MD5(form_data)");
 
         DB::insert("INSERT IGNORE INTO " . $pre . "cache SELECT * FROM " . $pre . "cache_old");
 
-        // Ensure the new column is unique
-        // Schema::table('cache', function (Blueprint $table) {
-        //     $table->string('hash_long', 32)->unique()->change();
-        // });
+        Schema::dropIfExists('cache_old');
     }
 
     /**
@@ -49,6 +47,9 @@ return new class extends Migration
     {
         Schema::table('cache', function (Blueprint $table) {
             $table->dropColumn(['hash_long']);
+            $table->dropUnique('idh_long');
         });
+
+        Schema::dropIfExists('cache_old');
     }
 };

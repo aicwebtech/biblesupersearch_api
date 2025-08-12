@@ -3,7 +3,6 @@
 namespace Tests\Feature\Models;
 
 use App\Models\Cache;
-use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
 class CacheTest extends TestCase
