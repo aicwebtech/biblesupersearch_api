@@ -1,0 +1,10 @@
+.dialogNoTitle .ui-dialog-titlebar {
+    display:none
+}
+
+.dialogCenterText { text-align: center; }
+
+.dialog_red_alert {
+    color: red;
+    font-weight: bold;
+}

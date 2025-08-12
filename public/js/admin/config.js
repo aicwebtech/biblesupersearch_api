@@ -43,10 +43,12 @@ $( function() {
     });
 
     $('#button_clear_all_rendered').click(function() {
-        Dialogs.textConfirm('Are you sure? \nThis will delete ALL retained rendered Bibles.', 'DELETE', function(confirm) {
-            
+        AICWEBTECH.jQuery.Dialogs.textConfirm('Are you sure? \nThis will delete ALL retained rendered Bibles.', 'DELETE', function(confirm) {
+            console.log('del all', confirm);
+
+
             if(confirm) {
-                Dialogs.set('loadingShowing', true);
+                AICWEBTECH.jQuery.Dialogs.set('loadingShowing', true);
                 
                 $.ajax({
                     url: baseAppUrl + '/admin/config/download/delete',
@@ -54,11 +56,11 @@ $( function() {
                     dataType: 'json',
 
                     success: function(data, statux, xhr) {
-                        Dialogs.set('loadingShowing', false);
+                        AICWEBTECH.jQuery.Dialogs.set('loadingShowing', false);
                         $('#rendered_space_used').html(data.space_used);
                     },
                     error: function(xhr, status, error) {
-                        Dialogs.set('loadingShowing', false);
+                        AICWEBTECH.jQuery.Dialogs.set('loadingShowing', false);
                         alert('An error has occurred');
                     }
                 });
@@ -68,12 +70,12 @@ $( function() {
         return false;
     });    
 
-    $('#button_clean_up_rendered').click(function() {
-        Dialogs.confirm('Are you sure? \nThis will clean up temporary rendered Bibles.', function(confirm) {
+    $('#button_clean_up_rendered').click(function(e) {
+        AICWEBTECH.jQuery.Dialogs.confirm('Are you sure? \nThis will clean up temporary rendered Bibles.', function(confirm) {
             console.log('wat', confirm);
 
             if(confirm) {
-                Dialogs.set('loadingShowing', true);
+                AICWEBTECH.jQuery.Dialogs.set('loadingShowing', true);
 
                 $.ajax({
                     url: baseAppUrl + '/admin/config/download/cleanup',
@@ -81,11 +83,11 @@ $( function() {
                     dataType: 'json',
 
                     success: function(data, statux, xhr) {
-                        Dialogs.set('loadingShowing', false);
+                        AICWEBTECH.jQuery.Dialogs.set('loadingShowing', false);
                         $('#rendered_space_used').html(data.space_used);
                     },
                     error: function(xhr, status, error) {
-                        Dialogs.set('loadingShowing', false);
+                        AICWEBTECH.jQuery.Dialogs.set('loadingShowing', false);
                         alert('An error has occurred');
                     }
                 });
@@ -121,10 +123,11 @@ $( function() {
             cache = total - temp;
 
             if(cache < 0) {
-                Dialogs.alert('Error: This total size would push the retained size below zero.');
-                $('#download_temp_cache_size').val(downloadTempCacheSize);
-                $('#download_cache_size').val(downloadCacheSize);
-                $('#download_total_cache_size').val(downloadCacheSize + downloadTempCacheSize);
+                AICWEBTECH.jQuery.Dialogs.alert('Error: This total size would push the retained size below zero.', function() {
+                    $('#download_temp_cache_size').val(downloadTempCacheSize);
+                    $('#download_cache_size').val(downloadCacheSize);
+                    $('#download_total_cache_size').val(downloadCacheSize + downloadTempCacheSize);
+                });
                 return;
             }
 
@@ -140,8 +143,7 @@ $( function() {
         $('#rendered_space_slider').slider('option', 'values', [min, max]);
     });
 
-    Dialogs = new AICWEBTECH.Enyo.jQuery.EmbeddedDialogs();
-    Dialogs.renderInto('dialog_container');
+    AICWEBTECH.jQuery.Dialogs.init();
 });
 
 function handleDownloadSpaceChange() {
