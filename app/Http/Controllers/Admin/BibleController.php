@@ -28,7 +28,7 @@ class BibleController extends Controller
      *
      * @return \Illuminate\Http\Response
      */
-    public function index() 
+    public function indexOld() 
     {
         Bible::updateNeedsUpdate();
         Bible::populateBibleTable();
@@ -53,7 +53,13 @@ class BibleController extends Controller
         return view('admin.bibles_old', ['bootstrap' => $bootstrap]);
     }
 
-    public function indexNew()
+        /**
+     * Display a listing of the resource.
+     * In this case, a page with a grid
+     *
+     * @return \Illuminate\Http\Response
+     */
+    public function index()
     {
         Bible::updateNeedsUpdate();
         Bible::populateBibleTable();
@@ -302,6 +308,8 @@ class BibleController extends Controller
      */
     public function edit($id) 
     {
+        return response('Not Implemented', 501);
+        
         $Bible = Bible::findByModule($id);
 
         if(!$Bible) {

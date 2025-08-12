@@ -2,7 +2,6 @@
     $buttons = [
         // ['label' => 'Dashboard', 'route' => 'admin.main', 'new_tab' => FALSE, 'hash' => ''],
         ['label' => 'Bibles', 'route' => 'admin.bibles.index', 'new_tab' => FALSE, 'hash' => ''],
-        ['label' => 'Bibles (new)', 'route' => 'admin.bibles.indexNew', 'new_tab' => FALSE, 'hash' => ''],
         ['label' => 'Languages', 'route' => 'admin.languages.index', 'new_tab' => FALSE, 'hash' => ''],
         ['label' => 'Options', 'route' => 'admin.configs', 'new_tab' => FALSE, 'hash' => ''],
         ['label' => 'Terms of Service', 'route' => 'admin.tos', 'new_tab' => FALSE, 'hash' => ''],
@@ -24,10 +23,6 @@ if(!isset($javascripts)) {
 }
 else if(!is_array($javascripts)) {
     $javascripts = array($javascripts);
-}
-
-if(isset($include_enyo) && $include_enyo) {
-    $javascripts[] = '/js/bin/enyo/2.5.1.1/enyo.js';
 }
 
 if(isset($include_vue) && $include_vue) {

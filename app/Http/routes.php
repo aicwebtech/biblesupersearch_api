@@ -82,7 +82,7 @@ Route::get('/admin/phpinfo', 'AdminController@debug')->name('admin.phpinfo');
 Route::get('/admin/statics', 'Admin\AppController@statics');
 
 // Bible mannager routes
-Route::get('/admin/bibles/indexNew', 'Admin\BibleController@indexNew')->name('admin.bibles.indexNew'); // temp
+//Route::get('/admin/bibles/indexNew', 'Admin\BibleController@indexNew')->name('admin.bibles.indexNew'); // temp
 
 Route::get('/admin/bibles/grid', 'Admin\BibleController@grid');
 Route::get('/admin/bibles/languages', 'Admin\BibleController@languages');
