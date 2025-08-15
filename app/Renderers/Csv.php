@@ -11,6 +11,8 @@ class Csv extends TextAbstract
     protected $include_book_name = TRUE;
     protected $escape = "\\";  // :todo: this should be a setting or default to ""
 
+    static public $extras_class = Extras\Csv::class;
+
     /**
      * This initializes the file, and does other pre-rendering work
      * @param bool $overwrite
