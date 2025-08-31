@@ -760,7 +760,8 @@ class Bible extends Model
         return TRUE;
     }
 
-    public function openModuleFile() {
+    public function openModuleFile() 
+    {
         $Zip  = new ZipArchive();
         $path = $this->getModuleFilePath();
 

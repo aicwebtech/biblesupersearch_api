@@ -44,11 +44,11 @@ class BookAbstractTest extends TestCase
 
     public function testBookListImportCSV()
     {
-        $test_language = 'test'; // NOT a valid language code!
+        $test_language = 'art'; // Artifical language for testing
         Book::dropBookTable($test_language);
 
         $class_name = Book::getClassNameByLanguageRaw($test_language);
-        $this->assertEquals('App\Models\Books\Test', $class_name);
+        $this->assertEquals('App\Models\Books\Art', $class_name);
         $this->assertFalse(class_exists($class_name));
         
         Book::makeClassByLanguage($test_language);

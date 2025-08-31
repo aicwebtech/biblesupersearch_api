@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 use Database\Seeders\DatabaseSeeder;
+use App\Models\Language;
 
 class BookAbstract extends Model
 {
@@ -95,6 +96,10 @@ class BookAbstract extends Model
 
     public static function makeClassByLanguage($language)
     {
+        if(!Language::validateLanguage($language)) {
+            return;
+        }
+        
         $model_class = studly_case(strtolower($language));
         $namespace = __NAMESPACE__;
         $class_name = $namespace . '\\' . $model_class;

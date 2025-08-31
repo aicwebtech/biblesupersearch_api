@@ -80,16 +80,13 @@ class SQLite3 extends RenderAbstract
         }
 
         DB::connection($cn)->table('meta')->insert($meta);
-
-        // $this->TableVerses = DB::connection($cn)->table('verses');
-
+        
         return TRUE;
     }
 
     protected function _renderVerseChunk() 
     {
         DB::connection( $this->getDbConnectionName('render') )->table('verses')->insert($this->chunk_data);
-        // $this->TableVerses->insert($this->chunk_data);
     }
 
     protected function _renderFinish() 

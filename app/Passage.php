@@ -1406,7 +1406,7 @@ class Passage {
     }
 
     public static function _containsNonPassageCharacters($string) {
-        $non_passage_chars = preg_match('/[`\\~!@#$%\^&*{}_[\]()]/', $string, $matches);
+        $non_passage_chars = preg_match('/[`\'"\\~!@#$%\^&*{}_[\]()=]/', $string, $matches);
         // $non_passage_chars = preg_match_all('/[\p{Ps}\p{Pe}\(\)\\\|\+&]/', $string, $matches); // BookAbstract::findByEnteredName
         // $non_passage_chars = preg_match_all('/[^0-9\p{L}\p{M} :,.-]/', $string, $matches);
         // $non_passage_chars = preg_match_all('/[`\\~!@#$%\^&*{}_[\]]/', $string, $matches);

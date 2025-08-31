@@ -53,11 +53,11 @@ class ErrorTest extends TestCase
     }
 
     #[DataProvider('illegalCharactersDataProvider')]
-    public function testIllegalCharacters(string $qu) 
+    public function testIllegalCharacters(string $qu, string|null $qu_tr = null) 
     {
         $Engine = Engine::getInstance();
              
-        $qu_tr = $qu;
+        //$qu_tr = $qu;
         $qu_tr = $qu_tr ?: $qu;
 
         // Reference
@@ -65,7 +65,7 @@ class ErrorTest extends TestCase
         $this->assertTrue($Engine->hasErrors());
         $errors = $Engine->getErrors();
         $this->assertCount(1, $errors);
-        $this->assertEquals( trans('errors.passage_not_found', ['passage' => $qu]), $errors[0]);      
+        $this->assertEquals( trans('errors.passage_not_found', ['passage' => $qu_tr]), $errors[0]);      
 
         // Search, type = all words
         $results = $Engine->actionQuery(['bible' => 'kjv', 'request' => $qu]);
@@ -100,11 +100,90 @@ class ErrorTest extends TestCase
     {
         return [
             ['*'],
-            [' * '],
-            [' + '],
-            [' " "'],
+            [' * ', '*'],
+            [' + ', '+'],
+            [' " "', '" "'],
             ['"' . chr(32) . '"'],
         ];
+    }
+
+    public function testAttemptedOsCodeInjection() 
+    {
+        $Engine = new Engine();
+        $results = $Engine->actionQuery(['bible' => 'kjv', 'search' => 'faith && rm -rf /']);
+        $this->assertTrue($Engine->hasErrors());
+
+        $results = $Engine->actionQuery(['bible' => 'kjv && rm -rf /', 'search' => 'faith']);
+        $this->assertTrue($Engine->hasErrors());
+    }
+
+    #[DataProvider('sqlInjectionDataProvider')]
+    public function testAttemptedSqlInjection(string $qu) 
+    {
+        $expected_count = config('app.debug') ? 2 : 1;
+        
+        $Engine = new Engine();
+        $results = $Engine->actionQuery(['bible' => 'kjv', 'search' => 'faith' . $qu]);
+        $this->assertTrue($Engine->hasErrors());
+        $errors = $Engine->getErrors();
+        // print_r($errors);
+        //$this->assertCount(1, $errors);
+
+        $results = $Engine->actionQuery(['bible' => 'kjv', 'request' => 'faith' . $qu]);
+        $this->assertTrue($Engine->hasErrors());
+        $errors = $Engine->getErrors();
+        // print_r($errors);
+        //$this->assertCount(1, $errors);
+
+        $results = $Engine->actionQuery(['bible' => 'kjv', 'request' => 'Romans 1' . $qu]);
+        $this->assertTrue($Engine->hasErrors());
+        $errors = $Engine->getErrors();
+        // print_r($errors);
+        //$this->assertCount(1, $errors);
+
+        $results = $Engine->actionQuery(['bible' => 'kjv', 'reference' => 'Romans 1' . $qu]);
+        $this->assertTrue($Engine->hasErrors());
+        $errors = $Engine->getErrors();
+        // print_r($errors);
+        //$this->assertCount(1, $errors);
+    }
+
+    public static function sqlInjectionDataProvider() 
+    {
+        return [
+            ['; DROP TABLE users; --'],
+            ["'; DROP TABLE users;"],
+            ['"; DROP TABLE users;'],
+            ['; UPDATE bibles SET enabled=0;'],
+            ["'; UPDATE bibles SET enabled='0';"],
+            ['"; DELETE FROM bibles; --'],
+            ['; SELECT * FROM users;'],
+            ["'; SELECT * FROM users;"],
+            ['"; SELECT * FROM users;'],
+        ];
+    }
+
+    public static function xssInjectionDataProvider() 
+    {
+        return [
+            ['<script>alert("XSS")</script>'],
+            ['<img src=x onerror=alert("XSS")>'],
+            ['<b onmouseover=alert("XSS")>bold</b>'],
+            ['<iframe src="javascript:alert(\'XSS\');"></iframe>'],
+            ['<a href="javascript:alert(\'XSS\')">click me</a>'],
+            ['<div style="background-image: url(javascript:alert(\'XSS\'))">test</div>'],
+            ['<svg onload=alert("XSS")>'],
+            ['<math><mi xlink:href="javascript:alert(\'XSS\')">XSS</mi></math>'],
+        ];
+    }
+
+    public function testAttemptedXssInjection() 
+    {
+        $Engine = new Engine();
+        $results = $Engine->actionQuery(['bible' => 'kjv', 'search' => '<script>alert("XSS")</script>']);
+        $this->assertTrue($Engine->hasErrors());
+        $errors = $Engine->getErrors();
+        $this->assertCount(1, $errors);
     }
 
     public function testParallelLookupNoResults() 

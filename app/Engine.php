@@ -462,9 +462,9 @@ class Engine
                     $BibleResults = $Bible->getSearch($Passages, $Search, $input); // Laravel Collection
                 }
                 catch (\Exception $e) {
-                    $this->addTransError('errors.500', [], 4, 500);
-
+                    
                     if(config('app.debug')) {
+                        $this->addTransError('errors.500', [], 4, 500);
                         $m = $e->getMessage();
                         $m = "<div style='width:800px;font-family:Monospace;white-space:pre-wrap;text- align:left'>" . $m . "</div>";
                         
@@ -1451,10 +1451,15 @@ class Engine
                         break;
                     case 'string':
                         $value = (string) $input[$index];
-                        $value = str_replace("\n", ' ', $value);
+                        $value = self::sanitizeString($value);
                         break;
                     default:
-                        $value = $input[$index];
+                        if(is_string($value)) {
+                            $value = self::sanitizeString($input[$index]);
+                        }
+                        else {
+                            $value = $input[$index];
+                        }
                 }
             }
 
@@ -1467,6 +1472,15 @@ class Engine
         }
 
         return $clean;
+    }
+
+    public static function sanitizeString($str)
+    {
+        $str = trim($str);
+        $str = strip_tags($str);
+        $str = str_replace('\n', ' ', $str);
+        $str = preg_replace('/\s+/', ' ', $str);
+        return $str;
     }
 
     public function setDefaultDataType($type) 

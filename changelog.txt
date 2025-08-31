@@ -1,5 +1,9 @@
 Bible SuperSearch API Changelog
 
+= 6.1.1
+* Fixed issues with the USFM importer
+* Fixed several security issues
+
 = 6.1.0
 * Optimization work on most renderings (except PDF).
 * Fixed issue with config caching option.

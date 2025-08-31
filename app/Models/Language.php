@@ -10,6 +10,8 @@ class Language extends Model
 
     public $timestamps = FALSE;
 
+    protected static $valid_languages = [];
+
     protected $fillable = [
         'name', 'iso_name', 'code', 'native_name', 'iso_endonym', 'rtl', 'family', 
         'iso_639_1', 'iso_639_2', 'iso_639_2_b', 'iso_639_3', 'iso_639_3_raw', 'notes',
@@ -116,6 +118,23 @@ class Language extends Model
                 -> value('value');
 
         return $raw === null ? $default : $raw;
+    }
+
+    public static function validateLanguage($lang)
+    {
+        if(!$lang) {
+            return false;
+        }
+
+        if(!isset(static::$valid_languages[$lang])) {
+            static::$valid_languages[$lang] = false;
+
+            if(preg_match('/^[a-z]{2,3}$/', $lang)) {
+                static::$valid_languages[$lang] = static::where('code', $lang)->exists();
+            }
+        }
+
+        return static::$valid_languages[$lang];
     }
 
     public static function hasBookSupport($lang)

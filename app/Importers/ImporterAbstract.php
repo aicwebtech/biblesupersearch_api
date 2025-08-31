@@ -121,6 +121,9 @@ abstract class ImporterAbstract
 
     public function saveBookList()
     {
+        return false;  // Disabled for now, this is an experimental / development feature only
+        // causing issues for some use cases (ie mismatch languages)
+
         $Bible = Bible::findByModule($this->module);
 
         $lang = $Bible ? $Bible->lang_short : null;
