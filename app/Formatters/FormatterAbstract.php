@@ -26,7 +26,8 @@ abstract class FormatterAbstract {
     protected $languages;
     protected $input;
 
-    public function __construct($results, $Passages, $Search, $languages, $input) {
+    public function __construct($results, $Passages, $Search, $languages, $input) 
+    {
         $this->results      = $results;
         $this->Passages     = $Passages;
         $this->PassagesOrig = $Passages;
@@ -39,7 +40,8 @@ abstract class FormatterAbstract {
 
     abstract public function format();
 
-    protected function _mapResultsToPassages($results) {
+    protected function _mapResultsToPassages($results) 
+    {
         $passage_group_search = false;
 
         if($this->input['group_passage_search_results'] && $this->is_search && $this->has_passages) {
@@ -88,11 +90,13 @@ abstract class FormatterAbstract {
         return TRUE;
     }
 
-    protected function _createPassageFromSingleVerse($verse) {
+    protected function _createPassageFromSingleVerse($verse) 
+    {
 
     }
 
-    protected function _preFormatVerses($results) {
+    protected function _preFormatVerses($results) 
+    {
         return $results; //
 
         // foreach($results as $key => &$verse) {
@@ -103,7 +107,8 @@ abstract class FormatterAbstract {
         // return $results;
     }
 
-    protected function _preFormatVersesHelper(&$verse) {
+    protected function _preFormatVersesHelper(&$verse) 
+    {
 
     }
 }

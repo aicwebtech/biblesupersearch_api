@@ -1225,6 +1225,7 @@ class Engine
             'minimal'   => 'minimal',
             'passage'   => 'passage',
             'lite'      => 'lite',
+            'simple'    => 'simple',
         );
 
         $format_type  = (array_key_exists($format_type, $format_map)) ? $format_map[$format_type] : 'passage';
