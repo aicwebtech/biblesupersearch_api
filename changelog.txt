@@ -1,5 +1,9 @@
 Bible SuperSearch API Changelog
 
+= 6.1.2
+* Added link to redirect around mod_rewrite error
+* Fixed issues with Bible grid / edit functions when operating without a dedicated (sub) domain.
+
 = 6.1.1
 * Fixed issues with the USFM importer
 * Fixed several security issues

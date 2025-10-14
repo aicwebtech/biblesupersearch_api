@@ -120,7 +120,7 @@ enyo.kind({
         this.set('processing', true);
         var item = this.queue.shift();
         this.$.Bible.set('content', item.name);
-        var url = '../admin/bibles/' + this.action + '/' + item.id;
+        var url = baseAppUrl + '/admin/bibles/' + this.action + '/' + item.id;
         this.log('sim load url', url);
         this.postData._token = laravelCsrfToken;
 

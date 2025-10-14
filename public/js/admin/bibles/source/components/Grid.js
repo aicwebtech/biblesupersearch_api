@@ -186,7 +186,7 @@ enyo.kind({
             ];
 
             this.gridHandle = $(this.$.Grid.hasNode()).jqGrid({
-                url: '../admin/bibles/grid',
+                url: baseAppUrl + '/admin/bibles/grid',
                 datatype: 'json',
                 idPrefix: this.idPrefix,
                 colModel: this.colModel,
@@ -258,7 +258,7 @@ enyo.kind({
         return html;
     },    
     __makeHtmlLink: function(text, url, target) {
-        var html = "<a href='" + url + "' target='" + target + "'>" + text + "</a>";
+        var html = "<a href='" + baseAppUrl + url + "' target='" + target + "'>" + text + "</a>";
         return html;
     },
     __setCellColor: function(rowId, cellIndex, color) {
