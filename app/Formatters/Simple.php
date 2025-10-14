@@ -22,7 +22,7 @@ class Simple extends FormatterAbstract
         
         foreach($this->results as $bible => &$verses) {
             foreach($verses as &$verse) {
-                $Book = $BookAbstract::findByIdAndLanguage($verse->book, $language);
+                $Book = BookAbstract::findByIdAndLanguage($verse->book, $language);
                 $verse->book_name = $Book->name;
                 $verse->book_shortname = $Book->shortname;
             }
