@@ -10,6 +10,7 @@ use Illuminate\Foundation\Testing\DatabaseTransactions;
 use PHPUnit\Framework\Attributes\DataProvider;
 
 use App\Engine;
+use App\Models\Bible;
 
 class SearchValidationTest extends TestCase 
 {
@@ -72,6 +73,10 @@ class SearchValidationTest extends TestCase
     // This test was build to work around configs, but it is ugly
     public function testParallelLanguageSearch()
     {
+        if(!Bible::isEnabled('tr')) {
+            $this->markTestSkipped('Bible tr or Bible tyndale not installed or enabled');
+        }
+        
         $multi_bible_languages_allow = config('bss.parallel_search_different_languages');
 
         $this->testParallelLanguageSearchHelper('always');

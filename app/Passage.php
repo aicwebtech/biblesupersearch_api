@@ -52,8 +52,7 @@ class Passage {
     public function setBookById($book_id) 
     {
         $language = (is_array($this->languages) && count($this->languages)) ? $this->languages[0] : config('bss.defaults.language_short');
-        $book_class = Book::getClassNameByLanguage($language);
-        $Book = $book_class::find($book_id);
+        $Book = Book::findByIdAndLanguage($book_id, $language);
 
         if($Book) {
             $this->Book = $Book;
@@ -69,7 +68,8 @@ class Passage {
      * Sets the book (or book range for searches)
      * @param string|int $book
      */
-    public function setBook($book) {
+    public function setBook($book) 
+    {
         $this->raw_book = $book;
         $this->is_random = FALSE;
 
@@ -117,7 +117,8 @@ class Passage {
         }
     }
 
-    public function setBookRange($book_range) {
+    public function setBookRange($book_range) 
+    {
         $this->raw_book = $book_range;
         $book_range = trim( preg_replace('/\s+/', ' ', $book_range) );
         $books = explode('-', $book_range);
@@ -130,7 +131,8 @@ class Passage {
      * Logs error with regards to book processing
      * @param string $message
      */
-    protected function _addBookError($message) {
+    protected function _addBookError($message) 
+    {
         $this->is_valid = FALSE;
         $this->Book = NULL;
         $this->Book_En = NULL;
@@ -138,7 +140,8 @@ class Passage {
         $this->addError($message);
     }
 
-    protected function _generateRandomReference($reference) {
+    protected function _generateRandomReference($reference) 
+    {
         $random = static::normalizeRandom($reference);
         $random = substr($random, 7);
 
@@ -171,11 +174,13 @@ class Passage {
      * @param string $book
      * @return Book $Book
      */
-    public function findBook($book, $loose = false) {
+    public function findBook($book, $loose = false) 
+    {
         return static::findBookByNameAndLanguage($book, $this->languages, false, $loose);
     }
 
-    public static function findBookByNameAndLanguage($book, $languages = [], $multiple = FALSE, $loose = false) {
+    public static function findBookByNameAndLanguage($book, $languages = [], $multiple = FALSE, $loose = false) 
+    {
         $found = FALSE;
         $primary_language = NULL;
 
@@ -228,7 +233,8 @@ class Passage {
      * @param array $languages
      * @return object|string
      */
-    static public function findShortcut($reference, $languages, $return_as_string = FALSE) {
+    static public function findShortcut($reference, $languages, $return_as_string = FALSE) 
+    {
         $SC = Shortcut::findByEnteredName($reference);
 
         if(!$SC) {
@@ -437,7 +443,8 @@ class Passage {
         $this->chapter_verse_parsed = $parsed;
     }
 
-    protected function _singleVerseHelper($chapter, $verse) {
+    protected function _singleVerseHelper($chapter, $verse) 
+    {
         if($this->is_contextual && $verse) {
             $item = array(
                 'cst' => $chapter,
@@ -454,7 +461,8 @@ class Passage {
         return $item;
     }
 
-    public function setChapterVerseFromParsed($parsed_item) {
+    public function setChapterVerseFromParsed($parsed_item) 
+    {
         $this->clearChapterVerse();
         $chapter_verse = '';
         $chapters = [];
@@ -499,7 +507,8 @@ class Passage {
         $this->chapter_verse_parsed = array($parsed_item);
     }
 
-    public function clearChapterVerse() {
+    public function clearChapterVerse() 
+    {
         $this->chapter_verse_parsed = [];
         $this->raw_chapter_verse = NULL;
         $this->chapter_verse = NULL;
@@ -509,7 +518,8 @@ class Passage {
         $this->verses_count = 0;
     }
 
-    public function getNormalizedReferences() {
+    public function getNormalizedReferences() 
+    {
         $parsed = $this->chapter_verse_parsed;
 
         if(!is_array($parsed)) {
@@ -1055,7 +1065,8 @@ class Passage {
         return (empty($Passages)) ? FALSE : $Passages;
     }
 
-    public static function explodeReferences($reference, $separate_book = FALSE) {
+    public static function explodeReferences($reference, $separate_book = FALSE) 
+    {
         $exploded = [];
         $ref_end  = strlen($reference) - 1;
         $book_end = FALSE;
@@ -1142,9 +1153,6 @@ class Passage {
         }
 
         return true;
-
-        // $extra = preg_match('/[^\p{L}]+/', $char, $matches);
-        // return !$extra; 
     }
 
     public static function isChapterVerse($char)
@@ -1152,11 +1160,13 @@ class Passage {
         return is_numeric($char) || in_array($char, [':',',',';','-']);
     }
 
-    public static function isWhitespace($char) {
+    public static function isWhitespace($char) 
+    {
         return $char == ' ';
     }
 
-    public static function isRandom($reference) {
+    public static function isRandom($reference) 
+    {
         $reference = strtolower($reference);
         $reference = str_replace(' ', '_', $reference);
 
@@ -1171,7 +1181,8 @@ class Passage {
         return FALSE;
     }
 
-    public static function normalizeRandom($reference) {
+    public static function normalizeRandom($reference) 
+    {
         $ref = strtolower($reference);
         $ref = str_replace(' ', '_', $ref);
         $randoms = ['random_book', 'random_chapter', 'random_verse'];
@@ -1191,7 +1202,8 @@ class Passage {
      * @param string $chapter_verse - string representing the chapter and verse references
      * @return \App\Passage
      */
-    public static function parseSingleReference($book, $chapter_verse, $languages = [], $is_search = FALSE, $Bibles = [], $parameters = []) {
+    public static function parseSingleReference($book, $chapter_verse, $languages = [], $is_search = FALSE, $Bibles = [], $parameters = []) 
+    {
         $Passage = new static;
         $Passage->languages = $languages;
         $Passage->is_search = $is_search;
@@ -1209,7 +1221,8 @@ class Passage {
      * @param stdClass $verse
      * @return \App\Passage
      */
-    public static function createFromVerse($verse, $languages = [], $is_search = FALSE) {
+    public static function createFromVerse($verse, $languages = [], $is_search = FALSE) 
+    {
         $Passage = new static;
         $Passage->languages = $languages;
         $Passage->is_search = $is_search;
@@ -1225,7 +1238,8 @@ class Passage {
      * @param int $chapter
      * @return \App\Passage
      */
-    public static function createFromChapter($book_id, $chapter, $languages = [], $is_search = FALSE) {
+    public static function createFromChapter($book_id, $chapter, $languages = [], $is_search = FALSE) 
+    {
         $Passage = new static;
         $Passage->languages = $languages;
         $Passage->is_search = $is_search;
@@ -1234,7 +1248,8 @@ class Passage {
         return $Passage;
     }
 
-    public static function explodePassages($Passages = [], $separate_book_ranges = TRUE, $separate_chapters = FALSE) {
+    public static function explodePassages($Passages = [], $separate_book_ranges = TRUE, $separate_chapters = FALSE) 
+    {
         $Exploded = [];
 
         foreach($Passages as $Passage) {
@@ -1244,7 +1259,8 @@ class Passage {
         return $Exploded;
     }    
 
-    public static function explodePassagesByChapters($Passages = []) {
+    public static function explodePassagesByChapters($Passages = []) 
+    {
         $Exploded = [];
 
         foreach($Passages as $Passage) {
@@ -1406,7 +1422,7 @@ class Passage {
     }
 
     public static function _containsNonPassageCharacters($string) {
-        $non_passage_chars = preg_match('/[`\\~!@#$%\^&*{}_[\]()]/', $string, $matches);
+        $non_passage_chars = preg_match('/[`\'"\\~!@#$%\^&*{}_[\]()=]/', $string, $matches);
         // $non_passage_chars = preg_match_all('/[\p{Ps}\p{Pe}\(\)\\\|\+&]/', $string, $matches); // BookAbstract::findByEnteredName
         // $non_passage_chars = preg_match_all('/[^0-9\p{L}\p{M} :,.-]/', $string, $matches);
         // $non_passage_chars = preg_match_all('/[`\\~!@#$%\^&*{}_[\]]/', $string, $matches);

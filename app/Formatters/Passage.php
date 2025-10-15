@@ -13,9 +13,11 @@ namespace App\Formatters;
  *
  * @author Computer
  */
-class Passage extends FormatterAbstract {
+class Passage extends FormatterAbstract 
+{
 
-    public function format() {
+    public function format() 
+    {
         $results  = $this->_preFormatVerses($this->results);
         $passages = [];
 

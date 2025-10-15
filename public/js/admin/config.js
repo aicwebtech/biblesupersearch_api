@@ -1,6 +1,3 @@
-
-var Dialogs = null;
-
 $( function() {
     $.ajaxSetup({
         headers: {
@@ -44,8 +41,6 @@ $( function() {
 
     $('#button_clear_all_rendered').click(function() {
         AICWEBTECH.jQuery.Dialogs.textConfirm('Are you sure? \nThis will delete ALL retained rendered Bibles.', 'DELETE', function(confirm) {
-            console.log('del all', confirm);
-
 
             if(confirm) {
                 AICWEBTECH.jQuery.Dialogs.set('loadingShowing', true);
@@ -72,7 +67,6 @@ $( function() {
 
     $('#button_clean_up_rendered').click(function(e) {
         AICWEBTECH.jQuery.Dialogs.confirm('Are you sure? \nThis will clean up temporary rendered Bibles.', function(confirm) {
-            console.log('wat', confirm);
 
             if(confirm) {
                 AICWEBTECH.jQuery.Dialogs.set('loadingShowing', true);
@@ -145,8 +139,4 @@ $( function() {
 
     AICWEBTECH.jQuery.Dialogs.init();
 });
-
-function handleDownloadSpaceChange() {
-
-}
 

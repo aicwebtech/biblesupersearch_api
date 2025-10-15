@@ -123,7 +123,7 @@ enyo.kind({
         }
 
         var ajax = new enyo.Ajax({
-            url: '/admin/bibles/' + this.pk,
+            url: baseAppUrl + '/admin/bibles/' + this.pk,
             method: 'GET',
             headers: this.app.defaultAjaxHeaders
         });
@@ -163,7 +163,7 @@ enyo.kind({
         this.log(postData);
 
         var ajax = new enyo.Ajax({
-            url: '/admin/bibles/' + this.pk,
+            url: baseAppUrl + '/admin/bibles/' + this.pk,
             method: 'PUT',
             postBody: postData,
             headers: this.app.defaultAjaxHeaders

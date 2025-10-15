@@ -150,11 +150,11 @@ class Usfm extends ImporterAbstract
         if($Zip->open($zipfile) === TRUE) {
             // Not importing any metadata at this time!
             if($this->insert_into_bible_table) {
-                $desc  = $Zip->getFromName('copr.htm');
+                $desc  = $Zip->getFromName('copr.htm') || null;
 
-                if(!$desc) {
-                    return $this->addError('Could not open file copr.htm inside of Zip file.<br />Is this a valid USFM file?');
-                }
+                // if(!$desc) {
+                //     return $this->addError('Could not open file copr.htm inside of Zip file.<br />Is this a valid USFM file?');
+                // }
 
                 $attr['description'] = $desc ?: null;
                 $Bible->fill($attr);
@@ -181,7 +181,15 @@ class Usfm extends ImporterAbstract
 
     private function _zipImportHelper(&$Zip, $filename) 
     {
-        $pseudo_book = intval($filename);
+        $spl = explode('.', $filename);
+        $ext = strtolower(array_pop($spl));
+
+        if($ext != 'usfm' && $ext != 'sfm') {
+            return false;
+        }
+        
+        $pseudo_book = intval(basename($filename));
+
         $chapter = $verse = NULL;
 
         if(!$pseudo_book) {
@@ -291,8 +299,8 @@ class Usfm extends ImporterAbstract
         $file       = static::sanitizeFileName( $File->getClientOriginalName() );
         $Zip        = new ZipArchive();
 
-        if(stripos($file, 'usfm') === false) {
-            return $this->addError('Does not appear to be a USFM file; filename does not contain "usfm".');
+        if(stripos($file, 'sfm') === false) {
+            return $this->addError('Does not appear to be a USFM file; filename does not end with "usf" or "usfm".');
         }
 
         $allowed = [
@@ -301,22 +309,28 @@ class Usfm extends ImporterAbstract
             'signature.txt.asc',
         ];
 
+        $book_count = 0;
+
         if($Zip->open($zipfile) == true) {
             for ($i = 0; $i < $Zip->numFiles; $i++) {
                 $filename = $Zip->getNameIndex($i);
                 $spl = explode('.', $filename);
-                $ext = array_pop($spl);
+                $ext = strtolower(array_pop($spl));
 
-                if(!in_array($filename, $allowed) && $ext != 'usfm' && $ext != 'css') {
-                    return $this->addError('Does not appear to be a USFM file; ZIP file contains a file with a non-standard extension: ' . $filename);
+                if($ext == 'usfm' || $ext == 'sfm') {
+                    $book_count++;
                 }
             }
         }
 
-        $desc  = $Zip->getFromName('copr.htm');
+        if($book_count == 0) {
+            return $this->addError('Does not appear to be a valid USFM file; ZIP file does not contain any .usfm or .sfm files.');
+        }
 
-        if(!$desc) {
-            return $this->addError('Could not open file copr.htm inside of Zip file.<br />Is this a valid USFM file?');
+        if($Zip->locateName('copr.htm')) {
+            $desc  = $Zip->getFromName('copr.htm');
+        } else {
+            $desc = null;
         }
 
         $this->bible_attributes = [
