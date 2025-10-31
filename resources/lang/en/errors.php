@@ -29,6 +29,10 @@ return array(
         'op_at_beginning' => 'Operators such as \':op\' cannot be at the beginning of your search. Please remove it, or use it\'s lower case equivalent.',
         'op_at_end' => 'Operators such as \':op\' cannot be at the end of your search. Please remove it, or use it\'s lower case equivalent.',
     ),
+    'audio' => [
+        'bible_no_audio' => 'Audio not available for Bible: :module',
+        'requirements' => 'bible, book, and chapter_verse are required',
+    ]
     'paren_mismatch' => 'Your parentheses are mismatched.',
     'prox_paren_mismatch' => 'Your parentheses are mismatched, or you have a proximity operator inside of parentheses.',
     'prox_operator_not_allowed' => 'Proximity operators such as PROX and CHAP can only be used with boolean searches',    
