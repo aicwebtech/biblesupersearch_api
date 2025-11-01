@@ -60,6 +60,11 @@ abstract class VerseAbstract extends Model
         }
     }
 
+    public function getModule() 
+    {
+        return $this->module;
+    }
+
     public function classFileExists() 
     {
         return $this->hasClass;
@@ -79,6 +84,18 @@ abstract class VerseAbstract extends Model
     public static function getSearch($Passages = NULL, $Search = NULL, $parameters = []) 
     {
         throw new StandardException('Must implement getSearch in child class!');
+    }
+
+    /**
+     * Gets audio data for verses in the passages
+     * 
+     * @param array $Passages Array of App/Passage instances, represents the passages requested, if any
+     * @param array $parameters Search parameters - user input
+     * @return array $Verses array of Verses instances (found verses)
+     */
+    public static function getAudio($Passages, $parameters = []) 
+    {
+        throw new StandardException('Must implement getAudio in child class!');
     }
 
     /**

@@ -28,6 +28,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('bible_audio');
+        Schema::dropIfExists('bible_verses_audio');
     }
 };

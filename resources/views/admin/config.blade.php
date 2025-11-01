@@ -1,6 +1,16 @@
 <?php
     $mail_drivers = ["smtp", "mail", "sendmail", "mailgun", "mandrill", "ses", "log"];
 
+    $tts_apis = [
+        // 'aws_polly' => 'Amazon Web Services Polly',
+        // 'google_cloud_tts' => 'Google Cloud Text-to-Speech',
+        // 'ibm_watson_tts' => 'IBM Watson Text to Speech',
+        'narakeet'  => 'Narakeet',
+        'murf_ai'   => 'Murf AI',
+        'openai_tts' => 'OpenAI',
+        'eleven_labs' => 'Eleven Labs',
+    ];
+
     $javascripts = [
         '/js/bin/custom-jquery/Dialogs.js',
         '/js/admin/config.js',
@@ -29,6 +39,7 @@
                     <ul>
                         <li><a href='#tab_basic'>General Settings</a></li>
                         <li><a href='#tab_download'>Bible Downloads</a></li>
+                        <li><a href='#tab_audio'>Audio Bible</a></li>
                         <li><a href='#tab_advanced'>Advanced</a></li>
                     </ul>
 
@@ -349,12 +360,6 @@
                                                     Yes, <small>if search query includes other words</small>
                                                 </label>
 
-<!--                                                 <input 
-                                                    type='radio' name='bss__search_common_words' value='search_type' 
-                                                    id='search_common_words_search_type' 
-                                                    @if($configs['bss.search_common_words'] == 'search_type')checked='checked'@endif 
-                                                />
-                                                <label for='search_common_words_languages_search_type'>Depends on Search Type</label> -->
                                                 <br />
                                             </td>
                                         </tr>
@@ -680,6 +685,117 @@
                                                     </span>
                                                 </td>
                                             </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div id='tab_audio' class='config_tab'>
+                        <div class='container' style='width:800px'> 
+                            <div class='config_group'>
+                                <div class='config_block'>
+                                    <h1>Bible Audio</h1>
+
+                                    <table>
+                                        <tbody>
+                                            <tr>
+                                                <td class='ralign' style='width:320px'>Enable Bible Audio: </td>
+                                                <td>
+                                                    <label for='audio_enable_1'>Yes</label>
+                                                    <input
+                                                        type='radio' name='audio__enable' value='1' id='audio_enable_1'
+                                                        @if($configs['audio.enable'] == 1)checked='checked'@endif
+                                                     />
+                                                    <label for='audio_enable_0'>No</label>
+                                                    <input
+                                                        type='radio' name='audio__enable' value='0' id='audio_enable_0'
+                                                         @if($configs['audio.enable'] == 0)checked='checked'@endif
+                                                        />
+                                                    <span class='info'>
+                                                        <span>i</span>
+                                                        <p>
+                                                            This enables the Bible Audio functionality.<br /><br />
+                                                            Note: We do not currently provide audio Bible files. 
+                                                            You will need to provide these yourself or use the 
+                                                            Text-to-Speech (TTS) API option below.
+                                                        </p>
+                                                    </span>
+                                                </td>
+                                            </tr>
+                                            <!-- <tr>
+                                                <td class='ralign' style='width:320px'>Granularity: </td>
+                                                <td>
+                                                    <label for='audio_gran_chapter'>Chapter</label>
+                                                    <input
+                                                        type='radio' name='audio__granularity' value='1' id='audio_gran_chapter'
+                                                        @if($configs['audio.granularity'] == 'chapter')checked='checked'@endif
+                                                     />
+                                                    <label for='audio_gran_verse'>Verse</label>
+                                                    <input
+                                                        type='radio' name='audio__granularity' value='0' id='audio_gran_verse'
+                                                         @if($configs['audio.granularity'] == 'verse')checked='checked'@endif
+                                                        />
+                                                    <span class='info'>
+                                                        <span>i</span>
+                                                        <p>
+                                                            This enables the Bible Audio functionality.<br /><br />
+                                                            Note: We do not currently provide audio Bible files. 
+                                                            You will need to provide these yourself or use the 
+                                                            Text-to-Speech (TTS) API option below.
+                                                        </p>
+                                                    </span>
+                                                </td>
+                                            </tr> -->
+                                            <tr>
+                                                <td class='ralign' style='width:320px'>Use TTS API: </td>
+                                                <td>
+                                                    <label for='audio_tts_api_enable_1'>Yes</label>
+                                                    <input
+                                                        type='radio' name='audio__tts_api_enable' value='1' id='audio_tts_api_enable_1'
+                                                        @if($configs['audio.tts_api_enable'] == 1)checked='checked'@endif
+                                                     />
+                                                    <label for='audio_tts_api_enable_0'>No</label>
+                                                    <input
+                                                        type='radio' name='audio__tts_api_enable' value='0' id='audio_tts_api_enable_0'
+                                                         @if($configs['audio.tts_api_enable'] == 0)checked='checked'@endif
+                                                        />
+                                                    <span class='info'>
+                                                        <span>i</span>
+                                                        <p>
+                                                            Generates Bible audio on demand using a 3rd party Text-to-Speech 
+                                                            API and stores locally for future use.
+                                                        </p>
+                                                    </span>
+                                                </td>
+                                            </tr>
+                                            <tr>
+                                                <td class='ralign' style='width:320px'>TTS API: </td>
+                                                <td>
+                                                    <select name='audio__tts_api' style='width: 300px'>
+                                                        @foreach(App\AudioManager::$tts_apis as $idx => $dr)
+                                                        <option value='{{$idx}}'
+                                                            @if($configs['audio.tts_api'] == $idx)selected='selected'@endif>{{$dr['name']}}
+                                                        </option>
+                                                        @endforeach
+                                                    </select>
+                                                    <span class='info'>
+                                                        <span>i</span>
+                                                        <p style='width:300px'>
+                                                            Select the Text-to-Speech API to use <br />
+                                                            for generating Bible audio.
+                                                        </p>
+                                                    </span>
+                                                </td>
+                                            </tr>
+                                            <tr>
+                                                <td class='ralign' style='width:320px'>TTS API Key: </td>
+                                                <td>
+                                                    <input name='audio__tts_api_key' size='50' value='{{$configs['audio.tts_api_key']}}'>
+                                                </td>
+                                            </tr>
+                                            
                                         </tbody>
                                     </table>
                                 </div>

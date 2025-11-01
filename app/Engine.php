@@ -597,16 +597,9 @@ class Engine
 
         $input = $this->_sanitizeInput($input, $parsing);
 
-        $response  = new \stdClass();
-        $response->audio = [];
-        $response->has_audio = false;
-
         if(empty($input['bible']) || empty($input['book']) || empty($input['chapter_verse'])) {
             return $this->addError(trans('errors.audio.requirements'));
-            return FALSE;
         }
-
-        // var_dump($input);
 
         $Bible = Bible::findByModule($input['bible']);
 
@@ -614,20 +607,13 @@ class Engine
             return $this->addError(trans('errors.bible_no_exist', ['module' => $input['bible']]));
         }
 
-        $Passage = new Passage();
-        $Passage->setBook($input['book']);
-        $Passage->setChapterVerse($input['chapter_verse']);
+        $response  = new \stdClass();
+        $response->audio = [];
+        $response->has_audio = false;
 
-        try {
-            $text = $Bible->getSearch([$Passage], null, []);
+        $Manager = new \App\AudioManager();
 
-            // print_r($text);
-        } catch (\Exception $e) {
-            if(config('app.debug')) {
-                $this->addTransError('errors.500', [], 4, 500);
-            }
-            return FALSE;
-        }
+        $audio = $Manager->getAudioByInput($input, $Bible);
 
         return $response;
     }

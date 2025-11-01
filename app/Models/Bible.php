@@ -161,9 +161,21 @@ class Bible extends Model
      * @param array $parameters Search parameters - user input
      * @return array $Verses array of Verses instances (found verses)
      */
-    public function getSearch($Passages = NULL, $Search = NULL, $parameters = array()) 
+    public function getSearch($Passages = NULL, $Search = NULL, $parameters = []) 
     {
         return $this->verses()->getSearch($Passages, $Search, $parameters);
+    }
+
+    /**
+     * Gets audio data for verses in the passages
+     *
+     * @param array $Passages Array of App/Passage instances, represents the passages requested, if any
+     * @param array $parameters Search parameters - user input
+     * @return array $Verses array of Verses instances (found verses)
+     */
+    public function getAudio($Passages = NULL, $parameters = []) 
+    {
+        return $this->verses()->getAudio($Passages, $parameters);
     }
 
     /**

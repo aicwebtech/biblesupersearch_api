@@ -148,7 +148,49 @@ class VerseStandard extends VerseAbstract
         return (empty($verses)) ? FALSE : $verses;
     }
 
-    protected static function _buildPassageQuery($Passages, $table = '', $parameters = array()) 
+    /**
+     * Gets audio data for verses in the passages
+     * 
+     * @param array $Passages Array of App/Passage instances, represents the passages requested
+     * @param array $parameters Search parameters - user input
+     * @return array $Verses array of Verses instances (found verses)
+     */
+    public static function getAudio($Passages, $parameters = []) 
+    {
+        if(!$Passages) {
+            return FALSE;
+        }
+        
+        $Verse = new static;
+        $table = $Verse->getTable();
+
+        $Query = DB::table($table . ' AS tb');
+        $Query->select('tb.id','tb.book','tb.chapter','tb.verse','tb.text','a.file_name');
+        $Query->orderBy('book', 'ASC')->orderBy('chapter', 'ASC')->orderBy('verse', 'ASC');
+
+        $Query->leftJoin('bible_verses_audio AS a', function($join) use ($Verse) {
+            $join->on('tb.book', '=', 'a.book')
+                 ->on('tb.chapter', '=', 'a.chapter')
+                 ->on('tb.verse', '=', 'a.verse')
+                 ->on('a.module', '=', DB::raw("'" . $Verse->getModule() . "'"));
+        });
+
+        $passage_query = static::_buildPassageQuery($Passages, DB::getTablePrefix() . 'tb', $parameters);
+
+        if($passage_query) {
+            $Query->whereRaw('(' . $passage_query . ')');
+        } else {
+            return FALSE;
+        }
+
+        // print($Query->toSql()); die();
+
+        $verses = $Query->get();
+
+        return (empty($verses)) ? FALSE : $verses;
+    }
+
+    protected static function _buildPassageQuery($Passages, $table = '', $parameters = []) 
     {
         if(empty($Passages)) {
             return FALSE;

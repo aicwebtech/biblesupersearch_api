@@ -21,7 +21,9 @@ class ApiController extends Controller
             $allowed_actions[] = 'download';
         }
 
-        $allowed_actions[] = 'audio';
+        if(config('audio.enable')) {
+            $allowed_actions[] = 'audio';
+        }
 
         $debug_input = FALSE;
         $_SESSION['debug'] = [];
