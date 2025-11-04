@@ -610,10 +610,22 @@ class Engine
         $response  = new \stdClass();
         $response->audio = [];
         $response->has_audio = false;
+        $response->success = true;
 
         $Manager = new \App\AudioManager();
 
         $audio = $Manager->getAudioByInput($input, $Bible);
+
+        if($Manager->hasErrors()) {
+            $response->success = false;
+            $response->errors = $Manager->getErrors();
+            return $response;
+            
+            // $this->addErrors($Manager->getErrors(), $Manager->getErrorLevel());
+            // return FALSE;
+        }
+
+        $response->audio = $audio->toArray();
 
         return $response;
     }

@@ -57,27 +57,53 @@ class AudioManager
 
             foreach($verses as &$verse) {
                 if(!$verse->file_name) {
-                    $this->renderAudioTTS($verse, $parameters);
+                    $success = $this->renderAudioTTS($Bible, $verse, $parameters);
+
+                    if($success) {
+                        $ABV = new \App\Models\AudioBibleVerse();
+                        $ABV->module = $Bible->module;
+                        $ABV->book = $verse->book;
+                        $ABV->chapter = $verse->chapter;
+                        $ABV->verse = $verse->verse;
+                        $ABV->file_name = $verse->file_name;
+                        $ABV->save();
+                    }
                 }
             }
             unset($verse);
 
             // $text = $Bible->getSearch([$Passage], null, []);
 
-            print_r($verses);
+            //print_r($verses);
+            return $verses;
         } catch (\Exception $e) {
             if(config('app.debug')) {
                 $this->addTransError('errors.500', [], 4, 500);
+            } else {
+                throw $e;
             }
             return FALSE;
         }
     }
 
-    protected function renderAudioTTS(&$verse, $parameters = []) 
+    protected function renderAudioTTS($Bible, &$verse, $parameters = []) 
     {
         $bcv = $verse->book . ' ' . $verse->chapter . ':' . $verse->verse;
         
-        $filename = 'tts_' . md5($bcv) . '_' . microtime(false) . '.mp3';
+        $filename = 'tts_' . md5($bcv) . '_' . time() . '.mp3';
         $verse->file_name = $filename;
+
+        $TTS = new \App\TextToSpeech\Narakeet($Bible, $parameters);
+
+        $success = $TTS->generateAudio($verse->text, $parameters, $filename);
+
+        if(!$success) {
+            $this->addTransError('errors.audio_tts_failed', ['bcv' => $bcv]);
+            return FALSE;
+        } else {
+            $verse->file_name = $filename;
+        }
+
+        return true;
     }
 }
