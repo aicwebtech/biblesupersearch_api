@@ -149,13 +149,14 @@ class VerseStandard extends VerseAbstract
     }
 
     /**
-     * Gets audio data for verses in the passages
+     * Gets (existing) audio data for verses in the passages
      * 
      * @param array $Passages Array of App/Passage instances, represents the passages requested
      * @param array $parameters Search parameters - user input
+     * @param boolean|null $whole_chapter Whether to get whole chapters only
      * @return array $Verses array of Verses instances (found verses)
      */
-    public static function getAudio($Passages, $parameters = []) 
+    public static function getAudio($Passages, $parameters = [], $whole_chapter = null) 
     {
         if(!$Passages) {
             return FALSE;
@@ -164,16 +165,28 @@ class VerseStandard extends VerseAbstract
         $Verse = new static;
         $table = $Verse->getTable();
 
+        $whole_chapter_manual = $whole_chapter !== null;
+        $whole_chapter = $whole_chapter === null ? $Passages[0]->is_chapter_only : $whole_chapter;
+
         $Query = DB::table($table . ' AS tb');
         $Query->select('tb.id','tb.book','tb.chapter','tb.verse','tb.text','a.file_name');
         $Query->orderBy('book', 'ASC')->orderBy('chapter', 'ASC')->orderBy('verse', 'ASC');
 
-        $Query->leftJoin('bible_verses_audio AS a', function($join) use ($Verse) {
-            $join->on('tb.book', '=', 'a.book')
-                 ->on('tb.chapter', '=', 'a.chapter')
-                 ->on('tb.verse', '=', 'a.verse')
-                 ->on('a.module', '=', DB::raw("'" . $Verse->getModule() . "'"));
-        });
+        if($whole_chapter) {
+            $Query->leftJoin('bible_verses_audio AS a', function($join) use ($Verse) {
+                $join->on('tb.book', '=', 'a.book')
+                    ->on('tb.chapter', '=', 'a.chapter')
+                    ->whereIsNull('a.verse')
+                    ->on('a.module', '=', DB::raw("'" . $Verse->getModule() . "'"));
+            });
+        } else {
+            $Query->leftJoin('bible_verses_audio AS a', function($join) use ($Verse) {
+                $join->on('tb.book', '=', 'a.book')
+                    ->on('tb.chapter', '=', 'a.chapter')
+                    ->on('tb.verse', '=', 'a.verse')
+                    ->on('a.module', '=', DB::raw("'" . $Verse->getModule() . "'"));
+            });
+        }
 
         $passage_query = static::_buildPassageQuery($Passages, DB::getTablePrefix() . 'tb', $parameters);
 
@@ -186,6 +199,16 @@ class VerseStandard extends VerseAbstract
         // print($Query->toSql()); die();
 
         $verses = $Query->get();
+
+        if($whole_chapter) {
+            $has_audio = (bool) $verses->first(function($item) {
+                return $item->file_name !== null;
+            });
+
+            if(!$has_audio) {
+                return self::getAudio($Passages, $parameters, false);
+            }
+        }
 
         return (empty($verses)) ? FALSE : $verses;
     }

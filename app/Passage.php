@@ -27,6 +27,8 @@ class Passage {
     protected $Book;                        // Book instance - Single or Start of range
     protected $Book_En;                     // Book instance - Range end
     protected $is_book_range = FALSE;
+    protected $is_chapter_only = FALSE;
+    protected $has_verses = FALSE;
     protected $raw_reference;               // Reference as entered by user
     protected $raw_book;                    // Book as entered by user
     protected $raw_chapter_verse;           // Chapter and verse as entered by user
@@ -45,7 +47,8 @@ class Passage {
     protected $contextual_range = 5;
     protected $partial_verses = false;      // Whether the passage actually only contains a subset of the verses indicated by it's reference (mainly for passage-search combinations)
 
-    public function __construct() {
+    public function __construct() 
+    {
         // Do something?
     }
 
@@ -343,9 +346,13 @@ class Passage {
                     $current_chapter = NULL;
                 }
             }
+
+            $this->is_chapter_only = TRUE;
         }
         // Parse out chapter / verse references
         else {
+            $this->has_verses = TRUE;
+            
             foreach($preparsed_values as $in => $value) {
                 $next = (isset($preparsed_values[$in + 1])) ? $preparsed_values[$in + 1] : NULL;
                 $last = (isset($preparsed_values[$in - 1])) ? $preparsed_values[$in - 1] : NULL;
@@ -516,6 +523,8 @@ class Passage {
         $this->chapter_min = NULL;
         $this->verses = [];
         $this->verses_count = 0;
+        $this->is_chapter_only = FALSE;
+        $this->has_verses = FALSE;
     }
 
     public function getNormalizedReferences() 
@@ -636,13 +645,16 @@ class Passage {
         }
     }
 
-    public function __get($name) {
+    public function __get($name) 
+    {
         if($name == 'chapter_verse_normal') {
             return $this->getNormalizedReferences();
         }
 
-        $gettable = ['languages', 'is_search', 'is_book_range', 'is_valid', 'Book', 'Book_En', 'raw_book', 'raw_reference', 'raw_chapter_verse',
-            'chapter_verse', 'chapter_verse_parsed', 'chapter_max', 'chapter_min'];
+        $gettable = [
+            'languages', 'is_search', 'is_book_range', 'is_valid', 'Book', 'Book_En', 'raw_book', 'raw_reference', 'raw_chapter_verse',
+            'chapter_verse', 'chapter_verse_parsed', 'chapter_max', 'chapter_min', 'is_chapter_only', 'has_verses'
+        ];
 
         if(in_array($name, $gettable)) {
             return $this->$name;
