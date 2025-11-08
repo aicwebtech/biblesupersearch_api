@@ -203,10 +203,10 @@ abstract class TtsAbstract
 
     protected function _formatText($text)
     {
-        if(!static::renderStrongs($this->Bible->lang_short)) {
-            $text = preg_replace('/\} \{/', '', $text);
-            $text = preg_replace('/\{[^\}]+\}/', '', $text);
-        }
+        $text = preg_replace('/\} \{/', '', $text);
+        $text = preg_replace('/\{[^\}]+\}/', '', $text);
+        $text = str_replace(['[', ']'], '', $text);
+        $text = str_replace(['‹', '›'], '', $text);
 
         $text = trim($text);
 
@@ -301,19 +301,15 @@ abstract class TtsAbstract
             return FALSE;
         }
 
-        $renderer = (new \ReflectionClass($this))->getShortName();
-        $module = $this->Bible->module;
-
         $dir = $relative ? '' : static::getAudioBasePath();
-        $dir .= $renderer;
+        $dir .= $this->Bible->module;
 
         if(!is_dir($dir) && $create_dir && !$relative) {
             mkdir($dir, 0775, TRUE);
             chmod($dir, 0775);
         }
 
-        $path = $dir; // . '/' . $module . '.' . $this->file_extension;
-        return $path;
+        return $dir;
     }
 
     public function getDownloadFilePath()

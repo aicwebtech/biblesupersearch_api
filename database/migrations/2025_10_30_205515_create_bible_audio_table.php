@@ -14,12 +14,11 @@ return new class extends Migration
         Schema::create('bible_verses_audio', function (Blueprint $table) {
             $table->id();
             $table->string('module')->comment('Bible module');
-            $table->integer('audio_bible_id')->unsigned()->comment('ID of the audio Bible, null if none/default')->nullable();
             $table->string('file_name')->nullable()->comment('Internal file name for audio file');
             $table->tinyInteger('book')->unsigned();
             $table->tinyInteger('chapter')->unsigned();
             $table->tinyInteger('verse')->unsigned()->nullable();
-            $table->timestamps();
+            $table->timestamps(); // 8 Bytes for each (2mb per BIBLE), do we really need both or any?
         });
     }
 

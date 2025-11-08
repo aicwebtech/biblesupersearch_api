@@ -29,7 +29,9 @@ class Narakeet extends TtsAbstract
         }
 
         $file_handle = fopen($file_path, 'w');
+        $text = $this->_formatText($text);
 
+        // var_dump($text);
         // var_dump($filename);
         // die($file_path);
 
@@ -54,6 +56,7 @@ class Narakeet extends TtsAbstract
         // $curl_error = curl_error($curl);
         // $curl_info = curl_getinfo($curl);
         curl_close($curl);
+        fclose($file_handle);
 
         // print_r($curl_info);
         // print_r($curl_error);

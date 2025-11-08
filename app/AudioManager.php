@@ -89,8 +89,12 @@ class AudioManager
     protected function renderAudioTTS($Bible, &$verse, $parameters = []) 
     {
         $bcv = $verse->book . ' ' . $verse->chapter . ':' . $verse->verse;
-        
-        $filename = 'tts_' . md5($bcv) . '_' . time() . '.mp3';
+
+        // file name is str padded book, chapter, verse
+        $filename = str_pad($verse->book, 2, '0', STR_PAD_LEFT) . '_' .
+                    str_pad($verse->chapter, 3, '0', STR_PAD_LEFT) . '_' .
+                    str_pad($verse->verse, 3, '0', STR_PAD_LEFT) . '.mp3';
+
         $verse->file_name = $filename;
 
         $TTS = new \App\TextToSpeech\Narakeet($Bible, $parameters);
