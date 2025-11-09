@@ -16,9 +16,7 @@ class Narakeet extends TtsAbstract
     public function generateAudio($text, $options = [], $filename = null)
     {
         $apikey = config('audio.tts_api_key');
-        $voice = 'brian';
-
-        // todo format text
+        $voice = $this->_getVoiceByLanguage($this->Bible->lang_short);
 
         $path = $this->getAudioFilePath(true);
 
@@ -31,9 +29,10 @@ class Narakeet extends TtsAbstract
         $file_handle = fopen($file_path, 'w');
         $text = $this->_formatText($text);
 
-        // var_dump($text);
+        var_dump($voice);
         // var_dump($filename);
         // die($file_path);
+        return false;
 
         $url = "https://api.narakeet.com/text-to-speech/mp3?voice=$voice";
 
@@ -62,5 +61,40 @@ class Narakeet extends TtsAbstract
         // print_r($curl_error);
 
         return true;
+    }
+
+    protected function _getVoiceByLanguage($language_short)
+    {
+        
+        // :todo let user select voice by language?
+        // :todo let user select male vs female voice?
+
+        $voice = config('lang.' . $language_short . '.text_to_speech.narakeet.voices.default');
+
+        if($voice) {
+            return $voice;
+        }
+
+        $voice_default = config('text_to_speech.narakeet.voices.default');
+
+        return $voice_default;
+
+        $map = [
+            'en' => 'brian',
+            'es' => 'carmen',
+            'fr' => 'celine',
+            'lv' => 'kristaps',
+            'de' => 'anna',
+            'it' => 'carlo',
+            'pt' => 'joana',
+            'ru' => 'nikolai',
+            'zh' => 'meilin',
+        ];
+
+        if(isset($map[$language_short])) {
+            return $map[$language_short];
+        }
+
+        return 'brian';
     }
 }

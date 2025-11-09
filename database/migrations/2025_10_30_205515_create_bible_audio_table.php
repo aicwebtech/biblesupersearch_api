@@ -18,7 +18,6 @@ return new class extends Migration
             $table->tinyInteger('book')->unsigned();
             $table->tinyInteger('chapter')->unsigned();
             $table->tinyInteger('verse')->unsigned()->nullable();
-            $table->timestamps(); // 8 Bytes for each (2mb per BIBLE), do we really need both or any?
         });
     }
 
