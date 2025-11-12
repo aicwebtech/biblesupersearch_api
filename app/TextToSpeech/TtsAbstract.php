@@ -43,163 +43,33 @@ abstract class TtsAbstract
         }
     }
 
-    /**
-     * Generates the output file and saves it to disk
-     * @return boolean
-     */
-    public function render($overwrite = FALSE, $suppress_overwrite_error = FALSE) 
+    public function generateAudio($text, $options = [], $filename = null) 
     {
-        if($this->hasErrors()) {
+        $apikey = config('audio.tts_api_key');
+        $path = $this->getAudioFilePath(true);
+
+        if($filename) {
+            $file_path = $path . '/' . $filename;
+        } else {
+            $file_path = $path . '/narakeet_' . md5($text . microtime(false)) . '.mp3';
+        }
+
+        try {
+            $file_handle = fopen($file_path, 'w');
+            $text = $this->_formatText($text);
+
+            $success = $this->generateAudioHelper($text, $options, $file_handle);
+
+            fclose($file_handle);
+
+            return $success;
+        } catch (\Exception $e) {
+            $this->addError( $e->getMessage() );
             return FALSE;
         }
-
-        set_time_limit(static::$render_est_time + 120);
-        $file_path = $this->getRenderFilePath();
-        $this->overwrite = $overwrite;
-
-        if(!$overwrite && is_file($file_path)) {
-            if($suppress_overwrite_error) {
-                return TRUE;
-            }
-
-            return $this->addError('File already exists');
-        }
-
-        $start_time   = time();
-        $locale_cache = App::getLocale();
-
-        App::setLocale($this->Bible->lang_short);
-
-        $success = $this->_renderStart();
-
-        if(!$success) {
-            return FALSE;
-        }
-
-        $this->_beforeVerseRender();
-        $this->_verseRender();
-        $this->_afterVerseRender();
-
-        $success = $this->_renderFinish();
-
-        App::setLocale($locale_cache);
-
-        if(function_exists('posix_getuid')) {
-            // Method DNE on Windows, so we only do this on POSIX systems        
-            if(posix_getuid() == fileowner($file_path)) {
-                chmod($file_path, 0775);
-            }
-        }
- 
-        $file_size_bytes = filesize($this->getRenderFilePath());
-        $file_size_mb    = round( $file_size_bytes / 1024 / 1024);
-
-        $Rendering = $this->_getRenderingRecord();
-        $Rendering->rendered_duration   = time() - $start_time;
-        $Rendering->meta_hash           = md5($this->_getMetaString());
-        $Rendering->rendered_at         = date('Y-m-d H:i:s');
-        $Rendering->downloaded_at       = NULL;
-        $Rendering->version             = static::$render_version;
-        $Rendering->file_size           = $file_size_mb;
-        $Rendering->file_name           = basename($file_path);
-        
-        if(!$Rendering->save()) {
-            return FALSE;
-        }
-
-        return (bool) $success;
     }
 
-    public function isRenderNeeded($ignore_cache = FALSE) 
-    {
-        $file_path = $this->getRenderFilePath();
-
-        if(!is_file($file_path)) {
-            return TRUE;
-        }
-
-        $Rendering = $this->_getRenderingRecord($ignore_cache);
-
-        if(static::$render_version != floatval($Rendering->version) || !$Rendering->rendered_at) {
-            return TRUE;
-        }
-
-        if(md5($this->_getMetaString()) != $Rendering->meta_hash) {
-            return TRUE;
-        }
-
-        return FALSE;
-    }
-
-    /**
-     * If for any reason the  given format cannot be rendered using the given Bible
-     * This will add an error messge and return false
-     * (Note: we already check if the given Bible is able to be rendered into any format)
-     */ 
-    public function canRenderAndDownload()
-    {
-        return true;
-    }
-
-    /**
-     * If render file does not exist or output has changed, generates the output file and saves it to disk
-     * @return boolean
-     */
-    public function renderIfNeeded() 
-    {
-        if($this->isRenderNeeded()) {
-            return $this->render(TRUE, TRUE);
-        }
-
-        return TRUE;
-    }
-
-
-    /**
-     * This initializes the file, and does other pre-rendering work
-     * @param bool $overwrite
-     */
-    protected function _renderStart() 
-    {
-        return TRUE;
-    }
-
-    protected function _verseRender()
-    {
-        $Verses = $this->Bible->verses();
-        $table  = $Verses->getTable();
-        $Query  = DB::table( $table )->select($table . '.id','book','chapter','verse','text');
-
-        if($this->include_special) {
-            $Query->addSelect('italics');
-            $Query->addSelect('strongs');
-        }
-
-        if($this->include_book_name) {
-            $book_table = $this->_getBookTable();
-            $Query->join($book_table, $table . '.book', $book_table . '.id');
-            $Query->addSelect($book_table . '.' . $this->book_name_field . ' AS book_name');
-        }
-
-        if($this->debug) {
-            $Query->where($table . '.id', '<', 200);
-        }
-
-        $closure = function($rows) {
-            foreach($rows as $row) {
-                $row->text = $this->_formatText($row->text);
-                $this->_renderSingleVerse($row);
-            }
-
-            unset($rows);
-            $this->_renderVerseChunk();
-            $this->chunk_data = [];
-        };
-
-        $Query->orderBy($table . '.id');
-        $Query->chunk($this->chunk_size, $closure);
-        return true;
-    }
+    abstract protected function generateAudioHelper($text, $options, $file_handle);
 
     protected function _formatText($text)
     {
@@ -212,33 +82,6 @@ abstract class TtsAbstract
 
         return $text;
     }
-
-    protected function _renderVerseChunk() 
-    {
-
-    }
-
-    /**
-     * Does any nessessary tasks after rendering is finished, such as closing a file stream
-     *
-     * @return bool $success
-     */
-    protected function _renderFinish() 
-    {
-        return TRUE;
-    }
-
-    /**
-     * Code to be executed before individusl verses are rendered
-     * Possible Usage: Title page, preface, copyright info
-     */
-    protected function _beforeVerseRender() { }
-
-    /**
-     * Code to be executed after individusl verses are rendered
-     * Usage: Finishing pages
-     */
-    protected function _afterVerseRender() { }
 
     protected function _getBookTable() 
     {
@@ -259,42 +102,6 @@ abstract class TtsAbstract
         return 'books_en';
     }
 
-    public function output() {
-
-    }
-
-    public function _getMetaString($plain_text = FALSE) 
-    {
-        $meta_string = $this->Bible->name;
-        $meta_string .= ' ' . $this->_getCopyrightStatement($plain_text);
-
-        return $meta_string;
-    }
-
-    public function _getRenderingRecord($ignore_cache = FALSE) 
-    {
-        if(!$this->Rendering || $ignore_cache) {
-            $renderer = static::getRendererId();
-            $this->Rendering = Rendering::firstOrCreate(['renderer' => $renderer, 'module' => $this->Bible->module]);
-        }
-
-        return $this->Rendering;
-    }
-
-    protected function _htmlToPlainText($html, $line_break_replacement = NULL) 
-    {
-        $line_break_replacement = $line_break_replacement ?: PHP_EOL;
-        $line_break_replacement_double = $line_break_replacement . $line_break_replacement;
-        $text = $html;
-        $text = str_replace(["\r\n", "\n", "\r"], '', $text);
-        $text = str_replace(['<br />', '<br>'], $line_break_replacement, $text);
-        $text = str_replace(['</p>'], $line_break_replacement_double, $text);
-        $text = str_replace('&nbsp;', ' ', $text);
-        $text = html_entity_decode($text, ENT_QUOTES | ENT_HTML5);
-        $text = strip_tags($text);
-        return $text;
-    }
-
     public function getAudioFilePath($create_dir = FALSE, $relative = false) 
     {
         if($this->hasErrors()) {
@@ -312,44 +119,46 @@ abstract class TtsAbstract
         return $dir;
     }
 
-    public function getDownloadFilePath()
-    {
-        return $this->getRenderFilePath();
-    }
-
-    public function incrementHitCounter() 
-    {
-        $Rendering = $this->_getRenderingRecord();
-        $Rendering->hits ++;
-        $Rendering->downloaded_at = date('Y-m-d H:i:s');
-        $Rendering->save();
-    }
-
     public static function getAudioBasePath() 
     {
         return dirname(__FILE__) . '/../../bibles/audio/';
     }
 
-    public static function getRenderBiblesLimit() 
+    public static function getVoiceByLanguage($language_short, $tts_api = null)
     {
-        return static::$render_bibles_limit;
-    }
+        if(!$tts_api) {
+            $tts_api = strtolower( (new \ReflectionClass(static::class))->getShortName() );
+        }
 
-    public static function getName() 
-    {
-        return static::$name;
-    }    
+        // :todo let user select voice by language?
+        // :todo let user select male vs female voice?
 
-    public static function getDescription() 
-    {
-        return static::$description;
-    }
+        $voice = config('lang.' . $language_short . '.text_to_speech.' . $tts_api . '.voices.default');
 
-    public static function getRendererId($settings = array()) 
-    {
-        $cl = explode('\\', get_called_class());
-        $cl = array_pop($cl);
-        return $cl;
+        if($voice) {
+            return $voice;
+        }
+
+        $voice_default = config('text_to_speech.narakeet.voices.default');
+
+        return $voice_default;
+
+        $map = [
+            'en' => 'brian',
+            'es' => 'carmen',
+            'fr' => 'celine',
+            'lv' => 'kristaps',
+            'de' => 'anna',
+            'it' => 'carlo',
+            'pt' => 'joana',
+            'ru' => 'nikolai',
+            'zh' => 'meilin',
+        ];
+
+        if(isset($map[$language_short])) {
+            return $map[$language_short];
+        }
+
+        return 'brian';
     }
 }
-

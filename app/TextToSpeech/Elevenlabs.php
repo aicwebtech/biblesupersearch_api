@@ -2,7 +2,7 @@
 
 namespace App\TextToSpeech;
 
-class Narakeet extends TtsAbstract 
+class Elevenlabs extends TtsAbstract 
 {
     protected $api_url = 'https://api.narakeet.com/text-to-speech/mp3';
 
@@ -13,6 +13,8 @@ class Narakeet extends TtsAbstract
 
     public function generateAudioHelper($text, $options, $file_handle)
     {
+        return false;
+        
         $apikey = config('audio.tts_api_key');
         $voice = static::getVoiceByLanguage($this->Bible->lang_short);
 

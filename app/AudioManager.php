@@ -13,24 +13,20 @@ class AudioManager
 
     static public $tts_apis = [
         'elevenlabs' => [
-            'name' => 'Eleven Labs',
-            'base_url' => 'https://api.elevenlabs.io/v1',
-            'method' => 'POST',
-            'response_type' => 'audio/mpeg',
-            'headers' => [
-                'xi-api-key' => null, // to be set dynamically
-                'Content-Type' => 'application/json',
-            ],
+            'name'  => 'Eleven Labs',
+            'class' => \App\TextToSpeech\Elevenlabs::class,
+        ],
+        'murfai' => [
+            'name'  => 'Murf AI',
+            'class' => \App\TextToSpeech\MurfAI::class,
         ],
         'narakeet' => [
-            'name' => 'Narakeet',
-            'base_url' => 'https://api.narakeet.com/text-to-speech/mp3',
-            'method' => 'POST',
-            'response_type' => 'audio/mpeg',
-            'headers' => [
-                'Authorization' => null, // to be set dynamically
-                'Content-Type' => 'application/json',
-            ],
+            'name'  => 'Narakeet',
+            'class' => \App\TextToSpeech\Narakeet::class,
+        ],
+        'openai' => [
+            'name'  => 'OpenAI',
+            'class' => \App\TextToSpeech\OpenAI::class,
         ],
     ];
 
@@ -55,16 +51,19 @@ class AudioManager
         try {
             $verses = $Bible->getAudio([$Passage], []);
 
+            //print_r($verses); die();
+            // return $verses;
+
             foreach($verses as &$verse) {
                 if(!$verse->file_name) {
                     $success = $this->renderAudioTTS($Bible, $verse, $parameters);
 
                     if($success) {
                         $ABV = new \App\Models\AudioBibleVerse();
-                        $ABV->module = $Bible->module;
-                        $ABV->book = $verse->book;
-                        $ABV->chapter = $verse->chapter;
-                        $ABV->verse = $verse->verse;
+                        $ABV->module    = $Bible->module;
+                        $ABV->book      = $verse->book;
+                        $ABV->chapter   = $verse->chapter;
+                        $ABV->verse     = $verse->verse;
                         $ABV->file_name = $verse->file_name;
                         $ABV->save();
                     }
@@ -72,9 +71,6 @@ class AudioManager
             }
             unset($verse);
 
-            // $text = $Bible->getSearch([$Passage], null, []);
-
-            //print_r($verses);
             return $verses;
         } catch (\Exception $e) {
             if(config('app.debug')) {

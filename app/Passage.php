@@ -661,11 +661,13 @@ class Passage {
         }
     }
 
-    public function getParsed() {
+    public function getParsed() 
+    {
         return $this->chapter_verse_parsed;
     }
 
-    public function toArray($verbose = FALSE) {
+    public function toArray($verbose = FALSE) 
+    {
         $single = $this->containsSingleVerse();
 
         $passage = array(
@@ -674,7 +676,7 @@ class Passage {
             'book_short'        => $this->Book->shortname,
             'book_raw'          => $this->raw_book,
             'chapter_verse'     => $this->getAdjustedChapterVerse(),
-            //'chapter_verse'     => $this->chapter_verse,
+            'chapter_verse_int' => $this->chapter_verse,
             'chapter_verse_raw' => $this->raw_chapter_verse,
             'verse_index'       => $this->generateVerseIndex(),
             'verses'            => $this->verses,
@@ -926,11 +928,13 @@ class Passage {
      *
      * @return bool
      */
-    public function isChapterOnly() {
+    public function isChapterOnly() 
+    {
         return (strpos($this->chapter_verse, ':') === FALSE);
     }
 
-    public function explodePassage($separate_book_ranges, $separate_chapters) {
+    public function explodePassage($separate_book_ranges, $separate_chapters) 
+    {
         if($separate_book_ranges && $this->is_book_range) {
             $Passages = [];
 
@@ -997,7 +1001,8 @@ class Passage {
         return [$this];
     }
 
-    public function explodePassageByChapters() {
+    public function explodePassageByChapters() 
+    {
         $Exploded = [];
 
         if(empty($this->verses) || !$this->isSingleBook()) {

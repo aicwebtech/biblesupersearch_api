@@ -176,7 +176,7 @@ class VerseStandard extends VerseAbstract
             $Query->leftJoin('bible_verses_audio AS a', function($join) use ($Verse) {
                 $join->on('tb.book', '=', 'a.book')
                     ->on('tb.chapter', '=', 'a.chapter')
-                    ->whereIsNull('a.verse')
+                    ->whereNull('a.verse')
                     ->on('a.module', '=', DB::raw("'" . $Verse->getModule() . "'"));
             });
         } else {
