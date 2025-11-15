@@ -21,6 +21,7 @@ vendor.zip
 /bibles/usfm/*
 /bibles/misc/*
 /bibles/rendered/*
+/bibles/audio/*
 /app/Premium
 
 #temp
