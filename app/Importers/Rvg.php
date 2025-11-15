@@ -38,7 +38,7 @@ class Rvg extends ImporterAbstract
 
         // Script settings
         $dir  = dirname(__FILE__) . '/../../bibles/misc/'; // directory of Bible files
-        $file   = 'RVG20180201.txt';
+        $file   = 'RVG23-RLI-20251028.txt';
         $path   = $dir . $file;
         $module = $this->module;
 
@@ -100,5 +100,10 @@ class Rvg extends ImporterAbstract
 
         $this->_insertVerses();
         return true;
+    }
+
+    public function checkUploadedFile(\Illuminate\Http\UploadedFile $File): bool  
+    {
+        return $this->addError('Not implemented for RVG importer', 4);
     }
 }

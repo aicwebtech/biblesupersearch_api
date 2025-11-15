@@ -92,7 +92,7 @@ abstract class ImporterAbstract
         $Bible = $this->_getBible($this->module);
 
         if(!$this->overwrite && $this->_existing && $this->insert_into_bible_table) {
-            // return $this->addError('Module already exists: \'' . $module . '\' Use --overwrite to overwrite it.', 4);
+            return $this->addError('Module already exists: \'' . $module . '\' Use --overwrite to overwrite it.', 4);
         }
 
         if(is_callable($this->_before_import_bible)) {
@@ -366,6 +366,21 @@ abstract class ImporterAbstract
 
         $this->bible_attributes = $attributes;
         return ($this->has_errors) ? FALSE : TRUE;
+    }
+
+    protected function saveBible() 
+    {
+        if($this->insert_into_bible_table) {
+            $attr = $this->bible_attributes;
+            $Bible->fill($attr);
+            $Bible->save();
+        }
+
+        if($this->_existing) {
+            $Bible->uninstall();
+        }
+
+        $Bible->install(TRUE);
     }
 
     protected function _addVerse($book, $chapter, $verse, $text, $format_text = FALSE) 
