@@ -10,7 +10,7 @@
         "php": ">=8.2.0",
         "laravel/framework": "^12.0",
         "guzzlehttp/guzzle": "^7.0.1",
-        "phpoffice/phpspreadsheet": "^3.10",
+        "phpoffice/phpspreadsheet": "^5.0",
         "tecnickcom/tcpdf": "^6.2",
         "laravel/helpers": "^1.2",
         "laravel/tinker" : "^2.0",
