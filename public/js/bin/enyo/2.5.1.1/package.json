@@ -33,7 +33,7 @@
   },
   "dependencies": {
     "less": "1.7.0",
-    "uglify-js": "2.2.5",
+    "uglify-js": "2.6.0",
     "shelljs": "0.2.6",
     "nopt": "2.1.2"
   },
