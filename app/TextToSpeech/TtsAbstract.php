@@ -119,6 +119,19 @@ abstract class TtsAbstract
         return $dir;
     }
 
+    public static function getAudioFilePathStatic($module, $create_dir = FALSE, $relative = false) 
+    {
+        $dir = $relative ? '' : static::getAudioBasePath();
+        $dir .= $module;
+
+        if(!is_dir($dir) && $create_dir && !$relative) {
+            mkdir($dir, 0775, TRUE);
+            chmod($dir, 0775);
+        }
+
+        return $dir;
+    }
+
     public static function getAudioBasePath() 
     {
         return dirname(__FILE__) . '/../../bibles/audio/';

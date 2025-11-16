@@ -580,6 +580,62 @@ class Engine
 
     public function actionAudio($input)
     {
+        list($input, $Bible) = $this->audioValidateHelper($input);
+
+        if($this->hasErrors()) {
+            return FALSE;
+        }
+
+        $response  = new \stdClass();
+        $response->audio = [];
+        $response->has_audio = false;
+        $response->success = true;
+
+        $Manager = new \App\AudioManager();
+
+        $audio = $Manager->downloadAudioByInput($input, $Bible);
+
+        if($Manager->hasErrors()) {
+            $response->success = false;
+            $response->errors = $Manager->getErrors();
+            return $response;
+        }
+
+        $response->audio = $audio->toArray();
+
+        return $response;
+    }
+
+    public function actionAudioCheck($input)
+    {
+        list($input, $Bible) = $this->audioValidateHelper($input);
+
+        if($this->hasErrors()) {
+            return FALSE;
+        }
+
+        $response  = new \stdClass();
+        $response->audio = [];
+        $response->has_audio = false;
+        $response->success = true;
+
+        $Manager = new \App\AudioManager();
+
+        $audio = $Manager->checkAudioByInput($input, $Bible);
+
+        if($Manager->hasErrors()) {
+            $response->success = false;
+            $response->errors = $Manager->getErrors();
+            return $response;
+        }
+
+        $response->audio = $audio->toArray();
+
+        return $response;
+    }
+
+    protected function audioValidateHelper($input)
+    {
         $parsing = [
             'bible' => [
                 'type' => 'string',
@@ -607,27 +663,7 @@ class Engine
             return $this->addError(trans('errors.bible_no_exist', ['module' => $input['bible']]));
         }
 
-        $response  = new \stdClass();
-        $response->audio = [];
-        $response->has_audio = false;
-        $response->success = true;
-
-        $Manager = new \App\AudioManager();
-
-        $audio = $Manager->getAudioByInput($input, $Bible);
-
-        if($Manager->hasErrors()) {
-            $response->success = false;
-            $response->errors = $Manager->getErrors();
-            return $response;
-            
-            // $this->addErrors($Manager->getErrors(), $Manager->getErrorLevel());
-            // return FALSE;
-        }
-
-        $response->audio = $audio->toArray();
-
-        return $response;
+        return [$input, $Bible];
     }
 
     /**

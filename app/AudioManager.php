@@ -30,17 +30,27 @@ class AudioManager
         ],
     ];
 
-    public function getAudioByInput($input, $module = null)
+    public function checkAudioByInput($input, $module = null)
+    {
+        return $this->getAudioByInput($input, 'tts', $module);
+    }
+
+    public function downloadAudioByInput($input, $module = null)
+    {
+        return $this->getAudioByInput($input, 'get', $module);
+    }
+
+    public function getAudioByInput($input, $mode = null, $module = null)
     {
         $Passage = new Passage();
         $Passage->setBook($input['book']);
         $Passage->setChapterVerse($input['chapter_verse']);
         $module = $module ?? $input['bible'] ?? null;
 
-        return $this->getAudio($Passage, $module, $input);
+        return $this->getAudio($Passage, $module, $input, $mode);
     }
 
-    public function getAudio($Passage, $module, $parameters = [])
+    public function getAudio($Passage, $module, $parameters = [], $mode = null)
     {
         if(is_object($module)) {
             $Bible = $module;
@@ -53,9 +63,10 @@ class AudioManager
 
             //print_r($verses); die();
             // return $verses;
+            $mp3_str = null;
 
             foreach($verses as &$verse) {
-                if(!$verse->file_name) {
+                if(!$verse->file_name && $mode == 'tts') {
                     $success = $this->renderAudioTTS($Bible, $verse, $parameters);
 
                     if($success) {
@@ -66,6 +77,21 @@ class AudioManager
                         $ABV->verse     = $verse->verse;
                         $ABV->file_name = $verse->file_name;
                         $ABV->save();
+                    }
+                }
+
+                if($mode == 'get') {
+                    if(!isset($verse->file_name)) {
+                        $this->addTransError('errors.audio_file_missing', ['bcv' => $verse->book . ' ' . $verse->chapter . ':' . $verse->verse]);
+                        continue;
+                    }
+                    
+                    $file_path = \App\TextToSpeech\TtsAbstract::getAudioFilePathStatic($Bible->module) . '/' . $verse->file_name;
+
+                    if(file_exists($file_path)) {
+                        $mp3_str .= file_get_contents($file_path);
+                    } else {
+                        $this->addTransError('errors.audio_file_missing', ['bcv' => $verse->book . ' ' . $verse->chapter . ':' . $verse->verse]);
                     }
                 }
             }
