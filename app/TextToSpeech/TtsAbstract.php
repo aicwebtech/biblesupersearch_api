@@ -73,10 +73,13 @@ abstract class TtsAbstract
 
     protected function _formatText($text)
     {
-        $text = preg_replace('/\} \{/', '', $text);
-        $text = preg_replace('/\{[^\}]+\}/', '', $text);
-        $text = str_replace(['[', ']'], '', $text);
-        $text = str_replace(['‹', '›'], '', $text);
+        $text = preg_replace('/\} \{/', '', $text); // remove Strongs numbers
+        $text = preg_replace('/\{[^\}]+\}/', '', $text); // remove Strongs numbers
+        $text = str_replace(['[', ']'], '', $text); // remove brackets (italic markers)
+        $text = str_replace(['‹', '›'], '', $text); // remove red letter markers
+        $text = str_replace('¶', '', $text); // remove paragraph markers
+        $text = strip_tags($text); // remove HTML tags
+        $text = preg_replace('/\s+/', ' ', $text); // normalize whitespace
 
         $text = trim($text);
 

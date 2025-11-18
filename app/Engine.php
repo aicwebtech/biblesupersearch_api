@@ -601,7 +601,7 @@ class Engine
             return $response;
         }
 
-        $response->audio = $audio->toArray();
+        //$response->audio = $audio->toArray();
 
         return $response;
     }
@@ -630,6 +630,7 @@ class Engine
         }
 
         $response->audio = $audio->toArray();
+        $response->has_audio = $Manager->has_all_audio;
 
         return $response;
     }

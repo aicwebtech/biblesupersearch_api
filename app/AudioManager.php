@@ -11,6 +11,8 @@ class AudioManager
     // AudioManager code would go here
     use Error;
 
+    public $has_all_audio = false;
+
     static public $tts_apis = [
         'elevenlabs' => [
             'name'  => 'Eleven Labs',
@@ -32,7 +34,7 @@ class AudioManager
 
     public function checkAudioByInput($input, $module = null)
     {
-        return $this->getAudioByInput($input, 'tts', $module);
+        return $this->getAudioByInput($input, 'generate', $module);
     }
 
     public function downloadAudioByInput($input, $module = null)
@@ -40,7 +42,7 @@ class AudioManager
         return $this->getAudioByInput($input, 'get', $module);
     }
 
-    public function getAudioByInput($input, $mode = null, $module = null)
+    public function getAudioByInput($input, $mode = 'check', $module = null)
     {
         $Passage = new Passage();
         $Passage->setBook($input['book']);
@@ -64,9 +66,12 @@ class AudioManager
             //print_r($verses); die();
             // return $verses;
             $mp3_str = null;
+            $this->has_all_audio = true;
 
             foreach($verses as &$verse) {
-                if(!$verse->file_name && $mode == 'tts') {
+                $verse_has_audio = (bool) $verse->file_name;
+                
+                if(!$verse->file_name && $mode == 'generate') {
                     $success = $this->renderAudioTTS($Bible, $verse, $parameters);
 
                     if($success) {
@@ -77,6 +82,7 @@ class AudioManager
                         $ABV->verse     = $verse->verse;
                         $ABV->file_name = $verse->file_name;
                         $ABV->save();
+                        $verse_has_audio = true;
                     }
                 }
 
@@ -94,8 +100,32 @@ class AudioManager
                         $this->addTransError('errors.audio_file_missing', ['bcv' => $verse->book . ' ' . $verse->chapter . ':' . $verse->verse]);
                     }
                 }
+
+                $this->has_all_audio = $this->has_all_audio && $verse_has_audio;
             }
             unset($verse);
+
+            if($mode == 'get') {
+                if($this->hasErrors()) {
+                    return FALSE;
+                } else {
+                    header('Content-Description: File Transfer');
+                    header('Content-Type: audio/mpeg');
+                    // header('Content-Disposition: attachment; filename=audio');
+                    // header('Content-Disposition: inline; filename=audio.mp3');
+                    header('Content-Disposition: inline');
+                    // header('Content-Transfer-Encoding: binary');
+                    header('Access-Control-Allow-Origin: *');
+                    header('Expires: 0');
+                    header('Cache-Control: must-revalidate, post-check=0, pre-check=0');
+                    header('Pragma: public');
+                    header('Content-Length: ' . strlen($mp3_str));
+                    
+                    echo($mp3_str);
+
+                    exit;
+                }
+            }
 
             return $verses;
         } catch (\Exception $e) {
