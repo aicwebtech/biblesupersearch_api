@@ -177,4 +177,17 @@ abstract class TtsAbstract
 
         return 'brian';
     }
+
+    public static function getAllApiVoicesByLanguage($language_short)
+    {
+        $voices = [];
+
+        foreach(\App\AudioManager::$tts_apis as $api_key => $api_info) {
+            $class = $api_info['class'];
+            $voice = $class::getVoiceByLanguage($language_short, $api_key);
+            $voices[$api_key] = $voice;
+        }
+
+        return $voices;
+    }
 }

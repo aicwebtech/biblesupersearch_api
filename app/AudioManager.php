@@ -14,23 +14,38 @@ class AudioManager
     public $has_all_audio = false;
 
     static public $tts_apis = [
-        'elevenlabs' => [
-            'name'  => 'Eleven Labs',
-            'class' => \App\TextToSpeech\Elevenlabs::class,
-        ],
-        'murfai' => [
-            'name'  => 'Murf AI',
-            'class' => \App\TextToSpeech\MurfAI::class,
-        ],
+        // name limited to 100 chars to match DB field!
+        // 'elevenlabs' => [
+        //     'name'  => 'Eleven Labs',
+        //     'class' => \App\TextToSpeech\Elevenlabs::class,
+        // ],
+        // 'murfai' => [
+        //     'name'  => 'Murf AI',
+        //     'class' => \App\TextToSpeech\MurfAI::class,
+        // ],
         'narakeet' => [
             'name'  => 'Narakeet',
             'class' => \App\TextToSpeech\Narakeet::class,
         ],
-        'openai' => [
-            'name'  => 'OpenAI',
-            'class' => \App\TextToSpeech\OpenAI::class,
-        ],
+        // 'openai' => [
+        //     'name'  => 'OpenAI',
+        //     'class' => \App\TextToSpeech\OpenAI::class,
+        // ],
     ];
+
+    static public function getTtsApisList()
+    {
+        $list = [];
+
+        foreach(self::$tts_apis as $key => $api) {
+            $list[] = [
+                'key'   => $key,
+                'name'  => $api['name'],
+            ];
+        }
+        
+        return $list;
+    }
 
     public function checkAudioByInput($input, $module = null)
     {
@@ -62,9 +77,6 @@ class AudioManager
         
         try {
             $verses = $Bible->getAudio([$Passage], []);
-
-            //print_r($verses); die();
-            // return $verses;
             $mp3_str = null;
             $this->has_all_audio = true;
 
@@ -111,13 +123,37 @@ class AudioManager
                 } else {
                     header('Content-Description: File Transfer');
                     header('Content-Type: audio/mpeg');
-                    // header('Content-Disposition: attachment; filename=audio');
-                    // header('Content-Disposition: inline; filename=audio.mp3');
                     header('Content-Disposition: inline');
-                    // header('Content-Transfer-Encoding: binary');
+                    header('Content-Transfer-Encoding: binary');
                     header('Access-Control-Allow-Origin: *');
                     header('Expires: 0');
+                    
+                    // :todo - determine proper caching headers for debug and production
+                    // :todo - figure out how to send duration of audio
+
+                    $duration = null;
+
+                    // Fallback: estimate from filesize using assumed bitrate (128 kbps)
+                    if ($duration === null) {
+                        $size = strlen($mp3_str);
+
+                        if ($size && $size > 0) {
+                            $assumed_bitrate = 163840; // bits per second
+                            $duration = ($size * 8) / $assumed_bitrate;
+                        }
+                    }
+
+                    // calculated duratoin is correct for narakeet
+                    // headers appear to be non-standard ... 
+
+                    if ($duration !== null) {
+                        header('X-Content-Duration: ' . number_format($duration, 3));
+                        header('X-Audio-Duration: ' . number_format($duration, 3));
+                        header('Content-Duration: ' . number_format($duration, 3));
+                    }
+
                     header('Cache-Control: must-revalidate, post-check=0, pre-check=0');
+                    header('Cache-Control: private', false);
                     header('Pragma: public');
                     header('Content-Length: ' . strlen($mp3_str));
                     
@@ -149,13 +185,18 @@ class AudioManager
 
         $verse->file_name = $filename;
 
-        $TTS = new \App\TextToSpeech\Narakeet($Bible, $parameters);
+        $tts = self::$tts_apis[ config('audio.tts_api') ] ?? null;
+
+        if(!$tts) {
+            return $this->addError('TTS API NOT supported: ' . config('audio.tts_api'));
+        }
+
+        $TTS = new $tts['class']($Bible, $parameters);
 
         $success = $TTS->generateAudio($verse->text, $parameters, $filename);
 
         if(!$success) {
-            $this->addTransError('errors.audio_tts_failed', ['bcv' => $bcv]);
-            return FALSE;
+            return $this->addTransError('errors.audio_tts_failed', ['bcv' => $bcv]);
         } else {
             $verse->file_name = $filename;
         }

@@ -17,10 +17,10 @@ class Language extends Model
     protected $fillable = [
         'name', 'iso_name', 'code', 'native_name', 'iso_endonym', 'rtl', 'family', 
         'iso_639_1', 'iso_639_2', 'iso_639_2_b', 'iso_639_3', 'iso_639_3_raw', 'notes',
-        'common_words',
+        'common_words', 'tts_api', 'tts_voice',
     ];
 
-        static public function getUpdateRules($id = NULL) 
+    static public function getUpdateRules($id = NULL) 
     {
         $id = (int) $id;
 
@@ -43,6 +43,8 @@ class Language extends Model
                 Rule::unique('languages')->ignore($id),
             ],
             'common_words'      => 'nullable',
+            'tts_api'           => 'nullable|max:100',
+            'tts_voice'         => 'nullable|max:255',
         );    
 
         return $rules;
