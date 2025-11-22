@@ -37,12 +37,7 @@ class LanguageConfigController extends Controller
             $Lang->initLanguage();
         }
 
-        $bootstrap = new \stdClass();
-        // $bootstrap->Languages = $Languages;
-        $bootstrap->baseURL = url('');
-        $bootstrap->tts_enabled = (bool)config('audio.enable', false) && (bool)config('audio.tts_api_enable', false);
-        $bootstrap->tts_apis = \App\AudioManager::getTtsApisList();
-        $bootstrap->tts_api_default = config('audio.tts_api') ?? null;
+        $bootstrap = $this->getAdminBootstrap();
 
         return view('admin.languages', [
             'bootstrap' => json_encode($bootstrap),

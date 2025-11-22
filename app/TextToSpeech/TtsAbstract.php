@@ -16,6 +16,8 @@ abstract class TtsAbstract
 
     public $debug = false; // Debug rendering by only rendering handful of verses
 
+    protected static $requires_voice = true;
+
     protected $file_extension = 'mp3';
 
     protected $Bible;
@@ -41,6 +43,13 @@ abstract class TtsAbstract
         if(!$this->file_extension) {
             throw new Exception('$this->file_extension is required on render class!');
         }
+    }
+
+    public static function getMeta()
+    {
+        return [
+            'requires_voice' => static::$requires_voice
+        ];
     }
 
     public function generateAudio($text, $options = [], $filename = null) 

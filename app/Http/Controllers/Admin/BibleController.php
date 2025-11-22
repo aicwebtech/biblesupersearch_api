@@ -57,25 +57,8 @@ class BibleController extends Controller
     {
         Bible::updateNeedsUpdate();
         Bible::populateBibleTable();
-        $ImportManagerClass = Helpers::find('\App\ImportManager');
-
-        $bootstrap = new \stdClass;
-        $bootstrap->baseURL = url('');
-
-        // :todo move these to an API endpoint ...
-        $bootstrap->devToolsEnabled  = (bool) config('bss.dev_tools');
-        $bootstrap->premToolsEnabled = config('app.premium');
-        $bootstrap->maxUploadSize    = Helpers::maxUploadSize('both');
-        $bootstrap->languages  = \App\Models\Language::orderBy('name', 'asc')->get();
-        $bootstrap->copyrights = [];
-        $bootstrap->importers  = $ImportManagerClass::getImportersList();
-
-        foreach(\App\Models\Copyright::orderBy('name')->get() as $Copyright) {
-            $data = $Copyright->getAttributes();
-            $data['copyright_statement_processed'] = $Copyright->getProcessedCopyrightStatement();
-            $bootstrap->copyrights[] = $data;
-        }
-
+        
+        $bootstrap = $this->getAdminBootstrap();
         $bootstrap = json_encode($bootstrap);
 
         return view('admin.bibles', ['bootstrap' => $bootstrap]);
@@ -286,10 +269,13 @@ class BibleController extends Controller
     {
         $Bible = Bible::findOrFail($id);
 
+        $Language = Language::findByCode($Bible->lang_short);
+
         $resp = new \stdClass();
         $resp->success = TRUE;
         $resp->Bible   = $Bible->attributesToArray();
         $resp->Bible['has_module_file'] = $Bible->hasModuleFile() ? 1 : 0;
+        $resp->Bible['tts_api_voices'] = \App\TextToSpeech\TtsAbstract::getAllApiVoicesByLanguage($Language->code, $Language->tts_api);
 
         return new Response($resp, 200);
     }

@@ -51,7 +51,9 @@ class Bible extends Model
             'owner'                 => 'nullable',
             'publisher'             => 'nullable',
             'restrict'              => 'nullable',
-            'research'              => 'nullable',
+            'research'              => 'nullable|boolean',
+            'audio_enable'          => 'nullable|boolean',
+            'tts_enable'            => 'nullable|boolean',
             'description'           => 'nullable',
             'copyright_statement'   => 'nullable',
             'copyright_id'          => 'required|integer',
@@ -92,6 +94,8 @@ class Bible extends Model
         'restrict',
         'module_v2',
         'importer',
+        'audio_enable',
+        'tts_enable',
         'import_file',
     );
 

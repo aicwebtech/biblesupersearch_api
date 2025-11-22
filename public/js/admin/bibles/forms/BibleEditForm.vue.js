@@ -101,6 +101,7 @@ const template = `
                 ></v-switch>    
             </v-col>
         </v-row>
+
         <v-row v-bind='defaultProps.vrows'>
             <v-col>
                 <v-switch
@@ -109,6 +110,41 @@ const template = `
                     label="Research - select this if you don't reccomend this Bible for general use."
                     v-bind='defaultProps.switches'
                 ></v-switch>    
+            </v-col>
+        </v-row>
+
+        <v-row v-bind='defaultProps.vrows' v-if='bootstrap.audio_enabled'>
+            <v-col>
+                <v-switch
+                    class='ml-3'
+                    v-model='record.audio_enable'
+                    label='Audio Enabled - whether the Bible is enabled for audio'
+                    v-bind='defaultProps.switches'
+                ></v-switch>    
+            </v-col>
+        </v-row>
+
+        <v-row v-bind='defaultProps.vrows' v-if='bootstrap.tts_enabled && record.audio_enable'>
+            <v-col>
+                <v-switch
+                    class='ml-3'
+                    v-model='record.tts_enable'
+                    label='Text to Speech - whether the Bible is enabled for text to speech conversion'
+                    v-bind='defaultProps.switches'
+                ></v-switch>    
+            </v-col>
+        </v-row>
+
+        <v-row v-bind='defaultProps.vrows' v-if='bootstrap.tts_enabled && record.tts_enable && ttsApiRequiresVoice'>
+            <v-col>
+                <v-text-field 
+                    :label='"Text to Speech Voice (" + ttsApiName + ")"' 
+                    v-model='record.tts_voice'
+                    v-bind='defaultProps.texts'
+                    :rrules='[v=> !!v || "TTS Voice is required", v => errorShow("shortname")]'
+                    :hint='ttsVoicePlaceHolder'
+                    persistent-hint
+                ></v-text-field>  
             </v-col>
         </v-row>
 
@@ -311,6 +347,48 @@ export default {
             var cr = bootstrap.copyrights.find(element => element.id == this.record.copyright_id);
             return cr ? cr.copyright_statement_processed : '';
         },
+        language() {
+            return bootstrap.languages.find(element => element.code == this.record.lang_short);
+        },
+        ttsVoicePlaceHolder() {
+            if(!this.language) {
+                return null;
+            }
+            
+            var tts_api = this.record.tts_api || this.language.tts_api || this.bootstrap.tts_api_default;
+            
+            if(!tts_api) {
+                return 'ERROR: No default TTS API configured';
+            }
+
+            var voices = this.language.tts_api_voices || null;
+
+            var voice = voices && voices[tts_api] && voices[tts_api].length > 0 ? voices[tts_api] : null;
+
+            if(voice) {
+                return 'Leave blank for defalt of "' + voice + '"';
+            } else {
+                return 'ERROR: No default voice configured for this language / TTS API';
+            }
+        },
+        ttsApiName() {
+            var tts_api = this.record.tts_api ? this.record.tts_api : this.bootstrap.tts_api_default;
+            
+            if(!tts_api) {
+                return 'ERROR: No default TTS API configured';
+            }
+
+            return this.bootstrap.tts_apis.find(api => api.key === tts_api).name || 'Unknown';
+        },
+        ttsApiRequiresVoice() {
+            var tts_api = this.record.tts_api ? this.record.tts_api : this.bootstrap.tts_api_default;
+            
+            if(!tts_api) {
+                return false;
+            }
+
+            return this.bootstrap.tts_apis.find(api => api.key === tts_api).requires_voice || false;
+        }
     },
     methods: {
         languageItemProps(item) {

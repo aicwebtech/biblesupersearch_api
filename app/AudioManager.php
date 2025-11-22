@@ -38,12 +38,14 @@ class AudioManager
         $list = [];
 
         foreach(self::$tts_apis as $key => $api) {
+            
             $list[] = [
                 'key'   => $key,
                 'name'  => $api['name'],
+                'requires_voice' => ($api['class'])::$requires_voice,
             ];
         }
-        
+
         return $list;
     }
 
