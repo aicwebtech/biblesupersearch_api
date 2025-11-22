@@ -6,6 +6,8 @@ class Narakeet extends TtsAbstract
 {
     protected $api_url = 'https://api.narakeet.com/text-to-speech/mp3';
 
+    static protected $label = 'Narakeet';
+
     public function __construct($Bible, $options = [])
     {
         parent::__construct($Bible, $options);

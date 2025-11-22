@@ -774,9 +774,9 @@
                                                 <td class='ralign' style='width:320px'>TTS API: </td>
                                                 <td>
                                                     <select name='audio__tts_api' style='width: 300px'>
-                                                        @foreach(App\AudioManager::$tts_apis as $idx => $dr)
-                                                        <option value='{{$idx}}'
-                                                            @if($configs['audio.tts_api'] == $idx)selected='selected'@endif>{{$dr['name']}}
+                                                        @foreach(App\AudioManager::getTtsApisList() as $idx => $dr)
+                                                        <option value='{{$dr['key']}}'
+                                                            @if($configs['audio.tts_api'] == $dr['key'])selected='selected'@endif>{{$dr['name']}}
                                                         </option>
                                                         @endforeach
                                                     </select>

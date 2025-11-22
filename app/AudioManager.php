@@ -5,8 +5,9 @@ namespace App;
 use App\Models\Bible;
 use App\Passage;
 use App\Traits\Error;
+use App\Interfaces\ErrorInterface;
 
-class AudioManager 
+class AudioManager implements ErrorInterface
 {
     // AudioManager code would go here
     use Error;
@@ -14,6 +15,8 @@ class AudioManager
     public $has_all_audio = false;
 
     static public $tts_apis = [
+        'narakeet' => \App\TextToSpeech\Narakeet::class,
+        
         // name limited to 100 chars to match DB field!
         // 'elevenlabs' => [
         //     'name'  => 'Eleven Labs',
@@ -23,10 +26,10 @@ class AudioManager
         //     'name'  => 'Murf AI',
         //     'class' => \App\TextToSpeech\MurfAI::class,
         // ],
-        'narakeet' => [
-            'name'  => 'Narakeet',
-            'class' => \App\TextToSpeech\Narakeet::class,
-        ],
+        // 'narakeet' => [
+        //     'name'  => 'Narakeet',
+        //     'class' => \App\TextToSpeech\Narakeet::class,
+        // ],
         // 'openai' => [
         //     'name'  => 'OpenAI',
         //     'class' => \App\TextToSpeech\OpenAI::class,
@@ -37,16 +40,18 @@ class AudioManager
     {
         $list = [];
 
-        foreach(self::$tts_apis as $key => $api) {
-            
-            $list[] = [
-                'key'   => $key,
-                'name'  => $api['name'],
-                'requires_voice' => ($api['class'])::$requires_voice,
-            ];
+        foreach(self::$tts_apis as $key => $class) {
+            $meta = ($class)::getMeta();
+            $meta['key'] = $key;
+            $list[] = $meta;
         }
 
         return $list;
+    }
+
+    static public function getTtsApiClasses()
+    {
+        return static::$tts_apis;
     }
 
     public function checkAudioByInput($input, $module = null)
@@ -75,6 +80,10 @@ class AudioManager
             $Bible = $module;
         } else {
             $Bible = Bible::findByModule($input['bible']);
+        }
+
+        if(!$Bible->audio_enable) {
+            return $this->addTransError('errors.audio.bible_no_audio', ['module' => $Bible->module], 4);
         }
         
         try {
@@ -178,6 +187,16 @@ class AudioManager
 
     protected function renderAudioTTS($Bible, &$verse, $parameters = []) 
     {
+        $tts_enabled = (bool)config('audio.tts_api_enable', false);
+
+        if(!$tts_enabled) {
+            return $this->addTransError('errors.audio.no_tts');
+        }
+
+        if(!$Bible->tts_enable) {
+            return $this->addTransError('errors.audio.no_tts_bible', ['module' => $Bible->module]);
+        }
+        
         $bcv = $verse->book . ' ' . $verse->chapter . ':' . $verse->verse;
 
         // file name is str padded book, chapter, verse
@@ -187,18 +206,18 @@ class AudioManager
 
         $verse->file_name = $filename;
 
-        $tts = self::$tts_apis[ config('audio.tts_api') ] ?? null;
+        $tts_class = self::$tts_apis[ config('audio.tts_api') ] ?? null;
 
-        if(!$tts) {
+        if(!$tts_class) {
             return $this->addError('TTS API NOT supported: ' . config('audio.tts_api'));
         }
 
-        $TTS = new $tts['class']($Bible, $parameters);
+        $TTS = new $tts_class($Bible, $parameters);
 
         $success = $TTS->generateAudio($verse->text, $parameters, $filename);
 
         if(!$success) {
-            return $this->addTransError('errors.audio_tts_failed', ['bcv' => $bcv]);
+            return $this->addTransError('errors.audio.tts_failed', ['bcv' => $bcv]);
         } else {
             $verse->file_name = $filename;
         }

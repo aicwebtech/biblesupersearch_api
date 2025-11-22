@@ -11,8 +11,9 @@ use App\CacheManager;
 use App\Helpers;
 use Illuminate\Support\Arr;
 use Illuminate\Pagination\LengthAwarePaginator as Paginator;
+use App\Interfaces\ErrorInterface;
 
-class Engine 
+class Engine implements ErrorInterface
 {
 
     use Traits\Error {
@@ -596,8 +597,8 @@ class Engine
         $audio = $Manager->downloadAudioByInput($input, $Bible);
 
         if($Manager->hasErrors()) {
+            $this->mergeErrors($Manager);
             $response->success = false;
-            $response->errors = $Manager->getErrors();
             return $response;
         }
 
@@ -624,8 +625,8 @@ class Engine
         $audio = $Manager->checkAudioByInput($input, $Bible);
 
         if($Manager->hasErrors()) {
+            $this->mergeErrors($Manager);
             $response->success = false;
-            $response->errors = $Manager->getErrors();
             return $response;
         }
 
@@ -679,6 +680,7 @@ class Engine
         $Bibles = Bible::select('bibles.name','shortname','module','year','owner', 'description',
             'languages.name AS lang','lang_short','copyright','italics','strongs','red_letter',
             'paragraph','rank','research','bibles.restrict','copyright_id','copyright_statement', 
+            'audio_enable',
             'languages.rtl', 'languages.native_name AS lang_native');
 
         $Bibles->leftJoin('languages', 'bibles.lang_short', 'languages.code');
@@ -743,6 +745,7 @@ class Engine
 
         foreach($Bibles as $Bible) {
             $bibles[$Bible->module] = $Bible->getAttributes();
+            $bibles[$Bible->module]['audio_enable'] = (bool)$Bible->audio_enable;
             $bibles[$Bible->module]['downloadable'] = $Bible->isDownloadable();
             $bibles[$Bible->module]['copyright_statement'] = $Bible->getCopyrightStatement();
         }
@@ -1049,7 +1052,7 @@ class Engine
     }
 
     /**
-     * returns data that the API needs to run
+     * STATICS returns data that the API needs to run
      */
     public function actionStatics($input) 
     {
@@ -1062,6 +1065,7 @@ class Engine
         $response->bibles                   = $this->actionBibles($input);
         $response->books                    = $this->actionBooks($input);
         //$response->books_count_diffs        = $this->getChapterVerseCounts(true);
+        $response->audio_enabled            = config('audio.enable');
         $response->shortcuts                = $this->actionShortcuts($input);
         $response->download_enabled         = (bool) config('download.enable');
         $response->download_limit           = config('download.enable') ? config('download.bible_limit') : FALSE;

@@ -32,6 +32,9 @@ return array(
     'audio' => [
         'bible_no_audio' => 'Audio not available for Bible: :module',
         'requirements' => 'bible, book, and chapter_verse are required',
+        'no_tts' => 'Unable to generate audio, text-to-speech is not enabled on this API.',
+        'no_tts_bible' => 'Unable to generate audio, text-to-speech is not enabled on this API for this bible: :module',
+        'tts_failed' => 'Faled to convert text to speech.',
     ],
     'paren_mismatch' => 'Your parentheses are mismatched.',
     'prox_paren_mismatch' => 'Your parentheses are mismatched, or you have a proximity operator inside of parentheses.',

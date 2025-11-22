@@ -16,6 +16,9 @@ abstract class TtsAbstract
 
     public $debug = false; // Debug rendering by only rendering handful of verses
 
+    protected static $label = null;
+    protected static $url = null; // URL to API docs
+    protected static $voice_url = null; // URL to API list of voices, if applicable
     protected static $requires_voice = true;
 
     protected $file_extension = 'mp3';
@@ -48,6 +51,9 @@ abstract class TtsAbstract
     public static function getMeta()
     {
         return [
+            'name' => static::$label,
+            'url' => static::$url,
+            'voice_url' => static::$voice_url,
             'requires_voice' => static::$requires_voice
         ];
     }
@@ -191,8 +197,7 @@ abstract class TtsAbstract
     {
         $voices = [];
 
-        foreach(\App\AudioManager::$tts_apis as $api_key => $api_info) {
-            $class = $api_info['class'];
+        foreach(\App\AudioManager::getTtsApiClasses() as $api_key => $class) {
             $voice = $class::getVoiceByLanguage($language_short, $api_key);
             $voices[$api_key] = $voice;
         }
