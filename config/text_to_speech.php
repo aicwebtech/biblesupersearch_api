@@ -5,28 +5,16 @@
 // murfai
 
 // These are global default voices
-// For best results, set voices per language in resources/lang/{lang_short}/text_to_speech.php
+// For best results, set voices per language in ./lang/{lang_short}/text_to_speech.php
 
 return [
     'narakeet' => [
-        'voices' => [
-            'default'   => 'raymond',
-            'male'      => null, // ???
-            'female'    => null,
-        ]
+        'voice' => 'raymond',
     ],
     'openai' => [
-        'voices' => [
-            'default'   => null,
-            'male'      => null,
-            'female'    => null,
-        ],
+        'voice' => null,
     ],
     'murfai' => [
-        'voices' => [
-            'default'   => null,
-            'male'      => null,
-            'female'    => null,
-        ],
+        'voice' => null,
     ],
 ];

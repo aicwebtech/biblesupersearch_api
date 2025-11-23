@@ -164,13 +164,13 @@ abstract class TtsAbstract
         // :todo let user select voice by language?
         // :todo let user select male vs female voice?
 
-        $voice = config('lang.' . $language_short . '.text_to_speech.' . $tts_api . '.voices.default');
+        $voice = config('lang.' . $language_short . '.text_to_speech.' . $tts_api . '.voice');
 
         if($voice) {
             return $voice;
         }
 
-        $voice_default = config('text_to_speech.narakeet.voices.default');
+        $voice_default = config('text_to_speech.narakeet.voice');
 
         return $voice_default;
 
