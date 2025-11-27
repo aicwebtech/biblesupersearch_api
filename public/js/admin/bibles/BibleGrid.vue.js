@@ -7,7 +7,7 @@ import ChipBool from '../../bin/custom_vue/components/ChipBool.vue.js';
 import ChipBoolAlt from '../../bin/custom_vue/components/ChipBoolAlt.vue.js';
 import ActionDialog from './dialogs/ActionDialog.vue.js';
 import ImportDialog from './dialogs/ImportDialog.vue.js';
-import { gridTemplateProps, useGrid } from '../../bin/custom_vue/composables/Grid.vue.js';
+import { gridTemplateProps, useGrid } from '../../bin/custom_vue/composables/grid/Grid.vue.js';
 
 const template = `<v-sheet>
             <h2 class='app'>
@@ -78,18 +78,18 @@ const template = `<v-sheet>
                 </template>
    
                 <template v-slot:thead>
-                    <tr>
+                    <tr class='grid-thead-search'>
                         <td>
-                            <v-chip text='Reset' @click='gridResetSearch'></v-chip>
+                            <v-chip text='Reset' @click='gridResetSearch' size='small' class='ml-1'></v-chip>
                         </td>
                         <td v-for='col in headers'>
                             <component 
                                 :is="col.searchComponent || 'v-text-field'" 
                                 v-if='col.searchable != false'
                                 v-model="gridData[col.searchField || col.key]" 
-                                class="ma-0 mr-1 pa-0" 
+                                class="ma-0 mr-1 pa-0 text-caption" 
                                 density="compact" 
-                                :placeholder="'Search ' + col.title + ' ...'" 
+                                :placeholder="col.searchLabel === false ? null : 'Search ' + col.title + ' ...'" 
                                 hide-details
                                 clearable
                                 v-bind='col.searchProps || null'
@@ -162,22 +162,22 @@ const template = `<v-sheet>
                     {{ formatDateTime(item.updated_at, "fullDateTime") }}
                 </template>    
 
-                <template v-slot:item.attention={item}>
+                <template v-slot:item.actions={item}>
                     <ChipAlert
                         v-if="item.has_module_file == '0'"
                         @click="handleSingleAction('export', item)" 
                         v-bind='chipProps'
                         text='Export'
+                        class='mr-2'
                     />
                     <ChipAlert
                         v-else-if="item.needs_update == '1' && bootstrap.devToolsEnabled"
                         @click="handleSingleAction('update', item)" 
                         v-bind='chipProps'
                         text='Update'
-                    />
-                </template>  
-
-                <template v-slot:item.actions={item}>
+                        class='mr-2'
+                    />    
+                
                     <v-chip v-bind='chipProps'
                         text='Edit'
                         @click='clickEdit(item)'
@@ -461,7 +461,7 @@ export default {
     },
     computed: {
         showExtraCols() {
-            return this.extraCols
+            return this.extraCols;
         },
         headers() {
             if(this.showExtraCols) {
@@ -487,13 +487,12 @@ export default {
                     {title: 'Research**', key: 'research', width: 60, searchComponent: 'YesNoSel', align: 'center'},
                     {title: 'Updated', key: 'updated_at', width: 150, searchable: false, align: 'center'},
                     {title: 'Rank', key: 'rank', width: 50, searchable: false, align: 'center'},
-                    {title: 'Attention', key: 'attention', sortable: false, width: 100, searchable: false},
-                    {title: 'Actions', key: 'actions', sortable: false, width: 100, searchable: false},
+                    {title: '', key: 'actions', sortable: false, width: 150, searchable: false, align: 'end'},
                 ];                
 
             } else {
                 return [
-                    {title: 'Name', key: 'name', width: 250, cellProps: {size: 'small', _class: 'd-inline-block text-truncate'}},
+                    {title: 'Name', key: 'name', width: 350, cellProps: {size: 'small', _class: 'd-inline-block text-truncate'}},
                     {title: 'Short Name', key: 'shortname', width: 150},
                     {title: 'Module', key: 'module', width: 150},
                     {title: 'Language', key: 'lang', width: 150, searchComponent: 'v-autocomplete', searchProps: {
@@ -502,11 +501,10 @@ export default {
                         'item-value': 'code'
                     }},
                     {title: 'Year', key: 'year', width: 150},
-                    {title: 'Installed', key: 'installed', width: 50, searchComponent: 'YesNoSel', align: 'center'},
-                    {title: 'Enabled', key: 'enabled', width: 50, searchComponent: 'YesNoSel', align: 'center'},
+                    {title: 'Installed', key: 'installed', width: 50, searchComponent: 'YesNoSel', searchLabel: false, align: 'center'},
+                    {title: 'Enabled', key: 'enabled', width: 50, searchComponent: 'YesNoSel', searchLabel: false, align: 'center'},
                     {title: 'Rank', key: 'rank', width: 50, searchable: false, align: 'center'},
-                    {title: 'Attention', key: 'attention', sortable: false, width: 100, searchable: false},
-                    {title: 'Actions', key: 'actions', sortable: false, width: 100, searchable: false},
+                    {title: '', key: 'actions', sortable: false, width: 100, searchable: false, align: 'end'},
                 ];
             }
         },
