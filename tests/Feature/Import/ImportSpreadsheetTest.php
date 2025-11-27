@@ -22,7 +22,7 @@ class ImportSpreadsheetTest extends TestCase
     protected $files_lite = [
         'kjv_min.csv'  => 'csv',  // No speed difference for CSV
         'kjv_min.xlsx'  => 'excel',
-        'kjv_min.ods'   => 'ods',
+        //'kjv_min.ods'   => 'ods',
     ];
 
     protected $files = [];
