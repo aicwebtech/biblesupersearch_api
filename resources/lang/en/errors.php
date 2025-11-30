@@ -35,6 +35,7 @@ return array(
         'no_tts' => 'Unable to generate audio, text-to-speech is not enabled on this API.',
         'no_tts_bible' => 'Unable to generate audio, text-to-speech is not enabled on this API for this bible: :module',
         'tts_failed' => 'Faled to convert text to speech.',
+        'no_tts_voice' => 'No voice available for TTS API: :api and language: :language',
     ],
     'paren_mismatch' => 'Your parentheses are mismatched.',
     'prox_paren_mismatch' => 'Your parentheses are mismatched, or you have a proximity operator inside of parentheses.',

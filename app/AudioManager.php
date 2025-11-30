@@ -217,7 +217,11 @@ class AudioManager implements ErrorInterface
         $success = $TTS->generateAudio($verse->text, $parameters, $filename);
 
         if(!$success) {
-            return $this->addTransError('errors.audio.tts_failed', ['bcv' => $bcv]);
+            if($TTS->hasErrors()) {
+                return $this->mergeErrors($TTS);
+            } else {
+                return $this->addTransError('errors.audio.tts_failed', ['bcv' => $bcv]);
+            }
         } else {
             $verse->file_name = $filename;
         }

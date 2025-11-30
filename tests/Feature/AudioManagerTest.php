@@ -103,4 +103,46 @@ class AudioManagerTest extends TestCase
         $result = $method->invokeArgs($mgr, [$Bible, &$verse, []]);
         $this->assertSame('ERR_TTS_API', $result);
     }
+
+    public function testRenderAudioTTSReturnsErrorWhenNoVoiceForLanguage()
+    {
+        // make sure TTS enabled globally and for bible
+        Config::set('audio.tts_api_enable', true);
+        Config::set('audio.tts_api', 'narakeet');
+
+        $Bible = new \App\Models\Bible();
+        $Bible->tts_enable = true;
+        $Bible->module = 'TEST';
+        $Bible->lang_short = 'xx'; // fake language with no voices
+
+        $verse = new \stdClass();
+        $verse->book = 1;
+        $verse->chapter = 1;
+        $verse->verse = 1;
+        $verse->text = 'In the beginning...';
+
+        /** @var AudioManager|MockObject $mgr */
+        $mgr = $this->getMockBuilder(AudioManager::class)
+                    ->onlyMethods(['addTransError'])
+                    ->getMock();
+
+        // This mock isn't working ... 
+        // $mgr->expects($this->once())
+        //     ->method('addTransError')
+        //     ->with('errors.audio.no_tts_voice', ['api' => 'Narakeet', 'language' => 'xx'])
+        //     ->willReturn('ERR_NO_VOICE');
+
+        $method = new \ReflectionMethod(AudioManager::class, 'renderAudioTTS');
+        $method->setAccessible(true);
+
+        // Checking actual error message instead of using mock return
+        $trans_error = trans('errors.audio.no_tts_voice', ['api' => 'Narakeet', 'language' => 'xx']);
+
+        $result = $method->invokeArgs($mgr, [$Bible, &$verse, []]);
+        
+        $this->assertFalse($result);
+        $this->assertTrue($mgr->hasErrors());
+
+        $this->assertSame($trans_error, $mgr->getErrors()[0]);
+    }
 }

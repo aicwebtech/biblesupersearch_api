@@ -4,10 +4,11 @@ namespace App\TextToSpeech;
 
 use App\Models\Bible;
 use App\Models\AudioBibleVerse;
+use App\Interfaces\ErrorInterface;
 use DB;
 use App;
 
-abstract class TtsAbstract 
+abstract class TtsAbstract implements ErrorInterface
 {
     use \App\Traits\Error;
 
@@ -60,6 +61,10 @@ abstract class TtsAbstract
 
     public function generateAudio($text, $options = [], $filename = null) 
     {
+        if(!$this->validateGenerateAudio()) {
+            return FALSE;
+        }
+        
         $apikey = config('audio.tts_api_key');
         $path = $this->getAudioFilePath(true);
 
@@ -71,6 +76,11 @@ abstract class TtsAbstract
 
         try {
             $file_handle = fopen($file_path, 'w');
+
+            if(!$file_handle) {
+                return $this->addError('Unable to open file for writing: ' . $file_path);
+            }
+
             $text = $this->_formatText($text);
 
             $success = $this->generateAudioHelper($text, $options, $file_handle);
@@ -85,6 +95,23 @@ abstract class TtsAbstract
     }
 
     abstract protected function generateAudioHelper($text, $options, $file_handle);
+
+    protected function validateGenerateAudio()
+    {
+        if(!$this->Bible) {
+            return $this->addError('Bible not set for TTS generation.');
+        }
+
+        if(static::$requires_voice) {
+            $voice = static::getVoiceByLanguage($this->Bible->lang_short);
+
+            if(!$voice) {
+                return $this->addTransError('errors.audio.no_tts_voice', ['api' => static::$label, 'language' => $this->Bible->lang_short]);
+            }
+        }
+
+        return true;
+    }
 
     protected function _formatText($text)
     {

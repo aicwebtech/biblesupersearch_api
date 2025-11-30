@@ -9,7 +9,7 @@
 
 return [
     'narakeet' => [
-        'voice' => 'raymond',
+        'voice' => null,
     ],
     'openai' => [
         'voice' => null,

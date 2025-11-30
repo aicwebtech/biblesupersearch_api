@@ -202,11 +202,17 @@ trait Error
         foreach($errors as $error) {
             $this->addError($error, $level, $http_status);
         }
+
+        return false;
     }
 
     public function mergeErrors(Error|ErrorInterface $Error)
     {
-        $this->addErrors($Error->getErrors(), $Error->getErrorLevel(), $Error->getHttpStatus());
+        return $this->addErrors(
+            $Error->getErrors(), 
+            $Error->getErrorLevel(), 
+            $Error->getHttpStatus()
+        );
     }
 
     public function addErrorByHttpStatus($code, $level = NULL) 
