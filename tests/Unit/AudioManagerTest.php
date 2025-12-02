@@ -39,7 +39,6 @@ namespace Tests\Unit
         protected function setUp(): void
         {
             $rp = new \ReflectionProperty(AudioManager::class, 'tts_apis');
-            $rp->setAccessible(true);
             $this->originalTtsApis = $rp->getValue();
             // ensure config override container exists
             $GLOBALS['_config_overrides'] = [];
@@ -48,16 +47,14 @@ namespace Tests\Unit
         protected function tearDown(): void
         {
             $rp = new \ReflectionProperty(AudioManager::class, 'tts_apis');
-            $rp->setAccessible(true);
-            $rp->setValue($this->originalTtsApis);
+            $rp->setValue(null, $this->originalTtsApis);
             unset($GLOBALS['_config_overrides']);
         }
 
         public function testGetTtsApisListReturnsMetaWithKey()
         {
             $rp = new \ReflectionProperty(AudioManager::class, 'tts_apis');
-            $rp->setAccessible(true);
-            $rp->setValue([
+            $rp->setValue(null, [
                 'a' => \App\TextToSpeech\TestTtsA::class,
                 'b' => \App\TextToSpeech\TestTtsB::class,
             ]);
@@ -81,8 +78,7 @@ namespace Tests\Unit
         {
             $expected = ['x' => 'SomeClass', 'y' => 'OtherClass'];
             $rp = new \ReflectionProperty(AudioManager::class, 'tts_apis');
-            $rp->setAccessible(true);
-            $rp->setValue($expected);
+            $rp->setValue(null, $expected);
 
             $got = AudioManager::getTtsApiClasses();
             $this->assertSame($expected, $got);
@@ -143,8 +139,7 @@ namespace Tests\Unit
         {
             // ensure static tts_apis does not interfere
             $rp = new \ReflectionProperty(AudioManager::class, 'tts_apis');
-            $rp->setAccessible(true);
-            $rp->setValue([]);
+            $rp->setValue(null, []);
 
             $GLOBALS['_config_overrides']['audio.tts_api_enable'] = false;
 
@@ -169,7 +164,6 @@ namespace Tests\Unit
                 ->willReturn('ERR_TTS_DISABLED');
 
             $method = new \ReflectionMethod(AudioManager::class, 'renderAudioTTS');
-            $method->setAccessible(true);
 
             $result = $method->invokeArgs($mgr, [$Bible, &$verse, []]);
             $this->assertSame('ERR_TTS_DISABLED', $result);
@@ -183,8 +177,7 @@ namespace Tests\Unit
 
             // ensure no supported apis are registered
             $rp = new \ReflectionProperty(AudioManager::class, 'tts_apis');
-            $rp->setAccessible(true);
-            $rp->setValue([]);
+            $rp->setValue(null, []);
 
             $Bible = new \stdClass();
             $Bible->tts_enable = true;
@@ -207,7 +200,6 @@ namespace Tests\Unit
                 ->willReturn('ERR_TTS_API');
 
             $method = new \ReflectionMethod(AudioManager::class, 'renderAudioTTS');
-            $method->setAccessible(true);
 
             $result = $method->invokeArgs($mgr, [$Bible, &$verse, []]);
             $this->assertSame('ERR_TTS_API', $result);

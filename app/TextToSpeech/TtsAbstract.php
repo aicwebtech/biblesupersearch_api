@@ -119,6 +119,7 @@ abstract class TtsAbstract implements ErrorInterface
         $text = preg_replace('/\{[^\}]+\}/', '', $text); // remove Strongs numbers
         $text = str_replace(['[', ']'], '', $text); // remove brackets (italic markers)
         $text = str_replace(['‹', '›'], '', $text); // remove red letter markers
+        $text = str_replace(['{/', '[/', '[/', '/'], '', $text); // remove closing tags
         $text = str_replace('¶', '', $text); // remove paragraph markers
         $text = strip_tags($text); // remove HTML tags
         $text = preg_replace('/\s+/', ' ', $text); // normalize whitespace

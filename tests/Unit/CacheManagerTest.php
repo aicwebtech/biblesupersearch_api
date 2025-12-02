@@ -45,7 +45,6 @@ class CacheManagerTest extends TestCase
         $manager = new CacheManager();
         $data = '{"a":1}';
         $hash = (new \ReflectionClass($manager))->getMethod('_generateLongHash');
-        $hash->setAccessible(true);
         $this->assertEquals(md5($data), $hash->invoke($manager, $data));
     }
 }

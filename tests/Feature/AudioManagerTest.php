@@ -16,7 +16,6 @@ class AudioManagerTest extends TestCase
         parent::setUp();
         
         $rp = new \ReflectionProperty(AudioManager::class, 'tts_apis');
-        $rp->setAccessible(true);
         $this->originalTtsApis = $rp->getValue();
         // ensure config override container exists
     }
@@ -24,8 +23,7 @@ class AudioManagerTest extends TestCase
     public function tearDown(): void
     {
         $rp = new \ReflectionProperty(AudioManager::class, 'tts_apis');
-        $rp->setAccessible(true);
-        $rp->setValue($this->originalTtsApis);
+        $rp->setValue(null, $this->originalTtsApis);
 
         parent::tearDown();
     }
@@ -34,8 +32,7 @@ class AudioManagerTest extends TestCase
     {
         // ensure static tts_apis does not interfere
         $rp = new \ReflectionProperty(AudioManager::class, 'tts_apis');
-        $rp->setAccessible(true);
-        $rp->setValue([]);
+        $rp->setValue(null, []);
 
         Config::set('audio.tts_api_enable', false);
 
@@ -60,7 +57,6 @@ class AudioManagerTest extends TestCase
             ->willReturn('ERR_TTS_DISABLED');
 
         $method = new \ReflectionMethod(AudioManager::class, 'renderAudioTTS');
-        $method->setAccessible(true);
 
         $result = $method->invokeArgs($mgr, [$Bible, &$verse, []]);
         $this->assertSame('ERR_TTS_DISABLED', $result);
@@ -74,8 +70,7 @@ class AudioManagerTest extends TestCase
 
         // ensure no supported apis are registered
         $rp = new \ReflectionProperty(AudioManager::class, 'tts_apis');
-        $rp->setAccessible(true);
-        $rp->setValue([]);
+        $rp->setValue(null, []);
 
         $Bible = new \stdClass();
         $Bible->tts_enable = true;
@@ -98,7 +93,6 @@ class AudioManagerTest extends TestCase
             ->willReturn('ERR_TTS_API');
 
         $method = new \ReflectionMethod(AudioManager::class, 'renderAudioTTS');
-        $method->setAccessible(true);
 
         $result = $method->invokeArgs($mgr, [$Bible, &$verse, []]);
         $this->assertSame('ERR_TTS_API', $result);
@@ -133,7 +127,6 @@ class AudioManagerTest extends TestCase
         //     ->willReturn('ERR_NO_VOICE');
 
         $method = new \ReflectionMethod(AudioManager::class, 'renderAudioTTS');
-        $method->setAccessible(true);
 
         // Checking actual error message instead of using mock return
         $trans_error = trans('errors.audio.no_tts_voice', ['api' => 'Narakeet', 'language' => 'xx']);
