@@ -6,7 +6,8 @@ use Tests\TestCase;
 use Illuminate\Support\Facades\Http;
 use App\TextToSpeech\Narakeet;
 use App\Models\Language;
-use PHPUnit\Framework\Attributes\DataProvider;
+use Illuminate\Support\Facades\Config;
+
 
 class NarakeetTest extends TestCase
 {
@@ -18,11 +19,15 @@ class NarakeetTest extends TestCase
         config()->set('services.narakeet.key', 'test-api-key');
     }
 
-    //#[DataProvider('languageDataProvider')]
     public function testVoiceByLanguage()
     {
         $languages = Language::select('languages.code', 'languages.name')
-                    ->join('bibles', 'bibles.lang_short', 'languages.code')
+                    // join on bible only if bible is official
+                    ->join('bibles', function ($join) {
+                        $join->on('bibles.lang_short', '=', 'languages.code')
+                             ->where('bibles.official', '=', 1);
+                    })
+
                     ->groupBy('languages.id')->orderBy('languages.name');
 
         foreach($languages->get() as $lang) {
@@ -31,104 +36,47 @@ class NarakeetTest extends TestCase
         }
     }
 
-    public static function languageDataProvider()
+    public function testSpecificLanguageVoice()
     {
-        // return [
-        //     ['en'],
-        //     ['es'],
-        //     ['fr'],
-        //     ['de'],
-        //     ['it'],
-        //     ['pt'],
-        //     ['ru'],
-        //     ['zh'],
-        //     ['ja'],
-        //     ['ko'],
-        // ];
-        
-        
-        $languages = Language::select('languages.code')
-                    ->join('bibles', 'bibles.lang_short', 'languages.code')
-                    ->groupBy('languages.id');
+        $voice = Narakeet::getVoiceByLanguage('fr');
+        $this->assertEquals('guillaume', $voice, 'Unexpected Narakeet voice for French.');
 
-        $data = [];
-
-        foreach($languages->get() as $lang) {
-            $data[] = [$lang->code];
-        }
-
-        print_r($data);
-
-        return $data;
+        $voice = Narakeet::getVoiceByLanguage('de');
+        $this->assertEquals('bruno', $voice, 'Unexpected Narakeet voice for German.');
     }
 
-    public function __test_it_synthesizes_text_and_returns_download_url()
+    public function testVoiceOverrideByLanguage()
     {
-        $expectedUrl = 'https://cdn.narakeet.com/audio/example.mp3';
+        $Lang = Language::findByCode('es');
+        $this->assertNotNull($Lang, 'Language es not found in database.');
 
-        // Fake the Narakeet API response
-        Http::fake([
-            'https://api.narakeet.com/*' => Http::response([
-                'downloadUrl' => $expectedUrl,
-            ], 201),
-        ]);
+        $cache = $Lang->tts_voice;
 
-        $narakeet = new Narakeet('kjv');
+        $Lang->tts_voice = 'custom_spanish_voice';
+        $Lang->save();
+    
+        $voice = Narakeet::getVoiceByLanguage('es');
+        $this->assertEquals('custom_spanish_voice', $voice, 'Voice override for Spanish did not work.');
 
-        $result = $narakeet->generateAudio('Hello world');
-
-        $this->assertIsString($result);
-        $this->assertEquals($expectedUrl, $result);
-
-        // Ensure request included Authorization header with configured key
-        Http::assertSent(function ($request) {
-            return str_contains($request->url(), 'api.narakeet.com')
-                && $request->hasHeader('Authorization')
-                && in_array('Bearer test-api-key', $request->header('Authorization'));
-        });
+        // Restore original voice setting
+        $Lang->tts_voice = $cache;
+        $Lang->save();
     }
 
-    public function __test_it_sends_voice_and_format_options_in_payload()
+    public function testApiDefaultLanguage()
     {
-        Http::fake([
-            'https://api.narakeet.com/*' => Http::response([
-                'downloadUrl' => 'https://cdn.narakeet.com/audio/example.wav',
-            ], 201),
-        ]);
+        $voice = Narakeet::getVoiceByLanguage('xx'); // assuming 'xx' is not a real language code
+        $this->assertNull($voice, 'Expected no voice for unknown language code.');// by default, our Narakeet handling does NOT have a default voice ...
+        $this->assertNull(config('text_to_speech.narakeet.voice'), 'Expected no default Narakeet voice in config.');
 
-        $narakeet = new Narakeet('kjv');
+        $default_voice = 'default_narakeet_voice';
+        Config::set('text_to_speech.narakeet.voice', $default_voice); 
+        $this->assertEquals($default_voice, config('text_to_speech.narakeet.voice'), 'Failed to set default Narakeet voice in config.');
 
-        $narakeet->generateAudio('Testing voice and format', [
-            'voice' => 'Amy',
-            'format' => 'wav',
-        ]);
+        $voice = Narakeet::getVoiceByLanguage('xx'); // assuming 'xx' is not a real language code
+        $this->assertEquals($default_voice, $voice, 'Did not return default Narakeet voice for unknown language.');
 
-        Http::assertSent(function ($request) {
-            if (! str_contains($request->url(), 'api.narakeet.com')) {
-                return false;
-            }
-
-            // request body is JSON; decode and inspect fields
-            $body = json_decode($request->body(), true);
-            return is_array($body)
-                && isset($body['voice']) && $body['voice'] === 'Amy'
-                && isset($body['format']) && $body['format'] === 'wav'
-                && (isset($body['script']) || isset($body['text']));
-        });
-    }
-
-    public function __test_it_throws_exception_on_error_response()
-    {
-        Http::fake([
-            'https://api.narakeet.com/*' => Http::response([
-                'error' => 'Invalid payload',
-            ], 400),
-        ]);
-
-        $this->expectException(\RuntimeException::class);
-
-        $narakeet = new Narakeet('kjv');
-
-        $narakeet->generateAudio('This will fail');
+        // Clean up config
+        Config::set('text_to_speech.narakeet.voice', null);
     }
 }

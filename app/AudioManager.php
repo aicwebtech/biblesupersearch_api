@@ -193,6 +193,10 @@ class AudioManager implements ErrorInterface
             return $this->addTransError('errors.audio.no_tts');
         }
 
+        if(!$Bible->audio_enable) {
+            return $this->addTransError('errors.audio.bible_no_audio', ['module' => $Bible->module]);
+        }
+
         if(!$Bible->tts_enable) {
             return $this->addTransError('errors.audio.no_tts_bible', ['module' => $Bible->module]);
         }

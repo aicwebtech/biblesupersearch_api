@@ -98,10 +98,10 @@ class TtsAbstractTest extends TestCase
         $voice = (static::makeConcrete())::getVoiceByLanguage('en', 'test_tts_class');
         $this->assertEquals('alice', $voice);
 
-        // when no lang-specific config is present, fall back to default narakeet voice
+        // when no lang-specific config is present, return NULL ... there is NO default TTS API if the selected API has no default voice ... 
         Config::set('lang.en.text_to_speech.test_tts_class.voice', null);
         Config::set('text_to_speech.narakeet.voice', 'brian-default');
         $voice2 = (static::makeConcrete())::getVoiceByLanguage('en', null);
-        $this->assertEquals('brian-default', $voice2);
+        $this->assertNull($voice2);
     }
 }

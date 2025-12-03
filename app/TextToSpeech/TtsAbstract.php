@@ -4,6 +4,7 @@ namespace App\TextToSpeech;
 
 use App\Models\Bible;
 use App\Models\AudioBibleVerse;
+use App\Models\Language;
 use App\Interfaces\ErrorInterface;
 use DB;
 use App;
@@ -189,36 +190,20 @@ abstract class TtsAbstract implements ErrorInterface
             $tts_api = strtolower( (new \ReflectionClass(static::class))->getShortName() );
         }
 
-        // :todo let user select voice by language?
-        // :todo let user select male vs female voice?
+        $Lang = Language::findByCode($language_short);
+
+        if($Lang && $Lang->tts_voice) {
+            return $Lang->tts_voice; // use override from language table
+        }
 
         $voice = config('lang.' . $language_short . '.text_to_speech.' . $tts_api . '.voice');
 
         if($voice) {
-            return $voice;
+            return $voice; // use hard-coded api/language config
         }
 
-        $voice_default = config('text_to_speech.narakeet.voice');
-
-        return $voice_default;
-
-        $map = [
-            'en' => 'brian',
-            'es' => 'carmen',
-            'fr' => 'celine',
-            'lv' => 'kristaps',
-            'de' => 'anna',
-            'it' => 'carlo',
-            'pt' => 'joana',
-            'ru' => 'nikolai',
-            'zh' => 'meilin',
-        ];
-
-        if(isset($map[$language_short])) {
-            return $map[$language_short];
-        }
-
-        return 'brian';
+        // return api default voice
+        return config('text_to_speech.' . $tts_api . '.voice');
     }
 
     public static function getAllApiVoicesByLanguage($language_short)
