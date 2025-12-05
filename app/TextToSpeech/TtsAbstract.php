@@ -184,6 +184,17 @@ abstract class TtsAbstract implements ErrorInterface
         return dirname(__FILE__) . '/../../bibles/audio/';
     }
 
+    public static function getVoiceByBible(Bible $Bible, $tts_api = null)
+    {
+        $b_voice = $Bible->tts_voice ? trim($Bible->tts_voice) : null;
+        
+        if($b_voice) {
+            return $b_voice; // use override from bible table
+        }
+        
+        return static::getVoiceByLanguage($Bible->lang_short, $tts_api);
+    }
+
     public static function getVoiceByLanguage($language_short, $tts_api = null)
     {
         if(!$tts_api) {

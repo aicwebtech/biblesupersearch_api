@@ -79,4 +79,24 @@ class NarakeetTest extends TestCase
         // Clean up config
         Config::set('text_to_speech.narakeet.voice', null);
     }
+
+    public function testGetVoiceByBibleUsesBibleOverride()
+    {
+        $Bible = new \App\Models\Bible();
+        $Bible->lang_short = 'en';
+        $Bible->tts_voice = 'bible_specific_voice';
+
+        $voice = Narakeet::getVoiceByBible($Bible);
+        $this->assertEquals('bible_specific_voice', $voice, 'Failed to get Bible-specific voice override.');
+    }
+
+    public function testGetVoiceByBible()
+    {
+        $Bible = new \App\Models\Bible();
+        $Bible->lang_short = 'fr';
+        $Bible->tts_voice = null;
+
+        $voice = Narakeet::getVoiceByBible($Bible);
+        $this->assertEquals('guillaume', $voice, 'Failed to get voice by Bible language.');
+    }
 }

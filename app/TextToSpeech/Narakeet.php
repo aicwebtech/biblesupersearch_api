@@ -22,8 +22,6 @@ class Narakeet extends TtsAbstract
             return $this->addTransError('errors.audio.no_tts_voice', ['api' => self::$label, 'language' => $this->Bible->lang_short]);
         }
 
-        var_dump($voice);
-        die('has a voice');
         // var_dump($filename);
         // die($file_path);
         // return false;
