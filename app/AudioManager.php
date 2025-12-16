@@ -6,6 +6,8 @@ use App\Models\Bible;
 use App\Passage;
 use App\Traits\Error;
 use App\Interfaces\ErrorInterface;
+use App\TextToSpeech\Mp3;
+use App\TextToSpeech\Ffmpeg;
 
 class AudioManager implements ErrorInterface
 {
@@ -88,8 +90,17 @@ class AudioManager implements ErrorInterface
         
         try {
             $verses = $Bible->getAudio([$Passage], []);
+            $compat_mode = !Ffmpeg::canUse();
             $mp3_str = null;
+            $mp3_size = 0;
+            $single_verse = (count($verses) == 1);
             $this->has_all_audio = true;
+            $file_paths = [];
+
+            if($mode == 'get' && $compat_mode) {
+                // create tmp file for mp3 concatenation
+                $mp3_tmp = tmpfile();
+            }
 
             foreach($verses as &$verse) {
                 $verse_has_audio = (bool) $verse->file_name;
@@ -118,7 +129,31 @@ class AudioManager implements ErrorInterface
                     $file_path = \App\TextToSpeech\TtsAbstract::getAudioFilePathStatic($Bible->module) . '/' . $verse->file_name;
 
                     if(file_exists($file_path)) {
-                        $mp3_str .= file_get_contents($file_path);
+                        $file_paths[] = realpath($file_path);
+                        
+                        //$mp3_str .= file_get_contents($file_path);
+                        // write to tmp file
+                        // $fp = fopen($file_path, 'rb');
+
+                        // $MP3 = MpegAudio::fromFile($file_path);
+                        // $frameCount = $MP3->getStart();
+
+                        $MP3 = new Mp3($file_path);                        
+                        $MP3->stripTags();
+
+                        $str_sans_tags = $MP3->getStr();
+
+                        if ($compat_mode) {
+                            fwrite($mp3_tmp, $MP3->getStr());
+                        }
+                        
+                        $mp3_size += strlen($MP3->getStr());
+
+                        // if($fp) {
+                        //     stream_copy_to_stream($fp, $mp3_tmp);
+                        //     fclose($fp);
+                        //     $verse_has_audio = true;
+                        // }
                     } else {
                         $this->addTransError('errors.audio_file_missing', ['bcv' => $verse->book . ' ' . $verse->chapter . ':' . $verse->verse]);
                     }
@@ -132,43 +167,77 @@ class AudioManager implements ErrorInterface
                 if($this->hasErrors()) {
                     return FALSE;
                 } else {
+                    
+                    //print_r($file_paths); die('PATHETIC');
+
                     header('Content-Description: File Transfer');
                     header('Content-Type: audio/mpeg');
                     header('Content-Disposition: inline');
                     header('Content-Transfer-Encoding: binary');
                     header('Access-Control-Allow-Origin: *');
                     header('Expires: 0');
-                    
+                    header('Transfer-Encoding: chunked');
+
                     // :todo - determine proper caching headers for debug and production
                     // :todo - figure out how to send duration of audio
 
                     $duration = null;
 
-                    // Fallback: estimate from filesize using assumed bitrate (128 kbps)
+                    // Fallback: estimate from filesize using assumed bitrate (160 kbps)
                     if ($duration === null) {
-                        $size = strlen($mp3_str);
+                        // $size = strlen($mp3_str);
 
-                        if ($size && $size > 0) {
+                        if ($mp3_size && $mp3_size > 0) {
                             $assumed_bitrate = 163840; // bits per second
-                            $duration = ($size * 8) / $assumed_bitrate;
+                            $duration = ($mp3_size * 8) / $assumed_bitrate;
                         }
                     }
 
-                    // calculated duratoin is correct for narakeet
+                    // calculated duration is correct for narakeet
                     // headers appear to be non-standard ... 
-
-                    if ($duration !== null) {
-                        header('X-Content-Duration: ' . number_format($duration, 3));
-                        header('X-Audio-Duration: ' . number_format($duration, 3));
-                        header('Content-Duration: ' . number_format($duration, 3));
-                    }
+                    // if ($duration !== null) {
+                    //     header('X-Content-Duration: ' . number_format($duration, 3));
+                    //     header('X-Audio-Duration: ' . number_format($duration, 3));
+                    //     header('Content-Duration: ' . number_format($duration, 3));
+                    // }
 
                     header('Cache-Control: must-revalidate, post-check=0, pre-check=0');
                     header('Cache-Control: private', false);
                     header('Pragma: public');
-                    header('Content-Length: ' . strlen($mp3_str));
+                    header('Content-Length: ' . $mp3_size);
+                    // header('Accept-Ranges: bytes');
+                    // http_response_code(206); // Partial Content
+
+                    if (!$compat_mode) {
+                        $tmp_file = tempnam(sys_get_temp_dir(), 'audiobib_');
+                        rename($tmp_file, $tmp_file . '.mp3');
+                        $tmp_file .= '.mp3';
+
+                        if(!Ffmpeg::quickMerge($file_paths, $tmp_file)) {
+                            return $this->addTransError('errors.audio.merge_failed', ['errors'=> implode("\n", Ffmpeg::$useErrors)]);
+                        }
+                    }
                     
-                    echo($mp3_str);
+                    if (false && count($verses) == 1) {
+                        $verse = $verses[0];
+                        // header('Content-Disposition: inline; filename="' . $verse->file_name . '"');
+                        $file_path = \App\TextToSpeech\TtsAbstract::getAudioFilePathStatic($Bible->module) . '/' . $verse->file_name;
+                        readfile($file_path);
+                    } else {
+                        // header('Content-Disposition: inline; filename="audio.mp3"');
+
+                        if($compat_mode) {
+                            rewind($mp3_tmp);
+                            fpassthru($mp3_tmp);
+                        } else {
+                            readfile($tmp_file);
+                            unlink($tmp_file);
+                        }
+                    }
+
+                    if ($mp3_tmp) {
+                        fclose($mp3_tmp);
+                    }
 
                     exit;
                 }

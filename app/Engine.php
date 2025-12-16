@@ -591,6 +591,7 @@ class Engine implements ErrorInterface
         $response->audio = [];
         $response->has_audio = false;
         $response->success = true;
+        $response->compat_mode = !\App\TextToSpeech\Ffmpeg::canUse();
 
         $Manager = new \App\AudioManager();
 
@@ -619,6 +620,7 @@ class Engine implements ErrorInterface
         $response->audio = [];
         $response->has_audio = false;
         $response->success = true;
+        $response->compat_mode = !\App\TextToSpeech\Ffmpeg::canUse();
 
         $Manager = new \App\AudioManager();
 
