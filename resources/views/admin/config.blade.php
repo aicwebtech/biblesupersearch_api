@@ -795,6 +795,25 @@
                                                     <input name='audio__tts_api_key' size='50' value='{{$configs['audio.tts_api_key']}}'>
                                                 </td>
                                             </tr>
+                                            <tr>
+                                                <td class='ralign' style='width:320px'>ffmpeg: </td>
+                                                <td>
+                                                    @if($ffmegg_usable)
+                                                        <span style='color: green; font-weight: bold'>Usable</span>
+                                                    @else
+                                                        <span style='color: red; font-weight: bold'>Not Usable</span>
+                                                        <br />
+                                                        <span>
+                                                            {!! nl2br(e(implode("\n", $ffmegg_errors))) !!}
+                                                        </span>
+                                                    @endif
+                                                    <span class='info'>
+                                                        <span>i</span>
+                                                        <p>
+                                                            ffmpeg is prefered for best performance for proper audio file processing.
+                                                        </p>
+                                                    </span>
+                                                </td>
                                             
                                         </tbody>
                                     </table>
