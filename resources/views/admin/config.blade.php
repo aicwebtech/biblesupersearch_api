@@ -1,16 +1,6 @@
 <?php
     $mail_drivers = ["smtp", "mail", "sendmail", "mailgun", "mandrill", "ses", "log"];
 
-    $tts_apis = [
-        // 'aws_polly' => 'Amazon Web Services Polly',
-        // 'google_cloud_tts' => 'Google Cloud Text-to-Speech',
-        // 'ibm_watson_tts' => 'IBM Watson Text to Speech',
-        'narakeet'  => 'Narakeet',
-        'murf_ai'   => 'Murf AI',
-        'openai_tts' => 'OpenAI',
-        'eleven_labs' => 'Eleven Labs',
-    ];
-
     $javascripts = [
         '/js/bin/custom-jquery/Dialogs.js',
         '/js/admin/config.js',
@@ -696,13 +686,13 @@
                         <div class='container' style='width:800px'> 
                             <div class='config_group'>
                                 <div class='config_block'>
-                                    <h1>Bible Audio</h1>
+                                    <h1>Audio Bible</h1>
 
                                     <table>
                                         <tbody>
                                             <tr>
-                                                <td class='ralign' style='width:320px'>Enable Bible Audio: </td>
-                                                <td>
+                                                <td class='ralign' style='width:170px'>Enable Bible Audio: </td>
+                                                <td style='width:500px'>
                                                     <label for='audio_enable_1'>Yes</label>
                                                     <input
                                                         type='radio' name='audio__enable' value='1' id='audio_enable_1'
@@ -748,8 +738,8 @@
                                                     </span>
                                                 </td>
                                             </tr> -->
-                                            <tr>
-                                                <td class='ralign' style='width:320px'>Use TTS API: </td>
+                                            <tr class='audio_bible_section' @if($configs['audio.enable'] == 0)style='display:none'@endif>
+                                                <td class='ralign'>Use TTS API: </td>
                                                 <td>
                                                     <label for='audio_tts_api_enable_1'>Yes</label>
                                                     <input
@@ -770,8 +760,11 @@
                                                     </span>
                                                 </td>
                                             </tr>
-                                            <tr>
-                                                <td class='ralign' style='width:320px'>TTS API: </td>
+                                            <tr 
+                                                class='audio_bible_tts_section' 
+                                                @if($configs['audio.enable'] == 0 || $configs['audio.tts_api_enable'] == 0)style='display:none'@endif
+                                            >
+                                                <td class='ralign'>TTS API: </td>
                                                 <td>
                                                     <select name='audio__tts_api' style='width: 300px'>
                                                         @foreach(App\AudioManager::getTtsApisList() as $idx => $dr)
@@ -789,14 +782,17 @@
                                                     </span>
                                                 </td>
                                             </tr>
-                                            <tr>
-                                                <td class='ralign' style='width:320px'>TTS API Key: </td>
+                                            <tr 
+                                                class='audio_bible_tts_section' 
+                                                @if($configs['audio.enable'] == 0 || $configs['audio.tts_api_enable'] == 0)style='display:none'@endif
+                                            >
+                                                <td class='ralign'>TTS API Key: </td>
                                                 <td>
                                                     <input name='audio__tts_api_key' size='50' value='{{$configs['audio.tts_api_key']}}'>
                                                 </td>
                                             </tr>
                                             <tr>
-                                                <td class='ralign' style='width:320px'>ffmpeg: </td>
+                                                <td class='ralign' style='vertical-align: top'>ffmpeg: </td>
                                                 <td>
                                                     @if($ffmegg_usable)
                                                         <span style='color: green; font-weight: bold'>Usable</span>
@@ -814,10 +810,14 @@
                                                         </p>
                                                     </span>
                                                 </td>
-                                            
+                                            </tr>
+                                            <tr class='audio_bible_section' @if($configs['audio.enable'] == 0)style='display:none'@endif>
+                                                <th colspan = '2'>
+                                                    Note: Audio and TTS must also be enabled on individual Bibles.
+                                                </td>
                                         </tbody>
-                                    </table>
-                                </div>
+                                        </table>
+                                    </div>
                             </div>
                         </div>
                     </div>

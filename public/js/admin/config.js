@@ -39,6 +39,29 @@ $( function() {
         }
     });
 
+    $('input[name=audio__enable]').click(function(e) {
+        if( $(this).val() == '1' ) {
+            $('.audio_bible_section').show();
+
+            if($('input[name=audio__tts_api_enable]:checked').val() == '1') {
+                $('.audio_bible_tts_section').show();
+            }
+        }
+        else {
+            $('.audio_bible_section').hide();
+            $('.audio_bible_tts_section').hide();
+        }
+    });
+
+    $('input[name=audio__tts_api_enable]').click(function(e) {
+        if( $(this).val() == '1' ) {
+            $('.audio_bible_tts_section').show();
+        }
+        else {
+            $('.audio_bible_tts_section').hide();
+        }
+    });
+
     $('#button_clear_all_rendered').click(function() {
         AICWEBTECH.jQuery.Dialogs.textConfirm('Are you sure? \nThis will delete ALL retained rendered Bibles.', 'DELETE', function(confirm) {
 

@@ -50,7 +50,7 @@ const template = `<v-sheet>
                 <v-btn size='small' prepend-icon='mdi-book' class='float-right' @click='openImport'>
                     Import Bible
                 </v-btn>                
-                <v-btn size='small' prepend-icon='mdi-plus' class='float-right' @click='clickEdit()'>
+                <v-btn size='small' v-if='false' prepend-icon='mdi-plus' class='float-right' @click='clickEdit()'>
                     Add Bible
                 </v-btn>
                 <span class='float-right'>&nbsp;</span>
