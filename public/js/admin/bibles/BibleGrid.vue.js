@@ -196,7 +196,7 @@ const template = `<v-sheet>
                                 <v-list-item-title>Edit</v-list-item-title>
                             </v-list-item>
 
-                            <v-list-item v-if='item.official == "0"' @click='clickReplace(item)'>
+                            <v-list-item v-if='false && item.official == "0"' @click='clickReplace(item)'>
                                 <template v-slot:prepend>
                                     <v-icon icon="mdi-book-arrow-left"></v-icon>
                                 </template>
