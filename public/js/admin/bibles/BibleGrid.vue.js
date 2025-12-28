@@ -7,6 +7,7 @@ import ChipBool from '../../bin/custom_vue/components/ChipBool.vue.js';
 import ChipBoolAlt from '../../bin/custom_vue/components/ChipBoolAlt.vue.js';
 import ActionDialog from './dialogs/ActionDialog.vue.js';
 import ImportDialog from './dialogs/ImportDialog.vue.js';
+import AudioDialog from './dialogs/AudioDialog.vue.js';
 import { gridTemplateProps, useGrid } from '../../bin/custom_vue/composables/grid/Grid.vue.js';
 
 const template = `<v-sheet>
@@ -196,6 +197,13 @@ const template = `<v-sheet>
                                 <v-list-item-title>Edit</v-list-item-title>
                             </v-list-item>
 
+                            <v-list-item @click="clickAudio(item)" v-if='item.audio_enable == "1"'>
+                                <template v-slot:prepend>
+                                    <v-icon icon="mdi-speaker"></v-icon>
+                                </template>
+                                <v-list-item-title>Audio</v-list-item-title>
+                            </v-list-item>
+
                             <v-list-item v-if='false && item.official == "0"' @click='clickReplace(item)'>
                                 <template v-slot:prepend>
                                     <v-icon icon="mdi-book-arrow-left"></v-icon>
@@ -283,8 +291,14 @@ const template = `<v-sheet>
                 @onClose='closeImport'
                 @onTest='testBible'
                 @onSave='refreshGridRefreshWithExtras'
-
             ></ImportDialog>
+
+            <AudioDialog 
+                :recordId='audioManagingId'
+                :record='selection'
+                @onClose='closeAudio'
+                @afterLeave='closeAudio'
+            ></AudioDialog>
 
             <EditDialog
                 :recordId='editingId'
@@ -335,6 +349,7 @@ export default {
         EditDialog,
         ActionDialog,
         ImportDialog,
+        AudioDialog,
         TruncateTooltip,
         YesNoSel,
         ChipAlert,
@@ -361,6 +376,8 @@ export default {
             extraCols: false,
             editing: false,
             editingId: null,
+            audioManagingId: null,
+            selection: null,
             selectedAction: null,
             actionQueue: null,
             importShowing: false,
@@ -520,6 +537,7 @@ export default {
         },
         clickEdit(item) {
             console.log('clickEdit', item);
+            this.closeAudio();
 
             if(item) {
                 this.editingId = item.id;
@@ -530,6 +548,26 @@ export default {
         closeEdit() {
             this.editingId = null;
             this.editingRecord = {};
+        },
+        clickAudio(item) {
+            if(!item || item.audio_enable != '1') {
+                return;
+            }
+            
+            console.log('clickAudio', item);
+            this.closeEdit();
+
+            this.audioManagingId = item.id;
+            this.selection = item;
+            this.editingId = null;
+        },
+        closeAudio() {
+            this.audioManagingId = null;
+            this.editingId = null;
+        },
+        closeDialogs() {
+            this.closeEdit();
+            this.closeAudio();
         },
         init() {
             if(this.inited) {

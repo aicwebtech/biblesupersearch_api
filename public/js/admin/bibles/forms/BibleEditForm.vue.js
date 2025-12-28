@@ -124,6 +124,28 @@ const template = `
             </v-col>
         </v-row>
 
+        <v-row v-bind='defaultProps.vrows' v-if='record.audio_enable'>
+            <v-col>
+                <v-radio-group v-model='record.audio_structure' inline class='pl-4'>
+                    <v-radio
+                        label='By Chapter'
+                        value='chapters'
+                        v-bind='defaultProps.radios'
+                    ></v-radio>   
+                    <v-radio
+                        label='By Verse'
+                        value='verses'
+                        v-bind='defaultProps.radios'
+                    ></v-radio>      
+                    <v-radio
+                        label='By Both Verse and Chapter'
+                        value='both'
+                        v-bind='defaultProps.radios'
+                    ></v-radio>
+                </v-radio-group>
+            </v-col>
+        </v-row>
+
         <v-row v-bind='defaultProps.vrows' v-if='bootstrap.tts_enabled && record.audio_enable'>
             <v-col>
                 <v-switch
@@ -135,7 +157,10 @@ const template = `
             </v-col>
         </v-row>
 
-        <v-row v-bind='defaultProps.vrows' v-if='bootstrap.tts_enabled && record.tts_enable && ttsApiRequiresVoice'>
+        <v-row 
+            v-bind='defaultProps.vrows' 
+            v-if='bootstrap.tts_enabled && record.audio_enable && record.tts_enable && ttsApiRequiresVoice'
+        >
             <v-col>
                 <v-text-field 
                     :label='"Text to Speech Voice (" + ttsApiName + ")"' 
@@ -147,7 +172,6 @@ const template = `
                 ></v-text-field>  
             </v-col>
         </v-row>
-
 
         <v-row v-bind='defaultProps.vrows' v-if='false'>
             <v-col></v-col>

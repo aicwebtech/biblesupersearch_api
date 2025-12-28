@@ -54,6 +54,7 @@ class Bible extends Model
             'research'              => 'nullable|boolean',
             'audio_enable'          => 'nullable|boolean',
             'tts_enable'            => 'nullable|boolean',
+            'audio_structure'       => 'nullable|in:verses,chapters,both',
             'description'           => 'nullable',
             'copyright_statement'   => 'nullable',
             'copyright_id'          => 'required|integer',
@@ -96,6 +97,7 @@ class Bible extends Model
         'importer',
         'audio_enable',
         'tts_enable',
+        'audio_structure',
         'import_file',
     );
 
@@ -180,6 +182,17 @@ class Bible extends Model
     public function getAudio($Passages = NULL, $parameters = []) 
     {
         return $this->verses()->getAudio($Passages, $parameters);
+    }
+
+    /**
+     * Gets audio data for all verses, based on request parameters
+     *
+     * @param array $parameters Search parameters - user input
+     * @return array $Verses array of Verses instances (found verses)
+     */
+    public function getAudioAll($parameters = []) 
+    {
+        return $this->verses()->getAudioAll($parameters);
     }
 
     /**
@@ -700,7 +713,8 @@ class Bible extends Model
      * for module confilct is used as for self::populateBibleTable above
      * 
      */ 
-    public static function updateBibleTable($fields = []) {
+    public static function updateBibleTable($fields = []) 
+    {
         $list = static::getListOfModuleFiles();
 
         foreach($list as $file) {
@@ -709,7 +723,8 @@ class Bible extends Model
         }
     }
 
-    public static function openModuleFileByModule($module) {
+    public static function openModuleFileByModule($module) 
+    {
         $Bible = static::findByModule($module);
 
         if($Bible) {
@@ -734,7 +749,8 @@ class Bible extends Model
     }
 
     // Stub method to check if a module has files in both the official and unofficial directory
-    public static function isModuleConflicted($module) {
+    public static function isModuleConflicted($module) 
+    {
         $Bible = static::findByModule($module);
 
         $file_of  = static::getModulePath() . $module . '.zip';

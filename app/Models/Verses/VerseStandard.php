@@ -5,6 +5,7 @@ namespace App\Models\Verses;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 use App\Models\Bible;
+use App\Models\Books\BookAbstract as Book;
 use App\Passage;
 use App\Search;
 use DB;
@@ -209,6 +210,134 @@ class VerseStandard extends VerseAbstract
                 return self::getAudio($Passages, $parameters, false);
             }
         }
+
+        return (empty($verses)) ? FALSE : $verses;
+    }
+
+    /**
+     * Gets (existing) audio data for all verses based on request parameters
+     * 
+     * @param array $parameters Search parameters - user input
+     * @return array $Verses array of Verses instances (found verses)
+     */
+    public static function getAudioAll($parameters = []) 
+    {
+        $Verse = new static;
+        $table = $Verse->getTable();
+        $Bible = $Verse->getBible();
+
+        $book_table = 'books_' . strtolower($Bible->lang_short);
+
+        if(!Schema::hasTable($book_table)) {
+            $book_table = 'books_' . strtolower(config('bss.default_language'));
+        }
+
+        $structure = $Bible->audio_structure ?? 'chapters';
+
+        $rows_per_page = isset($parameters['rows_per_page']) ? (int) $parameters['rows_per_page'] : null;
+        $page = isset($parameters['page']) ? (int) $parameters['page'] : 1;
+        $paginate = ($rows_per_page && $page);
+
+
+
+        $QueryVerses  = DB::table($table . ' AS tb');
+        $QueryVerses->select('b.name AS book_name', 'tb.book','tb.chapter','tb.verse','a.id');
+        $QueryVerses->join($book_table . ' AS b', 'tb.book', '=', 'b.id');
+        
+        $QueryVerses->leftJoin('bible_verses_audio AS a', function($join) use ($Verse) {
+            $join->on('tb.book', '=', 'a.book')
+                ->on('tb.chapter', '=', 'a.chapter')
+                ->on('tb.verse', '=', 'a.verse')
+                ->on('a.module', '=', DB::raw("'" . $Verse->getModule() . "'"));
+        });
+        
+        $QueryVerses->orderBy('book', 'ASC')->orderBy('chapter', 'ASC')->orderBy('verse', 'ASC');
+
+
+
+        $QueryChapters = DB::table($table . ' AS tb');
+        $QueryChapters->select('b.name AS book_name', 'tb.book','tb.chapter',DB::raw('NULL AS verse'), 'a.id');
+        $QueryChapters->join($book_table . ' AS b', 'tb.book', '=', 'b.id');
+
+        $QueryChapters->leftJoin('bible_verses_audio AS a', function($join) use ($Verse) {
+            $join->on('tb.book', '=', 'a.book')
+                ->on('tb.chapter', '=', 'a.chapter')
+                ->whereNull('a.verse')
+                ->on('a.module', '=', DB::raw("'" . $Verse->getModule() . "'"));
+        });
+
+        $QueryChapters->groupBy('tb.book','tb.chapter');
+        $QueryChapters->orderBy('book', 'ASC')->orderBy('chapter', 'ASC');
+
+ 
+
+        $searchable = [
+            'book_name' => [
+                'field' => 'b.name',
+                'type'  => 'str_inside',
+            ],
+            'chapter' => [
+                'field' => 'tb.chapter',
+                'type'  => 'int',
+            ],          
+            'verse' => [
+                'field' => 'tb.verse',
+                'type'  => 'int',
+            ],        
+            'has_audio' => [
+                'field' => 'a.id',
+                'type'  => 'bool_null',
+            ],
+        ];
+
+        foreach($searchable as $key => $f) {            
+            if(isset($parameters[$key]) && ($parameters[$key] || $parameters[$key] == 0)) {
+                $field = $f['field'];
+
+                switch($f['type']) {         
+                    case 'str_inside':
+                        $QueryChapters->where($field, 'LIKE', '%' . $parameters[$key] . '%');
+                        $QueryVerses->where($field, 'LIKE', '%' . $parameters[$key] . '%');
+                        break;                        
+                    case 'int':
+                        $QueryChapters->where($field, (int)$parameters[$key]);
+                        $QueryVerses->where($field, (int)$parameters[$key]);
+                        break;           
+                    case 'bool_null':
+                        if($parameters[$key] == 1) {
+                            $QueryChapters->whereNotNull($field);
+                            $QueryVerses->whereNotNull($field);
+                        } else {
+                            $QueryChapters->whereNull($field);
+                            $QueryVerses->whereNull($field);
+                        }
+                        break;
+
+                    case 'str_start':
+                    default:
+                        $QueryChapters->where($field, 'LIKE', $parameters[$key] . '%');
+                        $QueryVerses->where($field, 'LIKE', $parameters[$key] . '%');
+                }
+            }
+        }
+
+        //        print_r($QueryVerses->toSql());
+        // // print_r($QueryChapters->toSql());
+
+        // die();
+
+
+        if($structure == 'chapters') {
+            $Query = $QueryChapters;
+        } elseif($structure == 'both') {
+            $Query = $QueryChapters->unionAll($QueryVerses);
+        } else {
+            $Query = $QueryVerses;
+        }
+
+        // print($Query->toSql()); die();
+
+        $verses = $paginate ? $Query->paginate($rows_per_page) : $Query->get();
 
         return (empty($verses)) ? FALSE : $verses;
     }

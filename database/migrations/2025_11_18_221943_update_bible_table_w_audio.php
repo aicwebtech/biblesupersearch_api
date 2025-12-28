@@ -14,7 +14,7 @@ return new class extends Migration
         Schema::table('bibles', function (Blueprint $table) {
             $table->tinyInteger('audio_enable')->default(0)->unsigned();
             $table->tinyInteger('tts_enable')->default(0)->unsigned();
-            $table->string('audio_structure', length: 100)->nullable()->comment('chapters, verses or mixed');
+            $table->string('audio_structure', length: 100)->nullable()->comment('chapters, verses or both');
             $table->string('tts_api', length: 100)->nullable();
             $table->string('tts_voice')->nullable();
         });

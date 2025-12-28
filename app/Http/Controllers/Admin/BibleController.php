@@ -274,6 +274,7 @@ class BibleController extends Controller
         $resp = new \stdClass();
         $resp->success = TRUE;
         $resp->Bible   = $Bible->attributesToArray();
+        $resp->Bible['audio_structure'] = $Bible->audio_structure ?: 'chapters';
         $resp->Bible['has_module_file'] = $Bible->hasModuleFile() ? 1 : 0;
         $resp->Bible['tts_api_voices'] = \App\TextToSpeech\TtsAbstract::getAllApiVoicesByLanguage($Language->code, $Language->tts_api);
 
