@@ -19,7 +19,7 @@ abstract class Controller extends BaseController
         
         $bootstrap = new \stdClass();
         $bootstrap->baseURL = url('');
-
+        
         $bootstrap->devToolsEnabled  = (bool) config('bss.dev_tools');
         $bootstrap->premToolsEnabled = config('app.premium');
         $bootstrap->maxUploadSize    = \App\Helpers::maxUploadSize('both');
@@ -29,6 +29,7 @@ abstract class Controller extends BaseController
         $bootstrap->tts_enabled   = (bool)config('audio.enable', false) && (bool)config('audio.tts_api_enable', false);
         $bootstrap->tts_apis = \App\AudioManager::getTtsApisList();
         $bootstrap->tts_api_default = config('audio.tts_api') ?? null;
+        $bootstrap->tts_filename_matches = \App\AudioManager::getFilenameMatchesList();
 
         $bootstrap->languages  = \App\Models\Language::orderBy('name', 'asc')->get();
 

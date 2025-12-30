@@ -8,6 +8,9 @@ use App\Traits\Error;
 use App\Interfaces\ErrorInterface;
 use App\TextToSpeech\Mp3;
 use App\TextToSpeech\Ffmpeg;
+use App\TextToSpeech\TtsAbstract;
+use App\Models\AudioBibleVerse;
+use Illuminate\Support\Facades\Storage;
 
 class AudioManager implements ErrorInterface
 {
@@ -38,6 +41,39 @@ class AudioManager implements ErrorInterface
         // ],
     ];
 
+    static public $filename_matches = [
+        'auto' => [
+            // this is just a placeholder for auto-detect
+            'label' => 'Auto Detect',
+            'pattern' => '',
+            'type' => 'auto',
+            'auto' => false,
+        ],
+        'verse' => [
+            'label' => 'Verse (most)',
+            // grabs first two digit number as book, next two or three digit as chapter, next two or three as verse
+            'pattern' => '/(\d{2})[^\d]+(\d{2,3})[^\d]+(\d{2,3})[^\d]*\.mp3$/',
+            'type' => 'verse',
+            'auto' => true,
+        ],
+        'chapter' => [
+            'label' => 'Chapter (most)',
+            // grabs first two digit number as book, next two or three digit as chapter
+            'pattern' => '/(\d{2})[^\d]+(\d{2,3})[^\d]*\.mp3$/',
+            'type' => 'chapter',
+            'auto' => true,
+            'examples' => ['01-01-GEN.mp3', '55_II_Timothy_03.mp3']
+        ],
+        'chapter_custom_lv' => [
+            'label' => 'Chapter Custom - Latvian',
+            'pattern' => '/(\d{2})[^\d]+(\d{2,3})[^\d]*\.mp3$/',
+            //'pattern' => '/\d+\-(\d{2,3})[^\d]*\.mp3$/',
+            'type' => 'chapter',
+            'auto' => false,
+            'examples' => ['C02-01-GEN-01.mp3', 'C02-19-PSA-01.mp3, C02-19-PSA-100.mp3'],
+        ],
+    ];
+
     static public function getTtsApisList()
     {
         $list = [];
@@ -46,6 +82,20 @@ class AudioManager implements ErrorInterface
             $meta = ($class)::getMeta();
             $meta['key'] = $key;
             $list[] = $meta;
+        }
+
+        return $list;
+    }
+
+    static public function getFilenameMatchesList()
+    {
+        $list = [];
+
+        foreach(self::$filename_matches as $key => $match) {
+            $item = $match;
+            $item['key'] = $key;
+            $item['pattern'] = trim($item['pattern'], '/');
+            $list[] = $item;
         }
 
         return $list;
@@ -90,6 +140,9 @@ class AudioManager implements ErrorInterface
         
         try {
             $verses = $Bible->getAudio([$Passage], []);
+
+            // return $verses; // debug
+
             $compat_mode = !Ffmpeg::canUse();
             $mp3_str = null;
             $mp3_size = 0;
@@ -106,6 +159,10 @@ class AudioManager implements ErrorInterface
                 $verse_has_audio = (bool) $verse->file_name;
                 
                 if(!$verse->file_name && $mode == 'generate') {
+                    if($this->checkCanRenderTts($Bible) !== true) {
+                        continue;
+                    }
+                    
                     $success = $this->renderAudioTTS($Bible, $verse, $parameters);
 
                     if($success) {
@@ -126,7 +183,7 @@ class AudioManager implements ErrorInterface
                         continue;
                     }
                     
-                    $file_path = \App\TextToSpeech\TtsAbstract::getAudioFilePathStatic($Bible->module) . '/' . $verse->file_name;
+                    $file_path = TtsAbstract::getAudioFilePathStatic($Bible->module) . '/' . $verse->file_name;
 
                     if(file_exists($file_path)) {
                         $file_paths[] = realpath($file_path);
@@ -254,6 +311,25 @@ class AudioManager implements ErrorInterface
         }
     }
 
+    protected function checkCanRenderTts($Bible) 
+    {
+        $tts_enabled = (bool)config('audio.tts_api_enable', false);
+
+        if(!$tts_enabled) {
+            return $this->addTransError('errors.audio.no_audio_found');
+        }
+
+        if(!$Bible->audio_enable) {
+            return $this->addTransError('errors.audio.bible_no_audio', ['module' => $Bible->module]);
+        }
+
+        if(!$Bible->tts_enable) {
+            return $this->addTransError('errors.audio.no_audio_found');
+        }
+
+        return true;
+    }
+    
     protected function renderAudioTTS($Bible, &$verse, $parameters = []) 
     {
         $tts_enabled = (bool)config('audio.tts_api_enable', false);
@@ -300,5 +376,181 @@ class AudioManager implements ErrorInterface
         }
 
         return true;
+    }
+
+    public function previewAudioFiles($module, $file_names, $match_option)
+    {
+        $results = [];
+
+        foreach($file_names as $file) {
+            $parsed = self::parseFilenameVerse($file, $match_option);
+
+            if(!$parsed) {
+                $results[] = [
+                    'filename' => $file,
+                    'success'  => false,
+                    'error'    => 'Could not parse filename',
+                ];
+                continue;
+            }
+
+            $results[] = [
+                'filename' => $file,
+                'success'  => true,
+                'parsed'   => $parsed,
+            ];
+        }
+
+        return $results;
+    }
+
+    public function uploadAudioFiles($module, $files, $match_option, $overwrite_existing = false)
+    {
+        $results = [];
+
+        foreach($files as $file) {
+            $filename = $file->getClientOriginalName();
+
+            $parsed = self::parseFilenameVerse($filename, $match_option);
+
+            if(!$parsed) {
+                $results[] = [
+                    'filename' => $filename,
+                    'success'  => false,
+                    'error'    => 'Could not parse filename',
+                ];
+                continue;
+            }
+
+            // print_r($parsed); continue;
+
+            if($parsed['type'] == 'chapter') {
+                $ABB = AudioBibleVerse::where('module', $module)
+                    ->where('book', $parsed['book'])
+                    ->where('chapter', $parsed['chapter'])
+                    ->whereNull('verse')
+                    ->first();
+
+                    $new_filename = str_pad($parsed['book'], 2, '0', STR_PAD_LEFT) . '_' .
+                                    str_pad($parsed['chapter'], 3, '0', STR_PAD_LEFT) . '.mp3';
+            } else {
+                $ABB = AudioBibleVerse::where('module', $module)
+                    ->where('book', $parsed['book'])
+                    ->where('chapter', $parsed['chapter'])
+                    ->where('verse', $parsed['verse'])
+                    ->first();
+
+                $new_filename = str_pad($parsed['book'], 2, '0', STR_PAD_LEFT) . '_' .
+                                str_pad($parsed['chapter'], 3, '0', STR_PAD_LEFT) . '_' .
+                                str_pad($parsed['verse'], 3, '0', STR_PAD_LEFT) . '.mp3';
+            }
+
+            if($ABB) {
+                if($ABB->file_name) {
+                    if($ABB->file_name == $new_filename && !$overwrite_existing) {
+                        $results[] = [
+                            'filename' => $filename,
+                            'success'  => false,
+                            'error'    => 'Audio already exists for this passage',
+                        ];
+                        continue;
+                    }
+                    
+                    // delete old file
+                    $old_path = TtsAbstract::getAudioFilePathStatic($module) . '/' . $ABB->file_name;
+
+                    if(file_exists($old_path)) {
+                        unlink($old_path);
+                    }
+                } else {
+                    $ABB->file_name = $new_filename;
+                }
+            }
+
+            // move uploaded file to audio dir
+            $file->move( TtsAbstract::getAudioFilePathStatic($module), basename($new_filename) );
+
+            if(!$ABB) {
+                $ABB = new AudioBibleVerse();
+                $ABB->module  = $module;
+                $ABB->book    = $parsed['book'];
+                $ABB->chapter = $parsed['chapter'];
+                $ABB->verse   = $parsed['verse'];
+                $ABB->file_name = $new_filename;
+                $ABB->save();
+            }
+
+            $results[] = [
+                'filename' => $filename,
+                'success'  => true,
+                'parsed'   => $parsed,
+            ];
+        }
+
+        return $results;
+    }
+
+    /**
+     * Attempts to parse a filename to extract book, chapter, verse info
+     * based on known patterns.
+     *
+     * @param string $filename The filename to parse.
+     * @param string|bool true $match specific match to use or true for auto-detect
+     * @return array|null An associative array with parsed data or null if no match.
+     */
+    public static function parseFilenameVerse($filename, $option)
+    {
+        if(!$option || !$filename) {
+            return null;
+        }
+
+        $auto = ($option === true || $option === 'auto');
+
+        if(!$auto && !isset(self::$filename_matches[$option])) {
+            return null;
+        }
+
+        $has_match = false;
+
+        if($auto) {            
+            foreach(self::$filename_matches as $key => $match) {
+                if (!($match['auto'] ?? false)) {
+                    continue;
+                }
+                
+                if(preg_match($match['pattern'], $filename, $matches)) {
+                    $has_match = true;
+                    break;
+                }
+            }
+        } else {
+            $match = self::$filename_matches[$option];
+
+            if(preg_match($match['pattern'], $filename, $matches)) {
+                $has_match = true;
+            }
+        }
+
+        if($has_match) {
+            array_shift($matches); // remove full match
+
+            $result = [
+                'type' => $match['type'],
+            ];
+
+            if($match['type'] == 'verse') {
+                $result['book']    = (int) ltrim($matches[0], '0');
+                $result['chapter'] = (int) ltrim($matches[1], '0');
+                $result['verse']   = (int) ltrim($matches[2], '0');
+            } elseif($match['type'] == 'chapter') {
+                $result['book']    = (int) ltrim($matches[0], '0');
+                $result['chapter'] = (int) ltrim($matches[1], '0');
+                $result['verse']   = null;
+            }
+
+            return $result;
+        }
+
+        return null;
     }
 }

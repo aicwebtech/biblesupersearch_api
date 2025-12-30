@@ -165,6 +165,7 @@ class VerseStandard extends VerseAbstract
         
         $Verse = new static;
         $table = $Verse->getTable();
+        $Bible = $Verse->getBible();
 
         $whole_chapter_manual = $whole_chapter !== null;
         $whole_chapter = $whole_chapter === null ? $Passages[0]->is_chapter_only : $whole_chapter;
@@ -180,6 +181,7 @@ class VerseStandard extends VerseAbstract
                     ->whereNull('a.verse')
                     ->on('a.module', '=', DB::raw("'" . $Verse->getModule() . "'"));
             });
+            $Query->groupBy('tb.book','tb.chapter');
         } else {
             $Query->leftJoin('bible_verses_audio AS a', function($join) use ($Verse) {
                 $join->on('tb.book', '=', 'a.book')
@@ -201,12 +203,27 @@ class VerseStandard extends VerseAbstract
 
         $verses = $Query->get();
 
-        if($whole_chapter) {
+        if (!$whole_chapter) {
+            $has_audio = true;
+
+            foreach($verses as $verse) {
+                if($verse->file_name === null) {
+                    $has_audio = false;
+                    break;
+                }
+            }
+            
+            if(!$has_audio && !$whole_chapter_manual) {
+                return self::getAudio($Passages, $parameters, true);
+            }
+        }
+
+        if ($whole_chapter) {
             $has_audio = (bool) $verses->first(function($item) {
                 return $item->file_name !== null;
             });
 
-            if(!$has_audio) {
+            if(!$has_audio && !$whole_chapter_manual) {
                 return self::getAudio($Passages, $parameters, false);
             }
         }

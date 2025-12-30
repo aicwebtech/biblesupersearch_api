@@ -35,7 +35,6 @@ class VerseStandardTest extends TestCase
 
         $this->assertInstanceOf(VerseStandard::class, $Verses);
 
-
         $Passages = Passage::parseReferences('Rom 1:1-10');
         $VC = $Bible->getSearch($Passages);
         $VC2 = $Verses->getSearch($Passages);
@@ -163,4 +162,5 @@ class VerseStandardTest extends TestCase
             $this->assertTrue( Schema::hasTable($Verses->getTable()), 'No table for module: ' . $Bible->module . ', table:' . $Verses->getTable() );
         }
     }
+
 }

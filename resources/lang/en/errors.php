@@ -37,6 +37,7 @@ return array(
         'tts_failed' => 'Faled to convert text to speech.',
         'no_tts_voice' => 'No voice available for TTS API: :api and language: :language',
         'merge_failed' => 'FFMPEG merge failed :errors',
+        'no_audio_found' => 'No audio available for the requested passage.',
     ],
     'paren_mismatch' => 'Your parentheses are mismatched.',
     'prox_paren_mismatch' => 'Your parentheses are mismatched, or you have a proximity operator inside of parentheses.',

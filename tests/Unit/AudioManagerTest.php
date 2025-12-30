@@ -30,6 +30,7 @@ namespace Tests\Unit
     use PHPUnit\Framework\TestCase;
     use App\AudioManager;
     use PHPUnit\Framework\MockObject\MockObject;
+    use PHPUnit\Framework\Attributes\DataProvider;
 
     class AudioManagerTest extends TestCase
     {
@@ -135,74 +136,242 @@ namespace Tests\Unit
             $this->assertSame('ERR_NO_AUDIO', $result);
         }
 
-        public function __testRenderAudioTTSReturnsAddTransErrorWhenTtsGloballyDisabled()
+        #[DataProvider('parseFilenameAutoDataProvider')]
+        public function testParseFilenameAuto($filename, $expected)
         {
-            // ensure static tts_apis does not interfere
-            $rp = new \ReflectionProperty(AudioManager::class, 'tts_apis');
-            $rp->setValue(null, []);
-
-            $GLOBALS['_config_overrides']['audio.tts_api_enable'] = false;
-
-            $Bible = new \stdClass();
-            $Bible->tts_enable = true;
-            $Bible->module = 'TEST';
-
-            $verse = new \stdClass();
-            $verse->book = 1;
-            $verse->chapter = 1;
-            $verse->verse = 1;
-            $verse->text = 'In the beginning...';
-
-            /** @var AudioManager|MockObject $mgr */
-            $mgr = $this->getMockBuilder(AudioManager::class)
-                        ->onlyMethods(['addTransError'])
-                        ->getMock();
-
-            $mgr->expects($this->once())
-                ->method('addTransError')
-                ->with('errors.audio.no_tts')
-                ->willReturn('ERR_TTS_DISABLED');
-
-            $method = new \ReflectionMethod(AudioManager::class, 'renderAudioTTS');
-
-            $result = $method->invokeArgs($mgr, [$Bible, &$verse, []]);
-            $this->assertSame('ERR_TTS_DISABLED', $result);
+            $this->parseFilenameHelper($filename, $expected, true);
         }
 
-        public function __testRenderAudioTTSReturnsErrorWhenTtsApiNotSupported()
+        public static function parseFilenameAutoDataProvider()
         {
-            // make sure TTS enabled globally and for bible
-            $GLOBALS['_config_overrides']['audio.tts_api_enable'] = true;
-            $GLOBALS['_config_overrides']['audio.tts_api'] = 'nonexistent_api';
+            return [
+                'simple_verse_match_1' => [
+                    'filename' => '03_002_001.mp3',
+                    'expected' => [
+                        'type' => 'verse',
+                        'book' => 3,
+                        'chapter' => 2,
+                        'verse' => 1,
+                    ],
+                ],
+                'simple_verse_match_2' => [
+                    'filename' => 'verse_40_005_010.mp3',
+                    'expected' => [
+                        'type' => 'verse',
+                        'book' => 40,
+                        'chapter' => 5,
+                        'verse' => 10,
+                    ],
+                ],
+                'complex_verse_match_1' => [
+                    'filename' => 'bible_003_Leviticus_012_025_extra.mp3',
+                    'expected' => [
+                        'type' => 'verse',
+                        'book' => 3,
+                        'chapter' => 12,
+                        'verse' => 25,
+                    ],
+                ],
+                'complex_verse_match_1' => [
+                    'filename' => 'bible_20_Proverbs_12_03_extra.mp3',
+                    'expected' => [
+                        'type' => 'verse',
+                        'book' => 20,
+                        'chapter' => 12,
+                        'verse' => 3,
+                    ],
+                ],
+                'simple_chapter_match' => [
+                    'filename' => '05_010.mp3',
+                    'expected' => [
+                        'type' => 'chapter',
+                        'book' => 5,
+                        'chapter' => 10,
+                        'verse' => null,
+                    ],
+                ],
+                'simple_chapter_match_leading_zeros' => [
+                    'filename' => '001_002.mp3',
+                    'expected' => [
+                        'type' => 'chapter',
+                        'book' => 1,
+                        'chapter' => 2,
+                        'verse' => null,
+                    ],
+                ],
+                'complex_chapter_match' => [
+                    'filename' => 'bible_022_SongOfSolomon_003.mp3',
+                    'expected' => [
+                        'type' => 'chapter',
+                        'book' => 22,
+                        'chapter' => 3,
+                        'verse' => null,
+                    ],
+                ],
+                'complex_chapter_match_2' => [
+                    'filename' => '55_II_Timothy_03.mp3',
+                    'expected' => [
+                        'type' => 'chapter',
+                        'book' => 55,
+                        'chapter' => 3,
+                        'verse' => null,
+                    ],
+                ],
+                'custom_chapter_match_1' => [
+                    'filename' => 'C02-01-GEN-03.mp3',
+                    // the expected here is is not the desired result
+                    // Since this auto-detect checkds for verse first and this has 3 numbers
+                    // it will be interpreted as verse
 
-            // ensure no supported apis are registered
-            $rp = new \ReflectionProperty(AudioManager::class, 'tts_apis');
-            $rp->setValue(null, []);
+                    // Auto-detect cannot currently handle this format properly ... 
+                    
+                    'expected' => [
+                        'type' => 'verse',
+                        'book' => 2,
+                        'chapter' => 1,
+                        'verse' => 3,
+                    ],
+                ],
+                'no_match' => [
+                    'filename' => 'randomfile.mp3',
+                    'expected' => null,
+                ],
+                'no_match_not_enough_digits' => [
+                    'filename' => '1_2_3.mp3',
+                    'expected' => null,
+                ],
+                // 'chapter_no_verse' => [
+                //     'filename' => '01_002.mp3',
+                //     'expected' => null,
+                // ],
+            ];
+        }
 
-            $Bible = new \stdClass();
-            $Bible->tts_enable = true;
-            $Bible->module = 'TEST';
+        #[DataProvider('parseFilenameChapterCustomDataProvider')]
+        public function testParseFilenameChapterCustomMatch($filename, $expected)
+        {
+            $this->parseFilenameHelper($filename, $expected, 'chapter_custom_lv');
+        }
 
-            $verse = new \stdClass();
-            $verse->book = 1;
-            $verse->chapter = 1;
-            $verse->verse = 1;
-            $verse->text = 'In the beginning...';
+        public static function parseFilenameChapterCustomDataProvider()
+        {
+            return [
+                'custom_chapter_match_1' => [
+                    'filename' => 'C02-01-GEN-03.mp3',
+                    'expected' => [
+                        'type' => 'chapter',
+                        'book' => 1,
+                        'chapter' => 3,
+                        'verse' => null,
+                    ],
+                ],
+                'custom_chapter_match_2' => [
+                    'filename' => 'C02-19-PSA-01.mp3',
+                    'expected' => [
+                        'type' => 'chapter',
+                        'book' => 19,
+                        'chapter' => 1,
+                        'verse' => null,
+                    ],
+                ],
+                'custom_chapter_match_3' => [
+                    'filename' => 'C02-19-PSA-100.mp3',
+                    'expected' => [
+                        'type' => 'chapter',
+                        'book' => 19,
+                        'chapter' => 100,
+                        'verse' => null,
+                    ],
+                ],
+                'custom_chapter_match_4' => [
+                    'filename' => 'randomprefix_C02-40-MAT-28_randomsuffix.mp3',
+                    'expected' => [
+                        'type' => 'chapter',
+                        'book' => 40,
+                        'chapter' => 28,
+                        'verse' => null,
+                    ],
+                ],
+                // 'custom_chapter_no_match' => [
+                //     'filename' => 'bible_003_Leviticus_012_025_extra.mp3',
+                //     'expected' => null,
+                // ],
+            ];
+        }
 
-            /** @var AudioManager|MockObject $mgr */
-            $mgr = $this->getMockBuilder(AudioManager::class)
-                        ->onlyMethods(['addError'])
-                        ->getMock();
+        #[DataProvider('parseFilenameChapterDataProvider')]
+        public function testParseFilenameChapterMatch($filename, $expected)
+        {
+            $this->parseFilenameHelper($filename, $expected, 'chapter');
+        }
 
-            $mgr->expects($this->once())
-                ->method('addError')
-                ->with('TTS API NOT supported: ' . 'nonexistent_api')
-                ->willReturn('ERR_TTS_API');
-
-            $method = new \ReflectionMethod(AudioManager::class, 'renderAudioTTS');
-
-            $result = $method->invokeArgs($mgr, [$Bible, &$verse, []]);
-            $this->assertSame('ERR_TTS_API', $result);
+        public static function parseFilenameChapterDataProvider()
+        {
+            return [
+                'simple_chapter_match' => [
+                    'filename' => '05_010.mp3',
+                    'expected' => [
+                        'type' => 'chapter',
+                        'book' => 5,
+                        'chapter' => 10,
+                        'verse' => null,
+                    ],
+                ],
+                'simple_chapter_match_leading_zeros' => [
+                    'filename' => '001_002.mp3',
+                    'expected' => [
+                        'type' => 'chapter',
+                        'book' => 1,
+                        'chapter' => 2,
+                        'verse' => null,
+                    ],
+                ],
+                'complex_chapter_match' => [
+                    'filename' => 'bible_022_SongOfSolomon_003.mp3',
+                    'expected' => [
+                        'type' => 'chapter',
+                        'book' => 22,
+                        'chapter' => 3,
+                        'verse' => null,
+                    ],
+                ],
+                'no_match_not_enough_digits' => [
+                    'filename' => '1.mp3',
+                    'expected' => null,
+                ],
+                'mismatch_verse_instead_1' => [
+                    'filename' => '01_002_003.mp3',
+                    'expected' => [
+                        'type' => 'chapter',
+                        'book' => 2,
+                        'chapter' => 3,
+                        'verse' => null,
+                    ]
+                ],
+                'mismatch_verse_instead_2' => [
+                    'filename' => '01_02_03.mp3',
+                    'expected' => [
+                        'type' => 'chapter',
+                        'book' => 2,
+                        'chapter' => 3,
+                        'verse' => null,
+                    ]
+                ],
+            ];
+        }
+        
+        protected function parseFilenameHelper($filename, $expected, $matchType)
+        {
+            $result = AudioManager::parseFilenameVerse($filename, $matchType);
+            
+            if($expected === null) {
+                $this->assertNull($result);
+                return;
+            } else {
+                $this->assertIsArray($result);
+                $this->assertEquals($expected, $result);
+                return;
+            }
         }
     }
 }

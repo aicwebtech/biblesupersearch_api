@@ -3,9 +3,11 @@
 namespace App\Http\Controllers\Admin;
 
 use Illuminate\Http\Request;
+use App\Http\Responses\Response;
 use App\Http\Requests;
 use App\Http\Controllers\Controller;
 use \App\Models\Bible;
+use \App\AudioManager;
 
 class AudioBibleController extends Controller
 {
@@ -42,8 +44,44 @@ class AudioBibleController extends Controller
         return response($resp, 200);
     }
 
-    public function upload()
+    public function upload(Request $request)
     {
-        //
+        $Manager = new AudioManager();
+
+        $files = $request->file('files');
+        $overwrite_existing = $request->input('overwrite_existing', '0') == '1' ? true : false;
+        $matching = $request->input('matching', 'auto');
+        $module = $request->input('module', null);
+
+        if(empty($module) || empty($files)) {
+            return response(['error' => 'Invalid parameters'], 400);
+        }
+
+        $resp = new \stdClass();
+        $resp->success = true;
+
+        $resp->results = $Manager->uploadAudioFiles($module, $files, $matching, $overwrite_existing);
+
+        return new Response($resp, 200);
+    }
+
+    public function preview(Request $request)
+    {
+        $Manager = new AudioManager();
+
+        $files = $request->input('filenames', []);
+        $matching = $request->input('matching', 'auto');
+        $module = $request->input('module', null);
+
+        if(empty($module) || empty($files)) {
+            return response(['error' => 'Invalid parameters'], 400);
+        }
+
+        $resp = new \stdClass();
+        $resp->success = true;
+
+        $resp->results = $Manager->previewAudioFiles($module, $files, $matching);
+
+        return new Response($resp, 200);
     }
 }

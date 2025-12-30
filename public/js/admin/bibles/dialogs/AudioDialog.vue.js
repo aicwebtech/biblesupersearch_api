@@ -1,6 +1,7 @@
 import { gridTemplateProps, useGrid } from '../../../bin/custom_vue/composables/grid/Grid.vue.js';
 import ChipBool from '../../../bin/custom_vue/components/ChipBool.vue.js';
 import YesNoSel from '../../../bin/custom_vue/components/YesNoSelector.vue.js';
+import AudioUploadDialog from './AudioUploadDialog.vue.js';
 
 const tpl = `
     <v-dialog 
@@ -11,6 +12,29 @@ const tpl = `
             <v-card>
                 <v-card-title>{{title}}</v-card-title>
                 <v-card-text>
+                    <AudioUploadDialog
+                        ref='uploadDialog'
+                        :bible="record"
+                        @upload-success='gridRefresh()'
+                    >
+                        <template v-slot:activator="{ props: activatorProps }">
+                            <v-btn
+                                color="primary"
+                                dark
+                                v-bind="activatorProps"
+                            >
+                                Upload Audio Files
+                            </v-btn>
+                        </template>
+                    </AudioUploadDialog>
+
+                    <v-btn 
+                        prepend-icon="mdi-upload" 
+                        class="mb-2" 
+                        color="primary" 
+                        @click="$refs.uploadDialog.openDialog()"
+                    >Upload Audio Files</v-btn>
+
                     <v-data-table-server
                         ` + gridTemplateProps + `
 
@@ -84,7 +108,8 @@ export default {
     },
     components: {
         ChipBool,
-        YesNoSel
+        YesNoSel,
+        AudioUploadDialog
     },
     setup(props) {
         let data = {
