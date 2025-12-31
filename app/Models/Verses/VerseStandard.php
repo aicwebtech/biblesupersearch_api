@@ -251,14 +251,34 @@ class VerseStandard extends VerseAbstract
 
         $structure = $Bible->audio_structure ?? 'chapters';
 
+        $prefix = DB::getTablePrefix();
+
         $rows_per_page = isset($parameters['rows_per_page']) ? (int) $parameters['rows_per_page'] : null;
         $page = isset($parameters['page']) ? (int) $parameters['page'] : 1;
         $paginate = ($rows_per_page && $page);
 
+        $sortable = [
+            'type'      => 'type',
+            'book_name' => 'book_name',
+            'book'      => 'book',
+            'chapter'   => 'chapter',
+            'verse'     => 'verse',
+            'has_audio' => 'has_audio',
+        ];
 
+        $sidx = isset($parameters['sidx']) && isset($sortable[$parameters['sidx']]) ? $sortable[$parameters['sidx']] : null;
+        $sord = isset($parameters['sord']) && in_array(strtoupper($parameters['sord']), ['ASC','DESC']) ? strtoupper($parameters['sord']) : 'ASC';
+        // $sidx = $sidx_raw && isset($sortable[$sidx_raw]) ? $sortable[$sidx_raw] : null;
+
+        // var_dump($sidx); die();
 
         $QueryVerses  = DB::table($table . ' AS tb');
-        $QueryVerses->select('b.name AS book_name', 'tb.book','tb.chapter','tb.verse','a.id');
+        $QueryVerses->select(
+            'b.name AS book_name', 
+            'tb.book','tb.chapter','tb.verse','a.id', 
+            DB::raw('"chapter" AS type'),
+            DB::raw('IF(' . $prefix . 'a.id IS NULL, 0, 1) AS has_audio')
+        );
         $QueryVerses->join($book_table . ' AS b', 'tb.book', '=', 'b.id');
         
         $QueryVerses->leftJoin('bible_verses_audio AS a', function($join) use ($Verse) {
@@ -270,10 +290,16 @@ class VerseStandard extends VerseAbstract
         
         $QueryVerses->orderBy('book', 'ASC')->orderBy('chapter', 'ASC')->orderBy('verse', 'ASC');
 
-
-
         $QueryChapters = DB::table($table . ' AS tb');
-        $QueryChapters->select('b.name AS book_name', 'tb.book','tb.chapter',DB::raw('NULL AS verse'), 'a.id');
+        $QueryChapters->select(
+            'b.name AS book_name', 
+            'tb.book','tb.chapter',
+            DB::raw('NULL AS verse'), 
+            'a.id', 
+            DB::raw('"verse" AS type'),
+            DB::raw('IF(' . $prefix . 'a.id IS NULL, 0, 1) AS has_audio')
+        );
+
         $QueryChapters->join($book_table . ' AS b', 'tb.book', '=', 'b.id');
 
         $QueryChapters->leftJoin('bible_verses_audio AS a', function($join) use ($Verse) {
@@ -286,9 +312,11 @@ class VerseStandard extends VerseAbstract
         $QueryChapters->groupBy('tb.book','tb.chapter');
         $QueryChapters->orderBy('book', 'ASC')->orderBy('chapter', 'ASC');
 
- 
-
         $searchable = [
+            'type'  => [
+                'field' => 'verse',
+                'type'  => 'bool_null_having',
+            ],
             'book_name' => [
                 'field' => 'b.name',
                 'type'  => 'str_inside',
@@ -330,6 +358,16 @@ class VerseStandard extends VerseAbstract
                         }
                         break;
 
+                    case 'bool_null_having':
+                        if($parameters[$key] == 1) {
+                            $QueryChapters->havingNotNull($field);
+                            $QueryVerses->havingNotNull($field);
+                        } else {
+                            $QueryChapters->havingNull($field);
+                            $QueryVerses->havingNull($field);
+                        }
+                        break;
+
                     case 'str_start':
                     default:
                         $QueryChapters->where($field, 'LIKE', $parameters[$key] . '%');
@@ -350,6 +388,11 @@ class VerseStandard extends VerseAbstract
             $Query = $QueryChapters->unionAll($QueryVerses);
         } else {
             $Query = $QueryVerses;
+        }
+
+        if($sidx) {
+            // $Query->orderByRaw($sidx . ' ' . $sord);
+            $Query->orderBy($sidx, $sord);
         }
 
         // print($Query->toSql()); die();

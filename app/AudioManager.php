@@ -10,7 +10,6 @@ use App\TextToSpeech\Mp3;
 use App\TextToSpeech\Ffmpeg;
 use App\TextToSpeech\TtsAbstract;
 use App\Models\AudioBibleVerse;
-use Illuminate\Support\Facades\Storage;
 
 class AudioManager implements ErrorInterface
 {
@@ -382,6 +381,8 @@ class AudioManager implements ErrorInterface
     {
         $results = [];
 
+        natsort($file_names);
+
         foreach($file_names as $file) {
             $parsed = self::parseFilenameVerse($file, $match_option);
 
@@ -389,6 +390,7 @@ class AudioManager implements ErrorInterface
                 $results[] = [
                     'filename' => $file,
                     'success'  => false,
+                    'parsed'   => null,
                     'error'    => 'Could not parse filename',
                 ];
                 continue;
@@ -546,6 +548,16 @@ class AudioManager implements ErrorInterface
                 $result['book']    = (int) ltrim($matches[0], '0');
                 $result['chapter'] = (int) ltrim($matches[1], '0');
                 $result['verse']   = null;
+            }
+
+            if($result['book'] < 1 || $result['book'] > config('bible.total_books') || $result['chapter'] < 1) {
+                return null;
+            }
+
+            $chapters_in_book = config('bss.books_common')[$result['book']]['chapters'] ?? null;
+
+            if($chapters_in_book === null || $result['chapter'] > $chapters_in_book) {
+                return null;
             }
 
             return $result;

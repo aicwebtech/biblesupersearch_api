@@ -51,7 +51,7 @@ const tpl = `
                                         v-model="gridData[col.searchField || col.key]" 
                                         class="ma-0 mr-1 pa-0 text-caption" 
                                         density="compact" 
-                                        :placeholder="col.searchLabel === false ? null : 'Search ' + col.title + ' ...'" 
+                                        :placeholder="col.searchLabel === false ? null : 'Search ...'" 
                                         hide-details
                                         clearable
                                         v-bind='col.searchProps || null'
@@ -119,11 +119,12 @@ export default {
                 sidx: 'id',
                 sord: 'ASC',
                 has_audio: null,
+                type: null,
             },
 
             // Grid searchable fields (will be added to gridData as strings if don't exist)
             searchFields: [
-                'name', 'book', 'chapter', 'verse', 'has_audio',
+                'book_name', 'chapter', 'verse', 'has_audio', 'type'
             ],
         };
 
@@ -133,10 +134,17 @@ export default {
         return {
             showing: false,
             headers: [
+                {title: 'Type', key: 'type', searchComponent: 'v-select', searchField: 'type', searchProps: { 
+                    items: [ 
+                        // { title: 'All', value: null }, 
+                        { title: 'Chapter', value: 0 }, 
+                        { title: 'Verse', value: 1 } 
+                    ]
+                }},
                 {title: 'Book Name', key: 'book_name'},
                 {title: 'Chapter', key: 'chapter'},
                 {title: 'Verse', key: 'verse'},
-                {title: 'Has Audio', key: 'has_audio', searchComponent: 'YesNoSel', searchField: 'has_audio', searchProps: {label: 'Has Audio'}},
+                {title: 'Has Audio', key: 'has_audio', searchComponent: 'YesNoSel', searchField: 'has_audio'},
                 // todo
                 // {title: 'Actions', key: 'actions', sortable: false},
             ],

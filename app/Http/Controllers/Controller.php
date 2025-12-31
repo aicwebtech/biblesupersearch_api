@@ -31,6 +31,10 @@ abstract class Controller extends BaseController
         $bootstrap->tts_api_default = config('audio.tts_api') ?? null;
         $bootstrap->tts_filename_matches = \App\AudioManager::getFilenameMatchesList();
 
+        $bootstrap->book_lists = new \stdClass();
+
+        $bootstrap->book_lists->en = \App\Models\Books\En::get();
+
         $bootstrap->languages  = \App\Models\Language::orderBy('name', 'asc')->get();
 
         foreach($bootstrap->languages as &$language) {
