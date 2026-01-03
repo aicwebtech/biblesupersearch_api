@@ -20,7 +20,6 @@ class OpenAI extends TtsAbstract
         $apikey = $this->getApiKey();
         $voice = $this->getVoice();
 
-
         if(!$voice) {
             return $this->addTransError('errors.audio.no_tts_voice', ['api' => self::$label, 'language' => $this->Bible->lang_short]);
         }
