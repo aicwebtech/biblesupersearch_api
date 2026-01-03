@@ -22,6 +22,7 @@ abstract class TtsAbstract implements ErrorInterface
     protected static $url = null; // URL to API docs
     protected static $voice_url = null; // URL to API list of voices, if applicable
     protected static $requires_voice = true;
+    protected static $is_ai_based = false; // Indicates AI-based TTS (like OpenAI)
 
     protected $file_extension = 'mp3';
 
@@ -31,6 +32,7 @@ abstract class TtsAbstract implements ErrorInterface
     protected $current_book    = NULL;
     protected $current_chapter = NULL;
     protected $chunk_data = [];
+    protected $details = [];
 
     protected $Rendering = NULL;
     protected $overwrite = false;
@@ -56,8 +58,21 @@ abstract class TtsAbstract implements ErrorInterface
             'name' => static::$label,
             'url' => static::$url,
             'voice_url' => static::$voice_url,
-            'requires_voice' => static::$requires_voice
+            'requires_voice' => static::$requires_voice,
+            'is_ai_based' => static::$is_ai_based,
         ];
+    }
+
+    public function getVoice()
+    {
+        $voice = static::getVoiceByBible($this->Bible);
+        $this->details['voice'] = $voice;
+        return $voice;
+    }
+
+    public function getApiKey()
+    {
+        return config('audio.tts_api_key_' . static::getIdent());
     }
 
     public function generateAudio($text, $options = [], $filename = null) 
@@ -65,12 +80,14 @@ abstract class TtsAbstract implements ErrorInterface
         if(!$this->validateGenerateAudio()) {
             return FALSE;
         }
+
+        $this->details = [];
         
-        $apikey = config('audio.tts_api_key');
         $path = $this->getAudioFilePath(true);
 
         if($filename) {
             $file_path = $path . '/' . $filename;
+            $this->details['file_name'] = $filename;
         } else {
             $file_path = $path . '/narakeet_' . md5($text . microtime(false)) . '.mp3';
         }
@@ -93,6 +110,11 @@ abstract class TtsAbstract implements ErrorInterface
             $this->addError( $e->getMessage() );
             return FALSE;
         }
+    }
+
+    public function getGenerateDetails()
+    {
+        return $this->details;
     }
 
     abstract protected function generateAudioHelper($text, $options, $file_handle);
@@ -177,6 +199,11 @@ abstract class TtsAbstract implements ErrorInterface
         }
 
         return $dir;
+    }
+
+    public static function getIdent() 
+    {
+        return strtolower( (new \ReflectionClass(static::class))->getShortName() );
     }
 
     public static function getAudioBasePath() 

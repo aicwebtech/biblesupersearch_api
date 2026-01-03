@@ -4,7 +4,7 @@ namespace App\TextToSpeech;
 
 class OpenAI extends TtsAbstract 
 {
-    protected $api_url = 'https://api.narakeet.com/text-to-speech/mp3';
+    static protected $label = 'OpenAI';
 
     public function __construct($Bible, $options = [])
     {
@@ -13,17 +13,24 @@ class OpenAI extends TtsAbstract
 
     public function generateAudioHelper($text, $options, $file_handle)
     {
-        return false;
+        // return false;
         
-        $apikey = config('audio.tts_api_key');
-        $voice = static::getVoiceByLanguage($this->Bible->lang_short);
+
+
+        $apikey = $this->getApiKey();
+        $voice = $this->getVoice();
+
+
+        if(!$voice) {
+            return $this->addTransError('errors.audio.no_tts_voice', ['api' => self::$label, 'language' => $this->Bible->lang_short]);
+        }
 
         // var_dump($voice);
         // var_dump($filename);
         // die($file_path);
         // return false;
 
-        $url = "https://api.narakeet.com/text-to-speech/mp3?voice=$voice";
+        $url = "https://api.openai.com/v1/audio/speech";
 
         $options = [
             CURLOPT_URL => $url,
@@ -31,8 +38,8 @@ class OpenAI extends TtsAbstract
             CURLOPT_POST => true,
             CURLOPT_POSTFIELDS => $text,
             CURLOPT_HTTPHEADER => [
-                'Accept: application/octet-stream',
-                'Content-Type: text/plain',
+                "Authorization: Bearer $apikey",
+                'Content-Type: application/json',
                 "x-api-key: $apikey",
             ],
             CURLOPT_FILE => $file_handle,

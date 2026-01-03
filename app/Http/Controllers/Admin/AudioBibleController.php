@@ -15,7 +15,6 @@ class AudioBibleController extends Controller
     {
         parent::__construct();
         $this->middleware('auth:100');
-        // $this->middleware('dev_tools')->only('export', 'meta');
     }
     
     public function grid(Request $request, $id)
@@ -27,12 +26,9 @@ class AudioBibleController extends Controller
         }
 
         $params = $request->all();
-        // $params['has_audio'] = 0;
         $params['page'] = isset($_REQUEST['page']) ? (int) $_REQUEST['page'] : 1;
         $rows_per_page = $request->input('rows_per_page', 10);
         $Verses = $Bible->getAudioAll($params);
-
-        // print_r($Verses); die();
 
         $resp = [
             'total'     => $Verses->lastPage(),

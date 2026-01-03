@@ -167,21 +167,27 @@ class VerseStandard extends VerseAbstract
         $table = $Verse->getTable();
         $Bible = $Verse->getBible();
 
+        $whole_chapter_bible = false;
         $whole_chapter_manual = $whole_chapter !== null;
         $whole_chapter = $whole_chapter === null ? $Passages[0]->is_chapter_only : $whole_chapter;
+
+        if($Bible->audio_structure != 'both') {
+            $whole_chapter = ($Bible->audio_structure == 'chapters') ? true : false;
+            $whole_chapter_bible = true;
+        }
 
         $Query = DB::table($table . ' AS tb');
         $Query->select('tb.id','tb.book','tb.chapter','tb.verse','tb.text','a.file_name');
         $Query->orderBy('book', 'ASC')->orderBy('chapter', 'ASC')->orderBy('verse', 'ASC');
 
         if($whole_chapter) {
-            $Query->leftJoin('bible_verses_audio AS a', function($join) use ($Verse) {
+            $Query->join('bible_verses_audio AS a', function($join) use ($Verse) {
                 $join->on('tb.book', '=', 'a.book')
                     ->on('tb.chapter', '=', 'a.chapter')
                     ->whereNull('a.verse')
                     ->on('a.module', '=', DB::raw("'" . $Verse->getModule() . "'"));
             });
-            $Query->groupBy('tb.book','tb.chapter');
+            $Query->groupBy('tb.book','tb.chapter'); 
         } else {
             $Query->leftJoin('bible_verses_audio AS a', function($join) use ($Verse) {
                 $join->on('tb.book', '=', 'a.book')
@@ -213,8 +219,10 @@ class VerseStandard extends VerseAbstract
                 }
             }
             
-            if(!$has_audio && !$whole_chapter_manual) {
-                return self::getAudio($Passages, $parameters, true);
+            if(!$has_audio && !$whole_chapter_manual && !$whole_chapter_bible && !$Bible->tts_enable) {
+                $by_chapter = self::getAudio($Passages, $parameters, true);
+                // If we find audio by chapter, return that, otherwise return the verses (with or without audio)
+                return $by_chapter ?: $verses;
             }
         }
 
@@ -223,7 +231,7 @@ class VerseStandard extends VerseAbstract
                 return $item->file_name !== null;
             });
 
-            if(!$has_audio && !$whole_chapter_manual) {
+            if(!$has_audio && !$whole_chapter_manual && !$whole_chapter_bible) {
                 return self::getAudio($Passages, $parameters, false);
             }
         }
@@ -268,9 +276,6 @@ class VerseStandard extends VerseAbstract
 
         $sidx = isset($parameters['sidx']) && isset($sortable[$parameters['sidx']]) ? $sortable[$parameters['sidx']] : null;
         $sord = isset($parameters['sord']) && in_array(strtoupper($parameters['sord']), ['ASC','DESC']) ? strtoupper($parameters['sord']) : 'ASC';
-        // $sidx = $sidx_raw && isset($sortable[$sidx_raw]) ? $sortable[$sidx_raw] : null;
-
-        // var_dump($sidx); die();
 
         $QueryVerses  = DB::table($table . ' AS tb');
         $QueryVerses->select(
@@ -376,12 +381,6 @@ class VerseStandard extends VerseAbstract
             }
         }
 
-        //        print_r($QueryVerses->toSql());
-        // // print_r($QueryChapters->toSql());
-
-        // die();
-
-
         if($structure == 'chapters') {
             $Query = $QueryChapters;
         } elseif($structure == 'both') {
@@ -391,7 +390,6 @@ class VerseStandard extends VerseAbstract
         }
 
         if($sidx) {
-            // $Query->orderByRaw($sidx . ' ' . $sord);
             $Query->orderBy($sidx, $sord);
         }
 
@@ -564,15 +562,14 @@ class VerseStandard extends VerseAbstract
             //$table->charset('utf8mb4');
             //$table->collate('utf8mb4_unicode_ci');
 
-            //$table->increments('id');
             $table->integer('id', TRUE);
             $table->tinyInteger('book')->unsigned();
             $table->tinyInteger('chapter')->unsigned();
             $table->tinyInteger('verse')->unsigned();
             $table->mediumInteger('chapter_verse')->unsigned();
             $table->text('text')->charset('utf8');
-            $table->text('italics')->nullable();
-            $table->text('strongs')->nullable();
+            $table->text('italics')->nullable(); // obsolete
+            $table->text('strongs')->nullable(); // obsolete
             $table->index('book', 'ixb');
             $table->index('chapter', 'ixc');
             $table->index('verse', 'ixv');

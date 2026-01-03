@@ -7,6 +7,8 @@ class Narakeet extends TtsAbstract
     protected $api_url = 'https://api.narakeet.com/text-to-speech/mp3';
 
     static protected $label = 'Narakeet';
+    static protected $is_ai_based = true;
+    static protected $requires_voice = true;
 
     public function __construct($Bible, $options = [])
     {
@@ -15,12 +17,16 @@ class Narakeet extends TtsAbstract
 
     public function generateAudioHelper($text, $options, $file_handle)
     {
-        $apikey = config('audio.tts_api_key');
-        $voice = static::getVoiceByLanguage($this->Bible->lang_short);
+        $apikey = $this->getApiKey();
+        $voice = $this->getVoice();
 
         if(!$voice) {
             return $this->addTransError('errors.audio.no_tts_voice', ['api' => self::$label, 'language' => $this->Bible->lang_short]);
         }
+
+        // var_dump($voice);
+        // var_dump($apikey);
+        // die('here');
 
         // var_dump($filename);
         // die($file_path);
@@ -44,15 +50,8 @@ class Narakeet extends TtsAbstract
         $curl = curl_init();
         curl_setopt_array($curl, $options);
         curl_exec($curl);
-        // $curl_error = curl_error($curl);
-        // $curl_info = curl_getinfo($curl);
         curl_close($curl);
-
-        // print_r($curl_info);
-        // print_r($curl_error);
 
         return true;
     }
-
-
 }

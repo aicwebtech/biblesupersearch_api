@@ -34,10 +34,8 @@ class AudioManager implements ErrorInterface
         //     'name'  => 'Narakeet',
         //     'class' => \App\TextToSpeech\Narakeet::class,
         // ],
-        // 'openai' => [
-        //     'name'  => 'OpenAI',
-        //     'class' => \App\TextToSpeech\OpenAI::class,
-        // ],
+        
+        // 'openai' => \App\TextToSpeech\OpenAI::class,
     ];
 
     static public $filename_matches = [
@@ -105,6 +103,38 @@ class AudioManager implements ErrorInterface
         return static::$tts_apis;
     }
 
+    static public function ttsEnabled($Bible = null)
+    {
+        $tts_enabled = (bool)config('audio.tts_api_enable', false);
+
+        if(!$tts_enabled) {
+            return false;
+        }
+
+        if($Bible) {
+            if(!$Bible->audio_enable || !$Bible->tts_enable) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    static public function isTtsAI($Bible = null)
+    {
+        if($Bible && (!$Bible->audio_enable || !$Bible->tts_enable)) {
+            return false;
+        }
+
+        $tts_class = self::$tts_apis[ config('audio.tts_api', 'narakeet') ] ?? null;
+
+        if(!$tts_class) {
+            return false;
+        }
+
+        return $tts_class::getMeta()['is_ai_based'] ?? false;
+    }
+
     public function checkAudioByInput($input, $module = null)
     {
         return $this->getAudioByInput($input, 'generate', $module);
@@ -146,7 +176,7 @@ class AudioManager implements ErrorInterface
             $mp3_str = null;
             $mp3_size = 0;
             $single_verse = (count($verses) == 1);
-            $this->has_all_audio = true;
+            $this->has_all_audio = count($verses) > 0;
             $file_paths = [];
 
             if($mode == 'get' && $compat_mode) {
@@ -171,6 +201,8 @@ class AudioManager implements ErrorInterface
                         $ABV->chapter   = $verse->chapter;
                         $ABV->verse     = $verse->verse;
                         $ABV->file_name = $verse->file_name;
+                        $ABV->source    = config('audio.tts_api', 'narakeet');
+                        $ABV->voice     = $success['voice'] ?? null;
                         $ABV->save();
                         $verse_has_audio = true;
                     }
@@ -354,7 +386,7 @@ class AudioManager implements ErrorInterface
 
         $verse->file_name = $filename;
 
-        $tts_class = self::$tts_apis[ config('audio.tts_api') ] ?? null;
+        $tts_class = self::$tts_apis[ config('audio.tts_api', 'narakeet') ] ?? null;
 
         if(!$tts_class) {
             return $this->addError('TTS API NOT supported: ' . config('audio.tts_api'));
@@ -374,7 +406,7 @@ class AudioManager implements ErrorInterface
             $verse->file_name = $filename;
         }
 
-        return true;
+        return $TTS->getGenerateDetails();
     }
 
     public function previewAudioFiles($module, $file_names, $match_option)

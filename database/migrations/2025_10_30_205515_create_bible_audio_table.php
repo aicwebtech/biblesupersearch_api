@@ -15,9 +15,12 @@ return new class extends Migration
             $table->id();
             $table->string('module')->comment('Bible module');
             $table->string('file_name')->nullable()->comment('Internal file name for audio file');
+            $table->string('source')->nullable()->comment('Source of the audio file: TTS API or uploaded');
+            $table->string('voice')->nullable()->comment('Voice used for TTS generation');
             $table->tinyInteger('book')->unsigned();
             $table->tinyInteger('chapter')->unsigned();
             $table->tinyInteger('verse')->unsigned()->nullable();
+            $table->timestamps();
         });
     }
 

@@ -25,17 +25,10 @@ return new class extends Migration
         [
             'key'       => 'audio.tts_api',
             'descr'     => 'TTS API Selection',
-            'default'   => null,
+            'default'   => 'narakeet',
             'global'    => 1,
             'type'      => 'string',
-        ],        
-        [
-            'key'       => 'audio.tts_api_key',
-            'descr'     => 'TTS API Key',
-            'default'   => null,
-            'global'    => 1,
-            'type'      => 'string',
-        ],        
+        ],          
         [
             // Is this needd? 
             // Maybe just assume verse if tts_api_enable is true?

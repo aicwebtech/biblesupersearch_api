@@ -766,7 +766,7 @@
                                             >
                                                 <td class='ralign'>TTS API: </td>
                                                 <td>
-                                                    <select name='audio__tts_api' style='width: 300px'>
+                                                    <select name='audio__tts_api' id='audio_tts_api' style='width: 300px'>
                                                         @foreach(App\AudioManager::getTtsApisList() as $idx => $dr)
                                                         <option value='{{$dr['key']}}'
                                                             @if($configs['audio.tts_api'] == $dr['key'])selected='selected'@endif>{{$dr['name']}}
@@ -782,13 +782,34 @@
                                                     </span>
                                                 </td>
                                             </tr>
-                                            <tr 
+                                            <!-- <tr 
                                                 class='audio_bible_tts_section' 
                                                 @if($configs['audio.enable'] == 0 || $configs['audio.tts_api_enable'] == 0)style='display:none'@endif
                                             >
                                                 <td class='ralign'>TTS API Key: </td>
                                                 <td>
                                                     <input name='audio__tts_api_key' size='50' value='{{$configs['audio.tts_api_key']}}'>
+                                                </td>
+                                            </tr> -->
+                                            <tr 
+                                                class='audio_bible_tts_section audio_tts_api_narakeet_options' 
+                                                @if($configs['audio.enable'] == 0 || $configs['audio.tts_api_enable'] == 0 || $configs['audio.tts_api'] != 'narakeet')style='display:none'@endif
+                                            >
+                                                <td class='ralign'>Narakeet API Key: </td>
+                                                <td>
+                                                    <input name='audio__tts_api_key_narakeet' size='50' value='{{$configs['audio.tts_api_key_narakeet']}}'>
+                                                </td>
+                                            </tr>
+                                            <tr 
+                                                class='audio_bible_tts_section audio_tts_api_openai_options' 
+                                                @if($configs['audio.enable'] == 0 || $configs['audio.tts_api_enable'] == 0 || $configs['audio.tts_api'] != 'openai')style='display:none'@endif
+                                            >
+                                                <td class='ralign'>OpenAI API Key: </td>
+                                                <td>
+                                                    <textarea 
+                                                        name='audio__tts_api_key_openai' 
+                                                        style= 'width: 95%; height: 120px;'
+                                                    >{{$configs['audio.tts_api_key_openai']}}</textarea>
                                                 </td>
                                             </tr>
                                             <tr>
