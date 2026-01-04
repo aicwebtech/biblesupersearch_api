@@ -37,9 +37,7 @@ class LanguageConfigController extends Controller
             $Lang->initLanguage();
         }
 
-        $bootstrap = new \stdClass();
-        $bootstrap->Languages = $Languages;
-        $bootstrap->baseURL = url('');
+        $bootstrap = $this->getAdminBootstrap();
 
         return view('admin.languages', [
             'bootstrap' => json_encode($bootstrap),
@@ -231,9 +229,14 @@ class LanguageConfigController extends Controller
         $resp->success  = true;
         $resp->Language = $Language->attributesToArray();
 
+        $resp->Language['tts_api_voices'] = \App\TextToSpeech\TtsAbstract::getAllApiVoicesByLanguage($Language->code, $Language->tts_api);
+
         return new Response($resp, 200);
     }    
 
+    /* 
+        Redundant and deprecated, use resource fetch method
+     */
     public function fetch($lang) 
     {   
         $Language = Language::findByCode($lang, true);

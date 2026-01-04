@@ -126,6 +126,19 @@ class ExtrasAbstract
         return dirname(__FILE__) . '/../../../database/dumps/';
     }
 
+    protected function _copyDbDumpFileToRendered($src_filename, $dest_filename = null)
+    {
+        $dest_filename = $dest_filename ?: $src_filename;
+        $src_filepath  = $this->_getDBDumpDir() . $src_filename;
+        $dest_filepath = $this->getRenderFileDir() . $dest_filename;
+        
+        if(!copy($src_filepath, $dest_filepath)) {
+            throw new \StandardException('Unable to copy');
+        }
+
+        return $dest_filepath;
+    }
+
     protected function _renderReadme() 
     {
         $filepath = $this->getRenderFileDir() . 'readme.txt';

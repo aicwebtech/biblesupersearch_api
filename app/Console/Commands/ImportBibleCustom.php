@@ -15,7 +15,7 @@ class ImportBibleCustom extends ImportBible
      */
     protected $signature = 'bible:import-custom {importer}';
     protected $import_dir = 'misc';
-    protected $valid = ['rvg', 'irv', 'usfm'];
+    protected $valid = ['rvg', 'irv', 'usfm', 'text'];
 
     /**
      * The console command description.

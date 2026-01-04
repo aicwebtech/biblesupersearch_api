@@ -225,7 +225,7 @@ enyo.kind({
     },
     viewDescription: function(inSender, inEvent) {
         var ajax = new enyo.Ajax({
-            url: '../admin/bibles/' + inEvent.id,
+            url: baseAppUrl + '/admin/bibles/' + inEvent.id,
             method: 'GET',
             headers: this.app.defaultAjaxHeaders
         });
@@ -240,7 +240,7 @@ enyo.kind({
         ajax.go();
     },
     _singleActionHelper: function(action, id, postData) {
-        var url = '../admin/bibles/' + action + '/' + id;
+        var url = baseAppUrl + '/admin/bibles/' + action + '/' + id;
         this.app.set('ajaxLoading', true);
         postData._token = laravelCsrfToken;
 

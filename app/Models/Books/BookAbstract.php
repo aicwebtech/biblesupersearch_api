@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 use Database\Seeders\DatabaseSeeder;
+use App\Models\Language;
 
 class BookAbstract extends Model
 {
@@ -14,6 +15,8 @@ class BookAbstract extends Model
     protected $fillable = [
         'name', 'shortname', 'matching1', 'matching2',
     ];
+
+    protected static $cache_by_language_and_id = [];
 
     /**
      * Create a new Eloquent model instance.
@@ -43,8 +46,23 @@ class BookAbstract extends Model
      */
     public static function getClassNameByLanguageRaw($language) 
     {
-        $class_name = __NAMESPACE__ . '\\' . studly_case(strtolower($language));
+        $language = $language ?: config('bss.defaults.language_short');
+        
+        $class_name = $language ? __NAMESPACE__ . '\\' . studly_case(strtolower($language)) : null;
         return $class_name;
+    }
+
+    public static function getEffectiveClassName($language = null)
+    {
+        if($language) {
+            return static::getClassNameByLanguage($language);
+        }
+
+        if(get_called_class() != __CLASS__) {
+            return get_called_class();
+        }
+
+        return static::getClassNameByLanguage(config('bss.defaults.language_short'));
     }
 
     /**
@@ -95,6 +113,10 @@ class BookAbstract extends Model
 
     public static function makeClassByLanguage($language)
     {
+        if(!Language::validateLanguage($language)) {
+            return;
+        }
+        
         $model_class = studly_case(strtolower($language));
         $namespace = __NAMESPACE__;
         $class_name = $namespace . '\\' . $model_class;
@@ -151,6 +173,29 @@ class BookAbstract extends Model
         return strtolower(get_called_class());
     }
 
+    public static function findByIdAndLanguage($id, $language = NULL) 
+    {
+        $id = (int)$id;
+        
+        if(empty($id)) {
+            return FALSE;
+        }
+
+        $language = $language ?: config('bss.defaults.language_short');
+
+        if(!isset(self::$cache_by_language_and_id[$language])) {
+            self::$cache_by_language_and_id[$language] = [];
+        }
+
+        if(!isset(self::$cache_by_language_and_id[$language][$id])) {
+            $class_name = self::getEffectiveClassName($language);
+            
+            self::$cache_by_language_and_id[$language][$id] = $class_name::find($id);
+        }
+
+        return self::$cache_by_language_and_id[$language][$id];
+    }
+
     /**
      *
      * @param string|int $name
@@ -200,11 +245,11 @@ class BookAbstract extends Model
         $name = trim(trim($name), '.');
 
         // Attempt 0: Book Number
-        if(preg_match('/^[0-9]{1,2}[B]$/', $name)) {
-            $id = intval($name);
+        if(preg_match('/^[0-9]{1,2}[B]$/', $name) || is_int($name)) {
+            $id = (int)$name;
 
             if($id) {
-                $Book = $class_name::find($id);
+                $Book = self::findByIdAndLanguage($id, $language);
                 return ($multiple) ? [$Book] : $Book;
             }
         }

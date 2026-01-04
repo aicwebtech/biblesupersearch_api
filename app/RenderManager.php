@@ -8,7 +8,8 @@ use App\Models\RenderLog;
 use App\ProcessManager;
 use Illuminate\Support\Facades\Gate;
 
-class RenderManager {
+class RenderManager 
+{
     use Traits\Error;
 
     static public $format_kinds = [

@@ -37,4 +37,9 @@ return [
         'geneva',
         'chinese_union_trad',
     ],
+
+    'books_in_bible' => 66,
+    // 'books_in_deuterocanon' => 14, // Not used currently, need to vet this number
+    // 'books_in_apocrypha' => 7,     // Not used currently, need to vet this number
+    'total_books' => 66,
 ];

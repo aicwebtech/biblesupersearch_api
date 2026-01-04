@@ -5,6 +5,7 @@ namespace App\Models\Verses;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 use App\Models\Bible;
+use App\Models\Books\BookAbstract as Book;
 use App\Passage;
 use App\Search;
 use DB;
@@ -111,8 +112,7 @@ class VerseStandard extends VerseAbstract
                     $met = 600;
                     $lim = config('bss.parallel_search_maximum_results');
                 }
-                // var_dump($lim);
-                // die(__LINE__ . '');
+
                 ini_set('max_execution_time', $met);
                 $lim && $Query->limit($lim);
 
@@ -148,7 +148,258 @@ class VerseStandard extends VerseAbstract
         return (empty($verses)) ? FALSE : $verses;
     }
 
-    protected static function _buildPassageQuery($Passages, $table = '', $parameters = array()) 
+    /**
+     * Gets (existing) audio data for verses in the passages
+     * 
+     * @param array $Passages Array of App/Passage instances, represents the passages requested
+     * @param array $parameters Search parameters - user input
+     * @param boolean|null $whole_chapter Whether to get whole chapters only
+     * @return array $Verses array of Verses instances (found verses)
+     */
+    public static function getAudio($Passages, $parameters = [], $whole_chapter = null) 
+    {
+        if(!$Passages) {
+            return FALSE;
+        }
+        
+        $Verse = new static;
+        $table = $Verse->getTable();
+        $Bible = $Verse->getBible();
+
+        $whole_chapter_bible = false;
+        $whole_chapter_manual = $whole_chapter !== null;
+        $whole_chapter = $whole_chapter === null ? $Passages[0]->is_chapter_only : $whole_chapter;
+
+        if($Bible->audio_structure != 'both') {
+            $whole_chapter = ($Bible->audio_structure == 'chapters') ? true : false;
+            $whole_chapter_bible = true;
+        }
+
+        $Query = DB::table($table . ' AS tb');
+        $Query->select('tb.id','tb.book','tb.chapter','tb.verse','tb.text','a.file_name');
+        $Query->orderBy('book', 'ASC')->orderBy('chapter', 'ASC')->orderBy('verse', 'ASC');
+
+        if($whole_chapter) {
+            $Query->join('bible_verses_audio AS a', function($join) use ($Verse) {
+                $join->on('tb.book', '=', 'a.book')
+                    ->on('tb.chapter', '=', 'a.chapter')
+                    ->whereNull('a.verse')
+                    ->on('a.module', '=', DB::raw("'" . $Verse->getModule() . "'"));
+            });
+            $Query->groupBy('tb.book','tb.chapter'); 
+        } else {
+            $Query->leftJoin('bible_verses_audio AS a', function($join) use ($Verse) {
+                $join->on('tb.book', '=', 'a.book')
+                    ->on('tb.chapter', '=', 'a.chapter')
+                    ->on('tb.verse', '=', 'a.verse')
+                    ->on('a.module', '=', DB::raw("'" . $Verse->getModule() . "'"));
+            });
+        }
+
+        $passage_query = static::_buildPassageQuery($Passages, DB::getTablePrefix() . 'tb', $parameters);
+
+        if($passage_query) {
+            $Query->whereRaw('(' . $passage_query . ')');
+        } else {
+            return FALSE;
+        }
+
+        // print($Query->toSql()); die();
+
+        $verses = $Query->get();
+
+        if (!$whole_chapter) {
+            $has_audio = true;
+
+            foreach($verses as $verse) {
+                if($verse->file_name === null) {
+                    $has_audio = false;
+                    break;
+                }
+            }
+            
+            if(!$has_audio && !$whole_chapter_manual && !$whole_chapter_bible && !$Bible->tts_enable) {
+                $by_chapter = self::getAudio($Passages, $parameters, true);
+                // If we find audio by chapter, return that, otherwise return the verses (with or without audio)
+                return $by_chapter ?: $verses;
+            }
+        }
+
+        if ($whole_chapter) {
+            $has_audio = (bool) $verses->first(function($item) {
+                return $item->file_name !== null;
+            });
+
+            if(!$has_audio && !$whole_chapter_manual && !$whole_chapter_bible) {
+                return self::getAudio($Passages, $parameters, false);
+            }
+        }
+
+        return (empty($verses)) ? FALSE : $verses;
+    }
+
+    /**
+     * Gets (existing) audio data for all verses based on request parameters
+     * 
+     * @param array $parameters Search parameters - user input
+     * @return array $Verses array of Verses instances (found verses)
+     */
+    public static function getAudioAll($parameters = []) 
+    {
+        $Verse = new static;
+        $table = $Verse->getTable();
+        $Bible = $Verse->getBible();
+
+        $book_table = 'books_' . strtolower($Bible->lang_short);
+
+        if(!Schema::hasTable($book_table)) {
+            $book_table = 'books_' . strtolower(config('bss.default_language'));
+        }
+
+        $structure = $Bible->audio_structure ?? 'chapters';
+
+        $prefix = DB::getTablePrefix();
+
+        $rows_per_page = isset($parameters['rows_per_page']) ? (int) $parameters['rows_per_page'] : null;
+        $page = isset($parameters['page']) ? (int) $parameters['page'] : 1;
+        $paginate = ($rows_per_page && $page);
+
+        $sortable = [
+            'type'      => 'type',
+            'book_name' => 'book_name',
+            'book'      => 'book',
+            'chapter'   => 'chapter',
+            'verse'     => 'verse',
+            'has_audio' => 'has_audio',
+        ];
+
+        $sidx = isset($parameters['sidx']) && isset($sortable[$parameters['sidx']]) ? $sortable[$parameters['sidx']] : null;
+        $sord = isset($parameters['sord']) && in_array(strtoupper($parameters['sord']), ['ASC','DESC']) ? strtoupper($parameters['sord']) : 'ASC';
+
+        $QueryVerses  = DB::table($table . ' AS tb');
+        $QueryVerses->select(
+            'b.name AS book_name', 
+            'tb.book','tb.chapter','tb.verse','a.id', 
+            DB::raw('"chapter" AS type'),
+            DB::raw('IF(' . $prefix . 'a.id IS NULL, 0, 1) AS has_audio')
+        );
+        $QueryVerses->join($book_table . ' AS b', 'tb.book', '=', 'b.id');
+        
+        $QueryVerses->leftJoin('bible_verses_audio AS a', function($join) use ($Verse) {
+            $join->on('tb.book', '=', 'a.book')
+                ->on('tb.chapter', '=', 'a.chapter')
+                ->on('tb.verse', '=', 'a.verse')
+                ->on('a.module', '=', DB::raw("'" . $Verse->getModule() . "'"));
+        });
+        
+        $QueryVerses->orderBy('book', 'ASC')->orderBy('chapter', 'ASC')->orderBy('verse', 'ASC');
+
+        $QueryChapters = DB::table($table . ' AS tb');
+        $QueryChapters->select(
+            'b.name AS book_name', 
+            'tb.book','tb.chapter',
+            DB::raw('NULL AS verse'), 
+            'a.id', 
+            DB::raw('"verse" AS type'),
+            DB::raw('IF(' . $prefix . 'a.id IS NULL, 0, 1) AS has_audio')
+        );
+
+        $QueryChapters->join($book_table . ' AS b', 'tb.book', '=', 'b.id');
+
+        $QueryChapters->leftJoin('bible_verses_audio AS a', function($join) use ($Verse) {
+            $join->on('tb.book', '=', 'a.book')
+                ->on('tb.chapter', '=', 'a.chapter')
+                ->whereNull('a.verse')
+                ->on('a.module', '=', DB::raw("'" . $Verse->getModule() . "'"));
+        });
+
+        $QueryChapters->groupBy('tb.book','tb.chapter');
+        $QueryChapters->orderBy('book', 'ASC')->orderBy('chapter', 'ASC');
+
+        $searchable = [
+            'type'  => [
+                'field' => 'verse',
+                'type'  => 'bool_null_having',
+            ],
+            'book_name' => [
+                'field' => 'b.name',
+                'type'  => 'str_inside',
+            ],
+            'chapter' => [
+                'field' => 'tb.chapter',
+                'type'  => 'int',
+            ],          
+            'verse' => [
+                'field' => 'tb.verse',
+                'type'  => 'int',
+            ],        
+            'has_audio' => [
+                'field' => 'a.id',
+                'type'  => 'bool_null',
+            ],
+        ];
+
+        foreach($searchable as $key => $f) {            
+            if(isset($parameters[$key]) && ($parameters[$key] || $parameters[$key] == 0)) {
+                $field = $f['field'];
+
+                switch($f['type']) {         
+                    case 'str_inside':
+                        $QueryChapters->where($field, 'LIKE', '%' . $parameters[$key] . '%');
+                        $QueryVerses->where($field, 'LIKE', '%' . $parameters[$key] . '%');
+                        break;                        
+                    case 'int':
+                        $QueryChapters->where($field, (int)$parameters[$key]);
+                        $QueryVerses->where($field, (int)$parameters[$key]);
+                        break;           
+                    case 'bool_null':
+                        if($parameters[$key] == 1) {
+                            $QueryChapters->whereNotNull($field);
+                            $QueryVerses->whereNotNull($field);
+                        } else {
+                            $QueryChapters->whereNull($field);
+                            $QueryVerses->whereNull($field);
+                        }
+                        break;
+
+                    case 'bool_null_having':
+                        if($parameters[$key] == 1) {
+                            $QueryChapters->havingNotNull($field);
+                            $QueryVerses->havingNotNull($field);
+                        } else {
+                            $QueryChapters->havingNull($field);
+                            $QueryVerses->havingNull($field);
+                        }
+                        break;
+
+                    case 'str_start':
+                    default:
+                        $QueryChapters->where($field, 'LIKE', $parameters[$key] . '%');
+                        $QueryVerses->where($field, 'LIKE', $parameters[$key] . '%');
+                }
+            }
+        }
+
+        if($structure == 'chapters') {
+            $Query = $QueryChapters;
+        } elseif($structure == 'both') {
+            $Query = $QueryChapters->unionAll($QueryVerses);
+        } else {
+            $Query = $QueryVerses;
+        }
+
+        if($sidx) {
+            $Query->orderBy($sidx, $sord);
+        }
+
+        // print($Query->toSql()); die();
+
+        $verses = $paginate ? $Query->paginate($rows_per_page) : $Query->get();
+
+        return (empty($verses)) ? FALSE : $verses;
+    }
+
+    protected static function _buildPassageQuery($Passages, $table = '', $parameters = []) 
     {
         if(empty($Passages)) {
             return FALSE;
@@ -310,15 +561,14 @@ class VerseStandard extends VerseAbstract
             //$table->charset('utf8mb4');
             //$table->collate('utf8mb4_unicode_ci');
 
-            //$table->increments('id');
             $table->integer('id', TRUE);
             $table->tinyInteger('book')->unsigned();
             $table->tinyInteger('chapter')->unsigned();
             $table->tinyInteger('verse')->unsigned();
             $table->mediumInteger('chapter_verse')->unsigned();
             $table->text('text')->charset('utf8');
-            $table->text('italics')->nullable();
-            $table->text('strongs')->nullable();
+            $table->text('italics')->nullable(); // obsolete
+            $table->text('strongs')->nullable(); // obsolete
             $table->index('book', 'ixb');
             $table->index('chapter', 'ixc');
             $table->index('verse', 'ixv');

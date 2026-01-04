@@ -575,7 +575,7 @@ enyo.kind({
         };
 
         var ajax = new enyo.Ajax({
-            url: '/admin/bibles/unique',
+            url: baseAppUrl + '/admin/bibles/unique',
             method: 'GET',
             headers: this.app.defaultAjaxHeaders
         });

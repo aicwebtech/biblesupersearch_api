@@ -1,5 +1,19 @@
 Bible SuperSearch API Changelog
 
+= 6.1.3
+* Update RVG to latest (2023) Edition, removed old editions
+* Added KJV PCE edition
+* Renamed KJV with Strongs
+* Upstream bugfixes
+
+= 6.1.2
+* Added link to redirect around mod_rewrite error
+* Fixed issues with Bible grid / edit functions when operating without a dedicated (sub) domain.
+
+= 6.1.1
+* Fixed issues with the USFM importer
+* Fixed several security issues
+
 = 6.1.0
 * Optimization work on most renderings (except PDF).
 * Fixed issue with config caching option.

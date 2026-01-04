@@ -10,7 +10,6 @@ $( function() {
 
         var msg = 'You asked to enable the field \'' + labelText + '\'. <br><br> Editing this field may cause issues. <br><br> Are you sure you know what you\'re doing?';
 
-        // IN USE (Options => Advanced)
         AICWEBTECH.jQuery.Dialogs.confirm(msg, function(confirmed) {
             if(confirmed) {                
                 $(field).prop('readonly', false);

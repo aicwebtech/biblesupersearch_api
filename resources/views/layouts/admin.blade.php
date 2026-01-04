@@ -14,10 +14,6 @@
         ['label' => 'Log Out', 'route' => 'logout', 'new_tab' => FALSE, 'hash' => ''],
     ];
 
-if(!config('app.experimental')) {
-    unset($buttons[1]);
-}
-
 if(!isset($javascripts)) {
     $javascripts = array();
 }

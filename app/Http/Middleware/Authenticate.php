@@ -38,7 +38,7 @@ class Authenticate
     {
         if ($this->auth->guest()) {
 
-            if ($request->ajax()) {
+            if ($request->ajax() || $request->wantsJson()) {
                 $resp = new \stdClass;
                 $resp->success = FALSE;
                 $resp->message = 'Your session has timed out, please log in again.';
@@ -51,7 +51,7 @@ class Authenticate
 
         // Check the user's access level against the minimal
         if($this->auth->user()->access_level < $access_level) {
-            if ($request->ajax()) {
+            if ($request->ajax() || $request->wantsJson()) {
                 return response('Access Denied', 403);
             }
             else {

@@ -2,12 +2,15 @@
 
 namespace App\Traits;
 
+use App\Interfaces\ErrorInterface;
+
 /**
  * Trait for Error Reporting and Handling
  *
  */
-trait Error {
-    protected $errors = array(); // Array of errors, if any
+trait Error 
+{
+    protected $errors = []; // Array of errors, if any
     protected $has_errors = FALSE;
     protected $error_level = 0;
     protected $http_status = NULL;
@@ -102,7 +105,8 @@ trait Error {
      * Indicates if we have any errors
      * @return bool $has_errors
      */
-    public function hasErrors() {
+    public function hasErrors() 
+    {
         return $this->has_errors;
     }
 
@@ -110,7 +114,8 @@ trait Error {
      * Returns an array of all error messages
      * @return array $errors
      */
-    public function getErrors() {
+    public function getErrors() 
+    {
         return array_values($this->errors);
     }
 
@@ -119,7 +124,8 @@ trait Error {
      * If no error, returns 200
      * @return array $errors
      */
-    public function getHttpStatus() {
+    public function getHttpStatus() 
+    {
         return $this->hasErrors() ? $this->http_status : 200;
     }
 
@@ -127,7 +133,8 @@ trait Error {
      * Returns the error level
      * @return int error_level
      */
-    public function getErrorLevel() {
+    public function getErrorLevel() 
+    {
         return $this->error_level;
     }
 
@@ -135,7 +142,8 @@ trait Error {
      * Force set the error level
      * @param int $level
      */
-    public function setErrorLevel($level) {
+    public function setErrorLevel($level) 
+    {
         $this->error_level = (int) $level;
         return ($this->error_level) ? FALSE : TRUE;
     }
@@ -143,7 +151,8 @@ trait Error {
     /**
      * Clears out all errors
      */
-    public function resetErrors() {
+    public function resetErrors() 
+    {
         $this->errors = array();
         $this->has_errors = FALSE;
         $this->error_level = 0;
@@ -157,7 +166,8 @@ trait Error {
      * @param int $http_status - defaults to $this->default_http_status
      * @return bool FALSE
      */
-    public function addError($message, $level = 1, $http_status = NULL, $unique = TRUE) {
+    public function addError($message, $level = 1, $http_status = NULL, $unique = TRUE) 
+    {
         if($unique && is_string($unique)) {
             if(!isset($this->errors[$unique])) {
                 $this->errors[$unique] = $message;
@@ -177,7 +187,8 @@ trait Error {
         return FALSE;
     }
 
-    public function addTransError($trans, $prop = [], $level = 1, $http_status = null, $unique = true) {
+    public function addTransError($trans, $prop = [], $level = 1, $http_status = null, $unique = true) 
+    {
         $unique = $unique ? $trans : false;
         return $this->addError(trans($trans, $prop), $level, $http_status, $unique);
     }
@@ -186,13 +197,26 @@ trait Error {
      * Adds multiple errors at once
      * @param array $errors
      */
-    public function addErrors($errors, $level = 1, $http_status = NULL) {
+    public function addErrors($errors, $level = 1, $http_status = NULL) 
+    {
         foreach($errors as $error) {
             $this->addError($error, $level, $http_status);
         }
+
+        return false;
     }
 
-    public function addErrorByHttpStatus($code, $level = NULL) {
+    public function mergeErrors(Error|ErrorInterface $Error)
+    {
+        return $this->addErrors(
+            $Error->getErrors(), 
+            $Error->getErrorLevel(), 
+            $Error->getHttpStatus()
+        );
+    }
+
+    public function addErrorByHttpStatus($code, $level = NULL) 
+    {
         if(!$code || $code == 200) {
             return FALSE; // Not an error
         }

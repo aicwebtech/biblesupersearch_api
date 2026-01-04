@@ -84,10 +84,16 @@ export function useGrid(data, props) {
                 grid.totalRows.value = response.data.records;
                 grid.loading.value = false;
             }.bind(grid))   
-            .catch(function(response) {
-                // grid.gridRows = response.data.rows;
-                // grid.totalRows = response.data.records;
-                // grid.loading = false;
+            .catch(function(error) {
+                if(error.response.data.message) {
+                    alert(error.response.data.message);
+                } else {
+                    alert('An unknown error has occurred');
+                }
+                
+                grid.gridRows.value = [];
+                grid.totalRows.value = 0;
+                grid.loading.value = false;
             }.bind(grid));
         },
         gridPaginate(options) { 

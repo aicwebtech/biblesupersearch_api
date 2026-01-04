@@ -97,8 +97,6 @@ AICWEBTECH.jQuery.Dialogs = {
 
     // private methods
     _confirmOk: function() {
-        console.log('confirm ok');
-
         if(AICWEBTECH.jQuery.Dialogs.confirmWord) {
             var word = $('#text_confirm_input').val().trim();
 
@@ -117,8 +115,6 @@ AICWEBTECH.jQuery.Dialogs = {
         $('#jquery_dialogs_confirm').dialog('close');
     },
     _confirmCancel: function() {
-        console.log('confirm cancel');
-
         if(typeof AICWEBTECH.jQuery.Dialogs.callback == 'function') {
             AICWEBTECH.jQuery.Dialogs.callback(false);
         }
