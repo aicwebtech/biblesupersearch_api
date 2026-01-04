@@ -19,23 +19,11 @@ class AudioManager implements ErrorInterface
     public $has_all_audio = false;
 
     static public $tts_apis = [
+        // Name limited to 100 chars to match DB field!
+        // 'elevenlabs' => \App\TextToSpeech\Elevenlabs::class,
+        // 'murfai'   => \App\TextToSpeech\MurfAI::class,
         'narakeet' => \App\TextToSpeech\Narakeet::class,
-        
-        // name limited to 100 chars to match DB field!
-        // 'elevenlabs' => [
-        //     'name'  => 'Eleven Labs',
-        //     'class' => \App\TextToSpeech\Elevenlabs::class,
-        // ],
-        // 'murfai' => [
-        //     'name'  => 'Murf AI',
-        //     'class' => \App\TextToSpeech\MurfAI::class,
-        // ],
-        // 'narakeet' => [
-        //     'name'  => 'Narakeet',
-        //     'class' => \App\TextToSpeech\Narakeet::class,
-        // ],
-        
-        // 'openai' => \App\TextToSpeech\OpenAI::class,
+        // 'openai'   => \App\TextToSpeech\OpenAI::class,
     ];
 
     static public $filename_matches = [
@@ -511,6 +499,8 @@ class AudioManager implements ErrorInterface
                 $ABB->chapter = $parsed['chapter'];
                 $ABB->verse   = $parsed['verse'];
                 $ABB->file_name = $new_filename;
+                $ABB->source  = 'upload';
+                $ABB->voice   = null;
                 $ABB->save();
             }
 

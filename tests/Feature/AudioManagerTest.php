@@ -356,10 +356,15 @@ class AudioManagerTest extends TestCase
                 'filename' => '04_85.mp3',
                 'expected' => null,
             ],
-            // 'chapter_no_verse' => [
-            //     'filename' => '01_002.mp3',
-            //     'expected' => null,
-            // ],
+            'chapter_no_verse' => [
+                'filename' => '01_002.mp3',
+                'expected' => [
+                    'type' => 'chapter',
+                    'book' => 1,
+                    'chapter' => 2,
+                    'verse' => null,
+                ],
+            ],
         ];
     }
 
@@ -408,10 +413,15 @@ class AudioManagerTest extends TestCase
                     'verse' => null,
                 ],
             ],
-            // 'custom_chapter_no_match' => [
-            //     'filename' => 'bible_003_Leviticus_012_025_extra.mp3',
-            //     'expected' => null,
-            // ],
+            'custom_chapter_match_5' => [
+                'filename' => 'bible_003_Leviticus_012_025_extra.mp3',
+                'expected' => [
+                    'type' => 'chapter',
+                    'book' => 12,
+                    'chapter' => 25,
+                    'verse' => null,
+                ]
+            ],
         ];
     }
 

@@ -112,8 +112,7 @@ class VerseStandard extends VerseAbstract
                     $met = 600;
                     $lim = config('bss.parallel_search_maximum_results');
                 }
-                // var_dump($lim);
-                // die(__LINE__ . '');
+
                 ini_set('max_execution_time', $met);
                 $lim && $Query->limit($lim);
 

@@ -40,7 +40,6 @@ const tpl = `
 
                         :headers="headers"
                     >
-                        
                         <template v-slot:thead>
                             <tr class='grid-thead-search'>
  
@@ -136,7 +135,6 @@ export default {
             headers: [
                 {title: 'Type', key: 'type', searchComponent: 'v-select', searchField: 'type', searchProps: { 
                     items: [ 
-                        // { title: 'All', value: null }, 
                         { title: 'Chapter', value: 0 }, 
                         { title: 'Verse', value: 1 } 
                     ]

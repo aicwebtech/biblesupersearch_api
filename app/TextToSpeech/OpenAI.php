@@ -61,6 +61,4 @@ class OpenAI extends TtsAbstract
 
         return true;
     }
-
-
 }

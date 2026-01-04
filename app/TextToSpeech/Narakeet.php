@@ -24,14 +24,6 @@ class Narakeet extends TtsAbstract
             return $this->addTransError('errors.audio.no_tts_voice', ['api' => self::$label, 'language' => $this->Bible->lang_short]);
         }
 
-        // var_dump($voice);
-        // var_dump($apikey);
-        // die('here');
-
-        // var_dump($filename);
-        // die($file_path);
-        // return false;
-
         $url = "https://api.narakeet.com/text-to-speech/mp3?voice=$voice";
 
         $options = [
