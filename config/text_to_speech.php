@@ -12,7 +12,7 @@ return [
         'voice' => null,
     ],
     'openai' => [
-        'voice' => null,
+        'voice' => 'alloy',
     ],
     'murfai' => [
         'voice' => null,
