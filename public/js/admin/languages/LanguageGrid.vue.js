@@ -2,7 +2,7 @@ import LanguageForm from './LanguageEditForm.vue.js';
 import BooksDialog from './BookListDialog.vue.js';
 import EditDialog from '../../bin/custom_vue/dialogs/EditDialog.vue.js';
 import YesNoSel from '../../bin/custom_vue/components/YesNoSelector.vue.js';
-import { gridTemplateProps, useGrid } from '../../bin/custom_vue/composables/Grid.vue.js';
+import { gridTemplateProps, useGrid } from '../../bin/custom_vue/composables/grid/Grid.vue.js';
 
 const template = `<v-sheet>
             <h2 class='app'>Languages</h2>

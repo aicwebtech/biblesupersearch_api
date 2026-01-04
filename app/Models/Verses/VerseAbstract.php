@@ -52,12 +52,26 @@ abstract class VerseAbstract extends Model
         $this->Bible = $Bible;
     }
 
+    public function getBible() : Bible
+    {
+        if(!$this->Bible) {
+            $this->Bible = Bible::findByModule($this->module);
+        }
+        
+        return $this->Bible;
+    }
+
     public function setModule($module, $set_table = FALSE) {
         $this->module = $module;
 
         if($set_table) {
             $this->table = self::getTableByModule($this->module);
         }
+    }
+
+    public function getModule() 
+    {
+        return $this->module;
     }
 
     public function classFileExists() 
@@ -79,6 +93,29 @@ abstract class VerseAbstract extends Model
     public static function getSearch($Passages = NULL, $Search = NULL, $parameters = []) 
     {
         throw new StandardException('Must implement getSearch in child class!');
+    }
+
+    /**
+     * Gets audio data for verses in the passages
+     * 
+     * @param array $Passages Array of App/Passage instances, represents the passages requested, if any
+     * @param array $parameters Search parameters - user input
+     * @return array $Verses array of Verses instances (found verses)
+     */
+    public static function getAudio($Passages, $parameters = []) 
+    {
+        throw new StandardException('Must implement getAudio in child class!');
+    }
+
+    /**
+     * Gets audio data for all verses based on request parameters
+     * 
+     * @param array $parameters Search parameters - user input
+     * @return array $Verses array of Verses instances (found verses)
+     */
+    public static function getAudioAll($parameters = []) 
+    {
+        throw new StandardException('Must implement getAudioAll in child class!');
     }
 
     /**

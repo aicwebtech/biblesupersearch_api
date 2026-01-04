@@ -210,3 +210,6 @@ title.h1 {
     color: yellow;*/
 }
 
+.zebra_table tr:nth-child(even) {
+    background-color: #ddd;
+}

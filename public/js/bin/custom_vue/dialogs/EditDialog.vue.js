@@ -97,7 +97,6 @@ export default {
                 // Editing existing record
                 if(this.loadRecord) {
                     this.loading = true;
-                    this.showing = true;
                     var t = this;
 
                     axios.request({

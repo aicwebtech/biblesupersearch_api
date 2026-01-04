@@ -14,6 +14,7 @@
        '/css/vue/vue.css',
        '/js/admin/app/assets/style.css',
        '/js/admin/bibles/assets/style.css',
+       '/js/bin/custom_vue/composables/grid/grid.css',
     ];
 
     $u = url('');

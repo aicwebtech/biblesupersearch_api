@@ -53,6 +53,18 @@ const template = `
             </v-col>
         </v-row>   
 
+        <v-row v-bind='defaultProps.vrows' v-if='bootstrap.tts_enabled'>
+            <v-col>
+                <v-text-field 
+                    :label="'Text to Speech Voice (' + ttsApiName + ')'"
+                    v-model='record.tts_voice'
+                    v-bind='defaultProps.texts'
+                    :hint="ttsVoicePlaceHolder"
+                    persistent-hint
+                ></v-text-field>
+            </v-col>
+        </v-row>   
+
         <v-row v-bind='defaultProps.vrows'>
             <v-col>
                 <v-textarea 
@@ -77,4 +89,31 @@ export default {
             default: {}
         }
     },
+
+    computed: {
+        ttsVoicePlaceHolder() {
+            var tts_api = this.record.tts_api ? this.record.tts_api : this.bootstrap.tts_api_default;
+            
+            if(!tts_api) {
+                return 'ERROR: No default TTS API configured';
+            }
+
+            var voice = this.record.tts_api_voices && this.record.tts_api_voices[tts_api] && this.record.tts_api_voices[tts_api].length > 0 ? this.record.tts_api_voices[tts_api] : null;
+
+            if(voice) {
+                return 'Leave blank for defalt of "' + voice + '"';
+            } else {
+                return 'ERROR: No default voice configured for this language / TTS API';
+            }
+        },
+        ttsApiName() {
+            var tts_api = this.record.tts_api ? this.record.tts_api : this.bootstrap.tts_api_default;
+            
+            if(!tts_api) {
+                return 'ERROR: No default TTS API configured';
+            }
+
+            return this.bootstrap.tts_apis.find(api => api.key === tts_api).name || 'Unknown';
+        }
+    }
 }

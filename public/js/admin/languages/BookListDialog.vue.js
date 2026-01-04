@@ -1,4 +1,4 @@
-import { gridTemplateProps, useGrid } from '../../bin/custom_vue/composables/Grid.vue.js';
+import { gridTemplateProps, useGrid } from '../../bin/custom_vue/composables/grid/Grid.vue.js';
 
 const tpl = `
     <v-dialog 
