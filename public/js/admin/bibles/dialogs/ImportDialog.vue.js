@@ -208,9 +208,7 @@ export default {
             if(!this.file) {
                 this.errors.push('File is required');
             } else {
-                var fnParts = this.file.name.split('.'),
-                ext = fnParts.pop(),
-                matchesExt = false;
+                var matchesExt = false;
 
                 if(importer && importer.ext && importer.ext.length > 0) {
                     for(var i in importer.ext) {
@@ -267,7 +265,7 @@ export default {
                 t.fileSanitized = response.data.file;
                 
                 t.$refs.ConfirmDialog.alert(
-                    'This file is ready to import.  Please fill out the rest of' +
+                    'This file is ready to import.  Please fill out the rest of ' +
                     'the information for this Bible, then click \'Import File.\''
                 );
 

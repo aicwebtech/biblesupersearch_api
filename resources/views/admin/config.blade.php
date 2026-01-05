@@ -782,15 +782,6 @@
                                                     </span>
                                                 </td>
                                             </tr>
-                                            <!-- <tr 
-                                                class='audio_bible_tts_section' 
-                                                @if($configs['audio.enable'] == 0 || $configs['audio.tts_api_enable'] == 0)style='display:none'@endif
-                                            >
-                                                <td class='ralign'>TTS API Key: </td>
-                                                <td>
-                                                    <input name='audio__tts_api_key' size='50' value='{{$configs['audio.tts_api_key']}}'>
-                                                </td>
-                                            </tr> -->
                                             <tr 
                                                 class='audio_bible_tts_section audio_tts_api_narakeet_options' 
                                                 @if($configs['audio.enable'] == 0 || $configs['audio.tts_api_enable'] == 0 || $configs['audio.tts_api'] != 'narakeet')style='display:none'@endif
@@ -827,7 +818,7 @@
                                                     <span class='info'>
                                                         <span>i</span>
                                                         <p>
-                                                            ffmpeg is prefered for best performance for proper audio file processing.
+                                                            ffmpeg is preferred for best performance for proper audio file processing.
                                                         </p>
                                                     </span>
                                                 </td>

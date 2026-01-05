@@ -154,8 +154,7 @@ export default {
             this.closeDialog();
         },
         handleSave() {
-            var record = this.recording,
-                url = this.newRecord ? this.url : this.url + '/' + this.recordId,
+            var url = this.newRecord ? this.url : this.url + '/' + this.recordId,
                 method = this.newRecord ? 'POST' : 'PUT',
                 t = this;
 

@@ -34,7 +34,7 @@ return array(
         'requirements' => 'bible, book, and chapter_verse are required',
         'no_tts' => 'Unable to generate audio, text-to-speech is not enabled on this API.',
         'no_tts_bible' => 'Unable to generate audio, text-to-speech is not enabled on this API for this bible: :module',
-        'tts_failed' => 'Faled to convert text to speech.',
+        'tts_failed' => 'Failed to convert text to speech.',
         'no_tts_voice' => 'No voice available for TTS API: :api and language: :language',
         'merge_failed' => 'FFMPEG merge failed :errors',
         'no_audio_found' => 'No audio available for the requested passage.',

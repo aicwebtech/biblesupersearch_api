@@ -268,7 +268,7 @@ class AudioManagerTest extends TestCase
                     'verse' => 25,
                 ],
             ],
-            'complex_verse_match_1' => [
+            'complex_verse_match_2' => [
                 'filename' => 'bible_20_Proverbs_12_03_extra.mp3',
                 'expected' => [
                     'type' => 'verse',

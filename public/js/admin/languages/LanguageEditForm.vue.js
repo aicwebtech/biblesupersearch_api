@@ -101,7 +101,7 @@ export default {
             var voice = this.record.tts_api_voices && this.record.tts_api_voices[tts_api] && this.record.tts_api_voices[tts_api].length > 0 ? this.record.tts_api_voices[tts_api] : null;
 
             if(voice) {
-                return 'Leave blank for defalt of "' + voice + '"';
+                return 'Leave blank for default of "' + voice + '"';
             } else {
                 return 'ERROR: No default voice configured for this language / TTS API';
             }
