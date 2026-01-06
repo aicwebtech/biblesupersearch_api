@@ -627,9 +627,11 @@ class Engine implements ErrorInterface
         $audio = $Manager->checkAudioByInput($input, $Bible);
 
         if($Manager->hasErrors()) {
+            print_r( $Manager->getErrors() );
+            
             $this->mergeErrors($Manager);
             $response->success = false;
-            return $response;
+            return false;
         }
 
         $response->audio = $audio->toArray();

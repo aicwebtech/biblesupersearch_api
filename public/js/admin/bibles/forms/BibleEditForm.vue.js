@@ -146,6 +146,12 @@ const template = `
             </v-col>
         </v-row>
 
+        <v-row v-bind='defaultProps.vrows' v-if='record.audio_enable && record.audio_structure == "chapters"'>
+            <v-col>
+                Note: Text to Speech (TTS) requires verse-level audio structure.
+            </v-col>
+        </v-row>
+
         <v-row v-bind='defaultProps.vrows' v-if='bootstrap.tts_enabled && record.audio_enable'>
             <v-col>
                 <v-switch

@@ -335,7 +335,7 @@ class AudioManager implements ErrorInterface
         $tts_enabled = (bool)config('audio.tts_api_enable', false);
 
         if(!$tts_enabled) {
-            return $this->addTransError('errors.audio.no_audio_found');
+            return $this->addTransError('errors.audio.no_tts');
         }
 
         if(!$Bible->audio_enable) {
@@ -343,7 +343,11 @@ class AudioManager implements ErrorInterface
         }
 
         if(!$Bible->tts_enable) {
-            return $this->addTransError('errors.audio.no_audio_found');
+            return $this->addTransError('errors.audio.no_tts_bible', ['module' => $Bible->module]);
+        }
+
+        if($Bible->audio_structure == 'chapters') {
+            return $this->addTransError('errors.audio.unsupported_tts_structure');
         }
 
         return true;
@@ -363,6 +367,10 @@ class AudioManager implements ErrorInterface
 
         if(!$Bible->tts_enable) {
             return $this->addTransError('errors.audio.no_tts_bible', ['module' => $Bible->module]);
+        }
+
+        if($Bible->audio_structure == 'chapters') {
+            return $this->addTransError('errors.audio.unsupported_tts_structure');
         }
         
         $bcv = $verse->book . ' ' . $verse->chapter . ':' . $verse->verse;

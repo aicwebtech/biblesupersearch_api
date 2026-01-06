@@ -38,6 +38,7 @@ return array(
         'no_tts_voice' => 'No voice available for TTS API: :api and language: :language',
         'merge_failed' => 'FFMPEG merge failed :errors',
         'no_audio_found' => 'No audio available for the requested passage.',
+        'unsupported_tts_structure' => 'Audio generation with text-to-speech requires verse-level audio structure on the Bible.',
     ],
     'paren_mismatch' => 'Your parentheses are mismatched.',
     'prox_paren_mismatch' => 'Your parentheses are mismatched, or you have a proximity operator inside of parentheses.',
