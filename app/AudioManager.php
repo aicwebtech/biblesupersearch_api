@@ -91,6 +91,23 @@ class AudioManager implements ErrorInterface
         return static::$tts_apis;
     }
 
+    static public function audioEnabled($Bible = null)
+    {
+        $audio_enabled = (bool)config('audio.enable', false);
+
+        if(!$audio_enabled) {
+            return false;
+        }
+
+        if($Bible) {
+            if(!$Bible->audio_enable) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
     static public function ttsEnabled($Bible = null)
     {
         $tts_enabled = (bool)config('audio.tts_api_enable', false);
@@ -157,8 +174,6 @@ class AudioManager implements ErrorInterface
         
         try {
             $verses = $Bible->getAudio([$Passage], []);
-
-            // return $verses; // debug
 
             $compat_mode = !Ffmpeg::canUse();
             $mp3_str = null;
@@ -243,7 +258,7 @@ class AudioManager implements ErrorInterface
                 if($this->hasErrors()) {
                     return FALSE;
                 } else {
-                    
+                    // :todo CLEAN THIS UP!!!!
                     //print_r($file_paths); die('PATHETIC');
 
                     header('Content-Description: File Transfer');
@@ -252,7 +267,7 @@ class AudioManager implements ErrorInterface
                     header('Content-Transfer-Encoding: binary');
                     header('Access-Control-Allow-Origin: *');
                     header('Expires: 0');
-                    header('Transfer-Encoding: chunked');
+                    // header('Transfer-Encoding: chunked'); // not needed and causes issues
 
                     // :todo - determine proper caching headers for debug and production
                     // :todo - figure out how to send duration of audio

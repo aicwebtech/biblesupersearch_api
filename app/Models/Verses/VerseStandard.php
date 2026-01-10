@@ -253,7 +253,7 @@ class VerseStandard extends VerseAbstract
         $book_table = 'books_' . strtolower($Bible->lang_short);
 
         if(!Schema::hasTable($book_table)) {
-            $book_table = 'books_' . strtolower(config('bss.default_language'));
+            $book_table = 'books_' . strtolower(config('app.locale'));
         }
 
         $structure = $Bible->audio_structure ?? 'chapters';

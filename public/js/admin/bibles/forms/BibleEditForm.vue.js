@@ -4,7 +4,11 @@ const template = `
     <div 
         max-width='600' 
     >
-    
+
+        <v-alert v-if='notInstalled' type='warning' outlined>
+            This Bible is not yet installed. Some options below are disabled.
+        </v-alert>
+
         <v-row v-bind='defaultProps.vrows'>
             <v-col>
                 <v-text-field 
@@ -95,20 +99,21 @@ const template = `
             <v-col>
                 <v-switch
                     class='ml-3'
-                    v-model='record.enabled'
-                    label='Enabled - whether the Bible is enabled for use'
+                    v-model='record.research'
+                    label="Research - select this if you don't reccomend this Bible for general use."
                     v-bind='defaultProps.switches'
                 ></v-switch>    
             </v-col>
         </v-row>
-
+        
         <v-row v-bind='defaultProps.vrows'>
             <v-col>
                 <v-switch
                     class='ml-3'
-                    v-model='record.research'
-                    label="Research - select this if you don't reccomend this Bible for general use."
+                    v-model='record.enabled'
+                    label='Enabled - whether the Bible is enabled for use'
                     v-bind='defaultProps.switches'
+                    :disabled='notInstalled'
                 ></v-switch>    
             </v-col>
         </v-row>
@@ -120,13 +125,19 @@ const template = `
                     v-model='record.audio_enable'
                     label='Audio Enabled - whether the Bible is enabled for audio'
                     v-bind='defaultProps.switches'
+                    :disabled='notInstalled'
                 ></v-switch>    
             </v-col>
         </v-row>
 
         <v-row v-bind='defaultProps.vrows' v-if='record.audio_enable'>
             <v-col>
-                <v-radio-group v-model='record.audio_structure' inline class='pl-4'>
+                <v-radio-group 
+                    v-model='record.audio_structure' 
+                    inline 
+                    class='pl-4' 
+                    :disabled='notInstalled'
+                >
                     <v-radio
                         label='By Chapter'
                         value='chapters'
@@ -308,6 +319,10 @@ export default {
         errors: {
             type: Object,
             default: {}
+        },
+        mode: {
+            type: String,
+            default: 'edit' // edit, import
         }
     },
     data() {
@@ -418,7 +433,10 @@ export default {
             }
 
             return this.bootstrap.tts_apis.find(api => api.key === tts_api).requires_voice || false;
-        }
+        },
+        notInstalled() {
+            return this.record.installed != '1' && this.mode == 'edit' || this.record.id == -1;
+        } 
     },
     methods: {
         languageItemProps(item) {

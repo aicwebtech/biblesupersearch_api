@@ -197,7 +197,7 @@ const template = `<v-sheet>
                                 <v-list-item-title>Edit</v-list-item-title>
                             </v-list-item>
 
-                            <v-list-item @click="clickAudio(item)" v-if='item.audio_enable == "1"'>
+                            <v-list-item @click="clickAudio(item)" v-if='item.audio_enable == "1" && item.installed == "1"'>
                                 <template v-slot:prepend>
                                     <v-icon icon="mdi-speaker"></v-icon>
                                 </template>

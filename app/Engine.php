@@ -627,8 +627,6 @@ class Engine implements ErrorInterface
         $audio = $Manager->checkAudioByInput($input, $Bible);
 
         if($Manager->hasErrors()) {
-            print_r( $Manager->getErrors() );
-            
             $this->mergeErrors($Manager);
             $response->success = false;
             return false;
@@ -749,7 +747,7 @@ class Engine implements ErrorInterface
 
         foreach($Bibles as $Bible) {
             $bibles[$Bible->module] = $Bible->getAttributes();
-            $bibles[$Bible->module]['audio_enable'] = (bool)$Bible->audio_enable;
+            $bibles[$Bible->module]['audio_enable'] = \App\AudioManager::audioEnabled($Bible);
             $bibles[$Bible->module]['tts_enable'] = \App\AudioManager::ttsEnabled($Bible);
             $bibles[$Bible->module]['tts_ai'] = \App\AudioManager::isTtsAI($Bible);
             $bibles[$Bible->module]['downloadable'] = $Bible->isDownloadable();

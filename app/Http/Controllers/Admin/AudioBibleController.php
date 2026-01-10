@@ -25,6 +25,14 @@ class AudioBibleController extends Controller
             abort(404, 'Bible not found');
         }
 
+        if(!$Bible->installed) {
+            abort(404, 'Bible not installed');
+        }
+
+        if(!AudioManager::audioEnabled($Bible)) {
+            abort(404, 'Bible has no audio');
+        }
+
         $params = $request->all();
         $params['page'] = isset($_REQUEST['page']) ? (int) $_REQUEST['page'] : 1;
         $rows_per_page = $request->input('rows_per_page', 10);

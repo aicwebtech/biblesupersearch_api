@@ -58,6 +58,7 @@ const tpl = `
                         <EditForm 
                             :record='bibleRecord'
                             v-if = 'confirmed'
+                            mode='import'
                         ></EditForm>
 
                         <v-sheet v-if='confirmed && errors.length > 0' background-color='warn' class='mt-10'>
