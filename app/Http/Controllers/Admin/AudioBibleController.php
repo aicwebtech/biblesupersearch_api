@@ -69,6 +69,24 @@ class AudioBibleController extends Controller
         return new Response($resp, 200);
     }
 
+    public function scan(Request $request)
+    {
+        $Manager = new AudioManager();
+
+        $module = $request->input('module', null);
+
+        if(empty($module)) {
+            return response(['error' => 'Invalid parameters'], 400);
+        }
+
+        $resp = new \stdClass();
+        $resp->success = true;
+
+        $resp->results = $Manager->scanAudioFiles($module);
+
+        return new Response($resp, 200);
+    }
+
     public function preview(Request $request)
     {
         $Manager = new AudioManager();
@@ -87,5 +105,32 @@ class AudioBibleController extends Controller
         $resp->results = $Manager->previewAudioFiles($module, $files, $matching);
 
         return new Response($resp, 200);
+    }
+
+    // Needs to handle MULTIPLE files deletion
+    public function delete(Request $request, $id)
+    {
+        // $Bible = Bible::find($id);
+
+        // if(!$Bible) {
+        //     abort(404, 'Bible not found');
+        // }
+
+        // if(!$Bible->installed) {
+        //     abort(404, 'Bible not installed');
+        // }
+
+        // if(!AudioManager::audioEnabled($Bible)) {
+        //     abort(404, 'Bible has no audio');
+        // }
+        
+        // $Manager = new AudioManager();
+
+        // $resp = new \stdClass();
+        // $resp->success = true;
+
+        // $resp->results = $Manager->deleteAudioFiles($module, $files);
+
+        // return new Response($resp, 200);
     }
 }

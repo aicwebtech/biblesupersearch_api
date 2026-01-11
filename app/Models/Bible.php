@@ -137,7 +137,7 @@ class Bible extends Model
      */
     public function verses($force = FALSE) 
     {
-        if(!$this->module) {
+        if (!$this->module) {
             throw new \Exception('Module required on Bible model to access verses model');
         }
 
@@ -505,7 +505,8 @@ class Bible extends Model
         }
     }
 
-    public function deleteRenderedFiles() {
+    public function deleteRenderedFiles() 
+    {
         $Renderings = \App\Models\Rendering::where('module', $this->module)->get();
 
         foreach($Renderings as $R) {
@@ -514,20 +515,24 @@ class Bible extends Model
         }
     }
 
-    public function getModuleFilePath($short = FALSE) {
+    public function getModuleFilePath($short = FALSE) 
+    {
         $path = ($this->official) ? static::getModulePath($short) : static::getUnofficialModulePath($short);
         return $path . $this->getModuleFileName();
     }
 
-    public function getModuleFilePathShort() {
+    public function getModuleFilePathShort() 
+    {
         return $this->getModulePath(TRUE);
     }
 
-    public function getModuleFileName() {
+    public function getModuleFileName() 
+    {
         return $this->module . '.zip';
     }
 
-    public function hasModuleFile() {
+    public function hasModuleFile() 
+    {
         return is_file($this->getModuleFilePath());
     }
 
@@ -552,16 +557,19 @@ class Bible extends Model
         return FALSE;
     }
 
-    public static function getExportFields() {
+    public static function getExportFields() 
+    {
         // Warning: Add new items to the end, do not change the order or existing modules will break
         return array('book', 'chapter', 'verse', 'text', 'italics', 'strongs');
     }
 
-    public static function getExportDelimiter() {
+    public static function getExportDelimiter() 
+    {
         return '|';
     }
 
-    public static function findByModule($module, $fail = FALSE) {
+    public static function findByModule($module, $fail = FALSE) 
+    {
         if ($fail) {
             return Bible::where('module', $module)->firstOrFail();
         }
@@ -570,32 +578,39 @@ class Bible extends Model
         }
     }
 
-    public static function isEnabled($module) {
+    public static function isEnabled($module) 
+    {
         $Bible = static::findByModule($module);
         return ($Bible && $Bible->enabled);
     }
 
-    public static function getModulePath($short = FALSE) {
+    public static function getModulePath($short = FALSE) 
+    {
         return static::_getModulePathBase($short) . 'modules/';
     }
 
-    public static function getModulePathShort() {
+    public static function getModulePathShort() 
+    {
         return static::_getModulePathBase(TRUE) . 'modules/';
     }
 
-    public static function getUnofficialModulePath($short = FALSE) {
+    public static function getUnofficialModulePath($short = FALSE) 
+    {
         return static::_getModulePathBase($short) . 'unofficial/';
     }
 
-    public static function getUnofficialModulePathShort() {
+    public static function getUnofficialModulePathShort() 
+    {
         return static::_getModulePathBase(TRUE) . 'unofficial/';
     }
 
-    protected static function _getModulePathBase($short = FALSE) {
+    protected static function _getModulePathBase($short = FALSE) 
+    {
         return $short ? 'bibles/' : dirname(__FILE__) . '/../../bibles/';
     }
 
-    public static function createFromModuleFile($module) {
+    public static function createFromModuleFile($module) 
+    {
         if(!$module) {
             return FALSE;
         }
@@ -622,7 +637,8 @@ class Bible extends Model
         return FALSE;
     }    
 
-    public static function updateFromModuleFile($module, $fields = []) {
+    public static function updateFromModuleFile($module, $fields = []) 
+    {
         if(!$module) {
             return FALSE;
         }
@@ -651,7 +667,8 @@ class Bible extends Model
         return FALSE;
     }
 
-    public static function getListOfModuleFiles() {
+    public static function getListOfModuleFiles() 
+    {
         $dirs = [];
 
         $dirs[] = static::getModulePath();
@@ -819,7 +836,7 @@ class Bible extends Model
         $namespace = __NAMESPACE__ . '\Verses';
         $class_name = $namespace . '\\' . $model_class;
 
-        if (!class_exists($class_name)) {
+        if (!class_exists($class_name)) {            
             $table = StandardVerses::getTableByModule($module);
             $perm_file = (func_num_args() >= 2) ? func_get_arg(1) : FALSE;
 
@@ -959,7 +976,8 @@ class Bible extends Model
         }
     }
 
-    public function getRandomReference($random_mode) {
+    public function getRandomReference($random_mode) 
+    {
         return $this->verses()->getRandomReference($random_mode);
     }
 
@@ -968,7 +986,8 @@ class Bible extends Model
      *
      * @return array
      */
-    public function attributes() {
+    public function attributes() 
+    {
         return [
             'copyright_id' => 'copyright',
         ];
@@ -979,7 +998,8 @@ class Bible extends Model
      * 
      * @return array
      */
-    public function getChapterVerseCount($verbose = FALSE) {    
+    public function getChapterVerseCount($verbose = FALSE) 
+    {    
         return $this->verses()->getChapterVerseCount($verbose);
     }
 }

@@ -28,10 +28,10 @@ class VerseStandard extends VerseAbstract
      * @param array $parameters Search parameters - user input
      * @return array $Verses array of Verses instances (found verses)
      */
-    public static function getSearch($Passages = NULL, $Search = NULL, $parameters = array()) 
+    public function getSearch($Passages = NULL, $Search = NULL, $parameters = array()) 
     {
         $Verse = new static;
-        $table = $Verse->getTable();
+        $table = $this->getTable();
         $passage_query = $search_query = NULL;
         $is_special_search = ($Search && $Search->is_special);
         $Query = DB::table($table . ' AS tb');
@@ -156,15 +156,14 @@ class VerseStandard extends VerseAbstract
      * @param boolean|null $whole_chapter Whether to get whole chapters only
      * @return array $Verses array of Verses instances (found verses)
      */
-    public static function getAudio($Passages, $parameters = [], $whole_chapter = null) 
+    public function getAudio($Passages, $parameters = [], $whole_chapter = null) 
     {
         if(!$Passages) {
             return FALSE;
         }
         
-        $Verse = new static;
-        $table = $Verse->getTable();
-        $Bible = $Verse->getBible();
+        $table = $this->getTable();
+        $Bible = $this->getBible();
 
         $whole_chapter_bible = false;
         $whole_chapter_manual = $whole_chapter !== null;
@@ -180,19 +179,19 @@ class VerseStandard extends VerseAbstract
         $Query->orderBy('book', 'ASC')->orderBy('chapter', 'ASC')->orderBy('verse', 'ASC');
 
         if($whole_chapter) {
-            $Query->join('bible_verses_audio AS a', function($join) use ($Verse) {
+            $Query->join('bible_verses_audio AS a', function($join) {
                 $join->on('tb.book', '=', 'a.book')
                     ->on('tb.chapter', '=', 'a.chapter')
                     ->whereNull('a.verse')
-                    ->on('a.module', '=', DB::raw("'" . $Verse->getModule() . "'"));
+                    ->on('a.module', '=', DB::raw("'" . $this->getModule() . "'"));
             });
             $Query->groupBy('tb.book','tb.chapter'); 
         } else {
-            $Query->leftJoin('bible_verses_audio AS a', function($join) use ($Verse) {
+            $Query->leftJoin('bible_verses_audio AS a', function($join) {
                 $join->on('tb.book', '=', 'a.book')
                     ->on('tb.chapter', '=', 'a.chapter')
                     ->on('tb.verse', '=', 'a.verse')
-                    ->on('a.module', '=', DB::raw("'" . $Verse->getModule() . "'"));
+                    ->on('a.module', '=', DB::raw("'" . $this->getModule() . "'"));
             });
         }
 
@@ -244,12 +243,11 @@ class VerseStandard extends VerseAbstract
      * @param array $parameters Search parameters - user input
      * @return array $Verses array of Verses instances (found verses)
      */
-    public static function getAudioAll($parameters = []) 
+    public function getAudioAll($parameters = []) 
     {
-        $Verse = new static;
-        $table = $Verse->getTable();
-        $Bible = $Verse->getBible();
-
+        $table = $this->getTable();
+        $Bible = $this->getBible();
+        
         $book_table = 'books_' . strtolower($Bible->lang_short);
 
         if(!Schema::hasTable($book_table)) {
@@ -281,15 +279,15 @@ class VerseStandard extends VerseAbstract
             'b.name AS book_name', 
             'tb.book','tb.chapter','tb.verse','a.id', 
             DB::raw('"chapter" AS type'),
-            DB::raw('IF(' . $prefix . 'a.id IS NULL, 0, 1) AS has_audio')
+            DB::raw('IF(' . $prefix . 'a.file_name IS NULL, 0, 1) AS has_audio')
         );
         $QueryVerses->join($book_table . ' AS b', 'tb.book', '=', 'b.id');
         
-        $QueryVerses->leftJoin('bible_verses_audio AS a', function($join) use ($Verse) {
+        $QueryVerses->leftJoin('bible_verses_audio AS a', function($join) {
             $join->on('tb.book', '=', 'a.book')
                 ->on('tb.chapter', '=', 'a.chapter')
                 ->on('tb.verse', '=', 'a.verse')
-                ->on('a.module', '=', DB::raw("'" . $Verse->getModule() . "'"));
+                ->on('a.module', '=', DB::raw("'" . $this->getModule() . "'"));
         });
         
         $QueryVerses->orderBy('book', 'ASC')->orderBy('chapter', 'ASC')->orderBy('verse', 'ASC');
@@ -301,16 +299,16 @@ class VerseStandard extends VerseAbstract
             DB::raw('NULL AS verse'), 
             'a.id', 
             DB::raw('"verse" AS type'),
-            DB::raw('IF(' . $prefix . 'a.id IS NULL, 0, 1) AS has_audio')
+            DB::raw('IF(' . $prefix . 'a.file_name IS NULL, 0, 1) AS has_audio')
         );
 
         $QueryChapters->join($book_table . ' AS b', 'tb.book', '=', 'b.id');
 
-        $QueryChapters->leftJoin('bible_verses_audio AS a', function($join) use ($Verse) {
+        $QueryChapters->leftJoin('bible_verses_audio AS a', function($join) {
             $join->on('tb.book', '=', 'a.book')
                 ->on('tb.chapter', '=', 'a.chapter')
                 ->whereNull('a.verse')
-                ->on('a.module', '=', DB::raw("'" . $Verse->getModule() . "'"));
+                ->on('a.module', '=', DB::raw("'" . $this->getModule() . "'"));
         });
 
         $QueryChapters->groupBy('tb.book','tb.chapter');
@@ -334,7 +332,7 @@ class VerseStandard extends VerseAbstract
                 'type'  => 'int',
             ],        
             'has_audio' => [
-                'field' => 'a.id',
+                'field' => 'a.file_name',
                 'type'  => 'bool_null',
             ],
         ];
@@ -726,9 +724,8 @@ class VerseStandard extends VerseAbstract
         return $Query->count();
     }
 
-    public static function getStatistics($Passage, $input = [])
+    public function getStatistics($Passage, $input = [])
     {
-
         $b = $c = $v = null;
 
         $has_verses = $has_chapters = false;
@@ -841,7 +838,7 @@ class VerseStandard extends VerseAbstract
         $stats = [];
 
         foreach($queries as $type => $query) {
-            $stats[$type] = self::statsHelper($type, $query, $references[$type], $full_bible);
+            $stats[$type] = $this->statsHelper($type, $query, $references[$type], $full_bible);
         }
 
         unset($full_bible['_chapter_counts']);
@@ -849,7 +846,7 @@ class VerseStandard extends VerseAbstract
         return $stats;
     }
 
-    protected static function statsHelper($type = 'full', $query = null, $reference = null, $full_bible = [])
+    protected function statsHelper($type = 'full', $query = null, $reference = null, $full_bible = [])
     {
         $sub = [
             'type'          => $type,
@@ -859,8 +856,7 @@ class VerseStandard extends VerseAbstract
             'num_books'     => null,
         ];
 
-        $Verse = new static;
-        $table = $Verse->getTable();
+        $table = $this->getTable();
         $Query = DB::table($table . ' AS tb');
 
         $Query->select('id','book','chapter','verse','text','italics');

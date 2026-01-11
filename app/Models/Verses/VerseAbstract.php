@@ -90,7 +90,7 @@ abstract class VerseAbstract extends Model
      * @param array $parameters Search parameters - user input
      * @return array $Verses array of Verses instances (found verses)
      */
-    public static function getSearch($Passages = NULL, $Search = NULL, $parameters = []) 
+    public function getSearch($Passages = NULL, $Search = NULL, $parameters = []) 
     {
         throw new StandardException('Must implement getSearch in child class!');
     }
@@ -102,7 +102,7 @@ abstract class VerseAbstract extends Model
      * @param array $parameters Search parameters - user input
      * @return array $Verses array of Verses instances (found verses)
      */
-    public static function getAudio($Passages, $parameters = []) 
+    public function getAudio($Passages, $parameters = []) 
     {
         throw new StandardException('Must implement getAudio in child class!');
     }
@@ -113,7 +113,7 @@ abstract class VerseAbstract extends Model
      * @param array $parameters Search parameters - user input
      * @return array $Verses array of Verses instances (found verses)
      */
-    public static function getAudioAll($parameters = []) 
+    public function getAudioAll($parameters = []) 
     {
         throw new StandardException('Must implement getAudioAll in child class!');
     }

@@ -553,17 +553,18 @@ export default {
             if(!item || item.audio_enable != '1') {
                 return;
             }
-            
-            console.log('clickAudio', item);
             this.closeEdit();
 
             this.audioManagingId = item.id;
             this.selection = item;
+            // console.log('clickAudio', item, this.selection);
+
             this.editingId = null;
         },
         closeAudio() {
             this.audioManagingId = null;
             this.editingId = null;
+            this.selection = null;
         },
         closeDialogs() {
             this.closeEdit();

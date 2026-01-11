@@ -10,7 +10,7 @@ const tpl = `
     >
         <template v-slot:default="{ isActive }">
             <v-card>
-                <v-card-title>{{title}}</v-card-title>
+                <v-card-title>Audio Bible Manager: {{record?.name}}</v-card-title>
                 <v-card-text>
                     <AudioUploadDialog
                         ref='uploadDialog'
@@ -62,7 +62,7 @@ const tpl = `
                     
                         <template v-slot:item.has_audio={item}>
                             <ChipBool
-                                :value="item.id !== null"
+                                :value="item.has_audio"
                                 v-bind='chipProps'
                                 @click-false="openUploadSingle(item)"
                             />
@@ -80,6 +80,11 @@ const tpl = `
 
                 <v-card-actions>
                     <v-spacer></v-spacer>
+
+                    <v-btn
+                        text='scan'
+                        @click='scan()'
+                    ></v-btn>
 
                     <v-btn
                         text='Close'
@@ -153,15 +158,19 @@ export default {
             },
         }
     },
-    computed: {
-        title() {
-            return 'Audio Bible Manager: ' + this.record?.name;
-        }
-    },
+    // computed: {
+    //     title() {
+    //         console.log('title record', this.record);
+            
+    //         if(this.record == null) {
+    //             return 'Audio Bible Manager';
+    //         }
+            
+    //         return 'Audio Bible Manager: ' + this.record?.name;
+    //     }
+    // },
     watch: {
         recordId(newValue, oldValue) {
-            console.log('recordId', newValue);
-
             if(newValue === false || newValue === null) {
                 this.showing = false;
                 return;
@@ -184,6 +193,16 @@ export default {
         closeDialog() {
             this.showing = false;
             this.$emit('onClose');
+        },
+        scan() {
+            axios.post('/admin/bibles/audio/scan', {module: this.record.module, bible_id: this.record.id})
+                .then(response => {
+                    this.gridRefresh();
+                })
+                .catch(error => {
+                    console.error('Error scanning audio:', error);
+                });
+
         }
     }
 };

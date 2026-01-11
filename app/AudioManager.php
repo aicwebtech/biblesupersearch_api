@@ -537,6 +537,103 @@ class AudioManager implements ErrorInterface
         return $results;
     }
 
+    public function deleteAudioFile($module, $book, $chapter, $verse = null)
+    {
+        // if($verse === null) {
+        //     $ABB = AudioBibleVerse::where('module', $module)
+        //         ->where('book', $book)
+        //         ->where('chapter', $chapter)
+        //         ->whereNull('verse')
+        //         ->first();
+        // } else {
+        //     $ABB = AudioBibleVerse::where('module', $module)
+        //         ->where('book', $book)
+        //         ->where('chapter', $chapter)
+        //         ->where('verse', $verse)
+        //         ->first();
+        // }
+
+        // if(!$ABB || !$ABB->file_name) {
+        //     return $this->addTransError('errors.audio.file_not_found');
+        // }
+
+        // $file_path = TtsAbstract::getAudioFilePathStatic($module) . '/' . $ABB->file_name;
+
+        // if(file_exists($file_path)) {
+        //     unlink($file_path);
+        // }
+
+        // $ABB->delete();
+
+        // return true;
+    }
+
+    public function scanAudioFiles($module)
+    {
+        $audio_path = TtsAbstract::getAudioFilePathStatic($module);
+
+        // Delete existing records (do not delete files)
+        // Todo - only delete filenames
+        AudioBibleVerse::where('module', $module)->delete();
+
+        // AudioBibleVerse::where('module', $module)->
+
+        $results = [];
+
+        if(!is_dir($audio_path)) {
+            return $this->addTransError('errors.audio.audio_path_not_found', ['path' => $audio_path]);
+        }
+
+        $files = scandir($audio_path);
+
+        foreach($files as $file) {
+            if(in_array($file, ['.', '..'])) {
+                continue;
+            }
+
+            $parts = explode('_', $file);
+
+            $b = isset($parts[0]) ? (int) $parts[0] : null;
+            $c = isset($parts[1]) ? (int) $parts[1] : null;
+            $v = isset($parts[2]) ? (int) $parts[2] : null;
+            
+            if(!$b || !$c) {
+                continue;
+            }
+
+            if($v === null) {
+                $ABB = AudioBibleVerse::where('module', $module)
+                    ->where('book', $b)
+                    ->where('chapter', $c)
+                    ->whereNull('verse')
+                    ->first();
+            } else {
+                $ABB = AudioBibleVerse::where('module', $module)
+                    ->where('book', $b)
+                    ->where('chapter', $c)
+                    ->where('verse', $v)
+                    ->first();
+            }
+
+            if(!$ABB) {
+                $ABB = new AudioBibleVerse();
+                $ABB->book    = $b;
+                $ABB->chapter = $c;
+                $ABB->verse   = $v;
+                $ABB->module = $module;
+            }
+
+            $ABB->file_name    = $file;
+            $ABB->save();
+
+            $results[] = $file;
+        }
+
+        natsort($results);
+
+        return array_values($results);
+    }
+
     /**
      * Attempts to parse a filename to extract book, chapter, verse info
      * based on known patterns.

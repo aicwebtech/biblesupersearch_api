@@ -111,6 +111,7 @@ Route::resource('/admin/bibles', 'Admin\BibleController', ['as' => 'admin']);
 Route::get('/admin/bibles/audio/grid/{id}', 'Admin\AudioBibleController@grid');
 Route::post('/admin/bibles/audio/upload', 'Admin\AudioBibleController@upload');
 Route::post('/admin/bibles/audio/preview', 'Admin\AudioBibleController@preview');
+Route::post('/admin/bibles/audio/scan', 'Admin\AudioBibleController@scan');
 
 
 // Language manager routes
