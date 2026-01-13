@@ -28,21 +28,43 @@ const tpl = `
                         </template>
                     </AudioUploadDialog>
 
-                    <v-btn 
-                        prepend-icon="mdi-upload" 
-                        class="mb-2" 
-                        color="primary" 
-                        @click="$refs.uploadDialog.openDialog()"
-                    >Upload Audio Files</v-btn>
+                    <v-sheet v-if='rowSelections.length > 0' class='mt-3 mb-12'>
+                        <v-btn 
+                            prepend-icon="mdi-delete" 
+                            size='small'
+                            class="mb-2 float-left" 
+                            @click="deleteSelectedRows()"
+                        >Delete Audio Files</v-btn>
+                        <span class='clear-both'></span>
+                    </v-sheet>
+                    <v-sheet v-else class='mt-3 mb-12'>
+                        <span class='float-right'>&nbsp;</span>
+                        <v-btn 
+                            prepend-icon="mdi-upload" 
+                            size='small'
+                            class="mb-2 float-right" 
+                            @click="$refs.uploadDialog.openDialog()"
+                        >Upload Audio Files</v-btn>
+                        <span class='clear-both'></span>
+                    </v-sheet>
 
                     <v-data-table-server
                         ` + gridTemplateProps + `
-
+                        show-select
+                        :item-value="item => rowId(item)"
+                        v-model='rowSelections'
                         :headers="headers"
                     >
                         <template v-slot:thead>
                             <tr class='grid-thead-search'>
- 
+                                <td class='text-center pa-0 ma-0' style='width:40px;'>
+                                    <v-btn 
+                                        icon='mdi-filter-remove' 
+                                        size='x-small' 
+                                        @click='gridResetSearch()'
+                                        title='Reset Filters'
+                                    ></v-btn>
+                                </td>
                                 <td v-for='col in headers'>
                                     <component 
                                         :is="col.searchComponent || 'v-text-field'" 
@@ -62,7 +84,7 @@ const tpl = `
                     
                         <template v-slot:item.has_audio={item}>
                             <ChipBool
-                                :value="item.has_audio"
+                                :value="item.has_audio == 1"
                                 v-bind='chipProps'
                                 @click-false="openUploadSingle(item)"
                             />
@@ -72,7 +94,7 @@ const tpl = `
                             <span v-else>Verse</span>
                         </template>
                         <template v-slot:item.verse={item}>
-                            <span v-if='item.verse === null'>(all)</span>
+                            <span v-if='item.verse === null'>(whole chapter)</span>
                             <span v-else>{{item.verse}}</span>
                         </template>
                     </v-data-table-server>  
@@ -83,6 +105,7 @@ const tpl = `
 
                     <v-btn
                         text='scan'
+                        :loading='scanLoading'
                         @click='scan()'
                     ></v-btn>
 
@@ -156,19 +179,10 @@ export default {
                 size: 'small',
                 density: 'comfortable'
             },
+            scanLoading: false,
+            rowSelections: [],
         }
     },
-    // computed: {
-    //     title() {
-    //         console.log('title record', this.record);
-            
-    //         if(this.record == null) {
-    //             return 'Audio Bible Manager';
-    //         }
-            
-    //         return 'Audio Bible Manager: ' + this.record?.name;
-    //     }
-    // },
     watch: {
         recordId(newValue, oldValue) {
             if(newValue === false || newValue === null) {
@@ -177,6 +191,7 @@ export default {
             }
 
             // reset grid BEFORE changing URL
+            this.gridClearSearch();
             this.gridResetData();
             // Changing URL will cause grid refresh (ie reactive)
             this.url = '/admin/bibles/audio/grid/' + newValue;
@@ -195,14 +210,50 @@ export default {
             this.$emit('onClose');
         },
         scan() {
+            this.scanLoading = true;
+            
             axios.post('/admin/bibles/audio/scan', {module: this.record.module, bible_id: this.record.id})
                 .then(response => {
                     this.gridRefresh();
+                    this.scanLoading = false;
+                    this.closeDialog
                 })
                 .catch(error => {
                     console.error('Error scanning audio:', error);
+                    this.scanLoading = false;
                 });
+        },
+        rowId(item) {
+            if(item.id) {
+                return item.id;
+            }
 
+            return 'a_' + item.book + '_' + item.chapter + '_' + (item.verse || '0');
+        },
+        deleteSelectedRows() {
+            if(this.rowSelections.length === 0) {
+                alert('No audio files selected for deletion.');
+                return;
+            }
+
+            if(!confirm('Are you sure you want to delete the selected audio files? This action cannot be undone.')) {
+                return;
+            }
+
+            var idsToDelete = this.rowSelections.filter(ids => typeof ids === 'number');
+
+            axios.post('/admin/bibles/audio/delete', {
+                ids: idsToDelete,
+                module: this.record.module,
+                bible_id: this.record.id,
+            })
+            .then(response => {
+                this.rowSelections = [];
+                this.gridRefresh();
+            })
+            .catch(error => {
+                console.error('Error deleting audio files:', error);
+            });
         }
     }
 };

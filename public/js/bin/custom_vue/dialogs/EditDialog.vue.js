@@ -170,8 +170,8 @@ export default {
                 data: this.recording
             }).then(function(response) {
                 t.loading = false;
-                t.$emit('onSave');
                 t.closeDialog();
+                t.$emit('onSave');
             }).catch(function(error) {
                 t.responseErrors = error?.response?.data?.errors || null;
                 t.loading = false;

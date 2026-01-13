@@ -682,7 +682,7 @@ class Engine implements ErrorInterface
         $Bibles = Bible::select('bibles.name','shortname','module','year','owner', 'description',
             'languages.name AS lang','lang_short','copyright','italics','strongs','red_letter',
             'paragraph','rank','research','bibles.restrict','copyright_id','copyright_statement', 
-            'audio_enable', 'tts_enable',
+            'audio_enable', 'tts_enable', 'audio_structure',
             'languages.rtl', 'languages.native_name AS lang_native');
 
         $Bibles->leftJoin('languages', 'bibles.lang_short', 'languages.code');
@@ -750,6 +750,7 @@ class Engine implements ErrorInterface
             $bibles[$Bible->module]['audio_enable'] = \App\AudioManager::audioEnabled($Bible);
             $bibles[$Bible->module]['tts_enable'] = \App\AudioManager::ttsEnabled($Bible);
             $bibles[$Bible->module]['tts_ai'] = \App\AudioManager::isTtsAI($Bible);
+            $bibles[$Bible->module]['audio_structure'] = $Bible->audio_structure ?: 'chapter';
             $bibles[$Bible->module]['downloadable'] = $Bible->isDownloadable();
             $bibles[$Bible->module]['copyright_statement'] = $Bible->getCopyrightStatement();
         }

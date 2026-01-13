@@ -108,29 +108,36 @@ class AudioBibleController extends Controller
     }
 
     // Needs to handle MULTIPLE files deletion
-    public function delete(Request $request, $id)
+    public function delete(Request $request)
     {
-        // $Bible = Bible::find($id);
+        $ids = $request->input('ids', []);
+        $module = $request->input('module', null);
 
-        // if(!$Bible) {
-        //     abort(404, 'Bible not found');
-        // }
+        if(empty($module) || empty($ids)) {
+            return response(['error' => 'Invalid parameters'], 400);
+        }
 
-        // if(!$Bible->installed) {
-        //     abort(404, 'Bible not installed');
-        // }
+        $Bible = Bible::findByModule($module);
 
-        // if(!AudioManager::audioEnabled($Bible)) {
-        //     abort(404, 'Bible has no audio');
-        // }
+        if(!$Bible) {
+            abort(404, 'Bible not found');
+        }
         
-        // $Manager = new AudioManager();
+        if(!$Bible->installed) {
+            abort(404, 'Bible not installed');
+        }
 
-        // $resp = new \stdClass();
-        // $resp->success = true;
+        if(!AudioManager::audioEnabled($Bible)) {
+            abort(404, 'Bible has no audio');
+        }
+        
+        $Manager = new AudioManager();
 
-        // $resp->results = $Manager->deleteAudioFiles($module, $files);
+        $resp = new \stdClass();
+        $resp->success = true;
 
-        // return new Response($resp, 200);
+        $resp->results = $Manager->deleteAudioFiles($module, $ids);
+
+        return new Response($resp, 200);
     }
 }
