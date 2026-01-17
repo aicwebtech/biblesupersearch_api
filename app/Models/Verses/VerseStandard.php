@@ -175,7 +175,7 @@ class VerseStandard extends VerseAbstract
         }
 
         $Query = DB::table($table . ' AS tb');
-        $Query->select('tb.id','tb.book','tb.chapter','tb.verse','tb.text','a.file_name');
+        $Query->select('tb.id','tb.book','tb.chapter','tb.verse','tb.text','a.file_name', 'a.id AS audio_id');
         $Query->orderBy('book', 'ASC')->orderBy('chapter', 'ASC')->orderBy('verse', 'ASC');
 
         if($whole_chapter) {

@@ -41,8 +41,13 @@ class Narakeet extends TtsAbstract
 
         $curl = curl_init();
         curl_setopt_array($curl, $options);
-        curl_exec($curl);
+        $success = curl_exec($curl);
+        $curl_info = curl_getinfo($curl);
         curl_close($curl);
+
+        if($curl_info['http_code'] != 200) {
+            return false;
+        }
 
         return true;
     }

@@ -93,7 +93,7 @@ abstract class TtsAbstract implements ErrorInterface
         }
 
         try {
-            $file_handle = fopen($file_path, 'w');
+            $file_handle = fopen($file_path, 'w+');
 
             if(!$file_handle) {
                 return $this->addError('Unable to open file for writing: ' . $file_path);
@@ -104,6 +104,23 @@ abstract class TtsAbstract implements ErrorInterface
             $success = $this->generateAudioHelper($text, $options, $file_handle);
 
             fclose($file_handle);
+
+            if($success === false) {
+                $json = json_decode( file_get_contents($file_path), true );
+
+                if(isset($json['error'])) {
+                    if(is_array($json['error'])) {
+                        $error_msg = isset($json['error']['message']) ? $json['error']['message'] : json_encode($json['error']);
+                    } else {
+                        $error_msg = $json['error'];
+                    }
+                    
+                    $this->addTransError('errors.audio.tts_api_error', ['api' => static::$label, 'error' => $error_msg]);
+                }
+                
+                unlink($file_path);
+                return FALSE;
+            }
 
             return $success;
         } catch (\Exception $e) {

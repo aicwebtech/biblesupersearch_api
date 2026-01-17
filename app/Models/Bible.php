@@ -22,6 +22,8 @@ class Bible extends Model
     {
         $bible_id = (int) $bible_id;
 
+        // Items in this list also need to be added to $this->fillable below or mass assignment will fail
+
         $rules = array(
             'name'      => [
                 'required',
@@ -54,6 +56,7 @@ class Bible extends Model
             'research'              => 'nullable|boolean',
             'audio_enable'          => 'nullable|boolean',
             'tts_enable'            => 'nullable|boolean',
+            'tts_voice'             => 'nullable',
             'audio_structure'       => 'nullable|in:verses,chapters,both',
             'description'           => 'nullable',
             'copyright_statement'   => 'nullable',
@@ -97,6 +100,7 @@ class Bible extends Model
         'importer',
         'audio_enable',
         'tts_enable',
+        'tts_voice',
         'audio_structure',
         'import_file',
     );

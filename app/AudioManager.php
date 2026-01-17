@@ -23,7 +23,7 @@ class AudioManager implements ErrorInterface
         // 'elevenlabs' => \App\TextToSpeech\Elevenlabs::class,
         // 'murfai'   => \App\TextToSpeech\MurfAI::class,
         'narakeet' => \App\TextToSpeech\Narakeet::class,
-        // 'openai'   => \App\TextToSpeech\OpenAI::class,
+        'openai'   => \App\TextToSpeech\OpenAI::class,
     ];
 
     static public $filename_matches = [
@@ -188,9 +188,13 @@ class AudioManager implements ErrorInterface
             }
 
             foreach($verses as &$verse) {
-                $verse_has_audio = (bool) $verse->file_name;
+                $verse_has_audio = false;
+            
+                if($verse->file_name && is_file(TtsAbstract::getAudioFilePathStatic($Bible->module) . '/' . $verse->file_name)) {
+                    $verse_has_audio = true;
+                }
                 
-                if(!$verse->file_name && $mode == 'generate') {
+                if(!$verse_has_audio && $mode == 'generate') {
                     if($this->checkCanRenderTts($Bible) !== true) {
                         continue;
                     }
@@ -198,15 +202,25 @@ class AudioManager implements ErrorInterface
                     $success = $this->renderAudioTTS($Bible, $verse, $parameters);
 
                     if($success) {
-                        $ABV = new \App\Models\AudioBibleVerse();
-                        $ABV->module    = $Bible->module;
-                        $ABV->book      = $verse->book;
-                        $ABV->chapter   = $verse->chapter;
-                        $ABV->verse     = $verse->verse;
-                        $ABV->file_name = $verse->file_name;
-                        $ABV->source    = config('audio.tts_api', 'narakeet');
-                        $ABV->voice     = $success['voice'] ?? null;
-                        $ABV->save();
+                        if($verse->audio_id) {
+                            // update existing record
+                            $ABV = \App\Models\AudioBibleVerse::find($verse->audio_id);
+                            $ABV->file_name = $verse->file_name;
+                            $ABV->source    = config('audio.tts_api', 'narakeet');
+                            $ABV->voice     = $success['voice'] ?? null;
+                            $ABV->save();
+                        } else {
+                            // create new record}
+                            $ABV = new \App\Models\AudioBibleVerse();
+                            $ABV->module    = $Bible->module;
+                            $ABV->book      = $verse->book;
+                            $ABV->chapter   = $verse->chapter;
+                            $ABV->verse     = $verse->verse;
+                            $ABV->file_name = $verse->file_name;
+                            $ABV->source    = config('audio.tts_api', 'narakeet');
+                            $ABV->voice     = $success['voice'] ?? null;
+                            $ABV->save();
+                        }
                         $verse_has_audio = true;
                     }
                 }
@@ -575,13 +589,22 @@ class AudioManager implements ErrorInterface
             'removed'  => [],
         ];
 
-        // Delete existing records (do not delete files)
-        // Todo - only delete filenames
+        $dup_check = [];
+
         $abv = AudioBibleVerse::where('module', $module)
-            ->whereNotNull('file_name')
+            ->orderBy('id', 'ASC')
             ->get();
 
         foreach($abv as $record) {
+            $idx = $record->book . '_' . $record->chapter . '_' . ($record->verse ?? '0');
+
+            if(isset($dup_check[$idx])) {
+                // duplicate record, delete it
+                $record->delete();
+            } else {
+                $dup_check[$idx] = true;
+            }   
+        
             if($record->file_name) {
                 $file_path = TtsAbstract::getAudioFilePathStatic($module) . '/' . $record->file_name;
 
@@ -618,7 +641,7 @@ class AudioManager implements ErrorInterface
             $parsed = $this->parseInternalFilename($file);
             $ABB = $this->getAudioBibleVerse($module, $parsed['book'], $parsed['chapter'], $parsed['verse']);
 
-            $ABB->file_name    = $file;
+            $ABB->file_name = $file;
             $ABB->save();
 
             $results['added'][] = $file;
