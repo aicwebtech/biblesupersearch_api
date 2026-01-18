@@ -65,6 +65,20 @@ const template = `
             </v-col>
         </v-row>   
 
+        <v-row v-bind='defaultProps.vrows' v-if='bootstrap.tts_enabled'>
+            <v-col>
+                <v-text-field 
+                    :label="'Text to Speech Speed (' + ttsApiName + ')'"
+                    v-model='record.tts_speed'
+                    v-bind='defaultProps.texts'
+                    :rules="[
+                        v => (v === null || v === '' || (!isNaN(v) && v >= 0.25 && v <= 4.0)) || 'Speed must be a number between 0.25 and 4.0'
+                    ]"
+                    persistent-hint
+                ></v-text-field>
+            </v-col>
+        </v-row>  
+
         <v-row v-bind='defaultProps.vrows'>
             <v-col>
                 <v-textarea 

@@ -13,19 +13,26 @@ class OpenAI extends TtsAbstract
 
     public function generateAudioHelper($text, $options, $file_handle)
     {
-        $apikey = $this->getApiKey();
-        $voice = $this->getVoice();
+        $s = $this->getSettings();
 
-        if(!$voice) {
+        if(!$s['voice']) {
             return $this->addTransError('errors.audio.no_tts_voice', ['api' => self::$label, 'language' => $this->Bible->lang_short]);
         }
 
         $data = [
             'model' => 'gpt-4o-mini-tts',
-            'voice' => $voice,
+            'voice' => $s['voice'],
             'input' => $text,
             'instructions' => 'Text is in the language of ' . $this->Bible->lang_short,
         ];
+
+        if($s['speed'] && $s['speed'] != 1.0) {
+            $data['speed'] = (float) $s['speed'];
+        }
+
+        // print_r($s);
+        // print_r($data);
+        // return false;
 
         $url = "https://api.openai.com/v1/audio/speech";
 
@@ -35,7 +42,7 @@ class OpenAI extends TtsAbstract
             CURLOPT_POST => true,
             CURLOPT_POSTFIELDS => json_encode($data),
             CURLOPT_HTTPHEADER => [
-                "Authorization: Bearer $apikey",
+                "Authorization: Bearer {$s['api_key']}",
                 'Content-Type: application/json',
             ],
             CURLOPT_FILE => $file_handle,

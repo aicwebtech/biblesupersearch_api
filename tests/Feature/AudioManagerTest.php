@@ -37,7 +37,7 @@ class AudioManagerTest extends TestCase
 
         Config::set('audio.tts_api_enable', false);
 
-        $Bible = new \stdClass();
+        $Bible = new \App\Models\Bible();
         $Bible->audio_enable = true;
         $Bible->tts_enable = true;
         $Bible->module = 'TEST';
@@ -75,7 +75,7 @@ class AudioManagerTest extends TestCase
         $rp = new \ReflectionProperty(AudioManager::class, 'tts_apis');
         $rp->setValue(null, []);
 
-        $Bible = new \stdClass();
+        $Bible = new \App\Models\Bible();
         $Bible->audio_enable = true;
         $Bible->tts_enable = true;
         $Bible->module = 'TEST';

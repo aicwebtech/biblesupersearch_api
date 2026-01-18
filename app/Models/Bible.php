@@ -57,6 +57,7 @@ class Bible extends Model
             'audio_enable'          => 'nullable|boolean',
             'tts_enable'            => 'nullable|boolean',
             'tts_voice'             => 'nullable',
+            'tts_speed'             => 'nullable|numeric|min:0.25|max:4.0',
             'audio_structure'       => 'nullable|in:verses,chapters,both',
             'description'           => 'nullable',
             'copyright_statement'   => 'nullable',
@@ -101,6 +102,7 @@ class Bible extends Model
         'audio_enable',
         'tts_enable',
         'tts_voice',
+        'tts_speed',
         'audio_structure',
         'import_file',
     );

@@ -388,6 +388,8 @@ class VerseStandard extends VerseAbstract
 
         if($sidx) {
             $Query->orderBy($sidx, $sord);
+        } else {
+            $Query->orderBy('book', 'ASC')->orderBy('chapter', 'ASC')->orderBy('verse', 'ASC');
         }
 
         // print($Query->toSql()); die();

@@ -63,11 +63,25 @@ abstract class TtsAbstract implements ErrorInterface
         ];
     }
 
+    public function getSettings()
+    {
+        return [
+            'api_key' => $this->getApiKey(),
+            'voice' => $this->getVoice(),
+            'speed' => $this->getSpeed(),
+        ];
+    }
+
     public function getVoice()
     {
         $voice = static::getVoiceByBible($this->Bible);
         $this->details['voice'] = $voice;
         return $voice;
+    }
+
+    public function getSpeed()
+    {
+        return static::getSpeedByBible($this->Bible);
     }
 
     public function getApiKey()
@@ -259,6 +273,32 @@ abstract class TtsAbstract implements ErrorInterface
 
         // return api default voice
         return config('text_to_speech.' . $tts_api . '.voice');
+    }
+
+    public static function getSpeedByBible(Bible $Bible, $tts_api = null)
+    {
+        $b_speed = $Bible->tts_speed ? (float) $Bible->tts_speed : null;
+        
+        if($b_speed) {
+            return $b_speed; // use override from bible table
+        }
+        
+        return static::getSpeedByLanguage($Bible->lang_short, $tts_api);
+    }
+
+    public static function getSpeedByLanguage($language_short, $tts_api = null)
+    {
+        if(!$tts_api) {
+            $tts_api = strtolower( (new \ReflectionClass(static::class))->getShortName() );
+        }
+
+        $Lang = Language::findByCode($language_short);
+
+        if($Lang && $Lang->tts_speed) {
+            return $Lang->tts_speed; // use override from language table
+        }
+
+        return 1; // default speed
     }
 
     public static function getAllApiVoicesByLanguage($language_short)

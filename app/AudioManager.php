@@ -177,7 +177,6 @@ class AudioManager implements ErrorInterface
 
             $compat_mode = !Ffmpeg::canUse();
             $mp3_str = null;
-            $mp3_size = 0;
             $single_verse = (count($verses) == 1);
             $this->has_all_audio = count($verses) > 0;
             $file_paths = [];
@@ -199,29 +198,20 @@ class AudioManager implements ErrorInterface
                         continue;
                     }
                     
+                    set_time_limit(60); // extend time limit for TTS generation
                     $success = $this->renderAudioTTS($Bible, $verse, $parameters);
 
                     if($success) {
-                        if($verse->audio_id) {
-                            // update existing record
-                            $ABV = \App\Models\AudioBibleVerse::find($verse->audio_id);
-                            $ABV->file_name = $verse->file_name;
-                            $ABV->source    = config('audio.tts_api', 'narakeet');
-                            $ABV->voice     = $success['voice'] ?? null;
-                            $ABV->save();
-                        } else {
-                            // create new record}
-                            $ABV = new \App\Models\AudioBibleVerse();
-                            $ABV->module    = $Bible->module;
-                            $ABV->book      = $verse->book;
-                            $ABV->chapter   = $verse->chapter;
-                            $ABV->verse     = $verse->verse;
-                            $ABV->file_name = $verse->file_name;
-                            $ABV->source    = config('audio.tts_api', 'narakeet');
-                            $ABV->voice     = $success['voice'] ?? null;
-                            $ABV->save();
-                        }
+                        $ABV = $this->getAudioBibleVerse($Bible->module, $verse->book, $verse->chapter, $verse->verse);
+
+                        $ABV->file_name = $verse->file_name;
+                        $ABV->source    = config('audio.tts_api', 'narakeet');
+                        $ABV->voice     = $success['voice'] ?? null;
+                        $ABV->save();
+
                         $verse_has_audio = true;
+                    } else {
+                        break; // stop processing if TTS generation failed
                     }
                 }
 
@@ -236,29 +226,12 @@ class AudioManager implements ErrorInterface
                     if(file_exists($file_path)) {
                         $file_paths[] = realpath($file_path);
                         
-                        //$mp3_str .= file_get_contents($file_path);
-                        // write to tmp file
-                        // $fp = fopen($file_path, 'rb');
-
-                        // $MP3 = MpegAudio::fromFile($file_path);
-                        // $frameCount = $MP3->getStart();
-
                         $MP3 = new Mp3($file_path);                        
                         $MP3->stripTags();
-
-                        $str_sans_tags = $MP3->getStr();
 
                         if ($compat_mode) {
                             fwrite($mp3_tmp, $MP3->getStr());
                         }
-                        
-                        $mp3_size += strlen($MP3->getStr());
-
-                        // if($fp) {
-                        //     stream_copy_to_stream($fp, $mp3_tmp);
-                        //     fclose($fp);
-                        //     $verse_has_audio = true;
-                        // }
                     } else {
                         $this->addTransError('errors.audio_file_missing', ['bcv' => $verse->book . ' ' . $verse->chapter . ':' . $verse->verse]);
                     }
@@ -272,47 +245,6 @@ class AudioManager implements ErrorInterface
                 if($this->hasErrors()) {
                     return FALSE;
                 } else {
-                    // :todo CLEAN THIS UP!!!!
-                    //print_r($file_paths); die('PATHETIC');
-
-                    header('Content-Description: File Transfer');
-                    header('Content-Type: audio/mpeg');
-                    header('Content-Disposition: inline');
-                    header('Content-Transfer-Encoding: binary');
-                    header('Access-Control-Allow-Origin: *');
-                    header('Expires: 0');
-                    // header('Transfer-Encoding: chunked'); // not needed and causes issues
-
-                    // :todo - determine proper caching headers for debug and production
-                    // :todo - figure out how to send duration of audio
-
-                    $duration = null;
-
-                    // Fallback: estimate from filesize using assumed bitrate (160 kbps)
-                    if ($duration === null) {
-                        // $size = strlen($mp3_str);
-
-                        if ($mp3_size && $mp3_size > 0) {
-                            $assumed_bitrate = 163840; // bits per second
-                            $duration = ($mp3_size * 8) / $assumed_bitrate;
-                        }
-                    }
-
-                    // calculated duration is correct for narakeet
-                    // headers appear to be non-standard ... 
-                    // if ($duration !== null) {
-                    //     header('X-Content-Duration: ' . number_format($duration, 3));
-                    //     header('X-Audio-Duration: ' . number_format($duration, 3));
-                    //     header('Content-Duration: ' . number_format($duration, 3));
-                    // }
-
-                    header('Cache-Control: must-revalidate, post-check=0, pre-check=0');
-                    header('Cache-Control: private', false);
-                    header('Pragma: public');
-                    header('Content-Length: ' . $mp3_size);
-                    // header('Accept-Ranges: bytes');
-                    // http_response_code(206); // Partial Content
-
                     if (!$compat_mode) {
                         $tmp_file = tempnam(sys_get_temp_dir(), 'audiobib_');
                         rename($tmp_file, $tmp_file . '.mp3');
@@ -323,23 +255,30 @@ class AudioManager implements ErrorInterface
                         }
                     }
                     
-                    if (false && count($verses) == 1) {
-                        $verse = $verses[0];
-                        // header('Content-Disposition: inline; filename="' . $verse->file_name . '"');
-                        $file_path = \App\TextToSpeech\TtsAbstract::getAudioFilePathStatic($Bible->module) . '/' . $verse->file_name;
-                        readfile($file_path);
+                    header('Content-Description: File Transfer');
+                    header('Content-Type: audio/mpeg');
+                    header('Content-Disposition: inline');
+                    header('Content-Transfer-Encoding: binary');
+                    header('Access-Control-Allow-Origin: *');
+                    header('Expires: 0');
+                    // header('Transfer-Encoding: chunked'); // not needed and causes issues
+
+                    // :todo - determine proper caching headers for debug and production
+                    // :todo - figure out how to send duration of audio? or not needed?
+
+                    header('Cache-Control: must-revalidate, post-check=0, pre-check=0');
+                    header('Cache-Control: private', false);
+                    header('Pragma: public');
+                    // header('Content-Length: ' . $mp3_size); // breaks xampp / windows
+
+                    if($compat_mode) {
+                        rewind($mp3_tmp);
+                        fpassthru($mp3_tmp);
                     } else {
-                        // header('Content-Disposition: inline; filename="audio.mp3"');
-
-                        if($compat_mode) {
-                            rewind($mp3_tmp);
-                            fpassthru($mp3_tmp);
-                        } else {
-                            readfile($tmp_file);
-                            unlink($tmp_file);
-                        }
+                        readfile($tmp_file);
+                        unlink($tmp_file);
                     }
-
+                    
                     if ($mp3_tmp) {
                         fclose($mp3_tmp);
                     }
@@ -359,7 +298,7 @@ class AudioManager implements ErrorInterface
         }
     }
 
-    protected function checkCanRenderTts($Bible) 
+    protected function checkCanRenderTts(Bible $Bible) 
     {
         $tts_enabled = (bool)config('audio.tts_api_enable', false);
 
@@ -382,7 +321,7 @@ class AudioManager implements ErrorInterface
         return true;
     }
     
-    protected function renderAudioTTS($Bible, &$verse, $parameters = []) 
+    protected function renderAudioTTS(Bible $Bible, &$verse, $parameters = []) 
     {
         $tts_enabled = (bool)config('audio.tts_api_enable', false);
 
@@ -480,8 +419,6 @@ class AudioManager implements ErrorInterface
                 ];
                 continue;
             }
-
-            // print_r($parsed); continue;
 
             if($parsed['type'] == 'chapter') {
                 $ABB = AudioBibleVerse::where('module', $module)

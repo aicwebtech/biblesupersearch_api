@@ -72,6 +72,10 @@ export function useGrid(data, props) {
 
         // Methods
         gridRefresh() {
+            if(grid.loading.value) {
+                // return;
+            }
+            
             grid.loading.value = true;
 
             axios.request({
@@ -148,8 +152,6 @@ export function useGrid(data, props) {
 
     // Set up watchers for the searchable fields
     if(data.searchFields) {
-        var watch = [];
-
         for(const i in data.searchFields) {
             var f = data.searchFields[i];
 
