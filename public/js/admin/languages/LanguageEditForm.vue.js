@@ -55,6 +55,17 @@ const template = `
 
         <v-row v-bind='defaultProps.vrows' v-if='bootstrap.tts_enabled'>
             <v-col>
+                <v-select
+                    :items='ttsApiList'
+                    label="Text to Speech API"
+                    v-model='record.tts_api'
+                    v-bind='defaultProps.selects'
+                ></v-select>
+            </v-col>
+        </v-row>
+
+        <v-row v-bind='defaultProps.vrows' v-if='bootstrap.tts_enabled'>
+            <v-col>
                 <v-text-field 
                     :label="'Text to Speech Voice (' + ttsApiName + ')'"
                     v-model='record.tts_voice'
@@ -128,6 +139,16 @@ export default {
             }
 
             return this.bootstrap.tts_apis.find(api => api.key === tts_api).name || 'Unknown';
+        },
+        ttsApiList() {
+            var defaultApi = this.bootstrap.tts_api_default ? this.bootstrap.tts_apis.find(api => api.key === this.bootstrap.tts_api_default) : null;
+            var list = [{value: null, title: 'Global Default: ' + (defaultApi ? defaultApi.name : '')}];
+
+            for(var api of this.bootstrap.tts_apis) {
+                list.push({value: api.key, title: api.name});
+            }
+
+            return list;
         }
     }
 }

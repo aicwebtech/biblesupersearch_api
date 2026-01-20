@@ -174,6 +174,17 @@ const template = `
             </v-col>
         </v-row>
 
+        <v-row v-bind='defaultProps.vrows' v-if='bootstrap.tts_enabled && record.audio_enable && record.tts_enable'>
+            <v-col>
+                <v-select
+                    :items='ttsApiList'
+                    label="Text to Speech API"
+                    v-model='record.tts_api'
+                    v-bind='defaultProps.selects'
+                ></v-select>
+            </v-col>
+        </v-row>
+
         <v-row 
             v-bind='defaultProps.vrows' 
             v-if='bootstrap.tts_enabled && record.audio_enable && record.tts_enable && ttsApiRequiresVoice'
@@ -412,6 +423,9 @@ export default {
         language() {
             return bootstrap.languages.find(element => element.code == this.record.lang_short);
         },
+        languageTtsApi() {            
+            return this.language.tts_api || this.bootstrap.tts_api_default;
+        },
         ttsVoicePlaceHolder() {
             if(!this.language) {
                 return null;
@@ -433,8 +447,11 @@ export default {
                 return 'ERROR: No default voice configured for this language / TTS API';
             }
         },
+        ttsApiEffective() {
+            return this.record.tts_api ? this.record.tts_api : this.languageTtsApi;
+        },
         ttsApiName() {
-            var tts_api = this.record.tts_api ? this.record.tts_api : this.bootstrap.tts_api_default;
+            var tts_api = this.ttsApiEffective
             
             if(!tts_api) {
                 return 'ERROR: No default TTS API configured';
@@ -443,13 +460,23 @@ export default {
             return this.bootstrap.tts_apis.find(api => api.key === tts_api).name || 'Unknown';
         },
         ttsApiRequiresVoice() {
-            var tts_api = this.record.tts_api ? this.record.tts_api : this.bootstrap.tts_api_default;
+            var tts_api = this.ttsApiEffective;
             
             if(!tts_api) {
                 return false;
             }
 
             return this.bootstrap.tts_apis.find(api => api.key === tts_api).requires_voice || false;
+        },
+        ttsApiList() {
+            var defaultApi = this.languageTtsApi ? this.bootstrap.tts_apis.find(api => api.key === this.languageTtsApi) : null;
+            var list = [{value: null, title: 'Language Default: ' + (defaultApi ? defaultApi.name : '')}];
+
+            for(var api of this.bootstrap.tts_apis) {
+                list.push({value: api.key, title: api.name});
+            }
+
+            return list;
         },
         notInstalled() {
             return this.record.installed != '1' && this.mode == 'edit' || this.record.id == -1;

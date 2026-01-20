@@ -764,7 +764,7 @@
                                                 class='audio_bible_tts_section' 
                                                 @if($configs['audio.enable'] == 0 || $configs['audio.tts_api_enable'] == 0)style='display:none'@endif
                                             >
-                                                <td class='ralign'>TTS API: </td>
+                                                <td class='ralign'>Default TTS API: </td>
                                                 <td>
                                                     <select name='audio__tts_api' id='audio_tts_api' style='width: 300px'>
                                                         @foreach(App\AudioManager::getTtsApisList() as $idx => $dr)
@@ -776,15 +776,17 @@
                                                     <span class='info'>
                                                         <span>i</span>
                                                         <p style='width:300px'>
-                                                            Select the Text-to-Speech API to use <br />
-                                                            for generating Bible audio.
+                                                            Select the Default Text-to-Speech API to use
+                                                            for generating Bible audio. <br /><br />
+                                                            This can be overridden
+                                                            on a per-Language and per-Bible basis.
                                                         </p>
                                                     </span>
                                                 </td>
                                             </tr>
                                             <tr 
                                                 class='audio_bible_tts_section audio_tts_api_narakeet_options' 
-                                                @if($configs['audio.enable'] == 0 || $configs['audio.tts_api_enable'] == 0 || $configs['audio.tts_api'] != 'narakeet')style='display:none'@endif
+                                                @if($configs['audio.enable'] == 0 || $configs['audio.tts_api_enable'] == 0)style='display:none'@endif
                                             >
                                                 <td class='ralign'>Narakeet API Key: </td>
                                                 <td>
@@ -793,7 +795,7 @@
                                             </tr>
                                             <tr 
                                                 class='audio_bible_tts_section audio_tts_api_openai_options' 
-                                                @if($configs['audio.enable'] == 0 || $configs['audio.tts_api_enable'] == 0 || $configs['audio.tts_api'] != 'openai')style='display:none'@endif
+                                                @if($configs['audio.enable'] == 0 || $configs['audio.tts_api_enable'] == 0)style='display:none'@endif
                                             >
                                                 <td class='ralign'>OpenAI API Key: </td>
                                                 <td>
@@ -829,7 +831,7 @@
 
                                                     Note: BibleSuperSearch does not currently provide audio Bible files. 
                                                             You will need to provide these yourself or use the 
-                                                            Text-to-Speech (TTS) API option below.
+                                                            Text-to-Speech (TTS) API option above.
                                                 </td>
                                         </tbody>
                                         </table>

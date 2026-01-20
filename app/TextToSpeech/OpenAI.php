@@ -15,8 +15,8 @@ class OpenAI extends TtsAbstract
     {
         $s = $this->getSettings();
 
-        if(!$s['voice']) {
-            return $this->addTransError('errors.audio.no_tts_voice', ['api' => self::$label, 'language' => $this->Bible->lang_short]);
+        if(!$s) {
+            return false;
         }
 
         $data = [
@@ -29,10 +29,6 @@ class OpenAI extends TtsAbstract
         if($s['speed'] && $s['speed'] != 1.0) {
             $data['speed'] = (float) $s['speed'];
         }
-
-        // print_r($s);
-        // print_r($data);
-        // return false;
 
         $url = "https://api.openai.com/v1/audio/speech";
 

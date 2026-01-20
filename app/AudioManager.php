@@ -3,6 +3,7 @@
 namespace App;
 
 use App\Models\Bible;
+use App\Models\Language;
 use App\Passage;
 use App\Traits\Error;
 use App\Interfaces\ErrorInterface;
@@ -350,10 +351,17 @@ class AudioManager implements ErrorInterface
 
         $verse->file_name = $filename;
 
-        $tts_class = self::$tts_apis[ config('audio.tts_api', 'narakeet') ] ?? null;
+        if($Bible->tts_api) {
+            $tts_api = $Bible->tts_api;
+        } else {
+            $Language = Language::findByCode($Bible->lang_short);
+            $tts_api = $Language && $Language->tts_api ? $Language->tts_api : config('audio.tts_api', 'narakeet');
+        }
+
+        $tts_class = self::$tts_apis[ $tts_api ] ?? null;
 
         if(!$tts_class) {
-            return $this->addError('TTS API NOT supported: ' . config('audio.tts_api'));
+            return $this->addError('TTS API NOT supported: ' . $tts_api);
         }
 
         $TTS = new $tts_class($Bible, $parameters);

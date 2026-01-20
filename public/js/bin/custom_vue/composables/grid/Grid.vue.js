@@ -69,6 +69,7 @@ export function useGrid(data, props) {
         // Non-reactive properties
         gridSearchDefaults: {},
         gridPreventSearch: false,
+        gridSearchTimeout: null,
 
         // Methods
         gridRefresh() {
@@ -136,7 +137,11 @@ export function useGrid(data, props) {
         // Triggers grid to do search
         gridSearch() {
             if(!grid.gridPreventSearch) {
-                grid.gridSearchDate.value = String(Date.now());
+                clearTimeout(grid.gridSearchTimeout);
+
+                grid.gridSearchTimeout = setTimeout(() => {
+                    grid.gridSearchDate.value = String(Date.now());
+                }, 300);
             }
         },
         gridClearSearch() {

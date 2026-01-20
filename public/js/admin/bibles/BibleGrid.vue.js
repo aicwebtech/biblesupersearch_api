@@ -141,6 +141,15 @@ const template = `<v-sheet>
                     />
                 </template>                 
                 
+                <template v-slot:item.audio_enable={item}>
+                    <ChipBool
+                        :value="item.audio_enable == '1'"
+                        v-bind='chipProps'
+                        @click-true="clickAudio(item)" 
+                        @ccclick-false="handleSingleAction('enable', item)" 
+                    />
+                </template>                 
+                
                 <template v-slot:item.official={item}>
                     <ChipBoolAlt
                         :value="item.official == '1'"
@@ -499,6 +508,7 @@ export default {
                     {title: 'Year', key: 'year', width: 150},
                     {title: 'Installed', key: 'installed', width: 50, searchComponent: 'YesNoSel', align: 'center'},
                     {title: 'Enabled', key: 'enabled', width: 50, searchComponent: 'YesNoSel', align: 'center'},
+                    {title: 'Audio', key: 'audio_enable', width: 50, searchComponent: 'YesNoSel', align: 'center'},
                     {title: 'Has File', key: 'has_module_file', width: 100, sortable: false, searchComponent: 'YesNoSel', align: 'center'},
                     {title: 'Official*', key: 'official', width: 50, searchComponent: 'YesNoSel', align: 'center'},
                     {title: 'Research**', key: 'research', width: 60, searchComponent: 'YesNoSel', align: 'center'},

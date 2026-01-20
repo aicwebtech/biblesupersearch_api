@@ -55,20 +55,33 @@ abstract class TtsAbstract implements ErrorInterface
     public static function getMeta()
     {
         return [
-            'name' => static::$label,
-            'url' => static::$url,
-            'voice_url' => static::$voice_url,
-            'requires_voice' => static::$requires_voice,
-            'is_ai_based' => static::$is_ai_based,
+            'name'              => static::$label,
+            'url'               => static::$url,
+            'voice_url'         => static::$voice_url,
+            'requires_voice'    => static::$requires_voice,
+            'is_ai_based'       => static::$is_ai_based,
         ];
     }
 
     public function getSettings()
     {
+        $api_key = $this->getApiKey();
+        $voice = $this->getVoice();
+
+        if(!$api_key) {
+            return $this->addTransError('errors.audio.tts_api_key_missing', ['api' => static::$label]);
+        }
+
+        if(static::$requires_voice) {
+            if(!$voice) {
+                return $this->addTransError('errors.audio.no_tts_voice', ['api' => static::$label, 'language' => $this->Bible->lang_short]);
+            }
+        }
+    
         return [
-            'api_key' => $this->getApiKey(),
-            'voice' => $this->getVoice(),
-            'speed' => $this->getSpeed(),
+            'api_key'   => $api_key,
+            'voice'     => $voice,
+            'speed'     => $this->getSpeed(),
         ];
     }
 
