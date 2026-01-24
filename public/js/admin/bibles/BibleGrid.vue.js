@@ -141,6 +141,15 @@ const template = `<v-sheet>
                     />
                 </template>                 
                 
+                <template v-slot:item.audio_enable={item}>
+                    <ChipBool
+                        :value="item.audio_enable == '1'"
+                        v-bind='chipProps'
+                        @click-true="clickAudio(item)" 
+                        @ccclick-false="handleSingleAction('enable', item)" 
+                    />
+                </template>                 
+                
                 <template v-slot:item.official={item}>
                     <ChipBoolAlt
                         :value="item.official == '1'"
@@ -197,7 +206,7 @@ const template = `<v-sheet>
                                 <v-list-item-title>Edit</v-list-item-title>
                             </v-list-item>
 
-                            <v-list-item @click="clickAudio(item)" v-if='item.audio_enable == "1"'>
+                            <v-list-item @click="clickAudio(item)" v-if='item.audio_enable == "1" && item.installed == "1"'>
                                 <template v-slot:prepend>
                                     <v-icon icon="mdi-speaker"></v-icon>
                                 </template>
@@ -499,6 +508,7 @@ export default {
                     {title: 'Year', key: 'year', width: 150},
                     {title: 'Installed', key: 'installed', width: 50, searchComponent: 'YesNoSel', align: 'center'},
                     {title: 'Enabled', key: 'enabled', width: 50, searchComponent: 'YesNoSel', align: 'center'},
+                    {title: 'Audio', key: 'audio_enable', width: 50, searchComponent: 'YesNoSel', align: 'center'},
                     {title: 'Has File', key: 'has_module_file', width: 100, sortable: false, searchComponent: 'YesNoSel', align: 'center'},
                     {title: 'Official*', key: 'official', width: 50, searchComponent: 'YesNoSel', align: 'center'},
                     {title: 'Research**', key: 'research', width: 60, searchComponent: 'YesNoSel', align: 'center'},
@@ -531,12 +541,10 @@ export default {
     },
     methods: {        
         refreshGridRefreshWithExtras() {
-            console.log('afterGridRefresh', arguments);
             this.gridRefresh();
             this.loadBibleLanguage();
         },
         clickEdit(item) {
-            console.log('clickEdit', item);
             this.closeAudio();
 
             if(item) {
@@ -553,8 +561,6 @@ export default {
             if(!item || item.audio_enable != '1') {
                 return;
             }
-            
-            console.log('clickAudio', item);
             this.closeEdit();
 
             this.audioManagingId = item.id;
@@ -564,6 +570,7 @@ export default {
         closeAudio() {
             this.audioManagingId = null;
             this.editingId = null;
+            this.selection = null;
         },
         closeDialogs() {
             this.closeEdit();
@@ -615,17 +622,14 @@ export default {
             }
         },
         testBible(item) {
-            console.log('test Bible', item);
             this.handleSingleAction('test', item);
         },
         handleBulkAction(action, event) {
-            console.log('handleBulkAction', arguments);
             var s = this.rowSelections;
             var queue = this.gridRows.filter(item => s.includes(item.id));
             this.actionHelper(action, queue);
         },
         handleSingleAction(action, item) {
-            console.log('handleSingleAction', arguments);
             var queue = [item];
             this.actionHelper(action, queue);
         },

@@ -20,10 +20,14 @@ const tpl = `
         <template v-slot:default="{ isActive }">
             <v-card>
                 <v-card-title>{{title}}</v-card-title>
-                <v-card-text class='vue_dialog_body'>
+                <v-card-text class='vue_dialog_body' ref='body'>
                     <ErrorPane :errors='errors' color='error' />
 
-                    <v-form ref='form' v-model='formValid' lazy-validation>
+                    <v-alert v-if='confirmed && formValid === false' type='error' outlined>
+                        Please correct the errors in the form before saving.
+                    </v-alert>
+
+                    <v-form ref='form' v-model='formValid' validate-on='invalid-input lazy'>
                         <v-select
                             label='Importer'
                             clearable
@@ -34,6 +38,8 @@ const tpl = `
                             :disabled='confirmed'
                             density='compact'
                             :rules='[v => !!v || "Importer is required"]'
+                            v-bind='defaultProps.selects'
+                            :item-props='defaultProps.itemPropsFunction'
                         ></v-select>
 
                         <v-sheet v-html='importDescription'></v-sheet>
@@ -45,19 +51,17 @@ const tpl = `
                             :disabled='confirmed'
                             :hint="'Maximum upload size of ' + bootstrap.maxUploadSize.fmt + 'B'"
                             :rules='[v => !!file || "File is required", v => validateFileExtension(), v => validateFileSize()]'
+                            v-bind='defaultProps.fileInputs'
                         ></v-file-input>
 
                         <component ref='ImportComponent' :is='importerComponent' :settings='settings'></component>
 
                         <Confirm ref='ConfirmDialog'></Confirm>    
                         
-                        <v-sheet v-if = '!confirmed'>
-
-                        </v-sheet>
-                        
                         <EditForm 
                             :record='bibleRecord'
                             v-if = 'confirmed'
+                            mode='import'
                         ></EditForm>
 
                         <v-sheet v-if='confirmed && errors.length > 0' background-color='warn' class='mt-10'>
@@ -103,7 +107,7 @@ const tpl = `
 `;
 
 export default {
-    inject: ['bootstrap'],
+    inject: ['bootstrap', 'defaultProps'],
     template: tpl,
     components: {
         EditForm,
@@ -208,9 +212,7 @@ export default {
             if(!this.file) {
                 this.errors.push('File is required');
             } else {
-                var fnParts = this.file.name.split('.'),
-                ext = fnParts.pop(),
-                matchesExt = false;
+                var matchesExt = false;
 
                 if(importer && importer.ext && importer.ext.length > 0) {
                     for(var i in importer.ext) {
@@ -267,7 +269,7 @@ export default {
                 t.fileSanitized = response.data.file;
                 
                 t.$refs.ConfirmDialog.alert(
-                    'This file is ready to import.  Please fill out the rest of' +
+                    'This file is ready to import.  Please fill out the rest of ' +
                     'the information for this Bible, then click \'Import File.\''
                 );
 
@@ -297,6 +299,7 @@ export default {
             const { valid } = await this.$refs.form.validate();
 
             if (!valid) {
+                this.$refs.body.$el.scrollTop = 0;
                 return;
             }
 
@@ -325,7 +328,6 @@ export default {
                 var msg = 'Bible has imported successfully!  \n Would you like to test it?';
 
                 t.$refs.ConfirmDialog.confirmSingle(msg, function(confirmed) {                    
-                    console.log('confirmed', confirmed);
                     t.closeDialog();
                     confirmed && t.$emit('onTest', response.data.bible);
                 });

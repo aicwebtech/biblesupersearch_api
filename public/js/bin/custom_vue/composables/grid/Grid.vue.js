@@ -69,9 +69,14 @@ export function useGrid(data, props) {
         // Non-reactive properties
         gridSearchDefaults: {},
         gridPreventSearch: false,
+        gridSearchTimeout: null,
 
         // Methods
         gridRefresh() {
+            if(grid.loading.value) {
+                // return;
+            }
+            
             grid.loading.value = true;
 
             axios.request({
@@ -132,7 +137,11 @@ export function useGrid(data, props) {
         // Triggers grid to do search
         gridSearch() {
             if(!grid.gridPreventSearch) {
-                grid.gridSearchDate.value = String(Date.now());
+                clearTimeout(grid.gridSearchTimeout);
+
+                grid.gridSearchTimeout = setTimeout(() => {
+                    grid.gridSearchDate.value = String(Date.now());
+                }, 300);
             }
         },
         gridClearSearch() {
@@ -148,8 +157,6 @@ export function useGrid(data, props) {
 
     // Set up watchers for the searchable fields
     if(data.searchFields) {
-        var watch = [];
-
         for(const i in data.searchFields) {
             var f = data.searchFields[i];
 

@@ -100,7 +100,6 @@ export default {
     },
     watch: {
         showing(newValue, oldValue) {
-            console.log('showingChanged', newValue, oldValue);
             // do something here?
         },
         recordId(newValue, oldValue) {
@@ -154,8 +153,7 @@ export default {
             this.closeDialog();
         },
         handleSave() {
-            var record = this.recording,
-                url = this.newRecord ? this.url : this.url + '/' + this.recordId,
+            var url = this.newRecord ? this.url : this.url + '/' + this.recordId,
                 method = this.newRecord ? 'POST' : 'PUT',
                 t = this;
 

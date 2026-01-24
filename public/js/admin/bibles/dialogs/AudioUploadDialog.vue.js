@@ -86,9 +86,29 @@ const tpl = `
                                      </td>
                                     <td class='text-center'>
                                         <v-checkbox-btn
+                                            v-if='allCorrectOverride'
+                                            v-model="alwaysTrue"
+                                            :disabled="true"
+                                        />
+                                    
+                                        <v-checkbox-btn
+                                            v-else
                                             v-model="preview.correct"
                                             :disabled="!preview.success"
                                         />
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td class="text-center">
+                                        Total Files: {{ matchingPreview.length }}
+                                    </td>
+                                    <td class="text-center">
+                                        Matched: {{ matchingPreview.filter(p => p.success).length }}
+                                    </td>
+                                    <td colspan="2">&nbsp;</td>
+                                
+                                    <td class="text-center">
+                                        <v-checkbox-btn label='ALL ' v-model='allCorrectOverride' />
                                     </td>
                                 </tr>
                             </tbody>
@@ -97,7 +117,7 @@ const tpl = `
                         <v-sheet v-if="hasMismatch" class='mt-4 pa-4' color='error' outlined>
                             Some files could not be matched. Please adjust your matching selection or change selected files.
                         </v-sheet>
-                        <v-sheet v-else-if='!allCorrect' class='mt-4 pa-4' color='warning' outlined>
+                        <v-sheet v-else-if='!allCorrectWithOverride' class='mt-4 pa-4' color='warning' outlined>
                             Please confirm that all matched files are mapped to the correct reference before uploading.
                             If any are incorrrect, please adjust your matching selection or change selected files.
                         </v-sheet>
@@ -138,6 +158,8 @@ export default {
             overwriteExisting: false,
             isUploading: false,
             uploadProgress: 0,
+            allCorrectOverride: false,
+            alwaysTrue: true,
         };
     },
     computed: {
@@ -154,8 +176,11 @@ export default {
             
             return this.matchingPreview.every(preview => preview.success && preview.correct) ? true : false;
         },
+        allCorrectWithOverride() {
+            return this.allCorrect || this.allCorrectOverride;
+        },
         formValid() {
-            return this.files.length > 0 && !this.hasMismatch && this.allCorrect && this.matching !== null && this.fileSizeValid;
+            return this.files.length > 0 && !this.hasMismatch && this.allCorrectWithOverride && this.matching !== null && this.fileSizeValid;
         },
         fileSizeValid() {
             if(this.files.length === 0) {
@@ -183,6 +208,7 @@ export default {
             this.files = []
             this.matchingPreview = [];
             this.uploadProgress = 0;
+            this.allCorrectOverride = false;
         },
         onFilesSelected(files) {
             this.previewFiles();

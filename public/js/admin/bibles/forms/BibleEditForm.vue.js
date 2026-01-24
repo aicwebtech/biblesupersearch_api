@@ -4,7 +4,11 @@ const template = `
     <div 
         max-width='600' 
     >
-    
+
+        <v-alert v-if='notInstalled' type='warning' outlined>
+            This Bible is not yet installed. Some options below are disabled.
+        </v-alert>
+
         <v-row v-bind='defaultProps.vrows'>
             <v-col>
                 <v-text-field 
@@ -95,20 +99,21 @@ const template = `
             <v-col>
                 <v-switch
                     class='ml-3'
-                    v-model='record.enabled'
-                    label='Enabled - whether the Bible is enabled for use'
+                    v-model='record.research'
+                    label="Research - select this if you don't reccomend this Bible for general use."
                     v-bind='defaultProps.switches'
                 ></v-switch>    
             </v-col>
         </v-row>
-
+        
         <v-row v-bind='defaultProps.vrows'>
             <v-col>
                 <v-switch
                     class='ml-3'
-                    v-model='record.research'
-                    label="Research - select this if you don't reccomend this Bible for general use."
+                    v-model='record.enabled'
+                    label='Enabled - whether the Bible is enabled for use'
                     v-bind='defaultProps.switches'
+                    :disabled='notInstalled'
                 ></v-switch>    
             </v-col>
         </v-row>
@@ -120,13 +125,19 @@ const template = `
                     v-model='record.audio_enable'
                     label='Audio Enabled - whether the Bible is enabled for audio'
                     v-bind='defaultProps.switches'
+                    :disabled='notInstalled'
                 ></v-switch>    
             </v-col>
         </v-row>
 
         <v-row v-bind='defaultProps.vrows' v-if='record.audio_enable'>
             <v-col>
-                <v-radio-group v-model='record.audio_structure' inline class='pl-4'>
+                <v-radio-group 
+                    v-model='record.audio_structure' 
+                    inline 
+                    class='pl-4' 
+                    :disabled='notInstalled'
+                >
                     <v-radio
                         label='By Chapter'
                         value='chapters'
@@ -146,6 +157,12 @@ const template = `
             </v-col>
         </v-row>
 
+        <v-row v-bind='defaultProps.vrows' v-if='record.audio_enable && record.audio_structure == "chapters"'>
+            <v-col>
+                Note: Text to Speech (TTS) requires verse-level audio structure.
+            </v-col>
+        </v-row>
+
         <v-row v-bind='defaultProps.vrows' v-if='bootstrap.tts_enabled && record.audio_enable'>
             <v-col>
                 <v-switch
@@ -154,6 +171,18 @@ const template = `
                     label='Text to Speech - whether the Bible is enabled for text to speech conversion'
                     v-bind='defaultProps.switches'
                 ></v-switch>    
+            </v-col>
+        </v-row>
+
+        <v-row v-bind='defaultProps.vrows' v-if='bootstrap.tts_enabled && record.audio_enable && record.tts_enable'>
+            <v-col>
+                <v-select
+                    :items='ttsApiList'
+                    label="Text to Speech API"
+                    v-model='record.tts_api'
+                    v-bind='defaultProps.selects'
+                    :item-props='defaultProps.itemPropsFunction'
+                ></v-select>
             </v-col>
         </v-row>
 
@@ -168,6 +197,23 @@ const template = `
                     v-bind='defaultProps.texts'
                     :rrules='[v=> !!v || "TTS Voice is required", v => errorShow("shortname")]'
                     :hint='ttsVoicePlaceHolder'
+                    persistent-hint
+                ></v-text-field>  
+            </v-col>
+        </v-row>
+
+        <v-row 
+            v-bind='defaultProps.vrows' 
+            v-if='bootstrap.tts_enabled && record.audio_enable && record.tts_enable'
+        >
+            <v-col>
+                <v-text-field 
+                    :label='"Text to Speech Speed (" + ttsApiName + ")"' 
+                    v-model='record.tts_speed'
+                    v-bind='defaultProps.texts'
+                    :rules="[
+                        v => (v === null || v === '' || (!isNaN(v) && v >= 0.25 && v <= 4.0)) || 'Speed must be a number between 0.25 and 4.0'
+                    ]"
                     persistent-hint
                 ></v-text-field>  
             </v-col>
@@ -302,6 +348,10 @@ export default {
         errors: {
             type: Object,
             default: {}
+        },
+        mode: {
+            type: String,
+            default: 'edit' // edit, import
         }
     },
     data() {
@@ -312,20 +362,12 @@ export default {
     watch: {
         'record.copyright_id'(is, was) {
             this.prevCopyrightId = was || is;
-
-            console.log('copyright_id', is, was);
-
-            // if(!window.confirm('Please verify this is the correct copyright for this Bible')) {
-            //     this.record.copyright_id = was;
-            // }
-        },
-        'record.description'(is, was) {
-            // this.descriptionEditor && this.descriptionEditor.setData(is);
         },
         'record.id'(is, was) {
-            console.log('record id', is, was);
-            this.descriptionEditor && this.descriptionEditor.setData(this.record.description || '');
-            this.copyrightEditor && this.copyrightEditor.setData(this.record.copyright_statement || '');
+            if(this.record) {
+                this.descriptionEditor && this.descriptionEditor.setData(this.record.description || '');
+                this.copyrightEditor && this.copyrightEditor.setData(this.record.copyright_statement || '');
+            }
         }
     },
     mounted() {
@@ -374,6 +416,13 @@ export default {
         language() {
             return bootstrap.languages.find(element => element.code == this.record.lang_short);
         },
+        languageTtsApi() {            
+            if(!this.language) {
+                return this.bootstrap.tts_api_default;
+            } 
+
+            return this.language.tts_api || this.bootstrap.tts_api_default;
+        },
         ttsVoicePlaceHolder() {
             if(!this.language) {
                 return null;
@@ -395,8 +444,11 @@ export default {
                 return 'ERROR: No default voice configured for this language / TTS API';
             }
         },
+        ttsApiEffective() {
+            return this.record.tts_api ? this.record.tts_api : this.languageTtsApi;
+        },
         ttsApiName() {
-            var tts_api = this.record.tts_api ? this.record.tts_api : this.bootstrap.tts_api_default;
+            var tts_api = this.ttsApiEffective
             
             if(!tts_api) {
                 return 'ERROR: No default TTS API configured';
@@ -405,14 +457,31 @@ export default {
             return this.bootstrap.tts_apis.find(api => api.key === tts_api).name || 'Unknown';
         },
         ttsApiRequiresVoice() {
-            var tts_api = this.record.tts_api ? this.record.tts_api : this.bootstrap.tts_api_default;
+            var tts_api = this.ttsApiEffective;
             
             if(!tts_api) {
                 return false;
             }
 
             return this.bootstrap.tts_apis.find(api => api.key === tts_api).requires_voice || false;
-        }
+        },
+        ttsApiList() {
+            var defaultApi = this.languageTtsApi ? this.bootstrap.tts_apis.find(api => api.key === this.languageTtsApi) : null;
+            var list = [{value: null, title: 'Language Default: ' + (defaultApi ? defaultApi.name : '')}];
+
+            for(var api of this.bootstrap.tts_apis) {
+                list.push({value: api.key, title: api.name});
+            }
+
+            return list;
+        },
+        notInstalled() {            
+            if(!this.record || !this.record.id) {
+                return false;
+            }
+            
+            return this.record.installed != '1' && this.mode == 'edit' || this.record.id == -1;
+        } 
     },
     methods: {
         languageItemProps(item) {
@@ -429,8 +498,6 @@ export default {
             
         },
         copyRightChanged(event) {
-            console.log('new', event);
-            console.log('prev', this.prevCopyrightId);
             var prev = this.prevCopyrightId;
             var cr = bootstrap.copyrights.find((item) => item.id == event);
             var msg = 'Please verify this is the correct copyright for this Bible\n\n';
@@ -455,12 +522,6 @@ export default {
             if(this.errors && this.errors[field]) {
                 delete this.errors[field];
             }
-        },
-        eventTest(type, event) {
-            // console.log(type, event);
-
-            // if(type == 'u:modelValue') {
-            // }
         }
     }
 }

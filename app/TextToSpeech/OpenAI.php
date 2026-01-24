@@ -13,26 +13,22 @@ class OpenAI extends TtsAbstract
 
     public function generateAudioHelper($text, $options, $file_handle)
     {
-        // return false;
-        
-        $apikey = $this->getApiKey();
-        $voice = $this->getVoice();
+        $s = $this->getSettings();
 
-        if(!$voice) {
-            return $this->addTransError('errors.audio.no_tts_voice', ['api' => self::$label, 'language' => $this->Bible->lang_short]);
+        if(!$s) {
+            return false;
         }
-
-        // var_dump($voice);
-        // var_dump($filename);
-        // die($file_path);
-        // return false;
 
         $data = [
             'model' => 'gpt-4o-mini-tts',
-            'voice' => $voice,
-            'text' => $text,
+            'voice' => $s['voice'],
+            'input' => $text,
             'instructions' => 'Text is in the language of ' . $this->Bible->lang_short,
         ];
+
+        if($s['speed'] && $s['speed'] != 1.0) {
+            $data['speed'] = (float) $s['speed'];
+        }
 
         $url = "https://api.openai.com/v1/audio/speech";
 
@@ -42,7 +38,7 @@ class OpenAI extends TtsAbstract
             CURLOPT_POST => true,
             CURLOPT_POSTFIELDS => json_encode($data),
             CURLOPT_HTTPHEADER => [
-                "Authorization: Bearer $apikey",
+                "Authorization: Bearer {$s['api_key']}",
                 'Content-Type: application/json',
             ],
             CURLOPT_FILE => $file_handle,
@@ -51,13 +47,12 @@ class OpenAI extends TtsAbstract
         $curl = curl_init();
         curl_setopt_array($curl, $options);
         $result = curl_exec($curl);
-        $curl_error = curl_error($curl);
         $curl_info = curl_getinfo($curl);
         curl_close($curl);
 
-        print_r($result);
-        print_r($curl_info);
-        print_r($curl_error);
+        if($curl_info['http_code'] != 200) {
+            return false;
+        }
 
         return true;
     }

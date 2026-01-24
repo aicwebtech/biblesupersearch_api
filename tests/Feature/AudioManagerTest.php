@@ -37,7 +37,7 @@ class AudioManagerTest extends TestCase
 
         Config::set('audio.tts_api_enable', false);
 
-        $Bible = new \stdClass();
+        $Bible = new \App\Models\Bible();
         $Bible->audio_enable = true;
         $Bible->tts_enable = true;
         $Bible->module = 'TEST';
@@ -75,7 +75,7 @@ class AudioManagerTest extends TestCase
         $rp = new \ReflectionProperty(AudioManager::class, 'tts_apis');
         $rp->setValue(null, []);
 
-        $Bible = new \stdClass();
+        $Bible = new \App\Models\Bible();
         $Bible->audio_enable = true;
         $Bible->tts_enable = true;
         $Bible->module = 'TEST';
@@ -268,7 +268,7 @@ class AudioManagerTest extends TestCase
                     'verse' => 25,
                 ],
             ],
-            'complex_verse_match_1' => [
+            'complex_verse_match_2' => [
                 'filename' => 'bible_20_Proverbs_12_03_extra.mp3',
                 'expected' => [
                     'type' => 'verse',

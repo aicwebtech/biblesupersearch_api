@@ -3,6 +3,7 @@
 namespace App;
 
 use App\Models\Bible;
+use App\Models\Language;
 use App\Passage;
 use App\Traits\Error;
 use App\Interfaces\ErrorInterface;
@@ -23,7 +24,7 @@ class AudioManager implements ErrorInterface
         // 'elevenlabs' => \App\TextToSpeech\Elevenlabs::class,
         // 'murfai'   => \App\TextToSpeech\MurfAI::class,
         'narakeet' => \App\TextToSpeech\Narakeet::class,
-        // 'openai'   => \App\TextToSpeech\OpenAI::class,
+        'openai'   => \App\TextToSpeech\OpenAI::class,
     ];
 
     static public $filename_matches = [
@@ -89,6 +90,23 @@ class AudioManager implements ErrorInterface
     static public function getTtsApiClasses()
     {
         return static::$tts_apis;
+    }
+
+    static public function audioEnabled($Bible = null)
+    {
+        $audio_enabled = (bool)config('audio.enable', false);
+
+        if(!$audio_enabled) {
+            return false;
+        }
+
+        if($Bible) {
+            if(!$Bible->audio_enable) {
+                return false;
+            }
+        }
+
+        return true;
     }
 
     static public function ttsEnabled($Bible = null)
@@ -158,11 +176,8 @@ class AudioManager implements ErrorInterface
         try {
             $verses = $Bible->getAudio([$Passage], []);
 
-            // return $verses; // debug
-
             $compat_mode = !Ffmpeg::canUse();
             $mp3_str = null;
-            $mp3_size = 0;
             $single_verse = (count($verses) == 1);
             $this->has_all_audio = count($verses) > 0;
             $file_paths = [];
@@ -173,26 +188,31 @@ class AudioManager implements ErrorInterface
             }
 
             foreach($verses as &$verse) {
-                $verse_has_audio = (bool) $verse->file_name;
+                $verse_has_audio = false;
+            
+                if($verse->file_name && is_file(TtsAbstract::getAudioFilePathStatic($Bible->module) . '/' . $verse->file_name)) {
+                    $verse_has_audio = true;
+                }
                 
-                if(!$verse->file_name && $mode == 'generate') {
+                if(!$verse_has_audio && $mode == 'generate') {
                     if($this->checkCanRenderTts($Bible) !== true) {
                         continue;
                     }
                     
+                    set_time_limit(60); // extend time limit for TTS generation
                     $success = $this->renderAudioTTS($Bible, $verse, $parameters);
 
                     if($success) {
-                        $ABV = new \App\Models\AudioBibleVerse();
-                        $ABV->module    = $Bible->module;
-                        $ABV->book      = $verse->book;
-                        $ABV->chapter   = $verse->chapter;
-                        $ABV->verse     = $verse->verse;
+                        $ABV = $this->getAudioBibleVerse($Bible->module, $verse->book, $verse->chapter, $verse->verse);
+
                         $ABV->file_name = $verse->file_name;
                         $ABV->source    = config('audio.tts_api', 'narakeet');
                         $ABV->voice     = $success['voice'] ?? null;
                         $ABV->save();
+
                         $verse_has_audio = true;
+                    } else {
+                        break; // stop processing if TTS generation failed
                     }
                 }
 
@@ -207,29 +227,12 @@ class AudioManager implements ErrorInterface
                     if(file_exists($file_path)) {
                         $file_paths[] = realpath($file_path);
                         
-                        //$mp3_str .= file_get_contents($file_path);
-                        // write to tmp file
-                        // $fp = fopen($file_path, 'rb');
-
-                        // $MP3 = MpegAudio::fromFile($file_path);
-                        // $frameCount = $MP3->getStart();
-
                         $MP3 = new Mp3($file_path);                        
                         $MP3->stripTags();
-
-                        $str_sans_tags = $MP3->getStr();
 
                         if ($compat_mode) {
                             fwrite($mp3_tmp, $MP3->getStr());
                         }
-                        
-                        $mp3_size += strlen($MP3->getStr());
-
-                        // if($fp) {
-                        //     stream_copy_to_stream($fp, $mp3_tmp);
-                        //     fclose($fp);
-                        //     $verse_has_audio = true;
-                        // }
                     } else {
                         $this->addTransError('errors.audio_file_missing', ['bcv' => $verse->book . ' ' . $verse->chapter . ':' . $verse->verse]);
                     }
@@ -243,47 +246,6 @@ class AudioManager implements ErrorInterface
                 if($this->hasErrors()) {
                     return FALSE;
                 } else {
-                    
-                    //print_r($file_paths); die('PATHETIC');
-
-                    header('Content-Description: File Transfer');
-                    header('Content-Type: audio/mpeg');
-                    header('Content-Disposition: inline');
-                    header('Content-Transfer-Encoding: binary');
-                    header('Access-Control-Allow-Origin: *');
-                    header('Expires: 0');
-                    header('Transfer-Encoding: chunked');
-
-                    // :todo - determine proper caching headers for debug and production
-                    // :todo - figure out how to send duration of audio
-
-                    $duration = null;
-
-                    // Fallback: estimate from filesize using assumed bitrate (160 kbps)
-                    if ($duration === null) {
-                        // $size = strlen($mp3_str);
-
-                        if ($mp3_size && $mp3_size > 0) {
-                            $assumed_bitrate = 163840; // bits per second
-                            $duration = ($mp3_size * 8) / $assumed_bitrate;
-                        }
-                    }
-
-                    // calculated duration is correct for narakeet
-                    // headers appear to be non-standard ... 
-                    // if ($duration !== null) {
-                    //     header('X-Content-Duration: ' . number_format($duration, 3));
-                    //     header('X-Audio-Duration: ' . number_format($duration, 3));
-                    //     header('Content-Duration: ' . number_format($duration, 3));
-                    // }
-
-                    header('Cache-Control: must-revalidate, post-check=0, pre-check=0');
-                    header('Cache-Control: private', false);
-                    header('Pragma: public');
-                    header('Content-Length: ' . $mp3_size);
-                    // header('Accept-Ranges: bytes');
-                    // http_response_code(206); // Partial Content
-
                     if (!$compat_mode) {
                         $tmp_file = tempnam(sys_get_temp_dir(), 'audiobib_');
                         rename($tmp_file, $tmp_file . '.mp3');
@@ -294,23 +256,30 @@ class AudioManager implements ErrorInterface
                         }
                     }
                     
-                    if (false && count($verses) == 1) {
-                        $verse = $verses[0];
-                        // header('Content-Disposition: inline; filename="' . $verse->file_name . '"');
-                        $file_path = \App\TextToSpeech\TtsAbstract::getAudioFilePathStatic($Bible->module) . '/' . $verse->file_name;
-                        readfile($file_path);
+                    header('Content-Description: File Transfer');
+                    header('Content-Type: audio/mpeg');
+                    header('Content-Disposition: inline');
+                    header('Content-Transfer-Encoding: binary');
+                    header('Access-Control-Allow-Origin: *');
+                    header('Expires: 0');
+                    // header('Transfer-Encoding: chunked'); // not needed and causes issues
+
+                    // :todo - determine proper caching headers for debug and production
+                    // :todo - figure out how to send duration of audio? or not needed?
+
+                    header('Cache-Control: must-revalidate, post-check=0, pre-check=0');
+                    header('Cache-Control: private', false);
+                    header('Pragma: public');
+                    // header('Content-Length: ' . $mp3_size); // breaks xampp / windows
+
+                    if($compat_mode) {
+                        rewind($mp3_tmp);
+                        fpassthru($mp3_tmp);
                     } else {
-                        // header('Content-Disposition: inline; filename="audio.mp3"');
-
-                        if($compat_mode) {
-                            rewind($mp3_tmp);
-                            fpassthru($mp3_tmp);
-                        } else {
-                            readfile($tmp_file);
-                            unlink($tmp_file);
-                        }
+                        readfile($tmp_file);
+                        unlink($tmp_file);
                     }
-
+                    
                     if ($mp3_tmp) {
                         fclose($mp3_tmp);
                     }
@@ -330,26 +299,7 @@ class AudioManager implements ErrorInterface
         }
     }
 
-    protected function checkCanRenderTts($Bible) 
-    {
-        $tts_enabled = (bool)config('audio.tts_api_enable', false);
-
-        if(!$tts_enabled) {
-            return $this->addTransError('errors.audio.no_audio_found');
-        }
-
-        if(!$Bible->audio_enable) {
-            return $this->addTransError('errors.audio.bible_no_audio', ['module' => $Bible->module]);
-        }
-
-        if(!$Bible->tts_enable) {
-            return $this->addTransError('errors.audio.no_audio_found');
-        }
-
-        return true;
-    }
-    
-    protected function renderAudioTTS($Bible, &$verse, $parameters = []) 
+    protected function checkCanRenderTts(Bible $Bible) 
     {
         $tts_enabled = (bool)config('audio.tts_api_enable', false);
 
@@ -364,6 +314,33 @@ class AudioManager implements ErrorInterface
         if(!$Bible->tts_enable) {
             return $this->addTransError('errors.audio.no_tts_bible', ['module' => $Bible->module]);
         }
+
+        if($Bible->audio_structure == 'chapters') {
+            return $this->addTransError('errors.audio.unsupported_tts_structure');
+        }
+
+        return true;
+    }
+    
+    protected function renderAudioTTS(Bible $Bible, &$verse, $parameters = []) 
+    {
+        $tts_enabled = (bool)config('audio.tts_api_enable', false);
+
+        if(!$tts_enabled) {
+            return $this->addTransError('errors.audio.no_tts');
+        }
+
+        if(!$Bible->audio_enable) {
+            return $this->addTransError('errors.audio.bible_no_audio', ['module' => $Bible->module]);
+        }
+
+        if(!$Bible->tts_enable) {
+            return $this->addTransError('errors.audio.no_tts_bible', ['module' => $Bible->module]);
+        }
+
+        if($Bible->audio_structure == 'chapters') {
+            return $this->addTransError('errors.audio.unsupported_tts_structure');
+        }
         
         $bcv = $verse->book . ' ' . $verse->chapter . ':' . $verse->verse;
 
@@ -374,10 +351,17 @@ class AudioManager implements ErrorInterface
 
         $verse->file_name = $filename;
 
-        $tts_class = self::$tts_apis[ config('audio.tts_api', 'narakeet') ] ?? null;
+        if($Bible->tts_api) {
+            $tts_api = $Bible->tts_api;
+        } else {
+            $Language = Language::findByCode($Bible->lang_short);
+            $tts_api = $Language && $Language->tts_api ? $Language->tts_api : config('audio.tts_api', 'narakeet');
+        }
+
+        $tts_class = self::$tts_apis[ $tts_api ] ?? null;
 
         if(!$tts_class) {
-            return $this->addError('TTS API NOT supported: ' . config('audio.tts_api'));
+            return $this->addError('TTS API NOT supported: ' . $tts_api);
         }
 
         $TTS = new $tts_class($Bible, $parameters);
@@ -443,8 +427,6 @@ class AudioManager implements ErrorInterface
                 ];
                 continue;
             }
-
-            // print_r($parsed); continue;
 
             if($parsed['type'] == 'chapter') {
                 $ABB = AudioBibleVerse::where('module', $module)
@@ -512,6 +494,155 @@ class AudioManager implements ErrorInterface
         }
 
         return $results;
+    }
+
+    public function deleteAudioFiles($module, $ids)
+    {
+        $success = true;
+
+        foreach($ids as $id) {
+            $ABB = AudioBibleVerse::find($id);
+
+            if($ABB && $ABB->module == $module) {
+                $file_path = TtsAbstract::getAudioFilePathStatic($module) . '/' . $ABB->file_name;
+
+                if(file_exists($file_path)) {
+                    unlink($file_path);
+                }
+
+                $ABB->delete();
+            } else {
+                $success = false;
+            }
+        }
+        
+        return $success;
+    }
+
+    public function scanAudioFiles($module)
+    {
+        $audio_path = TtsAbstract::getAudioFilePathStatic($module);
+
+        if(!is_dir($audio_path)) {
+            return $this->addTransError('errors.audio.audio_path_not_found', ['path' => $audio_path]);
+        }
+
+        $l_files = $l_records = [];
+
+        $results = [
+            'added'    => [],
+            'removed'  => [],
+        ];
+
+        $dup_check = [];
+
+        $abv = AudioBibleVerse::where('module', $module)
+            ->orderBy('id', 'ASC')
+            ->get();
+
+        foreach($abv as $record) {
+            $idx = $record->book . '_' . $record->chapter . '_' . ($record->verse ?? '0');
+
+            if(isset($dup_check[$idx])) {
+                // duplicate record, delete it
+                $record->delete();
+            } else {
+                $dup_check[$idx] = true;
+            }   
+        
+            if($record->file_name) {
+                $file_path = TtsAbstract::getAudioFilePathStatic($module) . '/' . $record->file_name;
+
+                if(!file_exists($file_path)) {
+                    $record->file_name = null;
+                    $record->save();
+                    $results['removed'][] = $record->file_name;
+                } else {
+                    $l_records[] = $record->file_name;
+                }
+            }
+        }
+
+        $files = scandir($audio_path);
+
+        foreach($files as $file) {
+            if(in_array($file, ['.', '..'])) {
+                continue;
+            }
+
+            $parsed = $this->parseInternalFilename($file);
+
+            if(!$parsed) {
+                continue;
+            }
+
+            $l_files[] = $file;
+        }
+
+        // Files in $l_files NOT in $l_records need to be added/updated
+        $diff = array_diff($l_files, $l_records);
+
+        foreach($diff as $file) {
+            $parsed = $this->parseInternalFilename($file);
+            $ABB = $this->getAudioBibleVerse($module, $parsed['book'], $parsed['chapter'], $parsed['verse']);
+
+            $ABB->file_name = $file;
+            $ABB->save();
+
+            $results['added'][] = $file;
+        }
+
+        return $results;
+    }
+
+    public function parseInternalFilename($filename)
+    {
+        if(preg_match('/^(\d{2})_(\d{3})_(\d{3})\.mp3$/', $filename, $matches)) {
+            return [
+                'type'    => 'verse',
+                'book'    => (int) ltrim($matches[1], '0'),
+                'chapter' => (int) ltrim($matches[2], '0'),
+                'verse'   => (int) ltrim($matches[3], '0'),
+            ];
+        } elseif(preg_match('/^(\d{2})_(\d{3})\.mp3$/', $filename, $matches)) {
+            return [
+                'type'    => 'chapter',
+                'book'    => (int) ltrim($matches[1], '0'),
+                'chapter' => (int) ltrim($matches[2], '0'),
+                'verse'   => null,
+            ];
+        }
+
+        return null;
+    }
+
+    public function getAudioBibleVerse($module, $book, $chapter, $verse = null)
+    {
+        $ABB = null;
+        
+        if($verse === null) {
+            $ABB = AudioBibleVerse::where('module', $module)
+                ->where('book', $book)
+                ->where('chapter', $chapter)
+                ->whereNull('verse')
+                ->first();
+        } else {
+            $ABB = AudioBibleVerse::where('module', $module)
+                ->where('book', $book)
+                ->where('chapter', $chapter)
+                ->where('verse', $verse)
+                ->first();
+        }
+    
+        if(!$ABB) {
+            $ABB = new AudioBibleVerse();
+            $ABB->book    = $book;
+            $ABB->chapter = $chapter;
+            $ABB->verse   = $verse;
+            $ABB->module = $module;
+        }
+
+        return $ABB;
     }
 
     /**

@@ -62,23 +62,23 @@ $( function() {
         }
     });
 
-    $('#audio_tts_api').change(function(e) {
-        var api = $(this).val();
+    // $('#audio_tts_api').change(function(e) {
+    //     var api = $(this).val();
 
-        if(api == 'openai') {
-            $('.audio_tts_api_openai_options').show();
-        }
-        else {
-            $('.audio_tts_api_openai_options').hide();
-        }
+    //     if(api == 'openai') {
+    //         $('.audio_tts_api_openai_options').show();
+    //     }
+    //     else {
+    //         $('.audio_tts_api_openai_options').hide();
+    //     }
 
-        if(api == 'narakeet') {
-            $('.audio_tts_api_narakeet_options').show();
-        }
-        else {
-            $('.audio_tts_api_narakeet_options').hide();
-        }
-    });
+    //     if(api == 'narakeet') {
+    //         $('.audio_tts_api_narakeet_options').show();
+    //     }
+    //     else {
+    //         $('.audio_tts_api_narakeet_options').hide();
+    //     }
+    // });
 
     $('#button_clear_all_rendered').click(function() {
         AICWEBTECH.jQuery.Dialogs.textConfirm('Are you sure? \nThis will delete ALL retained rendered Bibles.', 'DELETE', function(confirm) {

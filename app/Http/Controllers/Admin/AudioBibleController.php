@@ -25,6 +25,14 @@ class AudioBibleController extends Controller
             abort(404, 'Bible not found');
         }
 
+        if(!$Bible->installed) {
+            abort(404, 'Bible not installed');
+        }
+
+        if(!AudioManager::audioEnabled($Bible)) {
+            abort(404, 'Bible has no audio');
+        }
+
         $params = $request->all();
         $params['page'] = isset($_REQUEST['page']) ? (int) $_REQUEST['page'] : 1;
         $rows_per_page = $request->input('rows_per_page', 10);
@@ -61,6 +69,24 @@ class AudioBibleController extends Controller
         return new Response($resp, 200);
     }
 
+    public function scan(Request $request)
+    {
+        $Manager = new AudioManager();
+
+        $module = $request->input('module', null);
+
+        if(empty($module)) {
+            return response(['error' => 'Invalid parameters'], 400);
+        }
+
+        $resp = new \stdClass();
+        $resp->success = true;
+
+        $resp->results = $Manager->scanAudioFiles($module);
+
+        return new Response($resp, 200);
+    }
+
     public function preview(Request $request)
     {
         $Manager = new AudioManager();
@@ -77,6 +103,40 @@ class AudioBibleController extends Controller
         $resp->success = true;
 
         $resp->results = $Manager->previewAudioFiles($module, $files, $matching);
+
+        return new Response($resp, 200);
+    }
+
+    // Needs to handle MULTIPLE files deletion
+    public function delete(Request $request)
+    {
+        $ids = $request->input('ids', []);
+        $module = $request->input('module', null);
+
+        if(empty($module) || empty($ids)) {
+            return response(['error' => 'Invalid parameters'], 400);
+        }
+
+        $Bible = Bible::findByModule($module);
+
+        if(!$Bible) {
+            abort(404, 'Bible not found');
+        }
+        
+        if(!$Bible->installed) {
+            abort(404, 'Bible not installed');
+        }
+
+        if(!AudioManager::audioEnabled($Bible)) {
+            abort(404, 'Bible has no audio');
+        }
+        
+        $Manager = new AudioManager();
+
+        $resp = new \stdClass();
+        $resp->success = true;
+
+        $resp->results = $Manager->deleteAudioFiles($module, $ids);
 
         return new Response($resp, 200);
     }

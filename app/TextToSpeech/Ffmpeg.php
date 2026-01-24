@@ -67,6 +67,8 @@ class Ffmpeg
             self::$useErrors[] = "ffmpeg merge failed: " . implode("\n", $output);
         }
 
+        // var_dump($return_var); die();
+
         return $return_var === 0;
     }
 }

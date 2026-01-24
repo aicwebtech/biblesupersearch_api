@@ -183,8 +183,6 @@ class ImportManager {
         $Importer = new $this->import_class();
         $Importer->test_mode = (bool) $this->test_mode;
         $type_info = static::$type_map[$this->type];
-
-
         
         if(!$Importer->setSettings($data)) {
             $this->addErrors($Importer->getErrors(), $Importer->getErrorLevel());

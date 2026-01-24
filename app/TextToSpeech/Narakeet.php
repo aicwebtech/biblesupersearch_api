@@ -17,14 +17,18 @@ class Narakeet extends TtsAbstract
 
     public function generateAudioHelper($text, $options, $file_handle)
     {
-        $apikey = $this->getApiKey();
-        $voice = $this->getVoice();
+        $s = $this->getSettings();
 
-        if(!$voice) {
-            return $this->addTransError('errors.audio.no_tts_voice', ['api' => self::$label, 'language' => $this->Bible->lang_short]);
+        if(!$s) {
+            return false;
         }
 
-        $url = "https://api.narakeet.com/text-to-speech/mp3?voice=$voice";
+        $url = "https://api.narakeet.com/text-to-speech/mp3?voice={$s['voice']}" ;
+
+        if(isset($s['speed']) && $s['speed'] != 1.0) {
+            $speed = (float) $s['speed'];
+            $url .= "&voice-speed=$speed";
+        }
 
         $options = [
             CURLOPT_URL => $url,
@@ -34,15 +38,20 @@ class Narakeet extends TtsAbstract
             CURLOPT_HTTPHEADER => [
                 'Accept: application/octet-stream',
                 'Content-Type: text/plain',
-                "x-api-key: $apikey",
+                "x-api-key: {$s['api_key']}",
             ],
             CURLOPT_FILE => $file_handle,
         ];
 
         $curl = curl_init();
         curl_setopt_array($curl, $options);
-        curl_exec($curl);
+        $success = curl_exec($curl);
+        $curl_info = curl_getinfo($curl);
         curl_close($curl);
+
+        if($curl_info['http_code'] != 200) {
+            return false;
+        }
 
         return true;
     }

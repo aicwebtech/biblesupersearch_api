@@ -55,6 +55,18 @@ const template = `
 
         <v-row v-bind='defaultProps.vrows' v-if='bootstrap.tts_enabled'>
             <v-col>
+                <v-select
+                    :items='ttsApiList'
+                    label="Text to Speech API"
+                    v-model='record.tts_api'
+                    v-bind='defaultProps.selects'
+                    :item-props='defaultProps.itemPropsFunction'
+                ></v-select>
+            </v-col>
+        </v-row>
+
+        <v-row v-bind='defaultProps.vrows' v-if='bootstrap.tts_enabled'>
+            <v-col>
                 <v-text-field 
                     :label="'Text to Speech Voice (' + ttsApiName + ')'"
                     v-model='record.tts_voice'
@@ -64,6 +76,20 @@ const template = `
                 ></v-text-field>
             </v-col>
         </v-row>   
+
+        <v-row v-bind='defaultProps.vrows' v-if='bootstrap.tts_enabled'>
+            <v-col>
+                <v-text-field 
+                    :label="'Text to Speech Speed (' + ttsApiName + ')'"
+                    v-model='record.tts_speed'
+                    v-bind='defaultProps.texts'
+                    :rules="[
+                        v => (v === null || v === '' || (!isNaN(v) && v >= 0.25 && v <= 4.0)) || 'Speed must be a number between 0.25 and 4.0'
+                    ]"
+                    persistent-hint
+                ></v-text-field>
+            </v-col>
+        </v-row>  
 
         <v-row v-bind='defaultProps.vrows'>
             <v-col>
@@ -101,7 +127,7 @@ export default {
             var voice = this.record.tts_api_voices && this.record.tts_api_voices[tts_api] && this.record.tts_api_voices[tts_api].length > 0 ? this.record.tts_api_voices[tts_api] : null;
 
             if(voice) {
-                return 'Leave blank for defalt of "' + voice + '"';
+                return 'Leave blank for default of "' + voice + '"';
             } else {
                 return 'ERROR: No default voice configured for this language / TTS API';
             }
@@ -114,6 +140,16 @@ export default {
             }
 
             return this.bootstrap.tts_apis.find(api => api.key === tts_api).name || 'Unknown';
+        },
+        ttsApiList() {
+            var defaultApi = this.bootstrap.tts_api_default ? this.bootstrap.tts_apis.find(api => api.key === this.bootstrap.tts_api_default) : null;
+            var list = [{value: null, title: 'Global Default: ' + (defaultApi ? defaultApi.name : '')}];
+
+            for(var api of this.bootstrap.tts_apis) {
+                list.push({value: api.key, title: api.name});
+            }
+
+            return list;
         }
     }
 }
