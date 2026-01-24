@@ -10,8 +10,6 @@ const tpl = `
                             v-model="matching"
                             :items="fileMatchOptions"
                             label="Filename Matching"
-                            iitem-value="key"
-                            iitem-text="label"
                             @update:modelValue="previewFiles"
                             density="comfortable"
                         />
