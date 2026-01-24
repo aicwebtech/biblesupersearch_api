@@ -439,7 +439,7 @@ export default {
             var voice = voices && voices[tts_api] && voices[tts_api].length > 0 ? voices[tts_api] : null;
 
             if(voice) {
-                return 'Leave blank for defalt of "' + voice + '"';
+                return 'Leave blank for default of "' + voice + '"';
             } else {
                 return 'ERROR: No default voice configured for this language / TTS API';
             }

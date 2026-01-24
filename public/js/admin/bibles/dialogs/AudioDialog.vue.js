@@ -216,7 +216,6 @@ export default {
                 .then(response => {
                     this.gridRefresh();
                     this.scanLoading = false;
-                    this.closeDialog
                 })
                 .catch(error => {
                     console.error('Error scanning audio:', error);

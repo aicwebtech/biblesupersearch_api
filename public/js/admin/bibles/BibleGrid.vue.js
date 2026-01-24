@@ -237,7 +237,7 @@ const template = `<v-sheet>
                                 <template v-slot:prepend>
                                     <v-icon icon="mdi-minus-box"></v-icon>
                                 </template>
-                                <v-list-item-title>Unistall</v-list-item-title>
+                                <v-list-item-title>Uninstall</v-list-item-title>
                             </v-list-item>
 
                             <v-list-item 

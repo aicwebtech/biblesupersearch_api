@@ -119,7 +119,7 @@ const tpl = `
                         </v-sheet>
                         <v-sheet v-else-if='!allCorrectWithOverride' class='mt-4 pa-4' color='warning' outlined>
                             Please confirm that all matched files are mapped to the correct reference before uploading.
-                            If any are incorrrect, please adjust your matching selection or change selected files.
+                            If any are incorrect, please adjust your matching selection or change selected files.
                         </v-sheet>
                     </v-card-text>
                     <v-card-actions>
