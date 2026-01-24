@@ -12,8 +12,12 @@ const template = `
 
                 <v-card-text class='vue_editdialog_body' ref='body'>
                     <ErrorPane :errors='responseErrors' color='error' />
+
+                    <v-alert v-if='formValid === false' type='error' outlined>
+                        Please correct the errors in the form before saving.
+                    </v-alert>
                 
-                    <v-form ref='form' v-model='formValid' lazy-validation>
+                    <v-form ref='form' v-model='formValid' validate-on='invalid-input lazy'>
                         <slot :data='recording' :errors='responseErrors'></slot>
                     </v-form>
 
@@ -149,9 +153,9 @@ export default {
             
             if(this.$refs.form) {
                 const { valid } = await this.$refs.form.validate();
-                console.log('form valid:', valid);
                 
                 if (!valid) {
+                    this.$refs.body.$el.scrollTop = 0;
                     return;
                 }
             }

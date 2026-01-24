@@ -16,6 +16,8 @@ class Spreadsheet extends SpreadsheetAbstract
 
     public function checkUploadedFile(UploadedFile $File): bool 
     {
+        set_time_limit(300);
+    
         if(!$this->_openSpreadsheetFile($File->getPathname())) {
             return FALSE;
         }
@@ -36,6 +38,8 @@ class Spreadsheet extends SpreadsheetAbstract
 
     protected function _importFromSpreadsheet($file_path) 
     {
+        set_time_limit(300);
+    
         if(!$this->_openSpreadsheetFile($file_path)) {
             return FALSE;
         }

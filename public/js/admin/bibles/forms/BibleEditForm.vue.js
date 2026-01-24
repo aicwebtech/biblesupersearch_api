@@ -181,6 +181,7 @@ const template = `
                     label="Text to Speech API"
                     v-model='record.tts_api'
                     v-bind='defaultProps.selects'
+                    :item-props='defaultProps.itemPropsFunction'
                 ></v-select>
             </v-col>
         </v-row>
@@ -361,20 +362,12 @@ export default {
     watch: {
         'record.copyright_id'(is, was) {
             this.prevCopyrightId = was || is;
-
-            console.log('copyright_id', is, was);
-
-            // if(!window.confirm('Please verify this is the correct copyright for this Bible')) {
-            //     this.record.copyright_id = was;
-            // }
-        },
-        'record.description'(is, was) {
-            // this.descriptionEditor && this.descriptionEditor.setData(is);
         },
         'record.id'(is, was) {
-            console.log('record id', is, was);
-            this.descriptionEditor && this.descriptionEditor.setData(this.record.description || '');
-            this.copyrightEditor && this.copyrightEditor.setData(this.record.copyright_statement || '');
+            if(this.record) {
+                this.descriptionEditor && this.descriptionEditor.setData(this.record.description || '');
+                this.copyrightEditor && this.copyrightEditor.setData(this.record.copyright_statement || '');
+            }
         }
     },
     mounted() {
@@ -424,6 +417,10 @@ export default {
             return bootstrap.languages.find(element => element.code == this.record.lang_short);
         },
         languageTtsApi() {            
+            if(!this.language) {
+                return this.bootstrap.tts_api_default;
+            } 
+
             return this.language.tts_api || this.bootstrap.tts_api_default;
         },
         ttsVoicePlaceHolder() {
@@ -478,7 +475,11 @@ export default {
 
             return list;
         },
-        notInstalled() {
+        notInstalled() {            
+            if(!this.record || !this.record.id) {
+                return false;
+            }
+            
             return this.record.installed != '1' && this.mode == 'edit' || this.record.id == -1;
         } 
     },
@@ -497,8 +498,6 @@ export default {
             
         },
         copyRightChanged(event) {
-            console.log('new', event);
-            console.log('prev', this.prevCopyrightId);
             var prev = this.prevCopyrightId;
             var cr = bootstrap.copyrights.find((item) => item.id == event);
             var msg = 'Please verify this is the correct copyright for this Bible\n\n';
@@ -523,12 +522,6 @@ export default {
             if(this.errors && this.errors[field]) {
                 delete this.errors[field];
             }
-        },
-        eventTest(type, event) {
-            // console.log(type, event);
-
-            // if(type == 'u:modelValue') {
-            // }
         }
     }
 }

@@ -23,6 +23,7 @@ export default {
 
     texts: {...overall},
     textareas: {...overall},
+    fileInputs: {...overall},
     switches: {
         ...overall,
         ...{

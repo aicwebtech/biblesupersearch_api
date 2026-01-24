@@ -60,6 +60,7 @@ const template = `
                     label="Text to Speech API"
                     v-model='record.tts_api'
                     v-bind='defaultProps.selects'
+                    :item-props='defaultProps.itemPropsFunction'
                 ></v-select>
             </v-col>
         </v-row>

@@ -100,7 +100,6 @@ export default {
     },
     watch: {
         showing(newValue, oldValue) {
-            console.log('showingChanged', newValue, oldValue);
             // do something here?
         },
         recordId(newValue, oldValue) {

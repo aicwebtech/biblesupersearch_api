@@ -21,18 +21,10 @@ export default {
     },
     methods: {
         initEditor() {
-            console.log('ckeditor init', this.$refs);
             var t = this,
                 ref = this.$refs.ta;
-
-            // ref.focus();
-
-            // return;
+                
             ref = document.getElementById('thing');
-
-            console.log('ckeditor ref', ref);
-
-            // return;
 
             ClassicEditor
                 .create( ref, {

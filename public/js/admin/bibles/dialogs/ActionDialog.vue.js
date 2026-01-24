@@ -25,7 +25,7 @@ const tpl = `
                             style='width: 100px; margin: auto; padding: 10px' 
                             v-if='testList.length == 0'
                         >
-                            <img src='/images/Spinner.gif'></img>
+                            <img :src="bootstrap.baseURL + '/images/Spinner.gif'"></img>
                         </v-sheet>
 
                         <div v-for='t in testList' v-html='t' ></div>
@@ -72,6 +72,7 @@ const tpl = `
 
 export default {
     template: tpl,
+    inject: ['bootstrap'],
     props: {
         actions: {
             type: Array,
@@ -152,7 +153,6 @@ export default {
     },
     watch: {
         action(newValue, oldValue) {
-            console.log('newValue', newValue);
             this.confirmed = false;
 
             if(newValue === false || newValue === null) {

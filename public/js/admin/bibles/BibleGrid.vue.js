@@ -541,12 +541,10 @@ export default {
     },
     methods: {        
         refreshGridRefreshWithExtras() {
-            console.log('afterGridRefresh', arguments);
             this.gridRefresh();
             this.loadBibleLanguage();
         },
         clickEdit(item) {
-            console.log('clickEdit', item);
             this.closeAudio();
 
             if(item) {
@@ -567,8 +565,6 @@ export default {
 
             this.audioManagingId = item.id;
             this.selection = item;
-            // console.log('clickAudio', item, this.selection);
-
             this.editingId = null;
         },
         closeAudio() {
@@ -626,17 +622,14 @@ export default {
             }
         },
         testBible(item) {
-            console.log('test Bible', item);
             this.handleSingleAction('test', item);
         },
         handleBulkAction(action, event) {
-            console.log('handleBulkAction', arguments);
             var s = this.rowSelections;
             var queue = this.gridRows.filter(item => s.includes(item.id));
             this.actionHelper(action, queue);
         },
         handleSingleAction(action, item) {
-            console.log('handleSingleAction', arguments);
             var queue = [item];
             this.actionHelper(action, queue);
         },
