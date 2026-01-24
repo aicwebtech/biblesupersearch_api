@@ -47,6 +47,8 @@ class ConfigController extends Controller
             'render_writeable'          => $render_writeable,
             'render_dir'                => $render_dir,
             'search_type_multi_lang'    => $st_lang,
+            'ffmegg_usable'             => \App\TextToSpeech\Ffmpeg::canUse(),
+            'ffmegg_errors'             => \App\TextToSpeech\Ffmpeg::$useErrors,
         ]);
     }
 

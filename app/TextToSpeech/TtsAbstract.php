@@ -1,0 +1,328 @@
+<?php
+
+namespace App\TextToSpeech;
+
+use App\Models\Bible;
+use App\Models\AudioBibleVerse;
+use App\Models\Language;
+use App\Interfaces\ErrorInterface;
+use DB;
+use App;
+
+abstract class TtsAbstract implements ErrorInterface
+{
+    use \App\Traits\Error;
+
+    static public $name;
+    static public $description = '';
+
+    public $debug = false; // Debug rendering by only rendering handful of verses
+
+    protected static $label = null;
+    protected static $url = null; // URL to API docs
+    protected static $voice_url = null; // URL to API list of voices, if applicable
+    protected static $requires_voice = true;
+    protected static $is_ai_based = false; // Indicates AI-based TTS (like OpenAI)
+
+    protected $file_extension = 'mp3';
+
+    protected $Bible;
+    protected $chunk_size = 100;
+
+    protected $current_book    = NULL;
+    protected $current_chapter = NULL;
+    protected $chunk_data = [];
+    protected $details = [];
+
+    protected $Rendering = NULL;
+    protected $overwrite = false;
+
+    protected $connection_map = [];
+
+    public function __construct($module) 
+    {
+        $this->Bible = ($module instanceof Bible) ? $module : Bible::findByModule($module);
+
+        if(!$this->Bible) {
+            $this->addError( trans('errors.bible_no_exist', ['module' => $module]) );
+        }
+
+        if(!$this->file_extension) {
+            throw new Exception('$this->file_extension is required on render class!');
+        }
+    }
+
+    public static function getMeta()
+    {
+        return [
+            'name'              => static::$label,
+            'url'               => static::$url,
+            'voice_url'         => static::$voice_url,
+            'requires_voice'    => static::$requires_voice,
+            'is_ai_based'       => static::$is_ai_based,
+        ];
+    }
+
+    public function getSettings()
+    {
+        $api_key = $this->getApiKey();
+        $voice = $this->getVoice();
+
+        if(!$api_key) {
+            return $this->addTransError('errors.audio.tts_api_key_missing', ['api' => static::$label]);
+        }
+
+        if(static::$requires_voice) {
+            if(!$voice) {
+                return $this->addTransError('errors.audio.no_tts_voice', ['api' => static::$label, 'language' => $this->Bible->lang_short]);
+            }
+        }
+    
+        return [
+            'api_key'   => $api_key,
+            'voice'     => $voice,
+            'speed'     => $this->getSpeed(),
+        ];
+    }
+
+    public function getVoice()
+    {
+        $voice = static::getVoiceByBible($this->Bible);
+        $this->details['voice'] = $voice;
+        return $voice;
+    }
+
+    public function getSpeed()
+    {
+        return static::getSpeedByBible($this->Bible);
+    }
+
+    public function getApiKey()
+    {
+        return config('audio.tts_api_key_' . static::getIdent());
+    }
+
+    public function generateAudio($text, $options = [], $filename = null) 
+    {
+        if(!$this->validateGenerateAudio()) {
+            return FALSE;
+        }
+
+        $this->details = [];
+        
+        $path = $this->getAudioFilePath(true);
+
+        if($filename) {
+            $file_path = $path . '/' . $filename;
+            $this->details['file_name'] = $filename;
+        } else {
+            $file_path = $path . '/narakeet_' . md5($text . microtime(false)) . '.mp3';
+        }
+
+        try {
+            $file_handle = fopen($file_path, 'w+');
+
+            if(!$file_handle) {
+                return $this->addError('Unable to open file for writing: ' . $file_path);
+            }
+
+            $text = $this->_formatText($text);
+
+            $success = $this->generateAudioHelper($text, $options, $file_handle);
+
+            fclose($file_handle);
+
+            if($success === false) {
+                $json = json_decode( file_get_contents($file_path), true );
+
+                if(isset($json['error'])) {
+                    if(is_array($json['error'])) {
+                        $error_msg = isset($json['error']['message']) ? $json['error']['message'] : json_encode($json['error']);
+                    } else {
+                        $error_msg = $json['error'];
+                    }
+                    
+                    $this->addTransError('errors.audio.tts_api_error', ['api' => static::$label, 'error' => $error_msg]);
+                }
+                
+                unlink($file_path);
+                return FALSE;
+            }
+
+            return $success;
+        } catch (\Exception $e) {
+            $this->addError( $e->getMessage() );
+            return FALSE;
+        }
+    }
+
+    public function getGenerateDetails()
+    {
+        return $this->details;
+    }
+
+    abstract protected function generateAudioHelper($text, $options, $file_handle);
+
+    protected function validateGenerateAudio()
+    {
+        if(!$this->Bible) {
+            return $this->addError('Bible not set for TTS generation.');
+        }
+
+        if(static::$requires_voice) {
+            $voice = static::getVoiceByLanguage($this->Bible->lang_short);
+
+            if(!$voice) {
+                return $this->addTransError('errors.audio.no_tts_voice', ['api' => static::$label, 'language' => $this->Bible->lang_short]);
+            }
+        }
+
+        return true;
+    }
+
+    protected function _formatText($text)
+    {
+        $text = preg_replace('/\} \{/', '', $text); // remove Strongs numbers
+        $text = preg_replace('/\{[^\}]+\}/', '', $text); // remove Strongs numbers
+        $text = str_replace(['[', ']'], '', $text); // remove brackets (italic markers)
+        $text = str_replace(['‹', '›'], '', $text); // remove red letter markers
+        $text = str_replace(['{/', '[/', '[/', '/'], '', $text); // remove closing tags
+        $text = str_replace('¶', '', $text); // remove paragraph markers
+        $text = strip_tags($text); // remove HTML tags
+        $text = preg_replace('/\s+/', ' ', $text); // normalize whitespace
+
+        $text = trim($text);
+
+        return $text;
+    }
+
+    protected function _getBookTable() 
+    {
+        if($this->book_name_language_force) {
+            return 'books_' . $this->book_name_language_force;
+        }
+
+        if (\App\Models\Books\BookAbstract::isSupportedLanguage($this->Bible->lang_short)) {
+            return 'books_' . $this->Bible->lang_short;
+        }
+
+        $lang = config('bss.defaults.language_short');
+
+        if (\App\Models\Books\BookAbstract::isSupportedLanguage($lang)) {
+            return 'books_' . $lang;
+        }
+
+        return 'books_en';
+    }
+
+    public function getAudioFilePath($create_dir = FALSE, $relative = false) 
+    {
+        if($this->hasErrors()) {
+            return FALSE;
+        }
+
+        $dir = $relative ? '' : static::getAudioBasePath();
+        $dir .= $this->Bible->module;
+
+        if(!is_dir($dir) && $create_dir && !$relative) {
+            mkdir($dir, 0775, TRUE);
+            chmod($dir, 0775);
+        }
+
+        return $dir;
+    }
+
+    public static function getAudioFilePathStatic($module, $create_dir = FALSE, $relative = false) 
+    {
+        $dir = $relative ? '' : static::getAudioBasePath();
+        $dir .= $module;
+
+        if(!is_dir($dir) && $create_dir && !$relative) {
+            mkdir($dir, 0775, TRUE);
+            chmod($dir, 0775);
+        }
+
+        return $dir;
+    }
+
+    public static function getIdent() 
+    {
+        return strtolower( (new \ReflectionClass(static::class))->getShortName() );
+    }
+
+    public static function getAudioBasePath() 
+    {
+        return dirname(__FILE__) . '/../../bibles/audio/';
+    }
+
+    public static function getVoiceByBible(Bible $Bible, $tts_api = null)
+    {
+        $b_voice = $Bible->tts_voice ? trim($Bible->tts_voice) : null;
+        
+        if($b_voice) {
+            return $b_voice; // use override from bible table
+        }
+        
+        return static::getVoiceByLanguage($Bible->lang_short, $tts_api);
+    }
+
+    public static function getVoiceByLanguage($language_short, $tts_api = null)
+    {
+        if(!$tts_api) {
+            $tts_api = strtolower( (new \ReflectionClass(static::class))->getShortName() );
+        }
+
+        $Lang = Language::findByCode($language_short);
+
+        if($Lang && $Lang->tts_voice) {
+            return $Lang->tts_voice; // use override from language table
+        }
+
+        $voice = config('lang.' . $language_short . '.text_to_speech.' . $tts_api . '.voice');
+
+        if($voice) {
+            return $voice; // use hard-coded api/language config
+        }
+
+        // return api default voice
+        return config('text_to_speech.' . $tts_api . '.voice');
+    }
+
+    public static function getSpeedByBible(Bible $Bible, $tts_api = null)
+    {
+        $b_speed = $Bible->tts_speed ? (float) $Bible->tts_speed : null;
+        
+        if($b_speed) {
+            return $b_speed; // use override from bible table
+        }
+        
+        return static::getSpeedByLanguage($Bible->lang_short, $tts_api);
+    }
+
+    public static function getSpeedByLanguage($language_short, $tts_api = null)
+    {
+        if(!$tts_api) {
+            $tts_api = strtolower( (new \ReflectionClass(static::class))->getShortName() );
+        }
+
+        $Lang = Language::findByCode($language_short);
+
+        if($Lang && $Lang->tts_speed) {
+            return $Lang->tts_speed; // use override from language table
+        }
+
+        return 1; // default speed
+    }
+
+    public static function getAllApiVoicesByLanguage($language_short)
+    {
+        $voices = [];
+
+        foreach(\App\AudioManager::getTtsApiClasses() as $api_key => $class) {
+            $voice = $class::getVoiceByLanguage($language_short, $api_key);
+            $voices[$api_key] = $voice;
+        }
+
+        return $voices;
+    }
+}

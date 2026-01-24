@@ -1,0 +1,14 @@
+.v-selection-control__wrapper {
+    height: 20px !important;
+}
+
+.v-data-table__tbody tr td {
+    height: 20px !important;
+    font-size: smaller !important;
+}
+
+.truncate {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}

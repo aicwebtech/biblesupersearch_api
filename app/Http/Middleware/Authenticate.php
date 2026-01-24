@@ -21,7 +21,8 @@ class Authenticate
      * @param  Guard  $auth
      * @return void
      */
-    public function __construct(Guard $auth) {
+    public function __construct(Guard $auth) 
+    {
         $this->auth = $auth;
     }
 
@@ -33,10 +34,11 @@ class Authenticate
      * @param integer $access_level minimal access level to view
      * @return mixed
      */
-    public function handle($request, Closure $next, $access_level = 1) {
+    public function handle($request, Closure $next, $access_level = 1) 
+    {
         if ($this->auth->guest()) {
 
-            if ($request->ajax()) {
+            if ($request->ajax() || $request->wantsJson()) {
                 $resp = new \stdClass;
                 $resp->success = FALSE;
                 $resp->message = 'Your session has timed out, please log in again.';
@@ -49,7 +51,7 @@ class Authenticate
 
         // Check the user's access level against the minimal
         if($this->auth->user()->access_level < $access_level) {
-            if ($request->ajax()) {
+            if ($request->ajax() || $request->wantsJson()) {
                 return response('Access Denied', 403);
             }
             else {

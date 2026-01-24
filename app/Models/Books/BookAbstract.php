@@ -46,7 +46,9 @@ class BookAbstract extends Model
      */
     public static function getClassNameByLanguageRaw($language) 
     {
-        $class_name = __NAMESPACE__ . '\\' . studly_case(strtolower($language));
+        $language = $language ?: config('bss.defaults.language_short');
+        
+        $class_name = $language ? __NAMESPACE__ . '\\' . studly_case(strtolower($language)) : null;
         return $class_name;
     }
 

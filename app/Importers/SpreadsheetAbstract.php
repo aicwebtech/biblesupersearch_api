@@ -48,7 +48,7 @@ abstract class SpreadsheetAbstract extends ImporterAbstract
 
     protected function _importHelper(Bible &$Bible): bool  
     {
-        @ini_set("memory_limit", "150M"); // TODO - need to test this with LARGE UNICODE BIBLES to make sure it doesn't break!
+        @ini_set("memory_limit", "256M"); // TODO - need to test this with LARGE UNICODE BIBLES to make sure it doesn't break!
             // Confirmed working with thaikjv .xls AND .csv (10+ MB files)
 
         // $Bible     = $this->_getBible($this->module);
@@ -305,6 +305,7 @@ abstract class SpreadsheetAbstract extends ImporterAbstract
 
         $found = array_fill_keys(array_keys($required), FALSE);
 
+        // Extract spreadsheet collumn settings and place them in the map
         foreach($set as $key => $value) {
             if(substr($key, 0, 3) == 'col') {
                 $value = ($value && $value != 'null') ? $value : NULL;

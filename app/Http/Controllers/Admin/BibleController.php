@@ -28,7 +28,7 @@ class BibleController extends Controller
      *
      * @return \Illuminate\Http\Response
      */
-    public function index() 
+    public function indexOld() 
     {
         Bible::updateNeedsUpdate();
         Bible::populateBibleTable();
@@ -48,6 +48,23 @@ class BibleController extends Controller
             $bootstrap->copyrights[] = $data;
         }
 
+        $bootstrap = json_encode($bootstrap);
+
+        return view('admin.bibles_old', ['bootstrap' => $bootstrap]);
+    }
+
+        /**
+     * Display a listing of the resource.
+     * In this case, a page with a grid
+     *
+     * @return \Illuminate\Http\Response
+     */
+    public function index()
+    {
+        Bible::updateNeedsUpdate();
+        Bible::populateBibleTable();
+        
+        $bootstrap = $this->getAdminBootstrap();
         $bootstrap = json_encode($bootstrap);
 
         return view('admin.bibles', ['bootstrap' => $bootstrap]);
@@ -85,6 +102,79 @@ class BibleController extends Controller
             ]);
             
             $postfilters = $data['_post_filters'];
+        } else {
+            $searchable = [
+                'name' => [
+                    // 'field' => 'bibles.name',
+                    'type'  => 'str_inside',
+                ],
+                'shortname' => [
+                    'field' => 'bibles.shortname',
+                    'type'  => 'str_start',
+                ],
+                'module' => [
+                    'field' => 'bibles.module',
+                    'type'  => 'str_inside',
+                ],                        
+                'year' => [
+                    'field' => 'bibles.year',
+                    'type'  => 'str_inside',
+                ],                  
+                'lang' => [
+                    'field' => 'bibles.lang_short',
+                    'type'  => 'str_exact',
+                ],                    
+                'copyright_id' => [
+                    'field' => 'bibles.copyright_id',
+                    'type'  => 'int',
+                ],                   
+                'enabled' => [
+                    'field' => 'bibles.enabled',
+                    'type'  => 'int',
+                ],                
+                'installed' => [
+                    'field' => 'bibles.installed',
+                    'type'  => 'int',
+                ],                   
+                'official' => [
+                    'field' => 'bibles.official',
+                    'type'  => 'int',
+                ],                         
+                'research' => [
+                    'field' => 'bibles.research',
+                    'type'  => 'int',
+                ],                      
+                'has_module_file' => [
+                    'field' => 'bibles.official',
+                    'type'  => 'postfilter',
+                ],            
+            ];
+
+            $postfilters = [];
+
+            foreach($searchable as $key => $f) {            
+                if(isset($data[$key]) && ($data[$key] || $data[$key] == 0)) {
+                    $field = $f['field'] ?? 'bibles.' . $key;
+
+                    switch($f['type']) {
+                        case 'postfilter':
+                            $postfilters[$key] = $data[$key];
+                            break;           
+                        case 'str_inside':
+                            $Query->where($field, 'LIKE', '%' . $data[$key] . '%');
+                            break;                        
+                        case 'int':
+                            $Query->where($field, (int)$data[$key]);
+                            break;                        
+                        case 'str_exact':
+                            $Query->where($field, $data[$key]);
+                            break;
+                        case 'str_start':
+                        default:
+                            $Query->where($field, 'LIKE', $data[$key] . '%');
+                    }
+                }
+            }
         }
 
         $has_post_filter = empty($postfilters) ? FALSE : TRUE;
@@ -172,7 +262,7 @@ class BibleController extends Controller
      */
     public function store(Request $request) 
     {
-        $this->_save($request, NULL);
+        return $this->_save($request, NULL);
     }
 
     /**
@@ -185,10 +275,14 @@ class BibleController extends Controller
     {
         $Bible = Bible::findOrFail($id);
 
+        $Language = Language::findByCode($Bible->lang_short);
+
         $resp = new \stdClass();
         $resp->success = TRUE;
         $resp->Bible   = $Bible->attributesToArray();
+        $resp->Bible['audio_structure'] = $Bible->audio_structure ?: 'chapters';
         $resp->Bible['has_module_file'] = $Bible->hasModuleFile() ? 1 : 0;
+        $resp->Bible['tts_api_voices'] = \App\TextToSpeech\TtsAbstract::getAllApiVoicesByLanguage($Language->code, $Language->tts_api);
 
         return new Response($resp, 200);
     }
@@ -201,6 +295,8 @@ class BibleController extends Controller
      */
     public function edit($id) 
     {
+        return response('Not Implemented', 501);
+        
         $Bible = Bible::findByModule($id);
 
         if(!$Bible) {
@@ -230,7 +326,7 @@ class BibleController extends Controller
 
         $bootstrap->bibleId = $bibleId;
         
-        foreacH(\App\Models\Copyright::all() as $Copyright) {
+        foreach(\App\Models\Copyright::all() as $Copyright) {
             $data = $Copyright->getAttributes();
             $data['copyright_statement_processed'] = $Copyright->getProcessedCopyrightStatement();
             $bootstrap->copyrights[] = $data;
@@ -299,6 +395,8 @@ class BibleController extends Controller
 
         $BibleClass = Helpers::find('\App\Models\Bible');
 
+        $isNew = (bool) $id ? FALSE : TRUE;
+
         if($id) {
             $Bible = Bible::findOrFail($id);
         }
@@ -306,6 +404,7 @@ class BibleController extends Controller
             $Bible = new Bible();
         }
 
+        
         $rules = $BibleClass::getUpdateRules($id);
         $data  = $request->only(array_keys($rules));
 
@@ -664,8 +763,20 @@ class BibleController extends Controller
 
         $ManagerClass   = Helpers::find('\App\ImportManager');
         $Manager        = new $ManagerClass();
+        $bible_id       = $request->input('id', null);
+        $Bible          = null;
 
-        $rules = $ManagerClass::getImportRules();
+        if($bible_id) {
+            $Bible = Bible::findOrFail($bible_id);
+
+            if($Bible->official) {
+                $resp->success = FALSE;
+                $resp->errors = ['Cannot overwrite official Bibles'];
+                return new Response($resp, 422);
+            }
+        }
+
+        $rules = $ManagerClass::getImportRules($bible_id);
         $data  = $request->only(array_keys($rules));
 
         $v = Validator::make($data, $rules);
@@ -676,10 +787,9 @@ class BibleController extends Controller
             return new Response($resp, 422);
         }
 
-        if($Manager->importFile($data)) {
+        if($Manager->importFile($data, $Bible)) {
             $resp->bible = $Manager->parsed_attributes ?: [];
-        }
-        else {
+        } else {
             $resp->success = FALSE;
             $resp->errors = $Manager->getErrors();
         }

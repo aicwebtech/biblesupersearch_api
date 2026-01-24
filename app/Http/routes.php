@@ -79,6 +79,10 @@ Route::get('/admin/uninstall', 'AdminController@uninstallPage')->name('admin.uni
 Route::post('/admin/uninstall', 'AdminController@softwareUninstall')->name('admin.douninstall');
 Route::get('/admin/uninstalled', 'AdminController@uninstalled')->name('admin.uninstalled'); //->middleware('install');
 Route::get('/admin/phpinfo', 'AdminController@debug')->name('admin.phpinfo'); 
+Route::get('/admin/statics', 'Admin\AppController@statics');
+
+// Bible mannager routes
+//Route::get('/admin/bibles/indexNew', 'Admin\BibleController@indexNew')->name('admin.bibles.indexNew'); // temp
 
 Route::get('/admin/bibles/grid', 'Admin\BibleController@grid');
 Route::get('/admin/bibles/languages', 'Admin\BibleController@languages');
@@ -101,22 +105,29 @@ Route::post('/admin/bibles/unique', 'Admin\BibleController@uniqueCheck');
 Route::get('/admin/bibles/unique', 'Admin\BibleController@uniqueCheck');
 Route::post('/admin/bibles/importcheck', 'Admin\BibleController@importCheck');
 Route::post('/admin/bibles/import', 'Admin\BibleController@import');
+Route::resource('/admin/bibles', 'Admin\BibleController', ['as' => 'admin']);
 
-Route::get('/admin/languages', 'Admin\LanguageConfigController@index')->name('admin.languages');
-Route::post('/admin/languages', 'Admin\LanguageConfigController@index');
+// Audio Bible manager routes
+Route::get('/admin/bibles/audio/grid/{id}', 'Admin\AudioBibleController@grid');
+Route::post('/admin/bibles/audio/upload', 'Admin\AudioBibleController@upload');
+Route::post('/admin/bibles/audio/preview', 'Admin\AudioBibleController@preview');
+Route::post('/admin/bibles/audio/scan', 'Admin\AudioBibleController@scan');
+Route::post('/admin/bibles/audio/delete', 'Admin\AudioBibleController@delete');
+
+
+// Language manager routes
 Route::get('/admin/languages/fetch/{id}', 'Admin\LanguageConfigController@fetch');
-Route::post('/admin/languages/save', 'Admin\LanguageConfigController@save');
+Route::get('/admin/languages/grid', 'Admin\LanguageConfigController@grid');
+Route::resource('/admin/languages', 'Admin\LanguageConfigController', ['as' => 'admin']); //  needed?  revise language routes
 
+Route::get('/admin/biblebooks/grid/{lang}', 'Admin\LanguageConfigController@gridBookList');
+
+// TOS / Privacy Policy management
 Route::get('/admin/tos', 'Admin\PostConfigController@tos')->name('admin.tos')->middleware('install');
 Route::post('/admin/tos', 'Admin\PostConfigController@saveTos');
 Route::get('/admin/privacy', 'Admin\PostConfigController@privacy')->name('admin.privacy')->middleware('install');
 Route::post('/admin/privacy', 'Admin\PostConfigController@savePrivacy');
 
-Route::resource('/admin/bibles', 'Admin\BibleController', ['as' => 'admin']);
-
-// Route::resource('/admin/bibles', 'Admin\BibleController', ['as' => 'admin', 'except' => [
-//     'create', 'edit'// , 'update'
-// ]]);
 
 Route::get('/admin/config', 'Admin\ConfigController@index')->name('admin.configs')->middleware('install');
 Route::post('/admin/config', 'Admin\ConfigController@store')->name('admin.configs.store');
