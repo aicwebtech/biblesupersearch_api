@@ -1,5 +1,5 @@
 <?php 
-// Text to Speech configuration for Urdu language
+// Text to Speech configuration for Vietnamese language
 // Needs voice 
 // narakeet
 // openai

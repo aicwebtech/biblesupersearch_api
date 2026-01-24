@@ -1,5 +1,5 @@
 <?php 
-// Text to Speech configuration for Punjabi (pa)
+// Text to Speech configuration for Romanian
 
 // Needs voice 
 // narakeet
