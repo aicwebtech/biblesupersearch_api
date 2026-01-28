@@ -173,25 +173,24 @@ const template = `<v-sheet>
                 </template>    
 
                 <template v-slot:item.actions={item}>
+                    <!-- Action Buttons -->
+                    <!-- We only show 1 button directly, rest go in menu -->
                     <ChipAlert
                         v-if="item.has_module_file == '0'"
                         @click="handleSingleAction('export', item)" 
                         v-bind='chipProps'
                         text='Export'
-                        class='mr-2'
                     />
                     <ChipAlert
                         v-else-if="item.needs_update == '1' && bootstrap.devToolsEnabled"
                         @click="handleSingleAction('update', item)" 
                         v-bind='chipProps'
                         text='Update'
-                        class='mr-2'
                     />    
-                
-                    <v-chip v-bind='chipProps'
+                    <v-chip v-else v-bind='chipProps'
                         text='Edit'
                         @click='clickEdit(item)'
-                    ></v-chip> 
+                    />
 
                     <v-menu>
                         <template v-slot:activator="{ props }">
@@ -225,6 +224,13 @@ const template = `<v-sheet>
                                     <v-icon icon="mdi-test-tube"></v-icon>
                                 </template>
                                 <v-list-item-title>Test</v-list-item-title>
+                            </v-list-item>
+
+                            <v-list-item @click="handleSingleAction('update', item)">
+                                <template v-slot:prepend>
+                                    <v-icon icon="mdi-update"></v-icon>
+                                </template>
+                                <v-list-item-title>Update</v-list-item-title>
                             </v-list-item>
                             
                             <v-list-item v-if='item.installed == "0"' @click="handleSingleAction('install', item)">
@@ -274,9 +280,9 @@ const template = `<v-sheet>
                                 @click="handleSingleAction('meta', item)"
                             >
                                 <template v-slot:prepend>
-                                    <v-icon icon="mdi-book-sync"></v-icon>
+                                    <v-icon icon="mdi-export"></v-icon>
                                 </template>
-                                <v-list-item-title>Update Module</v-list-item-title>
+                                <v-list-item-title>Module Settings</v-list-item-title>
                             </v-list-item>
 
                         </v-list>
@@ -290,9 +296,8 @@ const template = `<v-sheet>
                 :actions = 'bulkActions'
                 :queue = 'actionQueue'
                 @onClose='closeActions'
-                @onSave='refreshGridRefreshWithExtras'
-
-            ></ActionDialog>            
+                @onSave='refreshGridClearSelections'
+            />          
 
             <ImportDialog 
                 :showing = 'importShowing'
@@ -300,20 +305,20 @@ const template = `<v-sheet>
                 @onClose='closeImport'
                 @onTest='testBible'
                 @onSave='refreshGridRefreshWithExtras'
-            ></ImportDialog>
+            />
 
             <AudioDialog 
                 :recordId='audioManagingId'
                 :record='selection'
                 @onClose='closeAudio'
                 @afterLeave='closeAudio'
-            ></AudioDialog>
+            />
 
             <EditDialog
                 :recordId='editingId'
                 max-width='700'
                 loadRecord
-                recordType='Bible'
+                recordType='Bible Settings'
                 recordIndex='Bible'
                 @onClose='closeEdit'
                 @afterLeave='closeEdit'
@@ -423,8 +428,9 @@ export default {
                 {
                     action: 'update',
                     label: 'Update',
-                    // :todo what does this actually do?  Controller action 'update' is for saving module meta (IE PUT)
-                    // dialogTitle: 'Update Bible Text from Module'
+                    dialogTitle: 'Update Bible',
+                    confirmText: 'Are you sure that you want to update the selected Bibles?' + 
+                        '  This will overwrite any local changes you have made to each Bible\'s text and settings.',
                     actioning: 'Updating',
                     icon: 'mdi-update',
                 },
@@ -475,12 +481,12 @@ export default {
                 },
                 {
                     action: 'meta',
-                    label: 'Update Module',
-                    dialogTitle: 'Update Module File',
-                    confirmText: 'Are you sure that you want to save settings changes to these Bible module files?',
-                    actioning: 'Updating Meta',
+                    label: 'Module Settings',
+                    dialogTitle: 'Module Settings',
+                    confirmText: 'Are you sure that you want to export Bible settings changes (metadata) to these Bible module files?',
+                    actioning: 'Updating Module Settings',
                     requireDevTools: true,
-                    icon: 'mdi-book-sync'
+                    icon: 'mdi-export'
                 },
             ]
         }
@@ -543,6 +549,10 @@ export default {
         refreshGridRefreshWithExtras() {
             this.gridRefresh();
             this.loadBibleLanguage();
+        },
+        refreshGridClearSelections() {
+            this.rowSelections = [];
+            this.refreshGridRefreshWithExtras();
         },
         clickEdit(item) {
             this.closeAudio();

@@ -115,10 +115,33 @@ class Bible extends Model
     ];
 
     // List of fields to NOT export when creating modules
-    protected $do_not_export = ['id', 'created_at', 'updated_at', 'enabled', 'installed', 'installed_at', 'needs_update', 'module_updated_at'];
+    protected $do_not_export = [
+        'id', 
+        'created_at', 
+        'updated_at', 
+        'enabled', 
+        'installed', 
+        'installed_at', 
+        'needs_update', 
+        'module_updated_at',
+        'audio_enable',
+        'tts_enable',
+        'tts_api',
+        'tts_voice',
+        'tts_speed',
+    ];
 
     // List of fileds to not use as metadata (in addition to those contained in $this->do_not_export)
-    protected $do_not_meta = ['rank', 'module_v2', 'importer', 'import_file', 'copyright_id', 'hebrew_text_id', 'greek_text_id', 'translation_type_id'];
+    protected $do_not_meta = [
+        'rank', 
+        'module_v2', 
+        'importer', 
+        'import_file', 
+        'copyright_id', 
+        'hebrew_text_id', 
+        'greek_text_id', 
+        'translation_type_id'
+    ];
 
     public $migrate_code = 0;  // 0 = no change, 1 = deleted unnessessary file, 2 = moved file, 3 = file does not exist
 
@@ -941,11 +964,9 @@ class Bible extends Model
 
     public function needsUpdate() 
     {
-        if(!$this->installed) {
-            return FALSE;
-        }
-
-        if(!$this->module_version || version_compare($this->module_version, config('app.version')) >= 0) {
+        // If module version is up to date with app version, no update needed
+        // In this case, update module version to match app version and clear needs_update flag if needed
+        if (!$this->module_version || version_compare($this->module_version, config('app.version')) >= 0) {
             if($this->module_version != config('app.version') || $this->needs_update == 1) {  
                 $this->module_version = config('app.version');
                 $this->needs_update = 0;
@@ -953,11 +974,11 @@ class Bible extends Model
             }
 
             return FALSE;
-        }
-        else if($this->needs_update) {
+        } elseif ($this->needs_update) {
             return TRUE;
         }
 
+        // Check module file for version info
         $Zip  = $this->openModuleFile();
 
         if(!$Zip) {
@@ -967,23 +988,26 @@ class Bible extends Model
         $json = $Zip->getFromName('info.json');
         $meta = json_decode($json, TRUE);
 
-        if(array_key_exists('module_version', $meta) && version_compare($this->module_version, $meta['module_version']) == -1) {
-            if($this->needs_update == 0) {                
+        // Check if module version in info.json is newer than current module version
+        // If so, flag as needing update
+        // The module version coming from the module file will always be <= app version
+        if (array_key_exists('module_version', $meta) && version_compare($this->module_version, $meta['module_version']) == -1) {
+            if ($this->needs_update == 0) {                
                 $this->needs_update = 1;
                 $this->save();
             }
 
             return TRUE;
-        }
-        else {
-            if($this->module_version != config('app.version') || $this->needs_update == 1) {                
+        } else {
+            // If flagged as needing update but module version is actually current, clear flag
+            if ($this->module_version != config('app.version') || $this->needs_update == 1) {                
                 $this->module_version = config('app.version');
                 $this->needs_update = 0;
                 $this->save();
             }
-
-            return FALSE;
         }
+
+        return FALSE;
     }
 
     public function getRandomReference($random_mode) 
