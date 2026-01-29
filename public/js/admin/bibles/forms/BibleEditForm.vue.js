@@ -2,9 +2,8 @@ import '../../../../js/bin/ckeditor5/build/ckeditor.js';
 
 const template = `
     <div 
-        max-width='600' 
+        max-width='800' 
     >
-
         <v-alert v-if='notInstalled' type='warning' outlined>
             This Bible is not yet installed. Some options below are disabled.
         </v-alert>
@@ -252,9 +251,6 @@ const template = `
                     item-title='name'
                     item-value='id'
                     :rules='[v=> !!v || "Copyright is required"]'
-                    @click:clear='eventTest("cl:clear", $event)'
-                    @update:focused='eventTest("u:focused", $event)'
-                    @update:menu='eventTest("u:menu", $event)'
                     @update:modelValue='copyRightChanged'
                 ></v-autocomplete>
             </v-col>

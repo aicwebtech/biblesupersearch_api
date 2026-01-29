@@ -296,7 +296,7 @@ const template = `<v-sheet>
                 :actions = 'bulkActions'
                 :queue = 'actionQueue'
                 @onClose='closeActions'
-                @onSave='refreshGridClearSelections'
+                @onSave='closeActionsRefresh'
             />          
 
             <ImportDialog 
@@ -316,7 +316,7 @@ const template = `<v-sheet>
 
             <EditDialog
                 :recordId='editingId'
-                max-width='700'
+                max-width='800'
                 loadRecord
                 recordType='Bible Settings'
                 recordIndex='Bible'
@@ -377,7 +377,9 @@ export default {
             this.init();
         },
         extraCols(is, was) {
-            !is && this.gridResetRows();
+            // This is annoying and shouldn't be needed 
+            // Commenting out for now
+            // !is && this.gridResetRows();
         }
     },
     data() {
@@ -648,8 +650,11 @@ export default {
             this.actionQueue = queue || null;
         },
         closeActions() {
-            // this.gridRefresh();
             this.selectedAction = null;
+        },
+        closeActionsRefresh() {
+            this.closeActions();
+            this.refreshGridClearSelections();
         },
         formatDateTime(datetime, format) {
             var pts = datetime.split(' ');

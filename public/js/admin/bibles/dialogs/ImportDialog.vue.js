@@ -14,7 +14,7 @@ import Usfm from '../forms/importers/USFM.vue.js';
 
 const tpl = `
     <v-dialog 
-        v-model='showing'
+        v-model='showingInternal'
         :max-width='confirmed ? 1000 : 600' 
     >
         <template v-slot:default="{ isActive }">
@@ -27,7 +27,7 @@ const tpl = `
                         Please correct the errors in the form before saving.
                     </v-alert>
 
-                    <v-form ref='form' v-model='formValid' validate-on='invalid-input lazy'>
+                    <v-form ref='form' v-model='formValid' validate-on='lazy'>
                         <v-select
                             label='Importer'
                             clearable
@@ -85,19 +85,21 @@ const tpl = `
 
                 <v-card-actions>
                     <v-spacer></v-spacer>
+                    
+                    <v-btn
+                        text='Cancel'
+                        @click='handleCancel()'
+                    ></v-btn>    
 
                     <v-btn v-if='!confirmed'e
                         text='Check File'
                         @click='handleCheckFile()'
-                    ></v-btn>                       
+                    ></v-btn>    
+
                     <v-btn v-if='confirmed'
                         text='Import Bible'
                         @click='handleImport()'
                     ></v-btn>                         
-                    <v-btn
-                        text='Cancel'
-                        @click='handleCancel()'
-                    ></v-btn>                    
                 </v-card-actions>
             </v-card>
 
@@ -135,6 +137,7 @@ export default {
     data() {
         return {
             loading: false,
+            showingInternal: false,
             confirmed: false,
             importer: null,
             file: null,
@@ -166,11 +169,17 @@ export default {
     watch: {
         showing: function(is, was) {
             this.importer = null;
+            this.showingInternal = is;
             this.file = null;
             this.fileSanitized = null;
             this.settings = {};
             this.bibleRecord = {};
             this.confirmed = false;
+        },
+        showingInternal: function(is, was) {
+            if(!is && was) {
+                this.$emit('onClose');
+            }
         },
         importer: function(is, was) {
             // this.$refs.ImportComponent && this.$refs.ImportComponent.reset();

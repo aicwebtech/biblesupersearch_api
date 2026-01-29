@@ -2,6 +2,7 @@ const tpl = `
 
     <v-dialog 
         v-model='showing'
+        @update.modelValue='handleShowingChange($event)'
         max-width='600' 
     >
         <template v-slot:default="{ isActive }">
@@ -178,6 +179,13 @@ export default {
         handleOk() {
             this.confirmed = true;
             this.queueProcessStart();
+        },
+        handleShowingChange(e) {
+            console.log('handleShowingChange', e);
+
+            if(!e) {
+                this.closeDialog();
+            }
         },
         queueProcessStart() {
             this.queueItemsTotal = this.queue.length;

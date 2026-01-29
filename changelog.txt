@@ -5,6 +5,8 @@ Bible SuperSearch API Changelog
 * Added KJV PCE edition
 * Renamed KJV with Strongs
 * Upstream bugfixes
+* Updating Bible (from module file to database) now updates both the text and the metadata. 
+        Previously, this only updated the text.
 
 = 6.1.2
 * Added link to redirect around mod_rewrite error
