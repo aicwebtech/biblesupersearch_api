@@ -156,7 +156,7 @@ export default {
     },
     watch: {
         action(newValue, oldValue) {
-            this.confirmed = false;
+            this.clearForm();
 
             if(newValue === false || newValue === null) {
                 this.showing = false;
@@ -164,7 +164,7 @@ export default {
             }
 
             this.showing = true;
-
+            
             if(this.autoConfirm) {
                 this.handleOk();
             }
@@ -183,10 +183,16 @@ export default {
             this.queueProcessStart();
         },
         handleShowingChange(e) {
-
             if(!e) {
                 this.closeDialog();
+            } else {
+                this.clearForm();
             }
+        },
+        clearForm() {
+            this.confirmed = false;
+            this.enable = false;
+            this.overwrite = false;
         },
         queueProcessStart() {
             this.queueItemsTotal = this.queue.length;
