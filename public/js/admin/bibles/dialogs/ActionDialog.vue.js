@@ -265,13 +265,11 @@ export default {
             this.$emit('onSuccess');
 
             if(this.action == 'test') {
-                return;
+                return; // do not close dialog on test
             }
 
-            if(this.queueErrors.length == 0 && this.action != 'test') {
-                this.$emit('onSave');
-                this.closeDialog();
-            }
+            this.$emit('onSave');
+            this.closeDialog();
         },
         queueHandleError(response) {
             this.queueErrors.push({
