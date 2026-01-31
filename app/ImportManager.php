@@ -3,6 +3,7 @@
 namespace App;
 
 use Illuminate\Http\Request;
+use \App\Models\Bible;
 use App\Helpers;
 
 class ImportManager {
@@ -77,6 +78,10 @@ class ImportManager {
             'name'  => 'USFM',
             'desc'  => [
                 'Imports a Bible in the <a href=\'https://paratext.org/usfm/\' target=\'_NEW\'>Unified Standard Format Markers (USFM)</a> ', 
+                'Bible Format. <br /><br />',
+            ],            
+            'desc_old'  => [
+                'Imports a Bible in the <a href=\'https://paratext.org/usfm/\' target=\'_NEW\'>Unified Standard Format Markers (USFM)</a> ', 
                 'Bible Format. <br /><br />Bibles in this format can be downloaded from ebible.com,',
                 ' however, please make sure to select the USFM format option.<br /><br />',
                 'Note: we only support the following markup features, everything else will be ignored:<ol>',
@@ -129,11 +134,11 @@ class ImportManager {
         return $importers;
     }
 
-    public static function getImportRules() 
+    public static function getImportRules($bible_id = null) 
     {
         $BibleClass = Helpers::find('\App\Models\Bible');
 
-        $rules = $BibleClass::getUpdateRules(NULL);
+        $rules = $BibleClass::getUpdateRules($bible_id);
 
         foreach(static::$import_rules as $key => $rule) {
             $rules[$key] = $rule;
@@ -171,8 +176,8 @@ class ImportManager {
     {
         ini_set('memory_limit', '256M');
 
-        if(!$this->setType($data['importer'])) {
-            return FALSE;
+        if(!isset($data['importer']) || !$this->setType($data['importer'])) {
+            return $this->addError('Importer is missing or invalid');
         }
 
         $Importer = new $this->import_class();
@@ -180,10 +185,10 @@ class ImportManager {
         $type_info = static::$type_map[$this->type];
         
         if(!$Importer->setSettings($data)) {
-            return $this->addErrors($Importer->getErrors(), $Importer->getErrorLevel());
+            $this->addErrors($Importer->getErrors(), $Importer->getErrorLevel());
         }
 
-        if($data['file']->isValid()) {
+        if(isset($data['file']) && $data['file']->isValid()) {
             $fileinfo = pathinfo( trim($data['file']->getClientOriginalName()) );
 
             if(is_array($type_info['ext']) && !empty($type_info['ext'])) {
@@ -198,10 +203,10 @@ class ImportManager {
 
                 if(!$matches_ext) {
                     if(count($type_info['ext']) > 1) {
-                        $msg .= 'Extension must be one of the following: .' . implode(', .', $type_info['ext']);
+                        $msg = 'Extension must be one of the following: .' . implode(', .', $type_info['ext']);
                     }
                     else {
-                        $msg .= 'This importer requires an extension of .' . $type_info['ext'][0];
+                        $msg = 'This importer requires an extension of .' . $type_info['ext'][0];
                     }
 
                     return $this->addError($msg, 4);
@@ -209,11 +214,11 @@ class ImportManager {
             }
 
             if(!$Importer->acceptUploadedFile($data['file'])) {
-                return $this->addErrors($Importer->getErrors(), $Importer->getErrorLevel());
+                $this->addErrors($Importer->getErrors(), $Importer->getErrorLevel());
             }
         }
         else {
-            return $this->addError('File missing or invalid.  Please note, the maximum upload filesize is ' . Helpers::maxUploadSize());
+            $this->addError('File missing or invalid.  Please note, the maximum upload filesize is ' . Helpers::maxUploadSize());
         }
 
         $this->sanitized_filename = $Importer->file;
@@ -226,6 +231,11 @@ class ImportManager {
         }
         unset($value);
 
+        if(isset($data['bible_id'])) {
+            $Bible = Bible::find($data['bible_id']);
+            $this->parsed_attributes = array_replace($this->parsed_attributes, $Bible->attributesToArray());
+        }
+
         return $this->hasErrors() ? FALSE : TRUE;
     }
 
@@ -233,7 +243,7 @@ class ImportManager {
       * Imports a Bible for a given file and importer 
       * 
       */
-    public function importFile($data) 
+    public function importFile($data, ?Bible $Bible = null) 
     {
         ini_set('memory_limit', '256M');
 
@@ -253,9 +263,12 @@ class ImportManager {
         if(!$use_mod && !$this->_checkModule($data['module'])) {
             return FALSE;
         }
+
+        if(!$Bible) {            
+            $BibleClass = \App\Helpers::find('\App\Models\Bible');
+            $Bible      = new $BibleClass();
+        }
         
-        $BibleClass = \App\Helpers::find('\App\Models\Bible');
-        $Bible      = new $BibleClass();
         $Importer   = new $this->import_class();
 
         $Bible->fill($data);

@@ -370,6 +370,8 @@ abstract class ImporterAbstract
 
     protected function saveBible() 
     {
+        $Bible = $this->_getBible($this->module);
+    
         if($this->insert_into_bible_table) {
             $attr = $this->bible_attributes;
             $Bible->fill($attr);

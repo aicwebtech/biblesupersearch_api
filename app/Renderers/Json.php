@@ -19,6 +19,8 @@ class Json extends TextAbstract
     // Estimated size to render a Bible of the given format, in MB. 
     static protected $render_est_size = 5;      
 
+    static public $extras_class = Extras\Json::class;
+
     protected $file_extension = 'json';
     protected $include_book_name = TRUE;
 

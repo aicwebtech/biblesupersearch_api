@@ -11,8 +11,9 @@ use App\CacheManager;
 use App\Helpers;
 use Illuminate\Support\Arr;
 use Illuminate\Pagination\LengthAwarePaginator as Paginator;
+use App\Interfaces\ErrorInterface;
 
-class Engine 
+class Engine implements ErrorInterface
 {
 
     use Traits\Error {
@@ -578,6 +579,97 @@ class Engine
         return $results;
     }
 
+    public function actionAudio($input)
+    {
+        list($input, $Bible) = $this->audioValidateHelper($input);
+
+        if($this->hasErrors()) {
+            return FALSE;
+        }
+
+        $response  = new \stdClass();
+        $response->audio = [];
+        $response->has_audio = false;
+        $response->success = true;
+        $response->compat_mode = !\App\TextToSpeech\Ffmpeg::canUse();
+
+        $Manager = new \App\AudioManager();
+
+        $audio = $Manager->downloadAudioByInput($input, $Bible);
+
+        if($Manager->hasErrors()) {
+            $this->mergeErrors($Manager);
+            $response->success = false;
+            return $response;
+        }
+
+        //$response->audio = $audio->toArray();
+
+        return $response;
+    }
+
+    public function actionAudioCheck($input)
+    {
+        list($input, $Bible) = $this->audioValidateHelper($input);
+
+        if($this->hasErrors()) {
+            return FALSE;
+        }
+
+        $response  = new \stdClass();
+        $response->audio = [];
+        $response->has_audio = false;
+        $response->success = true;
+        $response->compat_mode = !\App\TextToSpeech\Ffmpeg::canUse();
+
+        $Manager = new \App\AudioManager();
+
+        $audio = $Manager->checkAudioByInput($input, $Bible);
+
+        if($Manager->hasErrors()) {
+            $this->mergeErrors($Manager);
+            $response->success = false;
+            return false;
+        }
+
+        $response->audio = $audio->toArray();
+        $response->has_audio = $Manager->has_all_audio;
+
+        return $response;
+    }
+
+    protected function audioValidateHelper($input)
+    {
+        $parsing = [
+            'bible' => [
+                'type' => 'string',
+                'default' => null,
+            ],
+            'book' => [
+                'type' => 'string',
+                'default' => null,
+            ],
+            'chapter_verse' => [
+                'type' => 'string',
+                'default' => null,
+            ],
+        ];
+
+        $input = $this->_sanitizeInput($input, $parsing);
+
+        if(empty($input['bible']) || empty($input['book']) || empty($input['chapter_verse'])) {
+            return $this->addError(trans('errors.audio.requirements'));
+        }
+
+        $Bible = Bible::findByModule($input['bible']);
+
+        if(!$Bible) {
+            return $this->addError(trans('errors.bible_no_exist', ['module' => $input['bible']]));
+        }
+
+        return [$input, $Bible];
+    }
+
     /**
      * API action query for getting a list of Bibles available to the user
      * @param array $input
@@ -590,6 +682,7 @@ class Engine
         $Bibles = Bible::select('bibles.name','shortname','module','year','owner', 'description',
             'languages.name AS lang','lang_short','copyright','italics','strongs','red_letter',
             'paragraph','rank','research','bibles.restrict','copyright_id','copyright_statement', 
+            'audio_enable', 'tts_enable', 'audio_structure',
             'languages.rtl', 'languages.native_name AS lang_native');
 
         $Bibles->leftJoin('languages', 'bibles.lang_short', 'languages.code');
@@ -654,6 +747,10 @@ class Engine
 
         foreach($Bibles as $Bible) {
             $bibles[$Bible->module] = $Bible->getAttributes();
+            $bibles[$Bible->module]['audio_enable'] = \App\AudioManager::audioEnabled($Bible);
+            $bibles[$Bible->module]['tts_enable'] = \App\AudioManager::ttsEnabled($Bible);
+            $bibles[$Bible->module]['tts_ai'] = \App\AudioManager::isTtsAI($Bible);
+            $bibles[$Bible->module]['audio_structure'] = $Bible->audio_structure ?: 'chapter';
             $bibles[$Bible->module]['downloadable'] = $Bible->isDownloadable();
             $bibles[$Bible->module]['copyright_statement'] = $Bible->getCopyrightStatement();
         }
@@ -960,7 +1057,7 @@ class Engine
     }
 
     /**
-     * returns data that the API needs to run
+     * STATICS returns data that the API needs to run
      */
     public function actionStatics($input) 
     {
@@ -973,6 +1070,7 @@ class Engine
         $response->bibles                   = $this->actionBibles($input);
         $response->books                    = $this->actionBooks($input);
         //$response->books_count_diffs        = $this->getChapterVerseCounts(true);
+        $response->audio_enabled            = config('audio.enable');
         $response->shortcuts                = $this->actionShortcuts($input);
         $response->download_enabled         = (bool) config('download.enable');
         $response->download_limit           = config('download.enable') ? config('download.bible_limit') : FALSE;
@@ -1225,6 +1323,7 @@ class Engine
             'minimal'   => 'minimal',
             'passage'   => 'passage',
             'lite'      => 'lite',
+            'simple'    => 'simple',
         );
 
         $format_type  = (array_key_exists($format_type, $format_map)) ? $format_map[$format_type] : 'passage';

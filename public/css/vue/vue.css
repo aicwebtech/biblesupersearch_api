@@ -1,0 +1,59 @@
+/*Common CSS for all Vue.js*/
+
+h2.app {
+    color: rgb(var(--v-theme-secondary));
+    border-bottom: 5px solid rgb(var(--v-theme-secondary));;
+}
+
+.vue_editdialog_body {
+    max-height: 500px;
+    overflow-y: auto;
+}
+
+.vue_dialog_body {
+    max-height: 700px;
+    overflow-y: auto;
+}
+
+.accent_color {
+    background-color: #ff0000;
+}
+
+.v-table {
+    border: 1px solid rgb(var(--v-theme-primary-darken-1));;
+}
+
+.v-data-table-footer, .v-data-table-header  {
+    background-color: rgb(var(--v-theme-primary));
+    color: rgb(var(--v-theme-on-primary));
+}
+
+.v-data-table-column--fixed,.v-data-table__th--sticky {
+/*.v-data-table__thead {*/
+    background: rgb(var(--v-theme-primary)) !important;
+    color: rgb(var(--v-theme-on-primary));
+    font-weight: bold;
+/*    left: 0;
+    position: sticky!important;
+    z-index: 1*/
+}
+
+.v-card-title, .v-card-actions {
+    background-color: rgb(var(--v-theme-primary));
+    color: rgb(var(--v-theme-on-primary));
+}
+
+.error-dialog .v-card-title, .error-dialog .v-card-actions {
+    background-color: rgb(var(--v-theme-error));
+    color: rgb(var(--v-theme-on-error));
+}
+
+
+.normal_list {
+    margin-left: 20px;
+}
+
+/*.v-data-table__thead {
+    background-color: green;
+}
+

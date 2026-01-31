@@ -15,3 +15,7 @@ echo 'php 8.3:';
 echo 'php 8.4:'; 
 /usr/bin/php8.4 -v | grep -E 'PHP [0-9]+\.[0-9]+\.[0-9]+'
 /usr/bin/php8.4 ./vendor/bin/phpunit
+
+echo 'php 8.5:'; 
+/usr/bin/php8.5 -v | grep -E 'PHP [0-9]+\.[0-9]+\.[0-9]+'
+/usr/bin/php8.5 ./vendor/bin/phpunit

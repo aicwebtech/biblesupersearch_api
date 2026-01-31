@@ -14,7 +14,7 @@ body {
 
 #header h1 {
     text-align:center;
-    color:darkred;
+    color: #742d2d;
     font-size:140%;
     font-weight:bold;
 }
@@ -35,7 +35,7 @@ body {
 }
 
 #top_menu .active.menu_item {
-    background-color: #7a84a0;
+    background-color: #742d2d;
 }
 
 #app {
@@ -210,3 +210,6 @@ title.h1 {
     color: yellow;*/
 }
 
+.zebra_table tr:nth-child(even) {
+    background-color: #ddd;
+}

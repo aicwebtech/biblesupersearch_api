@@ -2,43 +2,64 @@
 
 namespace App\Renderers\Extras;
 
-// :todo finish this class!!
-
-// Simply copies existing CSV files to the output .ZIP file
+// This mainly copies existing CSV files to the output .ZIP file
 
 class Csv extends ExtrasAbstract 
 {
     
+    protected $escape = "\\";  // :todo: this should be a setting or default to ""
+
     protected function _renderBibleBookListSingle($lang_code) 
     {
         $filename = 'bible_books/' . $lang_code . '.csv';
-        
-        return $this->_getDBDumpDir() . $filename;
+
+        return $this->_copyDbDumpFileToRendered($filename, 'books_' . $lang_code . '.csv');
     }
 
-    protected function _renderBibleShortcuts() 
+    protected function _renderBibleShortcutsSingle($lang_code) 
     {
-        foreach( config('bss_table_languages.shortcuts') as $lang) {
-            $Language = Language::findByCode($lang);
-
-            if(!$Language) {
-                throw new \StandardException('No language for code ' . $lang);
-            }
-
-            $filepath = $this->_renderBibleShortcutsSingle($lang);
-            // $this->_pushFileInfo('shortcuts', $filepath, $Language->name); // future
-            $this->_pushFileInfo('misc', $filepath, 'Bible Search Shortcuts');
-        }
+        return $this->_dumpCsvGeneric('shortcuts_' . $lang_code, $this->getRenderFileDir() . 'shortcuts_' . $lang_code . '.csv');
     }
 
     protected function _renderStrongsDefinitionsHelper() 
     {
-        return $this->_getDBDumpDir() . 'strongs_definitions.csv';
+        return $this->_copyDbDumpFileToRendered('strongs_definitions.csv');
     }
 
     protected function _renderLanguagesHelper() 
     {
-        return $this->_getDBDumpDir() . 'languages.csv';
+        return $this->_copyDbDumpFileToRendered('languages.csv');
+    }
+
+    private function _dumpCsvGeneric($db_table, $filepath)
+    {
+        $db_table = env('DB_PREFIX') . $db_table;
+        $data = \DB::select("SELECT * FROM {$db_table}");
+
+        $handle = fopen($filepath, 'w');
+
+        $fields = get_object_vars($data[0]);
+        unset($fields['created_at']);
+        unset($fields['updated_at']);
+        
+        $fields = array_keys($fields);
+
+        fputcsv($handle, $fields, escape: $this->escape);
+
+        foreach($data as $key => &$row) {
+            $csv_row = [];
+
+            foreach($fields as $f) {
+                $csv_row[] = $row->$f;
+            }
+
+            fputcsv($handle, $csv_row, escape: $this->escape);
+        }
+        unset($row);
+        
+        fclose($handle);
+
+        return $filepath;
     }
 
 }
