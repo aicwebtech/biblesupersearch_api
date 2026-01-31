@@ -23,7 +23,7 @@ return [
     |
     */
 
-    'version' => '6.2.0.pre1',
+    'version' => '6.2.0',
 
 
     /*

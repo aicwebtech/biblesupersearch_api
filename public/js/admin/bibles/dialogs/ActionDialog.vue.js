@@ -19,6 +19,7 @@ const tpl = `
                         </ul>
 
                         <v-switch v-if='action == "install"' v-model='enable' label='Enable' color='primary' />
+                        <v-switch v-if='action == "export"' v-model='overwrite' label='Overwrite' color='primary' />
                     </v-sheet>
                     <v-sheet v-else-if='action=="test"'>
                         <!-- :todo rebuild API to NOT send back HTML! -->
@@ -103,6 +104,7 @@ export default {
             queueErrors: [],
             testList: [],
             enable: false,
+            overwrite: false
         }
     },
     computed: {
@@ -217,6 +219,10 @@ export default {
                 params.enable = this.enable ? 1 : 0;
             }
 
+            if(this.action == 'export') {
+                params.overwrite = this.overwrite ? 1 : 0;
+            }
+
             axios.request({
                 url: '/admin/bibles/' + this.action + '/' + this.queueItemCurrent.id,
                 method: 'POST',
@@ -241,16 +247,24 @@ export default {
                 this.queueLoading = false;
 
                 this.queueHandleError(response.response || response);
-                // this.closeDialogSave();
             }.bind(this));
         },
         queueProcessEnd() {
             this.queueProcessing = false;
             this.queueFinished = true;
-            this.$emit('onSave');
-            // this.closeDialogSave();
+
+            if(this.queueErrors.length > 0) {
+                return;
+            }
+
+            this.$emit('onSuccess');
+
+            if(this.action == 'test') {
+                return;
+            }
 
             if(this.queueErrors.length == 0 && this.action != 'test') {
+                this.$emit('onSave');
                 this.closeDialog();
             }
         },
@@ -265,10 +279,6 @@ export default {
         closeDialog() {
             this.showing = false;
             this.$emit('onClose');
-        },
-        closeDialogSave() {
-            this.closeDialog();
-            this.$emit('onSave');
         }
     }
 };

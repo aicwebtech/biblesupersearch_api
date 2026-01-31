@@ -295,8 +295,10 @@ const template = `<v-sheet>
                 :action = 'selectedAction'
                 :actions = 'bulkActions'
                 :queue = 'actionQueue'
-                @onClose='closeActions'
-                @onSave='closeActionsRefresh'
+                @onClose='handleCloseActions'
+                @onSave='handleSaveActions'
+                @onSuccess='handleSuccesActions'
+                @afterLeave='handleCloseActions'
             />          
 
             <ImportDialog 
@@ -649,11 +651,18 @@ export default {
             this.selectedAction = action || null;
             this.actionQueue = queue || null;
         },
-        closeActions() {
+        handleCloseActions() {
             this.selectedAction = null;
         },
+        handleSaveActions() {
+            this.refreshGridClearSelections();
+        },
+        handleSuccesActions() {
+            console.log('handleSuccesActions');
+            this.rowSelections = [];
+        },
         closeActionsRefresh() {
-            this.closeActions();
+            this.handleCloseActions();
             this.refreshGridClearSelections();
         },
         formatDateTime(datetime, format) {
