@@ -91,7 +91,7 @@ const tpl = `
                         @click='handleCancel()'
                     ></v-btn>    
 
-                    <v-btn v-if='!confirmed'e
+                    <v-btn v-if='!confirmed'
                         text='Check File'
                         @click='handleCheckFile()'
                     ></v-btn>    

@@ -14,7 +14,7 @@ const tpl = `
                     Files must have at least book and chapter information in the filename to be detected.
                     Any files that cannot be matched will be skipped.<br /><br />
 
-                    Uusing FTP, SFTP, or other file transfer method, please place audio files in :<br />
+                    Using FTP, SFTP, or other file transfer method, please place audio files in :<br />
                     <b>__path_to_BibleSuperSearch_API__/bibles/audio/{{bible.module}}</b> <br />
                     
                     directory on the server, then click the Scan button to have the system detect 
@@ -25,7 +25,7 @@ const tpl = `
                     If the filename contains only the book name and not number, such as <strong>Genesis_1_1.mp3</strong>, 
                     it will not be matched.<br /><br />
 
-                    If your files are not being detected, you can use the Audio Upload dialog to manually upload and specifiy the file name format.
+                    If your files are not being detected, you can use the Audio Upload dialog to manually upload and specify the file name format.
                 </v-card-text>
 
                 <v-card-actions>

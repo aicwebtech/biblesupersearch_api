@@ -297,7 +297,7 @@ const template = `<v-sheet>
                 :queue = 'actionQueue'
                 @onClose='handleCloseActions'
                 @onSave='handleSaveActions'
-                @onSuccess='handleSuccesActions'
+                @onSuccess='handleSuccessActions'
                 @afterLeave='handleCloseActions'
             />          
 
@@ -657,8 +657,8 @@ export default {
         handleSaveActions() {
             this.refreshGridClearSelections();
         },
-        handleSuccesActions() {
-            console.log('handleSuccesActions');
+        handleSuccessActions() {
+
             this.rowSelections = [];
         },
         closeActionsRefresh() {

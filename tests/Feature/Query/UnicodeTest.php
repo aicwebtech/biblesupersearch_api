@@ -536,7 +536,7 @@ class UnicodeTest extends TestCase
     public static function russianHighlightDataProvider() : array
     {
         return [
-            'prhrase' => ['phrase'],
+            'phrase' => ['phrase'],
             'any_word' => ['any_word'],
             'all_words' => ['all_words'],
         ];
