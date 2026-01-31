@@ -868,8 +868,6 @@ class Bible extends Model
         $class_name = $namespace . '\\' . $model_class;
 
         if (!class_exists($class_name)) {            
-            return $class_name;
-            
             $table = StandardVerses::getTableByModule($module);
             $perm_file = (func_num_args() >= 2) ? func_get_arg(1) : FALSE;
 

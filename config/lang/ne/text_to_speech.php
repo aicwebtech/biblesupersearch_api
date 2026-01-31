@@ -1,5 +1,5 @@
 <?php 
-// Text to Speech configuration for Neplai language
+// Text to Speech configuration for Nepali language
 
 // Needs voice 
 // narakeet
