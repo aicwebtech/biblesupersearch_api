@@ -2,6 +2,7 @@ import { gridTemplateProps, useGrid } from '../../../bin/custom_vue/composables/
 import ChipBool from '../../../bin/custom_vue/components/ChipBool.vue.js';
 import YesNoSel from '../../../bin/custom_vue/components/YesNoSelector.vue.js';
 import AudioUploadDialog from './AudioUploadDialog.vue.js';
+import AudioScanDialog from './AudioScanDialog.vue.js';
 
 const tpl = `
     <v-dialog 
@@ -16,17 +17,13 @@ const tpl = `
                         ref='uploadDialog'
                         :bible="record"
                         @upload-success='gridRefresh()'
-                    >
-                        <template v-slot:activator="{ props: activatorProps }">
-                            <v-btn
-                                color="primary"
-                                dark
-                                v-bind="activatorProps"
-                            >
-                                Upload Audio Files
-                            </v-btn>
-                        </template>
-                    </AudioUploadDialog>
+                    />
+                    
+                    <AudioScanDialog
+                        ref='scanDialog'
+                        :bible="record"
+                        @scan-success='gridRefresh()'
+                    />
 
                     <v-sheet v-if='rowSelections.length > 0' class='mt-3 mb-12'>
                         <v-btn 
@@ -34,17 +31,28 @@ const tpl = `
                             size='small'
                             class="mb-2 float-left" 
                             @click="deleteSelectedRows()"
-                        >Delete Audio Files</v-btn>
+                        >Delete Selected Audio Files</v-btn>
                         <span class='clear-both'></span>
                     </v-sheet>
                     <v-sheet v-else class='mt-3 mb-12'>
-                        <span class='float-right'>&nbsp;</span>
-                        <v-btn 
-                            prepend-icon="mdi-upload" 
-                            size='small'
-                            class="mb-2 float-right" 
-                            @click="$refs.uploadDialog.openDialog()"
-                        >Upload Audio Files</v-btn>
+                        <span class='float-left'>                        
+                            <v-btn 
+                                prepend-icon="mdi-upload" 
+                                size='small'
+                                class="mb-2 float-right" 
+                                @click="$refs.uploadDialog.openDialog()"
+                            >Upload Audio Files</v-btn>
+                        </span>
+
+                        <span class='float-right'>
+                            <v-btn 
+                                prepend-icon="mdi-magnify-scan" 
+                                size='small'
+                                class="mb-2 float-right" 
+                                @click="$refs.scanDialog.openDialog()"
+                            >Scan Uploaded Files</v-btn>
+                        </span>
+                        
                         <span class='clear-both'></span>
                     </v-sheet>
 
@@ -104,12 +112,6 @@ const tpl = `
                     <v-spacer></v-spacer>
 
                     <v-btn
-                        text='scan'
-                        :loading='scanLoading'
-                        @click='scan()'
-                    ></v-btn>
-
-                    <v-btn
                         text='Close'
                         @click='handleCancel()'
                     ></v-btn>                    
@@ -136,7 +138,8 @@ export default {
     components: {
         ChipBool,
         YesNoSel,
-        AudioUploadDialog
+        AudioUploadDialog,
+        AudioScanDialog
     },
     setup(props) {
         let data = {
@@ -208,20 +211,6 @@ export default {
         closeDialog() {
             this.showing = false;
             this.$emit('onClose');
-        },
-        scan() {
-            this.scanLoading = true;
-            
-            axios.post('/admin/bibles/audio/scan', {module: this.record.module, bible_id: this.record.id})
-                .then(response => {
-                    this.gridRefresh();
-                    this.scanLoading = false;
-                    this.closeDialog
-                })
-                .catch(error => {
-                    console.error('Error scanning audio:', error);
-                    this.scanLoading = false;
-                });
         },
         rowId(item) {
             if(item.id) {

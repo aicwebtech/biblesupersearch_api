@@ -2,6 +2,7 @@ const tpl = `
 
     <v-dialog 
         v-model='showing'
+        @update:modelValue='handleShowingChange($event)'
         max-width='600' 
     >
         <template v-slot:default="{ isActive }">
@@ -18,6 +19,7 @@ const tpl = `
                         </ul>
 
                         <v-switch v-if='action == "install"' v-model='enable' label='Enable' color='primary' />
+                        <v-switch v-if='action == "export"' v-model='overwrite' label='Overwrite' color='primary' />
                     </v-sheet>
                     <v-sheet v-else-if='action=="test"'>
                         <!-- :todo rebuild API to NOT send back HTML! -->
@@ -102,6 +104,7 @@ export default {
             queueErrors: [],
             testList: [],
             enable: false,
+            overwrite: false
         }
     },
     computed: {
@@ -153,7 +156,7 @@ export default {
     },
     watch: {
         action(newValue, oldValue) {
-            this.confirmed = false;
+            this.clearForm();
 
             if(newValue === false || newValue === null) {
                 this.showing = false;
@@ -161,7 +164,7 @@ export default {
             }
 
             this.showing = true;
-
+            
             if(this.autoConfirm) {
                 this.handleOk();
             }
@@ -178,6 +181,18 @@ export default {
         handleOk() {
             this.confirmed = true;
             this.queueProcessStart();
+        },
+        handleShowingChange(e) {
+            if(!e) {
+                this.closeDialog();
+            } else {
+                this.clearForm();
+            }
+        },
+        clearForm() {
+            this.confirmed = false;
+            this.enable = false;
+            this.overwrite = false;
         },
         queueProcessStart() {
             this.queueItemsTotal = this.queue.length;
@@ -209,6 +224,10 @@ export default {
                 params.enable = this.enable ? 1 : 0;
             }
 
+            if(this.action == 'export') {
+                params.overwrite = this.overwrite ? 1 : 0;
+            }
+
             axios.request({
                 url: '/admin/bibles/' + this.action + '/' + this.queueItemCurrent.id,
                 method: 'POST',
@@ -233,18 +252,24 @@ export default {
                 this.queueLoading = false;
 
                 this.queueHandleError(response.response || response);
-                // this.closeDialogSave();
             }.bind(this));
         },
         queueProcessEnd() {
             this.queueProcessing = false;
             this.queueFinished = true;
-            this.$emit('onSave');
-            // this.closeDialogSave();
 
-            if(this.queueErrors.length == 0 && this.action != 'test') {
-                this.closeDialog();
+            if(this.queueErrors.length > 0) {
+                return;
             }
+
+            this.$emit('onSuccess');
+
+            if(this.action == 'test') {
+                return; // do not close dialog on test
+            }
+
+            this.$emit('onSave');
+            this.closeDialog();
         },
         queueHandleError(response) {
             this.queueErrors.push({
@@ -257,10 +282,6 @@ export default {
         closeDialog() {
             this.showing = false;
             this.$emit('onClose');
-        },
-        closeDialogSave() {
-            this.closeDialog();
-            this.$emit('onSave');
         }
     }
 };

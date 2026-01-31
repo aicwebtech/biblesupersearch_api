@@ -7,6 +7,7 @@ use App\Engine;
 use Illuminate\Foundation\Testing\WithoutMiddleware;
 use Illuminate\Foundation\Testing\DatabaseMigrations;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
+use PHPUnit\Framework\Attributes\DataProvider;
 
 class UnicodeTest extends TestCase
 {
@@ -452,9 +453,13 @@ class UnicodeTest extends TestCase
         $this->assertNotEmpty($results['synodal']);
 
         // Search 2: Gen 1:26
-        $search_2 = 'И сказал Бог: сотворим человека по образу Нашему по подобию Нашему,и да владычествуют они над рыбами морскими, и над птицами небесными, и над скотом, и над всею землею, и над всеми гадами, пресмыкающимися по земле.';
+        // Original Unbound Bible Synodal text with no spaces after commas
+        // $search_2 = 'И сказал Бог: сотворим человека по образу Нашему по подобию Нашему,и да владычествуют они над рыбами морскими, и над птицами небесными, и над скотом, и над всею землею, и над всеми гадами, пресмыкающимися по земле.';
+        // $search_2_safe = 'И сказал Бог сотворим человека по образу Нашему по подобию Нашему и да владычествуют они над рыбами морскими и над птицами небесными и над скотом и над всею землею и над всеми гадами пресмыкающимися по земле';
 
-        $search_2_safe = 'И сказал Бог сотворим человека по образу Нашему по подобию Нашему и да владычествуют они над рыбами морскими и над птицами небесными и над скотом и над всею землею и над всеми гадами пресмыкающимися по земле';
+        $search_2 = 'И сказал Бог: сотворим человека по образу Нашему и по подобию Нашему, и да владычествуют они над рыбами морскими, и над птицами небесными, и над зверями, и над скотом, и над всею землею, и над всеми гадами, пресмыкающимися по земле.';
+
+        $search_2_safe = 'И сказал Бог сотворим человека по образу Нашему и по подобию Нашему и да владычествуют они над рыбами морскими и над птицами небесными и над зверями и над скотом и над всею землею и над всеми гадами пресмыкающимися по земле';
 
         // Search 2, but with words causing difficulty removed
         $search_2_adjusted = 'И сказал Бог сотворим человека по образу Нашему по Нашему и да владычествуют они над рыбами и над небесными и над скотом и над всею землею и над всеми по земле';
@@ -486,7 +491,8 @@ class UnicodeTest extends TestCase
         $this->assertCount(1, $results['synodal']);
     }
 
-    public function testRussianHighlight() 
+    #[DataProvider('russianHighlightDataProvider')]
+    public function testRussianHighlight($search_type) 
     {
         if(!Engine::isBibleEnabled('synodal')) {
             $this->markTestSkipped('Bible synodal not installed or enabled');
@@ -497,11 +503,16 @@ class UnicodeTest extends TestCase
         $Engine->setDefaultPageAll(TRUE);
 
         // Search: Exact text of Gen 1:26
-        $search = 'И сказал Бог: сотворим человека по образу Нашему по подобию Нашему,и да владычествуют они над рыбами морскими, и над птицами небесными, и над скотом, и над всею землею, и над всеми гадами, пресмыкающимися по земле.';
+        // Original Unbound Bible Synodal text with no spaces after commas
+        // $search = 'И сказал Бог: сотворим человека по образу Нашему по подобию Нашему,и да владычествуют они над рыбами морскими, и над птицами небесными, и над скотом, и над всею землею, и над всеми гадами, пресмыкающимися по земле.';
+        // $expected_hl_phrase = '<B>И сказал Бог: сотворим человека по образу Нашему по подобию Нашему,и да владычествуют они над рыбами морскими, и над птицами небесными, и над скотом, и над всею землею, и над всеми гадами, пресмыкающимися по земле</B>.'; // .</B> ???
+        // $expected_hl_other = '<B>И</B> <B>сказал</B> <B>Бог</B>: <B>сотворим</B> <B>человека</B> <B>по</B> <B>образу</B> <B>Нашему</B> <B>по</B> <B>подобию</B> <B>Нашему,и</B> <B>да</B> <B>владычествуют</B> <B>они</B> <B>над</B> <B>рыбами</B> <B>морскими</B>, <B>и</B> <B>над</B> <B>птицами</B> <B>небесными</B>, <B>и</B> <B>над</B> <B>скотом</B>, <B>и</B> <B>над</B> <B>всею</B> <B>землею</B>, <B>и</B> <B>над</B> <B>всеми</B> <B>гадами</B>, <B>пресмыкающимися</B> <B>по</B> <B>земле</B>.';
 
-        $expected_hl_phrase = '<B>И сказал Бог: сотворим человека по образу Нашему по подобию Нашему,и да владычествуют они над рыбами морскими, и над птицами небесными, и над скотом, и над всею землею, и над всеми гадами, пресмыкающимися по земле</B>.'; // .</B> ???
+        $search = 'И сказал Бог: сотворим человека по образу Нашему и по подобию Нашему, и да владычествуют они над рыбами морскими, и над птицами небесными, и над зверями, и над скотом, и над всею землею, и над всеми гадами, пресмыкающимися по земле.';
 
-        $expected_hl_other = '<B>И</B> <B>сказал</B> <B>Бог</B>: <B>сотворим</B> <B>человека</B> <B>по</B> <B>образу</B> <B>Нашему</B> <B>по</B> <B>подобию</B> <B>Нашему,и</B> <B>да</B> <B>владычествуют</B> <B>они</B> <B>над</B> <B>рыбами</B> <B>морскими</B>, <B>и</B> <B>над</B> <B>птицами</B> <B>небесными</B>, <B>и</B> <B>над</B> <B>скотом</B>, <B>и</B> <B>над</B> <B>всею</B> <B>землею</B>, <B>и</B> <B>над</B> <B>всеми</B> <B>гадами</B>, <B>пресмыкающимися</B> <B>по</B> <B>земле</B>.';
+        $expected_hl_phrase = '<B>И сказал Бог: сотворим человека по образу Нашему и по подобию Нашему, и да владычествуют они над рыбами морскими, и над птицами небесными, и над зверями, и над скотом, и над всею землею, и над всеми гадами, пресмыкающимися по земле</B>.';
+
+        $expected_hl_other = '<B>И</B> <B>сказал</B> <B>Бог</B>: <B>сотворим</B> <B>человека</B> <B>по</B> <B>образу</B> <B>Нашему</B> <B>и</B> <B>по</B> <B>подобию</B> <B>Нашему</B>, <B>и</B> <B>да</B> <B>владычествуют</B> <B>они</B> <B>над</B> <B>рыбами</B> <B>морскими</B>, <B>и</B> <B>над</B> <B>птицами</B> <B>небесными</B>, <B>и</B> <B>над</B> <B>зверями</B>, <B>и</B> <B>над</B> <B>скотом</B>, <B>и</B> <B>над</B> <B>всею</B> <B>землею</B>, <B>и</B> <B>над</B> <B>всеми</B> <B>гадами</B>, <B>пресмыкающимися</B> <B>по</B> <B>земле</B>.';
 
         $query = [
             'bible'  => 'synodal',
@@ -512,23 +523,23 @@ class UnicodeTest extends TestCase
             'highlight_tag' => 'B',
         ];
 
-        $search_types = ['phrase', 'any_word', 'all_words'];
-        // $search_types = ['any_word'];
+        $stt = 'search_type = ' . $search_type;
+        $expected = $search_type == 'phrase' ? $expected_hl_phrase : $expected_hl_other;
 
-        foreach($search_types as $st) {
-            $stt = 'search_type = ' . $st;
+        $query['search_type'] = $search_type;
+        $results = $Engine->actionQuery($query);
+        $this->assertFalse($Engine->hasErrors(), $stt);
+        $this->assertCount(1, $results['synodal'], $stt);
+        $this->assertEquals($expected, $results['synodal'][0]->text, $stt);
+    }
 
-            $expected = $st == 'phrase' ? $expected_hl_phrase : $expected_hl_other;
-
-            $query['search_type'] = $st;
-            $results = $Engine->actionQuery($query);
-            $this->assertFalse($Engine->hasErrors(), $stt);
-            $this->assertCount(1, $results['synodal'], $stt);
-
-            //print_r($results['synodal'][0]);
-
-            $this->assertEquals($expected, $results['synodal'][0]->text, $stt);
-        }
+    public static function russianHighlightDataProvider() : array
+    {
+        return [
+            'phrase' => ['phrase'],
+            'any_word' => ['any_word'],
+            'all_words' => ['all_words'],
+        ];
     }
 
     public function testWeirdHighlightIssue() 
@@ -550,7 +561,10 @@ class UnicodeTest extends TestCase
         $Engine->setDefaultPageAll(TRUE);
 
         // Search 2: Gen 1:26
-        $search_2 = 'И сказал Бог: сотворим человека по образу Нашему по подобию Нашему,и да владычествуют они над рыбами морскими, и над птицами небесными, и над скотом, и над всею землею, и над всеми гадами, пресмыкающимися по земле.';
+        // Original Unbound Bible Synodal text with no spaces after commas
+        //$search_2 = 'И сказал Бог: сотворим человека по образу Нашему по подобию Нашему,и да владычествуют они над рыбами морскими, и над птицами небесными, и над скотом, и над всею землею, и над всеми гадами, пресмыкающимися по земле.';
+
+        $search_2 = 'И сказал Бог: сотворим человека по образу Нашему и по подобию Нашему, и да владычествуют они над рыбами морскими, и над птицами небесными, и над зверями, и над скотом, и над всею землею, и над всеми гадами, пресмыкающимися по земле.';
 
         $query = [
             'bible'         => ['synodal','bishops'],
@@ -562,7 +576,7 @@ class UnicodeTest extends TestCase
 
         $results = $Engine->actionQuery($query);
 
-        $this->assertTrue($Engine->hasErrors()); // No results in Bishups
+        $this->assertTrue($Engine->hasErrors()); // No results in Bishops
         $this->assertCount(2, $results);
         $this->assertCount(1, $results['synodal']);
         $this->assertCount(1, $results['bishops']);

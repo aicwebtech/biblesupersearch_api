@@ -4,7 +4,7 @@ const tpl = `
             <template v-slot:default="{ isActive }">
         
                 <v-card>
-                    <v-card-title>Upload Audio Files</v-card-title>
+                    <v-card-title>Upload Audio Files: {{bible?.name}}</v-card-title>
                     <v-card-text>
                         <v-select
                             v-model="matching"

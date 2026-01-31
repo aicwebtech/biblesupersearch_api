@@ -76,8 +76,6 @@ export default {
     },
     watch: {
         language(newValue, oldValue) {
-            console.log('language', newValue);
-
             if(newValue === false || newValue === null) {
                 this.showing = false;
                 return;
