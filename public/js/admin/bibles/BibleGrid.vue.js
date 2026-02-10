@@ -500,50 +500,45 @@ export default {
             return this.extraCols;
         },
         headers() {
-            if(this.showExtraCols) {
-                return [
-                    {title: 'Name', key: 'name', width: 250, cellProps: {size: 'small', _class: 'd-inline-block text-truncate'}},
-                    {title: 'Short Name', key: 'shortname', width: 150},
-                    {title: 'Module', key: 'module', width: 150},
-                    {title: 'Language', key: 'lang', width: 150, searchComponent: 'v-autocomplete', searchProps: {
-                        'items': this.languagesWithBibles,
-                        'item-title': 'name',
-                        'item-value': 'code'
-                    }},
-                    {title: 'Copyright', key: 'copy', width: 250, searchComponent: 'v-autocomplete', searchField: 'copyright_id', searchProps: {
-                        'items': bootstrap.copyrights,
-                        'item-title': 'name',
-                        'item-value': 'id'
-                    } },
-                    {title: 'Year', key: 'year', width: 150},
-                    {title: 'Installed', key: 'installed', width: 50, searchComponent: 'YesNoSel', align: 'center'},
-                    {title: 'Enabled', key: 'enabled', width: 50, searchComponent: 'YesNoSel', align: 'center'},
-                    {title: 'Audio', key: 'audio_enable', width: 50, searchComponent: 'YesNoSel', align: 'center'},
-                    {title: 'Has File', key: 'has_module_file', width: 100, sortable: false, searchComponent: 'YesNoSel', align: 'center'},
-                    {title: 'Official*', key: 'official', width: 50, searchComponent: 'YesNoSel', align: 'center'},
-                    {title: 'Research**', key: 'research', width: 60, searchComponent: 'YesNoSel', align: 'center'},
-                    {title: 'Updated', key: 'updated_at', width: 150, searchable: false, align: 'center'},
-                    {title: 'Rank', key: 'rank', width: 50, searchable: false, align: 'center'},
-                    {title: '', key: 'actions', sortable: false, width: 150, searchable: false, align: 'end'},
-                ];                
+            var cols = [];
 
-            } else {
-                return [
-                    {title: 'Name', key: 'name', width: 350, cellProps: {size: 'small', _class: 'd-inline-block text-truncate'}},
-                    {title: 'Short Name', key: 'shortname', width: 150},
-                    {title: 'Module', key: 'module', width: 150},
-                    {title: 'Language', key: 'lang', width: 150, searchComponent: 'v-autocomplete', searchProps: {
-                        'items': this.languagesWithBibles,
-                        'item-title': 'name',
-                        'item-value': 'code'
-                    }},
-                    {title: 'Year', key: 'year', width: 150},
-                    {title: 'Installed', key: 'installed', width: 50, searchComponent: 'YesNoSel', searchLabel: false, align: 'center'},
-                    {title: 'Enabled', key: 'enabled', width: 50, searchComponent: 'YesNoSel', searchLabel: false, align: 'center'},
-                    {title: 'Rank', key: 'rank', width: 50, searchable: false, align: 'center'},
-                    {title: '', key: 'actions', sortable: false, width: 100, searchable: false, align: 'end'},
-                ];
+            cols.push({title: 'Name', key: 'name', width: 350, cellProps: {size: 'small', _class: 'd-inline-block text-truncate'}});
+            cols.push({title: 'Short Name', key: 'shortname', width: 150});
+            cols.push({title: 'Module', key: 'module', width: 150});
+
+            cols.push({title: 'Language', key: 'lang', width: 150, searchComponent: 'v-autocomplete', searchProps: {
+                'items': this.languagesWithBibles,
+                'item-title': 'name',
+                'item-value': 'code'
+            }});
+
+            if(this.showExtraCols) {
+                cols.push({title: 'Copyright', key: 'copy', width: 250, searchComponent: 'v-autocomplete', searchField: 'copyright_id', searchProps: {
+                    'items': bootstrap.copyrights,
+                    'item-title': 'name',
+                    'item-value': 'id'
+                } });
             }
+
+            cols.push({title: 'Year', key: 'year', width: 150});
+            cols.push({title: 'Installed', key: 'installed', width: 50, searchComponent: 'YesNoSel', searchLabel: false, align: 'center'});
+            cols.push({title: 'Enabled', key: 'enabled', width: 50, searchComponent: 'YesNoSel', searchLabel: false, align: 'center'});
+            
+            if(this.showExtraCols) {
+                if(this.bootstrap.audio_enabled) {
+                    cols.push({title: 'Audio', key: 'audio_enable', width: 50, searchComponent: 'YesNoSel', align: 'center'});
+                }
+
+                cols.push({title: 'Has File', key: 'has_module_file', width: 100, sortable: false, searchComponent: 'YesNoSel', align: 'center'});
+                cols.push({title: 'Official*', key: 'official', width: 50, searchComponent: 'YesNoSel', align: 'center'});
+                cols.push({title: 'Research**', key: 'research', width: 60, searchComponent: 'YesNoSel', align: 'center'});
+                cols.push({title: 'Updated', key: 'updated_at', width: 150, searchable: false, align: 'center'});
+            }
+            
+            cols.push({title: 'Rank', key: 'rank', width: 50, searchable: false, align: 'center'});
+            cols.push({title: '', key: 'actions', sortable: false, width: 100, searchable: false, align: 'end'});
+
+            return cols;
         },
         hasRowSelections() {
             return this.rowSelections.length > 0;

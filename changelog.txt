@@ -1,5 +1,9 @@
 Bible SuperSearch API Changelog
 
+= 6.2.1
+* Fixed bugs with config caching
+* Fixed Audio column showing on Bibles when Audio is disabled
+
 = 6.1.3
 * Update RVG to latest (2023) Edition, removed old editions
 * Added KJV PCE edition

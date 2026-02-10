@@ -30,6 +30,11 @@ class ConfigController extends Controller
         $render_writeable = \App\RenderManager::isRenderWritable();
         $render_dir = base_path('bibles/rendered');
 
+        // If the config cache is enabled but the app thinks the config is cached, then we need to clear the cache
+        if(app()->configurationIsCached() && !config('app.config_cache')) {
+            Artisan::call('config:clear');
+        }
+
         if(!$render_writeable) {
             ConfigManager::setConfig('download.enable', FALSE);
             $config_values['download.enable'] = FALSE;
@@ -61,17 +66,17 @@ class ConfigController extends Controller
     public function store(Request $request) 
     {
         $data = $request->toArray();
+        
+        // Clear config cache if it exists.
+        if(app()->configurationIsCached()) {
+            Artisan::call('config:clear');
+        }
+
         ConfigManager::setGlobalConfigs($data);
 
-        $config_cache = config('app.config_cache', '0');
-        $config_cache_changed = array_key_exists('app__config_cache', $data) && $data['app__config_cache'] != $config_cache;
-
-        if($config_cache_changed) {
-            if($data['app__config_cache']) {
-                Artisan::call('config:cache');
-            } else {
-                Artisan::call('config:clear');
-            }
+        // If the config cache is enabled, then we need to cache the config again after updating it
+        if(array_key_exists('app__config_cache', $data) && $data['app__config_cache']) {
+            Artisan::call('config:cache');
         }
 
         // Workaround for the fact that Laravel's config cache does not update the APP_URL env var at runtime
