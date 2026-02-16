@@ -11,6 +11,15 @@ class CreateBooksTableHindi extends Migration
     // This migration is obsolete
     // Book tables are now added when a Bible in given language is installed or imported!
 
+    /**
+     * Determine if this migration should run.
+     *
+     * @return bool
+     */
+    public function shouldRun(): bool
+    {
+        return false;
+    }
 
     private $languages = ['hi', 'pt', 'ja'];
 

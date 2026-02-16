@@ -1,5 +1,8 @@
 Bible SuperSearch API Changelog
 
+= 6.2.2
+* Emergency bugfix: database / migration issues on fresh install
+
 = 6.2.1
 * Fixed bugs with config caching
 * Fixed Audio column showing on Bibles when Audio is disabled
