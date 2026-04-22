@@ -354,7 +354,8 @@ class CommonWordTest extends TestCase
                     'always' => false,
                 ],
             ],
-            // Something in this set is running VERY slowly, need to skip it for now
+            //Something in this set is running VERY slowly, need to skip it for now
+            // This test IS passing, though ... 
             // [
             //     'params' => ['bible' => ['lv_gluck_8','kjv'], 'search' => 'and', 'language' => 'lv', 'page_limit' => 30],
             //     // Errors, because 'and' is not allowed in English (via kjv) NOT WORKING, NEVER HAS!
