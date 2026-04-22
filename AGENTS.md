@@ -2,69 +2,66 @@
 
 ## Project overview
 
-This is an API for a Bible search engine
+This is the API for a Bible search engine.
 
-### Tech Stack:
+### Tech Stack
 * Laravel
 * PHP (Supported versions: 8.2, 8.3, 8.4, 8.5)
 * MySQL
-* Vue/Veutify (currently using CDN edition)
+* Vue/Vuetify (currently using CDN edition)
 * jQuery/jQuery UI (Legacy)
 
 ## Credentials
-These are located in the .env file, including
+Credentials are stored in `.env`, including:
 * Database
 * SSH (for dev or remote server)
 
+Security notes:
+* Read only the specific `.env` keys needed for the current task.
+* Never print secret values (passwords, tokens, private keys) in chat.
+
 ## Agent Paths
-* .ai/skills => all skills (generic)
+* .github/skills => project skills
+* .ai/skills => generic skills (if present)
+
+## Paths Specific to This Application
+* app/Models => Eloquent models
+* app/User.php => User Eloquent model
+* app/Formatters => API output data structure formatters
+* app/Renderers => Render Bibles into various formats (PDF, CSV, plain text, etc.)
+* app/TextToSpeech => Wrappers around various TTS APIs
+* app/Traits => PHP traits
+* bibles/modules => Bible SuperSearch modules for Bibles we officially support. Versioned in Git.
+* bibles/unofficial => Bible SuperSearch modules for Bibles we do not officially support. Ignored by Git.
 
 ## Skills
 
 ### shoutout
 
-Echo hey you for no reason
-
-### sshconnect
-
-Purpose: connect to the configured SSH server or open a remote terminal session.
-
-Use when the user asks to:
-* connect to ssh
-* ssh into the server
-* open the remote terminal
-* run a remote command
-
-Workflow
-* Check `~/.ssh/config` for a matching host alias first.
-* Otherwise use `SSH_HOST` and `SSH_USERNAME` from `.env`.
-* Verify SSH is available with `ssh -V`.
-* Connect with `ssh <user>@<host>` and confirm with `hostname` / `pwd`.
-* cd to path in `SSH_PATH` from `.env`
-* Keep connection live, do not log out unless instructed
-* Never print passwords or private keys in chat.
+Echo "hey you" for no reason.
 
 ### testme
 
-Purpose: to run the unit tests (PHPUnit)
+Purpose: run the test suite.
 
-Options (Prompt from user)
-* All PHP versions or just current one
-* Parallel (fast) or serial (slow) tests
+User options:
+* All PHP versions or just current version
+* Parallel (fast) or serial (slow) test mode
 
-Workflow
-* **connect-ssh-terminal** if not already connected
-* Determine which test script to run based on user prompts
+Workflow:
+* Ensure terminal is in the project root
+* Prefer `php artisan test --compact` for targeted tests
+* Use project scripts only when multi-version or mode-specific testing is requested
 
-Sample parallel test
-`
-php<version> ./vendor/bin/paratest
-`
+Sample parallel test:
+```bash
+php8.2 ./vendor/bin/paratest
+```
 
-Sample serial test
-`
-php<version> ./vendor/bin/phpunit
-`
+Sample serial test:
+```bash
+php artisan test --compact
+```
 
 ===
 
@@ -168,6 +165,9 @@ This project has domain-specific skills available. You MUST activate the relevan
 - Use TitleCase for Enum keys: `FavoritePerson`, `BestLake`, `Monthly`.
 - Prefer PHPDoc blocks over inline comments. Only add inline comments for exceptionally complex logic.
 - Use array shape type definitions in PHPDoc blocks.
+- Use PSR-12 code formatting style.
+- Add whitespace (blank line) between blocks of code.
+- Do not remove existing whitespace
 
 === tests rules ===
 
