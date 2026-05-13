@@ -303,6 +303,10 @@ class Engine implements ErrorInterface
                 'type' => 'bool',
                 'default' => false,
             ],
+            'cross_references' => [
+                'type' => 'bool',
+                'default' => false,
+            ],
         ];
 
         $this->resetErrors();
@@ -555,6 +559,10 @@ class Engine implements ErrorInterface
             }
         }
 
+        if($input['cross_references']) {
+            $this->metadata->cross_references = $this->_getCrossReferences($results);
+        }
+
         if($input['results_list']) {
             $this->metadata->list = $Search ? $this->_formatResultsList($results, $input['page_limit'], $input['page']) : [];
         } 
@@ -577,6 +585,42 @@ class Engine implements ErrorInterface
         $this->metadata->paging = $paging;
 
         return $results;
+    }
+
+    /**
+     * Build a single cross-reference list for every verse in the result set.
+     *
+     * @param array $results
+     * @return array
+     */
+    protected function _getCrossReferences(array $results): array
+    {
+        $sourceVerses = [];
+
+        foreach($results as $bibleResults) {
+            if(!is_iterable($bibleResults)) {
+                continue;
+            }
+
+            foreach($bibleResults as $verse) {
+                if(!is_object($verse) || !isset($verse->book, $verse->chapter, $verse->verse)) {
+                    continue;
+                }
+
+                $sourceKey = $verse->book . ':' . $verse->chapter . ':' . $verse->verse;
+                $sourceVerses[$sourceKey] = [
+                    'book' => (int) $verse->book,
+                    'chapter' => (int) $verse->chapter,
+                    'verse' => (int) $verse->verse,
+                ];
+            }
+        }
+
+        if(empty($sourceVerses)) {
+            return [];
+        }
+
+        return \App\Models\CrossReference::groupedForSourceVerses(array_values($sourceVerses));
     }
 
     public function actionAudio($input)

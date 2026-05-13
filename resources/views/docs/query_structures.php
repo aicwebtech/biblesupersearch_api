@@ -20,6 +20,31 @@
     "errors":[],
     "error_level":0,
     "strongs":[], // <?php echo trans('query.strongs') , PHP_EOL ?>
+    "cross_references":[
+        {
+            "from_book":43,
+            "from_chapter":3,
+            "from_verse":16,
+            "cross_references":[
+                {
+                    "to_book":45,
+                    "to_chapter_start":10,
+                    "to_verse_start":9,
+                    "to_chapter_end":10,
+                    "to_verse_end":10,
+                    "votes":434
+                },
+                {
+                    "to_book":62,
+                    "to_chapter_start":4,
+                    "to_verse_start":9,
+                    "to_chapter_end":4,
+                    "to_verse_end":10,
+                    "votes":263
+                }
+            ]
+        }
+    ],
     "paging":{
         "total":338,
         "per_page":30,

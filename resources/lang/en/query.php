@@ -12,6 +12,7 @@ return array(
         'lookup2' => 'Look up Rom 1:1-2; Matt 5:6-8; John 3:16',
         'search1' => 'Search for \'faith\'',
         'search2' => '\'Romans\' searched \'for faith\'',
+        'cross_references' => 'Look up John 3:16 with grouped cross references',
     ),
     'navigation' => [
         'label' => 'Navigation',
@@ -218,6 +219,13 @@ return array(
             'name'   => 'Parallel Search Error Surpress',
             'default' => 'false',
             'description' => 'When true, the "verses from this Bible have been included for comparison" errors won\'t show.'
+        ],
+        'cross_references' => [
+            'type'   => 'Boolean',
+            'name'   => 'Cross References',
+            'default' => 'false',
+            'description' => 'When true, the response metadata includes a grouped list of cross references for every verse returned. '
+            . 'This list is global and is not tied to any specific Bible version.'
         ],
     )
 );

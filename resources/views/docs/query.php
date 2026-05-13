@@ -22,6 +22,10 @@
 <a href="<?php echo $url ?>/api?bible=kjv&reference=Rom&search=faith" target="querylookup1">
          <?php echo $url ?>/api?bible=kjv&reference=Rom&search=faith
 </a><br /><br />
+<?php echo trans('query.examples.cross_references') ?><br />
+<a href="<?php echo $url ?>/api?bible=kjv&reference=John 3:16&cross_references=true" target="querylookup1">
+         <?php echo $url ?>/api?bible=kjv&reference=John 3:16&cross_references=true
+</a><br /><br />
 
 <h4>
     Jump to: <a href='#query_structures'>Data Formats</a> &nbsp; <a href='#navigation'>Navigation</a> &nbsp; <a href='#pagination'>Pagination</a>
@@ -49,6 +53,7 @@
         'proximity_limit',
         'markup',
         'parallel_search_error_suppress',
+        'cross_references',
     );
 
     $advanced_params = array(
