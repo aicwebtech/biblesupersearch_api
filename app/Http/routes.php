@@ -107,6 +107,12 @@ Route::post('/admin/bibles/importcheck', 'Admin\BibleController@importCheck');
 Route::post('/admin/bibles/import', 'Admin\BibleController@import');
 Route::resource('/admin/bibles', 'Admin\BibleController', ['as' => 'admin']);
 
+// Features manager routes
+Route::get('/admin/features/grid', 'Admin\FeatureController@grid');
+Route::post('/admin/features/install/{id}', 'Admin\FeatureController@install');
+Route::post('/admin/features/uninstall/{id}', 'Admin\FeatureController@uninstall');
+Route::resource('/admin/features', 'Admin\FeatureController', ['as' => 'admin']);
+
 // Audio Bible manager routes
 Route::get('/admin/bibles/audio/grid/{id}', 'Admin\AudioBibleController@grid');
 Route::post('/admin/bibles/audio/upload', 'Admin\AudioBibleController@upload');
