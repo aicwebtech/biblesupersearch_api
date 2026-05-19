@@ -3,6 +3,7 @@
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
+use App\Models\CrossReference as Model;
 
 return new class extends Migration
 {
@@ -30,6 +31,8 @@ return new class extends Migration
             $table->index(['from_book', 'from_chapter', 'from_verse'], 'ix_cross_refs_from');
             $table->index(['to_book', 'to_chapter_start', 'to_verse_start'], 'ix_cross_refs_to_start');
         });
+
+        // Model::migrateFromCsv();
     }
 
     /**

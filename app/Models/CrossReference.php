@@ -179,4 +179,22 @@ class CrossReference extends Model
             ->values()
             ->all();
     }
+
+    public static function migrateFromCsv() 
+    {
+        $map = [
+            'id',
+            'from_book',	
+            'from_chapter', 
+            'from_verse', 
+            'to_book', 
+            'to_chapter_start', 
+            'to_verse_start', 
+            'to_chapter_end', 
+            'to_verse_end', 
+            'votes'
+        ];
+
+        \App\Importers\Database::importCSV('cross_references.csv', $map, '\\' . get_called_class(), 'id', null, 6000);
+    }    
 }

@@ -94,6 +94,10 @@ class InstallManager
 
     static function install(Request $request) 
     {
+        if(config('app.installed')) {
+            return FALSE;
+        }
+    
         $start_time = time();
 
         // Ensures that this installer can run even when not on CLI
@@ -110,7 +114,6 @@ class InstallManager
 
         // Set up database // --force Allows migration to run in production
         $exit_code = Artisan::call('migrate', array('--force' => TRUE));
-        // $exit_code = Artisan::call('migrate', array('--seed' => TRUE, '--force' => TRUE));
 
         // Populate the Bible table
         Bible::populateBibleTable();
@@ -144,6 +147,11 @@ class InstallManager
             $Bible = Bible::findByModule( config('bss.defaults.bible') );
             $Bible->install(FALSE, TRUE);
         }
+
+        // Set up book lists for EN language
+        \App\Models\Books\BookAbstract::createTableAndMigrateFromCsv('en');
+        $EN = Language::findByCode('en');
+        $EN->setAttr('book_list', 1);   
 
         error_reporting($ep);
 
