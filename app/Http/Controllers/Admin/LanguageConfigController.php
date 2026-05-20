@@ -25,14 +25,20 @@ class LanguageConfigController extends Controller
 
     public function index() 
     {
-        // ONLY pull languages WITH BIBLES
-        $Languages = Language::join('bibles', 'bibles.lang_short', '=', 'languages.code')
+        // ONLY pull languages WITH INSTALLED AND ENABLED BIBLES
+        $Languages = Language::join('bibles', function($join) {
+                            $join->on('bibles.lang_short', '=', 'languages.code')
+                                ->where('bibles.installed', 1)
+                                ->where('bibles.enabled', 1);
+                        })
                         ->select('languages.*')
                         ->distinct()
                         ->orderBy('languages.name', 'ASC')
                         ->get();
 
-        // Add book lists, ect for these language if not exists
+        // Add book lists, etc. for these languages if not exists
+        // This init check is here for backwards compatibility.
+        // Ideally, the Bible language is init when a bible is installed/enabled.  
         foreach($Languages as $Lang) {
             $Lang->initLanguage();
         }

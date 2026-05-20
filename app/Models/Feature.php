@@ -17,6 +17,8 @@ class Feature extends Model
         'installed' => 'boolean',
     ];
 
+    protected static $is_enabled = [];
+
     /**
      * Synchronize features from definitions into the database
      * Creates or updates entries for all feature+language combinations
@@ -92,5 +94,23 @@ class Feature extends Model
         }
 
         return $result;
+    }
+
+    public static function isEnabled(string $identifier, ?string $language = null): bool
+    {
+        $key = $identifier . ':' . ($language ?? 'null');
+
+        if (array_key_exists($key, self::$is_enabled)) {
+            return self::$is_enabled[$key];
+        }
+
+        $Feature = self::where('identifier', $identifier)
+            ->where('language', $language)
+            ->first();
+
+        $enabled = $Feature ? $Feature->installed : false;
+        self::$is_enabled[$key] = $enabled;
+
+        return $enabled;
     }
 }

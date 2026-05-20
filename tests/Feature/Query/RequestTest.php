@@ -6,6 +6,7 @@ use Tests\TestCase;
 use App\Engine;
 use App\Passage;
 use App\Models\Bible;
+use App\Models\Feature;
 use Illuminate\Foundation\Testing\WithoutMiddleware;
 use Illuminate\Foundation\Testing\DatabaseMigrations;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
@@ -96,6 +97,10 @@ class RequestTest extends TestCase
 
     public function testCrossReferencesAreAggregatedAcrossReturnedVerses(): void
     {
+        if(!Feature::isEnabled('cross_references')) {
+            $this->markTestSkipped('Cross references feature not installed or enabled');
+        }
+    
         $Engine = new Engine();
         $Engine->setDefaultDataType('raw');
 
@@ -109,7 +114,7 @@ class RequestTest extends TestCase
         $this->assertFalse($Engine->hasErrors());
         $singleBibleMetadata = $Engine->getMetadata();
         $this->assertIsArray($singleBibleMetadata->cross_references);
-        $this->assertNotEmpty($singleBibleMetadata->cross_references);
+        $this->assertNotEmpty($singleBibleMetadata->cross_references, 'Expected cross references to be present in metadata');
         $this->assertArrayHasKey('from_book', $singleBibleMetadata->cross_references[0]);
         $this->assertArrayHasKey('cross_references', $singleBibleMetadata->cross_references[0]);
         $this->assertArrayNotHasKey('created_at', $singleBibleMetadata->cross_references[0]);

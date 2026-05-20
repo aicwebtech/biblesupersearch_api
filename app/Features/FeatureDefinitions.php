@@ -2,6 +2,8 @@
 
 namespace App\Features;
 
+use App\Models\CrossReference;
+
 class FeatureDefinitions
 {
     /**
@@ -18,11 +20,11 @@ class FeatureDefinitions
                 'description' => 'Cross references data',
                 'languages' => null,
                 'install' => function(?string $language): bool {
-                    // TODO: Implement install callback for cross references
+                    CrossReference::migrateFromCsv();
                     return true;
                 },
                 'uninstall' => function(?string $language): bool {
-                    // TODO: Implement uninstall callback for cross references
+                    CrossReference::truncate();
                     return true;
                 },
             ],

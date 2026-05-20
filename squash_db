@@ -1,7 +1,0 @@
-# bash script to squash from template database
-#
-# empty template database and run all migrations fresh
-php artisan migrate:fresh --database=mysql_template
-#
-# dump the schema
-php artisan schema:dump --database=mysql_template --path=database/schema/mysql-schema.sql
