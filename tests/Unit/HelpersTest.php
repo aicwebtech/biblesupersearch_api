@@ -129,4 +129,32 @@ class HelpersTest extends TestCase
             ['4G', '100M', 1],
         ];
     }
+
+    #[DataProvider('stripHtmlFromTextEntryDataProvider')]
+    public function testStripHtmlFromTextEntry(string $input, string $expected)
+    {
+        $this->assertEquals($expected, Helpers::stripHtmlFromTextEntry($input));
+    }
+
+    public static function stripHtmlFromTextEntryDataProvider()
+    {
+        return [
+            [
+                'Copyright @copy; 2026 <b>Owner</b>',
+                'Copyright © 2026 Owner',
+            ],
+            [
+                'Line one<br>Line two<br />Line three',
+                "Line one\nLine two\nLine three",
+            ],
+            [
+                'Docs: <a href="https://example.com/path?q=1">Click Here</a>',
+                'Docs: Click Here (https://example.com/path?q=1)',
+            ],
+            [
+                '&lt;br&gt;Encoded break&lt;/br&gt; and &copy; entity',
+                "Encoded break\n and © entity",
+            ],
+        ];
+    }
 }
