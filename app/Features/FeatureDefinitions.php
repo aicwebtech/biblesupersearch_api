@@ -6,6 +6,10 @@ use App\Models\CrossReference;
 
 class FeatureDefinitions
 {
+    public const LANGUAGE_MODE_NONE = 'none';
+    public const LANGUAGE_MODE_SINGLE = 'single';
+    public const LANGUAGE_MODE_MULTI = 'multi';
+
     /**
      * Get all feature definitions
      * 
@@ -43,6 +47,62 @@ class FeatureDefinitions
                 },
             ],
         ];
+    }
+
+    public static function getLanguageMode(array $definition): string
+    {
+        $languages = $definition['languages'] ?? null;
+
+        if (is_array($languages)) {
+            if (empty($languages)) {
+                return self::LANGUAGE_MODE_NONE;
+            }
+
+            return self::LANGUAGE_MODE_MULTI;
+        }
+
+        if (is_string($languages) && trim($languages) !== '') {
+            return self::LANGUAGE_MODE_SINGLE;
+        }
+
+        if ($languages) {
+            return self::LANGUAGE_MODE_SINGLE;
+        }
+
+        return self::LANGUAGE_MODE_NONE;
+    }
+
+    /**
+     * Normalize languages to explicit rows for DB sync.
+     *
+     * @return array<int, string|null>
+     */
+    public static function normalizeLanguages(array $definition): array
+    {
+        $mode = self::getLanguageMode($definition);
+        $languages = $definition['languages'] ?? null;
+
+        if ($mode === self::LANGUAGE_MODE_NONE) {
+            return [null];
+        }
+
+        if ($mode === self::LANGUAGE_MODE_SINGLE) {
+            return [is_string($languages) ? trim($languages) : (string)$languages];
+        }
+
+        $normalized = [];
+
+        foreach ($languages as $language) {
+            $value = is_string($language) ? trim($language) : (string)$language;
+
+            if ($value === '') {
+                continue;
+            }
+
+            $normalized[] = $value;
+        }
+
+        return empty($normalized) ? [null] : $normalized;
     }
 
     /**

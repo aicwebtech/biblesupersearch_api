@@ -17,6 +17,13 @@ const tpl = `
                                 {{q.name}}
                             </li>
                         </ul>
+
+                        <v-switch
+                            v-if='action == "install"'
+                            v-model='enable'
+                            label='Enable'
+                            color='primary'
+                        />
                     </v-sheet>
                     <v-sheet v-else-if='queueProcessing'>
                         {{actioningLabel}} {{queueItemCurrent.name}}
@@ -86,6 +93,7 @@ export default {
             queueLoading: false,
             queueFinished: false,
             queueErrors: [],
+            enable: false,
         }
     },
     computed: {
@@ -161,6 +169,7 @@ export default {
         },
         clearForm() {
             this.confirmed = false;
+            this.enable = false;
         },
         queueProcessStart() {
             this.queueItemsTotal = this.queue.length;
@@ -185,9 +194,16 @@ export default {
             this.queueItemCurrent = this.queue.shift();
             this.queueLoading = true;
 
+            var params = {};
+
+            if(this.action == 'install') {
+                params.enable = this.enable ? 1 : 0;
+            }
+
             axios.request({
                 url: '/admin/features/' + this.action + '/' + this.queueItemCurrent.id,
                 method: 'POST',
+                params: params,
             })
             .then(function(response) {
                 this.queueLoading = false;

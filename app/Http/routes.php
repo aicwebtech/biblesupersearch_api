@@ -111,6 +111,8 @@ Route::resource('/admin/bibles', 'Admin\BibleController', ['as' => 'admin']);
 Route::get('/admin/features/grid', 'Admin\FeatureController@grid');
 Route::post('/admin/features/install/{id}', 'Admin\FeatureController@install');
 Route::post('/admin/features/uninstall/{id}', 'Admin\FeatureController@uninstall');
+Route::post('/admin/features/enable/{id}', 'Admin\FeatureController@enable');
+Route::post('/admin/features/disable/{id}', 'Admin\FeatureController@disable');
 Route::resource('/admin/features', 'Admin\FeatureController', ['as' => 'admin']);
 
 // Audio Bible manager routes

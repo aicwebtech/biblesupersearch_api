@@ -3,27 +3,33 @@ import ChipBool from '../../bin/custom_vue/components/ChipBool.vue.js';
 import ActionDialogFeatures from './dialogs/ActionDialog.vue.js';
 import { gridTemplateProps, useGrid } from '../../bin/custom_vue/composables/grid/Grid.vue.js';
 
-const template = `<v-sheet>
+ const template = `<v-sheet class='feature-grid-container'>
             <h2 class='app'>
                 Features
             </h2>
 
-            <v-sheet v-if='hasRowSelections' class='mt-3 mb-12'>
-                <span class='float-left'>
-                    With Selections:
-                </span>
+            <v-sheet class='feature-bulk-row mt-3 mb-6'>
+                <template v-if='hasRowSelections'>
+                    <span class='float-left'>
+                        With Selections:
+                    </span>
 
-                <span v-for='action in bulkActions' class='float-left'>
-                    <v-btn 
-                        xdensity='comfortable'
-                        size='small'
-                        class='ml-2'
-                        @click="handleBulkAction(action.action, $event)"
-                        :prepend-icon='action.icon'
-                    >
-                        {{action.label}}
-                    </v-btn>
-                </span>
+                    <span v-for='action in bulkActions' class='float-left'>
+                        <v-btn 
+                            xdensity='comfortable'
+                            size='small'
+                            class='ml-2'
+                            @click="handleBulkAction(action.action, $event)"
+                            :prepend-icon='action.icon'
+                        >
+                            {{action.label}}
+                        </v-btn>
+                    </span>
+                </template>
+                <template v-else>
+                    <span class='feature-bulk-placeholder'>&nbsp;</span>
+                </template>
+
                 <span class='clear-both'></span>
             </v-sheet>
             
@@ -76,6 +82,10 @@ const template = `<v-sheet>
                     <TruncateTooltip :text='item.description' :maxLen='50'></TruncateTooltip>
                 </template>                           
 
+                <template v-slot:item.code={item}>
+                    <TruncateTooltip :text='item.code' :maxLen='30'></TruncateTooltip>
+                </template>
+
                 <template v-slot:item.installed={item}>
                     <ChipBool
                         :value="item.installed == '1' || item.installed === true"
@@ -84,6 +94,15 @@ const template = `<v-sheet>
                         @click-false="handleSingleAction('install', item)"
                     />
                 </template>                 
+
+                <template v-slot:item.enabled={item}>
+                    <ChipBool
+                        :value="item.enabled == '1' || item.enabled === true"
+                        v-bind='chipProps'
+                        @click-true="handleSingleAction('disable', item)"
+                        @click-false="handleSingleAction('enable', item)"
+                    />
+                </template>
 
                 <template v-slot:item.actions={item}>
                     <v-menu>
@@ -103,6 +122,19 @@ const template = `<v-sheet>
                                     <v-icon icon="mdi-minus-box"></v-icon>
                                 </template>
                                 <v-list-item-title>Uninstall</v-list-item-title>
+                            </v-list-item>
+
+                            <v-list-item v-if='(item.installed == "1" || item.installed === true) && (item.enabled == "0" || item.enabled === false)' @click="handleSingleAction('enable', item)">
+                                <template v-slot:prepend>
+                                    <v-icon icon="mdi-lock-open"></v-icon>
+                                </template>
+                                <v-list-item-title>Enable</v-list-item-title>
+                            </v-list-item>
+                            <v-list-item v-else-if='item.enabled == "1" || item.enabled === true' @click="handleSingleAction('disable', item)">
+                                <template v-slot:prepend>
+                                    <v-icon icon="mdi-lock"></v-icon>
+                                </template>
+                                <v-list-item-title>Disable</v-list-item-title>
                             </v-list-item>
                         </v-list>
                     </v-menu>
@@ -132,12 +164,14 @@ export default {
                 sord: 'ASC',
                 rows_per_page: 25,
                 name: null,
+                code: null,
                 language: null,
                 installed: null,
+                enabled: null,
             },
 
             searchFields: [
-                'name', 'language', 'installed'
+                'name', 'code', 'language', 'installed', 'enabled'
             ],
         };
 
@@ -171,6 +205,18 @@ export default {
                     actioning: 'Uninstalling',
                     icon: 'mdi-minus-box',
                 },
+                {
+                    action: 'enable',
+                    label: 'Enable',
+                    actioning: 'Enabling',
+                    icon: 'mdi-lock-open',
+                },
+                {
+                    action: 'disable',
+                    label: 'Disable',
+                    actioning: 'Disabling',
+                    icon: 'mdi-lock',
+                },
             ]
         }
     },
@@ -179,9 +225,16 @@ export default {
             var cols = [];
 
             cols.push({title: 'Name', key: 'name', width: 200});
+            cols.push({title: 'Code', key: 'code', width: 180});
             cols.push({title: 'Language', key: 'language_name', width: 150});
-            cols.push({title: 'Description', key: 'description', width: 350});
+            cols.push({title: 'Description', key: 'description', width: 280});
             cols.push({title: 'Installed', key: 'installed', width: 100, searchComponent: 'v-select', searchProps: {
+                'items': [{title: 'Yes', value: 1}, {title: 'No', value: 0}],
+                'item-title': 'title',
+                'item-value': 'value',
+                'clearable': true,
+            }, align: 'center'});
+            cols.push({title: 'Enabled', key: 'enabled', width: 100, searchComponent: 'v-select', searchProps: {
                 'items': [{title: 'Yes', value: 1}, {title: 'No', value: 0}],
                 'item-title': 'title',
                 'item-value': 'value',

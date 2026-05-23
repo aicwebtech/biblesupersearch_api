@@ -65,6 +65,12 @@ class FeatureController extends Controller
             if (isset($data['installed'])) {
                 $Query->where('installed', (int) $data['installed']);
             }
+            if (isset($data['enabled'])) {
+                $Query->where('enabled', (int) $data['enabled']);
+            }
+            if (isset($data['code'])) {
+                $Query->where('code', 'LIKE', '%' . $data['code'] . '%');
+            }
         } else {
             // Handle simple search
             if (isset($data['name']) && $data['name']) {
@@ -75,6 +81,12 @@ class FeatureController extends Controller
             }
             if (isset($data['installed']) && ($data['installed'] === 0 || $data['installed'] === 1)) {
                 $Query->where('installed', (int) $data['installed']);
+            }
+            if (isset($data['enabled']) && ($data['enabled'] === 0 || $data['enabled'] === 1 || $data['enabled'] === '0' || $data['enabled'] === '1')) {
+                $Query->where('enabled', (int) $data['enabled']);
+            }
+            if (isset($data['code']) && $data['code']) {
+                $Query->where('code', 'LIKE', '%' . $data['code'] . '%');
             }
         }
 
@@ -88,6 +100,7 @@ class FeatureController extends Controller
             if ($definition) {
                 $row['name'] = $definition['name'];
                 $description = $definition['description'];
+                $mode = FeatureDefinitions::getLanguageMode($definition);
 
                 // Replace language placeholder in description
                 if ($Feature->language && strpos($description, '{language}') !== false) {
@@ -104,6 +117,10 @@ class FeatureController extends Controller
                 if ($Feature->language) {
                     $language = Language::where('code', $Feature->language)->first();
                     $row['language_name'] = $language ? $language->name : $Feature->language;
+
+                    if ($mode === FeatureDefinitions::LANGUAGE_MODE_MULTI && $row['language_name']) {
+                        $row['name'] .= ' (' . $row['language_name'] . ')';
+                    }
                 } else {
                     $row['language_name'] = '—';
                 }
@@ -129,15 +146,46 @@ class FeatureController extends Controller
      * @param int $id
      * @return \Illuminate\Http\Response
      */
-    public function install($id)
+    public function install(Request $request, $id)
+    {
+        $Feature = Feature::findOrFail($id);
+        $enable = $request->boolean('enable', false);
+        $resp = new \stdClass();
+        $resp->success = TRUE;
+
+        if (!$Feature->install($enable)) {
+            $resp->success = FALSE;
+            $resp->errors = ['Failed to install feature.'];
+            return new Response($resp, 422);
+        }
+
+        return new Response($resp, 200);
+    }
+
+    public function enable($id)
     {
         $Feature = Feature::findOrFail($id);
         $resp = new \stdClass();
         $resp->success = TRUE;
 
-        if (!$Feature->install()) {
+        if (!$Feature->enable()) {
             $resp->success = FALSE;
-            $resp->errors = ['Failed to install feature.'];
+            $resp->errors = ['Feature must be installed before it can be enabled.'];
+            return new Response($resp, 422);
+        }
+
+        return new Response($resp, 200);
+    }
+
+    public function disable($id)
+    {
+        $Feature = Feature::findOrFail($id);
+        $resp = new \stdClass();
+        $resp->success = TRUE;
+
+        if (!$Feature->disable()) {
+            $resp->success = FALSE;
+            $resp->errors = ['Failed to disable feature.'];
             return new Response($resp, 422);
         }
 

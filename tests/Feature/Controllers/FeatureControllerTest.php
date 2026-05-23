@@ -91,7 +91,9 @@ class FeatureControllerTest extends TestCase
             $this->assertArrayHasKey('name', $row);
             $this->assertArrayHasKey('description', $row);
             $this->assertArrayHasKey('language_name', $row);
+            $this->assertArrayHasKey('code', $row);
             $this->assertArrayHasKey('installed', $row);
+            $this->assertArrayHasKey('enabled', $row);
         }
     }
 
@@ -161,8 +163,10 @@ class FeatureControllerTest extends TestCase
 
         $Feature = Feature::create([
             'identifier' => 'cross_references',
+            'code' => 'cross_references',
             'language' => null,
             'installed' => false,
+            'enabled' => false,
         ]);
 
         $response = $this->actingAs($this->User)
@@ -174,6 +178,37 @@ class FeatureControllerTest extends TestCase
 
         $Feature->refresh();
         $this->assertTrue($Feature->installed);
+        $this->assertFalse($Feature->enabled);
+    }
+
+    public function test_install_sets_enabled_flag_when_requested()
+    {
+        if (!$this->User || $this->User->access_level < 100) {
+            $this->markTestSkipped('Admin user (id=1) not available for this environment.');
+        }
+
+        Feature::where('identifier', 'cross_references')
+            ->whereNull('language')
+            ->delete();
+
+        $Feature = Feature::create([
+            'identifier' => 'cross_references',
+            'code' => 'cross_references',
+            'language' => null,
+            'installed' => false,
+            'enabled' => false,
+        ]);
+
+        $response = $this->actingAs($this->User)
+            ->withSession(['banned' => FALSE])
+            ->postJson('/admin/features/install/' . $Feature->id . '?enable=1');
+
+        $response->assertStatus(200);
+        $response->assertJson(['success' => true]);
+
+        $Feature->refresh();
+        $this->assertTrue($Feature->installed);
+        $this->assertTrue($Feature->enabled);
     }
 
     public function test_uninstall_sets_installed_flag()
@@ -188,8 +223,10 @@ class FeatureControllerTest extends TestCase
 
         $Feature = Feature::create([
             'identifier' => 'cross_references',
+            'code' => 'cross_references',
             'language' => null,
             'installed' => true,
+            'enabled' => true,
         ]);
 
         $response = $this->actingAs($this->User)
@@ -201,6 +238,69 @@ class FeatureControllerTest extends TestCase
 
         $Feature->refresh();
         $this->assertFalse($Feature->installed);
+        $this->assertFalse($Feature->enabled);
+    }
+
+    public function test_enable_and_disable_actions_toggle_enabled_flag()
+    {
+        if (!$this->User || $this->User->access_level < 100) {
+            $this->markTestSkipped('Admin user (id=1) not available for this environment.');
+        }
+
+        Feature::where('identifier', 'cross_references')
+            ->whereNull('language')
+            ->delete();
+
+        $Feature = Feature::create([
+            'identifier' => 'cross_references',
+            'code' => 'cross_references',
+            'language' => null,
+            'installed' => true,
+            'enabled' => false,
+        ]);
+
+        $enableResponse = $this->actingAs($this->User)
+            ->withSession(['banned' => FALSE])
+            ->postJson('/admin/features/enable/' . $Feature->id);
+
+        $enableResponse->assertStatus(200);
+
+        $Feature->refresh();
+        $this->assertTrue($Feature->enabled);
+
+        $disableResponse = $this->actingAs($this->User)
+            ->withSession(['banned' => FALSE])
+            ->postJson('/admin/features/disable/' . $Feature->id);
+
+        $disableResponse->assertStatus(200);
+
+        $Feature->refresh();
+        $this->assertFalse($Feature->enabled);
+    }
+
+    public function test_enable_requires_installed_feature()
+    {
+        if (!$this->User || $this->User->access_level < 100) {
+            $this->markTestSkipped('Admin user (id=1) not available for this environment.');
+        }
+
+        Feature::where('identifier', 'cross_references')
+            ->whereNull('language')
+            ->delete();
+
+        $Feature = Feature::create([
+            'identifier' => 'cross_references',
+            'code' => 'cross_references',
+            'language' => null,
+            'installed' => false,
+            'enabled' => false,
+        ]);
+
+        $response = $this->actingAs($this->User)
+            ->withSession(['banned' => FALSE])
+            ->postJson('/admin/features/enable/' . $Feature->id);
+
+        $response->assertStatus(422);
     }
 
     public function test_feature_identified_by_identifier_and_language()
@@ -216,14 +316,18 @@ class FeatureControllerTest extends TestCase
         // Create two strongs entries with different languages
         $Feature1 = Feature::create([
             'identifier' => 'strongs',
+            'code' => 'strongs___en',
             'language' => 'en',
             'installed' => false,
+            'enabled' => false,
         ]);
 
         $Feature2 = Feature::create([
             'identifier' => 'strongs',
+            'code' => 'strongs___ru',
             'language' => 'ru',
             'installed' => false,
+            'enabled' => false,
         ]);
 
         // Install only Feature1
@@ -301,5 +405,41 @@ class FeatureControllerTest extends TestCase
 
         $this->assertEquals(1, $response['records']);
         $this->assertEquals('en', $response['rows'][0]['language']);
+    }
+
+    public function test_is_enabled_all_returns_global_and_language_keys()
+    {
+        if (!$this->User || $this->User->access_level < 100) {
+            $this->markTestSkipped('Admin user (id=1) not available for this environment.');
+        }
+
+        Feature::syncFeatures();
+
+        Feature::where('identifier', 'cross_references')->update([
+            'installed' => true,
+            'enabled' => true,
+        ]);
+
+        Feature::where('identifier', 'strongs')->where('language', 'en')->update([
+            'installed' => true,
+            'enabled' => true,
+        ]);
+
+        Feature::where('identifier', 'strongs')->where('language', 'ru')->update([
+            'installed' => true,
+            'enabled' => false,
+        ]);
+
+        $flags = Feature::isEnabledAll();
+
+        $this->assertArrayHasKey('cross_references.global', $flags);
+        $this->assertArrayHasKey('strongs.global', $flags);
+        $this->assertArrayHasKey('strongs.en', $flags);
+        $this->assertArrayHasKey('strongs.ru', $flags);
+
+        $this->assertTrue($flags['cross_references.global']);
+        $this->assertTrue($flags['strongs.global']);
+        $this->assertTrue($flags['strongs.en']);
+        $this->assertFalse($flags['strongs.ru']);
     }
 }

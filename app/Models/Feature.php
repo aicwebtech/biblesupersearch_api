@@ -8,13 +8,16 @@ use App\Features\FeatureDefinitions;
 class Feature extends Model
 {
     protected $fillable = [
+        'code',
         'identifier',
         'language',
         'installed',
+        'enabled',
     ];
 
     protected $casts = [
         'installed' => 'boolean',
+        'enabled' => 'boolean',
     ];
 
     protected static $is_enabled = [];
@@ -29,12 +32,8 @@ class Feature extends Model
     {
         foreach (FeatureDefinitions::all() as $definition) {
             $identifier = $definition['identifier'];
-            $languages = $definition['languages'] ?? [null];
-
-            // Ensure languages is an array (could be null or array)
-            if ($languages === null) {
-                $languages = [null];
-            }
+            $languages = FeatureDefinitions::normalizeLanguages($definition);
+            $mode = FeatureDefinitions::getLanguageMode($definition);
 
             foreach ($languages as $language) {
                 self::firstOrCreate(
@@ -43,11 +42,21 @@ class Feature extends Model
                         'language' => $language,
                     ],
                     [
+                        'code' => self::buildCode($identifier, $language, $mode),
                         'installed' => false,
+                        'enabled' => false,
                     ]
                 );
+
+                self::where('identifier', $identifier)
+                    ->where('language', $language)
+                    ->update([
+                        'code' => self::buildCode($identifier, $language, $mode),
+                    ]);
             }
         }
+
+        self::clearEnabledCache();
     }
 
     /**
@@ -55,7 +64,7 @@ class Feature extends Model
      * 
      * @return bool
      */
-    public function install(): bool
+    public function install(bool $enable = false): bool
     {
         $definition = FeatureDefinitions::find($this->identifier);
 
@@ -67,8 +76,13 @@ class Feature extends Model
         $result = $callback($this->language);
 
         if ($result) {
-            $this->update(['installed' => true]);
+            $this->update([
+                'installed' => true,
+                'enabled' => $enable ? true : $this->enabled,
+            ]);
         }
+
+        self::clearEnabledCache();
 
         return $result;
     }
@@ -90,10 +104,35 @@ class Feature extends Model
         $result = $callback($this->language);
 
         if ($result) {
-            $this->update(['installed' => false]);
+            $this->update([
+                'installed' => false,
+                'enabled' => false,
+            ]);
         }
 
+        self::clearEnabledCache();
+
         return $result;
+    }
+
+    public function enable(): bool
+    {
+        if (!$this->installed) {
+            return false;
+        }
+
+        $this->update(['enabled' => true]);
+        self::clearEnabledCache();
+
+        return true;
+    }
+
+    public function disable(): bool
+    {
+        $this->update(['enabled' => false]);
+        self::clearEnabledCache();
+
+        return true;
     }
 
     public static function isEnabled(string $identifier, ?string $language = null): bool
@@ -108,9 +147,58 @@ class Feature extends Model
             ->where('language', $language)
             ->first();
 
-        $enabled = $Feature ? $Feature->installed : false;
+        $enabled = $Feature ? (bool)$Feature->enabled : false;
         self::$is_enabled[$key] = $enabled;
 
         return $enabled;
+    }
+
+    /**
+     * Returns a flat map for statics output:
+     * - {identifier}.global => bool
+     * - {identifier}.{language} => bool (for language-specific rows)
+     *
+     * @return array<string, bool>
+     */
+    public static function isEnabledAll(): array
+    {
+        $map = [];
+
+        foreach (FeatureDefinitions::all() as $definition) {
+            $identifier = $definition['identifier'];
+            $mode = FeatureDefinitions::getLanguageMode($definition);
+            $rows = self::where('identifier', $identifier)->get();
+            $global = false;
+
+            foreach ($rows as $row) {
+                $isEnabled = (bool)$row->enabled;
+
+                if ($mode === FeatureDefinitions::LANGUAGE_MODE_MULTI && $row->language) {
+                    $map[$identifier . '.' . $row->language] = $isEnabled;
+                }
+
+                $global = $global || $isEnabled;
+            }
+
+            $map[$identifier . '.global'] = $global;
+        }
+
+        return $map;
+    }
+
+    public static function buildCode(string $identifier, ?string $language, ?string $mode = null): string
+    {
+        $mode = $mode ?? FeatureDefinitions::LANGUAGE_MODE_NONE;
+
+        if ($mode === FeatureDefinitions::LANGUAGE_MODE_MULTI && $language) {
+            return $identifier . '___' . $language;
+        }
+
+        return $identifier;
+    }
+
+    public static function clearEnabledCache(): void
+    {
+        self::$is_enabled = [];
     }
 }
