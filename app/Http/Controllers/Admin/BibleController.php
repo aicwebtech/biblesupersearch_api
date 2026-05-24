@@ -53,7 +53,7 @@ class BibleController extends Controller
         return view('admin.bibles_old', ['bootstrap' => $bootstrap]);
     }
 
-        /**
+    /**
      * Display a listing of the resource.
      * In this case, a page with a grid
      *

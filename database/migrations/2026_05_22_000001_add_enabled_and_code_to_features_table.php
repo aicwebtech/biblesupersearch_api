@@ -18,6 +18,7 @@ return new class extends Migration
             $table->boolean('enabled')->default(false)->after('installed');
         });
 
+        //: todo remove before release - this is to backfill code and enabled values for existing features
         foreach (Feature::all() as $feature) {
             $definition = FeatureDefinitions::find($feature->identifier);
             $mode = $definition

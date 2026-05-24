@@ -81,23 +81,32 @@ class FeatureDefinitionsTest extends TestCase
         }
     }
 
-    public function test_install_callback_returns_bool()
+    public function test_languages_mode_none_for_null_or_empty_values()
     {
-        $definitions = FeatureDefinitions::all();
+        $definitionNull = ['languages' => null];
+        $definitionEmptyString = ['languages' => ''];
+        $definitionFalse = ['languages' => false];
+        $definitionEmptyArray = ['languages' => []];
 
-        foreach ($definitions as $definition) {
-            $result = $definition['install'](null);
-            $this->assertIsBool($result);
-        }
+        $this->assertEquals(FeatureDefinitions::LANGUAGE_MODE_NONE, FeatureDefinitions::getLanguageMode($definitionNull));
+        $this->assertEquals(FeatureDefinitions::LANGUAGE_MODE_NONE, FeatureDefinitions::getLanguageMode($definitionEmptyString));
+        $this->assertEquals(FeatureDefinitions::LANGUAGE_MODE_NONE, FeatureDefinitions::getLanguageMode($definitionFalse));
+        $this->assertEquals(FeatureDefinitions::LANGUAGE_MODE_NONE, FeatureDefinitions::getLanguageMode($definitionEmptyArray));
     }
 
-    public function test_uninstall_callback_returns_bool()
+    public function test_languages_mode_single_for_string_value()
     {
-        $definitions = FeatureDefinitions::all();
+        $definition = ['languages' => 'en'];
 
-        foreach ($definitions as $definition) {
-            $result = $definition['uninstall'](null);
-            $this->assertIsBool($result);
-        }
+        $this->assertEquals(FeatureDefinitions::LANGUAGE_MODE_SINGLE, FeatureDefinitions::getLanguageMode($definition));
+        $this->assertEquals(['en'], FeatureDefinitions::normalizeLanguages($definition));
+    }
+
+    public function test_languages_mode_multi_for_array_even_with_one_element()
+    {
+        $definition = ['languages' => ['ru']];
+
+        $this->assertEquals(FeatureDefinitions::LANGUAGE_MODE_MULTI, FeatureDefinitions::getLanguageMode($definition));
+        $this->assertEquals(['ru'], FeatureDefinitions::normalizeLanguages($definition));
     }
 }

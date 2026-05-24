@@ -143,9 +143,20 @@ class Feature extends Model
             return self::$is_enabled[$key];
         }
 
-        $Feature = self::where('identifier', $identifier)
-            ->where('language', $language)
-            ->first();
+        if($language) {
+            $Feature = self::where('identifier', $identifier)
+                ->where('language', $language)
+                ->first();
+        } else {
+            $Feature = self::where('code', $identifier)
+                ->first();
+
+            if(!$Feature) {
+                $Feature = self::where('identifier', $identifier)
+                    ->whereNull('language')
+                    ->first();
+            }
+        }
 
         $enabled = $Feature ? (bool)$Feature->enabled : false;
         self::$is_enabled[$key] = $enabled;

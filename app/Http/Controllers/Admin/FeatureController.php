@@ -52,42 +52,24 @@ class FeatureController extends Controller
         $Query = Feature::orderBy($sidx, $sord);
 
         // Apply search filters
-        if (isset($data['_search']) && $data['_search'] == 'true') {
-            // Handle advanced search
-            if (isset($data['name'])) {
-                $Query->where(function($q) use ($data) {
-                    $q->where('identifier', 'LIKE', '%' . $data['name'] . '%');
-                });
-            }
-            if (isset($data['language'])) {
-                $Query->where('language', $data['language']);
-            }
-            if (isset($data['installed'])) {
-                $Query->where('installed', (int) $data['installed']);
-            }
-            if (isset($data['enabled'])) {
-                $Query->where('enabled', (int) $data['enabled']);
-            }
-            if (isset($data['code'])) {
-                $Query->where('code', 'LIKE', '%' . $data['code'] . '%');
-            }
-        } else {
-            // Handle simple search
-            if (isset($data['name']) && $data['name']) {
-                $Query->where('identifier', 'LIKE', '%' . $data['name'] . '%');
-            }
-            if (isset($data['language']) && $data['language']) {
-                $Query->where('language', $data['language']);
-            }
-            if (isset($data['installed']) && ($data['installed'] === 0 || $data['installed'] === 1)) {
-                $Query->where('installed', (int) $data['installed']);
-            }
-            if (isset($data['enabled']) && ($data['enabled'] === 0 || $data['enabled'] === 1 || $data['enabled'] === '0' || $data['enabled'] === '1')) {
-                $Query->where('enabled', (int) $data['enabled']);
-            }
-            if (isset($data['code']) && $data['code']) {
-                $Query->where('code', 'LIKE', '%' . $data['code'] . '%');
-            }
+        if (isset($data['name']) && $data['name']) {
+            $Query->where('identifier', 'LIKE', '%' . $data['name'] . '%');
+        }
+
+        if (isset($data['language']) && $data['language']) {
+            $Query->where('language', $data['language']);
+        }
+
+        if (isset($data['installed']) && ($data['installed'] === 0 || $data['installed'] === 1 || $data['installed'] === '0' || $data['installed'] === '1')) {
+            $Query->where('installed', (int) $data['installed']);
+        }
+
+        if (isset($data['enabled']) && ($data['enabled'] === 0 || $data['enabled'] === 1 || $data['enabled'] === '0' || $data['enabled'] === '1')) {
+            $Query->where('enabled', (int) $data['enabled']);
+        }
+
+        if (isset($data['code']) && $data['code']) {
+            $Query->where('code', 'LIKE', '%' . $data['code'] . '%');
         }
 
         $Features = $Query->paginate($rows_per_page);

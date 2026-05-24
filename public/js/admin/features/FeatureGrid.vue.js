@@ -1,4 +1,5 @@
 import TruncateTooltip from '../../bin/custom_vue/components/Truncate.vue.js';
+import YesNoSel from '../../bin/custom_vue/components/YesNoSelector.vue.js';
 import ChipBool from '../../bin/custom_vue/components/ChipBool.vue.js';
 import ActionDialogFeatures from './dialogs/ActionDialog.vue.js';
 import { gridTemplateProps, useGrid } from '../../bin/custom_vue/composables/grid/Grid.vue.js';
@@ -171,7 +172,7 @@ export default {
             },
 
             searchFields: [
-                'name', 'code', 'language', 'installed', 'enabled'
+                'name', 'language_name', 'installed', 'enabled'
             ],
         };
 
@@ -181,6 +182,7 @@ export default {
         ActionDialogFeatures,
         TruncateTooltip,
         ChipBool,
+        YesNoSel
     },
     template: template, 
     data() {
@@ -224,22 +226,11 @@ export default {
         headers() {
             var cols = [];
 
-            cols.push({title: 'Name', key: 'name', width: 200});
-            cols.push({title: 'Code', key: 'code', width: 180});
-            cols.push({title: 'Language', key: 'language_name', width: 150});
-            cols.push({title: 'Description', key: 'description', width: 280});
-            cols.push({title: 'Installed', key: 'installed', width: 100, searchComponent: 'v-select', searchProps: {
-                'items': [{title: 'Yes', value: 1}, {title: 'No', value: 0}],
-                'item-title': 'title',
-                'item-value': 'value',
-                'clearable': true,
-            }, align: 'center'});
-            cols.push({title: 'Enabled', key: 'enabled', width: 100, searchComponent: 'v-select', searchProps: {
-                'items': [{title: 'Yes', value: 1}, {title: 'No', value: 0}],
-                'item-title': 'title',
-                'item-value': 'value',
-                'clearable': true,
-            }, align: 'center'});
+            cols.push({title: 'Name', key: 'name', width: 200, searchable: false});
+            cols.push({title: 'Language', key: 'language_name', width: 150, searchable: false});
+            cols.push({title: 'Description', key: 'description', width: 280, searchable: false});
+            cols.push({title: 'Installed', key: 'installed', width: 100, searchComponent: 'YesNoSel', searchLabel: false, align: 'center'});
+            cols.push({title: 'Enabled', key: 'enabled', width: 100, searchComponent: 'YesNoSel', searchLabel: false, align: 'center'});
             
             cols.push({title: '', key: 'actions', sortable: false, width: 100, searchable: false, align: 'end'});
 
