@@ -34,25 +34,22 @@ class Feature extends Model
             $identifier = $definition['identifier'];
             $languages = FeatureDefinitions::normalizeLanguages($definition);
             $mode = FeatureDefinitions::getLanguageMode($definition);
-
+            
+             // Ensure there's exactly one row for the feature-language (for global features or as a fallback)
             foreach ($languages as $language) {
+                $code = self::buildCode($identifier, $language, $mode);
+            
                 self::firstOrCreate(
+                    [
+                        'code' => $code,
+                    ],
                     [
                         'identifier' => $identifier,
                         'language' => $language,
-                    ],
-                    [
-                        'code' => self::buildCode($identifier, $language, $mode),
                         'installed' => false,
                         'enabled' => false,
                     ]
                 );
-
-                self::where('identifier', $identifier)
-                    ->where('language', $language)
-                    ->update([
-                        'code' => self::buildCode($identifier, $language, $mode),
-                    ]);
             }
         }
 
@@ -189,7 +186,7 @@ class Feature extends Model
                 foreach ($rows as $row) {
                     $isEnabled = (bool)$row->enabled;
 
-                    if ($mode === FeatureDefinitions::LANGUAGE_MODE_MULTI && $row->language) {
+                    if ($row->language) {
                         $map[$identifier]->{$row->language} = $isEnabled;
                     }
 

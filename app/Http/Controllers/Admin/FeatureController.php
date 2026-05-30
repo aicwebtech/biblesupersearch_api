@@ -44,7 +44,7 @@ class FeatureController extends Controller
         $data = $request->toArray();
         $rows = [];
         $rows_per_page = (int) ($data['rows'] ?? 25);
-        $page = (int) ($_REQUEST['page'] ?? 1);
+        $page = (int) ($data['page'] ?? 1);
         $sidx = $data['sidx'] ?? 'id';
         $sord = $data['sord'] ?? 'ASC';
 

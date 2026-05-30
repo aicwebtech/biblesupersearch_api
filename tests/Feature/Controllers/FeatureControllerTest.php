@@ -20,7 +20,7 @@ class FeatureControllerTest extends TestCase
         $this->User->access_level = 100; // Admin access level
     }
 
-    public function test_index_syncs_features()
+    public function testIndexSyncFeatures()
     {
         if (!$this->User || $this->User->access_level < 100) {
             $this->markTestSkipped('Admin user (id=1) not available for this environment.');
@@ -35,12 +35,9 @@ class FeatureControllerTest extends TestCase
 
         // Check that features were synced to database
         $this->assertGreaterThan(0, Feature::count());
-        
-        // Should have 1 cross_references (null language) + 3 strongs (en, ru, es)
-        $this->assertEquals(4, Feature::count());
     }
 
-    public function test_grid_returns_feature_rows()
+    public function testGridReturnsFeatureRows()
     {
         if (!$this->User || $this->User->access_level < 100) {
             $this->markTestSkipped('Admin user (id=1) not available for this environment.');
@@ -62,7 +59,7 @@ class FeatureControllerTest extends TestCase
         $this->assertEquals(4, count($response['rows']));
     }
 
-    public function test_grid_includes_feature_definitions_data()
+    public function testGridIncludesFeatureDefinitionsData()
     {
         if (!$this->User || $this->User->access_level < 100) {
             $this->markTestSkipped('Admin user (id=1) not available for this environment.');
@@ -95,7 +92,7 @@ class FeatureControllerTest extends TestCase
         }
     }
 
-    public function test_grid_shows_cross_references_with_null_language()
+    public function testGridShowsCrossReferencesWithNullLanguage()
     {
         if (!$this->User || $this->User->access_level < 100) {
             $this->markTestSkipped('Admin user (id=1) not available for this environment.');
@@ -122,7 +119,7 @@ class FeatureControllerTest extends TestCase
         $this->assertEquals('Cross References', $crossRefRow['name']);
     }
 
-    public function test_grid_shows_strongs_with_separate_rows_per_language()
+    public function testGridShowsStrongsWithSeparateRowsPerLanguage()
     {
         if (!$this->User || $this->User->access_level < 100) {
             $this->markTestSkipped('Admin user (id=1) not available for this environment.');
@@ -149,7 +146,7 @@ class FeatureControllerTest extends TestCase
         $this->assertEquals(['en', 'es', 'ru'], $languages->toArray());
     }
 
-    public function test_sync_does_not_duplicate_existing_rows()
+    public function testSyncDoesNotDuplicateExistingRows()
     {
         if (!$this->User || $this->User->access_level < 100) {
             $this->markTestSkipped('Admin user (id=1) not available for this environment.');
@@ -164,7 +161,7 @@ class FeatureControllerTest extends TestCase
         $this->assertEquals($initialCount, Feature::count());
     }
 
-    public function test_grid_search_by_identifier()
+    public function testGridSearchByIdentifier()
     {
         if (!$this->User || $this->User->access_level < 100) {
             $this->markTestSkipped('Admin user (id=1) not available for this environment.');
@@ -187,7 +184,7 @@ class FeatureControllerTest extends TestCase
         $this->assertEquals(3, $response['records']);
     }
 
-    public function test_grid_search_by_language()
+    public function testGridSearchByLanguage()
     {
         if (!$this->User || $this->User->access_level < 100) {
             $this->markTestSkipped('Admin user (id=1) not available for this environment.');

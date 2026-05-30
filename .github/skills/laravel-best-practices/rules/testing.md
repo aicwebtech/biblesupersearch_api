@@ -13,12 +13,14 @@
 - No access to the rest of the application (no HTTP, no Eloquent models, no service providers).
 - Test pure logic, static helpers, value objects, and callbacks in isolation.
 - Validate callback contracts with `ReflectionFunction` rather than executing destructive callbacks.
+- Classes extend from **PHPUnit\Framework\TestCase**
 
 ### Feature tests
 - Have access to the database.
 - Database contents are generally static (Bible texts, Bible book lists, cross-reference data, etc.).
 - Do NOT INSERT, UPDATE, or DELETE database records without explicit instruction and authorization.
 - Read and assert against existing data only.
+- Classes extend from **Tests\TestCase**
 
 ## Use `LazilyRefreshDatabase` Over `RefreshDatabase`
 

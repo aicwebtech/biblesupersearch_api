@@ -157,16 +157,18 @@ class CrossReference extends Model
             ->groupBy(function(self $crossReference) {
                 return $crossReference->from_book . ':' . $crossReference->from_chapter . ':' . $crossReference->from_verse;
             })
-            ->map(function(Collection $group) {
+            ->mapWithKeys(function(Collection $group, $key) {
                 $first = $group->first();
+                $key_new = $first->from_book . '_' . $first->from_chapter . '_' . $first->from_verse;
 
                 return [
-                    'from_book' => (int) $first->from_book,
-                    'from_chapter' => (int) $first->from_chapter,
-                    'from_verse' => (int) $first->from_verse,
-                    'cross_references' => $group->map(function(self $crossReference) {
-                        return [
-                            'to_book' => (int) $crossReference->to_book,
+                    $key_new => [
+                        'from_book' => (int) $first->from_book,
+                        'from_chapter' => (int) $first->from_chapter,
+                        'from_verse' => (int) $first->from_verse,
+                        'cross_references' => $group->map(function(self $crossReference) {
+                            return [
+                                'to_book' => (int) $crossReference->to_book,
                             'to_chapter_start' => (int) $crossReference->to_chapter_start,
                             'to_verse_start' => (int) $crossReference->to_verse_start,
                             'to_chapter_end' => (int) $crossReference->to_chapter_end,
@@ -174,9 +176,9 @@ class CrossReference extends Model
                             'votes' => (int) $crossReference->votes,
                         ];
                     })->values()->all(),
-                ];
+                ]];
             })
-            ->values()
+            // ->values()
             ->all();
     }
 

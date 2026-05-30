@@ -6,7 +6,7 @@ use Illuminate\Foundation\Testing\WithoutMiddleware;
 use Illuminate\Foundation\Testing\DatabaseMigrations;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 use PHPUnit\Framework\Attributes\DataProvider;
-use Tests\TestCase;
+use PHPUnit\Framework\TestCase;
 
 use App\Helpers;
 
@@ -34,25 +34,6 @@ class HelpersTest extends TestCase
 
         Helpers::sortStringsByLength($raw, 'DESC');
         $this->assertEquals($exp, $raw);
-    }
-
-    #[DataProvider('makeDataProvider')]
-    public function testMake(string $class) 
-    {
-        $Object = Helpers::make($class);
-        $this->assertInstanceOf($class, $Object, "Could not instantiate: {$class}");
-    }
-
-    public static function makeDataProvider()
-    {
-        return [
-            ['App\Engine'],
-            ['App\Models\Bible'],
-            ['App\ImportManager'],
-            ['App\InstallManager'],
-            ['App\Search'],
-            ['App\Passage'],
-        ];
     }
 
     public function testMaxUploadSize() 

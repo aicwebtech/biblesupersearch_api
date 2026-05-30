@@ -56,7 +56,7 @@ class LanguageConfigController extends Controller
 
         $rows = $postfilters = [];
         $rows_per_page = (int) $data['rows'];
-        $page          = (int) $_REQUEST['page'];
+        $page          = (int) $data['page'];
         $show_all = $rows_per_page < 1;
 
         $pf = DB::getTablePrefix();

@@ -1,13 +1,13 @@
 <?php
 
-namespace Tests\Unit;
+namespace Tests\Feature\Features;
 
 use Tests\TestCase;
 use App\Features\FeatureDefinitions;
 
 class FeatureDefinitionsTest extends TestCase
 {
-    public function test_all_returns_expected_features()
+    public function testAllReturnsExpectedFeatures()
     {
         $definitions = FeatureDefinitions::all();
 
@@ -19,7 +19,7 @@ class FeatureDefinitionsTest extends TestCase
         $this->assertContains('strongs', $identifiers);
     }
 
-    public function test_all_returns_cross_references_with_null_language()
+    public function testAllReturnsCrossReferencesWithNullLanguage()
     {
         $definitions = FeatureDefinitions::all();
         $crossRef = collect($definitions)->firstWhere('identifier', 'cross_references');
@@ -29,7 +29,7 @@ class FeatureDefinitionsTest extends TestCase
         $this->assertEquals('Cross References', $crossRef['name']);
     }
 
-    public function test_all_returns_strongs_with_multiple_languages()
+    public function testAllReturnsStrongsWithMultipleLanguages()
     {
         $definitions = FeatureDefinitions::all();
         $strongs = collect($definitions)->firstWhere('identifier', 'strongs');
@@ -41,7 +41,7 @@ class FeatureDefinitionsTest extends TestCase
         $this->assertContains('es', $strongs['languages']);
     }
 
-    public function test_find_returns_correct_definition()
+    public function testFindReturnsCorrectDefinition()
     {
         $definition = FeatureDefinitions::find('strongs');
 
@@ -50,14 +50,14 @@ class FeatureDefinitionsTest extends TestCase
         $this->assertEquals("Strong's Definitions", $definition['name']);
     }
 
-    public function test_find_returns_null_for_unknown()
+    public function testFindReturnsNullForUnknown()
     {
         $definition = FeatureDefinitions::find('nonexistent_feature');
 
         $this->assertNull($definition);
     }
 
-    public function test_definitions_have_required_fields()
+    public function testDefinitionsHaveRequiredFields()
     {
         $definitions = FeatureDefinitions::all();
 
@@ -71,7 +71,7 @@ class FeatureDefinitionsTest extends TestCase
         }
     }
 
-    public function test_install_and_uninstall_callbacks_are_callable()
+    public function testInstallAndUninstallCallbacksAreCallable()
     {
         $definitions = FeatureDefinitions::all();
 
@@ -81,7 +81,7 @@ class FeatureDefinitionsTest extends TestCase
         }
     }
 
-    public function test_install_and_uninstall_callbacks_match_contract_without_execution()
+    public function testInstallAndUninstallCallbacksMatchContractWithoutExecution()
     {
         $definitions = FeatureDefinitions::all();
     
@@ -116,7 +116,7 @@ class FeatureDefinitionsTest extends TestCase
         }
     }
 
-    public function test_languages_mode_none_for_null_or_empty_values()
+    public function testLanguagesModeNoneForNullOrEmptyValues()
     {
         $definitionNull = ['languages' => null];
         $definitionEmptyString = ['languages' => ''];
@@ -129,7 +129,7 @@ class FeatureDefinitionsTest extends TestCase
         $this->assertEquals(FeatureDefinitions::LANGUAGE_MODE_NONE, FeatureDefinitions::getLanguageMode($definitionEmptyArray));
     }
 
-    public function test_languages_mode_single_for_string_value()
+    public function testLanguagesModeSingleForStringValue()
     {
         $definition = ['languages' => 'en'];
 
@@ -137,7 +137,7 @@ class FeatureDefinitionsTest extends TestCase
         $this->assertEquals(['en'], FeatureDefinitions::normalizeLanguages($definition));
     }
 
-    public function test_languages_mode_multi_for_array_even_with_one_element()
+    public function testLanguagesModeMultiForArrayEvenWithOneElement()
     {
         $definition = ['languages' => ['ru']];
 
