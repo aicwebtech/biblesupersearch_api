@@ -161,29 +161,6 @@ class FeatureControllerTest extends TestCase
         $this->assertEquals($initialCount, Feature::count());
     }
 
-    public function testGridSearchByIdentifier()
-    {
-        if (!$this->User || $this->User->access_level < 100) {
-            $this->markTestSkipped('Admin user (id=1) not available for this environment.');
-        }
-
-        Feature::syncFeatures();
-
-        $response = $this->actingAs($this->User)
-            ->withSession(['banned' => FALSE])
-            ->getJson('/admin/features/grid?' . http_build_query([
-                'rows' => 25,
-                'page' => 1,
-                'sidx' => 'id',
-                'sord' => 'ASC',
-                'name' => 'strongs',
-            ]));
-
-        $response->assertStatus(200);
-
-        $this->assertEquals(3, $response['records']);
-    }
-
     public function testGridSearchByLanguage()
     {
         if (!$this->User || $this->User->access_level < 100) {

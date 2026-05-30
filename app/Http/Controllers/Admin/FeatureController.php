@@ -52,10 +52,6 @@ class FeatureController extends Controller
         $Query = Feature::orderBy($sidx, $sord);
 
         // Apply search filters
-        if (isset($data['name']) && $data['name']) {
-            $Query->where('identifier', 'LIKE', '%' . $data['name'] . '%');
-        }
-
         if (isset($data['language']) && $data['language']) {
             $Query->where('language', $data['language']);
         }

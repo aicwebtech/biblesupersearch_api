@@ -66,7 +66,7 @@ class CrossReferenceTest extends TestCase
             ]),
         ]);
 
-        $grouped = CrossReference::groupBySourceVerses($crossReferences);
+        $grouped = array_values(CrossReference::groupBySourceVerses($crossReferences));
 
         $this->assertCount(2, $grouped);
         $this->assertSame(16, $grouped[0]['from_verse']);

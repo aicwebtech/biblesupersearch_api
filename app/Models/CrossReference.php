@@ -169,16 +169,16 @@ class CrossReference extends Model
                         'cross_references' => $group->map(function(self $crossReference) {
                             return [
                                 'to_book' => (int) $crossReference->to_book,
-                            'to_chapter_start' => (int) $crossReference->to_chapter_start,
-                            'to_verse_start' => (int) $crossReference->to_verse_start,
-                            'to_chapter_end' => (int) $crossReference->to_chapter_end,
-                            'to_verse_end' => (int) $crossReference->to_verse_end,
-                            'votes' => (int) $crossReference->votes,
-                        ];
-                    })->values()->all(),
-                ]];
+                                'to_chapter_start' => (int) $crossReference->to_chapter_start,
+                                'to_verse_start' => (int) $crossReference->to_verse_start,
+                                'to_chapter_end' => (int) $crossReference->to_chapter_end,
+                                'to_verse_end' => (int) $crossReference->to_verse_end,
+                                'votes' => (int) $crossReference->votes,
+                            ];
+                        })->values()->all(),
+                    ],
+                ];
             })
-            // ->values()
             ->all();
     }
 
