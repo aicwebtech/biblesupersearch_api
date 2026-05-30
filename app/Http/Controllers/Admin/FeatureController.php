@@ -140,7 +140,7 @@ class FeatureController extends Controller
         return new Response($resp, 200);
     }
 
-    public function enable($id)
+    public function enable(Request $request, $id)
     {
         $Feature = Feature::findOrFail($id);
         $resp = new \stdClass();
@@ -155,7 +155,7 @@ class FeatureController extends Controller
         return new Response($resp, 200);
     }
 
-    public function disable($id)
+    public function disable(Request $request, $id)
     {
         $Feature = Feature::findOrFail($id);
         $resp = new \stdClass();
@@ -176,7 +176,7 @@ class FeatureController extends Controller
      * @param int $id
      * @return \Illuminate\Http\Response
      */
-    public function uninstall($id)
+    public function uninstall(Request $request, $id)
     {
         $Feature = Feature::findOrFail($id);
         $resp = new \stdClass();

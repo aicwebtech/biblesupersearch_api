@@ -115,7 +115,6 @@ class RequestTest extends TestCase
         $crossReferences = array_values($singleBibleMetadata->cross_references);
 
         $this->assertFalse($Engine->hasErrors());
-        $singleBibleMetadata = $Engine->getMetadata();
         $this->assertIsArray($crossReferences);
         $this->assertNotEmpty($crossReferences, 'Expected cross references to be present in metadata');
         $this->assertArrayHasKey('from_book', $crossReferences[0]);
@@ -138,14 +137,14 @@ class RequestTest extends TestCase
 
         $this->assertFalse($Engine->hasErrors());
         $multiBibleMetadata = $Engine->getMetadata();
-        $crossReferences = array_values($multiBibleMetadata->cross_references);
+        $mbCrossReferences = array_values($multiBibleMetadata->cross_references);
 
         $this->assertCount(1, $singleBibleResults['kjv']);
         $this->assertCount(2, $multiBibleResults);
-        $this->assertCount(count($crossReferences), $crossReferences);
+        $this->assertCount(count($crossReferences), $mbCrossReferences);
         $this->assertSame(
             [$crossReferences[0]['from_book'], $crossReferences[0]['from_chapter'], $crossReferences[0]['from_verse']],
-            [$crossReferences[0]['from_book'], $crossReferences[0]['from_chapter'], $crossReferences[0]['from_verse']]
+            [$mbCrossReferences[0]['from_book'], $mbCrossReferences[0]['from_chapter'], $mbCrossReferences[0]['from_verse']]
         );
     }
 
