@@ -181,17 +181,29 @@ class Feature extends Model
             $rows = self::where('identifier', $identifier)->get();
             $global = false;
 
-            foreach ($rows as $row) {
-                $isEnabled = (bool)$row->enabled;
+            // For multi-language features, we want to know both the global state and the state for each language
+            if($mode === FeatureDefinitions::LANGUAGE_MODE_MULTI) {
+                $map[$identifier] = new \stdClass(); 
+                $map[$identifier]->global = false;
 
-                if ($mode === FeatureDefinitions::LANGUAGE_MODE_MULTI && $row->language) {
-                    $map[$identifier . '.' . $row->language] = $isEnabled;
+                foreach ($rows as $row) {
+                    $isEnabled = (bool)$row->enabled;
+
+                    if ($mode === FeatureDefinitions::LANGUAGE_MODE_MULTI && $row->language) {
+                        $map[$identifier]->{$row->language} = $isEnabled;
+                    }
+
+                    $global = $global || $isEnabled;
                 }
 
-                $global = $global || $isEnabled;
+                $map[$identifier]->global = $global;
+            } else {
+                // There should only be one row ... but we'll loop just in case
+                foreach ($rows as $row) {
+                    $isEnabled = (bool)$row->enabled;                    
+                    $map[$identifier] = $isEnabled;
+                }
             }
-
-            $map[$identifier . '.global'] = $global;
         }
 
         return $map;

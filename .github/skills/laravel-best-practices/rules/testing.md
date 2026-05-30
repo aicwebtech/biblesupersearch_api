@@ -1,5 +1,25 @@
 # Testing Best Practices
 
+## Project-Specific Test Rules
+
+### All tests
+- Create both unit tests and feature tests as applicable for a given class.
+- Do NOT create an empty test file when no tests are applicable.
+- Do NOT create tests for database migration classes.
+- Test method names must be camelCase (e.g. `testItReturnsNullForUnknownIdentifier`).
+
+### Unit tests
+- No database access.
+- No access to the rest of the application (no HTTP, no Eloquent models, no service providers).
+- Test pure logic, static helpers, value objects, and callbacks in isolation.
+- Validate callback contracts with `ReflectionFunction` rather than executing destructive callbacks.
+
+### Feature tests
+- Have access to the database.
+- Database contents are generally static (Bible texts, Bible book lists, cross-reference data, etc.).
+- Do NOT INSERT, UPDATE, or DELETE database records without explicit instruction and authorization.
+- Read and assert against existing data only.
+
 ## Use `LazilyRefreshDatabase` Over `RefreshDatabase`
 
 `RefreshDatabase` migrates once per process and wraps each test in a rolled-back transaction. `LazilyRefreshDatabase` skips even that first migration if the schema is already up to date.

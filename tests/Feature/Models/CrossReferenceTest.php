@@ -9,6 +9,8 @@ use Tests\TestCase;
 class CrossReferenceTest extends TestCase
 {
     /**
+     * Creates in-memory CrossReference model instance with given attributes, bypassing mass assignment and other protections
+     * Does not write to database, but allows testing of model methods that require a model instance with specific attributes
      * @param array<string, mixed> $attributes
      */
     protected function makeCrossReference(array $attributes): CrossReference
@@ -19,11 +21,9 @@ class CrossReferenceTest extends TestCase
         return $CrossReference;
     }
 
-    public function test_grouped_for_source_verses_returns_matching_rows_in_order(): void
+    public function testGroupedForSourceVersesReturnsMatchingRowsInOrder(): void
     {
-        $this->markTestIncomplete('Needs to pull existing data, not insert new data');
-    
-    
+
         $crossReferences = new Collection([
             $this->makeCrossReference([
                 'from_book' => 43,

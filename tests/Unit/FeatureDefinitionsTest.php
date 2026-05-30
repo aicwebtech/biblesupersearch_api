@@ -81,6 +81,41 @@ class FeatureDefinitionsTest extends TestCase
         }
     }
 
+    public function test_install_and_uninstall_callbacks_match_contract_without_execution()
+    {
+        $definitions = FeatureDefinitions::all();
+    
+        foreach ($definitions as $definition) {
+            foreach (['install', 'uninstall'] as $callbackKey) {
+                $callback = $definition[$callbackKey];
+    
+                $this->assertIsCallable($callback);
+    
+                $reflection = new \ReflectionFunction(\Closure::fromCallable($callback));
+    
+                $this->assertSame(
+                    1,
+                    $reflection->getNumberOfParameters(),
+                    "{$definition['identifier']} {$callbackKey} callback must accept exactly one parameter"
+                );
+    
+                $parameter = $reflection->getParameters()[0];
+                $this->assertTrue(
+                    $parameter->allowsNull(),
+                    "{$definition['identifier']} {$callbackKey} callback parameter must allow null"
+                );
+    
+                $parameterType = $parameter->getType();
+                $this->assertInstanceOf(\ReflectionNamedType::class, $parameterType);
+                $this->assertSame('string', $parameterType->getName());
+    
+                $returnType = $reflection->getReturnType();
+                $this->assertInstanceOf(\ReflectionNamedType::class, $returnType);
+                $this->assertSame('bool', $returnType->getName());
+            }
+        }
+    }
+
     public function test_languages_mode_none_for_null_or_empty_values()
     {
         $definitionNull = ['languages' => null];

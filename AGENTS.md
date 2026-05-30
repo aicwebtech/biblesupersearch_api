@@ -34,6 +34,25 @@ Security notes:
 * bibles/modules => Bible SuperSearch modules for Bibles we officially support. Versioned in Git.
 * bibles/unofficial => Bible SuperSearch modules for Bibles we do not officially support. Ignored by Git.
 
+## Tests
+
+### All tests
+* Create unit tests AND feature tests as applicable for a given class. Both types are expected where relevant.
+* Do NOT create an empty test file if no tests are applicable for that class.
+* Do NOT create tests for database migration classes.
+* Test method names must be in camelCase format (e.g. `testItReturnsNullForUnknownIdentifier`).
+
+### Unit tests
+* Unit tests have NO database access.
+* Unit tests have NO access to the rest of the application (no HTTP, no models, no service providers).
+* Test pure logic, static helpers, value objects, and callbacks in isolation.
+
+### Feature tests
+* Feature tests have access to the database.
+* The database contents are generally static — Bible texts, Bible book lists, cross-reference data, etc.
+* Do NOT INSERT, UPDATE, or DELETE database contents in feature tests without explicit instruction and authorization.
+* Read and assert against existing data only.
+
 ## Skills
 
 ### shoutout
