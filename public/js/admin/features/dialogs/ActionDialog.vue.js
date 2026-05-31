@@ -210,6 +210,7 @@ export default {
 
                 if(response.data.success == false) {
                     this.queueHandleError(response.response || response);
+                    return;
                 }
 
                 this.queueItemsProcessed ++;

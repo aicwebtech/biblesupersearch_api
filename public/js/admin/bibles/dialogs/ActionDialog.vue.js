@@ -238,6 +238,7 @@ export default {
 
                 if(response.data.success == false) {
                     this.queueHandleError(response.response || response);
+                    return;
                 }
 
                 if(this.action == 'test') {

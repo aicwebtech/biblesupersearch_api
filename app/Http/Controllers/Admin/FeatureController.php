@@ -102,9 +102,9 @@ class FeatureController extends Controller
                 } else {
                     $row['language_name'] = '—';
                 }
-            }
 
-            $rows[] = $row;
+                $rows[] = $row;
+            }
         }
 
         $resp = [
