@@ -94,10 +94,10 @@ class CommonWordTest extends TestCase
             ],
             [
                 'params' => ['bible' => 'kjv', 'search' => 'or','language' => 'en', 'page_limit' => 30],
-                // Has errors, because and on word list
+                // Has errors, because or on word list
                 'errors'  => [
                     'never' => true,
-                    'exact' => true, 
+                    'exact' => true, // test failing ... 
                     'always' => false,
                 ],
             ],
@@ -469,6 +469,16 @@ class CommonWordTest extends TestCase
                     $Language->save();
 
                     $this->assertEquals($words, $Language->common_words, "Language '{$lang}' common words not set correctly: {$desc}");
+                }
+            }
+
+            else {
+                $EN = self::getLanguage('en');
+                
+                if(empty($EN->common_words)) {
+                    $lang_cache['en'] = '';
+                    $EN->common_words = "a\nan\nand\nthe\nor";
+                    $EN->save();
                 }
             }
 

@@ -5,6 +5,7 @@ use Illuminate\Http\Request;
 use App\Models\Bible;
 use App\Models\Language;
 use App\Models\LanguageAttr;
+use App\Models\Feature;
 use Artisan;
 use App\ConfigManager;
 
@@ -118,6 +119,9 @@ class InstallManager
         // Populate the Bible table
         Bible::populateBibleTable();
 
+        // Populate the Features table
+        Feature::syncFeatures();
+
         // Add admin user
         $User = User::create([
             'name'          => $request->get('name'),
@@ -152,6 +156,10 @@ class InstallManager
         \App\Models\Books\BookAbstract::createTableAndMigrateFromCsv('en');
         $EN = Language::findByCode('en');
         $EN->setAttr('book_list', 1);   
+        // English common words. This is used for the common words feature, which helps to improve search results by identifying common words in each language that should be ignored or treated differently in searches.
+        // :todo this should be part of the language CSV. 
+        $EN->common_words = "a\nan\nand\nare\nas\nat\nbe\nby\nfor\nhe\nhis\nin\nis\nit\nof\non\nor\nthat\nthe\nthey\nto\nwas\nwith\nyou";
+        $EN->save();
 
         error_reporting($ep);
 
@@ -420,6 +428,13 @@ class InstallManager
         foreach($languages as $l) {
             $Lang = Language::findByCode($l);
             $Lang && $Lang->denitLanguage();
+        }
+
+        // Uninstall features
+        $InstalledFeatures = Feature::where('installed', 1)->get(); 
+        
+        foreach($InstalledFeatures as $Feature) {
+            $Feature->uninstall();
         }
 
         $exit_code = Artisan::call('migrate:reset', array('--force' => TRUE)); // Roll back ALL DB migrations

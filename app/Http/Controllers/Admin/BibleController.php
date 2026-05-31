@@ -53,7 +53,7 @@ class BibleController extends Controller
         return view('admin.bibles_old', ['bootstrap' => $bootstrap]);
     }
 
-        /**
+    /**
      * Display a listing of the resource.
      * In this case, a page with a grid
      *
@@ -75,7 +75,7 @@ class BibleController extends Controller
         $data = $request->toArray();
         $rows = $postfilters = [];
         $rows_per_page = (int) $data['rows'];
-        $page          = (int) $_REQUEST['page'];
+        $page          = (int) $data['page'];
 
         if($data['sidx'] == 'lang') {
             $data['sidx'] = 'languages.name';

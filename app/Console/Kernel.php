@@ -44,7 +44,7 @@ class Kernel extends ConsoleKernel
         Commands\UserPassword::class,
         Commands\MigrateModuleFiles::class,
         Commands\MigrationSquash::class,
-        Commands\DbTemplateSquash::class,
+        // Commands\DbTemplateSquash::class,
         // Commands\MigrationCustom::class,
     ];
 

@@ -147,6 +147,8 @@ class AudioManagerTest extends TestCase
 
     public function testAudioGenerateWhenBibleHasTtsDisabled()
     {
+        Config::set('audio.tts_api_enable', true);
+    
         $Bible = new \App\Models\Bible();
         $Bible->audio_enable = true;
         $Bible->tts_enable = false; // TTS disabled for this bible
@@ -177,6 +179,8 @@ class AudioManagerTest extends TestCase
 
     public function testAudioGenerateWhenBibleHasAudioDisabled()
     {
+        Config::set('audio.tts_api_enable', true);
+    
         $Bible = new \App\Models\Bible();
         $Bible->audio_enable = false; // Audio disabled for this bible
         $Bible->tts_enable = true; // ignored when audio disabled ... 

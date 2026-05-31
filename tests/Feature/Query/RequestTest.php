@@ -6,6 +6,7 @@ use Tests\TestCase;
 use App\Engine;
 use App\Passage;
 use App\Models\Bible;
+use App\Models\Feature;
 use Illuminate\Foundation\Testing\WithoutMiddleware;
 use Illuminate\Foundation\Testing\DatabaseMigrations;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
@@ -96,6 +97,10 @@ class RequestTest extends TestCase
 
     public function testCrossReferencesAreAggregatedAcrossReturnedVerses(): void
     {
+        if(!Feature::isEnabled('cross_references')) {
+            $this->markTestSkipped('Cross references feature not installed or enabled');
+        }
+    
         $Engine = new Engine();
         $Engine->setDefaultDataType('raw');
 
@@ -106,16 +111,18 @@ class RequestTest extends TestCase
             'cross_references' => TRUE,
         ]);
 
-        $this->assertFalse($Engine->hasErrors());
         $singleBibleMetadata = $Engine->getMetadata();
-        $this->assertIsArray($singleBibleMetadata->cross_references);
-        $this->assertNotEmpty($singleBibleMetadata->cross_references);
-        $this->assertArrayHasKey('from_book', $singleBibleMetadata->cross_references[0]);
-        $this->assertArrayHasKey('cross_references', $singleBibleMetadata->cross_references[0]);
-        $this->assertArrayNotHasKey('created_at', $singleBibleMetadata->cross_references[0]);
-        $this->assertArrayNotHasKey('updated_at', $singleBibleMetadata->cross_references[0]);
-        $this->assertArrayNotHasKey('created_at', $singleBibleMetadata->cross_references[0]['cross_references'][0]);
-        $this->assertArrayNotHasKey('updated_at', $singleBibleMetadata->cross_references[0]['cross_references'][0]);
+        $crossReferences = array_values($singleBibleMetadata->cross_references);
+
+        $this->assertFalse($Engine->hasErrors());
+        $this->assertIsArray($crossReferences);
+        $this->assertNotEmpty($crossReferences, 'Expected cross references to be present in metadata');
+        $this->assertArrayHasKey('from_book', $crossReferences[0]);
+        $this->assertArrayHasKey('cross_references', $crossReferences[0]);
+        $this->assertArrayNotHasKey('created_at', $crossReferences[0]);
+        $this->assertArrayNotHasKey('updated_at', $crossReferences[0]);
+        $this->assertArrayNotHasKey('created_at', $crossReferences[0]['cross_references'][0]);
+        $this->assertArrayNotHasKey('updated_at', $crossReferences[0]['cross_references'][0]);
 
         if(!Bible::isEnabled('bishops')) {
             $this->markTestSkipped('Bible bishops not installed or enabled');
@@ -130,13 +137,14 @@ class RequestTest extends TestCase
 
         $this->assertFalse($Engine->hasErrors());
         $multiBibleMetadata = $Engine->getMetadata();
+        $mbCrossReferences = array_values($multiBibleMetadata->cross_references);
 
         $this->assertCount(1, $singleBibleResults['kjv']);
         $this->assertCount(2, $multiBibleResults);
-        $this->assertCount(count($singleBibleMetadata->cross_references), $multiBibleMetadata->cross_references);
+        $this->assertCount(count($crossReferences), $mbCrossReferences);
         $this->assertSame(
-            [$singleBibleMetadata->cross_references[0]['from_book'], $singleBibleMetadata->cross_references[0]['from_chapter'], $singleBibleMetadata->cross_references[0]['from_verse']],
-            [$multiBibleMetadata->cross_references[0]['from_book'], $multiBibleMetadata->cross_references[0]['from_chapter'], $multiBibleMetadata->cross_references[0]['from_verse']]
+            [$crossReferences[0]['from_book'], $crossReferences[0]['from_chapter'], $crossReferences[0]['from_verse']],
+            [$mbCrossReferences[0]['from_book'], $mbCrossReferences[0]['from_chapter'], $mbCrossReferences[0]['from_verse']]
         );
     }
 

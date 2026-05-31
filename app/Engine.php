@@ -4,6 +4,7 @@ namespace App;
 
 use App\User;
 use App\Models\Bible;
+use App\Models\Feature;
 use App\Models\Language;
 use App\Passage;
 use App\Search;
@@ -1120,6 +1121,7 @@ class Engine implements ErrorInterface
         $response->download_limit           = config('download.enable') ? config('download.bible_limit') : FALSE;
         $response->download_formats         = $response->download_enabled ? array_values(RenderManager::getGroupedRendererList()) : [];
         $response->search_types             = config('bss.search_types');
+        $response->features_enabled         = Feature::isEnabledAll();
         $response->name                     = config('app.name');
         $response->hash                     = $this->_getNameHash();
         $response->version                  = config('app.version');

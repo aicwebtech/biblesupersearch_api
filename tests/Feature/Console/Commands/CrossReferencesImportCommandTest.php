@@ -1,13 +1,13 @@
 <?php
 
-namespace Tests\Unit;
+namespace Tests\Feature\Console\Commands;
 
 use App\Console\Commands\ImportCrossReferences;
 use Tests\TestCase;
 
 class CrossReferencesImportCommandTest extends TestCase
 {
-    public function test_parse_single_target_token(): void
+    public function testParseSingleTargetToken(): void
     {
         $Command = new ImportCrossReferences();
 
@@ -24,7 +24,7 @@ class CrossReferencesImportCommandTest extends TestCase
         $this->assertSame(13, $parsed['to_verse_end']);
     }
 
-    public function test_parse_target_range_token(): void
+    public function testParseTargetRangeToken(): void
     {
         $Command = new ImportCrossReferences();
 
@@ -38,7 +38,7 @@ class CrossReferencesImportCommandTest extends TestCase
         $this->assertSame(12, $parsed['to_verse_end']);
     }
 
-    public function test_parse_rejects_cross_book_target_range(): void
+    public function testParseRejectsCrossBookTargetRange(): void
     {
         $Command = new ImportCrossReferences();
 

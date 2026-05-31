@@ -3,7 +3,7 @@
 namespace Tests\Unit\Models;
 
 use App\Models\Cache;
-use Tests\TestCase;
+use PHPUnit\Framework\TestCase;
 
 class CacheTest extends TestCase
 {

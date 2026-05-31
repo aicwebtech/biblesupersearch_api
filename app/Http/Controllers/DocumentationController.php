@@ -8,13 +8,17 @@ use App\Models\Post;
 use App\RenderManager;
 use Illuminate\Support\Facades\Gate;
 
-class DocumentationController extends Controller {
-    public function __construct() {
+class DocumentationController extends Controller 
+{
+    
+    public function __construct() 
+    {
         parent::__construct();
         $this->middleware(['install','https','migrate']);
     }
 
-    public function __invoke() {
+    public function __invoke() 
+    {
         $Engine = new Engine();
         $bibles = $Engine->actionBibles( ['order_by_lang_name' => TRUE] );
         $TOS = Post::where('key', 'tos')->firstOrNew([]);
