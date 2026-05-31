@@ -132,24 +132,24 @@ class Feature extends Model
         return true;
     }
 
-    public static function isEnabled(string $identifier, ?string $language = null): bool
+    public static function isEnabled(string $code_or_identifier, ?string $language = null): bool
     {
-        $key = $identifier . ':' . ($language ?? 'null');
+        $key = $code_or_identifier . ':' . ($language ?? 'null');
 
         if (array_key_exists($key, self::$is_enabled)) {
             return self::$is_enabled[$key];
         }
 
         if($language) {
-            $Feature = self::where('identifier', $identifier)
+            $Feature = self::where('identifier', $code_or_identifier)
                 ->where('language', $language)
                 ->first();
         } else {
-            $Feature = self::where('code', $identifier)
+            $Feature = self::where('code', $code_or_identifier)
                 ->first();
 
             if(!$Feature) {
-                $Feature = self::where('identifier', $identifier)
+                $Feature = self::where('identifier', $code_or_identifier)
                     ->whereNull('language')
                     ->first();
             }
@@ -170,7 +170,7 @@ class Feature extends Model
      */
     public static function isEnabledAll(): array
     {
-        $map = [];
+        $map = ['_by_languages' => []];
 
         foreach (FeatureDefinitions::all() as $definition) {
             $identifier = $definition['identifier'];
@@ -180,20 +180,17 @@ class Feature extends Model
 
             // For multi-language features, we want to know both the global state and the state for each language
             if($mode === FeatureDefinitions::LANGUAGE_MODE_MULTI) {
-                $map[$identifier] = new \stdClass(); 
-                $map[$identifier]->global = false;
-
                 foreach ($rows as $row) {
                     $isEnabled = (bool)$row->enabled;
 
                     if ($row->language) {
-                        $map[$identifier]->{$row->language} = $isEnabled;
+                        $map['_by_languages'][$identifier][$row->language] = $isEnabled;
                     }
 
                     $global = $global || $isEnabled;
                 }
 
-                $map[$identifier]->global = $global;
+                $map[$identifier] = $global;
             } else {
                 // There should only be one row ... but we'll loop just in case
                 foreach ($rows as $row) {
