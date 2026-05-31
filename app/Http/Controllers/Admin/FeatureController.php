@@ -56,11 +56,11 @@ class FeatureController extends Controller
             $Query->where('language', $data['language']);
         }
 
-        if (isset($data['installed']) && ($data['installed'] === 0 || $data['installed'] === 1 || $data['installed'] === '0' || $data['installed'] === '1')) {
+        if (isset($data['installed']) && ($data['installed'] === '0' || $data['installed'] === '1')) {
             $Query->where('installed', (int) $data['installed']);
         }
 
-        if (isset($data['enabled']) && ($data['enabled'] === 0 || $data['enabled'] === 1 || $data['enabled'] === '0' || $data['enabled'] === '1')) {
+        if (isset($data['enabled']) && ($data['enabled'] === '0' || $data['enabled'] === '1')) {
             $Query->where('enabled', (int) $data['enabled']);
         }
 
