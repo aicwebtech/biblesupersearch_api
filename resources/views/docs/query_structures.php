@@ -20,6 +20,32 @@
     "errors":[],
     "error_level":0,
     "strongs":[], // <?php echo trans('query.strongs') , PHP_EOL ?>
+    "cross_references" : {
+        45_3_16: {
+            "from_book":43,
+            "from_chapter":3,
+            "from_verse":16,
+            "cross_references":[
+                {
+                    "to_book":45,
+                    "to_chapter_start":10,
+                    "to_verse_start":9,
+                    "to_chapter_end":10,
+                    "to_verse_end":10,
+                    "votes":434
+                },
+                {
+                    "to_book":62,
+                    "to_chapter_start":4,
+                    "to_verse_start":9,
+                    "to_chapter_end":4,
+                    "to_verse_end":10,
+                    "votes":263
+                }
+                ...
+            ]
+        }
+    ],
     "paging":{
         "total":338,
         "per_page":30,
@@ -102,6 +128,37 @@
             "single_verse":false
         }
     ]
+}
+</code></pre>
+
+<h4>
+    'cross_references' metadata (when <code>cross_references=true</code>):
+</h4>
+
+<div class='data_format'>
+    The <code>cross_references</code> flag adds a top-level metadata array named <code>cross_references</code>.
+    Each item is grouped by source verse for each versereturned by the query and contains all destination references for that source verse.
+    This structure is global across the response and is not split by Bible module.
+</div>
+
+<pre><code>{
+    "cross_references": {
+        "43_3_16": {
+            "from_book":43,          // Source verse book_id
+            "from_chapter":3,        // Source verse chapter
+            "from_verse":16,         // Source verse verse
+            "cross_references":[
+                {
+                    "to_book":45,          // Destination book_id
+                    "to_chapter_start":10, // Destination start chapter
+                    "to_verse_start":9,    // Destination start verse
+                    "to_chapter_end":10,   // Destination end chapter
+                    "to_verse_end":10,     // Destination end verse
+                    "votes":434            // Relative rank / vote count
+                }
+            ]
+        }
+    }
 }
 </code></pre>
 

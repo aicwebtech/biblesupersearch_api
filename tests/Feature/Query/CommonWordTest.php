@@ -7,7 +7,7 @@ use Tests\TestCase;
 use Illuminate\Foundation\Testing\WithoutMiddleware;
 use Illuminate\Foundation\Testing\DatabaseMigrations;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
-use PHPUnit\Framework\Attributes\Depends;
+use PHPUnit\Framework\Attributes\DataProvider;
 
 use App\Engine;
 use App\Models\Language;
@@ -15,16 +15,16 @@ use App\Models\Language;
 class CommonWordTest extends TestCase 
 {
 
-    static protected $Languages = [];
-    static protected $language_cache = [];
+    protected static array $Languages = [];
+    protected static array $language_cache = [];
 
-    protected $config_list = [
+    protected static array $config_list = [
         'always' => ['name' => 'Allow Common Words:  Yes / Always'],
         'exact' => ['name' => 'Allow Common Words:  Yes, if search query includes other words'],
         'never' => ['name' => 'Allow Common Words:  No / Never'],
     ];
 
-    protected $query_tests = [
+    protected static array $query_tests = [
         'QueryEn' => [
             [
                 'params' => ['bible' => 'kjv', 'search' => 'and', 'page_limit' => 30],
@@ -94,10 +94,10 @@ class CommonWordTest extends TestCase
             ],
             [
                 'params' => ['bible' => 'kjv', 'search' => 'or','language' => 'en', 'page_limit' => 30],
-                // Has errors, because and on word list
+                // Has errors, because or on word list
                 'errors'  => [
                     'never' => true,
-                    'exact' => true, 
+                    'exact' => true, // test failing ... 
                     'always' => false,
                 ],
             ],
@@ -354,6 +354,8 @@ class CommonWordTest extends TestCase
                     'always' => false,
                 ],
             ],
+            //Something in this set is running VERY slowly, need to skip it for now
+            // This test IS passing, though ... 
             // [
             //     'params' => ['bible' => ['lv_gluck_8','kjv'], 'search' => 'and', 'language' => 'lv', 'page_limit' => 30],
             //     // Errors, because 'and' is not allowed in English (via kjv) NOT WORKING, NEVER HAS!
@@ -386,7 +388,26 @@ class CommonWordTest extends TestCase
         ],
     ];
 
-    public $filter = null; //'LanguageMismatch';
+    public static ?string $filter = null; //'LanguageMismatch';
+
+    public static function queryGlobalProvider(): array
+    {
+        $datasets = [];
+
+        foreach (self::$config_list as $config => $configData) {
+            foreach (self::$query_tests as $method => $tests) {
+                if (self::$filter && $method !== self::$filter) {
+                    continue;
+                }
+
+                foreach ($tests as $idx => $test) {
+                    $datasets["{$config} | {$method} #{$idx}"] = [$config, $method, $idx, $test, $configData];
+                }
+            }
+        }
+
+        return $datasets;
+    }
 
     public function testSave() 
     {
@@ -410,90 +431,99 @@ class CommonWordTest extends TestCase
         $Language->save();
     }
 
-    public function testQueryGlobal()
+    #[DataProvider('queryGlobalProvider')]
+    public function testQueryGlobal(string $config, string $method, int $idx, array $test, array $configData): void
     {
         $config_cache = config('bss.search_common_words');
-        
-        foreach($this->config_list as $config => $data) {
+
+        try {
             config(['bss.search_common_words' => $config]);
 
-            foreach($this->query_tests as $method => $tests) {
-                if($this->filter && $method != $this->filter) {
-                    continue; // Skip tests that do not match the filter
-                }
-                
-                foreach($tests as $idx => $test) {
-                    $desc = "Config: {$config} - Method: {$method} - Test #{$idx}";
-                    $this->helpTestQuery($test, $config, $desc);
-                }
-            }
-        }
-
-        // Reset config
-        config(['bss.search_common_words' => $config_cache]);
-
-        foreach(self::$language_cache as $code => $words) {
-            $Language = self::getLanguage($code);
-            $Language->common_words = $words; // Restore original common words
-            $Language->save();
+            $config_name = $configData['name'] ?? $config;
+            $desc = "Config: {$config} ({$config_name}) - Method: {$method} - Test #{$idx}";
+            $this->helpTestQuery($test, $config, $desc);
+        } finally {
+            config(['bss.search_common_words' => $config_cache]);
         }
     }
 
-    protected function helpTestQuery($test, $config, $desc)
+    protected function helpTestQuery(array $test, string $config, string $desc): void
     {
         $Engine = new Engine(); // Need new instance because this test is colliding with others
         $lang_cache = [];
 
         if(isset($test['skipped']) && in_array($config, $test['skipped'])) {
+            $this->assertTrue(true, "Test skipped for config '{$config}': {$desc}");
             return;  // Skip this config/test
         }
 
-        if(isset($test['lang'])) {
-            foreach($test['lang'] as $lang => $words) {
+        try {
+            if(isset($test['lang'])) {
+                foreach($test['lang'] as $lang => $words) {
+                    $Language = self::getLanguage($lang);
+
+                    $this->assertNotEmpty($Language, "Language '{$lang}' not found: {$desc}");
+
+                    $lang_cache[$lang] = $Language->common_words;
+                    $Language->common_words = $words;
+                    $Language->save();
+
+                    $this->assertEquals($words, $Language->common_words, "Language '{$lang}' common words not set correctly: {$desc}");
+                }
+            }
+
+            else {
+                $EN = self::getLanguage('en');
+                
+                if(empty($EN->common_words)) {
+                    $lang_cache['en'] = '';
+                    $EN->common_words = "a\nan\nand\nthe\nor";
+                    $EN->save();
+                }
+            }
+
+            $this->assertEquals($config, config('bss.search_common_words'), "Config '{$config}' not set correctly: {$desc}");
+            
+            $results = $Engine->actionQuery($test['params']);
+
+            $this->assertIsArray($test['errors'], 'Test \'errors\' is not an array ' .  $desc);
+            $this->assertArrayHasKey($config, $test['errors'], "Test has no errors definde for config '{$config}': {$desc}");
+
+            $error_tests = $test['errors'][$config];
+
+            if($error_tests) {
+                $this->assertTrue($Engine->hasErrors(), "Query should result in errors: {$desc}");
+                $errors = $Engine->getErrors();
+                $this->assertNotEmpty($errors, "Engine has no errors: {$desc}");
+
+                if(is_array($error_tests)) {
+                    foreach($error_tests as $et) {
+                        $tr = trans($et[0], $et[1] ?? []);
+                        $this->assertContains($tr, $errors, "Error '{$tr}' not found in query errors: {$desc}");
+                    }
+                }
+
+            } else {
+                if($Engine->hasErrors()) {
+                    $errors = $Engine->getErrors();
+                    $this->fail("Query should not result in errors, but got: " . implode(', ', $errors) . " - {$desc}");
+                }
+                
+                $this->assertFalse($Engine->hasErrors(), "Query should not result in errors: {$desc}");
+            }
+        } finally {
+            foreach($lang_cache as $lang => $words) {
                 $Language = self::getLanguage($lang);
 
-                $this->assertNotEmpty($Language, "Language '{$lang}' not found: {$desc}");
-
-                $lang_cache[$lang] = $Language->common_words;
-                $Language->common_words = $words;
-                $Language->save();
-
-                $this->assertEquals($words, $Language->common_words, "Language '{$lang}' common words not set correctly: {$desc}");
-            }
-        }
-
-        $this->assertEquals($config, config('bss.search_common_words'), "Config '{$config}' not set correctly: {$desc}");
-        
-        $results = $Engine->actionQuery($test['params']);
-
-        $this->assertIsArray($test['errors'], 'Test \'errors\' is not an array ' .  $desc);
-        $this->assertArrayHasKey($config, $test['errors'], "Test has no errors definde for config '{$config}': {$desc}");
-
-        $error_tests = $test['errors'][$config];
-
-        if($error_tests) {
-            $this->assertTrue($Engine->hasErrors(), "Query should result in errors: {$desc}");
-            $errors = $Engine->getErrors();
-            $this->assertNotEmpty($errors, "Engine has no errors: {$desc}");
-
-            if(is_array($error_tests)) {
-                foreach($error_tests as $et) {
-                    $tr = trans($et[0], $et[1] ?? []);
-                    $this->assertContains($tr, $errors, "Error '{$tr}' not found in query errors: {$desc}");
+                if ($Language) {
+                    $Language->common_words = $words;
+                    $Language->save();
                 }
-            } 
-
-        } else {
-            if($Engine->hasErrors()) {
-                $errors = $Engine->getErrors();
-                $this->fail("Query should not result in errors, but got: " . implode(', ', $errors) . " - {$desc}");
             }
-            
-            $this->assertFalse($Engine->hasErrors(), "Query should not result in errors: {$desc}");
         }
     }
 
-    static protected function getLanguage($code)
+    protected static function getLanguage(string $code): ?Language
     {
         if(!isset(self::$Languages[$code])) {
             self::$Languages[$code] = Language::findByCode($code);

@@ -43,7 +43,7 @@ class CreateCopyrightTable extends Migration
             $table->string('url', 255)->after('copyright_statement')->nullable()->comment('URL to website for this translation, if it exists');
         });
 
-        Bible::updateBibleTable(['copyright', 'copyright_id', 'copyright_statement', 'url']);
+        // DO NOT USE// Bible::updateBibleTable(['copyright', 'copyright_id', 'copyright_statement', 'url']);
 
         // Model::migrateFromCsv();
         DatabaseSeeder::importSqlFile('copyrights.sql');
