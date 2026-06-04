@@ -8,6 +8,8 @@ use Illuminate\Database\Connection;
 use Illuminate\Database\ConnectionResolverInterface;
 use Illuminate\Database\Events\SchemaDumped;
 use Illuminate\Filesystem\Filesystem;
+use lluminate\Database\SqlServerConnection;
+use Illuminate\Database\Events\SchemaLoaded;
 use Illuminate\Support\Facades\Config;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Illuminate\Database\Console\Migrations\MigrateCommand;
@@ -62,8 +64,6 @@ class MigrationCustom extends MigrateCommand
             $this->migrator->deleteRepository();
 
             $connection->getSchemaState()->handleOutputUsing(function ($type, $buffer) {
-                print_r($buffer); die();
-            
                 $this->output->write($buffer);
             })->load($path);
         });

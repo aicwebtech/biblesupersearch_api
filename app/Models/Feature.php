@@ -162,11 +162,13 @@ class Feature extends Model
     }
 
     /**
-     * Returns a flat map for statics output:
-     * - {identifier}.global => bool
-     * - {identifier}.{language} => bool (for language-specific rows)
+     * For each feature definition, determine if it's enabled globally (any language) and for each language (if multi-language)
+     * 
+     * Returns a map for `Engine::actionStatics()` output:
+     * - {identifier} => bool (global true if any language row is enabled for multi-language features)
+     * - _by_languages[{identifier}][{language}] => bool (only for LANGUAGE_MODE_MULTI)
      *
-     * @return array<string, bool>
+     * @return array<string, mixed>
      */
     public static function isEnabledAll(): array
     {

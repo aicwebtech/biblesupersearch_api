@@ -130,6 +130,37 @@
 }
 </code></pre>
 
+<h4>
+    'cross_references' metadata (when <code>cross_references=true</code>):
+</h4>
+
+<div class='data_format'>
+    The <code>cross_references</code> flag adds a top-level metadata array named <code>cross_references</code>.
+    Each item is grouped by one source verse returned by the query and contains all destination references for that source verse.
+    This structure is global across the response and is not split by Bible module.
+</div>
+
+<pre><code>{
+    "cross_references":[
+        {
+            "from_book":43,          // Source verse book_id
+            "from_chapter":3,        // Source verse chapter
+            "from_verse":16,         // Source verse verse
+            "cross_references":[
+                {
+                    "to_book":45,          // Destination book_id
+                    "to_chapter_start":10, // Destination start chapter
+                    "to_verse_start":9,    // Destination start verse
+                    "to_chapter_end":10,   // Destination end chapter
+                    "to_verse_end":10,     // Destination end verse
+                    "votes":434            // Relative rank / vote count
+                }
+            ]
+        }
+    ]
+}
+</code></pre>
+
 <a name='navigation' />
 <br /><br />
 

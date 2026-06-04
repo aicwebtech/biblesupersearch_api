@@ -228,7 +228,7 @@ export default {
 
             cols.push({title: 'Name', key: 'name', width: 200, searchable: false});
             cols.push({title: 'Language', key: 'language_name', width: 150, searchable: false});
-            cols.push({title: 'Description', key: 'description', width: 280, searchable: false});
+            cols.push({title: 'Description', key: 'description', width: 280, searchable: false, sortable: false});
             cols.push({title: 'Installed', key: 'installed', width: 100, searchComponent: 'YesNoSel', searchLabel: false, align: 'center'});
             cols.push({title: 'Enabled', key: 'enabled', width: 100, searchComponent: 'YesNoSel', searchLabel: false, align: 'center'});
             

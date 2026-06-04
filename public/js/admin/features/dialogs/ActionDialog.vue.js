@@ -93,6 +93,7 @@ export default {
             queueLoading: false,
             queueFinished: false,
             queueErrors: [],
+            queueInternal: [],
             enable: false,
         }
     },
@@ -178,6 +179,7 @@ export default {
             this.queueProcessing = true;
             this.queueFinished = false;
             this.queueErrors = [];
+            this.queueInternal = [...this.queue];
             this.queueProcessNext();
         },
         queueProcessNext() {
@@ -186,12 +188,12 @@ export default {
                 return;
             }
 
-            if(this.queue.length == 0) {
+            if(this.queueInternal.length == 0) {
                 this.queueProcessEnd();
                 return;
             }
 
-            this.queueItemCurrent = this.queue.shift();
+            this.queueItemCurrent = this.queueInternal.shift();
             this.queueLoading = true;
 
             var params = {};
@@ -234,9 +236,12 @@ export default {
             this.closeDialog();
         },
         queueHandleError(response) {
+            const subtitle = Array.isArray(response.data.errors) 
+                ? response.data.errors.join('; ') : 'An unknown error occurred';
+
             this.queueErrors.push({
                 title: this.queueItemCurrent.name,
-                subtitle: response.data.errors.join('; ')
+                subtitle: subtitle
             });
 
             this.queueProcessNext();

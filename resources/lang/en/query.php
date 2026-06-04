@@ -224,7 +224,8 @@ return array(
             'type'   => 'Boolean',
             'name'   => 'Cross References',
             'default' => 'false',
-            'description' => 'When true, the response metadata includes a grouped list of cross references for every verse returned. '
+            'description' => 'When true, the query response includes a top-level <code>cross_references</code> array in metadata. '
+            . 'Entries are grouped by each returned source verse and include a <code>cross_references</code> child list of destination references. '
             . 'This list is global and is not tied to any specific Bible version.'
         ],
     )

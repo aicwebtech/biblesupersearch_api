@@ -77,6 +77,28 @@ class BibleController extends Controller
         $rows_per_page = (int) $data['rows'];
         $page          = (int) $data['page'];
 
+        $sortable_fields = [
+            'name', 
+            'shortname', 
+            'module', 
+            'year', 
+            'lang', 
+            'copy', 
+            'enabled', 
+            'installed', 
+            'official', 
+            'research',
+            'rank',
+        ];
+
+        if (!in_array($data['sidx'], $sortable_fields)) {
+            $data['sidx'] = 'rank';
+        }
+
+        if (!in_array(strtoupper($data['sord']), ['ASC', 'DESC'])) {
+            $data['sord'] = 'ASC';
+        }
+
         if($data['sidx'] == 'lang') {
             $data['sidx'] = 'languages.name';
         }        

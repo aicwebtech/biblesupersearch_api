@@ -45,11 +45,30 @@ class FeatureController extends Controller
         $rows = [];
         $rows_per_page = (int) ($data['rows'] ?? 25);
         $page = (int) ($data['page'] ?? 1);
+
+        $sortable_fields = ['id', 'code', 'identifier', 'language', 'installed', 'enabled', 'language_name'];
+
         $sidx = $data['sidx'] ?? 'id';
         $sord = $data['sord'] ?? 'ASC';
 
+        if (!in_array($sidx, $sortable_fields)) {
+            $sidx = 'id';
+        }
+
+        if($sidx === 'language_name') {
+            $sidx = 'languages.name';
+        }
+
+        if (!in_array(strtoupper($sord), ['ASC', 'DESC'])) {
+            $sord = 'ASC';
+        }
+
         // Build query
-        $Query = Feature::orderBy($sidx, $sord);
+        // $Query = Feature::orderBy($sidx, $sord);
+
+        $Query = Feature::select('features.*', 'languages.name AS lang_name')
+            ->leftJoin('languages', 'features.language', 'languages.code')
+            ->orderBy($sidx, $sord);
 
         // Apply search filters
         if (isset($data['language']) && $data['language']) {
@@ -81,20 +100,17 @@ class FeatureController extends Controller
                 $mode = FeatureDefinitions::getLanguageMode($definition);
 
                 // Replace language placeholder in description
-                if ($Feature->language && strpos($description, '{language}') !== false) {
-                    $language = Language::where('code', $Feature->language)->first();
-                    $languageName = $language ? $language->name : $Feature->language;
-                    $description = str_replace('{language}', $languageName, $description);
-                } elseif (!$Feature->language && strpos($description, '{language}') !== false) {
+                if ($Feature->lang_name && strpos($description, '{language}') !== false) {
+                    $description = str_replace('{language}', $Feature->lang_name, $description);
+                } elseif (!$Feature->lang_name && strpos($description, '{language}') !== false) {
                     $description = str_replace('{language}', '', $description);
                 }
 
                 $row['description'] = $description;
 
                 // Add language name
-                if ($Feature->language) {
-                    $language = Language::where('code', $Feature->language)->first();
-                    $row['language_name'] = $language ? $language->name : $Feature->language;
+                if ($Feature->lang_name) {
+                    $row['language_name'] = $Feature->lang_name;
 
                     if ($mode === FeatureDefinitions::LANGUAGE_MODE_MULTI && $row['language_name']) {
                         $row['name'] .= ' (' . $row['language_name'] . ')';
