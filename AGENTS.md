@@ -34,6 +34,28 @@ Security notes:
 * bibles/modules => Bible SuperSearch modules for Bibles we officially support. Versioned in Git.
 * bibles/unofficial => Bible SuperSearch modules for Bibles we do not officially support. Ignored by Git.
 
+## Tests
+
+### All tests
+- Create both unit tests and feature tests as applicable for a given class.
+- Do NOT create an empty test file when no tests are applicable.
+- Do NOT create tests for database migration classes.
+- Test method names must be camelCase (e.g. `testItReturnsNullForUnknownIdentifier`).
+
+### Unit tests
+- No database access.
+- No access to the rest of the application (no HTTP, no models, no service providers).
+- Test pure logic, static helpers, value objects, and callbacks in isolation.
+- Validate callback contracts with `ReflectionFunction` rather than executing destructive callbacks.
+- Classes extend from **PHPUnit\Framework\TestCase**
+
+### Feature tests
+* Feature tests have access to the database.
+* The database contents are generally static — Bible texts, Bible book lists, cross-reference data, etc.
+* Do NOT INSERT, UPDATE, or DELETE database contents in feature tests without explicit instruction and authorization.
+* Read and assert against existing data only.
+- Classes extend from **Tests\TestCase**
+
 ## Skills
 
 ### shoutout

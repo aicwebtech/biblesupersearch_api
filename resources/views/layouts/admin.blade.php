@@ -2,6 +2,7 @@
     $buttons = [
         // ['label' => 'Dashboard', 'route' => 'admin.main', 'new_tab' => FALSE, 'hash' => ''],
         ['label' => 'Bibles', 'route' => 'admin.bibles.index', 'new_tab' => FALSE, 'hash' => ''],
+        ['label' => 'Features', 'route' => 'admin.features.index', 'new_tab' => FALSE, 'hash' => ''],
         ['label' => 'Languages', 'route' => 'admin.languages.index', 'new_tab' => FALSE, 'hash' => ''],
         ['label' => 'Options', 'route' => 'admin.configs', 'new_tab' => FALSE, 'hash' => ''],
         ['label' => 'Terms of Service', 'route' => 'admin.tos', 'new_tab' => FALSE, 'hash' => ''],

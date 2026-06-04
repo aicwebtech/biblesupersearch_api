@@ -3,10 +3,8 @@
 namespace Tests\Unit;
 
 use Illuminate\Foundation\Testing\WithoutMiddleware;
-use Illuminate\Foundation\Testing\DatabaseMigrations;
-use Illuminate\Foundation\Testing\DatabaseTransactions;
 use PHPUnit\Framework\Attributes\DataProvider;
-use Tests\TestCase;
+use PHPUnit\Framework\TestCase;
 
 use App\Helpers;
 
@@ -34,25 +32,6 @@ class HelpersTest extends TestCase
 
         Helpers::sortStringsByLength($raw, 'DESC');
         $this->assertEquals($exp, $raw);
-    }
-
-    #[DataProvider('makeDataProvider')]
-    public function testMake(string $class) 
-    {
-        $Object = Helpers::make($class);
-        $this->assertInstanceOf($class, $Object, "Could not instantiate: {$class}");
-    }
-
-    public static function makeDataProvider()
-    {
-        return [
-            ['App\Engine'],
-            ['App\Models\Bible'],
-            ['App\ImportManager'],
-            ['App\InstallManager'],
-            ['App\Search'],
-            ['App\Passage'],
-        ];
     }
 
     public function testMaxUploadSize() 
@@ -127,6 +106,34 @@ class HelpersTest extends TestCase
             ['16M', '512k', 1],
             ['2048M', '1G', 1],
             ['4G', '100M', 1],
+        ];
+    }
+
+    #[DataProvider('stripHtmlFromTextEntryDataProvider')]
+    public function testStripHtmlFromTextEntry(string $input, string $expected)
+    {
+        $this->assertEquals($expected, Helpers::stripHtmlFromTextEntry($input));
+    }
+
+    public static function stripHtmlFromTextEntryDataProvider()
+    {
+        return [
+            [
+                'Copyright @copy; 2026 <b>Owner</b>',
+                'Copyright © 2026 Owner',
+            ],
+            [
+                'Line one<br>Line two<br />Line three',
+                "Line one\nLine two\nLine three",
+            ],
+            [
+                'Docs: <a href="https://example.com/path?q=1">Click Here</a>',
+                'Docs: Click Here (https://example.com/path?q=1)',
+            ],
+            [
+                '&lt;br&gt;Encoded break&lt;/br&gt; and &copy; entity',
+                "Encoded break\n and © entity",
+            ],
         ];
     }
 }

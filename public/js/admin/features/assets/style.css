@@ -1,0 +1,14 @@
+/* Features admin module styles */
+
+.feature-grid-container {
+	margin-top: 14px;
+}
+
+.feature-bulk-row {
+	min-height: 42px;
+}
+
+.feature-bulk-placeholder {
+	visibility: hidden;
+	display: inline-block;
+}

@@ -169,6 +169,56 @@ class Helpers {
     }
 
     /**
+     * Convert HTML-rich database text entry fields to plain text.
+     *
+     * Rules:
+     * - Keep copyright entities as the copyright symbol.
+     * - Convert line-break style tags to new lines.
+     * - Convert anchor tags to "link text (url)".
+     */
+    public static function stripHtmlFromTextEntry(?string $text): string
+    {
+        if($text === null || $text === '') {
+            return '';
+        }
+
+        // Keep link URLs after link text before stripping tags.
+        $text = preg_replace_callback('/<a\b[^>]*href\s*=\s*("|\')(.*?)\1[^>]*>(.*?)<\/a>/is', function($match) {
+            $url = trim(html_entity_decode($match[2], ENT_QUOTES | ENT_HTML5, 'UTF-8'));
+            $label = trim(strip_tags(html_entity_decode($match[3], ENT_QUOTES | ENT_HTML5, 'UTF-8')));
+
+            if($label === '') {
+                return $url;
+            }
+
+            if($url === '') {
+                return $label;
+            }
+
+            return $label . ' (' . $url . ')';
+        }, $text);
+
+        // Normalize known copyright encodings.
+        $text = str_ireplace(['@copy;', '&copy;', '&#169;', '&#xA9;'], '©', $text);
+
+        // Decode entities so encoded tags like &lt;br&gt; also become new lines.
+        $text = html_entity_decode($text, ENT_QUOTES | ENT_HTML5, 'UTF-8');
+
+        // Convert common block/line break tags to new lines.
+        $text = preg_replace('/<\s*br\s*\/?\s*>/i', "\n", $text);
+        $text = preg_replace('/<\s*\/\s*br\s*>/i', "\n", $text);
+        $text = preg_replace('/<\s*\/\s*(p|div|li)\s*>/i', "\n", $text);
+
+        $text = strip_tags($text);
+        $text = str_replace("\xC2\xA0", ' ', $text);
+        $text = preg_replace("/\r\n|\r/", "\n", $text);
+        $text = preg_replace('/[ \t]+\n/', "\n", $text);
+        $text = preg_replace('/\n{3,}/', "\n\n", $text);
+
+        return trim($text);
+    }
+
+    /**
      * Builds Laravel query from jqgrid search data
      * 
      * @param $data response data

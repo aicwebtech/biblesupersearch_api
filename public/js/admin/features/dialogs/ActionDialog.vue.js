@@ -18,26 +18,18 @@ const tpl = `
                             </li>
                         </ul>
 
-                        <v-switch v-if='action == "install"' v-model='enable' label='Enable' color='primary' />
-                        <v-switch v-if='action == "export"' v-model='overwrite' label='Overwrite' color='primary' />
-                    </v-sheet>
-                    <v-sheet v-else-if='action=="test"'>
-                        <!-- :todo rebuild API to NOT send back HTML! -->
-                        <v-sheet 
-                            style='width: 100px; margin: auto; padding: 10px' 
-                            v-if='testList.length == 0'
-                        >
-                            <img :src="bootstrap.baseURL + '/images/Spinner.gif'"></img>
-                        </v-sheet>
-
-                        <div v-for='t in testList' v-html='t' ></div>
+                        <v-switch
+                            v-if='action == "install"'
+                            v-model='enable'
+                            label='Enable'
+                            color='primary'
+                        />
                     </v-sheet>
                     <v-sheet v-else-if='queueProcessing'>
                         {{actioningLabel}} {{queueItemCurrent.name}}
 
                         <v-progress-linear 
                             v-model='queueItemsProcessedPercent'
-
                             color='secondary'
                             height='10'
                         ></v-progress-linear>
@@ -80,7 +72,6 @@ export default {
             type: Array,
             default: null,
         },        
-        // Queue of items to process
         queue: {
             type: Array,
             default: null
@@ -102,9 +93,8 @@ export default {
             queueLoading: false,
             queueFinished: false,
             queueErrors: [],
-            testList: [],
+            queueInternal: [],
             enable: false,
-            overwrite: false
         }
     },
     computed: {
@@ -116,7 +106,7 @@ export default {
             if(this.selectedAction.dialogTitle) {
                 return this.selectedAction.dialogTitle;
             } else {
-                return this.selectedAction.label + ' Bibles';
+                return this.selectedAction.label + ' Features';
             }
         },
         confirmButtonLabel() {
@@ -128,13 +118,6 @@ export default {
         actioningLabel() {
             return this.selectedAction ? this.selectedAction.actioning : null;
         },
-        autoConfirm() {
-            if(this.selectedAction) {
-                return this.selectedAction.autoConfirm || false;
-            } 
-
-            return false;
-        },
         confirmText() {
             if(!this.selectedAction) {
                 return null;
@@ -143,7 +126,7 @@ export default {
             if(this.selectedAction.confirmText) {
                 return this.selectedAction.confirmText;
             } else {
-                return 'Are you sure that you want to ' + this.selectedAction.action + ' the following Bibles?';
+                return 'Are you sure that you want to ' + this.selectedAction.action + ' the following features?';
             }
         },
         queueItemsProcessedPercent() {
@@ -164,10 +147,6 @@ export default {
             }
 
             this.showing = true;
-            
-            if(this.autoConfirm) {
-                this.handleOk();
-            }
         }
     },
     methods: {
@@ -192,7 +171,6 @@ export default {
         clearForm() {
             this.confirmed = false;
             this.enable = false;
-            this.overwrite = false;
         },
         queueProcessStart() {
             this.queueItemsTotal = this.queue.length;
@@ -201,7 +179,6 @@ export default {
             this.queueProcessing = true;
             this.queueFinished = false;
             this.queueErrors = [];
-            this.testList = [];
             this.queueInternal = [...this.queue];
             this.queueProcessNext();
         },
@@ -225,14 +202,10 @@ export default {
                 params.enable = this.enable ? 1 : 0;
             }
 
-            if(this.action == 'export') {
-                params.overwrite = this.overwrite ? 1 : 0;
-            }
-
             axios.request({
-                url: '/admin/bibles/' + this.action + '/' + this.queueItemCurrent.id,
+                url: '/admin/features/' + this.action + '/' + this.queueItemCurrent.id,
                 method: 'POST',
-                params: params
+                params: params,
             })
             .then(function(response) {
                 this.queueLoading = false;
@@ -242,17 +215,11 @@ export default {
                     return;
                 }
 
-                if(this.action == 'test') {
-                    this.testList = this.testList.concat(response.data.messages);
-                }
-
                 this.queueItemsProcessed ++;
                 this.queueProcessNext();
             }.bind(this))   
             .catch(function(response) {
-                // :todo do something
                 this.queueLoading = false;
-
                 this.queueHandleError(response.response || response);
             }.bind(this));
         },
@@ -265,18 +232,13 @@ export default {
             }
 
             this.$emit('onSuccess');
-
-            if(this.action == 'test') {
-                return; // do not close dialog on test
-            }
-
             this.$emit('onSave');
             this.closeDialog();
         },
         queueHandleError(response) {
             const subtitle = Array.isArray(response.data.errors) 
                 ? response.data.errors.join('; ') : 'An unknown error occurred';
-            
+
             this.queueErrors.push({
                 title: this.queueItemCurrent.name,
                 subtitle: subtitle
