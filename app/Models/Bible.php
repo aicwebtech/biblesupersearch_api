@@ -125,6 +125,7 @@ class Bible extends Model
         'needs_update', 
         'module_updated_at',
         'audio_enable',
+        'audio_structure',
         'tts_enable',
         'tts_api',
         'tts_voice',
