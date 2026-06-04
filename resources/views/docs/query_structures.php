@@ -20,8 +20,8 @@
     "errors":[],
     "error_level":0,
     "strongs":[], // <?php echo trans('query.strongs') , PHP_EOL ?>
-    "cross_references":[
-        {
+    "cross_references" : {
+        45_3_16: {
             "from_book":43,
             "from_chapter":3,
             "from_verse":16,
@@ -42,6 +42,7 @@
                     "to_verse_end":10,
                     "votes":263
                 }
+                ...
             ]
         }
     ],
@@ -136,13 +137,13 @@
 
 <div class='data_format'>
     The <code>cross_references</code> flag adds a top-level metadata array named <code>cross_references</code>.
-    Each item is grouped by one source verse returned by the query and contains all destination references for that source verse.
+    Each item is grouped by source verse for each versereturned by the query and contains all destination references for that source verse.
     This structure is global across the response and is not split by Bible module.
 </div>
 
 <pre><code>{
-    "cross_references":[
-        {
+    "cross_references": {
+        "43_3_16": {
             "from_book":43,          // Source verse book_id
             "from_chapter":3,        // Source verse chapter
             "from_verse":16,         // Source verse verse
@@ -157,7 +158,7 @@
                 }
             ]
         }
-    ]
+    }
 }
 </code></pre>
 

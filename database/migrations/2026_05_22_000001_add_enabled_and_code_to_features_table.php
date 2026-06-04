@@ -18,20 +18,6 @@ return new class extends Migration
             $table->boolean('enabled')->default(false)->after('installed');
         });
 
-        //: todo remove before release - this is to backfill code and enabled values for existing features
-        foreach (Feature::all() as $feature) {
-            $definition = FeatureDefinitions::find($feature->identifier);
-            $mode = $definition
-                ? FeatureDefinitions::getLanguageMode($definition)
-                : (($feature->language === null || $feature->language === '')
-                    ? FeatureDefinitions::LANGUAGE_MODE_NONE
-                    : FeatureDefinitions::LANGUAGE_MODE_MULTI);
-
-            $feature->code = Feature::buildCode($feature->identifier, $feature->language, $mode);
-            $feature->enabled = (bool)$feature->installed;
-            $feature->save();
-        }
-
         Schema::table('features', function (Blueprint $table) {
             $table->unique('code');
         });
