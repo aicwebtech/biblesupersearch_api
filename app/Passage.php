@@ -21,7 +21,7 @@ class Passage {
     // This should match ALL valid references.  However, it will match some invalid ones, too
     // Attempted to make unicode safe but not working ...
     // Todo - make unicode safe, attempt to filter out bad references 
-    const PASSAGE_REGEXP = '/(([0-9]\s*)?[\p{Lu}\p{M}][\p{L}\p{M}]+(\.|[\p{L}\p{M} ]{0,30})?)\s*([1-9][0-9]*(\s*[:\-,]\s*[1-9][0-9]*(\s*[\-,\s]\s*[1-9][0-9]*([0-9:,\-\s]+[1-9][0-9]*)?)?)?)/';
+    const PASSAGE_REGEXP = '/(([0-9]\s*)?[\p{Lu}\p{M}][\p{L}\p{M}]+(\.|[\p{L}\p{M} ]{0,30})?)\s*([1-9][0-9]*(\s*[:,\-\p{Pd}\x{2212}]\s*[1-9][0-9]*(\s*[,\-\p{Pd}\x{2212}\s]\s*[1-9][0-9]*([0-9:,\-\p{Pd}\x{2212}\s]+[1-9][0-9]*)?)?)?)/u';
 
     public $is_search = FALSE;
     protected $Book;                        // Book instance - Single or Start of range
@@ -73,6 +73,7 @@ class Passage {
      */
     public function setBook($book) 
     {
+        $book = static::normalizeRangeDashes($book);
         $this->raw_book = $book;
         $this->is_random = FALSE;
 
@@ -122,6 +123,7 @@ class Passage {
 
     public function setBookRange($book_range) 
     {
+        $book_range = static::normalizeRangeDashes($book_range);
         $this->raw_book = $book_range;
         $book_range = trim( preg_replace('/\s+/', ' ', $book_range) );
         $books = explode('-', $book_range);
@@ -276,6 +278,7 @@ class Passage {
 
         $this->clearChapterVerse();
         $chapter_verse = $chapter_verse ?: '';
+        $chapter_verse = static::normalizeRangeDashes($chapter_verse);
         $this->raw_chapter_verse = preg_replace('/\s+/', ' ', $chapter_verse);
         $chapter_verse = str_replace([';',' '], [',',''], $chapter_verse);
         $chapter_verse = preg_replace('/,+/', ',', $chapter_verse); // Replace repeated , with one ,
@@ -1055,6 +1058,8 @@ class Passage {
             return FALSE;
         }
 
+        $reference = static::normalizeRangeDashes($reference);
+
         $Passages   = [];
         $pre_parsed = static::explodeReferences($reference);
 
@@ -1084,6 +1089,7 @@ class Passage {
 
     public static function explodeReferences($reference, $separate_book = FALSE) 
     {
+        $reference = static::normalizeRangeDashes($reference);
         $exploded = [];
         $ref_end  = strlen($reference) - 1;
         $book_end = FALSE;
@@ -1174,7 +1180,16 @@ class Passage {
 
     public static function isChapterVerse($char)
     {
-        return is_numeric($char) || in_array($char, [':',',',';','-']);
+        return is_numeric($char) || in_array($char, [':',',',';','-','–','—','−']);
+    }
+
+    protected static function normalizeRangeDashes($string)
+    {
+        if(!is_string($string) || $string === '') {
+            return $string;
+        }
+
+        return preg_replace('/[\x{2010}\x{2011}\x{2012}\x{2013}\x{2014}\x{2212}]+/u', '-', $string);
     }
 
     public static function isWhitespace($char) 

@@ -470,9 +470,7 @@ class CommonWordTest extends TestCase
 
                     $this->assertEquals($words, $Language->common_words, "Language '{$lang}' common words not set correctly: {$desc}");
                 }
-            }
-
-            else {
+            } else {
                 $EN = self::getLanguage('en');
                 
                 if(empty($EN->common_words)) {

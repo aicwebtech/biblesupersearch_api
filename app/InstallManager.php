@@ -110,11 +110,15 @@ class InstallManager
 
         error_reporting(E_ERROR | E_PARSE); // Workaround for deprecation warning
 
+        set_time_limit(600); // 10 minute time limit for installation process
+
         // Generate application key
         Artisan::call('key:generate');
 
         // Set up database // --force Allows migration to run in production
         $exit_code = Artisan::call('migrate', array('--force' => TRUE));
+
+        set_time_limit(300); // 5 minute time limit for post-migration processes (like populating the Bible table)
 
         // Populate the Bible table
         Bible::populateBibleTable();
@@ -146,11 +150,9 @@ class InstallManager
 
         $elapsed_time = time() - $start_time;
 
-        if($elapsed_time < 90) {
-            // Install default Bible (usally KJV)
-            $Bible = Bible::findByModule( config('bss.defaults.bible') );
-            $Bible->install(FALSE, TRUE);
-        }
+        // Install default Bible (usally KJV)
+        $Bible = Bible::findByModule( config('bss.defaults.bible') );
+        $Bible->install(FALSE, TRUE);
 
         // Set up book lists for EN language
         \App\Models\Books\BookAbstract::createTableAndMigrateFromCsv('en');

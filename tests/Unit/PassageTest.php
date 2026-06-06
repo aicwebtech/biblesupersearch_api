@@ -125,6 +125,24 @@ class PassageTest extends TestCase
                 'cv'        => ['3:9-15'],
             ],            
             [
+                'text'      => '<span>Genesis 1:1–2</span>',
+                'passage'   => ['Genesis 1:1–2'],
+                'book'      => ['Genesis'],
+                'cv'        => ['1:1–2'],
+            ],
+            [
+                'text'      => '<span>Genesis 1:1—2</span>',
+                'passage'   => ['Genesis 1:1—2'],
+                'book'      => ['Genesis'],
+                'cv'        => ['1:1—2'],
+            ],
+            [
+                'text'      => '<span>Genesis 1:1−2</span>',
+                'passage'   => ['Genesis 1:1−2'],
+                'book'      => ['Genesis'],
+                'cv'        => ['1:1−2'],
+            ],
+            [
                 'text'      => '<span>Jn 5:2,17</span>',
                 'passage'   => ['Jn 5:2,17'],
                 'book'      => ['Jn'],
@@ -197,6 +215,10 @@ class PassageTest extends TestCase
     {
         $this->assertTrue(Passage::isChapterVerse('1'));
         $this->assertTrue(Passage::isChapterVerse(':'));
+        $this->assertTrue(Passage::isChapterVerse('-'));
+        $this->assertTrue(Passage::isChapterVerse('–'));
+        $this->assertTrue(Passage::isChapterVerse('—'));
+        $this->assertTrue(Passage::isChapterVerse('−'));
         $this->assertFalse(Passage::isChapterVerse('a'));
     }
 

@@ -128,6 +128,7 @@ class ConfigManager
     {
         $ConfigValues = self::getConfigs($user_id, TRUE);
         $config_values['app.configs_updated_at'] = time();
+        config($config_values); // Set in runtime for use immediately
 
         foreach($config_values as $key => $value) {
             $key = str_replace('__', '.', $key);

@@ -7,6 +7,16 @@ use Illuminate\Database\Migrations\Migration;
 class BibleBooksZh extends Migration
 {
     /**
+     * Determine if this migration should run.
+     *
+     * @return bool
+     */
+    public function shouldRun(): bool
+    {
+        return false;
+    }
+
+    /**
      * Run the migrations.
      *
      * @return void
