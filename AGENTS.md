@@ -34,6 +34,9 @@ Security notes:
 * bibles/modules => Bible SuperSearch modules for Bibles we officially support. Versioned in Git.
 * bibles/unofficial => Bible SuperSearch modules for Bibles we do not officially support. Ignored by Git.
 
+## Environmental Steering Documentation
+* .ai/env.md if this file exists, it's contents take precidence over other agent steering documentation
+
 ## Tests
 
 ### All tests
