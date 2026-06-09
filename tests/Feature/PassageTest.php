@@ -92,6 +92,33 @@ class PassageTest extends TestCase
         $this->assertEquals(5, $Passages[2]->chapter_max);
     }
 
+    public function testSupportsUnicodeDashesInRanges()
+    {
+        $reference = 'Gen 4 – 5; Rom 2:7—9; Genesis 1:1−2';
+        $Passages = Passage::parseReferences($reference, ['en']);
+
+        $this->assertCount(3, $Passages);
+        $this->assertEquals('Genesis', $Passages[0]->Book->name);
+        $this->assertEquals('Romans', $Passages[1]->Book->name);
+        $this->assertEquals('Genesis', $Passages[2]->Book->name);
+
+        $this->assertEquals('4-5', $Passages[0]->chapter_verse);
+        $this->assertEquals('2:7-9', $Passages[1]->chapter_verse);
+        $this->assertEquals('1:1-2', $Passages[2]->chapter_verse);
+
+        $this->assertEquals([
+            ['cst' => 4, 'vst' => NULL, 'cen' => 5, 'ven' => NULL, 'type' => 'range'],
+        ], $Passages[0]->chapter_verse_parsed);
+
+        $this->assertEquals([
+            ['cst' => 2, 'vst' => 7, 'cen' => 2, 'ven' => 9, 'type' => 'range'],
+        ], $Passages[1]->chapter_verse_parsed);
+
+        $this->assertEquals([
+            ['cst' => 1, 'vst' => 1, 'cen' => 1, 'ven' => 2, 'type' => 'range'],
+        ], $Passages[2]->chapter_verse_parsed);
+    }
+
     public function testWholeBookParse() 
     {
         $reference = 'Romans; Acts, John';
