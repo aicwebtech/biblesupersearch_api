@@ -14,7 +14,7 @@ return new class extends Migration
     public function up()
     {
         Schema::table('languages', function (Blueprint $table) {
-            $table->text('common_words');
+            $table->text('common_words')->nullable();
         });
     }
 

@@ -127,8 +127,9 @@ class ConfigManager
     static function setConfigs($config_values, $user_id = 0) 
     {
         $ConfigValues = self::getConfigs($user_id, TRUE);
-        $config_values['app.configs_updated_at'] = time();
-        config($config_values); // Set in runtime for use immediately
+
+        $config_values_mapped = [];
+        $config_values_mapped['app.configs_updated_at'] = time();
 
         foreach($config_values as $key => $value) {
             $key = str_replace('__', '.', $key);
@@ -136,8 +137,11 @@ class ConfigManager
             if(array_key_exists($key, $ConfigValues)) {
                 $ConfigValues[$key]->value = $value;
                 $ConfigValues[$key]->save();
+                $config_values_mapped[$key] = $value;
             }
         }
+
+        config($config_values_mapped); // Set in runtime for use immediately
     }
 
     static function setConfig($config_name, $config_value, $user_id = 0) 

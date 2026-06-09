@@ -557,7 +557,9 @@ class VerseStandard extends VerseAbstract
             return TRUE;
         }
 
-        Schema::create($this->table, function (Blueprint $table) {
+        $tbl = $this->table;
+
+        Schema::create($this->table, function (Blueprint $table) use ($tbl) {
             //$table->charset('utf8mb4');
             //$table->collate('utf8mb4_unicode_ci');
 
@@ -569,11 +571,11 @@ class VerseStandard extends VerseAbstract
             $table->text('text')->charset('utf8');
             $table->text('italics')->nullable(); // obsolete
             $table->text('strongs')->nullable(); // obsolete
-            $table->index('book', 'ixb');
-            $table->index('chapter', 'ixc');
-            $table->index('verse', 'ixv');
-            $table->index(['book', 'chapter_verse'], 'ixcv');
-            $table->index(['book', 'chapter', 'verse'], 'ixbcv'); // Composite index on b, c, v
+            $table->index('book', $tbl . '_ixb');
+            $table->index('chapter', $tbl . '_ixc');
+            $table->index('verse', $tbl . '_ixv');
+            $table->index(['book', 'chapter_verse'], $tbl . '_ixcv');
+            $table->index(['book', 'chapter', 'verse'], $tbl . '_ixbcv'); // Composite index on b, c, v
             //$table->index('text'); // Needs length - not supported in Laravel?
         });
 

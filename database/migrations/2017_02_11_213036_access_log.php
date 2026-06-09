@@ -19,7 +19,7 @@ class AccessLog extends Migration
             $table->integer('count')->unsigned();
             $table->tinyInteger('limit_reached')->unsigned()->default(0);
             $table->timestamps();
-            $table->unique(['ip_id', 'date'], 'ixcv');
+            $table->unique(['ip_id', 'date'], 'ux_ip_access_log_ip_id_date');
         });
     }
 

@@ -151,7 +151,11 @@ class InstallManager
         $elapsed_time = time() - $start_time;
 
         // Install default Bible (usally KJV)
-        $Bible = Bible::findByModule( config('bss.defaults.bible') );
+        $Bible = Bible::findByModule(config('bss.defaults.bible'));
+        if (!$Bible) {
+            error_reporting($ep);
+            return FALSE;
+        }
         $Bible->install(FALSE, TRUE);
 
         // Set up book lists for EN language

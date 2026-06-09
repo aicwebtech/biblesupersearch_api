@@ -20,7 +20,7 @@ return new class extends Migration
             $table->date('date');
             $table->integer('count')->unsigned();
             $table->timestamps();
-            $table->unique(['key_id', 'ip_id', 'date'], 'ixcv');
+            $table->unique(['key_id', 'ip_id', 'date'], 'ux_api_ip_key_count_key_id_ip_id_date');
         });
     }
 

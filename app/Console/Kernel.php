@@ -19,6 +19,7 @@ class Kernel extends ConsoleKernel
     protected $commands = [
         Commands\Inspire::class,
         Commands\AppVersion::class,
+        Commands\AppInstall::class,
         Commands\BibleRender::class,
         Commands\RenderExtras::class,
         Commands\ImportBibleUnbound::class,
