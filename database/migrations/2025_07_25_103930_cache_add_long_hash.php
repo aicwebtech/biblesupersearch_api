@@ -28,14 +28,15 @@ return new class extends Migration
             $table->text('form_data');
             $table->tinyInteger('preserve')->default(0)->unsigned();
             $table->timestamps();
-            $table->unique('hash', 'idh');
-            $table->unique('hash_long', 'idh_long'); // new
+            $table->unique('hash', 'ux_cache_hash');
+            $table->unique('hash_long', 'ux_cache_hash_long'); // new
         });
 
-        
-        DB::update("UPDATE " . $pre . "cache_old SET hash_long = MD5(form_data)");
-
-        DB::insert("INSERT IGNORE INTO " . $pre . "cache SELECT * FROM " . $pre . "cache_old");
+        // skip if using sqlite 
+        if(DB::getDriverName() !== 'sqlite') {
+            DB::update("UPDATE " . $pre . "cache_old SET hash_long = MD5(form_data)");
+            DB::insert("INSERT IGNORE INTO " . $pre . "cache SELECT * FROM " . $pre . "cache_old");
+        }
 
         Schema::dropIfExists('cache_old');
     }
@@ -47,7 +48,7 @@ return new class extends Migration
     {
         Schema::table('cache', function (Blueprint $table) {
             $table->dropColumn(['hash_long']);
-            $table->dropUnique('idh_long');
+            $table->dropUnique('ux_cache_hash_long');
         });
 
         Schema::dropIfExists('cache_old');

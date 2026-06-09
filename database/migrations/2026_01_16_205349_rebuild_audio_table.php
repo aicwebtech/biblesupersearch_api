@@ -34,6 +34,11 @@ return new class extends Migration
         $sql = "INSERT IGNORE INTO " . $pre . "bible_verses_audio (module, file_name, source, voice, book, chapter, verse, created_at, updated_at) ".
                "SELECT module, file_name, source, voice, book, chapter, verse, created_at, updated_at ".
                "FROM " . $pre . "bible_verses_audio_old GROUP BY module, book, chapter, verse";
+        
+        // SQLite uses `INSERT OR IGNORE` instead of MySQL's `INSERT IGNORE`
+        if (DB::getDriverName() === 'sqlite') {
+            $sql = str_replace('INSERT IGNORE', 'INSERT OR IGNORE', $sql);
+        }
 
         DB::insert($sql);
     }

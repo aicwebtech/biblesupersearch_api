@@ -19,6 +19,7 @@ class Kernel extends ConsoleKernel
     protected $commands = [
         Commands\Inspire::class,
         Commands\AppVersion::class,
+        Commands\AppInstall::class,
         Commands\BibleRender::class,
         Commands\RenderExtras::class,
         Commands\ImportBibleUnbound::class,
@@ -26,6 +27,7 @@ class Kernel extends ConsoleKernel
         // Commands\ImportBibleEvening::class, // Obsolete
         Commands\ImportBibleMySword::class,
         Commands\ImportBibleUsfm::class,
+        Commands\ImportCrossReferences::class,
         //Commands\ImportBibleCustom::class,  // DEV TOOL: Comment out when not using
         // Commands\BibleOfficial::class, // DEV TOOL: Mark Bible official, Comment out when not using
         Commands\ListBibles::class,
@@ -43,7 +45,8 @@ class Kernel extends ConsoleKernel
         Commands\UserPassword::class,
         Commands\MigrateModuleFiles::class,
         Commands\MigrationSquash::class,
-        Commands\DbTemplateSquash::class,
+        // Commands\DbTemplateSquash::class,
+        // Commands\MigrationCustom::class,
     ];
 
     /**

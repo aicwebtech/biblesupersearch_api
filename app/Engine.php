@@ -4,6 +4,7 @@ namespace App;
 
 use App\User;
 use App\Models\Bible;
+use App\Models\Feature;
 use App\Models\Language;
 use App\Passage;
 use App\Search;
@@ -303,6 +304,10 @@ class Engine implements ErrorInterface
                 'type' => 'bool',
                 'default' => false,
             ],
+            'cross_references' => [
+                'type' => 'bool',
+                'default' => false,
+            ],
         ];
 
         $this->resetErrors();
@@ -555,6 +560,10 @@ class Engine implements ErrorInterface
             }
         }
 
+        if($input['cross_references']) {
+            $this->metadata->cross_references = $this->_getCrossReferences($results);
+        }
+
         if($input['results_list']) {
             $this->metadata->list = $Search ? $this->_formatResultsList($results, $input['page_limit'], $input['page']) : [];
         } 
@@ -577,6 +586,42 @@ class Engine implements ErrorInterface
         $this->metadata->paging = $paging;
 
         return $results;
+    }
+
+    /**
+     * Build a single cross-reference list for every verse in the result set.
+     *
+     * @param array $results
+     * @return array
+     */
+    protected function _getCrossReferences(array $results): array
+    {
+        $sourceVerses = [];
+
+        foreach($results as $bibleResults) {
+            if(!is_iterable($bibleResults)) {
+                continue;
+            }
+
+            foreach($bibleResults as $verse) {
+                if(!is_object($verse) || !isset($verse->book, $verse->chapter, $verse->verse)) {
+                    continue;
+                }
+
+                $sourceKey = $verse->book . ':' . $verse->chapter . ':' . $verse->verse;
+                $sourceVerses[$sourceKey] = [
+                    'book' => (int) $verse->book,
+                    'chapter' => (int) $verse->chapter,
+                    'verse' => (int) $verse->verse,
+                ];
+            }
+        }
+
+        if(empty($sourceVerses)) {
+            return [];
+        }
+
+        return \App\Models\CrossReference::groupedForSourceVerses(array_values($sourceVerses));
     }
 
     public function actionAudio($input)
@@ -1076,6 +1121,7 @@ class Engine implements ErrorInterface
         $response->download_limit           = config('download.enable') ? config('download.bible_limit') : FALSE;
         $response->download_formats         = $response->download_enabled ? array_values(RenderManager::getGroupedRendererList()) : [];
         $response->search_types             = config('bss.search_types');
+        $response->features_enabled         = Feature::isEnabledAll();
         $response->name                     = config('app.name');
         $response->hash                     = $this->_getNameHash();
         $response->version                  = config('app.version');

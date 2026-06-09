@@ -28,12 +28,14 @@ abstract class ImportBible extends Command
     protected $require_file = TRUE;
     protected $ProgressBar = null;
 
-    protected $hints = array(
+    protected $_hints = array(
         'lang' => [
             //'English', 'Spanish', 'Chinese', 'Arabic', 'German', 'Greek', 'Hebrew', 'Hindi', 'French', 'Portuguese', 'Russian', 'Bengali', 'Malay', 'Urdo', 'Italian',
         ],
         'lang_short' => [], // ['en', 'es', 'zh', 'ar', 'de', 'el', 'he', 'hi', 'fi','fr','bn', 'it', 'ru', 'ms', 'ur']
     );
+
+    protected $hints = null;
 
     protected $ask = array(
         'name' => 'Full name of this Bible',
@@ -72,14 +74,14 @@ abstract class ImportBible extends Command
 
         // For some weird reason the MIGRATION that creates the langage table BREAKS here!
         // Not sure why that's even touching this completely unrelated class!
-        if (\Schema::hasTable('languages')) {
-            $Languages = Language::orderBy('name', 'asc')->get();
+        // if (\Schema::hasTable('languages')) {
+        //     $Languages = Language::orderBy('name', 'asc')->get();
 
-            foreach($Languages as $Lang) {
-                $this->hints['lang'][]       = $Lang->name;
-                $this->hints['lang_short'][] = $Lang->code;
-            }
-        }
+        //     foreach($Languages as $Lang) {
+        //         $this->hints['lang'][]       = $Lang->name;
+        //         $this->hints['lang_short'][] = $Lang->code;
+        //     }
+        // }
     }
 
     /**
@@ -91,8 +93,27 @@ abstract class ImportBible extends Command
         //
     }
 
+    protected function buildHints()
+    {
+        if(isset($this->hints)) {
+            return;
+        }
+
+        $this->hints = ['lang' => [], 'lang_short' => []];
+        
+        if (\Schema::hasTable('languages')) {
+            $Languages = Language::orderBy('name', 'asc')->get();
+
+            foreach($Languages as $Lang) {
+                $this->hints['lang'][]       = $Lang->name;
+                $this->hints['lang_short'][] = $Lang->code;
+            }
+        }
+    }
+
     protected function _handleHelper($Importer) 
     {
+        $this->buildHints(); // do not build hints in constructor ... 
         //$file       = $this->argument('file');
         //$module     = $this->argument('module');
         $file       = $this->option('file');

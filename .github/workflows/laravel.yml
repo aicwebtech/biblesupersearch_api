@@ -1,0 +1,47 @@
+name: Tests
+
+# This would work with feature tests, but somehow the app is getting wiped from the db between install and test run ...
+
+on:
+  push:
+    branches: [ "master" ]
+  pull_request:
+    branches: [ "master", "beta","develop", "release/*" ]
+
+jobs:
+  no-feature-tests:
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: shivammathur/setup-php@15c43e89cdef867065b0213be354c2841860869e
+      with:
+        php-version: '8.5'
+    - uses: actions/checkout@v4
+    - name: Copy .env
+      run: php -r "file_exists('.env') || copy('.env.example', '.env');"
+    - name: Install Dependencies
+      run: composer install -q --no-ansi --no-interaction --no-scripts --no-progress --prefer-dist
+    - name: Generate key
+      run: php artisan key:generate --force
+    - name: Directory Permissions
+      run: chmod -R 777 storage bootstrap/cache
+    - name: Create Database
+      run: |
+        mkdir -p database
+        touch database/database.sqlite
+
+    - name: Install Application to Database
+      env:
+        DB_CONNECTION: sqlite
+        DB_DATABASE: database/database.sqlite
+      run: |
+        php artisan app:install --bypass-prompts
+        php artisan bible:install --testing
+        php artisan config:clear
+
+    - name: Execute tests (Unit only for Now) via PHPUnit/Pest
+      env:
+        DB_CONNECTION: sqlite
+        DB_DATABASE: database/database.sqlite
+      run: php artisan test --testsuite=Unit

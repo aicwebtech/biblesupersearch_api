@@ -7,10 +7,12 @@ use App\Http\Controllers\Controller;
 use App\InstallManager as Installer;
 use Validator;
 
-class InstallController extends Controller {
+class InstallController extends Controller 
+{
     protected $redirectTo = '/install/config';
 
-    public function __construct() {
+    public function __construct() 
+    {
         parent::__construct();
         $this->middleware('installed');
     }
@@ -19,14 +21,16 @@ class InstallController extends Controller {
      * Step 1: Display a simple confirm form to begin the install process
      * @return type
      */
-    public function index() {
+    public function index() 
+    {
         return view('install.index');
     }
 
     /**
      * Step 2: Check dependencies, required hard configs, and database connection
      */
-    public function check() {
+    public function check() 
+    {
         list($checklist, $success) = Installer::checkSettings();
 
         return view('install.check', [
@@ -38,14 +42,13 @@ class InstallController extends Controller {
     /**
      * Step 3: Gather required soft configs
      */
-    public function config() {
-
-        return view('install.config', [
-
-        ]);
+    public function config() 
+    {
+        return view('install.config');
     }
 
-    public function handleConfig(Request $request) {
+    public function handleConfig(Request $request) 
+    {
 
         $validator = Validator::make($request->all(), [
             'name'      => 'required',
@@ -71,7 +74,8 @@ class InstallController extends Controller {
     /**
      * Step 4: Using provided hard and soft configs, install application to database
      */
-    public function install(Request $request) {
+    public function install(Request $request) 
+    {
         if(Installer::install($request)) {
             return view('install.done');
         }
@@ -83,7 +87,8 @@ class InstallController extends Controller {
     /**
      * Step 5??: Demonstrate / test the installed software
      */
-    public function demo() {
+    public function demo() 
+    {
 
     }
 }

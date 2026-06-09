@@ -20,7 +20,7 @@ class CreateProcessTable extends Migration
             $table->text('form_data');
             $table->enum('status', ['pending', 'complete'])->default('pending');
             $table->tinyInteger('preserve')->default(0)->unsigned();
-            $table->unique('hash', 'idh');
+            $table->unique('hash', 'ux_processes_hash');
             $table->timestamps();
         });
     }

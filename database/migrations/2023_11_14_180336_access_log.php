@@ -19,7 +19,7 @@ return new class extends Migration
             $table->integer('count')->unsigned();
             $table->tinyInteger('limit_reached')->unsigned()->default(0);
             $table->timestamps();
-            $table->unique(['key_id', 'date'], 'ixcv');
+            $table->unique(['key_id', 'date'], 'ux_api_key_access_log_key_id_date');
         });
     }
 

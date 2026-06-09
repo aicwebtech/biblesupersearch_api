@@ -10,6 +10,16 @@ class CreateLanguagesTable extends Migration
     // The languages table created here has been replaced by 2020_02_22_135407_rebuild_languages_table.php
 
     /**
+     * Determine if this migration should run.
+     *
+     * @return bool
+     */
+    public function shouldRun(): bool
+    {
+        return false;
+    }
+
+    /**
      * Run the migrations.
      *
      * @return void

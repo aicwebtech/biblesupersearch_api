@@ -1,10 +1,12 @@
 {
     "agents": [
-        "copilot"
+        "copilot",
+        "claude_code"
     ],
+    "cloud": false,
     "guidelines": true,
     "mcp": true,
-    "nightwatch_mcp": false,
+    "nightwatch": false,
     "sail": false,
     "skills": [
         "laravel-best-practices"
