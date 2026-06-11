@@ -148,6 +148,27 @@ class PassageTest extends TestCase
         $this->assertEquals('1:3-7', $Passages[0]->chapter_verse);
     }
 
+    public function testBookNamesWithParenthesesCanBeUsedAsReferences()
+    {
+        // Latvian book names containing parentheses must parse correctly as references
+        $Passages = Passage::parseReferences('Pirmā Mozus grāmata (Genesis)', ['lv']);
+        $this->assertCount(1, $Passages);
+        $this->assertTrue($Passages[0]->is_valid);
+        $this->assertEquals('Pirmā Mozus grāmata (Genesis)', $Passages[0]->Book->name);
+        $this->assertEquals(1, $Passages[0]->chapter_min); // defaults to chapter 1
+
+        $Passages = Passage::parseReferences('Otrā Mozus grāmata (Exodus)', ['lv']);
+        $this->assertCount(1, $Passages);
+        $this->assertTrue($Passages[0]->is_valid);
+        $this->assertEquals('Otrā Mozus grāmata (Exodus)', $Passages[0]->Book->name);
+
+        // Lithuanian book with parentheses
+        $Passages = Passage::parseReferences('Kunigų (Levitų)', ['lt']);
+        $this->assertCount(1, $Passages);
+        $this->assertTrue($Passages[0]->is_valid);
+        $this->assertEquals('Kunigų (Levitų)', $Passages[0]->Book->name);
+    }
+
     public function testSupportsUnicodeDashesInRangesLatvian()
     {
         $Passages = Passage::parseReferences("Psalmi 22:1\u{2013}2", ['lv']);

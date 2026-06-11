@@ -118,6 +118,25 @@ class BookAbstractTest extends TestCase
         $this->assertNull($Book);
     }
 
+    public function testFindByEnteredNameWithParentheses()
+    {
+        // Latvian book names that contain parentheses must be found by exact match
+        $Book = Book::findByEnteredName('Pirmā Mozus grāmata (Genesis)', 'lv');
+        $this->assertNotNull($Book);
+        $this->assertEquals(1, $Book->id);
+
+        $Book = Book::findByEnteredName('Kunigų (Levitų)', 'lt');
+        $this->assertNotNull($Book);
+        $this->assertEquals(3, $Book->id);
+
+        // Search queries with parentheses must NOT match any book
+        $Book = Book::findByEnteredName('love (God)');
+        $this->assertNull($Book);
+
+        $Book = Book::findByEnteredName('(Gen OR Rev)');
+        $this->assertNull($Book);
+    }
+
     public function testModelQuery() 
     {
         $class = 'App\Models\Books\En';

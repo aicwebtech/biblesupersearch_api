@@ -216,9 +216,9 @@ class BookAbstract extends Model
 //        $test = preg_replace('/[\p{L}0-9 ]+/i', '', $name); // Orignal 'working' test
 //        $test = preg_replace('/[\p{L}\p{M}\p{N}\p{P}\p{Pf}\p{Pd}\p{Zs}]+/', '', $name); // Attempted test, not working
 
-        if(!empty($test)) {
-            return FALSE;
-        }
+        // When special chars are present, only allow exact matching (not fuzzy) to prevent search injection.
+        // Book names in some languages legitimately contain parentheses (e.g. Latvian, Lithuanian).
+        $has_special_chars = (bool) $test;
 
         // This logic may be needed elsewhere
         $default_class_name = self::getClassNameByLanguage(config('bss.defaults.language_short'));
@@ -264,6 +264,10 @@ class BookAbstract extends Model
 
         if($Book) {
             return $Book;
+        }
+
+        if($has_special_chars) {
+            return ($multiple) ? [] : NULL;
         }
 
         if(\App\Helpers::isCommonWord($name, $language)) {
