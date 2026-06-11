@@ -218,7 +218,7 @@ class BookAbstract extends Model
 
         // When special chars are present, only allow exact matching (not fuzzy) to prevent search injection.
         // Book names in some languages legitimately contain parentheses (e.g. Latvian, Lithuanian).
-        $has_special_chars = !empty($test);
+        $has_special_chars = (bool) $test;
 
         // This logic may be needed elsewhere
         $default_class_name = self::getClassNameByLanguage(config('bss.defaults.language_short'));

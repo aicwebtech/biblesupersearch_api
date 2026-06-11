@@ -235,6 +235,7 @@ class RequestTest extends TestCase
         );
 
         $this->assertTrue($result[3]);
+        $this->assertCount(1, $result[2]);
         $this->assertEquals('Kunigų (Levitų)', $result[2][0]['simple']);
 
         // Search queries with parentheses must NOT produce a disambiguation
