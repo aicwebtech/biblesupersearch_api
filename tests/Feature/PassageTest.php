@@ -119,7 +119,56 @@ class PassageTest extends TestCase
         ], $Passages[2]->chapter_verse_parsed);
     }
 
-    public function testWholeBookParse() 
+    public function testSupportsUnicodeDashesInRangesRussian()
+    {
+        // Psalms with en, em, and minus-sign dashes
+        $Passages = Passage::parseReferences("Псалтирь 22:1\u{2013}2", ['ru']);
+        $this->assertCount(1, $Passages);
+        $this->assertTrue($Passages[0]->is_valid);
+        $this->assertEquals('Псалтирь', $Passages[0]->Book->name);
+        $this->assertEquals('22:1-2', $Passages[0]->chapter_verse);
+
+        $Passages = Passage::parseReferences("Псалтирь 22:1\u{2014}2", ['ru']);
+        $this->assertEquals('22:1-2', $Passages[0]->chapter_verse);
+
+        $Passages = Passage::parseReferences("Псалтирь 22:1\u{2212}2", ['ru']);
+        $this->assertEquals('22:1-2', $Passages[0]->chapter_verse);
+
+        // Books whose names contain a hyphen (e.g. "1-Я Царств") must not be mistaken for book ranges
+        $Passages = Passage::parseReferences("1-Я Царств 3:1\u{2013}5", ['ru']);
+        $this->assertCount(1, $Passages);
+        $this->assertTrue($Passages[0]->is_valid);
+        $this->assertEquals('1-Я Царств', $Passages[0]->Book->name);
+        $this->assertEquals('3:1-5', $Passages[0]->chapter_verse);
+
+        $Passages = Passage::parseReferences("2-Е Коринфянам 1:3\u{2014}7", ['ru']);
+        $this->assertCount(1, $Passages);
+        $this->assertTrue($Passages[0]->is_valid);
+        $this->assertEquals('2-Е Коринфянам', $Passages[0]->Book->name);
+        $this->assertEquals('1:3-7', $Passages[0]->chapter_verse);
+    }
+
+    public function testSupportsUnicodeDashesInRangesLatvian()
+    {
+        $Passages = Passage::parseReferences("Psalmi 22:1\u{2013}2", ['lv']);
+        $this->assertCount(1, $Passages);
+        $this->assertTrue($Passages[0]->is_valid);
+        $this->assertEquals('Psalmi', $Passages[0]->Book->name);
+        $this->assertEquals('22:1-2', $Passages[0]->chapter_verse);
+
+        $Passages = Passage::parseReferences("Jāņa evaņģēlijs 3:16\u{2013}17", ['lv']);
+        $this->assertCount(1, $Passages);
+        $this->assertTrue($Passages[0]->is_valid);
+        $this->assertEquals('Jāņa evaņģēlijs', $Passages[0]->Book->name);
+        $this->assertEquals('3:16-17', $Passages[0]->chapter_verse);
+
+        $Passages = Passage::parseReferences("1. Moz. 3:1\u{2014}5", ['lv']);
+        $this->assertCount(1, $Passages);
+        $this->assertTrue($Passages[0]->is_valid);
+        $this->assertEquals('3:1-5', $Passages[0]->chapter_verse);
+    }
+
+    public function testWholeBookParse()
     {
         $reference = 'Romans; Acts, John';
         $Passages = Passage::parseReferences($reference, ['en'], TRUE);
