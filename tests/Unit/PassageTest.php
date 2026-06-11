@@ -253,4 +253,54 @@ class PassageTest extends TestCase
         $this->assertTrue(Passage::_containsNonPassageCharacters('Gen 1:1!'));
         $this->assertFalse(Passage::_containsNonPassageCharacters('Gen 1:1'));
     }
+
+    // -----------------------------------------------------------------------
+    // normalizeRangeDashes
+    // -----------------------------------------------------------------------
+
+    private function normalizeRangeDashes(mixed $input): mixed
+    {
+        $method = new \ReflectionMethod(Passage::class, 'normalizeRangeDashes');
+        $method->setAccessible(true);
+        return $method->invoke(null, $input);
+    }
+
+    #[DataProvider('normalizeRangeDashesDataProvider')]
+    public function testNormalizeRangeDashesReplacesUnicodeDashes(string $input, string $expected): void
+    {
+        $this->assertSame($expected, $this->normalizeRangeDashes($input));
+    }
+
+    public static function normalizeRangeDashesDataProvider(): array
+    {
+        return [
+            'en dash'                    => ["\u{2013}",          '-'],
+            'em dash'                    => ["\u{2014}",          '-'],
+            'minus sign'                 => ["\u{2212}",          '-'],
+            'hyphen (unicode)'           => ["\u{2010}",          '-'],
+            'non-breaking hyphen'        => ["\u{2011}",          '-'],
+            'figure dash'                => ["\u{2012}",          '-'],
+            'multiple same dashes'       => ["\u{2014}\u{2014}",  '-'],
+            'multiple mixed dashes'      => ["\u{2013}\u{2014}",  '-'],
+            'ascii hyphen unchanged'     => ['-',                  '-'],
+            'no dashes unchanged'        => ['John',               'John'],
+            'en dash in context'         => ["Genesis 1:1\u{2013}2",  'Genesis 1:1-2'],
+            'em dash in context'         => ["Gen 1\u{2014}3",         'Gen 1-3'],
+            'minus sign in context'      => ["Rom 3:9\u{2212}15",      'Rom 3:9-15'],
+            'dash between words'         => ["Matt\u{2013}Luke",       'Matt-Luke'],
+            'empty string unchanged'     => ['',                   ''],
+            'russian text with dash'       => ["Пс 22:1\u{2013}2",          'Пс 22:1-2'],
+            'russian hyphenated book name' => ["1-Я Царств 3:1\u{2013}5",   '1-Я Царств 3:1-5'],
+            'latvian text with dash'       => ["Ps 22:1\u{2013}2",          'Ps 22:1-2'],
+            'latvian accented book name'   => ["Jāņa evaņģēlijs 3:16\u{2013}17", 'Jāņa evaņģēlijs 3:16-17'],
+        ];
+    }
+
+    public function testNormalizeRangeDashesReturnsNonStringUnchanged(): void
+    {
+        $this->assertNull($this->normalizeRangeDashes(null));
+        $this->assertSame(42, $this->normalizeRangeDashes(42));
+        $this->assertSame([], $this->normalizeRangeDashes([]));
+        $this->assertFalse($this->normalizeRangeDashes(false));
+    }
 }
