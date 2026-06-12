@@ -136,4 +136,72 @@ class HelpersTest extends TestCase
             ],
         ];
     }
+
+    #[DataProvider('ordinalDataProvider')]
+    public function testOrdinal(int $number, string $expected): void
+    {
+        $this->assertSame($expected, Helpers::ordinal($number));
+    }
+
+    public static function ordinalDataProvider(): array
+    {
+        return [
+            [1,   '1st'],
+            [2,   '2nd'],
+            [3,   '3rd'],
+            [4,   '4th'],
+            [10,  '10th'],
+            [11,  '11th'],
+            [12,  '12th'],
+            [13,  '13th'],
+            [21,  '21st'],
+            [22,  '22nd'],
+            [23,  '23rd'],
+            [100, '100th'],
+            [111, '111th'],
+            [121, '121st'],
+        ];
+    }
+
+    #[DataProvider('isCommonWordDataProvider')]
+    public function testIsCommonWord(string $word, string $lang, bool $expected): void
+    {
+        $this->assertSame($expected, Helpers::isCommonWord($word, $lang));
+    }
+
+    public static function isCommonWordDataProvider(): array
+    {
+        return [
+            ['a',     'en', true],
+            ['and',   'en', true],
+            ['the',   'en', true],
+            ['or',    'en', true],
+            ['but',   'en', true],
+            ['faith', 'en', false],
+            ['And',   'en', false],
+            ['a',     'es', false],
+            ['the',   'fr', false],
+        ];
+    }
+
+    #[DataProvider('trimRequestDataProvider')]
+    public function testTrimRequest(string $input, string $expected): void
+    {
+        $this->assertSame($expected, Helpers::trimRequest($input));
+    }
+
+    public static function trimRequestDataProvider(): array
+    {
+        return [
+            ['hello',        'hello'],
+            ['  hello  ',    'hello'],
+            [';hello;',      'hello'],
+            [',hello,',      'hello'],
+            ['; hello ;',    'hello'],
+            [', hello ,',    'hello'],
+            [';;hello;;',    'hello'],
+            ['',             ''],
+            ['  ;  ',        ''],
+        ];
+    }
 }
