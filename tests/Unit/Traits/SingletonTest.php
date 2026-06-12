@@ -10,7 +10,7 @@ class SingletonSubject
     use \App\Traits\Singleton;
 
     // Override generateInstance so we don't touch config('app.premium')
-    public static function generateInstance(): static
+    public static function generateInstance()
     {
         return new static();
     }

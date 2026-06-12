@@ -19,7 +19,7 @@ class RenderAbstractTest extends TestCase
                 // intentionally skip parent constructor (which needs Bible::findByModule)
             }
 
-            protected function _renderSingleVerse($verse): void {}
+            protected function _renderSingleVerse($verse) {}
 
             public function callHtmlToPlainText(string $html, ?string $sep = null): string
             {
