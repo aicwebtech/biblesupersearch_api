@@ -35,10 +35,11 @@ class LoadSoftConfiguration {
 
             // Set any other preset config values here
 
-            $mysql_version = $this->getMysqlVersion();
-
-            $config_values['database.mysql.server_version'] = $mysql_version;
-            $config_values['database.mysql.new_regexp'] = version_compare($mysql_version, '8.0.4', '>=');
+            if (config('database.default') === 'mysql') {
+                $mysql_version = $this->getMysqlVersion();
+                $config_values['database.mysql.server_version'] = $mysql_version;
+                $config_values['database.mysql.new_regexp'] = version_compare($mysql_version, '8.0.4', '>=');
+            }
 
             $config_values['app.premium'] = Helpers::isPremium();
 
