@@ -212,7 +212,42 @@ class RequestTest extends TestCase
         $this->assertCount(0, $metadata->disambiguation);
     }
 
-    public function testDisambiguationWithPassageLimit() 
+    public function testDisambiguationWithParenthesizedBookName()
+    {
+        // Latvian book names containing parentheses must produce a disambiguation link
+        $result = Passage::mapRequest(
+            ['request' => 'Pirmā Mozus grāmata (Genesis)', 'bible' => 'test'],
+            ['lv'],
+            []
+        );
+
+        $this->assertEquals('Pirmā Mozus grāmata (Genesis)', $result[0]); // treated as keywords
+        $this->assertNull($result[1]);                                      // not a reference
+        $this->assertTrue($result[3]);                                      // has disambiguation book
+        $this->assertCount(1, $result[2]);
+        $this->assertEquals('Pirmā Mozus grāmata (Genesis)', $result[2][0]['simple']);
+
+        // Lithuanian book with parentheses
+        $result = Passage::mapRequest(
+            ['request' => 'Kunigų (Levitų)', 'bible' => 'test'],
+            ['lt'],
+            []
+        );
+
+        $this->assertTrue($result[3]);
+        $this->assertCount(1, $result[2]);
+        $this->assertEquals('Kunigų (Levitų)', $result[2][0]['simple']);
+
+        // Search queries with parentheses must NOT produce a disambiguation
+        $result = Passage::mapRequest(
+            ['request' => 'love (God)', 'bible' => 'kjv'],
+            ['en'],
+            []
+        );
+        $this->assertFalse($result[3]);
+    }
+
+    public function testDisambiguationWithPassageLimit()
     {
         $Engine = Engine::getInstance();
         $Engine->setDefaultDataType('raw');

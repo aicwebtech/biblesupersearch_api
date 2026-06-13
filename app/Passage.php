@@ -83,6 +83,18 @@ class Passage {
         }
 
         if(strpos($book, '-') !== FALSE) {
+            // Some book names contain hyphens (e.g. Russian "1-Я Царств"), so try a direct
+            // lookup first before treating the hyphen as a book-range separator.
+            $Book = $this->findBook($book, true);
+
+            if($Book) {
+                $this->is_book_range = FALSE;
+                $this->Book = $Book;
+                $this->is_valid = TRUE;
+                $this->clearChapterVerse();
+                return;
+            }
+
             // handle book ranges
             if(!$this->is_search && !static::$allow_book_range_without_search) {
                 return $this->_addBookError(trans('errors.book.multiple_without_search'));
