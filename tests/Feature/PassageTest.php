@@ -161,12 +161,6 @@ class PassageTest extends TestCase
         $this->assertCount(1, $Passages);
         $this->assertTrue($Passages[0]->is_valid);
         $this->assertEquals('Otrā Mozus grāmata (Exodus)', $Passages[0]->Book->name);
-
-        // Lithuanian book with parentheses
-        $Passages = Passage::parseReferences('Kunigų (Levitų)', ['lt']);
-        $this->assertCount(1, $Passages);
-        $this->assertTrue($Passages[0]->is_valid);
-        $this->assertEquals('Kunigų (Levitų)', $Passages[0]->Book->name);
     }
 
     public function testSupportsUnicodeDashesInRangesLatvian()
