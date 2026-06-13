@@ -759,7 +759,7 @@ class Engine implements ErrorInterface
 
         // Legacy order by flag - still supported for now
         if(array_key_exists('order_by_lang_name', $input) && !empty($input['order_by_lang_name'])) {
-            $Bibles -> orderBy('lang', 'ASC') -> orderBy('name', 'ASC');
+            $Bibles -> orderBy('lang', 'ASC') -> orderBy('bibles.name', 'ASC');
         }
         else {
             foreach(explode('|', $order_by) as $ob) {
@@ -777,8 +777,9 @@ class Engine implements ErrorInterface
                     case 'shortname':
                         $language_float = null; // language float ignored in these cases
                     case 'lang_short':
-                        $Bibles -> orderBy($ob, 'ASC');
-                        break; 
+                        $col = ($ob === 'name') ? 'bibles.name' : $ob;
+                        $Bibles -> orderBy($col, 'ASC');
+                        break;
                 }
             }
         }

@@ -89,11 +89,13 @@ class SqlSearchTest extends TestCase
         $this->assertEquals('(`text` LIKE :bd1) OR (`text` LIKE :bd2) OR (`text` LIKE :bd3)', $sql);
         $this->assertEquals(array(':bd1' => '%faith%', ':bd2' => '%hope%', ':bd3' => '%love%'), $binddata);
 
-        // One Word (XOR)
+        // One Word (XOR) — SQLite converts XOR to != for compatibility
         $Search = SqlSearch::parseSearch(NULL, ['search_one' => 'faith hope love']);
         $this->assertInstanceOf('App\SqlSearch', $Search);
         list($sql, $binddata) = $Search->generateQuery();
-        $this->assertEquals('(`text` LIKE :bd1) XOR (`text` LIKE :bd2) XOR (`text` LIKE :bd3)', $sql);
+        $xor_op = (config('database.default') === 'sqlite') ? ' != ' : ' XOR ';
+        $expected_xor_sql = '(`text` LIKE :bd1)' . $xor_op . '(`text` LIKE :bd2)' . $xor_op . '(`text` LIKE :bd3)';
+        $this->assertEquals($expected_xor_sql, $sql);
         $this->assertEquals(array(':bd1' => '%faith%', ':bd2' => '%hope%', ':bd3' => '%love%'), $binddata);
 
         // None of the words (NOT)
