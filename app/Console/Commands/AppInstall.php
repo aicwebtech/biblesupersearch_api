@@ -8,6 +8,7 @@ use App\Models\Language;
 use App\Models\LanguageAttr;
 use App\Models\Feature;
 use App\ConfigManager;
+use App\User;
 
 class AppInstall extends Command
 {
@@ -50,6 +51,18 @@ class AppInstall extends Command
 
         // Set 'installed' config
         ConfigManager::setConfigs(['app.installed' => TRUE]);
+
+        // Create default admin user when bypassing prompts (e.g. CI)
+        if ($bypass && User::count() === 0) {
+            $User = new User;
+            $User->name     = 'Admin';
+            $User->username = 'admin';
+            $User->email    = 'admin@example.com';
+            $User->password = bcrypt('admin');
+            $User->save();
+            $User->access_level = 100;
+            $User->save();
+        }
 
         // Populate the Bible table
         Bible::populateBibleTable();

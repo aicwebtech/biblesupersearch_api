@@ -393,9 +393,9 @@ class Bible extends Model
         return TRUE;
     }
 
-    public function setCopyrightStatementAttribute($value) 
+    public function setCopyrightStatementAttribute($value)
     {
-        $this->attributes['copyright_statement'] = trim($value);
+        $this->attributes['copyright_statement'] = trim($value ?? '');
     }
 
     public function getCopyrightStatement() 

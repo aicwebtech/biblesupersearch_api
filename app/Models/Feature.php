@@ -139,7 +139,7 @@ class Feature extends Model
         if (array_key_exists($key, self::$is_enabled)) {
             return self::$is_enabled[$key];
         }
-
+        
         if($language) {
             $Feature = self::where('identifier', $code_or_identifier)
                 ->where('language', $language)

@@ -39,6 +39,9 @@ class LoadSoftConfiguration {
                 $mysql_version = $this->getMysqlVersion();
                 $config_values['database.mysql.server_version'] = $mysql_version;
                 $config_values['database.mysql.new_regexp'] = version_compare($mysql_version, '8.0.4', '>=');
+            } else {
+                // SQLite REGEXP is backed by PHP's preg_match, which supports \b word boundaries
+                $config_values['database.mysql.new_regexp'] = true;
             }
 
             $config_values['app.premium'] = Helpers::isPremium();

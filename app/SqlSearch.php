@@ -377,6 +377,12 @@ class SqlSearch {
         }
 
         $sql = trim($sql);
+
+        // SQLite does not support XOR; convert to != (valid when each side is a 0/1 LIKE/REGEXP expression)
+        if (config('database.default') === 'sqlite') {
+            $sql = str_replace(' XOR ', ' != ', $sql);
+        }
+
         return array($sql, $binddata);
     }
 
@@ -394,11 +400,18 @@ class SqlSearch {
         $term_fmts = $this->_termFormat($term, $exact_phrase, $whole_words, FALSE);
         $term_ops  = $this->_termOperator($term, $exact_phrase, $whole_words, FALSE);
 
+        $use_glob = ($exact_case && config('database.default') === 'sqlite');
+
         foreach($fields as $field) {
             $sql_sub = [];
 
             foreach($term_fmts AS $key => $term_fmt) {
-                $bind_index = static::pushToBindData($term_fmt, $binddata);
+                // GLOB (SQLite case-sensitive) uses * / ? wildcards instead of LIKE's % / _
+                $fmt = ($use_glob && $term_ops[$key] === 'LIKE')
+                    ? strtr($term_fmt, ['%' => '*', '_' => '?'])
+                    : $term_fmt;
+
+                $bind_index = static::pushToBindData($fmt, $binddata);
                 $sql_sub[]  = $this->_assembleTermSql($field, $bind_index, $term_ops[$key], $exact_case);
             }
 
@@ -646,6 +659,12 @@ class SqlSearch {
         //$binding = ($this->use_named_bindings) ? $bind_index : '?';
 
         $binding = $bind_index;
+
+        if ($exact_case && config('database.default') === 'sqlite' && $operator === 'LIKE') {
+            // BINARY prefix is MySQL-only; SQLite's GLOB operator is case-sensitive
+            return $field . ' GLOB ' . $binding;
+        }
+
         $binary = ($exact_case) ? 'BINARY ' : '';
         return $binary . $field . ' ' . $operator . ' ' . $binding;
     }
