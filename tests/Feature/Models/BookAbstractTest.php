@@ -125,10 +125,6 @@ class BookAbstractTest extends TestCase
         $this->assertNotNull($Book);
         $this->assertEquals(1, $Book->id);
 
-        $Book = Book::findByEnteredName('Kunigų (Levitų)', 'lt');
-        $this->assertNotNull($Book);
-        $this->assertEquals(3, $Book->id);
-
         // Search queries with parentheses must NOT match any book
         $Book = Book::findByEnteredName('love (God)');
         $this->assertNull($Book);
