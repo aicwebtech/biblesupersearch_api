@@ -20,7 +20,7 @@ class AppServiceProvider extends ServiceProvider
             if ($event->connection instanceof SQLiteConnection) {
                 $pdo = $event->connection->getPdo();
 
-                $pdo->sqliteCreateFunction('regexp', function ($pattern, $value) {
+                $this->sqliteCreateFunction($pdo, 'regexp', function ($pattern, $value) {
                     if ($value === null) {
                         return false;
                     }
@@ -32,7 +32,7 @@ class AppServiceProvider extends ServiceProvider
                 // Exact-case queries bypass this by using GLOB instead of LIKE (see SqlSearch).
                 // Cache compiled regexes per pattern (paid once per unique pattern, not per row).
                 $likeCache = [];
-                $pdo->sqliteCreateFunction('like', function ($pattern, $value) use (&$likeCache) {
+                $this->sqliteCreateFunction($pdo, 'like', function ($pattern, $value) use (&$likeCache) {
                     if ($value === null) {
                         return false;
                     }
@@ -84,5 +84,18 @@ class AppServiceProvider extends ServiceProvider
     public function register(): void
     {
         //
+    }
+
+    /**
+     * Pdo\Sqlite::createFunction() replaces PDO::sqliteCreateFunction() in PHP 8.4+.
+     * PDO::sqliteCreateFunction() is deprecated as of PHP 8.5.
+     */
+    private function sqliteCreateFunction(\PDO $pdo, string $name, callable $callback, int $argCount = -1): void
+    {
+        if (class_exists(\Pdo\Sqlite::class, false) && $pdo instanceof \Pdo\Sqlite) {
+            $pdo->createFunction($name, $callback, $argCount);
+        } else {
+            $pdo->sqliteCreateFunction($name, $callback, $argCount);
+        }
     }
 }
