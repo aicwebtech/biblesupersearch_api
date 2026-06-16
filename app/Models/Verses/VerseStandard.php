@@ -948,4 +948,14 @@ class VerseStandard extends VerseAbstract
 
         return $counts;
     }
+
+    public function getDistinctBooks(): array
+    {
+        return static::selectRaw('DISTINCT book')
+            ->where('book', '<=', 66)
+            ->orderBy('book')
+            ->pluck('book')
+            ->map(fn($b) => (int) $b)
+            ->toArray();
+    }
 }

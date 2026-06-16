@@ -234,7 +234,26 @@ class BibleTest extends TestCase
         $this->assertEquals(2,   $counts[19]['chapter_verses'][117]['verses_max']);
         $this->assertEquals(28,  $counts[06]['chapter_verses'][ 18]['verses_max']);
         $this->assertEquals(27,  $counts[40]['chapter_verses'][ 17]['verses_max']); // Matt 17 - missing v 21 in Critical Text
-        $this->assertEquals(20,  $counts[41]['chapter_verses'][ 16]['verses_max']); // Matt 16 - missing v 9-20 in Critical Text 
+        $this->assertEquals(20,  $counts[41]['chapter_verses'][ 16]['verses_max']); // Matt 16 - missing v 9-20 in Critical Text
+    }
+
+    public function testGetBookList(): void
+    {
+        $kjv = Bible::findByModule('kjv');
+
+        // Clear any previously cached value so we exercise the generation path
+        Bible::where('module', 'kjv')->update(['book_list' => null]);
+        $kjv->book_list = null;
+
+        $bookList = $kjv->getBookList();
+        $this->assertSame('entire', $bookList);
+
+        // Assert persisted to DB
+        $fresh = Bible::findByModule('kjv');
+        $this->assertSame('entire', $fresh->book_list);
+
+        // Assert cached path returns the same value without regenerating
+        $this->assertSame('entire', $fresh->getBookList());
     }
 
 }

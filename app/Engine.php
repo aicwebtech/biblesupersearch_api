@@ -726,9 +726,10 @@ class Engine implements ErrorInterface
         $include_desc = FALSE;
         $Bibles = Bible::select('bibles.name','shortname','module','year','owner', 'description',
             'languages.name AS lang','lang_short','copyright','italics','strongs','red_letter',
-            'paragraph','rank','research','bibles.restrict','copyright_id','copyright_statement', 
+            'paragraph','rank','research','bibles.restrict','copyright_id','copyright_statement',
             'audio_enable', 'tts_enable', 'audio_structure',
-            'languages.rtl', 'languages.native_name AS lang_native');
+            'languages.rtl', 'languages.native_name AS lang_native',
+            'bibles.id', 'bibles.book_list');
 
         $Bibles->leftJoin('languages', 'bibles.lang_short', 'languages.code');
         $bibles = array(); // Array of associative arrays
@@ -799,6 +800,7 @@ class Engine implements ErrorInterface
             $bibles[$Bible->module]['audio_structure'] = $Bible->audio_structure ?: 'chapter';
             $bibles[$Bible->module]['downloadable'] = $Bible->isDownloadable();
             $bibles[$Bible->module]['copyright_statement'] = $Bible->getCopyrightStatement();
+            $bibles[$Bible->module]['book_list'] = $Bible->getBookList();
         }
 
         if($language_float) {

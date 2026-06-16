@@ -52,10 +52,11 @@ class ApiControllerTest extends TestCase
             $this->markTestSkipped('429 Skipping due to rate limiting');
         }
 
-        $response->assertStatus(200);        
+        $response->assertStatus(200);
         $this->assertEquals(0, $response['error_level']);
-        $this->assertEquals('Romanos', $response['results']['books'][44]['name']); 
-        $this->assertEquals('KJV', $response['results']['bibles']['kjv']['shortname']); 
+        $this->assertEquals('Romanos', $response['results']['books'][44]['name']);
+        $this->assertEquals('KJV', $response['results']['bibles']['kjv']['shortname']);
+        $this->assertEquals('entire', $response['results']['bibles']['kjv']['book_list']);
         $this->assertEquals(config('app.version'), $response['results']['version']);
         $this->assertEquals(config('app.name'), $response['results']['name']);
 
@@ -64,7 +65,8 @@ class ApiControllerTest extends TestCase
         $response->assertStatus(200);
         $this->assertEquals(0, $response['error_level']);
         $this->assertEquals('Romanos', $response['results']['books'][44]['name']);
-        $this->assertEquals('KJV', $response['results']['bibles']['kjv']['shortname']); 
+        $this->assertEquals('KJV', $response['results']['bibles']['kjv']['shortname']);
+        $this->assertEquals('entire', $response['results']['bibles']['kjv']['book_list']);
         $this->assertEquals(config('app.version'), $response['results']['version']);
         $this->assertEquals(config('app.name'), $response['results']['name']);
 
@@ -72,10 +74,11 @@ class ApiControllerTest extends TestCase
         // GET
         $response = $this->getJson('/api/v2/statics?language=es');
 
-        $response->assertStatus(200);        
+        $response->assertStatus(200);
         $this->assertEquals(0, $response['error_level']);
-        $this->assertEquals('Romanos', $response['results']['books'][44]['name']); 
-        $this->assertEquals('KJV', $response['results']['bibles']['kjv']['shortname']); 
+        $this->assertEquals('Romanos', $response['results']['books'][44]['name']);
+        $this->assertEquals('KJV', $response['results']['bibles']['kjv']['shortname']);
+        $this->assertEquals('entire', $response['results']['bibles']['kjv']['book_list']);
         $this->assertEquals(config('app.version'), $response['results']['version']);
         $this->assertEquals(config('app.name'), $response['results']['name']);
     }       
@@ -95,9 +98,10 @@ class ApiControllerTest extends TestCase
             $this->markTestSkipped('429 Skipping due to rate limiting');
         }
 
-        $response->assertStatus(200);        
+        $response->assertStatus(200);
         $this->assertEquals(0, $response['error_level']);
-        $this->assertEquals('KJV', $response['results']['kjv']['shortname']); 
+        $this->assertEquals('KJV', $response['results']['kjv']['shortname']);
+        $this->assertEquals('entire', $response['results']['kjv']['book_list']);
 
         // POST
         $response = $this->postJson('/api/bibles', ['language' => 'es']);
@@ -108,7 +112,8 @@ class ApiControllerTest extends TestCase
 
         $response->assertStatus(200);
         $this->assertEquals(0, $response['error_level']);
-        $this->assertEquals('KJV', $response['results']['kjv']['shortname']); 
+        $this->assertEquals('KJV', $response['results']['kjv']['shortname']);
+        $this->assertEquals('entire', $response['results']['kjv']['book_list']);
     }   
 
     /**
