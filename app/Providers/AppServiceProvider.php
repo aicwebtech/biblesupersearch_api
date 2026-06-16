@@ -92,10 +92,11 @@ class AppServiceProvider extends ServiceProvider
      */
     private function sqliteCreateFunction(\PDO $pdo, string $name, callable $callback, int $argCount = -1): void
     {
-        if (class_exists(\Pdo\Sqlite::class, false) && $pdo instanceof \Pdo\Sqlite) {
+        if (method_exists($pdo, 'createFunction')) {
             $pdo->createFunction($name, $callback, $argCount);
-        } else {
-            $pdo->sqliteCreateFunction($name, $callback, $argCount);
+            return;
         }
+
+        $pdo->sqliteCreateFunction($name, $callback, $argCount);
     }
 }
