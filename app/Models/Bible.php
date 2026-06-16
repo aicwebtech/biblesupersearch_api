@@ -1047,10 +1047,15 @@ class Bible extends Model
             return $this->book_list;
         }
 
+        if(!$this->installed || !$this->id) {
+            return ''; // Not saved or installed, so no verses, so empty book list
+        }
+
         $books = $this->verses()->getDistinctBooks();
         $bookList = static::encodeBookList($books);
 
         static::where('id', $this->id)->update(['book_list' => $bookList]);
+        
         $this->book_list = $bookList;
 
         return $bookList;
