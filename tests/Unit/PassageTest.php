@@ -261,7 +261,6 @@ class PassageTest extends TestCase
     private function normalizeRangeDashes(mixed $input): mixed
     {
         $method = new \ReflectionMethod(Passage::class, 'normalizeRangeDashes');
-        $method->setAccessible(true);
         return $method->invoke(null, $input);
     }
 
