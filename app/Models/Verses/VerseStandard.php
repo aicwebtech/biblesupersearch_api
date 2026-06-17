@@ -951,8 +951,8 @@ class VerseStandard extends VerseAbstract
 
     public function getDistinctBooks(): array
     {
-        return static::selectRaw('DISTINCT book')
-            ->where('book', '<=', 66)
+        return static::query()
+            ->distinct()
             ->orderBy('book')
             ->pluck('book')
             ->map(fn($b) => (int) $b)
