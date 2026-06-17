@@ -729,7 +729,7 @@ class Engine implements ErrorInterface
             'paragraph','rank','research','bibles.restrict','copyright_id','copyright_statement',
             'audio_enable', 'tts_enable', 'audio_structure',
             'languages.rtl', 'languages.native_name AS lang_native',
-            'bibles.book_list');
+            'bibles.book_list', 'bibles.installed', 'bibles.id'); // all 3 needed for the book list to work
 
         $Bibles->leftJoin('languages', 'bibles.lang_short', 'languages.code');
         $bibles = []; // Array of associative arrays
@@ -783,6 +783,9 @@ class Engine implements ErrorInterface
             $bibles[$Bible->module]['downloadable'] = $Bible->isDownloadable();
             $bibles[$Bible->module]['copyright_statement'] = $Bible->getCopyrightStatement();
             $bibles[$Bible->module]['book_list'] = $Bible->getBookList();
+            // Remove attributes that aren't needed in the API response
+            unset($bibles[$Bible->module]['id']);
+            unset($bibles[$Bible->module]['installed']);
         }
 
         if($language_float) {
