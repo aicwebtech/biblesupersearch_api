@@ -951,7 +951,7 @@ class VerseStandard extends VerseAbstract
 
     public function getDistinctBooks(): array
     {
-        return static::query()
+        return $this->newQuery()
             ->distinct()
             ->orderBy('book')
             ->pluck('book')
