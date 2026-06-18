@@ -163,4 +163,27 @@ class VerseStandardTest extends TestCase
         }
     }
 
+    #[DataProvider('getDistinctBooksDataProvider')]
+    public function testGetDistinctBooks($module, $expected_books) 
+    {
+        $Bible = Bible::findByModule($module);
+        $Verses = $Bible->verses();
+
+        $this->assertInstanceOf(VerseStandard::class, $Verses);
+
+        $books = $Verses->getDistinctBooks();
+        $this->assertCount(count($expected_books), $books);
+        $this->assertEquals($expected_books, $books);
+    }
+
+    public static function getDistinctBooksDataProvider() 
+    {
+        return [
+            'entire bible' => ['kjv', range(1, 66)], // Has all 66 books
+            'ot only' => ['wlc', range(1, 39)], // Only has OT
+            'nt only' => ['tr', range(40, 66)], // Only has NT
+            'misc books tyndale' => ['tyndale', [...range(1,5), 32, ...range(40,66)]], // Only has Torah, Jonah, and NT
+        ];
+    }
+
 }

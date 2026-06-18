@@ -726,32 +726,16 @@ class Engine implements ErrorInterface
         $include_desc = FALSE;
         $Bibles = Bible::select('bibles.name','shortname','module','year','owner', 'description',
             'languages.name AS lang','lang_short','copyright','italics','strongs','red_letter',
-            'paragraph','rank','research','bibles.restrict','copyright_id','copyright_statement', 
+            'paragraph','rank','research','bibles.restrict','copyright_id','copyright_statement',
             'audio_enable', 'tts_enable', 'audio_structure',
-            'languages.rtl', 'languages.native_name AS lang_native');
+            'languages.rtl', 'languages.native_name AS lang_native',
+            'bibles.book_list', 'bibles.installed', 'bibles.id'); // all 3 needed for the book list to work
 
         $Bibles->leftJoin('languages', 'bibles.lang_short', 'languages.code');
-        $bibles = array(); // Array of associative arrays
+        $bibles = []; // Array of associative arrays
 
         $order_by_default = 'lang_native_name|rank';
         $order_by = array_key_exists('bible_order_by', $input) ? $input['bible_order_by'] : $order_by_default;
-        $group_by = array_key_exists('bible_group_by', $input) ? $input['bible_group_by'] : NULL;
-        $group_by_mapped = NULL;
-
-        // if($group_by && $group_by != 'none') {
-        //     switch($group_by) {
-        //         case 'language':
-        //             $group_by_mapped = 'lang_name';
-        //             break;            
-        //         case 'language_english':
-        //             $group_by_mapped = 'lang_name_english';
-        //             break;
-        //         default:
-        //             $group_by_mapped = NULL;
-        //     }
-
-        //     $order_by = ($group_by_mapped ?: $group_by) . '|' . $order_by;
-        // }
 
         if($include_desc) {
             $Bibles -> addSelect('description');
@@ -760,8 +744,7 @@ class Engine implements ErrorInterface
         // Legacy order by flag - still supported for now
         if(array_key_exists('order_by_lang_name', $input) && !empty($input['order_by_lang_name'])) {
             $Bibles -> orderBy('lang', 'ASC') -> orderBy('bibles.name', 'ASC');
-        }
-        else {
+        } else {
             foreach(explode('|', $order_by) as $ob) {
                 switch($ob) {
                     case 'lang_name':
@@ -799,6 +782,10 @@ class Engine implements ErrorInterface
             $bibles[$Bible->module]['audio_structure'] = $Bible->audio_structure ?: 'chapter';
             $bibles[$Bible->module]['downloadable'] = $Bible->isDownloadable();
             $bibles[$Bible->module]['copyright_statement'] = $Bible->getCopyrightStatement();
+            $bibles[$Bible->module]['book_list'] = $Bible->getBookList();
+            // Remove attributes that aren't needed in the API response
+            unset($bibles[$Bible->module]['id']);
+            unset($bibles[$Bible->module]['installed']);
         }
 
         if($language_float) {

@@ -130,6 +130,7 @@ class Bible extends Model
         'tts_api',
         'tts_voice',
         'tts_speed',
+        'book_list',
     ];
 
     // List of fileds to not use as metadata (in addition to those contained in $this->do_not_export)
@@ -1031,8 +1032,65 @@ class Bible extends Model
      * 
      * @return array
      */
-    public function getChapterVerseCount($verbose = FALSE) 
-    {    
+    public function getChapterVerseCount($verbose = FALSE)
+    {
         return $this->verses()->getChapterVerseCount($verbose);
+    }
+
+    /**
+     * Returns the compressed book list for this Bible.
+     * Generates and persists to DB on first call; returns cached value thereafter.
+     */
+    public function getBookList(): string
+    {
+        if ($this->book_list !== null) {
+            return $this->book_list;
+        }
+
+        if(!$this->installed || !$this->id) {
+            return ''; // Not saved or installed, so no verses, so empty book list
+        }
+
+        $books = $this->verses()->getDistinctBooks();
+        $bookList = static::encodeBookList($books);
+
+        static::where('id', $this->id)->update(['book_list' => $bookList]);
+        
+        $this->book_list = $bookList;
+
+        return $bookList;
+    }
+
+    /**
+     * Converts a sorted integer array of book IDs (1-66) to a compact string.
+     * Shorthands: 'ot' = books 1-39, 'nt' = books 40-66, 'entire' = all 66 books.
+     */
+    public static function encodeBookList(array $books): string
+    {
+        $otBooks = array_values(array_filter($books, fn($b) => $b <= 39));
+        $ntBooks = array_values(array_filter($books, fn($b) => $b >= 40));
+
+        $hasFullOT = $otBooks === range(1, 39);
+        $hasFullNT = $ntBooks === range(40, 66);
+
+        if ($hasFullOT && $hasFullNT) {
+            return 'entire';
+        }
+
+        $parts = [];
+
+        if ($hasFullOT) {
+            $parts[] = 'ot';
+        } else {
+            array_push($parts, ...$otBooks);
+        }
+
+        if ($hasFullNT) {
+            $parts[] = 'nt';
+        } else {
+            array_push($parts, ...$ntBooks);
+        }
+
+        return implode(',', $parts);
     }
 }
