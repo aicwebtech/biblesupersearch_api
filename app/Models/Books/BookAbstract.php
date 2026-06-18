@@ -266,6 +266,18 @@ class BookAbstract extends Model
             return $Book;
         }
 
+        // Attempt 1b: Collation-independent exact matching.
+        // The query above relies on the database collation to be case- and accent-insensitive.
+        // Many environments use stricter collations, which causes foreign book names to be
+        // missed (e.g. Russian "Бытие" != "бытие", Spanish "Génesis"), silently falling back
+        // to the English book list. Re-check exact matches in PHP so book lookups behave the
+        // same regardless of the database's collation.
+        $Book = self::findByNormalizedName($class_name, $name, $multiple);
+
+        if($multiple ? !empty($Book) : $Book) {
+            return $Book;
+        }
+
         if($has_special_chars) {
             return ($multiple) ? [] : NULL;
         }
@@ -316,6 +328,109 @@ class BookAbstract extends Model
         }
 
         return $Book;
+    }
+
+    /**
+     * Cache of all book rows, keyed by book list class name.
+     *
+     * @var array<string, array<int, static>>
+     */
+    protected static $all_books_cache = [];
+
+    /**
+     * Finds a book by performing a case- and accent-insensitive exact match in PHP,
+     * independent of the database collation.
+     *
+     * @param  string  $class_name
+     * @param  string  $name
+     * @param  bool  $multiple
+     * @return static|array<int, static>|null
+     */
+    protected static function findByNormalizedName(string $class_name, string $name, bool $multiple = FALSE)
+    {
+        $needle = self::normalizeForMatch($name);
+
+        if($needle === '') {
+            return ($multiple) ? [] : NULL;
+        }
+
+        if(!isset(self::$all_books_cache[$class_name])) {
+            self::$all_books_cache[$class_name] = $class_name::all()->all();
+        }
+
+        $matches = [];
+
+        foreach(self::$all_books_cache[$class_name] as $Book) {
+            foreach(['name', 'shortname', 'matching1', 'matching2'] as $field) {
+                if(self::normalizeForMatch($Book->{$field}) === $needle) {
+                    $matches[] = $Book;
+                    break;
+                }
+            }
+
+            if(!$multiple && !empty($matches)) {
+                return $matches[0];
+            }
+        }
+
+        return ($multiple) ? $matches : NULL;
+    }
+
+    /**
+     * Normalizes a book name for collation-independent comparison by lower-casing and
+     * folding common Latin diacritics so values like "Génesis" and "genesis" are equal.
+     *
+     * @param  string|null  $string
+     * @return string
+     */
+    protected static function normalizeForMatch($string): string
+    {
+        if($string === null) {
+            return '';
+        }
+
+        $string = trim((string) $string);
+
+        if($string === '') {
+            return '';
+        }
+
+        $string = function_exists('mb_strtolower') ? mb_strtolower($string, 'UTF-8') : strtolower($string);
+        $string = strtr($string, self::accentFoldingMap());
+
+        return preg_replace('/\s+/u', ' ', $string);
+    }
+
+    /**
+     * Map of lower-case accented Latin characters to their base form, used for
+     * accent-insensitive matching when the intl Normalizer extension is unavailable.
+     *
+     * @return array<string, string>
+     */
+    protected static function accentFoldingMap(): array
+    {
+        return [
+            'à'=>'a','á'=>'a','â'=>'a','ã'=>'a','ä'=>'a','å'=>'a','ā'=>'a','ă'=>'a','ą'=>'a',
+            'ç'=>'c','ć'=>'c','č'=>'c','ĉ'=>'c','ċ'=>'c',
+            'ð'=>'d','ď'=>'d','đ'=>'d',
+            'è'=>'e','é'=>'e','ê'=>'e','ë'=>'e','ē'=>'e','ĕ'=>'e','ė'=>'e','ę'=>'e','ě'=>'e',
+            'ĝ'=>'g','ğ'=>'g','ġ'=>'g','ģ'=>'g',
+            'ĥ'=>'h','ħ'=>'h',
+            'ì'=>'i','í'=>'i','î'=>'i','ï'=>'i','ī'=>'i','ĭ'=>'i','į'=>'i','ı'=>'i',
+            'ĵ'=>'j',
+            'ķ'=>'k',
+            'ĺ'=>'l','ļ'=>'l','ľ'=>'l','ł'=>'l',
+            'ñ'=>'n','ń'=>'n','ņ'=>'n','ň'=>'n',
+            'ò'=>'o','ó'=>'o','ô'=>'o','õ'=>'o','ö'=>'o','ø'=>'o','ō'=>'o','ŏ'=>'o','ő'=>'o',
+            'ŕ'=>'r','ŗ'=>'r','ř'=>'r',
+            'ś'=>'s','ŝ'=>'s','ş'=>'s','š'=>'s',
+            'ţ'=>'t','ť'=>'t','ŧ'=>'t',
+            'ù'=>'u','ú'=>'u','û'=>'u','ü'=>'u','ū'=>'u','ŭ'=>'u','ů'=>'u','ű'=>'u','ų'=>'u',
+            'ŵ'=>'w',
+            'ý'=>'y','ÿ'=>'y','ŷ'=>'y',
+            'ź'=>'z','ż'=>'z','ž'=>'z',
+            'þ'=>'th','ß'=>'ss','æ'=>'ae','œ'=>'oe',
+        ];
     }
 
     public static function createTableAndMigrateFromCsv($language = null)

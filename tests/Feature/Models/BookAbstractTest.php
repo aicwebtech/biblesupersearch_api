@@ -133,7 +133,34 @@ class BookAbstractTest extends TestCase
         $this->assertNull($Book);
     }
 
-    public function testModelQuery() 
+    #[DataProvider('collationIndependentMatchDataProvider')]
+    public function testFindByEnteredNameIsCollationIndependent(string $language, string $book, int $id)
+    {
+        // Foreign book names must be found regardless of the database collation, i.e.
+        // case- and accent-insensitively, instead of falling back to the English list.
+        $Book = Book::findByEnteredName($book, $language);
+        $this->assertNotNull($Book, "Expected to find book for [$language] '$book'");
+        $this->assertEquals($id, $Book->id);
+    }
+
+    public static function collationIndependentMatchDataProvider()
+    {
+        return [
+            // Spanish - accent and case variations of "Génesis"
+            'es exact'      => ['es', 'Génesis', 1],
+            'es upper'      => ['es', 'GÉNESIS', 1],
+            'es lower'      => ['es', 'génesis', 1],
+            'es no accent'  => ['es', 'Genesis', 1],
+            // Russian - case variations (data is stored lower-case)
+            'ru exact'      => ['ru', 'бытие', 1],
+            'ru title'      => ['ru', 'Бытие', 1],
+            'ru upper'      => ['ru', 'БЫТИЕ', 1],
+            // Latvian - parenthesized name, mixed case
+            'lv lower'      => ['lv', 'pirmā mozus grāmata (genesis)', 1],
+        ];
+    }
+
+    public function testModelQuery()
     {
         $class = 'App\Models\Books\En';
         // Get multiple models

@@ -250,6 +250,27 @@ class RequestTest extends TestCase
         $this->assertFalse($result[3]);
     }
 
+    public function testDisambiguationWithForeignBookName()
+    {
+        // A single foreign-language book name in the request field must produce a
+        // disambiguation link, the same as English (BSS-265). Uses mapRequest directly
+        // so no installed Bible of that language is required.
+
+        // Russian "Бытие" (Genesis) - data is stored lower-case, user types it capitalized
+        $result = Passage::mapRequest(['request' => 'Бытие', 'bible' => 'test'], ['ru'], []);
+        $this->assertTrue($result[3]);
+        $this->assertCount(1, $result[2]);
+        $this->assertEquals('бытие', $result[2][0]['simple']);
+
+        // Spanish "Génesis" (and accent-free spelling) must also disambiguate
+        foreach (['Génesis', 'Genesis'] as $request) {
+            $result = Passage::mapRequest(['request' => $request, 'bible' => 'test'], ['es'], []);
+            $this->assertTrue($result[3], "Expected disambiguation for '$request'");
+            $this->assertCount(1, $result[2]);
+            $this->assertEquals('Génesis', $result[2][0]['simple']);
+        }
+    }
+
     public function testDisambiguationWithPassageLimit()
     {
         $Engine = Engine::getInstance();

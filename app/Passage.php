@@ -100,12 +100,40 @@ class Passage {
                 return $this->_addBookError(trans('errors.book.multiple_without_search'));
             }
 
-            $books = explode('-', $book);
-            $book_st = array_shift($books);
-            $book_en = array_pop($books);
-            $book_en = ($book_en) ? $book_en : $book_st;
-            $Book_St = $this->findBook( $book_st, true );
-            $Book_En = $this->findBook( $book_en, true );
+            // Book ranges are separated by '-', but some book names themselves contain
+            // hyphens (e.g. Russian "1-Я Царств"). Try each hyphen as the split point and
+            // use the first one where both sides resolve to a book, so ranges of hyphenated
+            // book names (e.g. "1-Я Царств-2-Я Царств") are parsed correctly.
+            $Book_St = $Book_En = NULL;
+
+            for($offset = strpos($book, '-'); $offset !== FALSE; $offset = strpos($book, '-', $offset + 1)) {
+                $left  = trim(substr($book, 0, $offset));
+                $right = trim(substr($book, $offset + 1));
+
+                if($left === '' || $right === '') {
+                    continue;
+                }
+
+                $St = $this->findBook($left, true);
+                $En = $this->findBook($right, true);
+
+                if($St && $En) {
+                    $Book_St = $St;
+                    $Book_En = $En;
+                    break;
+                }
+            }
+
+            // Fallback to the original first/last segment behaviour for inputs the smart
+            // split could not resolve (e.g. a trailing hyphen "Genesis-").
+            if(!($Book_St && $Book_En)) {
+                $books = explode('-', $book);
+                $book_st = array_shift($books);
+                $book_en = array_pop($books);
+                $book_en = ($book_en) ? $book_en : $book_st;
+                $Book_St = $this->findBook( $book_st, true );
+                $Book_En = $this->findBook( $book_en, true );
+            }
 
             if($Book_St && $Book_En) {
                 $this->is_book_range = TRUE;
