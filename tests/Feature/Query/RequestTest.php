@@ -250,6 +250,50 @@ class RequestTest extends TestCase
         $this->assertFalse($result[3]);
     }
 
+    public function testDisambiguationWithForeignBookName()
+    {
+        // A single foreign-language book name in the request field must produce a
+        // disambiguation link, the same as English (BSS-265). Uses mapRequest directly
+        // so no installed Bible of that language is required.
+
+        // Russian "Бытие" (Genesis) - data is stored lower-case, user types it capitalized
+        $result = Passage::mapRequest(['request' => 'Бытие', 'bible' => 'test'], ['ru'], []);
+        $this->assertTrue($result[3]);
+        $this->assertCount(1, $result[2]);
+        $this->assertEquals('бытие', $result[2][0]['simple']);
+
+        // Spanish "Génesis" (and accent-free spelling) must also disambiguate
+        foreach (['Génesis', 'Genesis'] as $request) {
+            $result = Passage::mapRequest(['request' => $request, 'bible' => 'test'], ['es'], []);
+            $this->assertTrue($result[3], "Expected disambiguation for '$request'");
+            $this->assertCount(1, $result[2]);
+            $this->assertEquals('Génesis', $result[2][0]['simple']);
+        }
+    }
+
+    public function testRequestKeywordsPreserveUnicodeDashes()
+    {
+        // When the request field is free-text search (not a passage), unicode dashes must
+        // NOT be normalized to '-' the way they are for references/ranges, otherwise phrase
+        // searches break (cf. UnicodeTest::testLatvian). The request field can become either
+        // a reference or keywords, so both keyword routes must preserve the original dashes.
+
+        // Request-only, classified as keywords (no numbers, has an em-dash)
+        $emdash = "love \u{2014} joy"; // em-dash
+        $result = Passage::mapRequest(['request' => $emdash, 'bible' => 'test'], ['en'], []);
+        $this->assertEquals($emdash, $result[0]); // keywords preserved verbatim
+        $this->assertNull($result[1]);            // not treated as a reference
+
+        // Request alongside an existing reference, request is not a strict passage -> keywords
+        $endash = "mercy \u{2013} grace"; // en-dash
+        $result = Passage::mapRequest(
+            ['request' => $endash, 'reference' => 'John 3:16', 'bible' => 'test'],
+            ['en'],
+            []
+        );
+        $this->assertEquals($endash, $result[0]); // keywords preserved verbatim
+    }
+
     public function testDisambiguationWithPassageLimit()
     {
         $Engine = Engine::getInstance();

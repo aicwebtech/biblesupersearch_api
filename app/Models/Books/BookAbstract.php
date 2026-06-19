@@ -11,6 +11,7 @@ use App\Models\Language;
 class BookAbstract extends Model
 {
     protected $language;
+    protected static $accent_folding_map = null;
 
     protected $fillable = [
         'name', 'shortname', 'matching1', 'matching2',
@@ -266,6 +267,18 @@ class BookAbstract extends Model
             return $Book;
         }
 
+        // Attempt 1b: Collation-independent exact matching.
+        // The query above relies on the database collation to be case- and accent-insensitive.
+        // Many environments use stricter collations, which causes foreign book names to be
+        // missed (e.g. Russian "Бытие" != "бытие", Spanish "Génesis"), silently falling back
+        // to the English book list. Re-check exact matches in PHP so book lookups behave the
+        // same regardless of the database's collation.
+        $Book = self::findByNormalizedName($class_name, $name, $multiple);
+
+        if($multiple ? !empty($Book) : $Book) {
+            return $Book;
+        }
+
         if($has_special_chars) {
             return ($multiple) ? [] : NULL;
         }
@@ -318,6 +331,140 @@ class BookAbstract extends Model
         return $Book;
     }
 
+    /**
+     * Cache of all book rows with their pre-computed normalized field values, keyed by
+     * book list class name. Each entry is `['Book' => static, 'normalized' => string[]]`.
+     *
+     * @var array<string, array<int, array{Book: static, normalized: array<int, string>}>>
+     */
+    protected static $all_books_cache = [];
+
+    /**
+     * Finds a book by performing a case- and accent-insensitive exact match in PHP,
+     * independent of the database collation.
+     *
+     * @param  string  $class_name
+     * @param  string  $name
+     * @param  bool  $multiple
+     * @return static|array<int, static>|null
+     */
+    protected static function findByNormalizedName(string $class_name, string $name, bool $multiple = FALSE)
+    {
+        $needle = self::normalizeForMatch($name);
+
+        if($needle === '') {
+            return ($multiple) ? [] : NULL;
+        }
+
+        $matches = [];
+
+        foreach(self::getNormalizedBooks($class_name) as $entry) {
+            if(in_array($needle, $entry['normalized'], true)) {
+                $matches[] = $entry['Book'];
+
+                if(!$multiple) {
+                    return $matches[0];
+                }
+            }
+        }
+
+        return ($multiple) ? $matches : NULL;
+    }
+
+    /**
+     * Returns all books for the given class with their field values pre-normalized once,
+     * so repeated lookups do not re-normalize every field of every book on each miss.
+     *
+     * @param  string  $class_name
+     * @return array<int, array{Book: static, normalized: array<int, string>}>
+     */
+    protected static function getNormalizedBooks(string $class_name): array
+    {
+        if(!isset(self::$all_books_cache[$class_name])) {
+            $cache = [];
+
+            foreach($class_name::all()->all() as $Book) {
+                $normalized = [];
+
+                foreach(['name', 'shortname', 'matching1', 'matching2'] as $field) {
+                    $normalized[] = self::normalizeForMatch($Book->{$field});
+                }
+
+                $cache[] = ['Book' => $Book, 'normalized' => $normalized];
+            }
+
+            self::$all_books_cache[$class_name] = $cache;
+        }
+
+        return self::$all_books_cache[$class_name];
+    }
+
+    /**
+     * Normalizes a book name for collation-independent comparison by lower-casing and
+     * folding common Latin diacritics so values like "Génesis" and "genesis" are equal.
+     *
+     * @param  string|null  $string
+     * @return string
+     */
+    protected static function normalizeForMatch($string): string
+    {
+        if($string === null) {
+            return '';
+        }
+
+        $string = trim((string) $string);
+
+        if($string === '') {
+            return '';
+        }
+
+        $string = function_exists('mb_strtolower') ? mb_strtolower($string, 'UTF-8') : strtolower($string);
+        $string = strtr($string, self::accentFoldingMap());
+
+        // preg_replace with the /u flag returns null on malformed UTF-8 (which can survive
+        // when mb_strtolower is unavailable to sanitize it); fall back to a byte-wise
+        // whitespace collapse so matching degrades gracefully instead of returning null.
+        $collapsed = preg_replace('/\s+/u', ' ', $string);
+
+        return ($collapsed === null) ? preg_replace('/\s+/', ' ', $string) : $collapsed;
+    }
+
+    /**
+     * Map of lower-case accented Latin characters to their base form, used for
+     * accent-insensitive matching when the intl Normalizer extension is unavailable.
+     *
+     * @return array<string, string>
+     */
+    protected static function accentFoldingMap(): array
+    {
+        if (self::$accent_folding_map === null) {
+            self::$accent_folding_map = [
+                'à'=>'a','á'=>'a','â'=>'a','ã'=>'a','ä'=>'a','å'=>'a','ā'=>'a','ă'=>'a','ą'=>'a',
+                'ç'=>'c','ć'=>'c','č'=>'c','ĉ'=>'c','ċ'=>'c',
+                'ð'=>'d','ď'=>'d','đ'=>'d',
+                'è'=>'e','é'=>'e','ê'=>'e','ë'=>'e','ē'=>'e','ĕ'=>'e','ė'=>'e','ę'=>'e','ě'=>'e',
+                'ĝ'=>'g','ğ'=>'g','ġ'=>'g','ģ'=>'g',
+                'ĥ'=>'h','ħ'=>'h',
+                'ì'=>'i','í'=>'i','î'=>'i','ï'=>'i','ī'=>'i','ĭ'=>'i','į'=>'i','ı'=>'i',
+                'ĵ'=>'j',
+                'ķ'=>'k',
+                'ĺ'=>'l','ļ'=>'l','ľ'=>'l','ł'=>'l',
+                'ñ'=>'n','ń'=>'n','ņ'=>'n','ň'=>'n',
+                'ò'=>'o','ó'=>'o','ô'=>'o','õ'=>'o','ö'=>'o','ø'=>'o','ō'=>'o','ŏ'=>'o','ő'=>'o',
+                'ŕ'=>'r','ŗ'=>'r','ř'=>'r',
+                'ś'=>'s','ŝ'=>'s','ş'=>'s','š'=>'s',
+                'ţ'=>'t','ť'=>'t','ŧ'=>'t',
+                'ù'=>'u','ú'=>'u','û'=>'u','ü'=>'u','ū'=>'u','ŭ'=>'u','ů'=>'u','ű'=>'u','ų'=>'u',
+                'ŵ'=>'w',
+                'ý'=>'y','ÿ'=>'y','ŷ'=>'y',
+                'ź'=>'z','ż'=>'z','ž'=>'z',
+                'þ'=>'th','ß'=>'ss','æ'=>'ae','œ'=>'oe',
+            ];
+        }
+
+        return self::$accent_folding_map;
+    }
+
     public static function createTableAndMigrateFromCsv($language = null)
     {
         $language = $language ?: static::getLanguage();
@@ -340,6 +487,7 @@ class BookAbstract extends Model
         \App\Importers\Database::importCSV($csv_file, $map, static::getClassNameByLanguage($language));
         Model::reguard();
 
+        self::clearAllBooksCache($language);
         DatabaseSeeder::setCreatedUpdated($tn);
         return true;
     }
@@ -362,8 +510,24 @@ class BookAbstract extends Model
         \App\Importers\Database::importCSV($csv_file, $map, static::getClassNameByLanguage($language));
         Model::reguard();
 
+        self::clearAllBooksCache($language);
         DatabaseSeeder::setCreatedUpdated($tn);
         return true;
+    }
+
+    public static function clearAllBooksCache($language = null)
+    {
+        if($language) {
+            $class_name = self::getClassNameByLanguage($language);
+        }
+        elseif(get_called_class() != __CLASS__) {
+            $class_name = get_called_class();
+        }
+        else {
+            $class_name = static::getClassNameByLanguage(config('bss.defaults.language_short'));
+        }
+
+        unset(self::$all_books_cache[$class_name]);
     }
 
     public static function exportToCsv($language = null)

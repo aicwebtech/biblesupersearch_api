@@ -100,12 +100,40 @@ class Passage {
                 return $this->_addBookError(trans('errors.book.multiple_without_search'));
             }
 
-            $books = explode('-', $book);
-            $book_st = array_shift($books);
-            $book_en = array_pop($books);
-            $book_en = ($book_en) ? $book_en : $book_st;
-            $Book_St = $this->findBook( $book_st, true );
-            $Book_En = $this->findBook( $book_en, true );
+            // Book ranges are separated by '-', but some book names themselves contain
+            // hyphens (e.g. Russian "1-Я Царств"). Try each hyphen as the split point and
+            // use the first one where both sides resolve to a book, so ranges of hyphenated
+            // book names (e.g. "1-Я Царств-2-Я Царств") are parsed correctly.
+            $Book_St = $Book_En = NULL;
+
+            for($offset = strpos($book, '-'); $offset !== FALSE; $offset = strpos($book, '-', $offset + 1)) {
+                $left  = trim(substr($book, 0, $offset));
+                $right = trim(substr($book, $offset + 1));
+
+                if($left === '' || $right === '') {
+                    continue;
+                }
+
+                $St = $this->findBook($left, true);
+                $En = $this->findBook($right, true);
+
+                if($St && $En) {
+                    $Book_St = $St;
+                    $Book_En = $En;
+                    break;
+                }
+            }
+
+            // Fallback to the original first/last segment behaviour for inputs the smart
+            // split could not resolve (e.g. a trailing hyphen "Genesis-").
+            if(!($Book_St && $Book_En)) {
+                $books = explode('-', $book);
+                $book_st = array_shift($books);
+                $book_en = array_pop($books);
+                $book_en = ($book_en) ? $book_en : $book_st;
+                $Book_St = $this->findBook( $book_st, true );
+                $Book_En = $this->findBook( $book_en, true );
+            }
 
             if($Book_St && $Book_En) {
                 $this->is_book_range = TRUE;
@@ -1204,6 +1232,13 @@ class Passage {
         return preg_replace('/[\x{2010}\x{2011}\x{2012}\x{2013}\x{2014}\x{2212}]+/u', '-', $string);
     }
 
+    protected static function trimNormalizeInput(string $string) : string
+    {
+        $string = Helpers::trimRequest($string);
+        $string = static::normalizeRangeDashes($string);
+        return $string;
+    }
+
     public static function isWhitespace($char) 
     {
         return $char == ' ';
@@ -1329,9 +1364,17 @@ class Passage {
      */
     public static function mapRequest($input, $languages, $Bibles) 
     {
-        $reference  = empty($input['reference']) ? NULL : Helpers::trimRequest($input['reference']);
-        $keywords   = empty($input['search'])    ? NULL : Helpers::trimRequest($input['search']);
-        $request    = empty($input['request'])   ? NULL : Helpers::trimRequest($input['request']);
+        // Reference and request fields carry passage ranges, so unicode range dashes
+        // (en/em dash etc.) are normalized to '-'. The search/keywords field is NOT
+        // normalized because legitimate search text may contain those dashes.
+        $reference   = empty($input['reference']) ? NULL : static::trimNormalizeInput($input['reference']);
+        $keywords    = empty($input['search'])    ? NULL : Helpers::trimRequest($input['search']);
+        $request     = empty($input['request'])   ? NULL : static::trimNormalizeInput($input['request']);
+
+        // Un-normalized copy of the request used whenever it is routed to keywords, so
+        // dashes in free-text search are preserved (the request field can become either
+        // a reference or a search).
+        $request_raw = empty($input['request'])   ? NULL : Helpers::trimRequest($input['request']);
 
         $disambiguation = [];
         $has_disambiguation_book = FALSE;
@@ -1364,7 +1407,7 @@ class Passage {
                 }
                 // Otherwise, treats it as search keywords
                 else {
-                    $keywords = $request_org;
+                    $keywords = $request_raw;
 
                     // Check for a single book
                     $Books = static::findBookByNameAndLanguage($request, $languages, TRUE);
@@ -1394,7 +1437,7 @@ class Passage {
                     $reference = $request;
                 }
                 else {
-                    $keywords = $request;
+                    $keywords = $request_raw;
                 }
             }
         }
@@ -1402,7 +1445,8 @@ class Passage {
         return array($keywords, $reference, $disambiguation, $has_disambiguation_book);
     }
 
-    public static function isPassage($string, $languages, $strict = FALSE) {
+    public static function isPassage($string, $languages, $strict = FALSE) 
+    {
         $passages = static::explodeReferences($string, TRUE);
 
         if(!static::_isPossiblePassageHelper($string, $passages)) {
@@ -1429,7 +1473,8 @@ class Passage {
         return $has_valid_passage;
     }
 
-    public static function isPossiblePassage($string) {
+    public static function isPossiblePassage($string) 
+    {
         $passages = static::explodeReferences($string, TRUE);
         return static::_isPossiblePassageHelper($string, $passages);
     }
@@ -1437,11 +1482,13 @@ class Passage {
     /*
      * Unlike static::isPassage() this requires the passage to have at least a chapter
      */
-    public static function isPassageStrict($string, $languages) {
+    public static function isPassageStrict($string, $languages) 
+    {
         return static::isPassage($string, $languages, TRUE);
     }
 
-    protected static function _isPossiblePassageHelper($string, $passages) {
+    protected static function _isPossiblePassageHelper($string, $passages) 
+    {
         $non_passage_chars = static::_containsNonPassageCharacters($string);
 
         // $Passages = static::parseReferences($request, $languages, FALSE, $Bibles); // Worst case senariao - lots of overhead
@@ -1465,7 +1512,8 @@ class Passage {
         return TRUE;
     }
 
-    public static function _containsNonPassageCharacters($string) {
+    public static function _containsNonPassageCharacters($string) 
+    {
         $non_passage_chars = preg_match('/[`\'"\\~!@#$%\^&*{}_[\]()=]/', $string, $matches);
         // $non_passage_chars = preg_match_all('/[\p{Ps}\p{Pe}\(\)\\\|\+&]/', $string, $matches); // BookAbstract::findByEnteredName
         // $non_passage_chars = preg_match_all('/[^0-9\p{L}\p{M} :,.-]/', $string, $matches);

@@ -148,6 +148,27 @@ class PassageTest extends TestCase
         $this->assertEquals('1:3-7', $Passages[0]->chapter_verse);
     }
 
+    public function testBookRangeOfHyphenatedBookNamesRussian()
+    {
+        // A range whose start and end book names both contain hyphens (e.g. "1-Я Царств")
+        // must be split at the correct hyphen, not the first one (BSS-270 multi-dash).
+        $Passages = Passage::parseReferences('1-Я Царств-2-Я Царств', ['ru'], TRUE);
+        $this->assertCount(1, $Passages);
+        $this->assertTrue($Passages[0]->is_valid);
+        $this->assertTrue($Passages[0]->is_book_range);
+        $this->assertFalse($Passages[0]->hasErrors());
+        $this->assertEquals('1-Я Царств', $Passages[0]->Book->name);
+        $this->assertEquals('2-Я Царств', $Passages[0]->Book_En->name);
+
+        // Same range expressed with a spaced en-dash separator
+        $Passages = Passage::parseReferences("1-Я Царств \u{2013} 2-Я Царств", ['ru'], TRUE);
+        $this->assertCount(1, $Passages);
+        $this->assertTrue($Passages[0]->is_valid);
+        $this->assertTrue($Passages[0]->is_book_range);
+        $this->assertEquals('1-Я Царств', $Passages[0]->Book->name);
+        $this->assertEquals('2-Я Царств', $Passages[0]->Book_En->name);
+    }
+
     public function testBookNamesWithParenthesesCanBeUsedAsReferences()
     {
         // Latvian book names containing parentheses must parse correctly as references
