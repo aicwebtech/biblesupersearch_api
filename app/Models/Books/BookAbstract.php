@@ -11,6 +11,7 @@ use App\Models\Language;
 class BookAbstract extends Model
 {
     protected $language;
+    protected static $accent_folding_map = null;
 
     protected $fillable = [
         'name', 'shortname', 'matching1', 'matching2',
@@ -331,9 +332,10 @@ class BookAbstract extends Model
     }
 
     /**
-     * Cache of all book rows, keyed by book list class name.
+     * Cache of all book rows with their pre-computed normalized field values, keyed by
+     * book list class name. Each entry is `['Book' => static, 'normalized' => string[]]`.
      *
-     * @var array<string, array<int, static>>
+     * @var array<string, array<int, array{Book: static, normalized: array<int, string>}>>
      */
     protected static $all_books_cache = [];
 
@@ -354,26 +356,47 @@ class BookAbstract extends Model
             return ($multiple) ? [] : NULL;
         }
 
-        if(!isset(self::$all_books_cache[$class_name])) {
-            self::$all_books_cache[$class_name] = $class_name::all()->all();
-        }
-
         $matches = [];
 
-        foreach(self::$all_books_cache[$class_name] as $Book) {
-            foreach(['name', 'shortname', 'matching1', 'matching2'] as $field) {
-                if(self::normalizeForMatch($Book->{$field}) === $needle) {
-                    $matches[] = $Book;
-                    break;
-                }
-            }
+        foreach(self::getNormalizedBooks($class_name) as $entry) {
+            if(in_array($needle, $entry['normalized'], true)) {
+                $matches[] = $entry['Book'];
 
-            if(!$multiple && !empty($matches)) {
-                return $matches[0];
+                if(!$multiple) {
+                    return $matches[0];
+                }
             }
         }
 
         return ($multiple) ? $matches : NULL;
+    }
+
+    /**
+     * Returns all books for the given class with their field values pre-normalized once,
+     * so repeated lookups do not re-normalize every field of every book on each miss.
+     *
+     * @param  string  $class_name
+     * @return array<int, array{Book: static, normalized: array<int, string>}>
+     */
+    protected static function getNormalizedBooks(string $class_name): array
+    {
+        if(!isset(self::$all_books_cache[$class_name])) {
+            $cache = [];
+
+            foreach($class_name::all()->all() as $Book) {
+                $normalized = [];
+
+                foreach(['name', 'shortname', 'matching1', 'matching2'] as $field) {
+                    $normalized[] = self::normalizeForMatch($Book->{$field});
+                }
+
+                $cache[] = ['Book' => $Book, 'normalized' => $normalized];
+            }
+
+            self::$all_books_cache[$class_name] = $cache;
+        }
+
+        return self::$all_books_cache[$class_name];
     }
 
     /**
@@ -398,7 +421,12 @@ class BookAbstract extends Model
         $string = function_exists('mb_strtolower') ? mb_strtolower($string, 'UTF-8') : strtolower($string);
         $string = strtr($string, self::accentFoldingMap());
 
-        return preg_replace('/\s+/u', ' ', $string);
+        // preg_replace with the /u flag returns null on malformed UTF-8 (which can survive
+        // when mb_strtolower is unavailable to sanitize it); fall back to a byte-wise
+        // whitespace collapse so matching degrades gracefully instead of returning null.
+        $collapsed = preg_replace('/\s+/u', ' ', $string);
+
+        return ($collapsed === null) ? preg_replace('/\s+/', ' ', $string) : $collapsed;
     }
 
     /**
@@ -409,28 +437,32 @@ class BookAbstract extends Model
      */
     protected static function accentFoldingMap(): array
     {
-        return [
-            'à'=>'a','á'=>'a','â'=>'a','ã'=>'a','ä'=>'a','å'=>'a','ā'=>'a','ă'=>'a','ą'=>'a',
-            'ç'=>'c','ć'=>'c','č'=>'c','ĉ'=>'c','ċ'=>'c',
-            'ð'=>'d','ď'=>'d','đ'=>'d',
-            'è'=>'e','é'=>'e','ê'=>'e','ë'=>'e','ē'=>'e','ĕ'=>'e','ė'=>'e','ę'=>'e','ě'=>'e',
-            'ĝ'=>'g','ğ'=>'g','ġ'=>'g','ģ'=>'g',
-            'ĥ'=>'h','ħ'=>'h',
-            'ì'=>'i','í'=>'i','î'=>'i','ï'=>'i','ī'=>'i','ĭ'=>'i','į'=>'i','ı'=>'i',
-            'ĵ'=>'j',
-            'ķ'=>'k',
-            'ĺ'=>'l','ļ'=>'l','ľ'=>'l','ł'=>'l',
-            'ñ'=>'n','ń'=>'n','ņ'=>'n','ň'=>'n',
-            'ò'=>'o','ó'=>'o','ô'=>'o','õ'=>'o','ö'=>'o','ø'=>'o','ō'=>'o','ŏ'=>'o','ő'=>'o',
-            'ŕ'=>'r','ŗ'=>'r','ř'=>'r',
-            'ś'=>'s','ŝ'=>'s','ş'=>'s','š'=>'s',
-            'ţ'=>'t','ť'=>'t','ŧ'=>'t',
-            'ù'=>'u','ú'=>'u','û'=>'u','ü'=>'u','ū'=>'u','ŭ'=>'u','ů'=>'u','ű'=>'u','ų'=>'u',
-            'ŵ'=>'w',
-            'ý'=>'y','ÿ'=>'y','ŷ'=>'y',
-            'ź'=>'z','ż'=>'z','ž'=>'z',
-            'þ'=>'th','ß'=>'ss','æ'=>'ae','œ'=>'oe',
-        ];
+        if (self::$accent_folding_map === null) {
+            self::$accent_folding_map = [
+                'à'=>'a','á'=>'a','â'=>'a','ã'=>'a','ä'=>'a','å'=>'a','ā'=>'a','ă'=>'a','ą'=>'a',
+                'ç'=>'c','ć'=>'c','č'=>'c','ĉ'=>'c','ċ'=>'c',
+                'ð'=>'d','ď'=>'d','đ'=>'d',
+                'è'=>'e','é'=>'e','ê'=>'e','ë'=>'e','ē'=>'e','ĕ'=>'e','ė'=>'e','ę'=>'e','ě'=>'e',
+                'ĝ'=>'g','ğ'=>'g','ġ'=>'g','ģ'=>'g',
+                'ĥ'=>'h','ħ'=>'h',
+                'ì'=>'i','í'=>'i','î'=>'i','ï'=>'i','ī'=>'i','ĭ'=>'i','į'=>'i','ı'=>'i',
+                'ĵ'=>'j',
+                'ķ'=>'k',
+                'ĺ'=>'l','ļ'=>'l','ľ'=>'l','ł'=>'l',
+                'ñ'=>'n','ń'=>'n','ņ'=>'n','ň'=>'n',
+                'ò'=>'o','ó'=>'o','ô'=>'o','õ'=>'o','ö'=>'o','ø'=>'o','ō'=>'o','ŏ'=>'o','ő'=>'o',
+                'ŕ'=>'r','ŗ'=>'r','ř'=>'r',
+                'ś'=>'s','ŝ'=>'s','ş'=>'s','š'=>'s',
+                'ţ'=>'t','ť'=>'t','ŧ'=>'t',
+                'ù'=>'u','ú'=>'u','û'=>'u','ü'=>'u','ū'=>'u','ŭ'=>'u','ů'=>'u','ű'=>'u','ų'=>'u',
+                'ŵ'=>'w',
+                'ý'=>'y','ÿ'=>'y','ŷ'=>'y',
+                'ź'=>'z','ż'=>'z','ž'=>'z',
+                'þ'=>'th','ß'=>'ss','æ'=>'ae','œ'=>'oe',
+            ];
+        }
+
+        return self::$accent_folding_map;
     }
 
     public static function createTableAndMigrateFromCsv($language = null)
@@ -455,6 +487,7 @@ class BookAbstract extends Model
         \App\Importers\Database::importCSV($csv_file, $map, static::getClassNameByLanguage($language));
         Model::reguard();
 
+        self::clearAllBooksCache($language);
         DatabaseSeeder::setCreatedUpdated($tn);
         return true;
     }
@@ -477,8 +510,24 @@ class BookAbstract extends Model
         \App\Importers\Database::importCSV($csv_file, $map, static::getClassNameByLanguage($language));
         Model::reguard();
 
+        self::clearAllBooksCache($language);
         DatabaseSeeder::setCreatedUpdated($tn);
         return true;
+    }
+
+    public static function clearAllBooksCache($language = null)
+    {
+        if($language) {
+            $class_name = self::getClassNameByLanguage($language);
+        }
+        elseif(get_called_class() != __CLASS__) {
+            $class_name = get_called_class();
+        }
+        else {
+            $class_name = static::getClassNameByLanguage(config('bss.defaults.language_short'));
+        }
+
+        unset(self::$all_books_cache[$class_name]);
     }
 
     public static function exportToCsv($language = null)

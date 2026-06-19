@@ -271,6 +271,29 @@ class RequestTest extends TestCase
         }
     }
 
+    public function testRequestKeywordsPreserveUnicodeDashes()
+    {
+        // When the request field is free-text search (not a passage), unicode dashes must
+        // NOT be normalized to '-' the way they are for references/ranges, otherwise phrase
+        // searches break (cf. UnicodeTest::testLatvian). The request field can become either
+        // a reference or keywords, so both keyword routes must preserve the original dashes.
+
+        // Request-only, classified as keywords (no numbers, has an em-dash)
+        $emdash = "love \u{2014} joy"; // em-dash
+        $result = Passage::mapRequest(['request' => $emdash, 'bible' => 'test'], ['en'], []);
+        $this->assertEquals($emdash, $result[0]); // keywords preserved verbatim
+        $this->assertNull($result[1]);            // not treated as a reference
+
+        // Request alongside an existing reference, request is not a strict passage -> keywords
+        $endash = "mercy \u{2013} grace"; // en-dash
+        $result = Passage::mapRequest(
+            ['request' => $endash, 'reference' => 'John 3:16', 'bible' => 'test'],
+            ['en'],
+            []
+        );
+        $this->assertEquals($endash, $result[0]); // keywords preserved verbatim
+    }
+
     public function testDisambiguationWithPassageLimit()
     {
         $Engine = Engine::getInstance();
