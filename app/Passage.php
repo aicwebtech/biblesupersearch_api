@@ -1382,26 +1382,52 @@ class Passage {
         if(!empty($request)) {
             if(!$keywords && !$reference) {
                 $request_org = $request;
-                $non_passage_chars = static::_containsNonPassageCharacters($request);
 
                 $passages = static::explodeReferences($request, TRUE);
 
                 // $Passages = static::parseReferences($request, $languages, FALSE, $Bibles); // Worst case senariao - lots of overhead
 
-                // Treats as passage if 
-                // * It's not empty AND 
+                // The "non-passage characters" (boolean/regexp operators, parentheses) only
+                // disqualify a passage when they appear OUTSIDE of a recognised book name.
+                // Book names in some languages legitimately contain parentheses, e.g. Latvian
+                // "Pirmā Mozus grāmata (Genesis)" or Russian "Книга Бытие (Первая книга Моисея)".
+                // We strip each resolved book name out and only test the remaining chapter/verse
+                // text, so such references are no longer misclassified as searches (BSS-265/270).
+                $residual = '';
+                $all_books_resolve = !empty($passages);
+
+                foreach($passages as $passage) {
+                    if(!static::findBookByNameAndLanguage($passage['book'], $languages)) {
+                        $all_books_resolve = FALSE;
+                        $residual .= ' ' . $passage['book'];
+                    }
+
+                    $residual .= ' ' . $passage['chapter_verse'];
+                }
+
+                $non_passage_chars  = static::_containsNonPassageCharacters($residual);
+                $residual_has_paren = (strpos($residual, '(') !== FALSE);
+                $has_number         = (bool) preg_match('/[0-9]/', $request);
+
+                // Treats as passage if
+                // * It's not empty AND
                 // * doesn't contain Strong's Numbers AND
-                // * doesn't contain invalid characters for a reference (such as those used for boolean or REGEXP queries) AND 
+                // * the chapter/verse text doesn't contain invalid characters (boolean/REGEXP) AND
                 // * either
-                //      1) It contains numbers but no (parentheses) or
-                //      2) It resolves to multiple (possible) passages
+                //      1) Every book resolved and it contains numbers, or
+                //      2) It contains numbers but no stray (parentheses), or
+                //      3) It resolves to multiple (possible) passages
                 // Note: This passage-checking logic is specific to this method
                 if(
                     // static::isPossiblePassage($request)
-                    !empty($passages) && 
-                    !(preg_match('/[GHgh][0-9]+/', $request)) && 
-                    !$non_passage_chars && 
-                    ( (preg_match('/[0-9]/', $request) && strpos($request, '(') === FALSE) || count($passages) >= 2)
+                    !empty($passages) &&
+                    !(preg_match('/[GHgh][0-9]+/', $request)) &&
+                    !$non_passage_chars &&
+                    (
+                        ($all_books_resolve && $has_number) ||
+                        ($has_number && !$residual_has_paren) ||
+                        count($passages) >= 2
+                    )
                 ) {
                     $reference = $request_org;
                 }

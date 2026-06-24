@@ -73,6 +73,15 @@ class Engine implements ErrorInterface
             $this->primary_language = $default_language;
             array_unshift($this->languages, $this->primary_language);
         }
+
+        // setBibles() rebuilds $this->languages from scratch (the reset above), which would
+        // otherwise discard the interface language set via setDefaultLanguage(). Re-append it
+        // (after the Bibles' own languages, so it stays a fallback) so that references typed in
+        // the user's language resolve even when the searched Bible is in another language, e.g.
+        // Latvian "Pirmā Mozus grāmata (Genesis)" searched against an English Bible (BSS-265/270).
+        if($this->default_language && $this->languageHasBookSupport($this->default_language) && !in_array($this->default_language, $this->languages)) {
+            $this->languages[] = $this->default_language;
+        }
     }
 
     protected function _parseInputArray($input) 

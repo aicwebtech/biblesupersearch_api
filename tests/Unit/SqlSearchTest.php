@@ -149,6 +149,18 @@ class SqlSearchTest extends TestCase
         $this->assertStringContainsString('Hello world test', $output);
     }
 
+    public function testRemoveUnsafeCharactersCollapsesUnicodeDashes()
+    {
+        // Unicode dashes / the math minus sign must become word separators. Left in place they
+        // are neither recognised operators nor stripped, and leak into the generated SQL as a
+        // stray operator, producing a database syntax error (BSS-270).
+        foreach (["\u{2013}", "\u{2014}", "\u{2212}", "\u{2010}", "\u{2015}"] as $dash) {
+            $output = SqlSearch::removeUnsafeCharacters('love ' . $dash . ' joy');
+            $this->assertStringNotContainsString($dash, $output);
+            $this->assertEquals('love joy', $output);
+        }
+    }
+
     public function testParseSimpleQueryTermsSplitsAndDeduplicates()
     {
         $terms = SqlSearch::parseSimpleQueryTerms("foo bar foo baz");
