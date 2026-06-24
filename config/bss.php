@@ -21,7 +21,7 @@ return [
             'books'           => 86400,
             'bibles'          => 86400,
             'statics'         => 3600,
-            'statics_changed' => 3600,
+            'statics_changed' => 60,             // short TTL: clients poll this to detect data changes
             'query'           => 3600,
         ],
     ],

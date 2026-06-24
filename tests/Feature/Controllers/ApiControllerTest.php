@@ -398,6 +398,42 @@ class ApiControllerTest extends TestCase
     }
 
     /**
+     * JSONP responses (a 'callback' is present) must not be marked publicly
+     * cacheable, even though they are GET 200 responses (BSS-272).
+     *
+     * @return void
+     */
+    public function testJsonpResponsesNotCached()
+    {
+        $response = $this->getJson('/api/books?language=es&callback=mycb');
+
+        if($response->status() == 429) {
+            $this->markTestSkipped('429 Skipping due to rate limiting');
+        }
+
+        $response->assertStatus(200);
+        $this->assertStringNotContainsString('public', (string) $response->headers->get('Cache-Control'));
+    }
+
+    /**
+     * Pretty-printed error views are HTML 200 responses and must not be
+     * marked publicly cacheable (BSS-272).
+     *
+     * @return void
+     */
+    public function testPrettyPrintedErrorsNotCached()
+    {
+        $response = $this->get('/api/query?pretty_print=1');
+
+        if($response->status() == 429) {
+            $this->markTestSkipped('429 Skipping due to rate limiting');
+        }
+
+        $response->assertStatus(200);
+        $this->assertStringNotContainsString('public', (string) $response->headers->get('Cache-Control'));
+    }
+
+    /**
      * Tests of the 'download' action
      *
      * @return void
