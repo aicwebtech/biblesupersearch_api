@@ -1220,7 +1220,7 @@ class Passage {
 
     public static function isChapterVerse($char)
     {
-        return is_numeric($char) || in_array($char, [':',',',';','-','–','—','−']);
+        return is_numeric($char) || in_array($char, [':',',',';','-','–','—','―','−']);
     }
 
     protected static function normalizeRangeDashes($string)
@@ -1229,7 +1229,7 @@ class Passage {
             return $string;
         }
 
-        return preg_replace('/[\x{2010}\x{2011}\x{2012}\x{2013}\x{2014}\x{2212}]+/u', '-', $string);
+        return preg_replace('/[\x{2010}\x{2011}\x{2012}\x{2013}\x{2014}\x{2015}\x{2212}]+/u', '-', $string);
     }
 
     protected static function trimNormalizeInput(string $string) : string

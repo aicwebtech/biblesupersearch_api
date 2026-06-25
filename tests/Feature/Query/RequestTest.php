@@ -80,7 +80,7 @@ class RequestTest extends TestCase
 
         $book = 'Pirmā Mozus grāmata (Genesis)'; // Latvian for Genesis
 
-        foreach (['-', "\u{2013}", "\u{2014}", "\u{2212}"] as $dash) {
+        foreach (['-', "\u{2013}", "\u{2014}", "\u{2015}", "\u{2212}"] as $dash) {
             foreach (['request', 'reference'] as $field) {
                 $input = [
                     'bible'       => 'kjv',
@@ -97,6 +97,43 @@ class RequestTest extends TestCase
                 $this->assertCount(2, $results['kjv'], "Expected Genesis 1:1-2 for $field");
             }
         }
+    }
+
+    /**
+     * A reused Engine instance must not carry a prior query's interface language into a later
+     * query that supplies no language. setBibles() appends default_language as a book-name
+     * fallback, so a stale value would resolve foreign book names the new request never asked
+     * for (BSS-265/270).
+     */
+    public function testReusedEngineDoesNotCarryStaleInterfaceLanguage()
+    {
+        $Engine = new Engine();
+        $Engine->setDefaultDataType('raw');
+
+        $book = 'Pirmā Mozus grāmata (Genesis)'; // Latvian for Genesis
+
+        // Query 1: Latvian interface language resolves the Latvian book name against the English Bible.
+        $results = $Engine->actionQuery([
+            'bible'       => 'kjv',
+            'language'    => 'lv',
+            'page_all'    => TRUE,
+            'whole_words' => FALSE,
+            'request'     => $book . ' 1:1',
+        ]);
+
+        $this->assertFalse($Engine->hasErrors(), implode(' | ', $Engine->getErrors()));
+        $this->assertCount(1, $results['kjv']);
+
+        // Query 2 on the SAME instance, no language. Without the stale 'lv' fallback the Latvian
+        // book name no longer resolves, so it is treated as a (non-matching) search, not Genesis.
+        $results = $Engine->actionQuery([
+            'bible'       => 'kjv',
+            'page_all'    => TRUE,
+            'whole_words' => FALSE,
+            'request'     => $book . ' 1:1',
+        ]);
+
+        $this->assertEmpty($results['kjv'], 'Reused Engine should not resolve the Latvian book name without a language');
     }
 
     public function testWithBooleanProximity()
@@ -315,6 +352,7 @@ class RequestTest extends TestCase
             'hyphen'    => '-',
             'en dash'   => "\u{2013}",
             'em dash'   => "\u{2014}",
+            'horiz bar' => "\u{2015}",
             'minus'     => "\u{2212}",
         ];
 

@@ -109,13 +109,19 @@ class Engine implements ErrorInterface
         return TRUE;
     }
 
-    public function setDefaultLanguage($lang) 
+    public function setDefaultLanguage($lang)
     {
         if($this->languageHasBookSupport($lang)) {
             $this->default_language = $lang;
             $this->languages[] = $lang;
             return TRUE;
         }
+
+        // Clear any previously-set interface language so a reused Engine instance does not
+        // carry a stale default_language into a query that supplied no (or an unsupported)
+        // language - setBibles() appends default_language as a fallback, so leaving it set
+        // would resolve book names in a language the current request never requested.
+        $this->default_language = NULL;
 
         return FALSE;
     }
