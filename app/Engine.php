@@ -48,8 +48,8 @@ class Engine implements ErrorInterface
 
     public function setBibles($modules) 
     {
-        $this->Bibles = array();
-        $this->languages = array();
+        $this->Bibles = [];
+        $this->languages = [];
         $this->primary_language = NULL;
         $this->multi_bibles = FALSE;
 
@@ -100,15 +100,35 @@ class Engine implements ErrorInterface
         return TRUE;
     }
 
-    public function setDefaultLanguage($lang) 
+    public function setDefaultLanguage($lang)
     {
+        if(empty($lang)) {
+            $this->default_language = NULL;
+            return TRUE;
+        }
+    
         if($this->languageHasBookSupport($lang)) {
             $this->default_language = $lang;
-            $this->languages[] = $lang;
             return TRUE;
         }
 
         return FALSE;
+    }
+
+    /**
+     * Returns the list of languages in use by the current set of Bibles, 
+     * plus the default language if it is not already included.
+     * @return array
+     */
+    public function getLanguagesWithDefault()
+    {
+        $langs = $this->languages;
+
+        if($this->default_language && !in_array($this->default_language, $langs)) {
+            $langs[] = $this->default_language;
+        }
+
+        return $langs;
     }
 
     public function addBible($module) 
@@ -346,6 +366,7 @@ class Engine implements ErrorInterface
         $this->setDefaultLanguage($input['language']);
         !empty($input['bible']) && $this->setBibles($input['bible']);
         $multi_bible_languages = $this->hasMultipleBibleLanguages();
+        $languages = $this->getLanguagesWithDefault();
 
         $input['bible'] = array_keys($this->Bibles);
         $input['page_limit'] = min( (int) $input['page_limit'], (int) config('bss.global_maximum_results'));
@@ -370,7 +391,7 @@ class Engine implements ErrorInterface
             return false;
         }
 
-        list($keywords, $references, $this->metadata->disambiguation, $disamb_book) = Passage::mapRequest($input, $this->languages, $this->Bibles);
+        list($keywords, $references, $this->metadata->disambiguation, $disamb_book) = Passage::mapRequest($input, $languages, $this->Bibles);
         $input['search']    = $keywords ?: NULL;
         $input['reference'] = $references ?: NULL;
         unset($input['request']); 
@@ -385,7 +406,7 @@ class Engine implements ErrorInterface
         }
 
         // Passage parsing and validation
-        $Passages = Passage::parseReferences($references . ' ', $this->languages, $is_search, $this->Bibles, $input);
+        $Passages = Passage::parseReferences($references . ' ', $languages, $is_search, $this->Bibles, $input);
 
         if(is_array($Passages)) {
             foreach($Passages as $key => $Passage) {
@@ -1170,7 +1191,7 @@ class Engine implements ErrorInterface
         Passage::$allow_book_range_without_search = true;
 
         // Passage parsing and validation
-        $Passages = Passage::parseReferences($references . ' ', $this->languages, $is_search, $this->Bibles, $input);
+        $Passages = Passage::parseReferences($references . ' ', $this->getLanguagesWithDefault(), $is_search, $this->Bibles, $input);
         
         Passage::$allow_book_range_without_search = false;
 
@@ -1384,7 +1405,7 @@ class Engine implements ErrorInterface
             $results = $this->_highlightResults($results, $Search, $Passages, $input);
         }
 
-        $Formatter = new $format_class($results, $Passages, $Search, $this->languages, $input);
+        $Formatter = new $format_class($results, $Passages, $Search, $this->getLanguagesWithDefault(), $input);
         return $Formatter->format();
     }
 
