@@ -1393,17 +1393,24 @@ class Passage {
                 // "Pirmā Mozus grāmata (Genesis)" or Russian "Книга Бытие (Первая книга Моисея)".
                 // We strip each resolved book name out and only test the remaining chapter/verse
                 // text, so such references are no longer misclassified as searches (BSS-265/270).
-                $residual = '';
-                $all_books_resolve = !empty($passages);
+$residual = '';
+$all_books_resolve = !empty($passages);
+$bookResolvesCache = [];
 
-                foreach($passages as $passage) {
-                    if(!static::findBookByNameAndLanguage($passage['book'], $languages)) {
-                        $all_books_resolve = FALSE;
-                        $residual .= ' ' . $passage['book'];
-                    }
+foreach($passages as $passage) {
+    $bookKey = $passage['book'];
 
-                    $residual .= ' ' . $passage['chapter_verse'];
-                }
+    if(!array_key_exists($bookKey, $bookResolvesCache)) {
+        $bookResolvesCache[$bookKey] = (bool) static::findBookByNameAndLanguage($bookKey, $languages);
+    }
+
+    if(!$bookResolvesCache[$bookKey]) {
+        $all_books_resolve = FALSE;
+        $residual .= ' ' . $bookKey;
+    }
+
+    $residual .= ' ' . $passage['chapter_verse'];
+}
 
                 $non_passage_chars  = static::_containsNonPassageCharacters($residual);
                 $residual_has_paren = (strpos($residual, '(') !== FALSE);
