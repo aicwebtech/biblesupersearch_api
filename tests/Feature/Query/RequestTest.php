@@ -93,7 +93,7 @@ class RequestTest extends TestCase
                 $results = $Engine->actionQuery($input);
                 $errors  = $Engine->getErrors();
 
-                $this->assertFalse($Engine->hasErrors(), "Errors for $field with dash U+" . bin2hex($dash) . ': ' . implode(' | ', $errors));
+                $this->assertFalse($Engine->hasErrors(), "Errors for $field with dash hex " . bin2hex($dash) . ': ' . implode(' | ', $errors));
                 $this->assertCount(2, $results['kjv'], "Expected Genesis 1:1-2 for $field");
             }
         }
