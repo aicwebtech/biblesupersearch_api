@@ -20,9 +20,22 @@ class UserTest extends TestCase
     {
         $user = new User();
         $this->assertEquals(
-            ['name', 'username', 'email', 'password', 'user_access', 'comments'],
+            ['name', 'username', 'email', 'password', 'comments'],
             $user->getFillable()
         );
+    }
+
+    /**
+     * The privilege field driving the auth:N middleware must never be
+     * mass-assignable, otherwise a crafted request could escalate privileges.
+     */
+    public function testAccessLevelIsNotMassAssignable()
+    {
+        $user = new User();
+        $this->assertNotContains('access_level', $user->getFillable());
+
+        $user->fill(['access_level' => 100]);
+        $this->assertNull($user->access_level, 'access_level must be ignored by mass assignment');
     }
 
     public function testHiddenAttributes()

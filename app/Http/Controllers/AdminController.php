@@ -40,8 +40,14 @@ class AdminController extends Controller
         return view('admin.help');
     }    
 
-    public function debug() 
+    public function debug()
     {
+        // phpinfo() leaks the full PHP environment (paths, versions, loaded
+        // modules, some secrets). Only expose it when debug mode is enabled.
+        if(!config('app.debug')) {
+            abort(404);
+        }
+
         phpinfo();
     }
 
