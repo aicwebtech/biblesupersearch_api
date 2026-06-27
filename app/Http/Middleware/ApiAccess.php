@@ -27,7 +27,7 @@ class ApiAccess
         $err  = NULL;
         $code = NULL;
         $key = $request->input('key') ?: null;
-        $dom = $request->input('domain') ?: null;
+        $dom = ApiAccessManager::trustedDomain(); // never trust a client-supplied domain - see ApiAccessManager
         $uri = $request->path();
         $parts = explode('/', $uri);
         $action = isset($parts[1]) ? $parts[1] : 'query';

@@ -869,9 +869,17 @@ class Bible extends Model
         $namespace = __NAMESPACE__ . '\Verses';
         $class_name = $namespace . '\\' . $model_class;
 
-        if (!class_exists($class_name)) {            
+        if (!class_exists($class_name)) {
             $table = StandardVerses::getTableByModule($module);
             $perm_file = (func_num_args() >= 2) ? func_get_arg(1) : FALSE;
+
+            // Defense in depth: never materialize a class definition built from
+            // anything that is not a strict identifier / table name, regardless of
+            // upstream validation. This guarantees the generated source is safe
+            // even if a future caller reaches this method without validateModule().
+            if(!preg_match('/^[A-Za-z][A-Za-z0-9_]*$/', $model_class) || !preg_match('/^[a-z][a-z0-9_]*$/', $table)) {
+                return FALSE;
+            }
 
             $code = '
                 namespace ' . $namespace . ';
@@ -895,8 +903,9 @@ class Bible extends Model
                 unlink($tempfile);
             }
             else {
-                // Fallback to eval
-                eval($code); // Need this working on live server.
+                // Intentionally no dynamic-code execution fallback here. If no
+                // writable location is available to materialize the class, fail loudly.
+                throw new \RuntimeException('Unable to generate verse model class: no writable directory available');
             }
         }
 

@@ -12,15 +12,38 @@ class ApiAccessManager
     public static function lookUp(Request $request): AccessLogInterface
     {
         $key = $request->input('key') ?: null;
-        $dom = $request->input('domain') ?: null;
-        return static::lookUpHelper($key, $dom);
+        return static::lookUpHelper($key, static::trustedDomain());
     }
 
     public static function lookUpByInput($input): AccessLogInterface
     {
         $key = isset($input['key']) ? $input['key'] : null;
-        $dom = isset($input['domain']) ? $input['domain'] : null;
-        return static::lookUpHelper($key, $dom);
+        return static::lookUpHelper($key, static::trustedDomain());
+    }
+
+    /**
+     * Resolve the requesting site's domain from browser-set request headers only.
+     *
+     * The resolved domain drives per-domain rate limiting as well as the
+     * same-domain and whitelist "unlimited" grants in IpAccess::getAccessLimit().
+     * It must therefore never be derived from a client-supplied request parameter
+     * (e.g. a `domain` query/post field): an attacker can trivially rotate such a
+     * value to obtain unlimited fresh daily quotas, or set it to the server's own
+     * host / a whitelisted domain to be granted unlimited access. The Origin and
+     * Referer headers are set by the browser and cannot be forged by scripts
+     * running on a third-party site.
+     *
+     * @return string|null
+     */
+    public static function trustedDomain(): ?string
+    {
+        foreach(['HTTP_ORIGIN', 'HTTP_REFERER'] as $header) {
+            if(!empty($_SERVER[$header])) {
+                return $_SERVER[$header];
+            }
+        }
+
+        return null;
     }
 
     protected static function lookUpHelper($key, $dom): AccessLogInterface

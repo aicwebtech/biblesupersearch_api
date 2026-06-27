@@ -27,7 +27,9 @@ class IpAccess extends Model implements AccessLogInterface
     static public function findOrCreateByIpOrDomain($ip_address = null, $host = null) 
     {
         if($ip_address === true) {
-            $default_host = (array_key_exists('HTTP_REFERER', $_SERVER)) ? $_SERVER['HTTP_REFERER'] : 'localhost';
+            // Trust only browser-set headers for the domain, never client-supplied
+            // request parameters. See ApiAccessManager::trustedDomain().
+            $default_host = $_SERVER['HTTP_ORIGIN'] ?? $_SERVER['HTTP_REFERER'] ?? 'localhost';
             $host = $host ?: $default_host;
             $ip_address = (array_key_exists('REMOTE_ADDR', $_SERVER))  ? $_SERVER['REMOTE_ADDR']  : '127.0.0.1';
         }

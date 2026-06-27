@@ -130,10 +130,18 @@ class BookAbstract extends Model
                 return;
             }
 
+            // Defense in depth: never materialize a class definition built from
+            // anything that is not a strict identifier / table name, regardless of
+            // upstream validation. This guarantees the generated source is safe
+            // even if a future caller reaches this method without validateLanguage().
+            if(!preg_match('/^[A-Za-z][A-Za-z0-9_]*$/', $model_class) || !preg_match('/^[a-z][a-z0-9_]*$/', $table)) {
+                return;
+            }
+
             $code = '
                 // Auto-generated class
                 namespace ' . $namespace . ';
-                class ' . $model_class . ' extends BookAbstract 
+                class ' . $model_class . ' extends BookAbstract
                 {
                     protected $hasClass = false;
                     protected $table = \'' . $table . '\';
@@ -145,7 +153,7 @@ class BookAbstract extends Model
                 $code = '
                     // Auto-generated class
                     namespace ' . $namespace . ';
-                    class ' . $model_class . ' extends BookAbstract 
+                    class ' . $model_class . ' extends BookAbstract
                     {
                         protected $table = \'' . $table . '\';
                     }
@@ -163,8 +171,9 @@ class BookAbstract extends Model
                 unlink($tempfile);
             }
             else {
-                // Fallback to eval
-                eval($code); // Need this working on live server.
+                // Intentionally no dynamic-code execution fallback here. If no
+                // writable location is available to materialize the class, fail loudly.
+                throw new \RuntimeException('Unable to generate book model class: no writable directory available');
             }
         }
     }
