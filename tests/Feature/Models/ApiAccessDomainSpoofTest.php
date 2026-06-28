@@ -62,14 +62,48 @@ class ApiAccessDomainSpoofTest extends TestCase
         $Access->delete();
     }
 
-    /** The per-request domain is taken from the browser Origin header, not the param. */
-    public function testOriginHeaderDeterminesDomainOverParam()
+    /**
+     * A trusted (whitelisted) domain supplied via the browser Origin header is
+     * honored, and takes precedence over the spoofable `domain` param.
+     */
+    public function testWhitelistedOriginHeaderDeterminesDomainOverParam()
     {
-        $_SERVER['HTTP_ORIGIN'] = 'https://embedder.example.org';
+        $_SERVER['HTTP_ORIGIN'] = 'https://trusted-partner.com';
 
         $Access = ApiAccessManager::lookUpByInput(['domain' => 'api.example.com']);
 
-        $this->assertSame('embedder.example.org', $Access->domain, 'Origin header must take precedence over the domain param');
+        $this->assertSame('trusted-partner.com', $Access->domain, 'Whitelisted Origin header must take precedence over the domain param');
+        $this->assertSame(0, $Access->getAccessLimit(), 'Whitelisted domain must grant unlimited access');
+
+        $Access->delete();
+    }
+
+    /**
+     * An untrusted (non-whitelisted, non-same-host) Origin must NOT receive its
+     * own domain-keyed bucket: otherwise rotating the header would mint fresh
+     * daily quotas. Such traffic is bucketed by IP instead.
+     */
+    public function testUntrustedOriginDoesNotCreateDomainBucket()
+    {
+        $_SERVER['HTTP_ORIGIN'] = 'https://random-embedder.example.org';
+
+        $Access = ApiAccessManager::lookUpByInput(['domain' => 'api.example.com']);
+
+        $this->assertNull($Access->domain, 'Untrusted domain must not be keyed by domain');
+        $this->assertNotSame(0, $Access->getAccessLimit(), 'Untrusted domain must not yield unlimited access');
+
+        $Access->delete();
+    }
+
+    /** The same-host grant still works: an Origin matching the API host yields unlimited access. */
+    public function testSameHostOriginStillGrantsUnlimited()
+    {
+        $_SERVER['HTTP_ORIGIN'] = 'https://api.example.com';
+
+        $Access = ApiAccessManager::lookUpByInput([]);
+
+        $this->assertSame('api.example.com', $Access->domain, 'Same-host Origin must be keyed by domain');
+        $this->assertSame(0, $Access->getAccessLimit(), 'Same-host request must keep unlimited access');
 
         $Access->delete();
     }

@@ -46,6 +46,46 @@ class ApiAccessManager
         return null;
     }
 
+    /**
+     * Resolve the API server's own host (from server-set values), normalized to
+     * a bare domain. Used both for the same-host "unlimited" grant and to decide
+     * which request domains are privileged enough to receive their own
+     * rate-limit bucket.
+     *
+     * @return string|null
+     */
+    public static function currentHost(): ?string
+    {
+        $host = $_SERVER['HTTP_HOST'] ?? $_SERVER['SERVER_NAME'] ?? '';
+
+        return static::parseDomain($host);
+    }
+
+    /**
+     * A request domain is "privileged" - and therefore allowed its own
+     * rate-limit bucket - only when it is explicitly whitelisted or matches the
+     * API's own host.
+     *
+     * The requesting domain is derived from the browser-set Origin/Referer
+     * headers (see trustedDomain()). Those headers cannot be forged by scripts
+     * on a third-party site, but a direct (non-browser) HTTP client can set them
+     * to anything. We must therefore never give an arbitrary, client-claimed
+     * domain its own IpAccess record: doing so would let a client rotate the
+     * header to mint unlimited fresh daily quotas. Untrusted domains are instead
+     * bucketed by IP in IpAccess::findOrCreateByIpOrDomain().
+     *
+     * @param  string|null $domain
+     * @return bool
+     */
+    public static function isDomainPrivileged(?string $domain): bool
+    {
+        if(empty($domain)) {
+            return false;
+        }
+
+        return static::isWhitelisted(null, $domain) || $domain === static::currentHost();
+    }
+
     protected static function lookUpHelper($key, $dom): AccessLogInterface
     {
         $err  = NULL;
