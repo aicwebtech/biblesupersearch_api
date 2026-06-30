@@ -333,7 +333,8 @@ class ApiControllerTest extends TestCase
 
             $response->assertStatus(200);
 
-            $cacheControl = $response->headers->get('Cache-Control');
+            $cacheControl = (string) $response->headers->get('Cache-Control');
+            $this->assertNotSame('', $cacheControl, "Cache-Control missing for {$uri}");
             $this->assertStringContainsString('public', $cacheControl, "Cache-Control public missing for {$uri}");
             $this->assertStringContainsString('max-age=' . $maxAge, $cacheControl, "max-age missing for {$uri}");
             $this->assertNotEmpty($response->headers->get('ETag'), "ETag missing for {$uri}");
