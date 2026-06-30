@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use Tests\TestCase;
 use App\Passage;
 use App\Models\Books\BookAbstract as Book;
+use App\Models\Language;
 use PHPUnit\Framework\Attributes\DataProvider;
 
 class PassageTest extends TestCase
@@ -874,8 +875,18 @@ class PassageTest extends TestCase
     #[DataProvider('mapRequestLanguageProvider')]
     public function testMapRequestResolvesEveryBookNameAndShortname(string $language): void
     {
-        $class_name = Book::getClassNameByLanguage($language);
-        $Books      = $class_name::all();
+        // if books table for language is not installed, skip test
+        if(!Language::hasBookSupport($language)) {
+            $this->markTestSkipped("Language '{$language}' table not installed.");
+        }
+
+        $class_name = Book::getClassNameByLanguageStrict($language);
+
+        if(!$class_name || !class_exists($class_name)) {
+            $this->markTestSkipped("Language '{$language}' table not installed.");
+        }
+
+        $Books      = $class_name::all();        
 
         $this->assertNotEmpty($Books, "No books found for language '{$language}'. Is the books_{$language} table populated?");
 
