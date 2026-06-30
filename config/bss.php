@@ -16,7 +16,7 @@ return [
     // See App\Http\Middleware\SetCacheHeaders.
     'cache_headers' => [
         'enable'     => env('API_CACHE_HEADERS', true),
-        'visibility' => 'public',           // 'public' | 'private'
+        'visibility' => env('API_CACHE_HEADERS_VISIBILITY', 'public'),           // 'public' | 'private'
         'actions'    => [                   // action => max-age (seconds); unlisted actions are not cached
             'books'           => 86400,
             'bibles'          => 86400,
