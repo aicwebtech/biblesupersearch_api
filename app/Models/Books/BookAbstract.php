@@ -174,6 +174,11 @@ class BookAbstract extends Model
         return strtolower(get_called_class());
     }
 
+    public static function isValidBookId(int|string $id): bool
+    {
+        return filter_var($id, FILTER_VALIDATE_INT, ['options' => ['min_range' => 1, 'max_range' => 66]]) !== false;
+    }
+
     public static function findByIdAndLanguage($id, $language = NULL) 
     {
         $id = (int)$id;
