@@ -229,6 +229,10 @@ class Engine implements ErrorInterface
             'bible' => [
                 'type' => 'array_string',
             ],
+            'disamb_book' => [
+                'type' => 'string',
+                'default' => null,
+            ],
             'whole_words' => [
                 'type' => 'bool',
                 'default' => false,

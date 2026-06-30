@@ -4,10 +4,19 @@ namespace Tests\Feature;
 
 use Tests\TestCase;
 use App\Passage;
+use App\Models\Books\BookAbstract as Book;
 use PHPUnit\Framework\Attributes\DataProvider;
 
 class PassageTest extends TestCase
 {
+    /**
+     * Languages whose complete book lists are exercised against Passage::mapRequest().
+     * Add a language code here (and ensure its books_<lang> table is populated) to
+     * extend the coverage of testMapRequestResolvesEveryBookNameAndShortname().
+     *
+     * @var array<int, string>
+     */
+    protected static array $map_request_languages = ['ru', 'lt', 'pl', 'hi', 'zh_tw', 'ja'];
 
     public function testEmptyReference() 
     {
@@ -849,5 +858,116 @@ class PassageTest extends TestCase
         $this->assertFalse(Passage::isPassage('faith', $languages));
         $this->assertFalse(Passage::isPassage('faith hope', $languages));
         $this->assertFalse(Passage::isPassage('faith || hope', $languages));
+    }
+
+    /**
+     * Regression coverage for BSS-265 / BSS-270: every book name and shortname in each
+     * supported language must round-trip cleanly through Passage::mapRequest(), both as a
+     * reference (book + chapter:verse) and as a bare book name (search / disambiguation).
+     *
+     * Customer-reported failures occurred in Russian ("Книга Руфи"), Lithuanian ("Pradžios")
+     * and Polish ("Ruty"), where valid book names were misclassified as free-text searches.
+     *
+     * The book lists are queried inside the test (not the data provider) because the
+     * application/database is not yet booted while data providers are resolved.
+     */
+    #[DataProvider('mapRequestLanguageProvider')]
+    public function testMapRequestResolvesEveryBookNameAndShortname(string $language): void
+    {
+        $class_name = Book::getClassNameByLanguage($language);
+        $Books      = $class_name::all();
+
+        $this->assertNotEmpty($Books, "No books found for language '{$language}'. Is the books_{$language} table populated?");
+
+        $unresolved_references   = [];
+        $unrecognised_book_names = [];
+        $dirty_residuals         = [];
+
+        foreach($Books as $Book) {
+            // Each book contributes its full name and (when present) its shortname.
+            $names = array_filter([$Book->name, $Book->shortname], fn($name) => !empty($name));
+
+            foreach($names as $name) {
+                // 1) Reference: "<book> <chapter>:<verse>" must map to a reference, not keywords.
+                $reference_input = $name . ' 1:1';
+                [$keywords, $reference] = $this->mapRequestField($reference_input, $language);
+
+                if(empty($reference) || !empty($keywords)) {
+                    $unresolved_references[] = "{$reference_input} (reference='{$reference}', keywords='{$keywords}')";
+                }
+
+                // 1b) After the recognised book name is stripped, the remaining chapter/verse
+                // text must contain no non-passage characters. This is the BSS-265 mechanism:
+                // book names may legitimately contain parentheses (e.g. Lithuanian
+                // "Kunigų (Levitų)"), but the residual that classifies the reference must be clean.
+                $residual = $this->residualAfterBookStripping($reference_input, $language);
+
+                if(Passage::_containsNonPassageCharacters($residual)) {
+                    $dirty_residuals[] = "{$reference_input} (residual='" . trim($residual) . "')";
+                }
+
+                // 2) Bare book name: must be recognised, either as a whole-book reference or
+                // as a disambiguation suggestion. It must never be lost as a plain keyword.
+                [$bare_keywords, $bare_reference, , $has_disambiguation_book] = $this->mapRequestField($name, $language);
+
+                if(empty($bare_reference) && !$has_disambiguation_book) {
+                    $unrecognised_book_names[] = "{$name} (keywords='{$bare_keywords}')";
+                }
+            }
+        }
+
+        $this->assertSame([], $unresolved_references,
+            "[{$language}] book references were misclassified as searches: " . implode(' | ', $unresolved_references));
+        $this->assertSame([], $unrecognised_book_names,
+            "[{$language}] bare book names were not recognised: " . implode(' | ', $unrecognised_book_names));
+        $this->assertSame([], $dirty_residuals,
+            "[{$language}] chapter/verse residuals contained non-passage characters: " . implode(' | ', $dirty_residuals));
+    }
+
+    /**
+     * @return array<int, array{0: string}>
+     */
+    public static function mapRequestLanguageProvider(): array
+    {
+        return array_map(fn(string $language) => [$language], static::$map_request_languages);
+    }
+
+    /**
+     * Runs a single value through Passage::mapRequest() via the request field for the given
+     * language, returning [keywords, reference, disambiguation, has_disambiguation_book].
+     *
+     * @return array{0: ?string, 1: ?string, 2: array, 3: bool}
+     */
+    private function mapRequestField(string $value, string $language): array
+    {
+        $input = [
+            'request'   => $value,
+            'reference' => NULL,
+            'search'    => NULL,
+            'bible'     => 'kjv',
+        ];
+
+        return Passage::mapRequest($input, [$language], []);
+    }
+
+    /**
+     * Mirrors the residual that Passage::mapRequest() tests for non-passage characters:
+     * recognised book names are stripped out and only the remaining chapter/verse text
+     * (plus any unresolved book text) is returned.
+     */
+    private function residualAfterBookStripping(string $reference, string $language): string
+    {
+        $passages = Passage::explodeReferences($reference, TRUE);
+        $residual = '';
+
+        foreach($passages as $passage) {
+            if(!Passage::findBookByNameAndLanguage($passage['book'], [$language])) {
+                $residual .= ' ' . $passage['book'];
+            }
+
+            $residual .= ' ' . $passage['chapter_verse'];
+        }
+
+        return $residual;
     }
 }

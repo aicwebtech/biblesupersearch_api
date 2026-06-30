@@ -174,6 +174,11 @@ class BookAbstract extends Model
         return strtolower(get_called_class());
     }
 
+    public static function isValidBookId($id) 
+    {
+        return is_numeric($id) && $id > 0 && $id < 67;
+    }
+
     public static function findByIdAndLanguage($id, $language = NULL) 
     {
         $id = (int)$id;
