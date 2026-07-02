@@ -4,6 +4,8 @@ namespace App\Console\Commands;
 
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\Validator;
+use Illuminate\Validation\Rules\Password;
 
 class UserCreate extends Command
 {
@@ -38,10 +40,24 @@ class UserCreate extends Command
      */
     public function handle()
     {
+        $password = $this->argument('password');
+
+        $validator = Validator::make(
+            ['password' => $password],
+            ['password' => ['required', Password::defaults()]]
+        );
+
+        if ($validator->fails()) {
+            $this->error($validator->errors()->first('password'));
+            return self::FAILURE;
+        }
+
         $User = new \App\User;
         $User->email    = $this->argument('email_address');
         $User->username = $this->argument('username');
-        $User->password = password_hash( $this->argument('password'), PASSWORD_BCRYPT);
+        $User->password = password_hash($password, PASSWORD_BCRYPT);
         $User->save();
+
+        return self::SUCCESS;
     }
 }

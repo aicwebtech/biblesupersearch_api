@@ -3,6 +3,7 @@
 namespace App\Console\Commands;
 
 use Illuminate\Console\Command;
+use Illuminate\Support\Str;
 use App\Models\Bible;
 use App\Models\Language;
 use App\Models\LanguageAttr;
@@ -54,14 +55,19 @@ class AppInstall extends Command
 
         // Create default admin user when bypassing prompts (e.g. CI)
         if ($bypass && User::count() === 0) {
+            $password = Str::password(16);
+
             $User = new User;
             $User->name     = 'Admin';
             $User->username = 'admin';
             $User->email    = 'admin@example.com';
-            $User->password = bcrypt('admin');
+            $User->password = bcrypt($password);
             $User->save();
             $User->access_level = 100;
             $User->save();
+
+            $this->warn("Admin user created with password: {$password}");
+            $this->warn('Store this now and change it after first login.');
         }
 
         // Populate the Bible table

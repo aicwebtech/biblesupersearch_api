@@ -404,6 +404,7 @@ class SqlSearch {
         }
 
         $sql = [];
+        $bind_index = null;
         $fields    = $this->_termFields($term, $fields, $table_alias);
         $term_fmts = $this->_termFormat($term, $exact_phrase, $whole_words, FALSE, TRUE);
         $term_ops  = $this->_termOperator($term, $exact_phrase, $whole_words, FALSE);
@@ -435,6 +436,13 @@ class SqlSearch {
             }
 
             $sql[] = implode(' AND ', $sql_sub);
+        }
+
+        // Every field/format was skipped (e.g. only an empty REGEXP pattern remained),
+        // so there is no term SQL to emit. Fall back to a predicate that is always
+        // false rather than building invalid `()` SQL. See BSS-240.
+        if(empty($sql)) {
+            return array('(1 = 0)', $bind_index);
         }
 
         $sql = (count($sql) == 1) ? '(' . $sql[0] . ')' : '(' . implode(' OR ', $sql) . ')';

@@ -20,7 +20,7 @@ class AppServiceProvider extends ServiceProvider
         // Single source of truth for password strength. Applied wherever a
         // password is validated via Password::defaults() (registration, reset,
         // install). See AuthController, PasswordController, InstallController.
-        Password::defaults(fn () => Password::min(8)->letters()->numbers());
+        Password::defaults(fn () => Password::min(10)->mixedCase()->numbers()->symbols());
 
         Event::listen(ConnectionEstablished::class, function (ConnectionEstablished $event) {
             if ($event->connection instanceof SQLiteConnection) {
