@@ -53,6 +53,7 @@ class UserCreate extends Command
         }
 
         $User = new \App\User;
+        $User->name     = $this->argument('username');
         $User->email    = $this->argument('email_address');
         $User->username = $this->argument('username');
         $User->password = password_hash($password, PASSWORD_BCRYPT);
