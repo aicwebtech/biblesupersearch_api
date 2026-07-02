@@ -12,6 +12,20 @@ return [
     // API actions that do NOT count against hit limits
     'free_actions' => ['statics_changed', 'version', 'readcache'],
 
+    // Cacheable response headers for public, idempotent (GET) read endpoints.
+    // See App\Http\Middleware\SetCacheHeaders.
+    'cache_headers' => [
+        'enable'     => env('API_CACHE_HEADERS', true),
+        'visibility' => env('API_CACHE_HEADERS_VISIBILITY', 'public'),           // 'public' | 'private'
+        'actions'    => [                   // action => max-age (seconds); unlisted actions are not cached
+            'books'           => 86400,
+            'bibles'          => 86400,
+            'statics'         => 3600,
+            'statics_changed' => 60,             // short TTL: clients poll this to detect data changes
+            'query'           => 3600,
+        ],
+    ],
+
     'import_from_v2' => env('IMPORT_FROM_V2', FALSE),
     'daily_access_limit' => env('DAILY_ACCESS_LIMIT', 2000),
     'public_access' => true,

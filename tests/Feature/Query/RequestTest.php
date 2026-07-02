@@ -67,7 +67,76 @@ class RequestTest extends TestCase
         $this->assertCount(83, $results['kjv']);
     }
 
-    public function testWithBooleanProximity() 
+    /**
+     * A passage typed in the interface language, against a Bible of another language, must
+     * resolve - including book names that contain parentheses and ranges using any unicode
+     * dash. Previously the minus sign (U+2212) leaked into the search SQL and crashed the
+     * query (BSS-265/270).
+     */
+    public function testForeignLanguagePassageAgainstEnglishBible()
+    {
+        $Engine = new Engine();
+        $Engine->setDefaultDataType('raw');
+
+        $book = 'Pirmā Mozus grāmata (Genesis)'; // Latvian for Genesis
+
+        foreach (['-', "\u{2013}", "\u{2014}", "\u{2015}", "\u{2212}"] as $dash) {
+            foreach (['request', 'reference'] as $field) {
+                $input = [
+                    'bible'       => 'kjv',
+                    'language'    => 'lv',
+                    'page_all'    => TRUE,
+                    'whole_words' => FALSE,
+                    $field        => $book . ' 1:1' . $dash . '2',
+                ];
+
+                $results = $Engine->actionQuery($input);
+                $errors  = $Engine->getErrors();
+
+                $this->assertFalse($Engine->hasErrors(), "Errors for $field with dash hex " . bin2hex($dash) . ': ' . implode(' | ', $errors));
+                $this->assertCount(2, $results['kjv'], "Expected Genesis 1:1-2 for $field");
+            }
+        }
+    }
+
+    /**
+     * A reused Engine instance must not carry a prior query's interface language into a later
+     * query that supplies no language. setBibles() appends default_language as a book-name
+     * fallback, so a stale value would resolve foreign book names the new request never asked
+     * for (BSS-265/270).
+     */
+    public function testReusedEngineDoesNotCarryStaleInterfaceLanguage()
+    {
+        $Engine = new Engine();
+        $Engine->setDefaultDataType('raw');
+
+        $book = 'Pirmā Mozus grāmata (Genesis)'; // Latvian for Genesis
+
+        // Query 1: Latvian interface language resolves the Latvian book name against the English Bible.
+        $results = $Engine->actionQuery([
+            'bible'       => 'kjv',
+            'language'    => 'lv',
+            'page_all'    => TRUE,
+            'whole_words' => FALSE,
+            'request'     => $book . ' 1:1',
+        ]);
+
+        $this->assertFalse($Engine->hasErrors(), implode(' | ', $Engine->getErrors()));
+        $this->assertCount(1, $results['kjv']);
+
+        // Query 2 on the SAME instance, no language. Without the stale 'lv' fallback the Latvian
+        // book name no longer resolves, so it is treated as a (non-matching) search, not Genesis.
+        $results = $Engine->actionQuery([
+            'bible'       => 'kjv',
+            'page_all'    => TRUE,
+            'whole_words' => FALSE,
+            'request'     => $book . ' 1:1',
+        ]);
+
+        $this->assertEmpty($results['kjv'], 'Reused Engine should not resolve the Latvian book name without a language');
+    }
+
+    public function testWithBooleanProximity()
     {
         $Engine = new Engine();
         $Engine->setDefaultDataType('raw');
@@ -268,6 +337,146 @@ class RequestTest extends TestCase
             $this->assertTrue($result[3], "Expected disambiguation for '$request'");
             $this->assertCount(1, $result[2]);
             $this->assertEquals('Génesis', $result[2][0]['simple']);
+        }
+    }
+
+    public function testDisambiguationBookParameter()
+    {
+        // The UI can pass a `disamb_book` parameter naming the book to use for the
+        // disambiguation suggestion when the request is treated as a free-text search.
+        // When provided, the book is resolved from `disamb_book` instead of the request text.
+
+        // 1) A free-text search that does NOT resolve to a book on its own ("faith")
+        //    produces a disambiguation when the UI supplies the book explicitly.
+        $result = Passage::mapRequest(
+            ['request' => 'faith', 'bible' => 'kjv', 'disamb_book' => 'Romans'],
+            ['en'],
+            []
+        );
+        $this->assertEquals('faith', $result[0]); // still treated as keywords
+        $this->assertNull($result[1]);            // not a reference
+        $this->assertTrue($result[3]);            // has disambiguation book
+        $this->assertCount(1, $result[2]);
+        $this->assertEquals('Romans', $result[2][0]['simple']);
+        $this->assertEquals('Romans', $result[2][0]['data']['reference']);
+        $this->assertEquals('kjv', $result[2][0]['data']['bible']);
+
+        // Without the parameter, "faith" yields no disambiguation (it is not a book).
+        $result = Passage::mapRequest(['request' => 'faith', 'bible' => 'kjv'], ['en'], []);
+        $this->assertFalse($result[3]);
+        $this->assertCount(0, $result[2]);
+
+        // 2) `disamb_book` overrides the book that would have been derived from the request.
+        //    "John" is itself a book, but the UI asks to disambiguate to "Romans".
+        $result = Passage::mapRequest(
+            ['request' => 'John', 'bible' => 'kjv', 'disamb_book' => 'Romans'],
+            ['en'],
+            []
+        );
+        $this->assertTrue($result[3]);
+        $this->assertCount(1, $result[2]);
+        $this->assertEquals('Romans', $result[2][0]['simple']);
+
+        // Without `disamb_book`, the request itself ("John") drives the disambiguation.
+        $result = Passage::mapRequest(['request' => 'John', 'bible' => 'kjv'], ['en'], []);
+        $this->assertTrue($result[3]);
+        $this->assertEquals('John', $result[2][0]['simple']);
+
+        // 3) A shortname is accepted ("Rom" -> Romans).
+        $result = Passage::mapRequest(
+            ['request' => 'faith', 'bible' => 'kjv', 'disamb_book' => 'Rom'],
+            ['en'],
+            []
+        );
+        $this->assertTrue($result[3]);
+        $this->assertEquals('Romans', $result[2][0]['simple']);
+
+        // 3b) A numeric value is treated as a book ID (Romans is book 45). The UI may
+        //     send it as a string or an integer; both must resolve and never throw.
+        foreach(['45', 45] as $book_id) {
+            $result = Passage::mapRequest(
+                ['request' => 'faith', 'bible' => 'kjv', 'disamb_book' => $book_id],
+                ['en'],
+                []
+            );
+            $this->assertTrue($result[3], 'Expected disambiguation for book ID ' . var_export($book_id, TRUE));
+            $this->assertCount(1, $result[2]);
+            $this->assertEquals('Romans', $result[2][0]['simple']);
+        }
+
+        // A foreign-language book ID resolves in the request language (Russian book 8 = Ruth).
+        $result = Passage::mapRequest(
+            ['request' => 'благодать', 'bible' => 'synodal', 'disamb_book' => '8'],
+            ['ru'],
+            []
+        );
+        $this->assertTrue($result[3]);
+        $this->assertEquals('Руфь', $result[2][0]['simple']);
+
+        // 4) A `disamb_book` that resolves to nothing produces no disambiguation.
+        $result = Passage::mapRequest(
+            ['request' => 'faith', 'bible' => 'kjv', 'disamb_book' => 'zzzznotabook'],
+            ['en'],
+            []
+        );
+        $this->assertFalse($result[3]);
+        $this->assertCount(0, $result[2]);
+
+        // An empty-string `disamb_book` is ignored and yields no disambiguation.
+        $result = Passage::mapRequest(
+            ['request' => 'faith', 'bible' => 'kjv', 'disamb_book' => ''],
+            ['en'],
+            []
+        );
+        $this->assertFalse($result[3]);
+
+        // 5) When the request is a valid passage it is routed to the reference and
+        //    `disamb_book` is ignored entirely.
+        $result = Passage::mapRequest(
+            ['request' => 'Romans 1:1', 'bible' => 'kjv', 'disamb_book' => 'Genesis'],
+            ['en'],
+            []
+        );
+        $this->assertEquals('Romans 1:1', $result[1]); // reference
+        $this->assertNull($result[0]);                 // no keywords
+        $this->assertFalse($result[3]);                // no disambiguation
+        $this->assertCount(0, $result[2]);
+
+        // 6) The book is resolved in the request's language, so a foreign-language
+        //    `disamb_book` works too (Russian "Руфь" = Ruth).
+        $result = Passage::mapRequest(
+            ['request' => 'благодать', 'bible' => 'synodal', 'disamb_book' => 'Руфь'],
+            ['ru'],
+            []
+        );
+        $this->assertTrue($result[3]);
+        $this->assertCount(1, $result[2]);
+        $this->assertEquals('Руфь', $result[2][0]['simple']);
+    }
+
+    public function testForeignBookPassageWithParenthesesIsTreatedAsReference()
+    {
+        // Book names in some languages contain parentheses, e.g. Latvian
+        // "Pirmā Mozus grāmata (Genesis)". A passage using such a name in the request field
+        // must be routed to the reference (not misclassified as a boolean/keyword search just
+        // because it contains parentheses), for every kind of range dash (BSS-265/270).
+        $book = 'Pirmā Mozus grāmata (Genesis)';
+
+        $dashes = [
+            'hyphen'    => '-',
+            'en dash'   => "\u{2013}",
+            'em dash'   => "\u{2014}",
+            'horiz bar' => "\u{2015}",
+            'minus'     => "\u{2212}",
+        ];
+
+        foreach ($dashes as $label => $dash) {
+            $request = $book . ' 1:1' . $dash . '2';
+            $result = Passage::mapRequest(['request' => $request, 'bible' => 'test'], ['lv'], []);
+
+            $this->assertNull($result[0], "Expected no keywords for $label range");
+            // Range dashes are normalized to '-' on the reference.
+            $this->assertEquals($book . ' 1:1-2', $result[1], "Expected reference for $label range");
         }
     }
 

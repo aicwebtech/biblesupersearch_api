@@ -311,6 +311,130 @@ class ApiControllerTest extends TestCase
     }    
 
     /**
+     * Cacheable read endpoints (GET) should send public Cache-Control + ETag
+     * and must NOT set session/CSRF cookies (BSS-272).
+     *
+     * @return void
+     */
+    public function testCacheHeadersOnReadEndpoints()
+    {
+        $cases = [
+            '/api/books?language=es'            => 86400,
+            '/api/statics?language=es'          => 3600,
+            '/api/query?request=faith&bible=kjv' => 3600,
+        ];
+
+        foreach($cases as $uri => $maxAge) {
+            $response = $this->getJson($uri);
+
+            if($response->status() == 429) {
+                $this->markTestSkipped('429 Skipping due to rate limiting');
+            }
+
+            $response->assertStatus(200);
+
+            $cacheControl = (string) $response->headers->get('Cache-Control');
+            $this->assertNotSame('', $cacheControl, "Cache-Control missing for {$uri}");
+            $this->assertStringContainsString('public', $cacheControl, "Cache-Control public missing for {$uri}");
+            $this->assertStringContainsString('max-age=' . $maxAge, $cacheControl, "max-age missing for {$uri}");
+            $this->assertNotEmpty($response->headers->get('ETag'), "ETag missing for {$uri}");
+            $this->assertEmpty($response->headers->get('Set-Cookie'), "Set-Cookie present for {$uri}");
+        }
+    }
+
+    /**
+     * A matching If-None-Match should yield a 304 Not Modified (BSS-272).
+     *
+     * @return void
+     */
+    public function test304OnMatchingEtag()
+    {
+        $response = $this->getJson('/api/books?language=es');
+
+        if($response->status() == 429) {
+            $this->markTestSkipped('429 Skipping due to rate limiting');
+        }
+
+        $response->assertStatus(200);
+        $etag = $response->headers->get('ETag');
+        $this->assertNotEmpty($etag);
+
+        $cached = $this->getJson('/api/books?language=es', ['If-None-Match' => $etag]);
+        $cached->assertStatus(304);
+        $this->assertEmpty($cached->getContent());
+    }
+
+    /**
+     * POST (non-idempotent) requests must not be marked publicly cacheable (BSS-272).
+     *
+     * @return void
+     */
+    public function testNoCacheHeadersOnPost()
+    {
+        $response = $this->postJson('/api/books', ['language' => 'es']);
+
+        if($response->status() == 429) {
+            $this->markTestSkipped('429 Skipping due to rate limiting');
+        }
+
+        $response->assertStatus(200);
+        $this->assertStringNotContainsString('public', (string) $response->headers->get('Cache-Control'));
+    }
+
+    /**
+     * Error (non-200) responses must not be marked publicly cacheable (BSS-272).
+     *
+     * @return void
+     */
+    public function testErrorResponsesNotCached()
+    {
+        $response = $this->getJson('/api/query');
+
+        if($response->status() == 429) {
+            $this->markTestSkipped('429 Skipping due to rate limiting');
+        }
+
+        $response->assertStatus(400);
+        $this->assertStringNotContainsString('public', (string) $response->headers->get('Cache-Control'));
+    }
+
+    /**
+     * JSONP responses (a 'callback' is present) must not be marked publicly
+     * cacheable, even though they are GET 200 responses (BSS-272).
+     *
+     * @return void
+     */
+    public function testJsonpResponsesNotCached()
+    {
+        $response = $this->getJson('/api/books?language=es&callback=mycb');
+
+        if($response->status() == 429) {
+            $this->markTestSkipped('429 Skipping due to rate limiting');
+        }
+
+        $response->assertStatus(200);
+        $this->assertStringNotContainsString('public', (string) $response->headers->get('Cache-Control'));
+    }
+
+    /**
+     * Pretty-printed error views are HTML 200 responses and must not be
+     * marked publicly cacheable (BSS-272).
+     *
+     * @return void
+     */
+    public function testPrettyPrintedErrorsNotCached()
+    {
+        $response = $this->get('/api/query?pretty_print=1');
+
+        if($response->status() == 429) {
+            $this->markTestSkipped('429 Skipping due to rate limiting');
+        }
+
+        $response->assertStatus(200);
+        $this->assertStringNotContainsString('public', (string) $response->headers->get('Cache-Control'));
+    }
+
+    /**
      * Tests of the 'download' action
      *
      * @return void
