@@ -203,14 +203,14 @@ class SqlSearch {
             return ' ';
         }, $search);
 
-        // '=' is a math symbol (\p{Sm}), so the \p{P} pass above never sees it.
-        // Strip it alongside the other unsafe characters: it has meaning in SQL
-        // and is never needed in a keyword search. See BSS-240 (";=," strip).
         // Unicode dashes and the math minus sign (U+2010–U+2015, U+2212) are word
         // separators in free-text searches. They must be collapsed to a space; if left in
         // place they are neither a recognised boolean operator nor stripped, and leak into
         // the generated SQL as a stray operator (e.g. "... LIKE :bd6)−(text LIKE :bd7)"),
         // producing a database syntax error. The em-dash is included here as well.
+        // '=' is a math symbol (\p{Sm}), so the \p{P} pass above never sees it.
+        // Strip it alongside the other unsafe characters: it has meaning in SQL
+        // and is never needed in a keyword search. See BSS-240 (";=," strip).
         $other = ['—', '„', '“','”', '‐', '‑', '‒', '–', '―', '−', '='];
 
         $search = str_replace($other, ' ', $search);
