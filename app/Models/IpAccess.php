@@ -26,17 +26,30 @@ class IpAccess extends Model implements AccessLogInterface
 
     static public function findOrCreateByIpOrDomain($ip_address = null, $host = null) 
     {
-        if($ip_address === true) {
-            $default_host = (array_key_exists('HTTP_REFERER', $_SERVER)) ? $_SERVER['HTTP_REFERER'] : 'localhost';
+        // When called with `true`, the IP and domain are derived from the
+        // current request; an explicit IP/host comes from trusted server-side
+        // code (admin tools, tests) and is always honored as-is.
+        $from_request = ($ip_address === true);
+
+        if($from_request) {
+            // Trust only browser-set headers for the domain, never client-supplied
+            // request parameters. See ApiAccessManager::trustedDomain().
+            $default_host = $_SERVER['HTTP_ORIGIN'] ?? $_SERVER['HTTP_REFERER'] ?? 'localhost';
             $host = $host ?: $default_host;
             $ip_address = (array_key_exists('REMOTE_ADDR', $_SERVER))  ? $_SERVER['REMOTE_ADDR']  : '127.0.0.1';
         }
 
         $domain = ApiAccessManager::parseDomain($host);
 
-        if($domain) {
+        // A request-derived domain comes from the forgeable Origin/Referer
+        // headers, so it only earns its own rate-limit bucket when it is
+        // privileged (explicitly whitelisted, or the API's own host). Otherwise
+        // a client could rotate the header to mint unlimited fresh daily quotas,
+        // so such traffic is bucketed strictly by IP. See
+        // ApiAccessManager::isDomainPrivileged().
+        if($domain && (!$from_request || ApiAccessManager::isDomainPrivileged($domain))) {
             $IP = static::firstOrNew(['domain' => $domain]);
-      
+
             if(!$IP->id) {
                 $IP->ip_address = $ip_address;
                 $IP->limit = ($ip_address == '127.0.0.1' || $ip_address == '::1') ? 0 : null;
@@ -132,18 +145,9 @@ class IpAccess extends Model implements AccessLogInterface
         }
 
         if($this->domain) {
-            $current_domain = '';
+            $current_domain = ApiAccessManager::currentHost();
 
-            if(array_key_exists('HTTP_HOST', $_SERVER)) {
-                $current_domain = $_SERVER['HTTP_HOST'];
-            }
-            elseif(array_key_exists('SERVER_NAME', $_SERVER)) {
-                $current_domain = $_SERVER['SERVER_NAME'];
-            }
-            
-            $current_domain = ApiAccessManager::parseDomain($current_domain);
-
-            if($current_domain == $this->domain) {
+            if($current_domain && $current_domain == $this->domain) {
                 return 0;
             }
         }

@@ -67,6 +67,49 @@ class SearchValidationTest extends TestCase
         ];
     }
 
+    /**
+     * BSS-240: regex metacharacters and stray symbols (e.g. "(", "+", "$") must
+     * never reach MySQL as an invalid REGEXP pattern or as a bare operator
+     * between term groups. Such input may legitimately yield "no results", but
+     * must never produce a SQL / system error.
+     */
+    #[DataProvider('unsafeSearchCharsDataProvider')]
+    public function testUnsafeSearchCharsDoNotCauseSqlError(string $search, string $search_type, bool $whole_words)
+    {
+        $Engine = Engine::getInstance();
+
+        $Engine->actionQuery([
+            'bible'       => 'kjv',
+            'search'      => $search,
+            'data_format' => 'raw',
+            'search_type' => $search_type,
+            'whole_words' => $whole_words,
+        ]);
+
+        foreach($Engine->getErrors() as $error) {
+            $this->assertStringNotContainsStringIgnoringCase('database error', $error, "[$search_type] '$search' produced a database error");
+            $this->assertStringNotContainsStringIgnoringCase('system error', $error, "[$search_type] '$search' produced a system error");
+        }
+
+        $this->addToAssertionCount(1);
+    }
+
+    public static function unsafeSearchCharsDataProvider()
+    {
+        return [
+            'unbalanced paren (phrase)'   => ['fa(ith', 'phrase', false],
+            'unbalanced paren (whole)'    => ['fa(ith', 'phrase', true],
+            'leading plus (phrase)'       => ['+faith', 'phrase', false],
+            'trailing plus (phrase)'      => ['faith+', 'phrase', false],
+            'dollar sign (whole word)'    => ['money$', 'phrase', true],
+            'dollar sign (and)'           => ['money$', 'and', false],
+            'bare dollar (and)'           => ['$', 'and', false],
+            'plus between words (and)'    => ['a+b', 'and', false],
+            'open bracket (phrase)'       => ['fa[ith', 'phrase', false],
+            'star quantifier (phrase)'    => ['*faith', 'phrase', false],
+        ];
+    }
+
     // Todo: rebuild the test for parallel language search
     // SEPARATE CLASS
     // Use separate process, data provider, other test standards ...

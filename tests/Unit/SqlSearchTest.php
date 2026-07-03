@@ -160,6 +160,36 @@ class SqlSearchTest extends TestCase
             $this->assertEquals('love joy', $output);
         }
     }
+    /**
+     * BSS-240: SQL-control characters ";=," must be stripped from keyword
+     * searches. ';' and ',' are punctuation (\p{P}); '=' is a math symbol
+     * (\p{Sm}) that the punctuation pass misses, so it is stripped explicitly.
+     */
+    public function testRemoveUnsafeCharactersStripsSqlControlChars()
+    {
+        $output = SqlSearch::removeUnsafeCharacters('John=5; faith, love');
+
+        $this->assertStringNotContainsString('=', $output);
+        $this->assertStringNotContainsString(';', $output);
+        $this->assertStringNotContainsString(',', $output);
+        // The actual keywords must survive intact.
+        $this->assertStringContainsString('John', $output);
+        $this->assertStringContainsString('5', $output);
+        $this->assertStringContainsString('faith', $output);
+        $this->assertStringContainsString('love', $output);
+    }
+
+    /**
+     * The "=" strip must not eat legitimate search operators (proximity ~,
+     * boolean | & ^, wildcard *), which are not math symbols / punctuation we remove.
+     */
+    public function testRemoveUnsafeCharactersKeepsSearchOperators()
+    {
+        $output = SqlSearch::removeUnsafeCharacters('faith* | hope');
+
+        $this->assertStringContainsString('*', $output);
+        $this->assertStringContainsString('|', $output);
+    }
 
     public function testParseSimpleQueryTermsSplitsAndDeduplicates()
     {

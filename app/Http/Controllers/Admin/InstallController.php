@@ -54,7 +54,7 @@ class InstallController extends Controller
             'name'      => 'required',
             'username'  => 'required|min:8|alpha_dash',
             'email'     => 'required|email',
-            'password'  => 'required|min:8',
+            'password'  => ['required', \Illuminate\Validation\Rules\Password::defaults()],
             'password2' => 'required|same:password',
         ], [
             'password2.same' => 'The two passwords do not match'

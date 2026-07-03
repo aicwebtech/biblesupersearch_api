@@ -31,7 +31,11 @@ class User extends Model implements AuthenticatableContract,
      *
      * @var array
      */
-    protected $fillable = ['name', 'username', 'email', 'password', 'user_access', 'comments'];
+    /*
+     * NOTE: `access_level` (the privilege field checked by the `auth:N` middleware)
+     * is intentionally NOT mass-assignable. It must only ever be set explicitly.
+     */
+    protected $fillable = ['name', 'username', 'email', 'password', 'comments'];
 
     /**
      * The attributes excluded from the model's JSON form.

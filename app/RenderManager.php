@@ -900,7 +900,6 @@ class RenderManager
         static::cleanUpTempZipFiles(false);
 
         if($space_needed_overall > $freed_space && $space_needed_render > 0) {
-            // echo "$space_needed_overall / $freed_space";
             return FALSE;
         }
 
@@ -953,7 +952,11 @@ class RenderManager
             return;
         }
 
-        $cmd = 'php ' . $_SERVER['DOCUMENT_ROOT'] . '../artisan bible:render ' . $format . ' "' . implode(',', $process_bibles) . '"'; 
+        // Every dynamic segment is shell-escaped: $format and the bible modules
+        // can originate from user input, and the paths are escaped defensively.
+        $cmd = 'php ' . escapeshellarg($_SERVER['DOCUMENT_ROOT'] . '../artisan')
+             . ' bible:render ' . escapeshellarg($format)
+             . ' ' . escapeshellarg(implode(',', $process_bibles));
 
         if($overwrite) {
             $cmd .= ' --overwrite';
@@ -962,7 +965,7 @@ class RenderManager
         // $cmd .= ' > /dev/null 2>&1';
         // $cmd .= ' > /dev/null & ';
         // $cmd .= ' > /dev/null ';
-        $cmd .= ' > ' . $_SERVER['DOCUMENT_ROOT'] . '../bibles/rendered/log_' . time() . '.txt';
+        $cmd .= ' > ' . escapeshellarg($_SERVER['DOCUMENT_ROOT'] . '../bibles/rendered/log_' . time() . '.txt');
 
         // Use Laravel queues???
 
