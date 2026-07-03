@@ -66,8 +66,7 @@ class AppInstall extends Command
             $User->access_level = 100;
             $User->save();
 
-            $this->warn("Admin user created with password: {$password}");
-            $this->warn('Store this now and change it after first login.');
+            $this->warn('Admin user created. Set a password immediately using: php artisan user:password admin <new-password>');
         }
 
         // Populate the Bible table
