@@ -173,7 +173,12 @@ class BookAbstract extends Model
             else {
                 // Intentionally no dynamic-code execution fallback here. If no
                 // writable location is available to materialize the class, fail loudly.
-                throw new \RuntimeException('Unable to generate book model class: no writable directory available');
+                throw new \RuntimeException(sprintf(
+                    'Unable to generate book model class "%s": no writable directory available (checked: %s, %s)',
+                    $model_class,
+                    dirname(__FILE__),
+                    sys_get_temp_dir()
+                ));
             }
         }
     }
