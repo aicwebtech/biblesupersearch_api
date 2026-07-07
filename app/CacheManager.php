@@ -8,21 +8,45 @@ class CacheManager
 {
     protected $hash_size = 10;
 
-    public function createCache($form_data, $parsing = []) 
+    public function createCache($form_data, $parsing = [])
     {
         $processed = $this->processFormData($form_data, $parsing);
         // Attempt to find / reuse an existing cache - is this a good idea?
         $Cache = $this->_getCacheByProcessedFormData($processed);
 
-        if(!$Cache) {
-            $Cache = new Cache();
-            $Cache->hash = $this->_generateHash();
-            $Cache->hash_long = $this->_generateLongHash($processed);
-            $Cache->form_data = $processed;
-            $Cache->save();
+        if($Cache) {
+            return $Cache;
         }
 
+        // Fresh query: populate the record now so the caller has its hash immediately, but
+        // defer the synchronous INSERT (~50ms on live) until after the response is sent. The
+        // cache row is only ever read back on a *later* request, so it never needs to be
+        // committed within the current one.
+        $Cache = new Cache();
+        $Cache->hash      = $this->_generateHash();
+        $Cache->hash_long = $this->_generateLongHash($processed);
+        $Cache->form_data = $processed;
+
+        $this->_deferCacheWrite($Cache);
+
         return $Cache;
+    }
+
+    /**
+     * Persist the cache record after the response has been flushed to the client, keeping the
+     * write off the request's critical path. A concurrent identical request may insert the same
+     * row first, so a unique-constraint violation is treated as a no-op.
+     */
+    protected function _deferCacheWrite(Cache $Cache): void
+    {
+        app()->terminating(function () use ($Cache) {
+            try {
+                $Cache->save();
+            }
+            catch (\Illuminate\Database\QueryException $e) {
+                // Row already persisted by a concurrent identical request; safe to ignore.
+            }
+        });
     }
 
     /**
