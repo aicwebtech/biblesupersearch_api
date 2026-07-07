@@ -127,4 +127,44 @@ class ParallelTest extends TestCase
         $this->assertEquals(66,         $results[23]['book_id']);
         $this->assertEquals('22:6',     $results[23]['chapter_verse']);
     }
+
+    /**
+     * Parallel searches are sliced to a single page before formatting, so the paging
+     * metadata must still describe the full result set (354 unique verses), not just
+     * the returned page. Guards the total/last_page computation for multi-Bible paging.
+     */
+    public function testParallelPaginationMetadata()
+    {
+        if(!Bible::isEnabled('bishops')) {
+            $this->markTestSkipped('Bible bishops not installed or enabled');
+        }
+
+        if(config('bss.parallel_search_maximum_results') < config('bss.global_maximum_results')) {
+            $this->markTestSkipped('Parallel search maximum results is overall maximum results, skipping');
+        }
+
+        $Engine = Engine::freshInstance();
+        config(['bss.pagination.limit' => 30]);
+
+        $Engine->actionQuery(['bible' => ['kjv','bishops'], 'search' => 'faith', 'whole_words' => FALSE, 'page' => 1]);
+        $paging = $Engine->getMetadata()->paging;
+
+        // 354 unique verses across both Bibles, 30 per page => 12 pages.
+        $this->assertEquals(354, $paging['total']);
+        $this->assertEquals(30,  $paging['per_page']);
+        $this->assertEquals(1,   $paging['current_page']);
+        $this->assertEquals(12,  $paging['last_page']);
+        $this->assertEquals(1,   $paging['from']);
+        $this->assertEquals(30,  $paging['to']);
+
+        // Last page carries the remaining 24 verses.
+        $Engine->actionQuery(['bible' => ['kjv','bishops'], 'search' => 'faith', 'whole_words' => FALSE, 'page' => 12]);
+        $paging = $Engine->getMetadata()->paging;
+
+        $this->assertEquals(354, $paging['total']);
+        $this->assertEquals(12,  $paging['current_page']);
+        $this->assertEquals(12,  $paging['last_page']);
+        $this->assertEquals(331, $paging['from']);
+        $this->assertEquals(354, $paging['to']);
+    }
 }

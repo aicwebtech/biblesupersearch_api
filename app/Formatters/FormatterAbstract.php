@@ -40,16 +40,18 @@ abstract class FormatterAbstract {
 
     abstract public function format();
 
-    protected function _mapResultsToPassages($results) 
+    protected function _mapResultsToPassages($results)
     {
         $passage_group_search = false;
+        $verses_by_bcv = [];
+        $use_verse_index = false;
 
         if($this->input['group_passage_search_results'] && $this->is_search && $this->has_passages) {
             $passage_group_search = true;
         }
 
         if(!($passage_group_search) && (!$this->has_passages || $this->is_search)) {
-            
+
             if(!$this->is_search) {
                 return FALSE;
             }
@@ -57,7 +59,9 @@ abstract class FormatterAbstract {
             $Passages = [];
 
             // We loop through every verse returned for every Bible requested,
-            // so none are omitted
+            // so none are omitted. Building a bcv => [module => verse] index in the same
+            // pass lets each (single-verse) passage claim its verse by direct lookup below,
+            // instead of re-scanning every result row for every passage (O(passages * verses)).
             foreach($results as $bible => $verses) {
                 foreach($verses as $verse) {
                     $bcv = $verse->book * 1000000 + $verse->chapter * 1000 + $verse->verse;
@@ -65,11 +69,14 @@ abstract class FormatterAbstract {
                     if(empty($Passages[$bcv])) {
                         $Passages[$bcv] = Passage::createFromVerse($verse, $this->languages);
                     }
+
+                    $verses_by_bcv[$bcv][$bible] = $verse;
                 }
             }
 
             ksort($Passages, SORT_NUMERIC);
             $this->Passages = array_values($Passages);
+            $use_verse_index = true;
         }
 
         // We explode chapters only if not a search
@@ -78,7 +85,11 @@ abstract class FormatterAbstract {
         $this->Passages = Passage::explodePassages($this->Passages, true, $explode_chapters);
 
         foreach($this->Passages as $key => $Passage) {
-            if(!$Passage->claimVerses($results)) {
+            $claimed = ($use_verse_index && $Passage->isSingleVerse())
+                ? $Passage->claimVersesFromIndex($verses_by_bcv)
+                : $Passage->claimVerses($results);
+
+            if(!$claimed) {
                 unset($this->Passages[$key]);
             }
         }
