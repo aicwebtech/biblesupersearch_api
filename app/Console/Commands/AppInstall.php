@@ -51,7 +51,7 @@ class AppInstall extends Command
         } else {
             $adminUser = [
                 'name'     => 'Admin',
-                'username' => 'admin',
+                'username' => 'admin_' . Str::random(4),
                 'email'    => 'admin@example.com',
                 'password' => Str::password(16),
             ];
@@ -66,8 +66,10 @@ class AppInstall extends Command
 
         // Create the admin user. When bypassing prompts (e.g. CI) use defaults,
         // otherwise prompt the installer for the account details.
-        if (User::count() === 0) {
-            $this->createAdminUser($adminUser);
+        $this->createAdminUser($adminUser);
+
+        if($bypass) {
+            $this->warn('Admin user created, set password immediately using php artisan user:password ' . $adminUser['username'] . ' <new_password>');
         }
 
         // Populate the Bible table
@@ -116,7 +118,7 @@ class AppInstall extends Command
         $username = $this->askValidated('username', 'Username', $rules['username']);
         $email    = $this->askValidated('email', 'Email address', $rules['email']);
 
-        $this->line('Password requirements: at least 10 characters, including letters and numbers.');
+        $this->line('Password requirements: at least 10 characters, including upper and lower case letters, numbers, and symbols.');
         $password = $this->askValidatedPassword();
 
         return [
