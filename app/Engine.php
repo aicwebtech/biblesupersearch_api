@@ -229,6 +229,10 @@ class Engine implements ErrorInterface
             'bible' => [
                 'type' => 'array_string',
             ],
+            'disamb_book' => [
+                'type' => 'string',
+                'default' => null,
+            ],
             'whole_words' => [
                 'type' => 'bool',
                 'default' => false,
@@ -990,7 +994,7 @@ class Engine implements ErrorInterface
 
     protected function _startQueueProcess($queue = 'default') 
     {
-        $cmd = 'php ' . $_SERVER['DOCUMENT_ROOT'] . '../artisan queue:work --stop-when-empty'; 
+        $cmd = 'php ' . escapeshellarg($_SERVER['DOCUMENT_ROOT'] . '../artisan') . ' queue:work --stop-when-empty';
 
         // $cmd .= ' > /dev/null 2>&1';
         // $cmd .= ' > /dev/null & ';
@@ -1001,9 +1005,6 @@ class Engine implements ErrorInterface
         // See these options on php artisan queue:work
         //  --once
         //  --stop-when-empty
-
-        var_dump($cmd);
-        // die($cmd);
 
         exec($cmd);
         return TRUE;

@@ -6,6 +6,7 @@ use Illuminate\Database\Events\ConnectionEstablished;
 use Illuminate\Database\SQLiteConnection;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\ServiceProvider;
+use Illuminate\Validation\Rules\Password;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -16,6 +17,11 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        // Single source of truth for password strength. Applied wherever a
+        // password is validated via Password::defaults() (registration, reset,
+        // install). See AuthController, PasswordController, InstallController.
+        Password::defaults(fn () => Password::min(10)->mixedCase()->numbers()->symbols());
+
         Event::listen(ConnectionEstablished::class, function (ConnectionEstablished $event) {
             if ($event->connection instanceof SQLiteConnection) {
                 $pdo = $event->connection->getPdo();

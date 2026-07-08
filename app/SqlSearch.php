@@ -208,7 +208,10 @@ class SqlSearch {
         // place they are neither a recognised boolean operator nor stripped, and leak into
         // the generated SQL as a stray operator (e.g. "... LIKE :bd6)−(text LIKE :bd7)"),
         // producing a database syntax error. The em-dash is included here as well.
-        $other = ['—', '„', '“','”', '‐', '‑', '‒', '–', '―', '−'];
+        // '=' is a math symbol (\p{Sm}), so the \p{P} pass above never sees it.
+        // Strip it alongside the other unsafe characters: it has meaning in SQL
+        // and is never needed in a keyword search. See BSS-240 (";=," strip).
+        $other = ['—', '„', '“','”', '‐', '‑', '‒', '–', '―', '−', '='];
 
         $search = str_replace($other, ' ', $search);
         $search = preg_replace('/\s{2,}/', ' ', $search);
@@ -401,8 +404,9 @@ class SqlSearch {
         }
 
         $sql = [];
+        $bind_index = null;
         $fields    = $this->_termFields($term, $fields, $table_alias);
-        $term_fmts = $this->_termFormat($term, $exact_phrase, $whole_words, FALSE);
+        $term_fmts = $this->_termFormat($term, $exact_phrase, $whole_words, FALSE, TRUE);
         $term_ops  = $this->_termOperator($term, $exact_phrase, $whole_words, FALSE);
 
         $use_glob = ($exact_case && config('database.default') === 'sqlite');
@@ -416,11 +420,29 @@ class SqlSearch {
                     ? strtr($term_fmt, ['%' => '*', '_' => '?'])
                     : $term_fmt;
 
+                // An empty REGEXP pattern is illegal in MySQL (error 3685) and can
+                // arise from a stray boolean operator (e.g. a leading "+"). Skip it
+                // instead of emitting `field REGEXP ''`. See BSS-240.
+                if($term_ops[$key] === 'REGEXP' && $fmt === '') {
+                    continue;
+                }
+
                 $bind_index = static::pushToBindData($fmt, $binddata);
                 $sql_sub[]  = $this->_assembleTermSql($field, $bind_index, $term_ops[$key], $exact_case);
             }
 
+            if(empty($sql_sub)) {
+                continue;
+            }
+
             $sql[] = implode(' AND ', $sql_sub);
+        }
+
+        // Every field/format was skipped (e.g. only an empty REGEXP pattern remained),
+        // so there is no term SQL to emit. Fall back to a predicate that is always
+        // false rather than building invalid `()` SQL. See BSS-240.
+        if(empty($sql)) {
+            return array('(1 = 0)', $bind_index);
         }
 
         $sql = (count($sql) == 1) ? '(' . $sql[0] . ')' : '(' . implode(' OR ', $sql) . ')';
@@ -464,8 +486,30 @@ class SqlSearch {
         }
     }
 
-    protected function _termFormat($term, $exact_phrase = FALSE, $whole_words = FALSE, $primary_only = TRUE) {
+    /**
+     * Escape regex metacharacters so a literal term is matched as literal text
+     * by MySQL's REGEXP operator. Without this, input such as "fa(ith" or a
+     * leading "+"/"*" produces an invalid pattern and a SQL error. Applied to
+     * phrase / whole-word / Strong's searches only; explicit regexp searches
+     * are left untouched so power users keep full regex capability. The '%'
+     * wildcard sentinel is intentionally not escaped (it is converted to '.*'
+     * by the caller). See BSS-240.
+     *
+     * @param string $term
+     * @return string
+     */
+    protected static function escapeRegexpLiteral($term)
+    {
+        return preg_replace('/[.^$*+?()\[\]{}|\\\\]/', '\\\\$0', $term);
+    }
+
+    protected function _termFormat($term, $exact_phrase = FALSE, $whole_words = FALSE, $primary_only = TRUE, $escape_literal = FALSE) {
         $is_phrase = $is_regexp = $is_strongs = $uses_regexp = FALSE;
+        // Escape regex metacharacters in literal terms for the SQL REGEXP path
+        // only, so input like "fa(ith" cannot produce an invalid pattern / SQL
+        // error. The highlight path passes $escape_literal = FALSE to preserve
+        // its own (PCRE) regex handling. See BSS-240.
+        $esc = fn($t) => $escape_literal ? static::escapeRegexpLiteral($t) : $t;
         $term_inexact = '%' . trim($term, '%"`\'') . '%';
         $phrase_whitespace = ' ';
         $phrase_whitespace = '([^a-fi-zA-FI-Z]+)';  // General approximation (fails open - may pull MORE results than it should)
@@ -491,7 +535,7 @@ class SqlSearch {
             // $whole_words = TRUE;
 
             if(!$whole_words) {
-                $phrase_term = str_replace(' ', $phrase_whitespace, $term);
+                $phrase_term = str_replace(' ', $phrase_whitespace, $esc($term));
                 // $phrase_term = '.*' . str_replace(' ', $phrase_whitespace, $term) . '.*';
 
                 // to do - use this return if bible has no markup
@@ -528,7 +572,9 @@ class SqlSearch {
             $post = ($has_en_pct) ? '' : '([[:>:]]|[›])';
         }
 
-        $regexp_term = ($is_phrase) ? str_replace(' ', $phrase_whitespace, $term) : str_replace('%', '.*', trim($term, '%'));
+        $regexp_term = ($is_phrase)
+            ? str_replace(' ', $phrase_whitespace, $esc($term))
+            : str_replace('%', '.*', $esc(trim($term, '%')));
         $regexp_term = $pre . trim($regexp_term, '%') . $post;
 
         if($primary_only) {
@@ -1020,8 +1066,14 @@ class SqlSearch {
         // $query = str_replace('&  -', '-', $query);
         $query = trim(preg_replace('/\s+/', ' ', $query));
 
-        // strip invalid characters
-        // $query = preg_replace('/[' . static::$term_base_regexp . '\(\)|!&^ "\'0-9%]+/u', '', $query);
+        // Strip stray symbol characters that are neither recognised operators
+        // nor term characters. Left in place they leak into the generated SQL
+        // between term groups (e.g. "(...)$(...)" or "(...)+(...)") and cause a
+        // SQL syntax error or silently wrong results. The operator symbols
+        // | ^ ~ are preserved; punctuation (& % - ( )) is \p{P}, not \p{S}, so
+        // it is untouched. See BSS-240.
+        $query = preg_replace('/(?![|^~])\p{S}/u', ' ', $query);
+        $query = trim(preg_replace('/\s+/', ' ', $query));
 
 
         // Insert implied AND

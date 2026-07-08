@@ -28,8 +28,8 @@ class AppInstallTest extends TestCase
             'name'                  => 'Site Admin',
             'username'              => 'admin_user',
             'email'                 => 'admin@example.com',
-            'password'              => 'password123',
-            'password_confirmation' => 'password123',
+            'password'              => 'Password123!',
+            'password_confirmation' => 'Password123!',
         ]));
     }
 
@@ -39,8 +39,8 @@ class AppInstallTest extends TestCase
             'name'                  => '',
             'username'              => 'admin_user',
             'email'                 => 'admin@example.com',
-            'password'              => 'password123',
-            'password_confirmation' => 'password123',
+            'password'              => 'Password123!',
+            'password_confirmation' => 'Password123!',
         ]));
     }
 
@@ -50,16 +50,16 @@ class AppInstallTest extends TestCase
             'name'                  => 'Site Admin',
             'username'              => 'admin',
             'email'                 => 'admin@example.com',
-            'password'              => 'password123',
-            'password_confirmation' => 'password123',
+            'password'              => 'Password123!',
+            'password_confirmation' => 'Password123!',
         ]));
 
         $this->assertFalse($this->passes([
             'name'                  => 'Site Admin',
             'username'              => 'has spaces',
             'email'                 => 'admin@example.com',
-            'password'              => 'password123',
-            'password_confirmation' => 'password123',
+            'password'              => 'Password123!',
+            'password_confirmation' => 'Password123!',
         ]));
     }
 
@@ -69,8 +69,8 @@ class AppInstallTest extends TestCase
             'name'                  => 'Site Admin',
             'username'              => 'admin_user',
             'email'                 => 'not-an-email',
-            'password'              => 'password123',
-            'password_confirmation' => 'password123',
+            'password'              => 'Password123!',
+            'password_confirmation' => 'Password123!',
         ]));
     }
 
@@ -91,8 +91,8 @@ class AppInstallTest extends TestCase
             'name'                  => 'Site Admin',
             'username'              => 'admin_user',
             'email'                 => 'admin@example.com',
-            'password'              => 'password123',
-            'password_confirmation' => 'different123',
+            'password'              => 'Password123!',
+            'password_confirmation' => 'Different123!',
         ]));
     }
 }

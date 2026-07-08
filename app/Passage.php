@@ -1486,8 +1486,24 @@ class Passage {
                 else {
                     $keywords = $request_raw;
 
-                    // Check for a single book
-                    $Books = static::findBookByNameAndLanguage($request, $languages, TRUE);
+                    if(isset($input['disamb_book'])) {
+                        // Check disamb book first, if provided by UI.
+                        $disamb_book = $input['disamb_book'];
+
+                        if(is_numeric($disamb_book)) {
+                            // A numeric value is a book ID; book lookup expects IDs in "<id>B" form.
+                            // An out-of-range ID would resolve to a null book and crash the lookup.
+                            $Books = Book::isValidBookId($disamb_book)
+                                ? static::findBookByNameAndLanguage($disamb_book . 'B', $languages, TRUE)
+                                : [];
+                        } else {
+                            // A non-numeric value is a book name (possibly foreign-language).
+                            $Books = static::findBookByNameAndLanguage($disamb_book, $languages, TRUE);
+                        }
+                    } else {
+                        // Check the request for a book name, if it resolves to a book.
+                        $Books = static::findBookByNameAndLanguage($request, $languages, TRUE);
+                    }
 
                     if($Books && is_array($Books)) {
                         $has_disambiguation_book = TRUE;

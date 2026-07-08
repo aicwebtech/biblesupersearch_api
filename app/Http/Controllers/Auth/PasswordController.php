@@ -68,6 +68,22 @@ class PasswordController extends Controller
     }
 
     /**
+     * Get the password reset validation rules.
+     *
+     * Enforces the same strength policy as registration / install.
+     *
+     * @return array
+     */
+    protected function rules()
+    {
+        return [
+            'token'    => 'required',
+            'email'    => 'required|email',
+            'password' => ['required', 'confirmed', \Illuminate\Validation\Rules\Password::defaults()],
+        ];
+    }
+
+    /**
      * Reset the given user's password.
      *
      * @param  \Illuminate\Contracts\Auth\CanResetPassword  $user
