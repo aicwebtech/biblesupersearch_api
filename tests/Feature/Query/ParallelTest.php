@@ -147,8 +147,8 @@ class ParallelTest extends TestCase
         config(['bss.pagination.limit' => 30]);
 
         $Engine->actionQuery(['bible' => ['kjv','bishops'], 'search' => 'faith', 'whole_words' => FALSE, 'page' => 1]);
+        $this->assertFalse($Engine->hasErrors());
         $paging = $Engine->getMetadata()->paging;
-
         // 354 unique verses across both Bibles, 30 per page => 12 pages.
         $this->assertEquals(354, $paging['total']);
         $this->assertEquals(30,  $paging['per_page']);
@@ -159,8 +159,8 @@ class ParallelTest extends TestCase
 
         // Last page carries the remaining 24 verses.
         $Engine->actionQuery(['bible' => ['kjv','bishops'], 'search' => 'faith', 'whole_words' => FALSE, 'page' => 12]);
+        $this->assertFalse($Engine->hasErrors());
         $paging = $Engine->getMetadata()->paging;
-
         $this->assertEquals(354, $paging['total']);
         $this->assertEquals(12,  $paging['current_page']);
         $this->assertEquals(12,  $paging['last_page']);
