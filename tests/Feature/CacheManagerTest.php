@@ -45,6 +45,29 @@ class CacheManagerTest extends TestCase
     }
 
     /**
+     * Race guard: two concurrent identical requests, both deferred and neither persisted yet,
+     * must return the *same* deterministic hash. Otherwise the racer whose deferred INSERT loses
+     * on the hash_long unique index would hand back a hash that never gets persisted. After the
+     * writes fire, exactly one row exists and it resolves the hash both racers returned.
+     */
+    public function testConcurrentIdenticalRequestsShareResolvableHash()
+    {
+        $manager = new CacheManager();
+        $form_data = ['racy' => uniqid('', true)];
+
+        // No terminate() between the two calls => both writes are still pending (the race).
+        $first  = $manager->createCache($form_data);
+        $second = $manager->createCache($form_data);
+
+        $this->assertEquals($first->hash, $second->hash);
+
+        $this->app->terminate();
+
+        $this->assertEquals(1, Cache::where('hash', $first->hash)->count());
+        $this->assertNotNull($manager->getCacheByHash($second->hash));
+    }
+
+    /**
      * Identical form data reuses the already-persisted cache row rather than writing a new one.
      */
     public function testCreateCacheReusesExisting()
