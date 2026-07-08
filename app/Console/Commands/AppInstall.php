@@ -116,7 +116,7 @@ class AppInstall extends Command
         $username = $this->askValidated('username', 'Username', $rules['username']);
         $email    = $this->askValidated('email', 'Email address', $rules['email']);
 
-        $this->line('Password requirements: at least 8 characters, including letters and numbers.');
+        $this->line('Password requirements: at least 10 characters, including letters and numbers.');
         $password = $this->askValidatedPassword();
 
         return [
