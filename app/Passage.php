@@ -876,6 +876,50 @@ class Passage {
         return $verse_claimed;
     }
 
+    /**
+     * Claims verses for a single-verse passage using a pre-built book/chapter/verse index.
+     *
+     * Functionally equivalent to {@see claimVerses()} for single-verse passages (as produced
+     * by {@see createFromVerse()}), but claims the verse by direct key lookup instead of
+     * re-scanning every result row. This turns the parallel-search passage mapping from
+     * O(passages * verses) into O(verses). Callers must guard with {@see isSingleVerse()}
+     * and fall back to claimVerses() for anything that is not a single verse.
+     *
+     * @param array<int, array<string, object>> $verses_by_bcv Map of bcv => [module => verse row]
+     * @return bool Whether any verse was claimed
+     */
+    public function claimVersesFromIndex(array $verses_by_bcv): bool
+    {
+        $this->verses_count = 0;
+
+        if(!$this->Book) {
+            return FALSE;
+        }
+
+        $parsed = $this->chapter_verse_parsed;
+
+        if(!is_array($parsed) || count($parsed) != 1 || $parsed[0]['type'] != 'single' || $parsed[0]['v'] === NULL) {
+            return FALSE;
+        }
+
+        $bcv = $this->Book->id * 1000000 + $parsed[0]['c'] * 1000 + $parsed[0]['v'];
+
+        if(!isset($verses_by_bcv[$bcv])) {
+            return FALSE;
+        }
+
+        $verse_claimed = FALSE;
+
+        foreach($verses_by_bcv[$bcv] as $bible => $verse) {
+            $this->verses[ $bible ][ $verse->chapter ][ $verse->verse ] = $verse;
+            $verse->claimed = TRUE;
+            $verse_claimed = TRUE;
+        }
+
+        $this->verses_count = $verse_claimed ? 1 : 0;
+        return $verse_claimed;
+    }
+
     public function verseInPassage($verse) 
     {
         $b = $verse->book;

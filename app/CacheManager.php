@@ -4,25 +4,50 @@ namespace App;
 
 use App\Models\Cache;
 
-class CacheManager 
+class CacheManager
 {
-    protected $hash_size = 10;
-
-    public function createCache($form_data, $parsing = []) 
+    public function createCache($form_data, $parsing = [])
     {
         $processed = $this->processFormData($form_data, $parsing);
         // Attempt to find / reuse an existing cache - is this a good idea?
         $Cache = $this->_getCacheByProcessedFormData($processed);
 
-        if(!$Cache) {
-            $Cache = new Cache();
-            $Cache->hash = $this->_generateHash();
-            $Cache->hash_long = $this->_generateLongHash($processed);
-            $Cache->form_data = $processed;
-            $Cache->save();
+        if($Cache) {
+            return $Cache;
         }
 
+        // Fresh query: populate the record now so the caller has its hash immediately, but
+        // defer the synchronous INSERT (~50ms on live) until after the response is sent. The
+        // cache row is only ever read back on a *later* request, so it never needs to be
+        // committed within the current one. The hash is derived deterministically from the
+        // query so concurrent identical requests agree on it even before the row is persisted.
+        $Cache = new Cache();
+        $Cache->hash      = $this->_generateHash($processed);
+        $Cache->hash_long = $this->_generateLongHash($processed);
+        $Cache->form_data = $processed;
+
+        $this->_deferCacheWrite($Cache);
+
         return $Cache;
+    }
+
+    /**
+     * Persist the cache record after the response has been flushed to the client, keeping the
+     * write off the request's critical path. A concurrent identical request may persist the same
+     * (deterministic hash / hash_long) row first, so a unique-constraint violation is treated as
+     * a no-op - the already-persisted row still resolves the hash this request handed back.
+     */
+    protected function _deferCacheWrite(Cache $Cache): void
+    {
+        app()->terminating(function () use ($Cache) {
+            try {
+                $Cache->save();
+            } catch (\Illuminate\Database\UniqueConstraintViolationException $e) {
+                // Row already persisted by a concurrent identical request; safe to ignore. Laravel
+                // normalises unique-violations into this exception across drivers (MySQL, SQLite),
+                // so this needs no driver-specific error-code check. Any other error still propagates.
+            }
+        });
     }
 
     /**
@@ -50,30 +75,16 @@ class CacheManager
         return Cache::where('hash_long', $hash_long)->first();
     }
 
-    protected function _generateHash() 
+    /**
+     * Deterministic public handle for a query. Deriving it from the (already unique) processed
+     * form data means concurrent identical requests produce the same hash, so even though the
+     * row write is deferred, every racer's returned hash resolves to the single persisted row.
+     * 16 hex chars stays well within the 20-char column while making cross-query collisions
+     * negligible.
+     */
+    protected function _generateHash(string $processed): string
     {
-        $hash = $this->_generateHashHelper();
-        $Cache = Cache::where('hash', $hash)->first();
-
-        while($Cache) {
-            $hash = $this->_generateHashHelper();
-            $Cache = Cache::where('hash', $hash)->first();
-        }
-
-        return $hash;
-    }
-
-    private function _generateHashHelper() 
-    {
-        $hash = '';
-
-        for($i = 1; $i <= $this->hash_size; $i ++) {
-            $num  = rand(0, 35);
-            $char = ($num < 10) ? $num : chr($num + 87);
-            $hash .= $char;
-        }
-
-        return $hash;
+        return substr(hash('sha256', $processed), 0, 16);
     }
 
     protected function _generateLongHash($processed) 

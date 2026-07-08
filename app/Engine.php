@@ -593,9 +593,29 @@ class Engine implements ErrorInterface
             $this->metadata->list = $Search ? $this->_formatResultsList($results, $input['page_limit'], $input['page']) : [];
         } 
 
+        // For paginated parallel (multi-Bible) searches, reduce the aligned result set to
+        // just the requested page of verses *before* the passage formatting runs. Otherwise
+        // the formatter builds (and claims) a passage for every matched verse across every
+        // Bible only to discard all but one page below - the dominant cost of parallel search.
+        $parallel_paginate = ($input['multi_bibles'] && $paginate && $Search &&
+            !$input['results_list'] && !$input['group_passage_search_results']);
+        $parallel_total = null;
+
+        if($parallel_paginate) {
+            list($results, $parallel_total) = $this->_sliceMultiBibleResultsToPage(
+                $results, (int) $input['page_limit'], (int) $input['page']
+            );
+        }
+
         $results = $this->_formatDataStructure($results, $input, $Passages, $Search);
 
-        if(($input['multi_bibles'] || $input['results_list']) && $paginate) {
+        if($parallel_paginate) {
+            // $results is already limited to the current page; build the paginator with the
+            // pre-computed total so the paging metadata still reflects the full result count.
+            $Paginator = new Paginator($results, $parallel_total, $input['page_limit'], $input['page']);
+            $paging = $this->_getCleanPagingData($Paginator);
+        }
+        elseif(($input['multi_bibles'] || $input['results_list']) && $paginate) {
             if($input['multi_bibles']) {
                 $results = array_slice($results, 0, config('bss.parallel_search_maximum_results'));
             }
@@ -1570,13 +1590,66 @@ class Engine implements ErrorInterface
         return in_array($data_format, $allowed);
     }
 
-    protected function _buildPaginator($data, $per_page, $current_page) 
+    protected function _buildPaginator($data, $per_page, $current_page)
     {
         $total = count($data);
         $offset = $per_page * ($current_page - 1);
         $data = array_slice($data, $offset, $per_page);
         $Paginator = new Paginator($data, $total, $per_page, $current_page);
         return $Paginator;
+    }
+
+    /**
+     * Reduces a multi-Bible (parallel) search result set to only the verses on the requested
+     * page, before the (relatively expensive) passage formatting runs. Pages are indexed by
+     * the union of matched book/chapter/verse positions across all Bibles, matching the order
+     * and count the post-format paginator would otherwise produce.
+     *
+     * @param array $results  Map of module => array of verse rows
+     * @param int $page_limit
+     * @param int $page
+     * @return array{0: array, 1: int} [results limited to the page, total verse count (capped)]
+     */
+    protected function _sliceMultiBibleResultsToPage($results, $page_limit, $page)
+    {
+        $bcvs = [];
+
+        foreach($results as $verses) {
+            foreach($verses as $verse) {
+                $bcv = $verse->book * 1000000 + $verse->chapter * 1000 + $verse->verse;
+                $bcvs[$bcv] = true;
+            }
+        }
+
+        ksort($bcvs, SORT_NUMERIC);
+        $bcvs = array_keys($bcvs);
+
+        // Mirror the parallel result ceiling applied when paginating post-format.
+        $max = (int) config('bss.parallel_search_maximum_results');
+
+        if($max && count($bcvs) > $max) {
+            $bcvs = array_slice($bcvs, 0, $max);
+        }
+
+        $total  = count($bcvs);
+        $offset = $page_limit * max(0, $page - 1);
+        $window = array_fill_keys(array_slice($bcvs, $offset, $page_limit), true);
+
+        $sliced = [];
+
+        foreach($results as $bible => $verses) {
+            $sliced[$bible] = [];
+
+            foreach($verses as $verse) {
+                $bcv = $verse->book * 1000000 + $verse->chapter * 1000 + $verse->verse;
+
+                if(isset($window[$bcv])) {
+                    $sliced[$bible][] = $verse;
+                }
+            }
+        }
+
+        return [$sliced, $total];
     }
 
     protected function _sanitizeInput($input, $parsing) 
