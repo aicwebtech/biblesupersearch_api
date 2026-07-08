@@ -53,7 +53,7 @@ class AppInstall extends Command
                 'name'     => 'Admin',
                 'username' => 'admin',
                 'email'    => 'admin@example.com',
-                'password' => 'admin',
+                'password' => Str::password(16),
             ];
         }
 

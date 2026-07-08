@@ -42,9 +42,11 @@ class CacheManager
         app()->terminating(function () use ($Cache) {
             try {
                 $Cache->save();
-            }
-            catch (\Illuminate\Database\QueryException $e) {
-                // Row already persisted by a concurrent identical request; safe to ignore.
+            } catch (\Illuminate\Database\QueryException $e) {
+                // Ignore duplicate-key errors from a concurrent identical request; rethrow anything else.
+                if (!isset($e->errorInfo[1]) || (int) $e->errorInfo[1] !== 1062) {
+                    throw $e;
+                }
             }
         });
     }
