@@ -140,7 +140,7 @@ class ParallelTest extends TestCase
         }
 
         if(config('bss.parallel_search_maximum_results') < config('bss.global_maximum_results')) {
-            $this->markTestSkipped('Parallel search maximum results is overall maximum results, skipping');
+            $this->markTestSkipped('Parallel search maximum results is less than global maximum results; paging totals may be capped, skipping');
         }
 
         $Engine = Engine::freshInstance();
