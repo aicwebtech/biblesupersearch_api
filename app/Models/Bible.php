@@ -1107,4 +1107,67 @@ class Bible extends Model
 
         return implode(',', $parts);
     }
+
+    /**
+     * Converts a compact book list string back into a sorted, unique integer array of book IDs.
+     * Inverse of encodeBookList(). Shorthands: 'ot' => 1-39, 'nt' => 40-66, 'entire' => 1-66.
+     *
+     * @return array<int>
+     */
+    public static function decodeBookList(string $bookList): array
+    {
+        if ($bookList === '') {
+            return [];
+        }
+
+        $books = [];
+
+        foreach (explode(',', $bookList) as $token) {
+            $token = trim($token);
+
+            switch ($token) {
+                case 'entire':
+                    array_push($books, ...range(1, 66));
+                    break;
+                case 'ot':
+                    array_push($books, ...range(1, 39));
+                    break;
+                case 'nt':
+                    array_push($books, ...range(40, 66));
+                    break;
+                case '':
+                    break;
+                default:
+                    $books[] = (int) $token;
+            }
+        }
+
+        $books = array_values(array_unique($books));
+        sort($books);
+
+        return $books;
+    }
+
+    /**
+     * Merges multiple book list strings into a single sorted, unique integer array of book IDs.
+     * Per BSS-266: a merge containing 'entire', or both 'ot' and 'nt', yields all 66 books.
+     *
+     * @param array<string> $bookLists
+     * @return array<int>
+     */
+    public static function mergeBookLists(array $bookLists): array
+    {
+        $set = [];
+
+        foreach ($bookLists as $bookList) {
+            foreach (static::decodeBookList((string) $bookList) as $book) {
+                $set[$book] = true;
+            }
+        }
+
+        $books = array_keys($set);
+        sort($books);
+
+        return $books;
+    }
 }

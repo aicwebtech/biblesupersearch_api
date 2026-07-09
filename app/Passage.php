@@ -46,6 +46,7 @@ class Passage {
     protected $is_contextual = FALSE;
     protected $contextual_range = 5;
     protected $partial_verses = false;      // Whether the passage actually only contains a subset of the verses indicated by it's reference (mainly for passage-search combinations)
+    protected $available_books;             // Memoized sorted list of book IDs available across $this->Bibles (BSS-266)
 
     public function __construct() 
     {
@@ -744,10 +745,18 @@ class Passage {
         $book_class = Book::getClassNameByLanguage($language);
         $book_com = config('bss.books_common.' . $this->Book->id);
 
-        $prev_book_id = $this->Book->id - 1;
-        $prev_book_id = ($prev_book_id >= 1) ? $prev_book_id : NULL;
-        $next_book_id = $this->Book->id + 1;
-        $next_book_id = ($next_book_id <= count(config('bss.books_common'))) ? $next_book_id : NULL;
+        $available_books = $this->getAvailableBooks();
+        $prev_book_id = $next_book_id = NULL;
+
+        foreach($available_books as $book_id) {
+            if($book_id < $this->Book->id) {
+                $prev_book_id = $book_id;   // Keep the largest available book below the current one
+            } elseif($book_id > $this->Book->id) {
+                $next_book_id = $book_id;   // Sorted ascending: first book above is next; prev already captured
+                break;
+            }
+        }
+
         $PrevBook = $NextBook = NULL;
         $whole_chapter = ($this->chapter_min && strval($this->chapter_min) != $this->chapter_verse);
         $whole_chapter = $this->partial_verses ? true : $whole_chapter;
@@ -814,6 +823,32 @@ class Passage {
         $nav['pb']  = $prev_book_id;
 
         return $nav;
+    }
+
+    /**
+     * Returns the sorted list of book IDs available across the Bibles on this passage (BSS-266).
+     * Used as the source of truth for prev/next book navigation so that absent books (e.g. the
+     * Old Testament when only an NT Bible is selected) are skipped. Falls back to all books when
+     * no book list data is available, preserving full-Bible navigation behavior.
+     *
+     * @return array<int>
+     */
+    protected function getAvailableBooks(): array {
+        if($this->available_books !== null) {
+            return $this->available_books;
+        }
+
+        $book_lists = [];
+
+        foreach($this->Bibles as $Bible) {
+            $book_lists[] = $Bible->getBookList();
+        }
+
+        $merged = Bible::mergeBookLists($book_lists);
+
+        $this->available_books = !empty($merged) ? $merged : range(1, count(config('bss.books_common')));
+
+        return $this->available_books;
     }
 
     public function getPrimaryLanguage() {
