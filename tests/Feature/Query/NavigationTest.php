@@ -123,7 +123,124 @@ class NavigationTest extends TestCase
         $this->assertEquals('Revelation 19', $results[0]['nav']['next_chapter']);
     }
 
-    public function testContext() 
+    /**
+     * BSS-266: prev/next book navigation must skip books that are absent from the queried Bible.
+     * The 'tyndale' testing Bible contains Genesis-Deuteronomy (1-5), Jonah (32) and the full NT,
+     * so navigation must jump across the 6-31 and 33-39 gaps rather than stepping +/-1.
+     */
+    public function testNavSkipsGapsForPartialOtBible()
+    {
+        $Engine = new Engine();
+
+        // Deuteronomy (5) is the last available OT book before the gap: next jumps to Jonah (32).
+        $results = $Engine->actionQuery(['bible' => 'tyndale', 'reference' => 'Deuteronomy 1', 'context' => TRUE]);
+        $this->assertFalse($Engine->hasErrors());
+        $this->assertEquals(4,          $results[0]['nav']['pb']);          // Numbers
+        $this->assertEquals(32,         $results[0]['nav']['nb']);          // Jonah, skipping 6-31
+        $this->assertEquals('Numbers',  $results[0]['nav']['prev_book']);
+        $this->assertEquals('Jonah',    $results[0]['nav']['next_book']);
+
+        // Last chapter of Deuteronomy: next chapter must roll into Jonah 1 across the gap.
+        $results = $Engine->actionQuery(['bible' => 'tyndale', 'reference' => 'Deuteronomy 34', 'context' => TRUE]);
+        $this->assertFalse($Engine->hasErrors());
+        $this->assertEquals(32,             $results[0]['nav']['ncb']);     // Jonah
+        $this->assertEquals(1,              $results[0]['nav']['ncc']);
+        $this->assertEquals('Deuteronomy 33', $results[0]['nav']['prev_chapter']);
+        $this->assertEquals('Jonah 1',        $results[0]['nav']['next_chapter']);
+
+        // Jonah (32) sits alone: previous jumps back to Deuteronomy (5), next forward to Matthew (40).
+        $results = $Engine->actionQuery(['bible' => 'tyndale', 'reference' => 'Jonah 1', 'context' => TRUE]);
+        $this->assertFalse($Engine->hasErrors());
+        $this->assertEquals(5,                 $results[0]['nav']['pb']);   // Deuteronomy
+        $this->assertEquals(40,                $results[0]['nav']['nb']);   // Matthew
+        $this->assertEquals('Deuteronomy',     $results[0]['nav']['prev_book']);
+        $this->assertEquals('Matthew',         $results[0]['nav']['next_book']);
+        $this->assertEquals('Deuteronomy 34',  $results[0]['nav']['prev_chapter']);
+
+        // Last chapter of Jonah: next chapter rolls into Matthew 1.
+        $results = $Engine->actionQuery(['bible' => 'tyndale', 'reference' => 'Jonah 4', 'context' => TRUE]);
+        $this->assertFalse($Engine->hasErrors());
+        $this->assertEquals(40,        $results[0]['nav']['ncb']);          // Matthew
+        $this->assertEquals(1,         $results[0]['nav']['ncc']);
+        $this->assertEquals('Matthew 1', $results[0]['nav']['next_chapter']);
+
+        // Matthew (40) begins the NT: previous jumps back to Jonah (32).
+        $results = $Engine->actionQuery(['bible' => 'tyndale', 'reference' => 'Matthew 1', 'context' => TRUE]);
+        $this->assertFalse($Engine->hasErrors());
+        $this->assertEquals(32,      $results[0]['nav']['pb']);             // Jonah
+        $this->assertEquals(41,      $results[0]['nav']['nb']);             // Mark
+        $this->assertEquals('Jonah', $results[0]['nav']['prev_book']);
+        $this->assertEquals('Mark',  $results[0]['nav']['next_book']);
+    }
+
+    /**
+     * BSS-266: an NT-only Bible ('tr') must not offer navigation into the absent Old Testament.
+     */
+    public function testNavNtOnlyBibleHidesOldTestament()
+    {
+        $Engine = new Engine();
+
+        // Matthew (40) is the first available book: no previous book/chapter.
+        $results = $Engine->actionQuery(['bible' => 'tr', 'reference' => 'Matthew 1', 'context' => TRUE]);
+        $this->assertFalse($Engine->hasErrors());
+        $this->assertEquals(NULL,   $results[0]['nav']['pb']);
+        $this->assertEquals(NULL,   $results[0]['nav']['prev_book']);
+        $this->assertEquals(NULL,   $results[0]['nav']['prev_chapter']);
+        $this->assertEquals(41,     $results[0]['nav']['nb']);             // Mark
+        $this->assertEquals('Mark', $results[0]['nav']['next_book']);
+
+        // Revelation (66) is the last available book: no next book/chapter.
+        $results = $Engine->actionQuery(['bible' => 'tr', 'reference' => 'Revelation 22', 'context' => TRUE]);
+        $this->assertFalse($Engine->hasErrors());
+        $this->assertEquals(65,     $results[0]['nav']['pb']);             // Jude
+        $this->assertEquals(NULL,   $results[0]['nav']['nb']);
+        $this->assertEquals('Jude', $results[0]['nav']['prev_book']);
+        $this->assertEquals(NULL,   $results[0]['nav']['next_book']);
+    }
+
+    /**
+     * BSS-266: an OT-only Bible ('wlc') must not offer navigation into the absent New Testament.
+     * Asserted on book IDs only, since 'wlc' uses Hebrew book names and versification.
+     */
+    public function testNavOtOnlyBibleHidesNewTestament()
+    {
+        $Engine = new Engine();
+
+        // Genesis (1) is the first available book: no previous book, next is Exodus (2).
+        $results = $Engine->actionQuery(['bible' => 'wlc', 'reference' => 'Genesis 1', 'context' => TRUE]);
+        $this->assertFalse($Engine->hasErrors());
+        $this->assertEquals(NULL, $results[0]['nav']['pb']);
+        $this->assertEquals(2,    $results[0]['nav']['nb']);
+
+        // Malachi (39) is the last available book: no next book into the NT.
+        $results = $Engine->actionQuery(['bible' => 'wlc', 'reference' => 'Malachi 1', 'context' => TRUE]);
+        $this->assertFalse($Engine->hasErrors());
+        $this->assertEquals(38,   $results[0]['nav']['pb']);              // Zechariah
+        $this->assertEquals(NULL, $results[0]['nav']['nb']);
+    }
+
+    /**
+     * BSS-266: navigation books are the union across all queried Bibles. Querying Deuteronomy in
+     * both 'tyndale' (which lacks Joshua-Malachi) and 'wlc' (full OT) fills the gap, so the next
+     * book becomes Joshua (6) instead of tyndale's lone Jonah (32).
+     */
+    public function testNavMergesBooksAcrossBibles()
+    {
+        $Engine = new Engine();
+
+        // tyndale alone: gap after Deuteronomy jumps straight to Jonah (32).
+        $results = $Engine->actionQuery(['bible' => 'tyndale', 'reference' => 'Deuteronomy 1', 'context' => TRUE]);
+        $this->assertFalse($Engine->hasErrors());
+        $this->assertEquals(32, $results[0]['nav']['nb']);
+
+        // tyndale + wlc: wlc supplies Joshua (6), so the next book is now Joshua, not Jonah.
+        $results = $Engine->actionQuery(['bible' => ['tyndale', 'wlc'], 'reference' => 'Deuteronomy 1', 'context' => TRUE]);
+        $this->assertFalse($Engine->hasErrors());
+        $this->assertEquals(4, $results[0]['nav']['pb']);                 // Numbers
+        $this->assertEquals(6, $results[0]['nav']['nb']);                 // Joshua
+    }
+
+    public function testContext()
     {
         $Engine = new Engine();
         $Engine->setDefaultDataType('raw');
