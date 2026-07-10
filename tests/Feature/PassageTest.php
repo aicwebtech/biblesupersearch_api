@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use Tests\TestCase;
 use App\Passage;
+use App\Models\Bible;
 use App\Models\Books\BookAbstract as Book;
 use App\Models\Language;
 use PHPUnit\Framework\Attributes\DataProvider;
@@ -980,5 +981,154 @@ class PassageTest extends TestCase
         }
 
         return $residual;
+    }
+
+    /**
+     * Builds a Bible with an arbitrary book_list by overriding the
+     * in-memory book_list attribute (getBookList() returns it directly when already set).
+     * Uses the real 'kjv' Bible so reference parsing still resolves every book.
+     */
+    private function bibleWithBookList(string $book_list): Bible
+    {
+        $Bible = Bible::findByModule('kjv');
+        $Bible->book_list = $book_list;
+
+        return $Bible;
+    }
+
+    /**
+     * @return array<string, Bible>
+     */
+    private function ntOnlyBibles(): array
+    {
+        return ['kjv' => $this->bibleWithBookList('nt')];
+    }
+
+    /**
+     * Navigation data for a single reference against the given in-memory Bibles.
+     *
+     * @param array<string, Bible> $Bibles
+     * @return array<string, mixed>
+     */
+    private function navFor(string $reference, array $Bibles): array
+    {
+        $Passages = Passage::parseReferences($reference, ['en'], FALSE, $Bibles);
+
+        return $Passages[0]->getNavigationData(TRUE);
+    }
+
+    public function testNavigationHidesOldTestamentForNtOnlyBible()
+    {
+        // Matthew (book 40) is the first NT book: no previous book should be available.
+        $Passages = Passage::parseReferences('Matthew 1', ['en'], FALSE, $this->ntOnlyBibles());
+        $nav      = $Passages[0]->getNavigationData(TRUE);
+
+        $this->assertNull($nav['pb'], 'Matthew should have no previous book when only the NT is available');
+        $this->assertNull($nav['prev_book']);
+        $this->assertNull($nav['prev_chapter']);
+        $this->assertNull($nav['pcb']);
+
+        // Mark (book 41) is still the next book within the NT.
+        $this->assertSame(41, $nav['nb']);
+    }
+
+    public function testNavigationNextBookNullAtEndOfNtOnlyBible()
+    {
+        // Revelation (book 66) is the last NT book: no next book should be available.
+        $Passages = Passage::parseReferences('Revelation 1', ['en'], FALSE, $this->ntOnlyBibles());
+        $nav      = $Passages[0]->getNavigationData(TRUE);
+
+        $this->assertNull($nav['nb'], 'Revelation should have no next book');
+        $this->assertNull($nav['next_book']);
+        $this->assertSame(65, $nav['pb'], 'Previous book from Revelation should be Jude (65)');
+    }
+
+    public function testNavigationFallsBackToAllBooksWhenNoBookList()
+    {
+        // No Bibles supplied => fallback to all 66 books => normal +/-1 neighbors.
+        $Passages = Passage::parseReferences('Matthew 1', ['en']);
+        $nav      = $Passages[0]->getNavigationData(TRUE);
+
+        $this->assertSame(39, $nav['pb'], 'Full-Bible navigation should still reach Malachi (39) before Matthew');
+        $this->assertSame(41, $nav['nb']);
+    }
+
+    /**
+     * Mirrors the real 'tyndale' Bible layout: Genesis-Deuteronomy (1-5), Jonah (32), full NT.
+     * Navigation must jump across the absent-book gaps (6-31 and 33-39).
+     */
+    public function testNavigationSkipsGapsForPartialOtBible()
+    {
+        $Bibles = ['kjv' => $this->bibleWithBookList('1,2,3,4,5,32,nt')];
+
+        // Genesis (1) is the first available book: no previous book, next is Exodus (2).
+        $nav = $this->navFor('Genesis 1', $Bibles);
+        $this->assertNull($nav['pb'], 'Genesis should have no previous book');
+        $this->assertSame(2, $nav['nb']);
+
+        // Deuteronomy (5) is the last available OT book before the gap: next jumps to Jonah (32).
+        $nav = $this->navFor('Deuteronomy 1', $Bibles);
+        $this->assertSame(4, $nav['pb'], 'Previous book from Deuteronomy should be Numbers (4)');
+        $this->assertSame(32, $nav['nb'], 'Next book from Deuteronomy should skip to Jonah (32)');
+        $this->assertSame('Jonah', $nav['next_book']);
+
+        // Jonah (32) sits alone: previous jumps back to Deuteronomy (5), next to Matthew (40).
+        $nav = $this->navFor('Jonah 1', $Bibles);
+        $this->assertSame(5, $nav['pb'], 'Previous book from Jonah should skip back to Deuteronomy (5)');
+        $this->assertSame(40, $nav['nb'], 'Next book from Jonah should skip to Matthew (40)');
+
+        // Matthew (40) begins the NT: previous jumps back to Jonah (32).
+        $nav = $this->navFor('Matthew 1', $Bibles);
+        $this->assertSame(32, $nav['pb'], 'Previous book from Matthew should skip back to Jonah (32)');
+        $this->assertSame(41, $nav['nb']);
+    }
+
+    /**
+     * When the current book itself is absent from the available set (e.g. an OT book not in a
+     * partial-OT Bible), navigation still resolves to the nearest available neighbors.
+     */
+    public function testNavigationFromAbsentBookResolvesNearestNeighbors()
+    {
+        // tyndale layout again; Joshua (6) is absent (in the 6-31 gap).
+        $Bibles = ['kjv' => $this->bibleWithBookList('1,2,3,4,5,32,nt')];
+
+        $nav = $this->navFor('Joshua 1', $Bibles);
+        $this->assertSame(5, $nav['pb'], 'Nearest available book below Joshua is Deuteronomy (5)');
+        $this->assertSame(32, $nav['nb'], 'Nearest available book above Joshua is Jonah (32)');
+    }
+
+    /**
+     * Selecting an NT-only Bible together with an OT-only Bible merges to the full 66 books,
+     * so navigation behaves as a complete Bible.
+     */
+    public function testNavigationMergesMultipleBibles()
+    {
+        $Bibles = [
+            'tr'  => $this->bibleWithBookList('nt'),
+            'wlc' => $this->bibleWithBookList('ot'),
+        ];
+
+        $nav = $this->navFor('Matthew 1', $Bibles);
+        $this->assertSame(39, $nav['pb'], 'NT + OT Bibles merge to a full Bible: Malachi (39) precedes Matthew');
+        $this->assertSame(41, $nav['nb']);
+    }
+
+    /**
+     * Integration check against the real persisted 'tyndale' book_list (skipped if not installed).
+     */
+    public function testNavigationWithRealTyndaleBible()
+    {
+        if(!Bible::isEnabled('tyndale')) {
+            $this->markTestSkipped('Bible tyndale not installed or enabled');
+        }
+
+        $Bibles = ['tyndale' => Bible::findByModule('tyndale')];
+
+        $nav = $this->navFor('Matthew 1', $Bibles);
+        $this->assertSame(32, $nav['pb'], 'Previous book from Matthew in tyndale should be Jonah (32)');
+
+        $nav = $this->navFor('Jonah 1', $Bibles);
+        $this->assertSame(5, $nav['pb'], 'Previous book from Jonah in tyndale should be Deuteronomy (5)');
+        $this->assertSame(40, $nav['nb'], 'Next book from Jonah in tyndale should be Matthew (40)');
     }
 }
