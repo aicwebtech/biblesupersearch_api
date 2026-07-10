@@ -840,10 +840,19 @@ class Passage {
 
         $book_lists = [];
 
-        foreach($this->Bibles as $Bible) {
-            $book_lists[] = $Bible->getBookList();
-        }
+        if (!empty($this->Bibles)) {
+            foreach ($this->Bibles as $Bible) {
+                $book_lists[] = $Bible->getBookList();
+            }
+        } elseif (!empty($this->verses)) {
+            foreach (array_keys($this->verses) as $module) {
+                $Bible = Bible::findByModule($module);
 
+                if ($Bible) {
+                    $book_lists[] = $Bible->getBookList();
+                }
+            }
+        }
         $merged = Bible::mergeBookLists($book_lists);
 
         $this->available_books = !empty($merged) ? $merged : range(1, count(config('bss.books_common')));
