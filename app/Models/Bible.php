@@ -1128,7 +1128,7 @@ class Bible extends Model
             switch ($token) {
                 case 'entire':
                     array_push($books, ...range(1, 66));
-                    break;
+                    break 2;
                 case 'ot':
                     array_push($books, ...range(1, 39));
                     break;
@@ -1138,7 +1138,11 @@ class Bible extends Model
                 case '':
                     break;
                 default:
-                    $books[] = (int) $token;
+                    $book = (int) $token;
+                    
+                    if( $book >= 1 && $book <= 66) {
+                        $books[] = $book;
+                    }                
             }
         }
 

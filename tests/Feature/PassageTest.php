@@ -984,7 +984,7 @@ class PassageTest extends TestCase
     }
 
     /**
-     * Builds a Bible with an arbitrary book_list without touching the DB by overriding the
+     * Builds a Bible with an arbitrary book_list by overriding the
      * in-memory book_list attribute (getBookList() returns it directly when already set).
      * Uses the real 'kjv' Bible so reference parsing still resolves every book.
      */

@@ -4,8 +4,8 @@ namespace App;
 
 use App\Models\Books\BookAbstract as Book;
 use App\Models\Shortcuts\ShortcutAbstract as Shortcut;
-use App\Models\Bible;
 use App\Helpers;
+use App\Models\Bible;
 
 /**
  * Class for parsing and handling of Bible passage references
