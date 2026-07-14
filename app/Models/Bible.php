@@ -456,9 +456,12 @@ class Bible extends Model
             $Zip->close();
         }
 
-        $this->installed_at = date('Y-m-d H:i:s');
-        $this->needs_update = 0;
-        $this->save();
+        if ($res === TRUE) {
+            $this->installed_at = date('Y-m-d H:i:s');
+            $this->needs_update = 0;
+            $this->save();
+        }
+
         return ($res === TRUE);
     }
 
@@ -649,7 +652,12 @@ class Bible extends Model
             $json  = $Zip->getFromName('info.json');
             $attr  = json_decode($json, TRUE);
 
-            if(is_array($attr) && empty($attr['module_version'])) {
+            if (!is_array($attr)) {
+                $Zip->close();
+                return FALSE;
+            }
+
+            if (empty($attr['module_version'])) {
                 $attr['module_version'] = config('app.version');
             }
 
