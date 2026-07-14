@@ -54,9 +54,114 @@ class BibleTest extends TestCase
     }
 
     /**
+     * BSS-279: module_version must round-trip from the module file's info.json into the DB
+     * (it is fillable), instead of being overwritten with the app version on install.
+     */
+    public function testModuleVersionRoundTripsFromModuleFile()
+    {
+        $module = 'bss279rt';
+        $path   = Bible::getModulePath() . $module . '.zip';
+
+        Bible::where('module', $module)->delete();
+        $this->writeTestModuleZip($path, '6.1.0', $module);
+
+        try {
+            $Bible = Bible::createFromModuleFile($module);
+            $this->assertNotFalse($Bible);
+            // Previously null (not fillable); now loaded from info.json.
+            $this->assertEquals('6.1.0', $Bible->module_version);
+        }
+        finally {
+            Bible::where('module', $module)->delete();
+            if (is_file($path)) { unlink($path); }
+        }
+    }
+
+    /**
+     * BSS-279: needsUpdate() must detect a newer module file pulled in from git (mtime moves),
+     * ignore an unchanged file cheaply, and not false-flag on an equal-version rebuild.
+     */
+    public function testNeedsUpdateDetection()
+    {
+        $module = 'bss279det';
+        $path   = Bible::getModulePath() . $module . '.zip';
+
+        Bible::where('module', $module)->delete();
+        $this->writeTestModuleZip($path, '6.0.0', $module);
+
+        $Bible = Bible::createFromModuleFile($module);
+        $Bible->installed    = 1;
+        $Bible->installed_at = date('Y-m-d H:i:s', time() - 60);
+        $Bible->needs_update = 0;
+        $Bible->save();
+
+        try {
+            // Cheap gate: file older than install -> no update, zip not consulted.
+            $this->touchModule($path, time() - 120);
+            $this->assertFalse($Bible->fresh()->needsUpdate());
+
+            // File newer but same version (e.g. fresh clone resets mtimes) -> no false positive.
+            $this->writeTestModuleZip($path, '6.0.0', $module);
+            $this->touchModule($path, time() + 10);
+            $this->assertFalse($Bible->fresh()->needsUpdate());
+            $this->assertEquals(0, $Bible->fresh()->needs_update);
+
+            // File newer AND higher version -> update detected and flag persisted.
+            $this->writeTestModuleZip($path, '6.5.0', $module);
+            $this->touchModule($path, time() + 10);
+            $this->assertTrue($Bible->fresh()->needsUpdate());
+            $this->assertEquals(1, $Bible->fresh()->needs_update);
+
+            // Cheap gate returns the persisted flag without re-reading the zip: version on disk
+            // is equal (would compute FALSE) yet flag stays 1 because the file predates install.
+            $this->writeTestModuleZip($path, '6.0.0', $module);
+            $this->touchModule($path, time() - 300);
+            $B = $Bible->fresh();
+            $B->installed_at = date('Y-m-d H:i:s');
+            $B->needs_update = 1;
+            $B->save();
+            $this->assertTrue($B->fresh()->needsUpdate());
+        }
+        finally {
+            Bible::where('module', $module)->delete();
+            if (is_file($path)) { unlink($path); }
+        }
+    }
+
+    private function writeTestModuleZip($path, $version, $module)
+    {
+        if (is_file($path)) {
+            unlink($path);
+        }
+
+        $info = json_encode([
+            'name'           => 'BSS279 ' . $module,
+            'shortname'      => strtoupper($module),
+            'module'         => $module,
+            'lang'           => 'English',
+            'lang_short'     => 'en',
+            'official'       => 1,
+            'module_version' => $version,
+        ]);
+
+        $Zip = new \ZipArchive();
+        $Zip->open($path, \ZipArchive::CREATE | \ZipArchive::OVERWRITE);
+        $Zip->addFromString('info.json', $info);
+        $Zip->addFromString('verses.txt', '# test');
+        $Zip->close();
+        clearstatcache(TRUE, $path);
+    }
+
+    private function touchModule($path, $timestamp)
+    {
+        touch($path, $timestamp);
+        clearstatcache(TRUE, $path);
+    }
+
+    /**
      * Test installation of an Unofficial Bible module
      */
-    public function testInstallUnofficial() 
+    public function testInstallUnofficial()
     {
        if(!$this->runInstallTest) {
             $this->assertTrue(TRUE);

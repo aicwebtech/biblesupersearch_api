@@ -526,7 +526,6 @@ class BibleController extends Controller
 
         $Bible->module_updated_at = date('Y-m-d H:i:s');
         $Bible->needs_update = 0;
-        $Bible->module_version = config('app.version');
         $Bible->save();
 
         if($Bible->hasErrors()) {

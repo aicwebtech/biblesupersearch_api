@@ -99,6 +99,7 @@ class Bible extends Model
         'citation_limit',
         'restrict',
         'module_v2',
+        'module_version',
         'importer',
         'audio_enable',
         'tts_enable',
@@ -258,7 +259,6 @@ class Bible extends Model
                 $this->installed_at = date('Y-m-d H:i:s');
                 $this->module_updated_at = NULL;
                 $this->needs_update = 0;
-                $this->module_version = config('app.version');
 
                 if($enable) {
                     $this->enabled = 1;
@@ -302,6 +302,11 @@ class Bible extends Model
         if(is_file($path) && !is_writable($path)) {
             return $this->addError('Cannot write file: ' . $this->getModuleFilePathShort() . ' as user ' . exec('whoami'), 4);
         }
+
+        // export() is the single source that stamps the current app version onto the module.
+        // This value is written into the .zip's info.json and persists into the DB when the
+        // module is later installed; it is never overwritten elsewhere. See needsUpdate().
+        $this->module_version = config('app.version');
 
         $export_fields = static::getExportFields();
         $mode = ($overwrite) ? ZipArchive::OVERWRITE : ZipArchive::CREATE;
@@ -569,28 +574,7 @@ class Bible extends Model
         return is_file($this->getModuleFilePath());
     }
 
-    public function needsUpdate_OLD() {
-        return FALSE;
-
-        if(!$this->hasModuleFile()) {
-            return FALSE;
-        }
-
-        $install_ts = strtotime($this->installed_at);
-        $update_ts  = filemtime($this->getModuleFilePath());
-
-        if(!$install_ts || !$update_ts) {
-            return FALSE;
-        }
-
-        if($update_ts > $install_ts) {
-            return TRUE;
-        }
-
-        return FALSE;
-    }
-
-    public static function getExportFields() 
+    public static function getExportFields()
     {
         // Warning: Add new items to the end, do not change the order or existing modules will break
         return array('book', 'chapter', 'verse', 'text', 'italics', 'strongs');
@@ -976,52 +960,44 @@ class Bible extends Model
         // self::where('1','1')->get();
     }
 
-    public function needsUpdate() 
+    public function needsUpdate()
     {
-        // If module version is up to date with app version, no update needed
-        // In this case, update module version to match app version and clear needs_update flag if needed
-        if (!$this->module_version || version_compare($this->module_version, config('app.version')) >= 0) {
-            if($this->module_version != config('app.version') || $this->needs_update == 1) {  
-                $this->module_version = config('app.version');
-                $this->needs_update = 0;
-                $this->save();
-            }
-
-            return FALSE;
-        } elseif ($this->needs_update) {
-            return TRUE;
-        }
-
-        // Check module file for version info
-        $Zip  = $this->openModuleFile();
-
-        if(!$Zip) {
+        if (!$this->installed || !$this->hasModuleFile()) {
             return FALSE;
         }
-        
+
+        // Cheap gate: filemtime is near-free, opening every module zip on each admin list load
+        // is not.  A git pull bumps the mtime of the files it changes, so only inspect the zip
+        // when the module file is newer than the last install/update.
+        $install_ts = strtotime($this->installed_at);
+        $file_ts    = filemtime($this->getModuleFilePath());
+
+        if ($install_ts && $file_ts && $file_ts <= $install_ts) {
+            return (bool) $this->needs_update;
+        }
+
+        // Module file has changed on disk since install.  Compare the installed module_version
+        // (DB) against the version now on disk (the zip's info.json).  An update is available
+        // when the on-disk version is newer.
+        $Zip = $this->openModuleFile();
+
+        if (!$Zip) {
+            return (bool) $this->needs_update;
+        }
+
         $json = $Zip->getFromName('info.json');
+        $Zip->close();
         $meta = json_decode($json, TRUE);
 
-        // Check if module version in info.json is newer than current module version
-        // If so, flag as needing update
-        // The module version coming from the module file will always be <= app version
-        if (array_key_exists('module_version', $meta) && version_compare($this->module_version, $meta['module_version']) == -1) {
-            if ($this->needs_update == 0) {                
-                $this->needs_update = 1;
-                $this->save();
-            }
+        $module_version = is_array($meta) ? ($meta['module_version'] ?? NULL) : NULL;
+        $needs = ($module_version && version_compare($this->module_version, $module_version) < 0);
 
-            return TRUE;
-        } else {
-            // If flagged as needing update but module version is actually current, clear flag
-            if ($this->module_version != config('app.version') || $this->needs_update == 1) {                
-                $this->module_version = config('app.version');
-                $this->needs_update = 0;
-                $this->save();
-            }
+        if ((int) $this->needs_update !== (int) $needs) {
+            $this->needs_update = $needs ? 1 : 0;
+            $this->save();
         }
 
-        return FALSE;
+        return $needs;
     }
 
     public function getRandomReference($random_mode) 
