@@ -1004,8 +1004,8 @@ class Bible extends Model
         $Zip->close();
         $meta = json_decode($json, TRUE);
 
-        $module_version = is_array($meta) ? ($meta['module_version'] ?? NULL) : NULL;
-        $needs = ($module_version && version_compare($this->module_version, $module_version) < 0);
+        $module_version = is_array($meta) ? ($meta['module_version'] ?? '0') : NULL;
+        $needs = ($module_version && version_compare($this->module_version ?? '0', $module_version) < 0);
 
         if ((int) $this->needs_update !== (int) $needs) {
             $this->needs_update = $needs ? 1 : 0;
