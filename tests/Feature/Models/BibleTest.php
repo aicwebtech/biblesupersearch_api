@@ -190,6 +190,7 @@ class BibleTest extends TestCase
             'name'           => 'BSS279 ' . $module,
             'shortname'      => strtoupper($module),
             'module'         => $module,
+            'year'           => '2020',
             'lang'           => 'English',
             'lang_short'     => 'en',
             'official'       => 1,
