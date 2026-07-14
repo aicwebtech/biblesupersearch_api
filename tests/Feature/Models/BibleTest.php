@@ -128,21 +128,78 @@ class BibleTest extends TestCase
         }
     }
 
+    /**
+     * BSS-279: a module file whose info.json carries no module_version must land in the DB with
+     * the current app version rather than NULL, so later version comparisons have a baseline.
+     */
+    public function testModuleVersionDefaultsToAppVersionWhenMissing()
+    {
+        $module = 'bss279def';
+        $path   = Bible::getModulePath() . $module . '.zip';
+
+        Bible::where('module', $module)->delete();
+        $this->writeTestModuleZip($path, NULL, $module);
+
+        try {
+            $Bible = Bible::createFromModuleFile($module);
+            $this->assertNotFalse($Bible);
+            $this->assertEquals(config('app.version'), $Bible->module_version);
+        }
+        finally {
+            Bible::where('module', $module)->delete();
+            if (is_file($path)) { unlink($path); }
+        }
+    }
+
+    /**
+     * BSS-279: syncing on-disk metadata to the DB (updateMetaInfo) makes the module current, so a
+     * stale needs_update flag must be cleared -- otherwise needsUpdate()'s cheap mtime gate keeps
+     * returning the stale flag without re-inspecting the zip.
+     */
+    public function testUpdateMetaInfoClearsStaleNeedsUpdate()
+    {
+        $module = 'bss279meta';
+        $path   = Bible::getModulePath() . $module . '.zip';
+
+        Bible::where('module', $module)->delete();
+        $this->writeTestModuleZip($path, '6.0.0', $module);
+
+        $Bible = Bible::createFromModuleFile($module);
+        $Bible->installed    = 1;
+        $Bible->installed_at = date('Y-m-d H:i:s');
+        $Bible->needs_update = 1;
+        $Bible->save();
+
+        try {
+            $Bible->updateMetaInfo();
+            $this->assertEquals(0, $Bible->fresh()->needs_update);
+        }
+        finally {
+            Bible::where('module', $module)->delete();
+            if (is_file($path)) { unlink($path); }
+        }
+    }
+
     private function writeTestModuleZip($path, $version, $module)
     {
         if (is_file($path)) {
             unlink($path);
         }
 
-        $info = json_encode([
+        $info = [
             'name'           => 'BSS279 ' . $module,
             'shortname'      => strtoupper($module),
             'module'         => $module,
             'lang'           => 'English',
             'lang_short'     => 'en',
             'official'       => 1,
-            'module_version' => $version,
-        ]);
+        ];
+
+        if ($version !== NULL) {
+            $info['module_version'] = $version;
+        }
+
+        $info = json_encode($info);
 
         $Zip = new \ZipArchive();
         $Zip->open($path, \ZipArchive::CREATE | \ZipArchive::OVERWRITE);

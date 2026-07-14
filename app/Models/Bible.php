@@ -307,6 +307,7 @@ class Bible extends Model
         // This value is written into the .zip's info.json and persists into the DB when the
         // module is later installed; it is never overwritten elsewhere. See needsUpdate().
         $this->module_version = config('app.version');
+        $this->needs_update   = 0;
 
         $export_fields = static::getExportFields();
         $mode = ($overwrite) ? ZipArchive::OVERWRITE : ZipArchive::CREATE;
@@ -456,11 +457,12 @@ class Bible extends Model
         }
 
         $this->installed_at = date('Y-m-d H:i:s');
+        $this->needs_update = 0;
         $this->save();
         return ($res === TRUE);
-    }    
+    }
 
-    public function revertMetaInfo() 
+    public function revertMetaInfo()
     {
         $path = $this->getModuleFilePath();
 
@@ -646,15 +648,20 @@ class Bible extends Model
         if($Zip) {
             $json  = $Zip->getFromName('info.json');
             $attr  = json_decode($json, TRUE);
+
+            if(is_array($attr) && empty($attr['module_version'])) {
+                $attr['module_version'] = config('app.version');
+            }
+
             $Bible = static::create($attr);
             $Zip->close();
             return $Bible;
         }
 
         return FALSE;
-    }    
+    }
 
-    public static function updateFromModuleFile($module, $fields = []) 
+    public static function updateFromModuleFile($module, $fields = [])
     {
         if(!$module) {
             return FALSE;
@@ -967,12 +974,12 @@ class Bible extends Model
         }
 
         // Cheap gate: filemtime is near-free, opening every module zip on each admin list load
-        // is not.  A git pull bumps the mtime of the files it changes, so only inspect the zip
-        // when the module file is newer than the last install/update.
-        $install_ts = strtotime($this->installed_at);
+        // is not.  A git pull bumps the mtime of the files it changes, so skip the zip only when
+        // the module file is strictly older than the last install/update.
+        $install_ts = $this->installed_at ? strtotime($this->installed_at) : FALSE;
         $file_ts    = filemtime($this->getModuleFilePath());
 
-        if ($install_ts && $file_ts && $file_ts <= $install_ts) {
+        if ($install_ts && $file_ts && $file_ts < $install_ts) {
             return (bool) $this->needs_update;
         }
 
