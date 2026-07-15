@@ -1011,6 +1011,11 @@ class Bible extends Model
         }
 
         $module_version = is_array($meta) ? ($meta['module_version'] ?? '0') : NULL;
+
+        if($module_version == '0' && $this->needs_update == 1) {
+            return true;  // We assume it needs an update if the ZIP module version is 0 and the DB says it needs an update
+        }
+
         $needs = ($module_version && version_compare($this->module_version ?? '0', $module_version) < 0);
 
         if ((int) $this->needs_update !== (int) $needs) {
