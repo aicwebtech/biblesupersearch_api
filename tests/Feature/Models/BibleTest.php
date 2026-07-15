@@ -201,9 +201,11 @@ class BibleTest extends TestCase
         }
 
         $info = json_encode($info);
+        $this->assertNotFalse($info, 'Failed to json_encode test module info.json');
 
         $Zip = new \ZipArchive();
-        $Zip->open($path, \ZipArchive::CREATE | \ZipArchive::OVERWRITE);
+        $res = $Zip->open($path, \ZipArchive::CREATE | \ZipArchive::OVERWRITE);
+        $this->assertTrue($res === TRUE, 'Failed to create test module zip at: ' . $path);
         $Zip->addFromString('info.json', $info);
         $Zip->addFromString('verses.txt', '# test');
         $Zip->close();
