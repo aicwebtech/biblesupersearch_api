@@ -220,7 +220,7 @@ class Usfm extends ImporterAbstract
         $book_str = strtoupper($m[1]);
 
         if(!isset($this->book_map[$book_str])) {
-            return; // Not one of the 66 canonical books (apocrypha / front matter / glossary)
+            return false; // Not one of the 66 canonical books (apocrypha / front matter / glossary)
         }
 
         $book = $this->book_map[$book_str];
