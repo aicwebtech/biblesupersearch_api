@@ -150,7 +150,7 @@ class Usfm extends ImporterAbstract
         if($Zip->open($zipfile) === TRUE) {
             // Not importing any metadata at this time!
             if($this->insert_into_bible_table) {
-                $desc  = $Zip->getFromName('copr.htm') || null;
+                $desc  = $Zip->getFromName('copr.htm') ?: null;
 
                 // if(!$desc) {
                 //     return $this->addError('Could not open file copr.htm inside of Zip file.<br />Is this a valid USFM file?');
@@ -179,7 +179,7 @@ class Usfm extends ImporterAbstract
         return true;
     }
 
-    private function _zipImportHelper(&$Zip, $filename) 
+    protected function _zipImportHelper(&$Zip, $filename)
     {
         $spl = explode('.', $filename);
         $ext = strtolower(array_pop($spl));
@@ -187,24 +187,40 @@ class Usfm extends ImporterAbstract
         if($ext != 'usfm' && $ext != 'sfm') {
             return false;
         }
-        
-        $pseudo_book = intval(basename($filename));
 
         $chapter = $verse = NULL;
 
-        if(!$pseudo_book) {
-            return FALSE;
-        }
-
         $next_line_para = FALSE;
         $bib = $Zip->getFromName($filename);
+
+        if($bib === false) {
+            return false;
+        }
+
+        if(substr($bib, 0, 3) === "\xEF\xBB\xBF") {
+            $bib = substr($bib, 3); // strip UTF-8 BOM (common in Paratext exports)
+        }
+
         $bib = preg_split("/\\r\\n|\\r|\\n/", $bib);
 
-        $id_line = array_shift($bib);
-        $book_str = substr($id_line, 4, 3);
+        // Skip any leading blank lines, then require the \id marker (USFM's first marker).
+        do {
+            $id_line = trim((string) array_shift($bib));
+        } while($id_line === '' && !empty($bib));
+
+        // "\id GEN - Description" => GEN ; tolerant of extra spaces and lowercase codes
+        if(!preg_match('/^\\\\id\s+(\w{3})/', $id_line, $m)) {
+            if(\App::runningInConsole()) {
+                echo('Skipping ' . $filename . ': no valid \\id line found.' . PHP_EOL);
+            }
+
+            return false; // No valid \id line - not an importable book file
+        }
+
+        $book_str = strtoupper($m[1]);
 
         if(!isset($this->book_map[$book_str])) {
-            return; // Apocryphal book, not supported
+            return false; // Not one of the 66 canonical books (apocrypha / front matter / glossary)
         }
 
         $book = $this->book_map[$book_str];
@@ -252,20 +268,19 @@ class Usfm extends ImporterAbstract
             }
 
             if(strpos($line, '\v') === 0) {
-                $vs = strpos($line, ' ') + 1;
-                $ts = strpos($line, ' ', $vs) + 1;
+                // "\v 1 text" => verse 1 / "text"; text is empty when the verse starts on the next line
+                if(preg_match('/^\\\\v\s+(\S+)\s*(.*)/', $line, $vm)) {
+                    $verse = (int) $vm[1];
+                    $text  = $vm[2];
 
-                $verse_str = substr($line, $vs, $ts - $vs - 1);
-                $verse = (int)$verse_str;
-
-                $text = substr($line, $ts);
-
-                if($next_line_para) {
-                    $text = '¶ ' . $text;
-                    $next_line_para = FALSE;
+                    if($next_line_para) {
+                        $text = '¶ ' . $text;
+                        $next_line_para = FALSE;
+                    }
                 }
-            } else if($text) {
-                $text .= $line;
+            } else if($verse !== null) {
+                // Continuation line of the current verse (verse text spanning multiple lines).
+                $text = ($text === null || $text === '') ? $line : $text . ' ' . $line;
             }
 
             if(!$line_lookahead || 
@@ -275,7 +290,8 @@ class Usfm extends ImporterAbstract
                 strpos($line_lookahead, '\mt') === 0 ||
                 strpos($line_lookahead, '\ms') === 0 ||
                 strpos($line_lookahead, '\r') === 0 ||
-                strpos($line_lookahead, '\d') === 0
+                strpos($line_lookahead, '\d') === 0 ||
+                strpos($line_lookahead, '\qa') === 0
              ) {
                 $end_of_verse = true;
             }
@@ -401,8 +417,12 @@ class Usfm extends ImporterAbstract
             $text = preg_replace($pattern, '', $text);
         }
 
+        // Remove USFM 3 milestone markers incl. word-alignment (\zaln-s|…\*, \zaln-e\*, \qt-s\*)
+        $text = preg_replace('/\\\\[a-z0-9]+-[se][^\\\\]*\\\\\*/i', '', $text);
+
         // // Remove any other formatting markup
-        $text = preg_replace('/\\\\[a-z][a-z0-9]*\*?/', '', $text);
+        $text = preg_replace('/\\\\[a-z][a-z0-9-]*\*?/i', '', $text);
+        $text = str_replace('\*', '', $text); // stray milestone / marker closers
 
         /// ??? what was this for?  Came from pre-existing IRV iporter
         if(preg_match('/[0-9]+:[0-9]+/', $text)) {
