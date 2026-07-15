@@ -456,9 +456,12 @@ class Bible extends Model
             $Zip->close();
         }
 
-        $this->installed_at = date('Y-m-d H:i:s');
-        $this->needs_update = 0;
-        $this->save();
+        if ($res === TRUE) {
+            $this->installed_at = date('Y-m-d H:i:s');
+            $this->needs_update = 0;
+            $this->save();
+        }
+
         return ($res === TRUE);
     }
 
@@ -649,7 +652,12 @@ class Bible extends Model
             $json  = $Zip->getFromName('info.json');
             $attr  = json_decode($json, TRUE);
 
-            if(is_array($attr) && empty($attr['module_version'])) {
+            if (!is_array($attr)) {
+                $Zip->close();
+                return FALSE;
+            }
+
+            if (empty($attr['module_version'])) {
                 $attr['module_version'] = config('app.version');
             }
 
@@ -1002,8 +1010,8 @@ class Bible extends Model
             return (bool) $this->needs_update;
         }
 
-        $module_version = $meta['module_version'] ?? NULL;
-        $needs = ($module_version && version_compare($this->module_version, $module_version) < 0);
+        $module_version = is_array($meta) ? ($meta['module_version'] ?? '0') : NULL;
+        $needs = ($module_version && version_compare($this->module_version ?? '0', $module_version) < 0);
 
         if ((int) $this->needs_update !== (int) $needs) {
             $this->needs_update = $needs ? 1 : 0;
