@@ -996,7 +996,13 @@ class Bible extends Model
         $Zip->close();
         $meta = json_decode($json, TRUE);
 
-        $module_version = is_array($meta) ? ($meta['module_version'] ?? NULL) : NULL;
+        // A readable zip with a missing or corrupt info.json tells us nothing about the on-disk
+        // version, so keep the persisted flag rather than clobbering a real needs_update.
+        if (!is_array($meta)) {
+            return (bool) $this->needs_update;
+        }
+
+        $module_version = $meta['module_version'] ?? NULL;
         $needs = ($module_version && version_compare($this->module_version, $module_version) < 0);
 
         if ((int) $this->needs_update !== (int) $needs) {

@@ -180,6 +180,53 @@ class BibleTest extends TestCase
         }
     }
 
+    /**
+     * BSS-279: a module file that changed on disk (mtime moved past install) but whose info.json is
+     * missing or corrupt tells us nothing about the on-disk version, so the persisted needs_update
+     * flag must be preserved rather than cleared to 0.
+     */
+    public function testNeedsUpdatePreservesFlagWhenInfoJsonUnreadable()
+    {
+        $module = 'bss279bad';
+        $path   = Bible::getModulePath() . $module . '.zip';
+
+        Bible::where('module', $module)->delete();
+        $this->writeTestModuleZip($path, '6.0.0', $module);
+
+        $Bible = Bible::createFromModuleFile($module);
+        $Bible->installed    = 1;
+        $Bible->installed_at = date('Y-m-d H:i:s', time() - 60);
+        $Bible->needs_update = 1;
+        $Bible->save();
+
+        try {
+            // Module file changed on disk (newer mtime) but info.json is unparseable.
+            $this->writeCorruptInfoModuleZip($path, $module);
+            $this->touchModule($path, time() + 10);
+
+            $this->assertTrue($Bible->fresh()->needsUpdate());
+            $this->assertEquals(1, $Bible->fresh()->needs_update);
+        }
+        finally {
+            Bible::where('module', $module)->delete();
+            if (is_file($path)) { unlink($path); }
+        }
+    }
+
+    private function writeCorruptInfoModuleZip($path, $module)
+    {
+        if (is_file($path)) {
+            unlink($path);
+        }
+
+        $Zip = new \ZipArchive();
+        $Zip->open($path, \ZipArchive::CREATE | \ZipArchive::OVERWRITE);
+        $Zip->addFromString('info.json', '{ this is not valid json');
+        $Zip->addFromString('verses.txt', '# test');
+        $Zip->close();
+        clearstatcache(TRUE, $path);
+    }
+
     private function writeTestModuleZip($path, $version, $module)
     {
         if (is_file($path)) {
