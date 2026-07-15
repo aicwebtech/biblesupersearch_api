@@ -53,7 +53,10 @@ class UsfmTest extends TestCase
      */
     private function makeZip(string $entryName, string $content): array
     {
-        $path = tempnam(sys_get_temp_dir(), 'usfm_test_') . '.zip';
+        $path = tempnam(sys_get_temp_dir(), 'usfm_test_');
+        if($path === false) {
+            $this->fail('Failed to create temporary file for USFM zip test.');
+        }
         $Zip  = new ZipArchive();
         $Zip->open($path, ZipArchive::CREATE | ZipArchive::OVERWRITE);
         $Zip->addFromString($entryName, $content);

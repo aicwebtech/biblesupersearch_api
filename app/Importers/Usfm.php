@@ -193,6 +193,10 @@ class Usfm extends ImporterAbstract
         $next_line_para = FALSE;
         $bib = $Zip->getFromName($filename);
 
+        if($bib === false) {
+            return false;
+        }
+
         if(substr($bib, 0, 3) === "\xEF\xBB\xBF") {
             $bib = substr($bib, 3); // strip UTF-8 BOM (common in Paratext exports)
         }
@@ -210,7 +214,7 @@ class Usfm extends ImporterAbstract
                 echo('Skipping ' . $filename . ': no valid \\id line found.' . PHP_EOL);
             }
 
-            return; // No valid \id line - not an importable book file
+            return false; // No valid \id line - not an importable book file
         }
 
         $book_str = strtoupper($m[1]);
