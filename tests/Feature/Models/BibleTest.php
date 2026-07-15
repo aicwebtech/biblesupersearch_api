@@ -220,7 +220,8 @@ class BibleTest extends TestCase
         }
 
         $Zip = new \ZipArchive();
-        $Zip->open($path, \ZipArchive::CREATE | \ZipArchive::OVERWRITE);
+        $res = $Zip->open($path, \ZipArchive::CREATE | \ZipArchive::OVERWRITE);
+        $this->assertTrue($res === TRUE, 'Failed to create corrupt test module zip at: ' . $path);
         $Zip->addFromString('info.json', '{ this is not valid json');
         $Zip->addFromString('verses.txt', '# test');
         $Zip->close();
