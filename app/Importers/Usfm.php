@@ -208,8 +208,7 @@ class Usfm extends ImporterAbstract
             $id_line = trim((string) array_shift($bib));
         } while($id_line === '' && !empty($bib));
 
-        // "\id GEN - Description" => GEN ; tolerant of extra spaces and lowercase codes
-        if(!preg_match('/^\\\\id\s+(\w{3})/', $id_line, $m)) {
+        if($id_line === '') {
             if(\App::runningInConsole()) {
                 echo('Skipping ' . $filename . ': no valid \\id line found.' . PHP_EOL);
             }
@@ -217,13 +216,15 @@ class Usfm extends ImporterAbstract
             return false; // No valid \id line - not an importable book file
         }
 
-        $book_str = strtoupper($m[1]);
+        $book = $this->getBookFromBookLine($id_line);
 
-        if(!isset($this->book_map[$book_str])) {
-            return false; // Not one of the 66 canonical books (apocrypha / front matter / glossary)
+        if(!$book) {
+            if(\App::runningInConsole()) {
+                echo('Skipping ' . $filename . ': no valid book line found.' . PHP_EOL);
+            }
+
+            return false; // No valid \id line - not an importable Bible book file
         }
-
-        $book = $this->book_map[$book_str];
 
         $text = null;
         $end_of_verse = false;
@@ -237,6 +238,17 @@ class Usfm extends ImporterAbstract
         foreach($bib as $key => $line) {
             $line = trim($line);
             $line_lookahead = isset($bib[$key + 1]) ? trim($bib[$key + 1]) : null;
+
+            // New book
+            if(strpos($line, '\id') === 0) {
+                $book = $this->getBookFromBookLine($line);
+
+                if(!$book) {
+                    return false; // Not one of the 66 canonical books (apocrypha / front matter / glossary)
+                }
+
+                $chapter = $verse = null;
+            }
 
             if(strpos($line, '\c') === 0) {
                 if(preg_match('/([0-9]+)/', $line, $matches)) {
@@ -309,6 +321,19 @@ class Usfm extends ImporterAbstract
         return true;
     }
 
+    protected function getBookFromBookLine($line)
+    {
+        if(preg_match('/^\\\\id\s+(\w{3})/', $line, $m)) {
+            $book_str = strtoupper($m[1]);
+
+            if(isset($this->book_map[$book_str])) {
+                return $this->book_map[$book_str];
+            }
+        }
+
+        return null;
+    }
+
     public function checkUploadedFile(UploadedFile $File): bool 
     {
         $zipfile    = $File->getPathname();
@@ -372,7 +397,11 @@ class Usfm extends ImporterAbstract
 
         $text = preg_replace_callback($pattern, function($matches) {
             // Note: strong is the only word attribute we use, we discard all others!
-            list($word, $attr) = explode('|', $matches[1]);
+            $m = $matches[1] ?? '';
+            $parts = explode('|', $m);
+
+            $word = $parts[0] ?? '';
+            $attr = $parts[1] ?? '';
 
             $strong_pos = strpos($attr, 'strong');
 
