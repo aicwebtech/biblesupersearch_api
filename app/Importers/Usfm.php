@@ -268,8 +268,8 @@ class Usfm extends ImporterAbstract
 
             // Chapter number: \c only. \ca, \cl, \cp, \cd are chapter *metadata*
             // whose digits must never be mistaken for the chapter number.
-            if(preg_match('/^\\\\c(\s|$)/', $line)) {
-                if(preg_match('/^\\\\c\s+([0-9]+)/', $line, $matches)) {
+            if(preg_match('/^\\\\c(\s|[0-9]|$)/', $line)) {
+                if(preg_match('/^\\\\c\s*([0-9]+)/', $line, $matches)) {
                     $chapter = (int) $matches[1];
                 }
 
@@ -378,12 +378,14 @@ class Usfm extends ImporterAbstract
         $file       = static::sanitizeFileName( $File->getClientOriginalName() );
         $Zip        = new ZipArchive();
 
-        if(stripos($file, 'sfm') === false) {
-            return $this->addError('Does not appear to be a USFM file; filename does not end with "usf" or "usfm".');
+        $ext = strtolower(pathinfo($file, PATHINFO_EXTENSION));
+
+        if(!in_array($ext, ['zip', 'usfm', 'sfm'], true)) {
+            return $this->addError('Does not appear to be a USFM file; filename does not end with ".zip", ".usfm" or ".sfm".');
         }
 
         // Plain (non-zipped) .usfm / .sfm file, potentially containing the entire Bible
-        if(!str_ends_with(strtolower($file), '.zip')) {
+        if($ext !== 'zip') {
             return $this->_checkUploadedPlainFile($File);
         }
 

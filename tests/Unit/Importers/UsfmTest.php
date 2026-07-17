@@ -297,6 +297,25 @@ class UsfmTest extends TestCase
     }
 
     // -----------------------------------------------------------------------
+    // Chapter markers with no whitespace before the number (\c1) must still set
+    // the chapter, without being confused for \ca/\cl/\cp/\cd metadata
+    // -----------------------------------------------------------------------
+
+    public function testChapterMarkerWithoutSpaceStillSetsChapter(): void
+    {
+        $content = "\\id GEN - Genesis\n\\c1\n\\v 1 First verse.\n\\c2\n\\v 1 Second chapter verse.\n";
+        [$Zip, $entry, $path] = $this->makeZip('01GEN.usfm', $content);
+
+        $imp = $this->makeImporter();
+        $imp->callZipImportHelper($Zip, $entry);
+        $this->cleanup($Zip, $path);
+
+        $this->assertCount(2, $imp->recorded);
+        $this->assertSame([1, 2], array_column($imp->recorded, 'chapter'));
+        $this->assertSame('Second chapter verse.', $imp->recorded[1]['text']);
+    }
+
+    // -----------------------------------------------------------------------
     // \toc names must be trimmed (tolerate extra whitespace after the marker)
     // -----------------------------------------------------------------------
 
@@ -406,6 +425,46 @@ class UsfmTest extends TestCase
         unlink($path);
 
         $this->assertTrue($result, implode(' ', $imp->getErrors()));
+    }
+
+    // -----------------------------------------------------------------------
+    // checkUploadedFile: a .zip whose name does not contain "sfm" (e.g. a
+    // Paratext "project.zip") must be accepted, not rejected on the filename
+    // -----------------------------------------------------------------------
+
+    public function testCheckUploadedFileAcceptsZipWithoutSfmInName(): void
+    {
+        $path = tempnam(sys_get_temp_dir(), 'usfm_test_');
+        $Zip  = new ZipArchive();
+        $Zip->open($path, ZipArchive::CREATE | ZipArchive::OVERWRITE);
+        $Zip->addFromString('01GEN.usfm', "\\id GEN\n\\c 1\n\\v 1 In the beginning.\n");
+        $Zip->close();
+        $File = new \Illuminate\Http\UploadedFile($path, 'project.zip', null, null, true);
+
+        $imp = $this->makeImporter();
+        $result = $imp->checkUploadedFile($File);
+        unlink($path);
+
+        $this->assertTrue($result, implode(' ', $imp->getErrors()));
+    }
+
+    // -----------------------------------------------------------------------
+    // checkUploadedFile: a file with an unsupported extension must be rejected,
+    // even if its name happens to contain the substring "sfm"
+    // -----------------------------------------------------------------------
+
+    public function testCheckUploadedFileRejectsUnsupportedExtension(): void
+    {
+        $path = tempnam(sys_get_temp_dir(), 'usfm_test_');
+        file_put_contents($path, "\\id GEN - Genesis\n\\c 1\n\\v 1 In the beginning.\n");
+        $File = new \Illuminate\Http\UploadedFile($path, 'sfm_notes.txt', null, null, true);
+
+        $imp = $this->makeImporter();
+        $result = $imp->checkUploadedFile($File);
+        unlink($path);
+
+        $this->assertFalse($result);
+        $this->assertStringContainsString('does not appear to be a usfm file', strtolower(implode(' ', $imp->getErrors())));
     }
 
     public function testCheckUploadedFileRejectsPlainFileWithoutIdMarkers(): void
