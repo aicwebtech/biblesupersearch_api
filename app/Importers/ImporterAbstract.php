@@ -422,7 +422,18 @@ abstract class ImporterAbstract
         }
     }
 
-    protected function _insertVerses() 
+    /**
+     * Echoes a progress / skip message when running in console.
+     * Safe to call when the Laravel app is not booted (e.g. pure PHPUnit unit tests).
+     */
+    protected function _echoIfConsole(string $message): void
+    {
+        if(class_exists('App') && \App::runningInConsole()) {
+            echo($message . PHP_EOL);
+        }
+    }
+
+    protected function _insertVerses()
     {
         DB::table($this->_table)->insert($this->_insertable);
         $this->_insertable = [];

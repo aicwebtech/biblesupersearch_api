@@ -43,6 +43,16 @@ class UsfmTest extends TestCase
             {
                 return $this->_formatText($text);
             }
+
+            public function getBookMetas(): array
+            {
+                return $this->book_metas;
+            }
+
+            public function getBibleAttributes(): array
+            {
+                return $this->bible_attributes;
+            }
         };
     }
 
@@ -196,6 +206,169 @@ class UsfmTest extends TestCase
         $this->assertCount(1, $imp->recorded);
         $this->assertSame(1, $imp->recorded[0]['book']);
         $this->assertSame('In the beginning.', $imp->recorded[0]['text']);
+    }
+
+    // -----------------------------------------------------------------------
+    // Multiple books in a single file: every verse of every book must import,
+    // including the last verse before the next \id, and \ide must be ignored
+    // -----------------------------------------------------------------------
+
+    public function testMultiBookFileImportsAllVersesOfAllBooks(): void
+    {
+        $content = "\\id GEN - Genesis\n\\ide UTF-8\n\\toc2 Genesis\n\\c 1\n"
+            . "\\v 1 In the beginning.\n\\v 2 And the earth was without form.\n"
+            . "\\id EXO - Exodus\n\\ide UTF-8\n\\toc2 Exodus\n\\c 1\n"
+            . "\\v 1 Now these are the names.\n";
+        [$Zip, $entry, $path] = $this->makeZip('bible.usfm', $content);
+
+        $imp = $this->makeImporter();
+        $imp->callZipImportHelper($Zip, $entry);
+        $this->cleanup($Zip, $path);
+
+        $this->assertCount(3, $imp->recorded);
+        $this->assertSame([1, 1, 2], array_column($imp->recorded, 'book'));
+        $this->assertSame('And the earth was without form.', $imp->recorded[1]['text']);
+        $this->assertSame('Now these are the names.', $imp->recorded[2]['text']);
+    }
+
+    // -----------------------------------------------------------------------
+    // A non-canonical book mid-file must be skipped entirely — its verses must
+    // not be imported under the previous book, and later books must still import
+    // -----------------------------------------------------------------------
+
+    public function testNonCanonicalBookMidFileDoesNotBleedIntoPreviousBook(): void
+    {
+        $content = "\\id GEN - Genesis\n\\c 1\n\\v 1 In the beginning.\n"
+            . "\\id TOB - Tobit\n\\c 1\n\\v 1 Apocryphal text here.\n"
+            . "\\id EXO - Exodus\n\\c 1\n\\v 1 Now these are the names.\n";
+        [$Zip, $entry, $path] = $this->makeZip('bible.usfm', $content);
+
+        $imp = $this->makeImporter();
+        $imp->callZipImportHelper($Zip, $entry);
+        $this->cleanup($Zip, $path);
+
+        $this->assertCount(2, $imp->recorded);
+        $this->assertSame([1, 2], array_column($imp->recorded, 'book'));
+        $this->assertNotContains('Apocryphal text here.', array_column($imp->recorded, 'text'));
+    }
+
+    // -----------------------------------------------------------------------
+    // A file LEADING with a non-canonical book (e.g. front matter) must still
+    // import the canonical books that follow it
+    // -----------------------------------------------------------------------
+
+    public function testFrontMatterFirstFileStillImportsCanonicalBooks(): void
+    {
+        $content = "\\id FRT - Front Matter\n\\p Some introduction text.\n"
+            . "\\id GEN - Genesis\n\\c 1\n\\v 1 In the beginning.\n";
+        [$Zip, $entry, $path] = $this->makeZip('bible.usfm', $content);
+
+        $imp = $this->makeImporter();
+        $result = $imp->callZipImportHelper($Zip, $entry);
+        $this->cleanup($Zip, $path);
+
+        $this->assertTrue($result);
+        $this->assertCount(1, $imp->recorded);
+        $this->assertSame(1, $imp->recorded[0]['book']);
+        $this->assertSame('In the beginning.', $imp->recorded[0]['text']);
+    }
+
+    // -----------------------------------------------------------------------
+    // Chapter metadata markers (\cl, \cp, \ca, \cd) must never set the chapter
+    // -----------------------------------------------------------------------
+
+    public function testChapterMetadataMarkersDoNotSetChapter(): void
+    {
+        $content = "\\id GEN - Genesis\n\\c 1\n\\cl Chapter One\n\\cp 99\n\\v 1 First verse.\n"
+            . "\\c 2\n\\cd A chapter about 40 days.\n\\v 1 Second chapter verse.\n";
+        [$Zip, $entry, $path] = $this->makeZip('01GEN.usfm', $content);
+
+        $imp = $this->makeImporter();
+        $imp->callZipImportHelper($Zip, $entry);
+        $this->cleanup($Zip, $path);
+
+        $this->assertCount(2, $imp->recorded);
+        $this->assertSame([1, 2], array_column($imp->recorded, 'chapter'));
+    }
+
+    // -----------------------------------------------------------------------
+    // \toc names must be trimmed (tolerate extra whitespace after the marker)
+    // -----------------------------------------------------------------------
+
+    public function testTocNamesAreTrimmed(): void
+    {
+        $content = "\\id GEN - Genesis\n\\toc1  The First Book of Moses \n\\toc2 Genesis\n\\toc3\tGen\n"
+            . "\\c 1\n\\v 1 In the beginning.\n";
+        [$Zip, $entry, $path] = $this->makeZip('01GEN.usfm', $content);
+
+        $imp = $this->makeImporter();
+        $imp->callZipImportHelper($Zip, $entry);
+        $this->cleanup($Zip, $path);
+
+        $this->assertSame('The First Book of Moses', $imp->getBookMetas()[1]['name_long']);
+        $this->assertSame('Genesis', $imp->getBookMetas()[1]['name']);
+        $this->assertSame('Gen', $imp->getBookMetas()[1]['shortname']);
+    }
+
+    // -----------------------------------------------------------------------
+    // \rem editorial remarks must not end a verse or bleed into its text
+    // -----------------------------------------------------------------------
+
+    public function testRemarkLinesDoNotBreakOrPolluteVerses(): void
+    {
+        $content = "\\id GEN - Genesis\n\\rem File-level editor note\n\\c 1\n"
+            . "\\v 1 In the\n\\rem mid-verse editor note\nbeginning.\n\\v 2 And the earth.\n";
+        [$Zip, $entry, $path] = $this->makeZip('01GEN.usfm', $content);
+
+        $imp = $this->makeImporter();
+        $imp->callZipImportHelper($Zip, $entry);
+        $this->cleanup($Zip, $path);
+
+        $this->assertCount(2, $imp->recorded);
+        $this->assertSame('In the beginning.', $imp->recorded[0]['text']);
+        $this->assertSame('And the earth.', $imp->recorded[1]['text']);
+    }
+
+    // -----------------------------------------------------------------------
+    // checkUploadedFile: a corrupt zip must be reported as unopenable, not as
+    // "contains no .usfm files"
+    // -----------------------------------------------------------------------
+
+    public function testCheckUploadedFileRejectsCorruptZip(): void
+    {
+        $path = tempnam(sys_get_temp_dir(), 'usfm_test_');
+        file_put_contents($path, 'this is not a zip archive');
+        $File = new \Illuminate\Http\UploadedFile($path, 'corrupt.usfm.zip', null, null, true);
+
+        $imp = $this->makeImporter();
+        $result = $imp->checkUploadedFile($File);
+        unlink($path);
+
+        $this->assertFalse($result);
+        $this->assertStringContainsString('unable to open ZIP', implode(' ', $imp->getErrors()));
+    }
+
+    // -----------------------------------------------------------------------
+    // checkUploadedFile: copr.htm must be found even as the FIRST zip entry
+    // (locateName() returns index 0, which is falsy)
+    // -----------------------------------------------------------------------
+
+    public function testCheckUploadedFileFindsCoprAtIndexZero(): void
+    {
+        $path = tempnam(sys_get_temp_dir(), 'usfm_test_');
+        $Zip  = new ZipArchive();
+        $Zip->open($path, ZipArchive::CREATE | ZipArchive::OVERWRITE);
+        $Zip->addFromString('copr.htm', '<p>Public Domain</p>'); // index 0
+        $Zip->addFromString('01GEN.usfm', "\\id GEN\n\\c 1\n\\v 1 In the beginning.\n");
+        $Zip->close();
+        $File = new \Illuminate\Http\UploadedFile($path, 'bible.usfm.zip', null, null, true);
+
+        $imp = $this->makeImporter();
+        $result = $imp->checkUploadedFile($File);
+        unlink($path);
+
+        $this->assertTrue($result);
+        $this->assertSame('<p>Public Domain</p>', $imp->getBibleAttributes()['description']);
     }
 
     // -----------------------------------------------------------------------

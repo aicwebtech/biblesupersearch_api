@@ -109,17 +109,7 @@ class Usfm extends ImporterAbstract
         $module = $this->module; // Module and db name
 
         if($this->debug) {
-            // $file = 'eng-kjv2006_usfm.zip';
-            // $file = 'eng-kjv_usfm_apoc.zip';
-            // $file = 'engwebu_usfm.zip';
-            // $file = 'engkjvcpb_usfm.zip';
-            // $file = 'bn_irv_usfm.zip';
             $file = 'ne_ulb_npiulb_usfm.zip';
-            // $file = 'mr_irv_usfm.zip';
-            // $file = 'gu_irv_2017_usfm.zip';
-            // $file = 'kn_irv_usfm.zip';
-            // $file = 'tg_tgk_usfm.zip';
-            // $module = $this->module = 'usfm_' . time();
             $this->bible_attributes['name'] = $this->module;
             $this->bible_attributes['lang_short'] = 'ne';
             $this->bible_attributes['lang'] = 'gu';
@@ -129,9 +119,6 @@ class Usfm extends ImporterAbstract
         $attr   = $this->bible_attributes;
 
         $zipfile = $dir . $file;
-
-        // Where did you get this Bible?
-        $source = "";
 
         if(!$this->overwrite && $this->_existing && $this->insert_into_bible_table) {
             return $this->addError('Module already exists: \'' . $module . '\' Use --overwrite to overwrite it.', 4);
@@ -151,10 +138,6 @@ class Usfm extends ImporterAbstract
             // Not importing any metadata at this time!
             if($this->insert_into_bible_table) {
                 $desc  = $Zip->getFromName('copr.htm') ?: null;
-
-                // if(!$desc) {
-                //     return $this->addError('Could not open file copr.htm inside of Zip file.<br />Is this a valid USFM file?');
-                // }
 
                 $attr['description'] = $desc ?: null;
                 $Bible->fill($attr);
@@ -203,28 +186,9 @@ class Usfm extends ImporterAbstract
 
         $bib = preg_split("/\\r\\n|\\r|\\n/", $bib);
 
-        // Skip any leading blank lines, then require the \id marker (USFM's first marker).
-        do {
-            $id_line = trim((string) array_shift($bib));
-        } while($id_line === '' && !empty($bib));
-
-        if($id_line === '') {
-            if(\App::runningInConsole()) {
-                echo('Skipping ' . $filename . ': no valid \\id line found.' . PHP_EOL);
-            }
-
-            return false; // No valid \id line - not an importable book file
-        }
-
-        $book = $this->getBookFromBookLine($id_line);
-
-        if(!$book) {
-            if(\App::runningInConsole()) {
-                echo('Skipping ' . $filename . ': no valid book line found.' . PHP_EOL);
-            }
-
-            return false; // No valid \id line - not an importable Bible book file
-        }
+        // Books are delimited by \id markers; content before the first valid one is ignored.
+        $book = null;
+        $id_found = $book_found = false;
 
         $text = null;
         $end_of_verse = false;
@@ -239,47 +203,82 @@ class Usfm extends ImporterAbstract
             $line = trim($line);
             $line_lookahead = isset($bib[$key + 1]) ? trim($bib[$key + 1]) : null;
 
-            // New book
-            if(strpos($line, '\id') === 0) {
+            // New book ("\id " with trailing space, so \ide et al don't match)
+            if(preg_match('/^\\\\id\s/', $line)) {
+                $id_found = true;
+
+                // Flush the previous book's final verse before resetting state
+                if($verse !== null) {
+                    $this->_addVerse($book, $chapter, $verse, $text, true);
+                }
+
+                if($book) {
+                    $this->book_metas[$book] = $book_meta; // Save the previous book's metadata
+                }
+
+                $book_meta = [
+                    'name_long' => null,
+                    'name'      => null,
+                    'shortname' => null,
+                ];
+
+                // null = non-canonical book (apocrypha / front matter / glossary); its content is skipped
                 $book = $this->getBookFromBookLine($line);
 
-                if(!$book) {
-                    return false; // Not one of the 66 canonical books (apocrypha / front matter / glossary)
+                if($book) {
+                    $book_found = true;
                 }
 
                 $chapter = $verse = null;
+                $text = null;
+                $next_line_para = false;
+
+                continue;
             }
 
-            if(strpos($line, '\c') === 0) {
-                if(preg_match('/([0-9]+)/', $line, $matches)) {
+            // Chapter number: \c only. \ca, \cl, \cp, \cd are chapter *metadata*
+            // whose digits must never be mistaken for the chapter number.
+            if(preg_match('/^\\\\c(\s|$)/', $line)) {
+                if(preg_match('/^\\\\c\s+([0-9]+)/', $line, $matches)) {
                     $chapter = (int) $matches[1];
                 }
 
                 continue;
-            }            
+            }
+
+            if(preg_match('/^\\\\c[alpd](\s|$)/', $line)) {
+                continue; // \ca, \cl, \cp, \cd - chapter metadata we do not use
+            }
+
 
             if(strpos($line, '\toc1') === 0) {
-                $book_meta['name_long'] = substr($line, 6);
+                $book_meta['name_long'] = trim(substr($line, 5));
                 continue;
-            }            
+            }
 
             if(strpos($line, '\toc2') === 0) {
-                $book_meta['name'] = substr($line, 6);
+                $book_meta['name'] = trim(substr($line, 5));
                 continue;
-            }            
+            }
 
             if(strpos($line, '\toc3') === 0) {
-                $book_meta['shortname'] = substr($line, 6);
+                $book_meta['shortname'] = trim(substr($line, 5));
                 continue;
+            }
+
+            if(preg_match('/^\\\\rem(\s|$)/', $line)) {
+                continue; // editorial remark - never published, must not bleed into verse text
             }
 
             // continue; // debugging - bypass actual Bible import
             
-            if(strpos($line, '\p') === 0) {
+            // Paragraph marker family (\p, \pi#, \pc, \pm(c|o|r), \po, \pr, \pb, \ph#)
+            // - but not unrelated \p-prefixed markers like \periph or \pn
+            if(preg_match('/^\\\\p(i[0-9]?|c|m[cor]?|o|r|b|h[0-9]?)?(\s|$)/', $line)) {
                 $next_line_para = TRUE;
             }
 
-            if(strpos($line, '\v') === 0) {
+            if(preg_match('/^\\\\v\s/', $line)) {
                 // "\v 1 text" => verse 1 / "text"; text is empty when the verse starts on the next line
                 if(preg_match('/^\\\\v\s+(\S+)\s*(.*)/', $line, $vm)) {
                     $verse = (int) $vm[1];
@@ -295,16 +294,11 @@ class Usfm extends ImporterAbstract
                 $text = ($text === null || $text === '') ? $line : $text . ' ' . $line;
             }
 
-            if(!$line_lookahead || 
-                strpos($line_lookahead, '\c') === 0 || 
-                strpos($line_lookahead, '\v') === 0 ||
-                strpos($line_lookahead, '\s') === 0 ||
-                strpos($line_lookahead, '\mt') === 0 ||
-                strpos($line_lookahead, '\ms') === 0 ||
-                strpos($line_lookahead, '\r') === 0 ||
-                strpos($line_lookahead, '\d') === 0 ||
-                strpos($line_lookahead, '\qa') === 0
-             ) {
+            // End of verse when the next line starts a chapter, verse, or heading-type
+            // marker. Family prefixes are intentional (\s* headings, \mt*/\ms* titles),
+            // but \rem is excluded: a remark does not end the verse (its line is skipped
+            // above, and the verse text may continue after it).
+            if(!$line_lookahead || preg_match('/^\\\\(c|v|s|mt|ms|r(?!em)|d|qa)/', $line_lookahead)) {
                 $end_of_verse = true;
             }
 
@@ -316,12 +310,26 @@ class Usfm extends ImporterAbstract
             }
         }
 
-        $this->book_metas[$book] = $book_meta;
+        if($book) {
+            $this->book_metas[$book] = $book_meta;
+        }
+
+        if(!$id_found) {
+            $this->_echoIfConsole('Skipping ' . $filename . ': no valid \\id line found.');
+
+            return false; // No valid \id line - not an importable book file
+        }
+
+        if(!$book_found) {
+            $this->_echoIfConsole('Skipping ' . $filename . ': no valid book line found.');
+
+            return false; // No canonical books - not an importable Bible book file
+        }
 
         return true;
     }
 
-    protected function getBookFromBookLine($line)
+    protected function getBookFromBookLine(string $line) : ?int
     {
         if(preg_match('/^\\\\id\s+(\w{3})/', $line, $m)) {
             $book_str = strtoupper($m[1]);
@@ -352,15 +360,19 @@ class Usfm extends ImporterAbstract
 
         $book_count = 0;
 
-        if($Zip->open($zipfile) == true) {
-            for ($i = 0; $i < $Zip->numFiles; $i++) {
-                $filename = $Zip->getNameIndex($i);
-                $spl = explode('.', $filename);
-                $ext = strtolower(array_pop($spl));
+        // ZipArchive::open() returns TRUE on success or an int error code on failure -
+        // a loose == true comparison would treat error codes as success.
+        if($Zip->open($zipfile) !== true) {
+            return $this->addError('Does not appear to be a valid USFM file; unable to open ZIP file.');
+        }
 
-                if($ext == 'usfm' || $ext == 'sfm') {
-                    $book_count++;
-                }
+        for ($i = 0; $i < $Zip->numFiles; $i++) {
+            $filename = $Zip->getNameIndex($i);
+            $spl = explode('.', $filename);
+            $ext = strtolower(array_pop($spl));
+
+            if($ext == 'usfm' || $ext == 'sfm') {
+                $book_count++;
             }
         }
 
@@ -368,7 +380,8 @@ class Usfm extends ImporterAbstract
             return $this->addError('Does not appear to be a valid USFM file; ZIP file does not contain any .usfm or .sfm files.');
         }
 
-        if($Zip->locateName('copr.htm')) {
+        // locateName() returns the entry index, which can be 0 (falsy) for the first entry
+        if($Zip->locateName('copr.htm') !== false) {
             $desc  = $Zip->getFromName('copr.htm');
         } else {
             $desc = null;
