@@ -118,13 +118,11 @@ class Usfm extends ImporterAbstract
 
         $attr   = $this->bible_attributes;
 
-        $zipfile = $dir . $file;
+        $filepath = $dir . $file;
 
         if(!$this->overwrite && $this->_existing && $this->insert_into_bible_table) {
             return $this->addError('Module already exists: \'' . $module . '\' Use --overwrite to overwrite it.', 4);
         }
-
-        $Zip = new ZipArchive;
 
         if(\App::runningInConsole()) {
             echo('Installing: ' . $module . PHP_EOL);
@@ -134,7 +132,13 @@ class Usfm extends ImporterAbstract
             $Bible->uninstall();
         }
 
-        if($Zip->open($zipfile) === TRUE) {
+        if(str_ends_with(strtolower($file), '.zip')) {
+            $Zip = new ZipArchive;
+
+            if($Zip->open($filepath) !== TRUE) {
+                return $this->addError('Unable to open ' . $filepath, 4);
+            }
+
             // Not importing any metadata at this time!
             if($this->insert_into_bible_table) {
                 $desc  = $Zip->getFromName('copr.htm') ?: null;
@@ -154,7 +158,21 @@ class Usfm extends ImporterAbstract
             $Zip->close();
         }
         else {
-            return $this->addError('Unable to open ' . $zipfile, 4);
+            // Plain .usfm / .sfm file, potentially containing the entire Bible
+            $contents = is_file($filepath) ? file_get_contents($filepath) : false;
+
+            if($contents === false) {
+                return $this->addError('Unable to open ' . $filepath, 4);
+            }
+
+            if($this->insert_into_bible_table) {
+                $Bible->fill($attr);
+                $Bible->save();
+            }
+
+            $Bible->install(TRUE);
+
+            $this->_importContents($contents, $file);
         }
 
         $this->_insertVerses();
@@ -171,14 +189,26 @@ class Usfm extends ImporterAbstract
             return false;
         }
 
-        $chapter = $verse = NULL;
-
-        $next_line_para = FALSE;
         $bib = $Zip->getFromName($filename);
 
         if($bib === false) {
             return false;
         }
+
+        return $this->_importContents($bib, $filename);
+    }
+
+    /**
+     *   Parses raw USFM content (one or more books, delimited by \id markers) and queues its verses.
+     *   @param string $bib - the raw USFM file contents
+     *   @param string $filename - the source file name, used for console messages only
+     *   @return bool $success
+     */
+    protected function _importContents(string $bib, string $filename): bool
+    {
+        $chapter = $verse = NULL;
+
+        $next_line_para = FALSE;
 
         if(substr($bib, 0, 3) === "\xEF\xBB\xBF") {
             $bib = substr($bib, 3); // strip UTF-8 BOM (common in Paratext exports)
@@ -342,7 +372,7 @@ class Usfm extends ImporterAbstract
         return null;
     }
 
-    public function checkUploadedFile(UploadedFile $File): bool 
+    public function checkUploadedFile(UploadedFile $File): bool
     {
         $zipfile    = $File->getPathname();
         $file       = static::sanitizeFileName( $File->getClientOriginalName() );
@@ -350,6 +380,11 @@ class Usfm extends ImporterAbstract
 
         if(stripos($file, 'sfm') === false) {
             return $this->addError('Does not appear to be a USFM file; filename does not end with "usf" or "usfm".');
+        }
+
+        // Plain (non-zipped) .usfm / .sfm file, potentially containing the entire Bible
+        if(!str_ends_with(strtolower($file), '.zip')) {
+            return $this->_checkUploadedPlainFile($File);
         }
 
         $allowed = [
@@ -389,6 +424,41 @@ class Usfm extends ImporterAbstract
 
         $this->bible_attributes = [
             'description' => $desc,
+        ];
+
+        return true;
+    }
+
+    /**
+     *   Validates an uploaded plaintext .usfm / .sfm file (not zipped).
+     *   @param Illuminate\Http\UploadedFile $File - the uploaded file
+     *   @return bool $success
+     */
+    protected function _checkUploadedPlainFile(UploadedFile $File): bool
+    {
+        $file_lc = strtolower( static::sanitizeFileName( $File->getClientOriginalName() ) );
+
+        if(!str_ends_with($file_lc, '.usfm') && !str_ends_with($file_lc, '.sfm')) {
+            return $this->addError('Does not appear to be a USFM file; expecting a .zip, .usfm or .sfm file.');
+        }
+
+        $contents = file_get_contents($File->getPathname());
+
+        if($contents === false) {
+            return $this->addError('Unable to read the uploaded file.');
+        }
+
+        if(substr($contents, 0, 3) === "\xEF\xBB\xBF") {
+            $contents = substr($contents, 3); // strip UTF-8 BOM (common in Paratext exports)
+        }
+
+        // Leading whitespace tolerated to match the parser, which trims each line
+        if(!preg_match('/^\s*\\\\id\s/m', $contents)) {
+            return $this->addError('Does not appear to be a valid USFM file; no \id markers found.');
+        }
+
+        $this->bible_attributes = [
+            'description' => null,
         ];
 
         return true;

@@ -39,6 +39,11 @@ class UsfmTest extends TestCase
                 return $this->_zipImportHelper($Zip, $filename);
             }
 
+            public function callImportContents(string $bib, string $filename)
+            {
+                return $this->_importContents($bib, $filename);
+            }
+
             public function callFormatText(string $text): string
             {
                 return $this->_formatText($text);
@@ -369,6 +374,69 @@ class UsfmTest extends TestCase
 
         $this->assertTrue($result);
         $this->assertSame('<p>Public Domain</p>', $imp->getBibleAttributes()['description']);
+    }
+
+    // -----------------------------------------------------------------------
+    // Plain (non-zipped) .usfm file: a whole-Bible plaintext file must be
+    // accepted by checkUploadedFile and parse via _importContents
+    // -----------------------------------------------------------------------
+
+    public function testCheckUploadedFileAcceptsPlainUsfmFile(): void
+    {
+        $path = tempnam(sys_get_temp_dir(), 'usfm_test_');
+        file_put_contents($path, "\xEF\xBB\xBF\\id GEN - Genesis\n\\c 1\n\\v 1 In the beginning.\n");
+        $File = new \Illuminate\Http\UploadedFile($path, 'whole_bible.usfm', null, null, true);
+
+        $imp = $this->makeImporter();
+        $result = $imp->checkUploadedFile($File);
+        unlink($path);
+
+        $this->assertTrue($result, implode(' ', $imp->getErrors()));
+        $this->assertNull($imp->getBibleAttributes()['description']);
+    }
+
+    public function testCheckUploadedFileAcceptsPlainSfmFile(): void
+    {
+        $path = tempnam(sys_get_temp_dir(), 'usfm_test_');
+        file_put_contents($path, "\\id MAT - Matthew\n\\c 1\n\\v 1 The book of the generation.\n");
+        $File = new \Illuminate\Http\UploadedFile($path, 'MAT.SFM', null, null, true);
+
+        $imp = $this->makeImporter();
+        $result = $imp->checkUploadedFile($File);
+        unlink($path);
+
+        $this->assertTrue($result, implode(' ', $imp->getErrors()));
+    }
+
+    public function testCheckUploadedFileRejectsPlainFileWithoutIdMarkers(): void
+    {
+        $path = tempnam(sys_get_temp_dir(), 'usfm_test_');
+        file_put_contents($path, "This is just some plain text.\nNo USFM markers here.\n");
+        $File = new \Illuminate\Http\UploadedFile($path, 'not_a_bible.usfm', null, null, true);
+
+        $imp = $this->makeImporter();
+        $result = $imp->checkUploadedFile($File);
+        unlink($path);
+
+        $this->assertFalse($result);
+        $this->assertStringContainsString('no \id markers', implode(' ', $imp->getErrors()));
+    }
+
+    public function testPlainMultiBookContentImportsAllVersesOfAllBooks(): void
+    {
+        $content = "\xEF\xBB\xBF\\id GEN - Genesis\n\\ide UTF-8\n\\toc2 Genesis\n\\c 1\n"
+            . "\\v 1 In the beginning.\n\\v 2 And the earth was without form.\n"
+            . "\\id EXO - Exodus\n\\ide UTF-8\n\\toc2 Exodus\n\\c 1\n"
+            . "\\v 1 Now these are the names.\n";
+
+        $imp = $this->makeImporter();
+        $result = $imp->callImportContents($content, 'whole_bible.usfm');
+
+        $this->assertTrue($result);
+        $this->assertCount(3, $imp->recorded);
+        $this->assertSame([1, 1, 2], array_column($imp->recorded, 'book'));
+        $this->assertSame('And the earth was without form.', $imp->recorded[1]['text']);
+        $this->assertSame('Now these are the names.', $imp->recorded[2]['text']);
     }
 
     // -----------------------------------------------------------------------
