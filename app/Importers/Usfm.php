@@ -109,17 +109,7 @@ class Usfm extends ImporterAbstract
         $module = $this->module; // Module and db name
 
         if($this->debug) {
-            // $file = 'eng-kjv2006_usfm.zip';
-            // $file = 'eng-kjv_usfm_apoc.zip';
-            // $file = 'engwebu_usfm.zip';
-            // $file = 'engkjvcpb_usfm.zip';
-            // $file = 'bn_irv_usfm.zip';
             $file = 'ne_ulb_npiulb_usfm.zip';
-            // $file = 'mr_irv_usfm.zip';
-            // $file = 'gu_irv_2017_usfm.zip';
-            // $file = 'kn_irv_usfm.zip';
-            // $file = 'tg_tgk_usfm.zip';
-            // $module = $this->module = 'usfm_' . time();
             $this->bible_attributes['name'] = $this->module;
             $this->bible_attributes['lang_short'] = 'ne';
             $this->bible_attributes['lang'] = 'gu';
@@ -128,16 +118,11 @@ class Usfm extends ImporterAbstract
 
         $attr   = $this->bible_attributes;
 
-        $zipfile = $dir . $file;
-
-        // Where did you get this Bible?
-        $source = "";
+        $filepath = $dir . $file;
 
         if(!$this->overwrite && $this->_existing && $this->insert_into_bible_table) {
             return $this->addError('Module already exists: \'' . $module . '\' Use --overwrite to overwrite it.', 4);
         }
-
-        $Zip = new ZipArchive;
 
         if(\App::runningInConsole()) {
             echo('Installing: ' . $module . PHP_EOL);
@@ -147,14 +132,16 @@ class Usfm extends ImporterAbstract
             $Bible->uninstall();
         }
 
-        if($Zip->open($zipfile) === TRUE) {
+        if(str_ends_with(strtolower($file), '.zip')) {
+            $Zip = new ZipArchive;
+
+            if($Zip->open($filepath) !== TRUE) {
+                return $this->addError('Unable to open ' . $filepath, 4);
+            }
+
             // Not importing any metadata at this time!
             if($this->insert_into_bible_table) {
                 $desc  = $Zip->getFromName('copr.htm') ?: null;
-
-                // if(!$desc) {
-                //     return $this->addError('Could not open file copr.htm inside of Zip file.<br />Is this a valid USFM file?');
-                // }
 
                 $attr['description'] = $desc ?: null;
                 $Bible->fill($attr);
@@ -171,7 +158,25 @@ class Usfm extends ImporterAbstract
             $Zip->close();
         }
         else {
-            return $this->addError('Unable to open ' . $zipfile, 4);
+            // Plain .usfm / .sfm file, potentially containing the entire Bible
+            $contents = is_file($filepath) ? file_get_contents($filepath) : false;
+
+            if($contents === false) {
+                return $this->addError('Unable to open ' . $filepath, 4);
+            }
+
+            if($this->insert_into_bible_table) {
+                $Bible->fill($attr);
+                $Bible->save();
+            }
+
+            $Bible->install(TRUE);
+
+            if(!$this->_importContents($contents, $file)) {
+                $Bible->uninstall();
+
+                return $this->addError('Does not appear to be a valid USFM file; no canonical books found.', 4);
+            }
         }
 
         $this->_insertVerses();
@@ -188,14 +193,26 @@ class Usfm extends ImporterAbstract
             return false;
         }
 
-        $chapter = $verse = NULL;
-
-        $next_line_para = FALSE;
         $bib = $Zip->getFromName($filename);
 
         if($bib === false) {
             return false;
         }
+
+        return $this->_importContents($bib, $filename);
+    }
+
+    /**
+     *   Parses raw USFM content (one or more books, delimited by \id markers) and queues its verses.
+     *   @param string $bib - the raw USFM file contents
+     *   @param string $filename - the source file name, used for console messages only
+     *   @return bool $success
+     */
+    protected function _importContents(string $bib, string $filename): bool
+    {
+        $chapter = $verse = NULL;
+
+        $next_line_para = FALSE;
 
         if(substr($bib, 0, 3) === "\xEF\xBB\xBF") {
             $bib = substr($bib, 3); // strip UTF-8 BOM (common in Paratext exports)
@@ -203,27 +220,9 @@ class Usfm extends ImporterAbstract
 
         $bib = preg_split("/\\r\\n|\\r|\\n/", $bib);
 
-        // Skip any leading blank lines, then require the \id marker (USFM's first marker).
-        do {
-            $id_line = trim((string) array_shift($bib));
-        } while($id_line === '' && !empty($bib));
-
-        // "\id GEN - Description" => GEN ; tolerant of extra spaces and lowercase codes
-        if(!preg_match('/^\\\\id\s+(\w{3})/', $id_line, $m)) {
-            if(\App::runningInConsole()) {
-                echo('Skipping ' . $filename . ': no valid \\id line found.' . PHP_EOL);
-            }
-
-            return false; // No valid \id line - not an importable book file
-        }
-
-        $book_str = strtoupper($m[1]);
-
-        if(!isset($this->book_map[$book_str])) {
-            return false; // Not one of the 66 canonical books (apocrypha / front matter / glossary)
-        }
-
-        $book = $this->book_map[$book_str];
+        // Books are delimited by \id markers; content before the first valid one is ignored.
+        $book = null;
+        $id_found = $book_found = false;
 
         $text = null;
         $end_of_verse = false;
@@ -238,36 +237,91 @@ class Usfm extends ImporterAbstract
             $line = trim($line);
             $line_lookahead = isset($bib[$key + 1]) ? trim($bib[$key + 1]) : null;
 
-            if(strpos($line, '\c') === 0) {
-                if(preg_match('/([0-9]+)/', $line, $matches)) {
+            // New book ("\id " with trailing space, so \ide et al don't match)
+            if(preg_match('/^\\\\id\s/', $line)) {
+                $id_found = true;
+
+                // Flush the previous book's final verse before resetting state
+                if($verse !== null) {
+                    $this->_addVerse($book, $chapter, $verse, $text, true);
+                }
+
+                if($book) {
+                    $this->book_metas[$book] = $book_meta; // Save the previous book's metadata
+                }
+
+                $book_meta = [
+                    'name_long' => null,
+                    'name'      => null,
+                    'shortname' => null,
+                ];
+
+                // null = non-canonical book (apocrypha / front matter / glossary); its content is skipped
+                $book = $this->getBookFromBookLine($line);
+
+                if($book) {
+                    $book_found = true;
+                }
+
+                $chapter = $verse = null;
+                $text = null;
+                $next_line_para = false;
+
+                continue;
+            }
+
+            // Chapter number: \c only. \ca, \cl, \cp, \cd are chapter *metadata*
+            // whose digits must never be mistaken for the chapter number.
+            if(preg_match('/^\\\\c(\s|[0-9]|$)/', $line)) {
+                if(preg_match('/^\\\\c\s*([0-9]+)/', $line, $matches)) {
                     $chapter = (int) $matches[1];
                 }
 
                 continue;
-            }            
+            }
+
+            if(preg_match('/^\\\\c[alpd](\s|$)/', $line)) {
+                continue; // \ca, \cl, \cp, \cd - chapter metadata we do not use
+            }
+
 
             if(strpos($line, '\toc1') === 0) {
-                $book_meta['name_long'] = substr($line, 6);
+                $book_meta['name_long'] = trim(substr($line, 5));
                 continue;
-            }            
+            }
 
             if(strpos($line, '\toc2') === 0) {
-                $book_meta['name'] = substr($line, 6);
+                $book_meta['name'] = trim(substr($line, 5));
                 continue;
-            }            
+            }
 
             if(strpos($line, '\toc3') === 0) {
-                $book_meta['shortname'] = substr($line, 6);
+                $book_meta['shortname'] = trim(substr($line, 5));
                 continue;
+            }
+
+            if(preg_match('/^\\\\rem(\s|$)/', $line)) {
+                continue; // editorial remark - never published, must not bleed into verse text
             }
 
             // continue; // debugging - bypass actual Bible import
             
-            if(strpos($line, '\p') === 0) {
+            // Paragraph marker family (\p, \pi#, \pc, \pm(c|o|r), \po, \pr, \pb, \ph#)
+            // - but not unrelated \p-prefixed markers like \periph or \pn
+            if(preg_match('/^\\\\p(i[0-9]?|c|m[cor]?|o|r|b|h[0-9]?)?(\s|$)/', $line)) {
+                // A paragraph marker ends the current verse (if any) and marks the next verse as a new paragraph.
+                if($verse !== null) {
+                    $this->_addVerse($book, $chapter, $verse, $text, true);
+                    $end_of_verse = false;
+                    $text = null;
+                    $verse = null;
+                }
+
                 $next_line_para = TRUE;
+                continue;
             }
 
-            if(strpos($line, '\v') === 0) {
+            if(preg_match('/^\\\\v\s/', $line)) {
                 // "\v 1 text" => verse 1 / "text"; text is empty when the verse starts on the next line
                 if(preg_match('/^\\\\v\s+(\S+)\s*(.*)/', $line, $vm)) {
                     $verse = (int) $vm[1];
@@ -283,16 +337,11 @@ class Usfm extends ImporterAbstract
                 $text = ($text === null || $text === '') ? $line : $text . ' ' . $line;
             }
 
-            if(!$line_lookahead || 
-                strpos($line_lookahead, '\c') === 0 || 
-                strpos($line_lookahead, '\v') === 0 ||
-                strpos($line_lookahead, '\s') === 0 ||
-                strpos($line_lookahead, '\mt') === 0 ||
-                strpos($line_lookahead, '\ms') === 0 ||
-                strpos($line_lookahead, '\r') === 0 ||
-                strpos($line_lookahead, '\d') === 0 ||
-                strpos($line_lookahead, '\qa') === 0
-             ) {
+            // End of verse when the next line starts a chapter, verse, or heading-type
+            // marker. Family prefixes are intentional (\s* headings, \mt*/\ms* titles),
+            // but \rem is excluded: a remark does not end the verse (its line is skipped
+            // above, and the verse text may continue after it).
+            if(!$line_lookahead || preg_match('/^\\\\(c|v|s|mt|ms|r(?!em)|d|qa)/', $line_lookahead)) {
                 $end_of_verse = true;
             }
 
@@ -304,19 +353,53 @@ class Usfm extends ImporterAbstract
             }
         }
 
-        $this->book_metas[$book] = $book_meta;
+        if($book) {
+            $this->book_metas[$book] = $book_meta;
+        }
+
+        if(!$id_found) {
+            $this->_echoIfConsole('Skipping ' . $filename . ': no valid \\id line found.');
+
+            return false; // No valid \id line - not an importable book file
+        }
+
+        if(!$book_found) {
+            $this->_echoIfConsole('Skipping ' . $filename . ': no valid book line found.');
+
+            return false; // No canonical books - not an importable Bible book file
+        }
 
         return true;
     }
 
-    public function checkUploadedFile(UploadedFile $File): bool 
+    protected function getBookFromBookLine(string $line) : ?int
+    {
+        if(preg_match('/^\\\\id\s+(\w{3})/', $line, $m)) {
+            $book_str = strtoupper($m[1]);
+
+            if(isset($this->book_map[$book_str])) {
+                return $this->book_map[$book_str];
+            }
+        }
+
+        return null;
+    }
+
+    public function checkUploadedFile(UploadedFile $File): bool
     {
         $zipfile    = $File->getPathname();
         $file       = static::sanitizeFileName( $File->getClientOriginalName() );
         $Zip        = new ZipArchive();
 
-        if(stripos($file, 'sfm') === false) {
-            return $this->addError('Does not appear to be a USFM file; filename does not end with "usf" or "usfm".');
+        $ext = strtolower(pathinfo($file, PATHINFO_EXTENSION));
+
+        if(!in_array($ext, ['zip', 'usfm', 'sfm'], true)) {
+            return $this->addError('Does not appear to be a USFM file; filename does not end with ".zip", ".usfm" or ".sfm".');
+        }
+
+        // Plain (non-zipped) .usfm / .sfm file, potentially containing the entire Bible
+        if($ext !== 'zip') {
+            return $this->_checkUploadedPlainFile($File);
         }
 
         $allowed = [
@@ -327,15 +410,19 @@ class Usfm extends ImporterAbstract
 
         $book_count = 0;
 
-        if($Zip->open($zipfile) == true) {
-            for ($i = 0; $i < $Zip->numFiles; $i++) {
-                $filename = $Zip->getNameIndex($i);
-                $spl = explode('.', $filename);
-                $ext = strtolower(array_pop($spl));
+        // ZipArchive::open() returns TRUE on success or an int error code on failure -
+        // a loose == true comparison would treat error codes as success.
+        if($Zip->open($zipfile) !== true) {
+            return $this->addError('Does not appear to be a valid USFM file; unable to open ZIP file.');
+        }
 
-                if($ext == 'usfm' || $ext == 'sfm') {
-                    $book_count++;
-                }
+        for ($i = 0; $i < $Zip->numFiles; $i++) {
+            $filename = $Zip->getNameIndex($i);
+            $spl = explode('.', $filename);
+            $ext = strtolower(array_pop($spl));
+
+            if($ext == 'usfm' || $ext == 'sfm') {
+                $book_count++;
             }
         }
 
@@ -343,7 +430,8 @@ class Usfm extends ImporterAbstract
             return $this->addError('Does not appear to be a valid USFM file; ZIP file does not contain any .usfm or .sfm files.');
         }
 
-        if($Zip->locateName('copr.htm')) {
+        // locateName() returns the entry index, which can be 0 (falsy) for the first entry
+        if($Zip->locateName('copr.htm') !== false) {
             $desc  = $Zip->getFromName('copr.htm');
         } else {
             $desc = null;
@@ -351,6 +439,41 @@ class Usfm extends ImporterAbstract
 
         $this->bible_attributes = [
             'description' => $desc,
+        ];
+
+        return true;
+    }
+
+    /**
+     *   Validates an uploaded plaintext .usfm / .sfm file (not zipped).
+     *   @param Illuminate\Http\UploadedFile $File - the uploaded file
+     *   @return bool $success
+     */
+    protected function _checkUploadedPlainFile(UploadedFile $File): bool
+    {
+        $file_lc = strtolower( static::sanitizeFileName( $File->getClientOriginalName() ) );
+
+        if(!str_ends_with($file_lc, '.usfm') && !str_ends_with($file_lc, '.sfm')) {
+            return $this->addError('Does not appear to be a USFM file; expecting a .zip, .usfm or .sfm file.');
+        }
+
+        $contents = file_get_contents($File->getPathname());
+
+        if($contents === false) {
+            return $this->addError('Unable to read the uploaded file.');
+        }
+
+        if(substr($contents, 0, 3) === "\xEF\xBB\xBF") {
+            $contents = substr($contents, 3); // strip UTF-8 BOM (common in Paratext exports)
+        }
+
+        // Leading whitespace tolerated to match the parser, which trims each line
+        if(!preg_match('/^\s*\\\\id\s/m', $contents)) {
+            return $this->addError('Does not appear to be a valid USFM file; no \id markers found.');
+        }
+
+        $this->bible_attributes = [
+            'description' => null,
         ];
 
         return true;
@@ -372,7 +495,11 @@ class Usfm extends ImporterAbstract
 
         $text = preg_replace_callback($pattern, function($matches) {
             // Note: strong is the only word attribute we use, we discard all others!
-            list($word, $attr) = explode('|', $matches[1]);
+            $m = $matches[1] ?? '';
+            $parts = explode('|', $m);
+
+            $word = $parts[0] ?? '';
+            $attr = $parts[1] ?? '';
 
             $strong_pos = strpos($attr, 'strong');
 

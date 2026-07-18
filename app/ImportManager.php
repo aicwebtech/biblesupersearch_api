@@ -77,9 +77,11 @@ class ImportManager {
         'usfm' => [
             'name'  => 'USFM',
             'desc'  => [
-                'Imports a Bible in the <a href=\'https://paratext.org/usfm/\' target=\'_NEW\'>Unified Standard Format Markers (USFM)</a> ', 
+                'Imports a Bible in the <a href=\'https://paratext.org/usfm/\' target=\'_NEW\'>Unified Standard Format Markers (USFM)</a> ',
                 'Bible Format. <br /><br />',
-            ],            
+                'Accepts either a .zip file containing one or more .usfm / .sfm files, ',
+                'or a single plaintext .usfm / .sfm file containing the entire Bible.<br /><br />',
+            ],
             'desc_old'  => [
                 'Imports a Bible in the <a href=\'https://paratext.org/usfm/\' target=\'_NEW\'>Unified Standard Format Markers (USFM)</a> ', 
                 'Bible Format. <br /><br />Bibles in this format can be downloaded from ebible.com,',
@@ -91,7 +93,7 @@ class ImportManager {
                 '</ol><br />',
             ],
             'url'   => 'https://ebible.org/download.php',
-            'ext'   => ['zip'],
+            'ext'   => ['zip', 'usfm', 'sfm'],
             'kind'  => 'Usfm',
             'class' => \App\Importers\Usfm::class,
         ],           

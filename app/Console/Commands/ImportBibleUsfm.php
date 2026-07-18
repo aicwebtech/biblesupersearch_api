@@ -13,7 +13,7 @@ class ImportBibleUsfm extends ImportBible
      */
     protected $signature = 'bible:import-usfm';
     protected $import_dir = 'usfm';
-    protected $file_extension = 'zip';
+    protected $file_extension = 'zip|usfm|sfm';
 
     /**
      * The console command description.
@@ -21,7 +21,7 @@ class ImportBibleUsfm extends ImportBible
      */
     protected $description = 'Import a Bible in the USFM format';
 
-    protected $name = 'USFM .zip';
+    protected $name = 'USFM .zip / .usfm / .sfm';
     
     /**
      * Create a new command instance.
