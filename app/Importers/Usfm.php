@@ -172,7 +172,11 @@ class Usfm extends ImporterAbstract
 
             $Bible->install(TRUE);
 
-            $this->_importContents($contents, $file);
+            if(!$this->_importContents($contents, $file)) {
+                $Bible->uninstall();
+
+                return $this->addError('Does not appear to be a valid USFM file; no canonical books found.', 4);
+            }
         }
 
         $this->_insertVerses();
@@ -305,7 +309,16 @@ class Usfm extends ImporterAbstract
             // Paragraph marker family (\p, \pi#, \pc, \pm(c|o|r), \po, \pr, \pb, \ph#)
             // - but not unrelated \p-prefixed markers like \periph or \pn
             if(preg_match('/^\\\\p(i[0-9]?|c|m[cor]?|o|r|b|h[0-9]?)?(\s|$)/', $line)) {
+                // A paragraph marker ends the current verse (if any) and marks the next verse as a new paragraph.
+                if($verse !== null) {
+                    $this->_addVerse($book, $chapter, $verse, $text, true);
+                    $end_of_verse = false;
+                    $text = null;
+                    $verse = null;
+                }
+
                 $next_line_para = TRUE;
+                continue;
             }
 
             if(preg_match('/^\\\\v\s/', $line)) {

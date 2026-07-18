@@ -39,7 +39,7 @@ class UsfmTest extends TestCase
                 return $this->_zipImportHelper($Zip, $filename);
             }
 
-            public function callImportContents(string $bib, string $filename)
+            public function callImportContents(string $bib, string $filename): bool
             {
                 return $this->_importContents($bib, $filename);
             }
