@@ -182,7 +182,7 @@ const template = `<v-sheet>
                         text='Export'
                     />
                     <ChipAlert
-                        v-else-if="item.needs_update == '1' && bootstrap.devToolsEnabled"
+                        v-else-if="item.needs_update == '1'
                         @click="handleSingleAction('update', item)" 
                         v-bind='chipProps'
                         text='Update'
