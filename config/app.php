@@ -23,7 +23,7 @@ return [
     |
     */
 
-    'version' => '6.3.0.alphabetacommie3',
+    'version' => '6.3.0.99alphabetacommie3',
 
 
     /*
