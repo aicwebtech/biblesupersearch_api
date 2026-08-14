@@ -182,7 +182,7 @@ const template = `<v-sheet>
                         text='Export'
                     />
                     <ChipAlert
-                        v-else-if="item.needs_update == '1' && bootstrap.devToolsEnabled"
+                        v-else-if="item.needs_update == '1'"
                         @click="handleSingleAction('update', item)" 
                         v-bind='chipProps'
                         text='Update'
@@ -282,7 +282,7 @@ const template = `<v-sheet>
                                 <template v-slot:prepend>
                                     <v-icon icon="mdi-export"></v-icon>
                                 </template>
-                                <v-list-item-title>Module Settings</v-list-item-title>
+                                <v-list-item-title>Export Meta</v-list-item-title>
                             </v-list-item>
 
                         </v-list>
@@ -485,9 +485,11 @@ export default {
                 },
                 {
                     action: 'meta',
-                    label: 'Module Settings',
-                    dialogTitle: 'Module Settings',
-                    confirmText: 'Are you sure that you want to export Bible settings changes (metadata) to these Bible module files?',
+                    label: 'Export Meta',
+                    dialogTitle: 'Export Module Settings / Metadata',
+                    confirmText: 'Are you sure that you want to export Bible settings changes (metadata) to these Bible module files? ' +
+                        'This will NOT trigger the Bible update mechanism; it will only apply to new installs of the module files. ' +
+                        'If you want to update the module files, use the "Export Module" action instead.',
                     actioning: 'Updating Module Settings',
                     requireDevTools: true,
                     icon: 'mdi-export'
