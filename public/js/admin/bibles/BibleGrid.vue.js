@@ -485,9 +485,11 @@ export default {
                 },
                 {
                     action: 'meta',
-                    label: 'Module Settings',
-                    dialogTitle: 'Module Settings',
-                    confirmText: 'Are you sure that you want to export Bible settings changes (metadata) to these Bible module files?',
+                    label: 'Export Meta',
+                    dialogTitle: 'Export Module Settings / Metadata',
+                    confirmText: 'Are you sure that you want to export Bible settings changes (metadata) to these Bible module files? ' +
+                        'This will NOT trigger the Bible update mechanism; it will only apply to new installs of the module files.' +
+                        'If you want to update the module files, use the "Export Module" action instead.',
                     actioning: 'Updating Module Settings',
                     requireDevTools: true,
                     icon: 'mdi-export'
