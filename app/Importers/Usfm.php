@@ -521,6 +521,13 @@ class Usfm extends ImporterAbstract
     {
         $text = parent::_preFormatText($text);
         $text = preg_replace('/\s+/', ' ', $text);
+
+        // Normalize nested character markers (\+add ...\+add*) to their un-nested form.
+        // This must run before _formatItalics() / _formatRedLetter(), which match the
+        // un-nested '\add ' / '\wj ' forms literally; done any later, nested markup is
+        // stripped as unknown markup instead of being converted to [...] / <...>.
+        $text = str_replace("\+", "\\", $text);
+
         return $text;
     }
 
@@ -535,9 +542,7 @@ class Usfm extends ImporterAbstract
             'rq',   // Inline quotation reference(s).
             'x',    // Cross references
         ];
-
         // We KEEP vp - published verse number
-        $text = str_replace("\+", "\\", $text);
 
         foreach($remove_contents as $c) {
             $pattern = "/\\\\$c (.+?)\\\\$c\*/";
@@ -547,18 +552,23 @@ class Usfm extends ImporterAbstract
         // Remove USFM 3 milestone markers incl. word-alignment (\zaln-s|…\*, \zaln-e\*, \qt-s\*)
         $text = preg_replace('/\\\\[a-z0-9]+-[se][^\\\\]*\\\\\*/i', '', $text);
 
-        // // Remove any other formatting markup
-        $text = preg_replace('/\\\\[a-z][a-z0-9-]*\*?/i', '', $text);
+        // Remove any other formatting markup.
+        // Per the USFM spec, a marker ending in '*' is a closing marker and is NOT followed
+        // by a space; every other marker is separated from the text that follows it by a
+        // single space that belongs to the marker, not to the text. That space must be
+        // removed along with the marker, or markup opening mid-word (eg "wa\tl linyu\tl*")
+        // leaves a space in the middle of the word.
+        $text = preg_replace('/\\\\[a-z][a-z0-9-]*\*/i', '', $text);  // closing markers
+        $text = preg_replace('/\\\\[a-z][a-z0-9-]* ?/i', '', $text);  // opening / standalone markers
         $text = str_replace('\*', '', $text); // stray milestone / marker closers
 
-        /// ??? what was this for?  Came from pre-existing IRV iporter
-        if(preg_match('/[0-9]+:[0-9]+/', $text)) {
-            $lpp = strrpos($text, '(');
-
-            if($lpp !== false) {
-                $text = substr($text, 0, $lpp);
-            }
-        }
+        // Remove a trailing parenthetical cross reference, eg "... (See Gen 1:1)".
+        // Inherited from the pre-existing IRV importer, which truncated from the last '('
+        // to the end of the verse whenever a chapter:verse reference appeared anywhere in
+        // it -- that silently deleted the tail of any verse containing an inline
+        // parenthetical. Only a parenthetical at the very end of the verse that actually
+        // contains a chapter:verse reference is removed.
+        $text = preg_replace('/\s*\([^()]*[0-9]+:[0-9]+[^()]*\)\s*$/', '', $text);
         
         // Check to see if we got everything
         // comment out or remove in production
@@ -566,7 +576,8 @@ class Usfm extends ImporterAbstract
         //     die('BAD FORMAT: ' . $text);
         // }
 
-        return parent::_postFormatText($text);
+        // Stripped markers can leave whitespace at either end of the verse
+        return trim(parent::_postFormatText($text));
     }
 
     protected function _removeUnusedTags($text)

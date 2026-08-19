@@ -534,4 +534,144 @@ class UsfmTest extends TestCase
             ],
         ];
     }
+
+    // -----------------------------------------------------------------------
+    // Character markers opening mid-word must not leave a space inside the word.
+    // Per the USFM spec, the space after a non-closing marker delimits the marker
+    // and belongs to it, not to the text.
+    // -----------------------------------------------------------------------
+
+    #[DataProvider('characterMarkerSpacingDataProvider')]
+    public function testCharacterMarkerSpacing(string $input, string $expected): void
+    {
+        $imp = $this->makeImporter();
+
+        $this->assertSame($expected, $imp->callFormatText($input));
+    }
+
+    public static function characterMarkerSpacingDataProvider(): array
+    {
+        return [
+            'transliterated word opening mid-word' => [
+                '\add wanda\add* ushikima, waungonyi, uchila, wa\tl linyu\tl* yamwaza yakuhosa,',
+                '[wanda] ushikima, waungonyi, uchila, walinyu yamwaza yakuhosa,',
+            ],
+            'nested marker opening mid-word' => [
+                'wa\+tl linyu\+tl* yamwaza',
+                'walinyu yamwaza',
+            ],
+            'marker between whole words keeps the surrounding space' => [
+                'the \nd LORD\nd* said',
+                'the LORD said',
+            ],
+            'closing marker followed by a suffix' => [
+                'the \nd LORD\nd*\'s house',
+                'the LORD\'s house',
+            ],
+            'line marker at the start of the text leaves no leading space' => [
+                '\q1 Blessed is the man',
+                'Blessed is the man',
+            ],
+            'numbered marker mid-word' => [
+                'wa\qs linyu\qs*',
+                'walinyu',
+            ],
+            'footnote attached to a word' => [
+                'in the beginning\f + \ft a note\f* God created',
+                'in the beginning God created',
+            ],
+            'trailing marker leaves no trailing space' => [
+                'First verse. \m',
+                'First verse.',
+            ],
+        ];
+    }
+
+    // -----------------------------------------------------------------------
+    // The same spacing rule must hold end-to-end through _importContents
+    // -----------------------------------------------------------------------
+
+    public function testMidWordCharacterMarkerImportsWithoutSpace(): void
+    {
+        $content = "\\id EXO - Exodus\n\\c 25\n"
+            . "\\m\n"
+            . "\\v 4 \\add wanda\\add* ushikima, waungonyi, uchila, wa\\tl linyu\\tl* yamwaza yakuhosa,\n";
+
+        $imp = $this->makeImporter();
+        $imp->callImportContents($content, '02EXO.usfm');
+
+        $this->assertCount(1, $imp->recorded);
+        $this->assertStringContainsString('walinyu', $imp->recorded[0]['text']);
+        $this->assertStringNotContainsString('wa linyu', $imp->recorded[0]['text']);
+    }
+
+    // -----------------------------------------------------------------------
+    // Nested character markers (\+add, \+wj) must produce the same markup as
+    // their un-nested forms, not be stripped as unknown markup.
+    // -----------------------------------------------------------------------
+
+    #[DataProvider('nestedMarkerDataProvider')]
+    public function testNestedMarkersKeepTheirMarkup(string $input, string $expected): void
+    {
+        $imp = $this->makeImporter();
+
+        $this->assertSame($expected, $imp->callFormatText($input));
+    }
+
+    public static function nestedMarkerDataProvider(): array
+    {
+        return [
+            'nested add inside wj' => [
+                '\\wj text \\+add supplied\\+add* more\\wj*',
+                '‹text [supplied] more›',
+            ],
+            'nested add alone matches un-nested add' => [
+                'the \\+add supplied\\+add* word',
+                'the [supplied] word',
+            ],
+            'nested wj inside a quotation' => [
+                'he said \\+wj follow me\\+wj* to them',
+                'he said ‹follow me› to them',
+            ],
+        ];
+    }
+
+    // -----------------------------------------------------------------------
+    // Only a trailing parenthetical cross reference is removed; an inline
+    // parenthetical must not truncate the rest of the verse.
+    // -----------------------------------------------------------------------
+
+    #[DataProvider('parentheticalReferenceDataProvider')]
+    public function testParentheticalCrossReferenceHandling(string $input, string $expected): void
+    {
+        $imp = $this->makeImporter();
+
+        $this->assertSame($expected, $imp->callFormatText($input));
+    }
+
+    public static function parentheticalReferenceDataProvider(): array
+    {
+        return [
+            'trailing reference removed' => [
+                'In the beginning God created (See Gen 1:1)',
+                'In the beginning God created',
+            ],
+            'inline reference keeps the rest of the verse' => [
+                'Some text (see 1:1) more text',
+                'Some text (see 1:1) more text',
+            ],
+            'inline reference before a trailing reference' => [
+                'A (see 2:2) and B (See 3:3)',
+                'A (see 2:2) and B',
+            ],
+            'trailing parenthetical without a reference is kept' => [
+                'Some text (an aside)',
+                'Some text (an aside)',
+            ],
+            'reference outside parentheses is kept' => [
+                'As it says in Gen 1:1, God created',
+                'As it says in Gen 1:1, God created',
+            ],
+        ];
+    }
 }
