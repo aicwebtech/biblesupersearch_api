@@ -78,17 +78,22 @@ class RenderedFileTest extends TestCase
 
     /**
      *  @depen_ds testRenderedCsv
-     */ 
-    public function testRenderedCopyright() 
+     *
+     * The copyright block is assembled by _getCopyrightStatement(), so the config permutations
+     * are asserted against that directly. Force-rendering the whole KJV for each permutation
+     * costs ~300 chunked queries and a 5MB file write, to read one line back. A single real
+     * render still runs at the end, pinning the statement to its position in the file.
+     */
+    public function testRenderedCopyright()
     {
         // Cache the existing config value
         $cache_deriv_cr = config('download.derivative_copyright_statement');
         $cache_bss_link = config('download.bss_link_enable');
         $cache_app_link = config('download.app_link_enable');
-        
+
         // Set some test values
         $test_deriv_cr = 'Big test of copyright year YYYY 12343123'; // YYYY is replaced with current year
-        
+
         $find_deriv_cr = 'Big test of copyright year ' . date('Y') . ' 12343123';
         $find_bss_url = 'www.BibleSuperSearch.com';
         $find_app_url = config('app.url');
@@ -106,15 +111,7 @@ class RenderedFileTest extends TestCase
         $this->assertFalse(config('download.app_link_enable'));
         $this->assertFalse(config('download.bss_link_enable'));
 
-        $this->assertTrue( $Renderer->render(TRUE, TRUE) ); // Force render
-        $file_path = $Renderer->getRenderFilePath();
-        $this->assertFileExists($file_path);
-        $file_data = file($file_path);
-
-        $this->assertIsArray($file_data);
-        $this->assertArrayHasKey(3, $file_data);
-
-        $cr = str_getcsv($file_data[3], escape: $this->csvesc)[0];
+        $cr = $Renderer->_getCopyrightStatement(TRUE, '  ');
 
         $this->assertStringNotContainsString($find_deriv_cr, $cr);
         $this->assertStringNotContainsString($find_bss_url, $cr);
@@ -132,15 +129,7 @@ class RenderedFileTest extends TestCase
         $this->assertTrue(config('download.app_link_enable'));
         $this->assertFalse(config('download.bss_link_enable'));
 
-        $this->assertTrue( $Renderer->render(TRUE, TRUE) ); // Force render
-        $file_path = $Renderer->getRenderFilePath();
-        $this->assertFileExists($file_path);
-        $file_data = file($file_path);
-
-        $this->assertIsArray($file_data);
-        $this->assertArrayHasKey(3, $file_data);
-
-        $cr = str_getcsv($file_data[3], escape: $this->csvesc)[0];
+        $cr = $Renderer->_getCopyrightStatement(TRUE, '  ');
 
         $this->assertStringNotContainsString($find_deriv_cr, $cr);
         $this->assertStringNotContainsString($find_bss_url, $cr);
@@ -157,48 +146,36 @@ class RenderedFileTest extends TestCase
         $this->assertTrue(config('download.app_link_enable'));
         $this->assertTrue(config('download.bss_link_enable'));
 
-        $this->assertTrue( $Renderer->render(TRUE, TRUE) ); // Force render
-        $file_path = $Renderer->getRenderFilePath();
-        $this->assertFileExists($file_path);
-        $file_data = file($file_path);
-
-        $this->assertIsArray($file_data);
-        $this->assertArrayHasKey(3, $file_data);
-
-        $cr = str_getcsv($file_data[3], escape: $this->csvesc)[0];
+        $cr = $Renderer->_getCopyrightStatement(TRUE, '  ');
 
         $this->assertStringNotContainsString($find_deriv_cr, $cr);
-        
+
+        // Guard retained from the original test: under config caching a runtime config()
+        // override may not reach the renderer.
         if(!config('app.config_cache')) {
-            // $this->assertStringContainsString($find_bss_url, $cr);
-            // $this->assertStringContainsString($find_app_url, $cr);
+            $this->assertStringContainsString($find_bss_url, $cr);
+            $this->assertStringContainsString($find_app_url, $cr);
         }
 
         // Add a deriv copyright statement
         config(['download.derivative_copyright_statement' => $test_deriv_cr]);
         $this->assertEquals($test_deriv_cr, config('download.derivative_copyright_statement'));
 
-        $this->assertTrue( $Renderer->render(TRUE, TRUE) ); // Force render
-        $file_path = $Renderer->getRenderFilePath();
-        $this->assertFileExists($file_path);
-        $file_data = file($file_path);
-
-        $this->assertIsArray($file_data);
-        $this->assertArrayHasKey(3, $file_data);
-
-        $cr = str_getcsv($file_data[3], escape: $this->csvesc)[0];
+        $cr = $Renderer->_getCopyrightStatement(TRUE, '  ');
 
         $this->assertStringContainsString($find_deriv_cr, $cr);
         $this->assertStringContainsString($find_bss_url, $cr);
         $this->assertStringContainsString($find_app_url, $cr);
 
-        // Revert to cached 
+        // Revert to cached
         config([
             'download.derivative_copyright_statement' => $cache_deriv_cr,
             'download.bss_link_enable' => $cache_bss_link,
             'download.app_link_enable' => $cache_app_link,
         ]);
 
+        // The one real render: proves the statement asserted on above is exactly what lands on
+        // line 4 of the rendered file, so the direct calls above are testing the right string.
         $this->assertTrue( $Renderer->render(TRUE, TRUE) ); // Force render
         $file_path = $Renderer->getRenderFilePath();
         $this->assertFileExists($file_path);
@@ -208,6 +185,9 @@ class RenderedFileTest extends TestCase
         $this->assertArrayHasKey(3, $file_data);
 
         $cr = str_getcsv($file_data[3], escape: $this->csvesc)[0];
+
+        $this->assertEquals($Renderer->_getCopyrightStatement(TRUE, '  '), $cr,
+            'The rendered copyright line must match _getCopyrightStatement()');
 
         if($cache_deriv_cr) {
             $this->assertStringNotContainsString($cache_deriv_cr, $cr);
@@ -219,7 +199,7 @@ class RenderedFileTest extends TestCase
         else {
             $this->assertStringNotContainsString($find_bss_url, $cr);
         }
-        
+
         if($cache_app_link) {
             $this->assertStringContainsString($find_app_url, $cr);
         }

@@ -66,23 +66,41 @@ class ParallelTest extends TestCase
         $this->assertCount(354, $results['bishops']);
     }
 
-    public function _testMaxResults() 
+    /**
+     * A broad parallel search must stop at the configured ceilings: the per-Bible parallel
+     * limit raises a 'result limit reached' error, and the global maximum caps the verses
+     * returned for each Bible.
+     */
+    public function testMaxResults() 
     {
-
-        // $this->markTestIncomplete('This test takes too long to run!');
-        
         if(!Bible::isEnabled('bishops')) {
             $this->markTestSkipped('Bible bishops not installed or enabled');
         }
 
+        // Lower the ceilings before the Engine is built. parallel_search_maximum_results is the
+        // SQL LIMIT applied per Bible, so this bounds the work without altering the code path
+        // under test. Laravel restores config between tests.
+        config([
+            'bss.parallel_search_maximum_results' => 60,
+            'bss.global_maximum_results'          => 20,
+        ]);
+
         if(config('bss.parallel_search_maximum_results') < config('bss.global_maximum_results')) {
-            $this->markTestSkipped('Parallel search maximum results is overall maximum results, skipping');
+            $this->markTestSkipped('Parallel search maximum results is less than overall maximum results, skipping');
         }
 
-        $Engine = Engine::getInstance();
+        $Engine = Engine::freshInstance();
+        $Engine->setDefaultDataType('raw');
+
         $results = $Engine->actionQuery(['bible' => ['kjv','bishops'], 'search' => 'God', 'whole_words' => FALSE, 'page_all' => TRUE]);
+
+        // 'God' matches far more than 60 verses in each Bible, so both hit the parallel limit.
         $this->assertTrue($Engine->hasErrors());
-        $this->assertCount(config('bss.global_maximum_results'), $results);
+
+        // Assert on a Bible's verse list, not on $results itself - that is keyed by module and
+        // only ever holds one entry per Bible.
+        $this->assertCount(config('bss.global_maximum_results'), $results['kjv']);
+        $this->assertLessThanOrEqual(config('bss.global_maximum_results'), count($results['bishops']));
     }
 
     public function testPagination() 

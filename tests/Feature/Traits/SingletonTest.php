@@ -66,6 +66,34 @@ class SingletonTest extends TestCase
         $this->assertNotSame($a, $b, 'freshInstance should reset the stored instance and return a new one');
     }
 
+    public function test_resetInstance_discards_instance_without_constructing_a_replacement()
+    {
+        Config::set('app.premium', false);
+
+        SimpleSingleton::freshInstance();
+        $a = SimpleSingleton::getInstance();
+
+        SimpleSingleton::resetInstance();
+        $b = SimpleSingleton::getInstance();
+
+        $this->assertNotSame($a, $b, 'resetInstance should discard the stored instance');
+    }
+
+    public function test_resetInstance_is_lazy()
+    {
+        Config::set('app.premium', false);
+
+        SimpleSingleton::freshInstance();
+        SimpleSingleton::resetInstance();
+
+        // Nothing is built until getInstance() is called again. Reading the static through
+        // reflection avoids triggering the lazy construction we are asserting on. No
+        // setAccessible() call: it has been a no-op since PHP 8.1 and is deprecated in 8.5.
+        $property = new \ReflectionProperty(SimpleSingleton::class, 'instance');
+
+        $this->assertNull($property->getValue(), 'resetInstance should not construct a replacement');
+    }
+
     public function __test_generateInstance_prefers_premium_class_when_enabled_and_exists()
     {
         // this test unable to work given current premium namespace logic ...

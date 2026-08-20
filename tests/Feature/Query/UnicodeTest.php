@@ -356,19 +356,24 @@ class UnicodeTest extends TestCase
         }
     }
 
-    public function _testLatvianWithEnglish() 
+    public function testLatvianWithEnglish() 
     {
-        // $this->markTestIncomplete('This test takes too long to run!');
-        
         if(!Engine::isBibleEnabled('lv_gluck_8')) {
             $this->markTestSkipped('Bible lv_gluck_8 not installed or enabled');
         }
+
+        // Cross-language parallel search is disabled by default, so enable it for this test -
+        // it is the behaviour under test. Set before the Engine is built; Laravel restores
+        // config between tests. The result ceilings are deliberately left at their real values:
+        // these queries paginate, and the paginated path already slices to one page before the
+        // passage formatting runs, so the search is bounded without weakening the assertions.
+        config(['bss.parallel_search_different_languages' => 'always']);
 
         if(config('bss.parallel_search_different_languages') == 'never') {
             $this->markTestSkipped('Searching across Bbiles of different languages is disabled');  
         }
 
-        $Engine = Engine::getInstance();
+        $Engine = Engine::freshInstance();
         $Engine->setDefaultDataType('passage');
 
         $results = $Engine->actionQuery([

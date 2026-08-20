@@ -136,6 +136,46 @@ class RequestTest extends TestCase
         $this->assertEmpty($results['kjv'], 'Reused Engine should not resolve the Latvian book name without a language');
     }
 
+    /**
+     * A reused Engine instance must not carry a prior query's Bible set into a later query
+     * that supplies none. actionQuery() derives $multi_bibles from the resulting set, so a
+     * stale set would also push a single-Bible request down the parallel search path.
+     */
+    public function testReusedEngineDoesNotCarryStaleBibleSet()
+    {
+        if(!Bible::isEnabled('bishops')) {
+            $this->markTestSkipped('Bible bishops not installed or enabled');
+        }
+
+        $default = config('bss.defaults.bible');
+        $Engine  = new Engine();
+        $Engine->setDefaultDataType('raw');
+
+        // Query 1: an explicit multi-Bible (parallel) search.
+        $results = $Engine->actionQuery([
+            'bible'       => ['kjv', 'bishops'],
+            'search'      => 'faith',
+            'whole_words' => FALSE,
+            'page_all'    => TRUE,
+        ]);
+
+        $this->assertFalse($Engine->hasErrors(), implode(' | ', $Engine->getErrors()));
+        $this->assertArrayHasKey('bishops', $results);
+
+        // Query 2 on the SAME instance, naming no Bible. It must fall back to the configured
+        // default, not silently reuse kjv+bishops from query 1.
+        $results = $Engine->actionQuery([
+            'search'      => 'faith',
+            'whole_words' => FALSE,
+            'page_all'    => TRUE,
+        ]);
+
+        $this->assertFalse($Engine->hasErrors(), implode(' | ', $Engine->getErrors()));
+        $this->assertArrayHasKey($default, $results);
+        $this->assertArrayNotHasKey('bishops', $results, 'Reused Engine leaked the previous query\'s Bible set');
+        $this->assertCount(1, $results, 'A query naming no Bible must not run as a parallel search');
+    }
+
     public function testWithBooleanProximity()
     {
         $Engine = new Engine();

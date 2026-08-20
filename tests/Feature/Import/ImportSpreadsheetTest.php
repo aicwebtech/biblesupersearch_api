@@ -26,7 +26,6 @@ class ImportSpreadsheetTest extends TestCase
     ];
 
     protected $files = [];
-    protected $UploadedFiles = [];
 
     public function __construct() 
     {
@@ -436,12 +435,7 @@ class ImportSpreadsheetTest extends TestCase
 
     protected function _generateUploadedFile($file_name) 
     {
-        // if(!array_key_exists($file_name, $this->UploadedFiles)) {
-            $file_path = dirname(__FILE__) . '/test_spreadsheets/' . $file_name;
-            return new UploadedFile($file_path, $file_name, NULL, NULL, TRUE);
-            $this->UploadedFiles[$file_name] = new UploadedFile($file_path, $file_name, NULL, NULL, TRUE);
-        // }
-
-        return $this->UploadedFiles[$file_name];
+        $file_path = dirname(__FILE__) . '/test_spreadsheets/' . $file_name;
+        return new UploadedFile($file_path, $file_name, NULL, NULL, TRUE);
     }
 }
