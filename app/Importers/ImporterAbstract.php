@@ -428,7 +428,13 @@ abstract class ImporterAbstract
      */
     protected function _echoIfConsole(string $message): void
     {
-        if(class_exists('App') && \App::runningInConsole()) {
+        // Ask the facades for their application rather than testing class_exists('App'):
+        // that only reports whether the class alias is loadable, which becomes true for the
+        // rest of the process as soon as anything boots Laravel - so a pure PHPUnit test
+        // running after a feature test would call through to a facade with no live root.
+        $App = \Illuminate\Support\Facades\Facade::getFacadeApplication();
+
+        if($App instanceof \Illuminate\Contracts\Foundation\Application && $App->runningInConsole()) {
             echo($message . PHP_EOL);
         }
     }
