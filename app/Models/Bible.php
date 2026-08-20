@@ -338,6 +338,10 @@ class Bible extends Model
         $data_str .= '# Columns: ' . implode($del, $export_fields) . $eol;
         $data_str .= '#' . $eol;
 
+        // Collect the rows and join once. Appending to $data_str in the loop reallocates a
+        // string that grows to several MB over 31k iterations.
+        $data_rows = [];
+
         foreach($data as $key => $row) {
             $rd = array();
             //$row['text'] = trim($row['text']);
@@ -346,8 +350,11 @@ class Bible extends Model
                 $rd[] = empty($row[$field]) ? NULL : trim($row[$field]);
             }
 
-            $data_str .= implode($del, $rd) . $eol;
+            $data_rows[] = implode($del, $rd);
         }
+
+        $data_str .= implode($eol, $data_rows) . $eol;
+        unset($data_rows);
 
         $Zip = new ZipArchive();
         $res = $Zip->open($path, $mode);

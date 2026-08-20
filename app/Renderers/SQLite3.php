@@ -26,7 +26,10 @@ class SQLite3 extends RenderAbstract
     protected $file_extension = 'sqlite';
     protected $include_book_name = FALSE;
 
-    protected $chuck_size = 3000;
+    // Rows per SELECT page from the source DB, and per INSERT batch into the rendered file.
+    // Kept well under SQLite's variable ceiling: this table has 5 columns, and builds before
+    // SQLite 3.32 cap a statement at 999 bound variables.
+    protected $chunk_size = 1000;
 
     protected $TableVerses = null;
 
@@ -82,6 +85,20 @@ class SQLite3 extends RenderAbstract
         DB::connection($cn)->table('meta')->insert($meta);
         
         return TRUE;
+    }
+
+    /**
+     * Render every verse inside one transaction. Each chunk insert would otherwise be its own
+     * implicit transaction, so SQLite would flush the file to disk once per chunk.
+     */
+    protected function _beforeVerseRender() 
+    {
+        DB::connection( $this->getDbConnectionName('render') )->beginTransaction();
+    }
+
+    protected function _afterVerseRender() 
+    {
+        DB::connection( $this->getDbConnectionName('render') )->commit();
     }
 
     protected function _renderVerseChunk() 

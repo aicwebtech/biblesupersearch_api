@@ -267,8 +267,10 @@ abstract class RenderAbstract
             $this->chunk_data = [];
         };
 
-        $Query->orderBy($table . '.id');
-        $Query->chunk($this->chunk_size, $closure);
+        // chunkById pages with `where id > ?` instead of OFFSET. Under chunk() each successive
+        // page made the database walk (and discard) every row before it, so the cost grew with
+        // the offset - expensive over a 31k-row verse table joined to the book table.
+        $Query->chunkById($this->chunk_size, $closure, $table . '.id', 'id');
         return true;
     }
 
@@ -364,7 +366,11 @@ abstract class RenderAbstract
         return $meta_string;
     }
 
-    protected function _getCopyrightStatement($plain_text = FALSE, $line_break_replacement = NULL) 
+    /**
+     * Public so the copyright block can be asserted on directly, without rendering an entire
+     * Bible to disk just to read its header. Mirrors _getMetaString(), already public.
+     */
+    public function _getCopyrightStatement($plain_text = FALSE, $line_break_replacement = NULL) 
     {
         $cr_statement = $this->Bible->getCopyrightStatement();
 

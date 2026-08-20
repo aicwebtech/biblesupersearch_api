@@ -12,23 +12,26 @@ use PhpOffice\PhpSpreadsheet\Spreadsheet as PhpSpreadsheet;
 
 class Spreadsheet extends SpreadsheetAbstract 
 {
+    /** Rows inspected when validating an uploaded file's column mapping. */
+    const CHECK_ROW_LIMIT = 200;
+
     protected $Spreadsheet;
 
     public function checkUploadedFile(UploadedFile $File): bool 
     {
         set_time_limit(300);
     
-        if(!$this->_openSpreadsheetFile($File->getPathname())) {
+        if(!$this->_openSpreadsheetFile($File->getPathname(), static::CHECK_ROW_LIMIT)) {
             return FALSE;
         }
 
-        $file_data = $this->_readSpreadsheet(200);
+        $file_data = $this->_readSpreadsheet(static::CHECK_ROW_LIMIT);
         $tmp_data  = [];
 
         foreach($file_data as $key => $row) {
             $tmp_data[] = $row;
 
-            if($key > 200) {
+            if($key > static::CHECK_ROW_LIMIT) {
                 break;
             }
         }
@@ -56,7 +59,13 @@ class Spreadsheet extends SpreadsheetAbstract
         return TRUE;
     }
 
-    protected function _openSpreadsheetFile($file_path) 
+    /**
+     * @param string $file_path
+     * @param int|null $row_limit Stop the reader after this many rows. Only pass this when the
+     *                            caller genuinely needs a prefix of the sheet - load() otherwise
+     *                            builds a Cell object for every cell in the workbook.
+     */
+    protected function _openSpreadsheetFile($file_path, $row_limit = NULL) 
     {
         try {
             $reader = \PhpOffice\PhpSpreadsheet\IOFactory::createReaderForFile($file_path);
@@ -66,6 +75,11 @@ class Spreadsheet extends SpreadsheetAbstract
         }
 
         $reader->setReadDataOnly(TRUE);
+
+        if($row_limit) {
+            $reader->setReadFilter(new RowLimitReadFilter((int) $row_limit));
+        }
+
         $this->Spreadsheet = $reader->load($file_path);
         return TRUE;
     }

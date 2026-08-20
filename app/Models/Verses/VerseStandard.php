@@ -579,6 +579,9 @@ class VerseStandard extends VerseAbstract
             //$table->index('text'); // Needs length - not supported in Laravel?
         });
 
+        // Note: creating these indexes after the bulk insert instead was measured and rejected.
+        // It is faster on SQLite (~7.5s vs ~11s for a 31k-verse Bible) but markedly slower on
+        // MySQL (~42s vs ~30s), and MySQL is the production target.
         if($structure_only) {
             return TRUE;
         }
@@ -617,9 +620,9 @@ class VerseStandard extends VerseAbstract
             $insertable[] = $map;
             $ins_count ++;
 
-            // Historically, chunk size of 100 has proven to be the most efficient
-            // Each verse includes 7 field placeholders, total limit is 65535 so max chunk sizze is 9362 
-            // 65535 / 7 = 9,362.143
+            // Batch size 1000. Each verse binds 7 placeholders (7000 per statement), within
+            // MySQL's 65535 limit (65535 / 7 = 9362) and SQLite's 32766 (since 3.32). SQLite
+            // builds older than 3.32 capped this at 999 and cannot run this batch size at all.
 
             if($ins_count >= 1000) {
                 DB::table($table)->insert($insertable);
@@ -651,7 +654,9 @@ class VerseStandard extends VerseAbstract
            }
         };
 
-        self::orderBy('id')->chunk(100, $closure);
+        // chunkById pages with `where id > ?` rather than OFFSET, so the cost per page stays
+        // flat instead of growing as the offset walks further into the table.
+        self::chunkById(1000, $closure);
         return $data;
     }
 

@@ -368,7 +368,11 @@ class Engine implements ErrorInterface
         }
 
         $this->setDefaultLanguage($input['language']);
-        !empty($input['bible']) && $this->setBibles($input['bible']);
+        // Always reset the Bible set. A reused Engine (it is a singleton) would otherwise
+        // carry the previous query's Bibles into a request that named none, silently
+        // running against them - and, since $multi_bibles is derived from the resulting
+        // set below, silently taking the parallel search path too.
+        $this->setBibles(!empty($input['bible']) ? $input['bible'] : config('bss.defaults.bible'));
         $multi_bible_languages = $this->hasMultipleBibleLanguages();
         $languages = $this->getLanguagesWithDefault();
 
@@ -607,6 +611,19 @@ class Engine implements ErrorInterface
             );
         }
 
+        // Same treatment for un-paginated (page_all) parallel searches: cap the aligned set to
+        // the global maximum *before* formatting. Previously every matched verse across every
+        // Bible was formatted and the overflow discarded afterwards, so a broad search built
+        // thousands of passages to keep a few hundred.
+        $parallel_cap = ($input['multi_bibles'] && !$paginate && $Search &&
+            !$input['results_list'] && !$input['group_passage_search_results']);
+
+        if($parallel_cap) {
+            list($results, ) = $this->_sliceMultiBibleResultsToPage(
+                $results, (int) config('bss.global_maximum_results'), 1
+            );
+        }
+
         $results = $this->_formatDataStructure($results, $input, $Passages, $Search);
 
         if($parallel_paginate) {
@@ -624,7 +641,8 @@ class Engine implements ErrorInterface
             $results = $Paginator->all();
             $paging = $this->_getCleanPagingData($Paginator);
         }
-        elseif(($input['multi_bibles'] || $input['results_list']) && !$paginate) {
+        elseif(!$parallel_cap && ($input['multi_bibles'] || $input['results_list']) && !$paginate) {
+            // $parallel_cap already capped this set before formatting.
             $results = array_slice($results, 0, config('bss.global_maximum_results'));
         }
 
@@ -1191,7 +1209,11 @@ class Engine implements ErrorInterface
 
         $input = $this->_sanitizeInput($input, $parsing);
         $this->setDefaultLanguage($input['language']);
-        !empty($input['bible']) && $this->setBibles($input['bible']);
+        // Always reset the Bible set. A reused Engine (it is a singleton) would otherwise
+        // carry the previous query's Bibles into a request that named none, silently
+        // running against them - and, since $multi_bibles is derived from the resulting
+        // set below, silently taking the parallel search path too.
+        $this->setBibles(!empty($input['bible']) ? $input['bible'] : config('bss.defaults.bible'));
 
         $input['bible'] = array_keys($this->Bibles);
         $parallel = $input['multi_bibles'] = (count($input['bible']) > 1);
