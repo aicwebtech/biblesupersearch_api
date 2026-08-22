@@ -350,9 +350,9 @@ class RenderedFileTest extends TestCase
 
     /**
      * The SQLite renderer batches a whole chunk of verses into one INSERT, so the batch has to
-     * fit the bound-variable ceiling of the SQLite build writing the file - 999 before 3.32,
-     * 32766 from 3.32 on. The chunk size is therefore derived from the render connection rather
-     * than hard-coded.
+     * fit the bound-variable ceiling of the SQLite build writing the file. That ceiling is
+     * compile-time configurable and varies between builds, so the chunk size is derived from
+     * the render connection rather than hard-coded.
      */
     public function testSqliteChunkSizeFitsTheBoundVariableCeiling() 
     {

@@ -28,8 +28,8 @@ class SQLite3 extends RenderAbstract
     protected $include_book_name = FALSE;
 
     // Rows per SELECT page from the source DB, and per INSERT batch into the rendered file.
-    // Recomputed in _renderStart() from the rendered file's own SQLite build, since the
-    // bound-variable ceiling it enforces depends on that build's version.
+    // Recomputed in _renderStart() from the bound-variable ceiling the SQLite build writing the
+    // file actually enforces, which varies by build - see Helpers::getMaxBoundVariables().
     protected $chunk_size = 1000;
 
     protected $TableVerses = null;
@@ -76,7 +76,7 @@ class SQLite3 extends RenderAbstract
         });
 
         // A chunk binds every verse column in one INSERT, so the batch has to fit the variable
-        // ceiling of the SQLite build writing this file - 999 before 3.32, 32766 after.
+        // ceiling of the SQLite build writing this file, which is compile-time configurable.
         $this->chunk_size = Helpers::getInsertChunkSize($this->include_book_name ? 5 : 4, $cn);
 
         $info = $this->Bible->getMeta();
