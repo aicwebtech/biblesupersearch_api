@@ -66,7 +66,7 @@ class SingletonTest extends TestCase
         $this->assertNotSame($a, $b, 'freshInstance should reset the stored instance and return a new one');
     }
 
-    public function test_resetInstance_discards_instance_without_constructing_a_replacement()
+    public function testResetInstanceDiscardsStoredInstance()
     {
         Config::set('app.premium', false);
 
@@ -79,7 +79,7 @@ class SingletonTest extends TestCase
         $this->assertNotSame($a, $b, 'resetInstance should discard the stored instance');
     }
 
-    public function test_resetInstance_is_lazy()
+    public function testResetInstanceIsLazy()
     {
         Config::set('app.premium', false);
 

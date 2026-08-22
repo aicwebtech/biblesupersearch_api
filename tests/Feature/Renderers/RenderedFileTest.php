@@ -111,7 +111,7 @@ class RenderedFileTest extends TestCase
         $this->assertFalse(config('download.app_link_enable'));
         $this->assertFalse(config('download.bss_link_enable'));
 
-        $cr = $Renderer->_getCopyrightStatement(TRUE, '  ');
+        $cr = $this->_copyrightStatement($Renderer);
 
         $this->assertStringNotContainsString($find_deriv_cr, $cr);
         $this->assertStringNotContainsString($find_bss_url, $cr);
@@ -129,7 +129,7 @@ class RenderedFileTest extends TestCase
         $this->assertTrue(config('download.app_link_enable'));
         $this->assertFalse(config('download.bss_link_enable'));
 
-        $cr = $Renderer->_getCopyrightStatement(TRUE, '  ');
+        $cr = $this->_copyrightStatement($Renderer);
 
         $this->assertStringNotContainsString($find_deriv_cr, $cr);
         $this->assertStringNotContainsString($find_bss_url, $cr);
@@ -146,7 +146,7 @@ class RenderedFileTest extends TestCase
         $this->assertTrue(config('download.app_link_enable'));
         $this->assertTrue(config('download.bss_link_enable'));
 
-        $cr = $Renderer->_getCopyrightStatement(TRUE, '  ');
+        $cr = $this->_copyrightStatement($Renderer);
 
         $this->assertStringNotContainsString($find_deriv_cr, $cr);
 
@@ -161,7 +161,7 @@ class RenderedFileTest extends TestCase
         config(['download.derivative_copyright_statement' => $test_deriv_cr]);
         $this->assertEquals($test_deriv_cr, config('download.derivative_copyright_statement'));
 
-        $cr = $Renderer->_getCopyrightStatement(TRUE, '  ');
+        $cr = $this->_copyrightStatement($Renderer);
 
         $this->assertStringContainsString($find_deriv_cr, $cr);
         $this->assertStringContainsString($find_bss_url, $cr);
@@ -186,7 +186,7 @@ class RenderedFileTest extends TestCase
 
         $cr = str_getcsv($file_data[3], escape: $this->csvesc)[0];
 
-        $this->assertEquals($Renderer->_getCopyrightStatement(TRUE, '  '), $cr,
+        $this->assertEquals($this->_copyrightStatement($Renderer), $cr,
             'The rendered copyright line must match _getCopyrightStatement()');
 
         if($cache_deriv_cr) {
@@ -346,6 +346,18 @@ class RenderedFileTest extends TestCase
         $this->assertEquals(22, $verse->chapter);
         $this->assertEquals(21, $verse->verse);
         $this->assertStringContainsString('Amen', $verse->text);
+    }
+
+    /**
+     * Read a renderer's copyright block without widening its visibility in production code.
+     * No setAccessible() call: reflection ignores visibility from PHP 8.1, and the method is
+     * deprecated in 8.5.
+     */
+    private function _copyrightStatement($Renderer) 
+    {
+        $Method = new \ReflectionMethod($Renderer, '_getCopyrightStatement');
+
+        return $Method->invoke($Renderer, TRUE, '  ');
     }
 
     private function _parsePlainText($row) 
