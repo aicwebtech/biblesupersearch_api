@@ -250,9 +250,19 @@ class Database
 
     static protected function _directInsertPush() 
     {
-        if(static::$insert_model) {
+        if(static::$insert_model && !empty(static::$insertable)) {
             $model_class = static::$insert_model;
-            $model_class::insertOrIgnore(static::$insertable);
+
+            // Each row binds one placeholder per column, so the buffered batch can outrun the
+            // connection's bound-variable ceiling - the cross reference import buffers 6000
+            // rows of 10 columns, well past SQLite's 32766. Split it into statements the
+            // connection can actually run.
+            $columns = count(reset(static::$insertable));
+            $chunk   = \App\Helpers::getInsertChunkSize($columns, (new $model_class)->getConnectionName(), count(static::$insertable));
+
+            foreach(array_chunk(static::$insertable, $chunk) as $batch) {
+                $model_class::insertOrIgnore($batch);
+            }
         }
 
         static::$insertable   = [];

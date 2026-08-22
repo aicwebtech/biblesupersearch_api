@@ -35,7 +35,7 @@ jobs:
         DB_DATABASE: database/database.sqlite
       run: |
         php artisan app:install --bypass-prompts
-        php artisan bible:install --testing
+        php artisan app:install-testing
         php artisan config:clear
 
     - name: Execute tests via PHPUnit
