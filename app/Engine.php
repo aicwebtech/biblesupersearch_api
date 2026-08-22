@@ -611,12 +611,16 @@ class Engine implements ErrorInterface
             );
         }
 
-        // Same treatment for un-paginated (page_all) parallel searches: cap the aligned set to
-        // the global maximum *before* formatting. Previously every matched verse across every
-        // Bible was formatted and the overflow discarded afterwards, so a broad search built
-        // thousands of passages to keep a few hundred.
+        // Same treatment for un-paginated (page_all) parallel searches that return a flat
+        // passage list: cap the aligned set to the global maximum *before* formatting, instead
+        // of building a passage for every matched verse across every Bible and slicing the
+        // overflow off afterwards. Restricted to the flat formats on purpose - the module-keyed
+        // formats ('minimal'/'raw'/'simple') are keyed by Bible, so the post-format slice below
+        // only ever trimmed Bibles, never verses, and they must keep every row the SQL limit
+        // (parallel_search_maximum_results) let through.
         $parallel_cap = ($input['multi_bibles'] && !$paginate && $Search &&
-            !$input['results_list'] && !$input['group_passage_search_results']);
+            !$input['results_list'] && !$input['group_passage_search_results'] &&
+            in_array($this->_getDataFormatType($input), ['passage', 'lite']));
 
         if($parallel_cap) {
             list($results, ) = $this->_sliceMultiBibleResultsToPage(
@@ -1410,10 +1414,15 @@ class Engine implements ErrorInterface
         return InstallManager::getChecklist();
     }
 
-    protected function _formatDataStructure($results, $input, $Passages, $Search) 
+    /**
+     * Resolves the requested data format (or its alias) to the formatter it maps to.
+     *
+     * @param array $input
+     * @return string One of 'minimal', 'passage', 'lite', 'simple'
+     */
+    protected function _getDataFormatType($input): string
     {
         $format_type = (!empty($input['data_format'])) ? $input['data_format'] : $this->default_data_format;
-        $parallel_unmatched_verses = TRUE;
 
         // Defines avaliable data formats and their aliases
         $format_map = array(
@@ -1424,7 +1433,13 @@ class Engine implements ErrorInterface
             'simple'    => 'simple',
         );
 
-        $format_type  = (array_key_exists($format_type, $format_map)) ? $format_map[$format_type] : 'passage';
+        return (array_key_exists($format_type, $format_map)) ? $format_map[$format_type] : 'passage';
+    }
+
+    protected function _formatDataStructure($results, $input, $Passages, $Search) 
+    {
+        $parallel_unmatched_verses = TRUE;
+        $format_type  = $this->_getDataFormatType($input);
         $format_class = '\App\Formatters\\' . ucfirst($format_type);
 
         // This doesn't work right!

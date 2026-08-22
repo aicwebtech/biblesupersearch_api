@@ -349,6 +349,116 @@ class RenderedFileTest extends TestCase
     }
 
     /**
+     * The SQLite renderer batches a whole chunk of verses into one INSERT, so the batch has to
+     * fit the bound-variable ceiling of the SQLite build writing the file - 999 before 3.32,
+     * 32766 from 3.32 on. The chunk size is therefore derived from the render connection rather
+     * than hard-coded.
+     */
+    public function testSqliteChunkSizeFitsTheBoundVariableCeiling() 
+    {
+        $Renderer = $this->_scratchSqliteRenderer();
+
+        $Start = new \ReflectionMethod($Renderer, '_renderStart');
+        $this->assertTrue($Start->invoke($Renderer));
+
+        $connection = $Renderer->renderConnectionName();
+        $chunk_size = (new \ReflectionProperty($Renderer, 'chunk_size'))->getValue($Renderer);
+
+        // 4 columns are bound per verse row (include_book_name is FALSE on this renderer).
+        $columns = 4;
+        $max     = \App\Helpers::getMaxBoundVariables($connection);
+
+        $this->assertGreaterThan(0, $chunk_size);
+        $this->assertLessThanOrEqual($max, $chunk_size * $columns);
+        $this->assertEquals(\App\Helpers::getInsertChunkSize($columns, $connection), $chunk_size);
+
+        // Modern SQLite has headroom for the full batch; only pre-3.32 builds get less.
+        if($max >= 1000 * $columns) {
+            $this->assertEquals(1000, $chunk_size);
+        }
+
+        $Renderer->cleanUp();
+    }
+
+    /**
+     * RenderManager catches a per-Bible render failure and carries on with the next Bible, so a
+     * throw mid-render must not leave the render transaction open - it would hold a write lock
+     * and a journal file for the rest of the process.
+     */
+    public function testSqliteRollsBackTheRenderTransactionWhenAChunkFails() 
+    {
+        $Renderer = $this->_scratchSqliteRenderer(TRUE);
+
+        try {
+            $Renderer->render(TRUE);
+            $this->fail('Expected the failing verse chunk to propagate out of render()');
+        }
+        catch(\RuntimeException $e) {
+            $this->assertEquals('Simulated chunk insert failure', $e->getMessage());
+        }
+
+        $connection = $Renderer->renderConnectionName();
+
+        $this->assertEquals(0, \DB::connection($connection)->transactionLevel(), 'Render transaction was left open');
+
+        // No lock survives the rollback, so the file is still writable.
+        \DB::connection($connection)->table('verses')->insert([
+            'book' => 1, 'chapter' => 1, 'verse' => 1, 'text' => 'post-rollback write',
+        ]);
+
+        $this->assertEquals(1, \DB::connection($connection)->table('verses')->count());
+
+        $Renderer->cleanUp();
+    }
+
+    /**
+     * A SQLite3 renderer writing to a scratch file instead of the shared rendered/ directory,
+     * optionally failing on its first verse chunk.
+     */
+    private function _scratchSqliteRenderer(bool $fail_on_chunk = FALSE) 
+    {
+        $Renderer = new class('kjv') extends \App\Renderers\SQLite3 {
+            public $scratch_path;
+            public $fail_on_chunk = FALSE;
+
+            public function getRenderFilePath($create_dir = FALSE, $relative = false) 
+            {
+                return $this->scratch_path;
+            }
+
+            public function renderConnectionName() 
+            {
+                return $this->getDbConnectionName('render');
+            }
+
+            public function cleanUp() 
+            {
+                \DB::disconnect($this->renderConnectionName());
+
+                foreach(['', '-journal', '-wal', '-shm'] as $suffix) {
+                    if(is_file($this->scratch_path . $suffix)) {
+                        unlink($this->scratch_path . $suffix);
+                    }
+                }
+            }
+
+            protected function _renderVerseChunk() 
+            {
+                if($this->fail_on_chunk) {
+                    throw new \RuntimeException('Simulated chunk insert failure');
+                }
+
+                parent::_renderVerseChunk();
+            }
+        };
+
+        $Renderer->scratch_path  = tempnam(sys_get_temp_dir(), 'bss_render_') . '.sqlite';
+        $Renderer->fail_on_chunk = $fail_on_chunk;
+
+        return $Renderer;
+    }
+
+    /**
      * Read a renderer's copyright block without widening its visibility in production code.
      * No setAccessible() call: reflection ignores visibility from PHP 8.1, and the method is
      * deprecated in 8.5.

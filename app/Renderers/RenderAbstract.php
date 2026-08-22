@@ -105,7 +105,18 @@ abstract class RenderAbstract
         }
 
         $this->_beforeVerseRender();
-        $this->_verseRender();
+
+        try {
+            $this->_verseRender();
+        }
+        catch(\Throwable $e) {
+            // RenderManager catches per-Bible failures and moves on to the next Bible, so any
+            // resource _beforeVerseRender() opened has to be released here or it stays open
+            // for the rest of the process.
+            $this->_onVerseRenderError($e);
+            throw $e;
+        }
+
         $this->_afterVerseRender();
 
         $success = $this->_renderFinish();
@@ -335,6 +346,15 @@ abstract class RenderAbstract
      * Usage: Finishing pages
      */
     protected function _afterVerseRender() { }
+
+    /**
+     * Code to be executed when verse rendering throws, in place of _afterVerseRender().
+     * Usage: releasing whatever _beforeVerseRender() acquired. The exception is re-thrown
+     * afterwards, so this must not swallow it.
+     *
+     * @param \Throwable $e
+     */
+    protected function _onVerseRenderError(\Throwable $e) { }
 
     protected function _getBookTable() 
     {

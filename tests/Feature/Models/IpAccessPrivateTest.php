@@ -19,6 +19,10 @@ use PHPUnit\Framework\Attributes\DataProvider;
  */
 class IpAccessPrivateTest extends TestCase 
 {
+    // testDefaultLimit only differs from testNoLimit while the configured cap is non-zero, so
+    // it opts out of the suite-wide lift in TestCase.
+    protected $lift_daily_access_limit = FALSE;
+
     protected $default_limit;
     protected $config_cache;
     protected $config_value = 0;

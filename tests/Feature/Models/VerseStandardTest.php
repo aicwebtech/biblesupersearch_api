@@ -28,6 +28,30 @@ class VerseStandardTest extends TestCase
         $this->assertInstanceOf(VerseAbstract::class, $Verses);
     }
 
+    /**
+     * exportData() must read the table the instance was pointed at. Modules without a dedicated
+     * App\Models\Verses class - everything the importer creates - are served by a plain
+     * VerseStandard with setModule($module, TRUE), whose table would otherwise fall back to the
+     * class-derived 'verses_verse_standard'.
+     */
+    public function testExportDataReadsTheModuleTableNotTheClassTable()
+    {
+        $Verses = new VerseStandard();
+        $Verses->setModule('kjv', TRUE);
+
+        $this->assertEquals('verses_kjv', $Verses->getTable());
+
+        $data = $Verses->exportData();
+
+        $this->assertCount(31102, $data);
+
+        $first = reset($data);
+        $this->assertEquals(1, $first->book);
+        $this->assertEquals(1, $first->chapter);
+        $this->assertEquals(1, $first->verse);
+        $this->assertStringContainsString('In the beginning God', $first->text);
+    }
+
     public function testLookupQuery() 
     {
         $Bible = Bible::findByModule('kjv');

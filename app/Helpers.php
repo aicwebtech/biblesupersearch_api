@@ -354,4 +354,47 @@ class Helpers {
         return [$op, $val, $special];
     }
 
+    /**
+     * Maximum number of bound variables one prepared statement may carry on a connection.
+     *
+     * SQLite compiles this ceiling in as SQLITE_MAX_VARIABLE_NUMBER and does not expose it to
+     * the driver, so it is derived from the engine version instead: 3.32.0 raised the default
+     * from 999 to 32766. Every other supported driver is far more generous - MySQL caps a
+     * statement at 65535 placeholders regardless of version.
+     *
+     * @param string|null $connection Connection name, NULL for the default connection
+     * @return int
+     */
+    public static function getMaxBoundVariables(?string $connection = NULL): int
+    {
+        $Connection = \DB::connection($connection);
+
+        if($Connection->getDriverName() !== 'sqlite') {
+            return 65535;
+        }
+
+        $version = (string) $Connection->getPdo()->getAttribute(\PDO::ATTR_SERVER_VERSION);
+
+        return version_compare($version, '3.32.0', '>=') ? 32766 : 999;
+    }
+
+    /**
+     * Rows per batched INSERT that keep the statement inside the connection's bound-variable
+     * ceiling. Modern SQLite and MySQL both clear $max_rows comfortably; SQLite builds older
+     * than 3.32 get a proportionally smaller batch rather than a "too many SQL variables"
+     * failure.
+     *
+     * @param int $columns_per_row Number of columns bound for each row
+     * @param string|null $connection Connection name, NULL for the default connection
+     * @param int $max_rows Desired batch size, returned whenever the ceiling allows it
+     * @return int
+     */
+    public static function getInsertChunkSize(int $columns_per_row, ?string $connection = NULL, int $max_rows = 1000): int
+    {
+        $columns_per_row = max(1, $columns_per_row);
+        $rows = (int) floor(static::getMaxBoundVariables($connection) / $columns_per_row);
+
+        return max(1, min($max_rows, $rows));
+    }
+
 }

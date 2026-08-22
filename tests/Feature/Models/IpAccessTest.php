@@ -13,6 +13,10 @@ use App\Models\IpAccess;
 /* See also class IpAccessPrivateTest */
 class IpAccessTest extends TestCase 
 {
+    // testDefaultLimit / testSameDomain assert on the configured cap being enforced, which the
+    // suite-wide lift in TestCase would turn into a no-limit case.
+    protected $lift_daily_access_limit = FALSE;
+
     protected $default_limit;
     protected $config_cache;
     protected $config_value = 1;

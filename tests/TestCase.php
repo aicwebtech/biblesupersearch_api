@@ -14,6 +14,14 @@ class TestCase extends BaseTestCase
     protected $baseUrl = 'http://localhost';
     protected $use_named_bindings = FALSE;
     protected $test_http = FALSE;
+
+    /**
+     * Whether createApplication() lifts the daily API hit cap for this test class.
+     * Set FALSE on tests that need to exercise the configured limit itself.
+     *
+     * @var bool
+     */
+    protected $lift_daily_access_limit = TRUE;
     
     /**
      * Creates the application.
@@ -39,7 +47,13 @@ class TestCase extends BaseTestCase
         // This must happen after the kernel bootstraps: bss.daily_access_limit is a DB-backed
         // soft config that LoadSoftConfiguration re-applies on every boot, so an env override
         // in phpunit.xml would be overwritten here.
-        config(['bss.daily_access_limit' => 0]);
+        //
+        // Tests that assert on limit enforcement opt out via $lift_daily_access_limit: they
+        // work against freshly created fake IPs / keys rather than the client IP the HTTP
+        // tests share, so they cannot trip the flag for the rest of the suite.
+        if($this->lift_daily_access_limit) {
+            config(['bss.daily_access_limit' => 0]);
+        }
 
         return $app;
     }

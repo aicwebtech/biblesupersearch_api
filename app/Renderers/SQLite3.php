@@ -4,6 +4,7 @@ namespace App\Renderers;
 
 use \DB;
 use \Schema;
+use App\Helpers;
 use Illuminate\Database\Schema\Blueprint;
 
 class SQLite3 extends RenderAbstract 
@@ -27,8 +28,8 @@ class SQLite3 extends RenderAbstract
     protected $include_book_name = FALSE;
 
     // Rows per SELECT page from the source DB, and per INSERT batch into the rendered file.
-    // Kept well under SQLite's variable ceiling: this table has 5 columns, and builds before
-    // SQLite 3.32 cap a statement at 999 bound variables.
+    // Recomputed in _renderStart() from the rendered file's own SQLite build, since the
+    // bound-variable ceiling it enforces depends on that build's version.
     protected $chunk_size = 1000;
 
     protected $TableVerses = null;
@@ -74,6 +75,10 @@ class SQLite3 extends RenderAbstract
             $table->index(['book', 'chapter', 'verse'], 'ixbcv'); // Composite index on b, c, v
         });
 
+        // A chunk binds every verse column in one INSERT, so the batch has to fit the variable
+        // ceiling of the SQLite build writing this file - 999 before 3.32, 32766 after.
+        $this->chunk_size = Helpers::getInsertChunkSize($this->include_book_name ? 5 : 4, $cn);
+
         $info = $this->Bible->getMeta();
         $info['copyright_statement'] = $this->_getCopyrightStatement(TRUE);
         $meta = [];
@@ -99,6 +104,16 @@ class SQLite3 extends RenderAbstract
     protected function _afterVerseRender() 
     {
         DB::connection( $this->getDbConnectionName('render') )->commit();
+    }
+
+    /**
+     * Roll the render transaction back when a verse chunk throws. RenderManager keeps going
+     * with the next Bible after an exception, so an abandoned transaction would otherwise hold
+     * a write lock and a -journal file open for the rest of the process.
+     */
+    protected function _onVerseRenderError(\Throwable $e) 
+    {
+        DB::connection( $this->getDbConnectionName('render') )->rollBack();
     }
 
     protected function _renderVerseChunk() 
