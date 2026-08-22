@@ -5,6 +5,7 @@ namespace Tests\Feature\Console\Commands;
 use App\Console\Commands\AppInstallTesting;
 use App\Models\Books\BookAbstract;
 use App\Models\Language;
+use App\Models\LanguageAttr;
 use Tests\TestCase;
 
 /**
@@ -94,6 +95,58 @@ class AppInstallTestingTest extends TestCase
         $identifiers = array_column(\App\Features\FeatureDefinitions::all(), 'identifier');
 
         $this->assertContains('cross_references', $identifiers);
+    }
+
+    /**
+     * language_attr.code was varchar(3), so MySQL silently truncated the regional codes the
+     * application ships book lists for: 'zh_cn' and 'zh_tw' both became 'zh_', colliding on the
+     * ica unique key, and hasBookSupport('zh_tw') could never match the truncated row. SQLite
+     * ignores varchar widths, so only MySQL ever showed it.
+     */
+    public function testBookListSupportSurvivesARegionalLanguageCode(): void
+    {
+        $code = 'qq_zz';
+
+        LanguageAttr::where('code', $code)->delete();
+
+        $Method = new \ReflectionMethod(AppInstallTesting::class, '_setBookListSupported');
+        $Method->invoke(new AppInstallTesting(), $code);
+
+        try {
+            $stored = LanguageAttr::where('code', $code)->where('attribute', 'book_list')->first();
+
+            $this->assertNotNull($stored, 'Regional language code was not stored');
+            $this->assertEquals($code, $stored->code, 'Regional language code was truncated on write');
+            $this->assertTrue(Language::hasBookSupport($code));
+        }
+        finally {
+            LanguageAttr::where('code', $code)->delete();
+        }
+    }
+
+    /**
+     * Writing one regional code must not collide with another sharing its first three
+     * characters - the exact failure the truncation caused.
+     */
+    public function testTwoRegionalCodesWithTheSamePrefixCoexist(): void
+    {
+        $codes = ['qq_aa', 'qq_bb'];
+
+        LanguageAttr::whereIn('code', $codes)->delete();
+
+        $Method = new \ReflectionMethod(AppInstallTesting::class, '_setBookListSupported');
+        $Command = new AppInstallTesting();
+
+        try {
+            foreach($codes as $code) {
+                $Method->invoke($Command, $code);
+            }
+
+            $this->assertEquals(2, LanguageAttr::whereIn('code', $codes)->where('attribute', 'book_list')->count());
+        }
+        finally {
+            LanguageAttr::whereIn('code', $codes)->delete();
+        }
     }
 
     public function testCommandRefusesToRunAgainstAnUninstalledApplication(): void

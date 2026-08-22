@@ -84,23 +84,33 @@ class AppInstallTesting extends Command
 
         $Bar = $this->output->createProgressBar(count($languages));
 
+        $failed = [];
+
         foreach($languages as $language) {
-            // Returns TRUE without re-importing when the table is already there, so running
-            // this command repeatedly is cheap.
-            BookAbstract::createTableAndMigrateFromCsv($language);
+            try {
+                // Returns TRUE without re-importing when the table is already there, so running
+                // this command repeatedly is cheap.
+                BookAbstract::createTableAndMigrateFromCsv($language);
 
-            // The book model class is generated from the table, so it can only be resolved
-            // after the import. A language that still has no class cannot be queried, and must
-            // not be advertised as having book support.
-            if(!BookAbstract::getClassNameByLanguageStrict($language)) {
-                $unavailable[] = $language;
-                $Bar->advance();
-                continue;
+                // The book model class is generated from the table, so it can only be resolved
+                // after the import. A language that still has no class cannot be queried, and
+                // must not be advertised as having book support.
+                if(!BookAbstract::getClassNameByLanguageStrict($language)) {
+                    $unavailable[] = $language;
+                    continue;
+                }
+
+                $this->_setBookListSupported($language);
+                $installed[] = $language;
             }
-
-            $this->_setBookListSupported($language);
-            $installed[] = $language;
-            $Bar->advance();
+            catch(\Throwable $e) {
+                // One unusable language must not cost the rest of the install; the summary
+                // below reports it so it cannot pass unnoticed.
+                $failed[$language] = $e->getMessage();
+            }
+            finally {
+                $Bar->advance();
+            }
         }
 
         $Bar->finish();
@@ -109,6 +119,10 @@ class AppInstallTesting extends Command
 
         if($unavailable) {
             $this->warn('  No book model class, skipped (' . count($unavailable) . '): ' . implode(', ', $unavailable));
+        }
+
+        foreach($failed as $language => $message) {
+            $this->error('  Failed to install the \'' . $language . '\' book list: ' . $message);
         }
     }
 
@@ -173,14 +187,21 @@ class AppInstallTesting extends Command
         foreach($Features as $Feature) {
             $label = $Feature->identifier . ($Feature->language ? ' (' . $Feature->language . ')' : '');
 
-            // install() re-runs the feature's own installer, which is written to be repeatable,
-            // and enable() is a no-op on a feature that is already enabled.
-            if(!$Feature->install(TRUE)) {
-                $this->newLine();
-                $this->warn('  Could not install feature: ' . $label);
+            try {
+                // install() re-runs the feature's own installer, which is written to be
+                // repeatable, and enabling an already-enabled feature is a no-op.
+                if(!$Feature->install(TRUE)) {
+                    $this->newLine();
+                    $this->warn('  Could not install feature: ' . $label);
+                }
             }
-
-            $Bar->advance();
+            catch(\Throwable $e) {
+                $this->newLine();
+                $this->error('  Failed to install feature ' . $label . ': ' . $e->getMessage());
+            }
+            finally {
+                $Bar->advance();
+            }
         }
 
         $Bar->finish();
