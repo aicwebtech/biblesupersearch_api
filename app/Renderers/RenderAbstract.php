@@ -108,6 +108,7 @@ abstract class RenderAbstract
 
         try {
             $this->_verseRender();
+            $this->_afterVerseRender();
         }
         catch(\Throwable $e) {
             // RenderManager catches per-Bible failures and moves on to the next Bible, so any
@@ -116,8 +117,6 @@ abstract class RenderAbstract
             $this->_onVerseRenderError($e);
             throw $e;
         }
-
-        $this->_afterVerseRender();
 
         $success = $this->_renderFinish();
 
