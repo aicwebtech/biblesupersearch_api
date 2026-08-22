@@ -366,11 +366,7 @@ abstract class RenderAbstract
         return $meta_string;
     }
 
-    /**
-     * Public so the copyright block can be asserted on directly, without rendering an entire
-     * Bible to disk just to read its header. Mirrors _getMetaString(), already public.
-     */
-    public function _getCopyrightStatement($plain_text = FALSE, $line_break_replacement = NULL) 
+    protected function _getCopyrightStatement($plain_text = FALSE, $line_break_replacement = NULL) 
     {
         $cr_statement = $this->Bible->getCopyrightStatement();
 
