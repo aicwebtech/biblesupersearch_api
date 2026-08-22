@@ -42,7 +42,7 @@ class SingletonTest extends TestCase
         parent::tearDown();
     }
 
-    public function test_getInstance_returns_same_instance()
+    public function testGetInstanceReturnsSameInstance()
     {
         Config::set('app.premium', false);
         
@@ -57,7 +57,7 @@ class SingletonTest extends TestCase
         $this->assertSame($a, $b, 'getInstance should return the same instance on multiple calls');
     }
 
-    public function test_freshInstance_resets_instance()
+    public function testFreshInstanceResetsInstance()
     {
         SimpleSingleton::freshInstance();
         $a = SimpleSingleton::getInstance();
@@ -94,7 +94,7 @@ class SingletonTest extends TestCase
         $this->assertNull($property->getValue(), 'resetInstance should not construct a replacement');
     }
 
-    public function __test_generateInstance_prefers_premium_class_when_enabled_and_exists()
+    public function __testGenerateInstancePrefersPremiumClassWhenEnabledAndExists()
     {
         // this test unable to work given current premium namespace logic ...
         
@@ -114,7 +114,7 @@ class SingletonTest extends TestCase
         );
     }
 
-    public function test_generateInstance_uses_default_when_premium_disabled_or_missing()
+    public function testGenerateInstanceUsesDefaultWhenPremiumDisabledOrMissing()
     {
         Config::set('app.premium', false);
 
