@@ -5,6 +5,7 @@ namespace Tests\Feature\Query;
 use Tests\TestCase;
 use Illuminate\Foundation\Testing\WithFaker;
 use App\Engine;
+use App\Models\Bible;
 
 class StatisticsTest extends TestCase 
 {
@@ -73,6 +74,38 @@ class StatisticsTest extends TestCase
         $this->assertEquals(31102, $response['kjv']['full']['num_verses']);
         $this->assertEquals(1189, $response['kjv']['full']['num_chapters']);
         $this->assertEquals(66, $response['kjv']['full']['num_books']);
+    }
+
+    /**
+     * actionStatistics() derives $multi_bibles from the Bible set it builds, so a reused Engine
+     * (it is a singleton) must not carry the previous request's Bibles into one that names
+     * none. This mirrors RequestTest::testReusedEngineDoesNotCarryStaleBibleSet, which covers
+     * the separate reset in actionQuery().
+     */
+    public function testReusedEngineDoesNotCarryStaleBibleSet()
+    {
+        if(!Bible::isEnabled('bishops')) {
+            $this->markTestSkipped('Bible bishops not installed or enabled');
+        }
+
+        $default = config('bss.defaults.bible');
+        $Engine  = new Engine();
+
+        // Request 1: an explicit multi-Bible request.
+        $response = $Engine->actionStatistics(['bible' => ['kjv', 'bishops'], 'reference' => 'John 3:16']);
+
+        $this->assertFalse($Engine->hasErrors(), implode(' | ', $Engine->getErrors()));
+        $this->assertArrayHasKey('kjv', $response);
+        $this->assertArrayHasKey('bishops', $response);
+
+        // Request 2 on the SAME instance, naming no Bible. It must fall back to the configured
+        // default rather than silently reusing kjv+bishops from request 1.
+        $response = $Engine->actionStatistics(['reference' => 'John 3:16']);
+
+        $this->assertFalse($Engine->hasErrors(), implode(' | ', $Engine->getErrors()));
+        $this->assertArrayHasKey($default, $response);
+        $this->assertArrayNotHasKey('bishops', $response, 'Reused Engine leaked the previous request\'s Bible set');
+        $this->assertCount(1, $response, 'A request naming no Bible must not run against multiple Bibles');
     }
 
     public function testErrors() 
