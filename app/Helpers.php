@@ -357,10 +357,13 @@ class Helpers {
     /**
      * Maximum number of bound variables one prepared statement may carry on a connection.
      *
-     * SQLite compiles this ceiling in as SQLITE_MAX_VARIABLE_NUMBER and does not expose it to
-     * the driver, so it is derived from the engine version instead: 3.32.0 raised the default
-     * from 999 to 32766. Every other supported driver is far more generous - MySQL caps a
-     * statement at 65535 placeholders regardless of version.
+     * SQLite's ceiling is SQLITE_MAX_VARIABLE_NUMBER, which is compile-time configurable and
+     * genuinely varies between builds - Debian and Ubuntu ship 250000, well above the 32766
+     * default. The build reports its own value through PRAGMA compile_options whenever it was
+     * set explicitly, so that is preferred; only a build that leaves the option at its default
+     * (and so does not list it) falls back to the version-derived default. Every other
+     * supported driver is far more generous - MySQL caps a statement at 65535 placeholders
+     * regardless of version.
      *
      * @param string|null $connection Connection name, NULL for the default connection
      * @return int
@@ -373,28 +376,73 @@ class Helpers {
             return 65535;
         }
 
+        foreach(static::getSqliteCompileOptions($connection) as $option) {
+            if(preg_match('/^MAX_VARIABLE_NUMBER=([0-9]+)$/', $option, $match) && (int) $match[1] > 0) {
+                return (int) $match[1];
+            }
+        }
+
+        // Documented default for the engine version: 3.32.0 raised it from 999 to 32766.
         $version = (string) $Connection->getPdo()->getAttribute(\PDO::ATTR_SERVER_VERSION);
 
         return version_compare($version, '3.32.0', '>=') ? 32766 : 999;
     }
 
     /**
+     * The compile options a SQLite build reports, as raw 'NAME' / 'NAME=value' strings.
+     * Returns an empty array for a connection that cannot answer the pragma.
+     *
+     * @param string|null $connection Connection name, NULL for the default connection
+     * @return string[]
+     */
+    public static function getSqliteCompileOptions(?string $connection = NULL): array
+    {
+        try {
+            $rows = \DB::connection($connection)->select('PRAGMA compile_options');
+        }
+        catch(\Throwable $e) {
+            return [];
+        }
+
+        $options = [];
+
+        foreach($rows as $row) {
+            $values = (array) $row;
+            $options[] = (string) reset($values);
+        }
+
+        return $options;
+    }
+
+    /**
      * Rows per batched INSERT that keep the statement inside the connection's bound-variable
-     * ceiling. Modern SQLite and MySQL both clear $max_rows comfortably; SQLite builds older
-     * than 3.32 get a proportionally smaller batch rather than a "too many SQL variables"
+     * ceiling. Modern SQLite and MySQL both clear $max_rows comfortably; a build with a low
+     * ceiling gets a proportionally smaller batch rather than a "too many SQL variables"
      * failure.
      *
      * @param int $columns_per_row Number of columns bound for each row
      * @param string|null $connection Connection name, NULL for the default connection
      * @param int $max_rows Desired batch size, returned whenever the ceiling allows it
      * @return int
+     * @throws \InvalidArgumentException When a single row cannot fit inside the ceiling, since
+     *                                   no batch size - not even one row - could then succeed.
      */
     public static function getInsertChunkSize(int $columns_per_row, ?string $connection = NULL, int $max_rows = 1000): int
     {
-        $columns_per_row = max(1, $columns_per_row);
-        $rows = (int) floor(static::getMaxBoundVariables($connection) / $columns_per_row);
+        if($columns_per_row < 1) {
+            throw new \InvalidArgumentException('Columns per row must be at least 1, got ' . $columns_per_row);
+        }
 
-        return max(1, min($max_rows, $rows));
+        $max = static::getMaxBoundVariables($connection);
+
+        if($columns_per_row > $max) {
+            throw new \InvalidArgumentException(
+                'A single row binds ' . $columns_per_row . ' variables, more than this connection permits in one '
+                . 'statement (' . $max . '). Reduce the columns bound per statement.'
+            );
+        }
+
+        return max(1, min($max_rows, (int) floor($max / $columns_per_row)));
     }
 
 }

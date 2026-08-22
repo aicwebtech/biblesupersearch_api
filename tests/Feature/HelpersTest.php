@@ -11,23 +11,71 @@ use App\Helpers;
 class HelpersTest extends TestCase
 {
     /**
-     * SQLite does not report SQLITE_MAX_VARIABLE_NUMBER to the driver, so the ceiling is taken
-     * from the engine version: 3.32.0 raised the default from 999 to 32766.
+     * SQLITE_MAX_VARIABLE_NUMBER is compile-time configurable, so the build's own reported
+     * value wins over the default for its version.
      */
     public function testGetMaxBoundVariablesForSqlite() 
     {
-        config(['database.connections.bound_variable_probe' => [
-            'driver'   => 'sqlite',
-            'database' => ':memory:',
-            'prefix'   => '',
-        ]]);
+        $this->_defineSqliteProbeConnection();
 
-        $version  = \DB::connection('bound_variable_probe')->getPdo()->getAttribute(\PDO::ATTR_SERVER_VERSION);
-        $expected = version_compare($version, '3.32.0', '>=') ? 32766 : 999;
+        $compiled = NULL;
+
+        foreach(Helpers::getSqliteCompileOptions('bound_variable_probe') as $option) {
+            if(preg_match('/^MAX_VARIABLE_NUMBER=([0-9]+)$/', $option, $match)) {
+                $compiled = (int) $match[1];
+            }
+        }
+
+        if($compiled === NULL) {
+            // A build that leaves the option at its default does not list it, so the documented
+            // default for the engine version is the only thing left to go on.
+            $version  = \DB::connection('bound_variable_probe')->getPdo()->getAttribute(\PDO::ATTR_SERVER_VERSION);
+            $expected = version_compare($version, '3.32.0', '>=') ? 32766 : 999;
+        }
+        else {
+            $expected = $compiled;
+        }
 
         $this->assertEquals($expected, Helpers::getMaxBoundVariables('bound_variable_probe'));
 
         \DB::disconnect('bound_variable_probe');
+    }
+
+    /**
+     * The reported ceiling must be the real one: a statement binding exactly that many
+     * variables has to execute, which the version-derived default alone cannot guarantee on a
+     * build compiled away from it.
+     */
+    public function testGetMaxBoundVariablesMatchesWhatTheBuildActuallyAccepts() 
+    {
+        $this->_defineSqliteProbeConnection();
+
+        $max = Helpers::getMaxBoundVariables('bound_variable_probe');
+
+        \Schema::connection('bound_variable_probe')->create('ceiling_probe', function($table) {
+            $table->integer('a');
+            $table->integer('b');
+        });
+
+        // Two columns per row, so this binds the ceiling exactly. Capped so the assertion stays
+        // cheap on builds that report a very large ceiling.
+        $rows_at_ceiling = min(intdiv($max, 2), 25000);
+        $rows = array_fill(0, $rows_at_ceiling, ['a' => 1, 'b' => 2]);
+
+        \DB::connection('bound_variable_probe')->table('ceiling_probe')->insert($rows);
+
+        $this->assertEquals($rows_at_ceiling, \DB::connection('bound_variable_probe')->table('ceiling_probe')->count());
+
+        \DB::disconnect('bound_variable_probe');
+    }
+
+    public function testGetSqliteCompileOptionsReturnsEmptyForNonSqlite() 
+    {
+        if(\DB::connection()->getDriverName() === 'sqlite') {
+            $this->markTestSkipped('Default connection is SQLite');
+        }
+
+        $this->assertEquals([], Helpers::getSqliteCompileOptions());
     }
 
     public function testGetMaxBoundVariablesForNonSqliteDrivers() 
@@ -45,11 +93,7 @@ class HelpersTest extends TestCase
      */
     public function testGetInsertChunkSizeStaysWithinTheConnectionCeiling() 
     {
-        config(['database.connections.bound_variable_probe' => [
-            'driver'   => 'sqlite',
-            'database' => ':memory:',
-            'prefix'   => '',
-        ]]);
+        $this->_defineSqliteProbeConnection();
 
         $max = Helpers::getMaxBoundVariables('bound_variable_probe');
 
@@ -60,13 +104,34 @@ class HelpersTest extends TestCase
             $this->assertLessThanOrEqual($max, $chunk * $columns, $columns . ' columns exceeds the ceiling');
         }
 
-        // A column count no batch can satisfy still yields a usable single-row batch.
-        $this->assertEquals(1, Helpers::getInsertChunkSize($max + 1, 'bound_variable_probe'));
-
         // The requested maximum is a ceiling, not a target.
         $this->assertEquals(25, Helpers::getInsertChunkSize(4, 'bound_variable_probe', 25));
 
         \DB::disconnect('bound_variable_probe');
+    }
+
+    /**
+     * A row that cannot fit the ceiling on its own has no valid batch size - not even one row -
+     * so the caller has to hear about it rather than get a number guaranteed to fail.
+     */
+    public function testGetInsertChunkSizeRejectsARowWiderThanTheCeiling() 
+    {
+        $this->_defineSqliteProbeConnection();
+
+        $max = Helpers::getMaxBoundVariables('bound_variable_probe');
+
+        $this->expectException(\InvalidArgumentException::class);
+        $this->expectExceptionMessage('more than this connection permits in one statement');
+
+        Helpers::getInsertChunkSize($max + 1, 'bound_variable_probe');
+    }
+
+    public function testGetInsertChunkSizeRejectsANonPositiveColumnCount() 
+    {
+        $this->expectException(\InvalidArgumentException::class);
+        $this->expectExceptionMessage('Columns per row must be at least 1');
+
+        Helpers::getInsertChunkSize(0);
     }
 
     /**
@@ -75,11 +140,7 @@ class HelpersTest extends TestCase
      */
     public function testGetInsertChunkSizeProducesAnExecutableBatch() 
     {
-        config(['database.connections.bound_variable_probe' => [
-            'driver'   => 'sqlite',
-            'database' => ':memory:',
-            'prefix'   => '',
-        ]]);
+        $this->_defineSqliteProbeConnection();
 
         \Schema::connection('bound_variable_probe')->create('chunk_probe', function($table) {
             $table->integer('book');
@@ -119,5 +180,15 @@ class HelpersTest extends TestCase
             ['App\Search'],
             ['App\Passage'],
         ];
+    }
+
+    /** An in-memory SQLite connection for probing the local build's limits. */
+    private function _defineSqliteProbeConnection(): void
+    {
+        config(['database.connections.bound_variable_probe' => [
+            'driver'   => 'sqlite',
+            'database' => ':memory:',
+            'prefix'   => '',
+        ]]);
     }
 }
