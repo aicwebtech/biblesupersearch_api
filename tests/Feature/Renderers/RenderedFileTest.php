@@ -452,7 +452,7 @@ class RenderedFileTest extends TestCase
             }
         };
 
-        $Renderer->scratch_path  = tempnam(sys_get_temp_dir(), 'bss_render_') . '.sqlite';
+        $Renderer->scratch_path  = tempnam(sys_get_temp_dir(), 'bss_render_');
         $Renderer->fail_on_chunk = $fail_on_chunk;
 
         return $Renderer;
