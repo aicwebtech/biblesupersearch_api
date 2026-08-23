@@ -486,4 +486,101 @@ class RenderedFileTest extends TestCase
             'text'      => $p[1],
         ];
     }
+
+    /**
+     * A render that throws has to put the locale back. RenderManager catches per-Bible failures
+     * and continues to the next Bible, so a locale left pointing at the failed Bible's language
+     * would follow it - every later Bible would render its copyright block and book names in the
+     * wrong language.
+     */
+    public function testRenderRestoresTheLocaleWhenTheVerseRenderThrows()
+    {
+        $locale_before = \App::getLocale();
+        $Renderer = new ThrowingVerseRenderCsv('luther');
+
+        // A Bible in another language, or the locale never moves off the default and the
+        // assertion below passes no matter what render() does.
+        $this->assertNotEquals($locale_before, $Renderer->bibleLanguage());
+
+        try {
+            $Renderer->render(TRUE);
+            $this->fail('The render was expected to throw');
+        }
+        catch(\RuntimeException $e) {
+            $this->assertEquals('Verse render failed', $e->getMessage());
+            $this->assertEquals($locale_before, \App::getLocale(), 'The locale was left set to the failed Bible\'s language');
+        }
+        finally {
+            \App::setLocale($locale_before);
+            $Renderer->removeRenderFile();
+        }
+    }
+
+    /**
+     * The same applies to the early return when _renderStart() reports failure. That path throws
+     * nothing, so a locale left behind is the only trace it leaves.
+     */
+    public function testRenderRestoresTheLocaleWhenRenderStartFails()
+    {
+        $locale_before = \App::getLocale();
+        $Renderer = new FailingRenderStartCsv('luther');
+
+        $this->assertNotEquals($locale_before, $Renderer->bibleLanguage());
+
+        try {
+            $this->assertFalse($Renderer->render(TRUE));
+            $this->assertEquals($locale_before, \App::getLocale(), 'The locale was left set to the failed Bible\'s language');
+        }
+        finally {
+            \App::setLocale($locale_before);
+            $Renderer->removeRenderFile();
+        }
+    }
+}
+
+/**
+ * A CSV renderer that writes outside the real render directory.
+ *
+ * Named rather than anonymous on purpose: getRenderFilePath() builds its directory from the
+ * class's short name, and an anonymous class's short name carries a null byte that mkdir()
+ * rejects.
+ */
+abstract class LocaleRestoreCsvDouble extends \App\Renderers\Csv
+{
+    public function bibleLanguage(): string
+    {
+        return $this->Bible->lang_short;
+    }
+
+    public function getRenderFilePath($create_dir = FALSE, $relative = false)
+    {
+        return sys_get_temp_dir() . '/bss_locale_restore_' . $this->Bible->module . '.' . $this->file_extension;
+    }
+
+    public function removeRenderFile(): void
+    {
+        $path = $this->getRenderFilePath();
+
+        if(is_file($path)) {
+            unlink($path);
+        }
+    }
+}
+
+/** Fails part way through the verses, after _beforeVerseRender() has opened the file. */
+class ThrowingVerseRenderCsv extends LocaleRestoreCsvDouble
+{
+    protected function _verseRender()
+    {
+        throw new \RuntimeException('Verse render failed');
+    }
+}
+
+/** Fails on the way in, taking render()'s early return. */
+class FailingRenderStartCsv extends LocaleRestoreCsvDouble
+{
+    protected function _renderStart()
+    {
+        return FALSE;
+    }
 }

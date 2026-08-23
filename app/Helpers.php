@@ -4,6 +4,13 @@ namespace App;
 
 class Helpers {
 
+    /**
+     * Memoized bound-variable ceilings, keyed by connection name ('' for the default).
+     *
+     * @var array<string, int>
+     */
+    protected static $max_bound_variables = [];
+
     /*
      * Sorts an array of strings by string length
      */
@@ -369,6 +376,35 @@ class Helpers {
      * @return int
      */
     public static function getMaxBoundVariables(?string $connection = NULL): int
+    {
+        // The ceiling cannot change within a process: it is a compile-time constant of the
+        // loaded SQLite build, and a fixed number for every other driver. Probing it costs a
+        // PRAGMA and a PDO attribute read, and the importers ask once per buffer flush - about
+        // 155 extra round trips on a 31k-verse import.
+        $key = $connection ?? '';
+
+        if(!array_key_exists($key, static::$max_bound_variables)) {
+            static::$max_bound_variables[$key] = static::_probeMaxBoundVariables($connection);
+        }
+
+        return static::$max_bound_variables[$key];
+    }
+
+    /**
+     * Discards the memoized ceilings, so a reconfigured connection is probed afresh.
+     */
+    public static function clearMaxBoundVariablesCache(): void
+    {
+        static::$max_bound_variables = [];
+    }
+
+    /**
+     * Asks the connection itself what its ceiling is. See getMaxBoundVariables().
+     *
+     * @param string|null $connection Connection name, NULL for the default connection
+     * @return int
+     */
+    protected static function _probeMaxBoundVariables(?string $connection = NULL): int
     {
         $Connection = \DB::connection($connection);
 

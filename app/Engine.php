@@ -1052,7 +1052,14 @@ class Engine implements ErrorInterface
             foreach($list as $lang) {
                 $namespaced_class = \App\Models\Books\BookAbstract::getClassNameByLanguageStrict($lang);
 
-                // $namespaced_class = 'App\Models\Books\\' . ucfirst($lang);
+                // A language keeps its 'book_list' attribute even if its books_<lang> table goes
+                // away, so an advertised language is not necessarily a queryable one. Skipping is
+                // the only safe response here: calling into FALSE is a fatal that takes down the
+                // request for every other language too.
+                if(!$namespaced_class) {
+                    continue;
+                }
+
                 $books_by_lang[$lang] = $namespaced_class::select('id', 'name', 'shortname')->orderBy('id', 'ASC') -> get() -> all();
             }
 

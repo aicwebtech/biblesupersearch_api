@@ -191,4 +191,48 @@ class HelpersTest extends TestCase
             'prefix'   => '',
         ]]);
     }
+
+    /**
+     * The ceiling is a compile-time constant of the loaded SQLite build (and a fixed number for
+     * every other driver), so probing it once per process is enough. It is asked for once per
+     * buffer flush during an import - roughly 155 times on a 31k-verse module - and each probe
+     * is a PRAGMA plus a PDO attribute read.
+     */
+    public function testGetMaxBoundVariablesIsProbedOncePerConnection()
+    {
+        $this->_defineSqliteProbeConnection();
+        Helpers::clearMaxBoundVariablesCache();
+
+        $Connection = \DB::connection('bound_variable_probe');
+        $Connection->flushQueryLog();
+        $Connection->enableQueryLog();
+
+        try {
+            $first   = Helpers::getMaxBoundVariables('bound_variable_probe');
+            $probed  = count($Connection->getQueryLog());
+
+            $this->assertGreaterThan(0, $probed, 'The first call did not probe the connection');
+
+            for($i = 0; $i < 5; $i++) {
+                $this->assertEquals($first, Helpers::getMaxBoundVariables('bound_variable_probe'));
+            }
+
+            $this->assertCount($probed, $Connection->getQueryLog(), 'The ceiling was re-probed on a later call');
+
+            // getInsertChunkSize() goes through the same memo, so it costs nothing per flush.
+            Helpers::getInsertChunkSize(4, 'bound_variable_probe');
+
+            $this->assertCount($probed, $Connection->getQueryLog(), 'getInsertChunkSize() re-probed the ceiling');
+
+            // A reconfigured connection has to be answerable again.
+            Helpers::clearMaxBoundVariablesCache();
+            $this->assertEquals($first, Helpers::getMaxBoundVariables('bound_variable_probe'));
+            $this->assertGreaterThan($probed, count($Connection->getQueryLog()), 'The cache was not cleared');
+        }
+        finally {
+            $Connection->disableQueryLog();
+            $Connection->flushQueryLog();
+            Helpers::clearMaxBoundVariablesCache();
+        }
+    }
 }

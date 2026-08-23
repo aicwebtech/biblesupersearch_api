@@ -98,29 +98,36 @@ abstract class RenderAbstract
 
         App::setLocale($this->Bible->lang_short);
 
-        $success = $this->_renderStart();
-
-        if(!$success) {
-            return FALSE;
-        }
-
-        $this->_beforeVerseRender();
-
         try {
-            $this->_verseRender();
-            $this->_afterVerseRender();
-        }
-        catch(\Throwable $e) {
-            // RenderManager catches per-Bible failures and moves on to the next Bible, so any
-            // resource _beforeVerseRender() opened has to be released here or it stays open
-            // for the rest of the process.
-            $this->_onVerseRenderError($e);
-            throw $e;
-        }
+            $success = $this->_renderStart();
 
-        $success = $this->_renderFinish();
+            if(!$success) {
+                return FALSE;
+            }
 
-        App::setLocale($locale_cache);
+            $this->_beforeVerseRender();
+
+            try {
+                $this->_verseRender();
+                $this->_afterVerseRender();
+            }
+            catch(\Throwable $e) {
+                // RenderManager catches per-Bible failures and moves on to the next Bible, so any
+                // resource _beforeVerseRender() opened has to be released here or it stays open
+                // for the rest of the process.
+                $this->_onVerseRenderError($e);
+                throw $e;
+            }
+
+            $success = $this->_renderFinish();
+        }
+        finally {
+            // Neither the throw above nor the early return can be allowed to skip this. Because
+            // RenderManager moves on to the next Bible, a locale left pointing at the failed
+            // Bible's language would follow it: every later Bible would render its copyright
+            // block and book names under the wrong locale.
+            App::setLocale($locale_cache);
+        }
 
         if(function_exists('posix_getuid')) {
             // Method DNE on Windows, so we only do this on POSIX systems        

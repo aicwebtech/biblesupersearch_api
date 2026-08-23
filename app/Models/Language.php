@@ -140,6 +140,11 @@ class Language extends Model
         foreach($this->getAllCodes() as $code) {
             Book::dropBookTable($code);
         }
+
+        // Symmetrical with initLanguage(). The tables are gone, so the language can no longer
+        // answer a book query; leaving the attribute set advertises book support that resolves
+        // to no model class - see Engine::actionBooks() and ExtrasAbstract::_renderBibleBookLists().
+        $this->unsetAttr('book_list');
     }
 
     public function getAttrAll()
@@ -200,6 +205,18 @@ class Language extends Model
         ], [
             'value'     => $value,
         ]);
+    }
+
+    /**
+     * Removes an attribute from this language, if it has one.
+     *
+     * @return int the number of rows deleted
+     */
+    public function unsetAttr(string $attribute): int
+    {
+        return LanguageAttr::where('code', $this->code)
+                -> where('attribute', $attribute)
+                -> delete();
     }
 
     public static function migrateFromCsv() 

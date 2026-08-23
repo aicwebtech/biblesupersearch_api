@@ -10,6 +10,7 @@ use Illuminate\Foundation\Testing\DatabaseTransactions;
 use PHPUnit\Framework\Attributes\DataProvider;
 
 use App\Models\Language;
+use App\Models\LanguageAttr;
 
 class LanguageTest extends TestCase
 {
@@ -65,5 +66,45 @@ class LanguageTest extends TestCase
             ['; dangerous(); ', false],
             [ 'dne', false ], // does not exist
         ];
+    }
+
+    /**
+     * denitLanguage() drops the language's book tables, so it must drop the 'book_list'
+     * attribute with them - that pairing is what initLanguage() establishes. A language left
+     * advertising book support it can no longer back resolves to no model class in
+     * Engine::actionBooks() and ExtrasAbstract::_renderBibleBookLists().
+     */
+    public function testDenitLanguageClearsBookSupport(): void
+    {
+        $code = 'qqy';
+
+        try {
+            $this->removeLanguageFixture($code);
+
+            $Language = Language::create(['code' => $code, 'name' => 'Denit Test']);
+            $Language->setAttr('book_list', 1);
+
+            $this->assertTrue(Language::hasBookSupport($code), 'Fixture was not flagged to begin with');
+
+            $Language->denitLanguage();
+
+            $this->assertFalse(Language::hasBookSupport($code));
+            $this->assertNotContains($code, Language::haveBookSupport());
+        }
+        finally {
+            // Every write is inside the try, so an assertion failure - or a throw between the
+            // two writes - cannot leave the fixture behind in the shared test database.
+            $this->removeLanguageFixture($code);
+        }
+    }
+
+    /**
+     * Deletes a throwaway language and any attributes it accumulated, whether or not the row was
+     * ever created.
+     */
+    private function removeLanguageFixture(string $code): void
+    {
+        LanguageAttr::where('code', $code)->delete();
+        Language::where('code', $code)->delete();
     }
 }
