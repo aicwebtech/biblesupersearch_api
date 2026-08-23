@@ -250,24 +250,30 @@ class Database
 
     static protected function _directInsertPush() 
     {
-        if(static::$insert_model && !empty(static::$insertable)) {
-            $model_class = static::$insert_model;
+        try {
+            if(static::$insert_model && !empty(static::$insertable)) {
+                $model_class = static::$insert_model;
 
-            // Each row binds one placeholder per column, so the buffered batch can outrun the
-            // connection's bound-variable ceiling - the cross reference import buffers 6000
-            // rows of 10 columns, well past SQLite's 32766. Split it into statements the
-            // connection can actually run.
-            $columns = count(reset(static::$insertable));
-            $chunk   = \App\Helpers::getInsertChunkSize($columns, (new $model_class)->getConnectionName(), count(static::$insertable));
+                // Each row binds one placeholder per column, so the buffered batch can outrun the
+                // connection's bound-variable ceiling - the cross reference import buffers 6000
+                // rows of 10 columns, well past SQLite's 32766. Split it into statements the
+                // connection can actually run.
+                $columns = count(reset(static::$insertable));
+                $chunk   = \App\Helpers::getInsertChunkSize($columns, (new $model_class)->getConnectionName(), count(static::$insertable));
 
-            foreach(array_chunk(static::$insertable, $chunk) as $batch) {
-                $model_class::insertOrIgnore($batch);
+                foreach(array_chunk(static::$insertable, $chunk) as $batch) {
+                    $model_class::insertOrIgnore($batch);
+                }
             }
         }
-
-        static::$insertable   = [];
-        static::$insert_count = 0;
-        static::$insert_model = NULL;
+        finally {
+            // The buffer has to be dropped even when the insert throws. A caller that catches
+            // and continues - app:install-testing moves on to the next language - would
+            // otherwise append to the failed rows and push them into the *next* model's table.
+            static::$insertable   = [];
+            static::$insert_count = 0;
+            static::$insert_model = NULL;
+        }
     }   
 
     static public function setCreatedUpdated($db_table) 

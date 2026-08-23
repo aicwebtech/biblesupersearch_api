@@ -1060,7 +1060,24 @@ class Engine implements ErrorInterface
                     continue;
                 }
 
-                $books_by_lang[$lang] = $namespaced_class::select('id', 'name', 'shortname')->orderBy('id', 'ASC') -> get() -> all();
+                try {
+                    $books_by_lang[$lang] = $namespaced_class::select('id', 'name', 'shortname')->orderBy('id', 'ASC') -> get() -> all();
+                }
+                catch(\Throwable $e) {
+                    // A class resolved once is cached for the rest of the process, table or no
+                    // table, so the check above cannot catch a table dropped after it loaded.
+                    // Rather than probe the schema for all ~50 languages on every request, let
+                    // the one query fail and drop just that language.
+                    try {
+                        \Log::warning('actionBooks: skipping language ' . $lang . ' - ' . $e->getMessage());
+                    }
+                    catch(\Throwable $ignored) {
+                        // An unwritable log target must not turn a skipped language back into
+                        // the failed request this whole branch exists to prevent.
+                    }
+
+                    continue;
+                }
             }
 
             return $books_by_lang;

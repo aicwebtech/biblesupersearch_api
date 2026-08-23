@@ -260,4 +260,49 @@ class EngineTest extends TestCase
             $this->removeLanguageFixture($code);
         }
     }
+
+    /**
+     * getClassNameByLanguageStrict() caches a generated class for the life of the process, table
+     * or no table, so a table dropped after the class loaded still resolves a truthy class name.
+     * The query itself then fails, and that one language must not take the request with it.
+     */
+    public function testActionBooksAllSkipsALanguageWhoseTableIsDroppedAfterItsClassLoaded()
+    {
+        $code = 'qqw';
+        $table = 'books_' . $code;
+        $default = config('bss.defaults.language_short');
+
+        try {
+            $Language = $this->createLanguageFixture($code, 'Dropped Table Test');
+
+            \Schema::create($table, function($table) {
+                $table->increments('id');
+                $table->string('name');
+                $table->string('shortname')->nullable();
+                $table->string('matching1')->nullable();
+                $table->string('matching2')->nullable();
+                $table->timestamps();
+            });
+
+            // Loads and caches the generated class while the table is still there.
+            $this->assertNotFalse(\App\Models\Books\BookAbstract::getClassNameByLanguageStrict($code));
+
+            $Language->setAttr('book_list', 1);
+
+            \Schema::dropIfExists($table);
+
+            // Still truthy - the class outlives its table, which is the whole point.
+            $this->assertNotFalse(\App\Models\Books\BookAbstract::getClassNameByLanguageStrict($code));
+
+            $books_by_lang = (new Engine())->actionBooks(['language' => 'ALL']);
+
+            $this->assertArrayNotHasKey($code, $books_by_lang);
+            $this->assertArrayHasKey($default, $books_by_lang);
+            $this->assertNotEmpty($books_by_lang[$default]);
+        }
+        finally {
+            \Schema::dropIfExists($table);
+            $this->removeLanguageFixture($code);
+        }
+    }
 }

@@ -4,7 +4,9 @@ namespace Tests\Feature\Console\Commands;
 
 use App\Console\Commands\AppInstallTesting;
 use App\Models\Books\BookAbstract;
+use App\Features\FeatureDefinitions;
 use App\Models\Bible;
+use App\Models\Feature;
 use App\Models\Language;
 use PHPUnit\Framework\Attributes\DataProvider;
 use Symfony\Component\Console\Input\ArrayInput;
@@ -254,5 +256,71 @@ class AppInstallTestingTest extends TestCase
             array_values(array_diff($expected, $ready)),
             'Testing Bibles are not installed and enabled; run php artisan app:install-testing'
         );
+    }
+
+    /**
+     * createTableAndMigrateFromCsv() returns TRUE the moment the table exists, without looking
+     * at its contents, so an import interrupted part way leaves a short table that still
+     * resolves a class. Flagging that as supported is the silent coverage gap this command is
+     * meant to close, so the row count is checked against the CSV.
+     */
+    public function testBookListRowCountMatchesTheCsvForEveryRequiredLanguage(): void
+    {
+        $Method = new \ReflectionMethod(AppInstallTesting::class, '_countBookListRows');
+        $Command = new AppInstallTesting();
+
+        foreach(self::REQUIRED_BOOK_LIST_LANGUAGES as $language) {
+            $expected = $Method->invoke($Command, $language);
+
+            $this->assertGreaterThan(0, $expected, "No book rows are defined in the '{$language}' CSV");
+
+            $class_name = BookAbstract::getClassNameByLanguageStrict($language);
+
+            $this->assertNotFalse($class_name, "No book model class resolves for '{$language}'");
+            $this->assertGreaterThanOrEqual(
+                $expected,
+                $class_name::count(),
+                "The '{$language}' book table holds fewer rows than its CSV defines; run php artisan app:install-testing"
+            );
+        }
+    }
+
+    /**
+     * The row count has to come from the CSV's own data rows - the header excluded, and any row
+     * the importer would drop for having no id excluded with it.
+     */
+    public function testCountBookListRowsCountsOnlyImportableRows(): void
+    {
+        $Method = new \ReflectionMethod(AppInstallTesting::class, '_countBookListRows');
+        $Command = new AppInstallTesting();
+
+        // A standard 66-book list, so the header is not being counted.
+        $this->assertEquals(66, $Method->invoke($Command, config('bss.defaults.language_short')));
+
+        // template.csv carries ids but no names; a language with no CSV at all has nothing.
+        $this->assertEquals(0, $Method->invoke($Command, 'no_such_language'));
+    }
+
+    /**
+     * syncFeatures() never prunes a row whose definition was removed, and Feature::install()
+     * returns FALSE for one of those. Installing every historical row would fail this command -
+     * and CI with it - permanently, on any database that ever held the old feature.
+     */
+    public function testFeatureInstallSkipsRowsWithNoCurrentDefinition(): void
+    {
+        $identifiers = array_column(FeatureDefinitions::all(), 'identifier');
+
+        $this->assertNotEmpty($identifiers);
+
+        $stale = Feature::whereNotIn('identifier', $identifiers)->pluck('identifier')->unique()->all();
+
+        // Every row the command will try to install must have a definition behind it.
+        foreach(Feature::whereIn('identifier', $identifiers)->get() as $Feature) {
+            $this->assertNotNull(
+                FeatureDefinitions::find($Feature->identifier),
+                "Feature '{$Feature->identifier}' would be installed but has no definition"
+            );
+            $this->assertNotContains($Feature->identifier, $stale);
+        }
     }
 }

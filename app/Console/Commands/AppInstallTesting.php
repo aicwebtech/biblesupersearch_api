@@ -5,6 +5,7 @@ namespace App\Console\Commands;
 use Illuminate\Console\Command;
 use App\Models\Bible;
 use App\Models\Books\BookAbstract;
+use App\Features\FeatureDefinitions;
 use App\Models\Feature;
 use App\Models\Language;
 
@@ -134,7 +135,7 @@ class AppInstallTesting extends Command
         $this->info('Installing book lists ...');
 
         $languages = $this->_getBookListLanguages();
-        $installed = $unavailable = [];
+        $installed = $unavailable = $incomplete = [];
 
         $Bar = $this->output->createProgressBar(count($languages));
 
@@ -150,8 +151,22 @@ class AppInstallTesting extends Command
                 // after the import. A language that still has no class cannot be queried, and
                 // must not be advertised as having book support. Same for a code with no
                 // `languages` row - see _setBookListSupported().
-                if(!BookAbstract::getClassNameByLanguageStrict($language)) {
+                $class_name = BookAbstract::getClassNameByLanguageStrict($language);
+
+                if(!$class_name) {
                     $unavailable[] = $language;
+                    continue;
+                }
+
+                // createTableAndMigrateFromCsv() returns early whenever the table already
+                // exists, so an import interrupted part way leaves a short table that still
+                // resolves a class. Re-importing is cheap (insertOrIgnore) and fills the gaps.
+                if($class_name::count() < $this->_countBookListRows($language)) {
+                    BookAbstract::migrateFromCsv($language);
+                }
+
+                if($class_name::count() < $this->_countBookListRows($language)) {
+                    $incomplete[] = $language;
                     continue;
                 }
 
@@ -180,6 +195,10 @@ class AppInstallTesting extends Command
             $this->warn('  Not installable, skipped (' . count($unavailable) . '): ' . implode(', ', $unavailable));
         }
 
+        if($incomplete) {
+            $this->error('  Book list table still short of its CSV (' . count($incomplete) . '): ' . implode(', ', $incomplete));
+        }
+
         foreach($failed as $language => $message) {
             $this->error('  Failed to install the \'' . $language . '\' book list: ' . $message);
         }
@@ -187,7 +206,35 @@ class AppInstallTesting extends Command
         // A skipped language counts as a failure too: its CSV ships, so something is expected to
         // install it, and every test that walks its book names skips itself instead of failing.
         // Anything deliberately not a language belongs in EXCLUDED_BOOK_LIST_FILES.
-        return !$failed && !$unavailable;
+        return !$failed && !$unavailable && !$incomplete;
+    }
+
+    /**
+     * How many books a language's CSV actually defines.
+     *
+     * Counts the rows the importer would keep - it skips any row without an id - so this can be
+     * compared against the table to tell a complete import from an interrupted one.
+     */
+    protected function _countBookListRows(string $language): int
+    {
+        $path = database_path('dumps/bible_books/' . strtolower($language) . '.csv');
+
+        if(!is_file($path)) {
+            return 0;
+        }
+
+        $lines = file($path, FILE_SKIP_EMPTY_LINES | FILE_IGNORE_NEW_LINES);
+        $rows  = 0;
+
+        foreach(array_slice($lines, 1) as $line) {
+            $fields = str_getcsv($line, escape: '\\');
+
+            if(!empty($fields[0])) {
+                $rows++;
+            }
+        }
+
+        return $rows;
     }
 
     /**
@@ -248,7 +295,17 @@ class AppInstallTesting extends Command
 
         Feature::syncFeatures();
 
-        $Features = Feature::orderBy('identifier')->orderBy('language')->get();
+        // syncFeatures() adds the current definitions but never prunes rows whose definition was
+        // removed, and Feature::install() returns FALSE for one of those - which would fail this
+        // command, and CI with it, permanently on any database that has ever held the old
+        // feature. Install only what is still defined, and say what was left alone.
+        $identifiers = array_column(FeatureDefinitions::all(), 'identifier');
+        $Features    = Feature::whereIn('identifier', $identifiers)->orderBy('identifier')->orderBy('language')->get();
+        $stale       = Feature::whereNotIn('identifier', $identifiers)->pluck('identifier')->unique()->all();
+
+        if($stale) {
+            $this->warn('  Features with no current definition, skipped (' . count($stale) . '): ' . implode(', ', $stale));
+        }
         $Bar = $this->output->createProgressBar(count($Features));
 
         $failed = [];

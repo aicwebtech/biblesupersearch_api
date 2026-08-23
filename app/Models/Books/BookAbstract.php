@@ -505,9 +505,16 @@ class BookAbstract extends Model
             return false;
         }
 
-        Model::unguard();
-        \App\Importers\Database::importCSV($csv_file, $map, $class_name);
-        Model::reguard();
+        try {
+            Model::unguard();
+            \App\Importers\Database::importCSV($csv_file, $map, $class_name);
+        }
+        finally {
+            // An import that throws must not leave Eloquent globally unguarded for the rest of
+            // the process - app:install-testing catches one language's failure and carries on
+            // importing the next 48.
+            Model::reguard();
+        }
 
         self::clearAllBooksCache($language);
         DatabaseSeeder::setCreatedUpdated($tn);
@@ -536,9 +543,14 @@ class BookAbstract extends Model
             return false;
         }
 
-        Model::unguard();
-        \App\Importers\Database::importCSV($csv_file, $map, $class_name);
-        Model::reguard();
+        try {
+            Model::unguard();
+            \App\Importers\Database::importCSV($csv_file, $map, $class_name);
+        }
+        finally {
+            // See createTableAndMigrateFromCsv().
+            Model::reguard();
+        }
 
         self::clearAllBooksCache($language);
         DatabaseSeeder::setCreatedUpdated($tn);
