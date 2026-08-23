@@ -67,6 +67,36 @@ class TestCase extends BaseTestCase
         parent::tearDown();
     }
 
+    /**
+     * Creates a throwaway language row for a code no real language uses.
+     *
+     * Every column the schema requires is supplied: SQLite enforces the NOT NULL on iso_name
+     * that a MySQL development database in a non-strict mode quietly fills in.
+     */
+    protected function createLanguageFixture(string $code, string $name): \App\Models\Language
+    {
+        $this->removeLanguageFixture($code);
+
+        return \App\Models\Language::create([
+            'code'        => $code,
+            'name'        => $name,
+            'iso_name'    => $name,
+            'native_name' => $name,
+            'iso_endonym' => $name,
+            'family'      => 'Test',
+        ]);
+    }
+
+    /**
+     * Deletes a throwaway language and any attributes it accumulated, whether or not the row was
+     * ever created. Safe to call from a finally that may run before the row exists.
+     */
+    protected function removeLanguageFixture(string $code): void
+    {
+        \App\Models\LanguageAttr::where('code', $code)->delete();
+        \App\Models\Language::where('code', $code)->delete();
+    }
+
     public function setUp(): void
     {
         parent::setUp();

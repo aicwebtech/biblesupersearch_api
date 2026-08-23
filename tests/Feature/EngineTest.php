@@ -10,7 +10,6 @@ use Illuminate\Foundation\Testing\DatabaseTransactions;
 use App\Engine;
 use App\Models\Bible;
 use App\Models\Language;
-use App\Models\LanguageAttr;
 use Illuminate\Support\Facades\Schema;
 
 class EngineTest extends TestCase
@@ -241,9 +240,7 @@ class EngineTest extends TestCase
         $default = config('bss.defaults.language_short');
 
         try {
-            $this->removeLanguageFixture($code);
-
-            $Language = Language::create(['code' => $code, 'name' => 'Book Table Drift Test']);
+            $Language = $this->createLanguageFixture($code, 'Book Table Drift Test');
             $Language->setAttr('book_list', 1);
 
             $this->assertContains($code, Language::haveBookSupport(), 'Fixture is not advertised as having book support');
@@ -262,15 +259,5 @@ class EngineTest extends TestCase
             // two writes - cannot leave the fixture behind in the shared test database.
             $this->removeLanguageFixture($code);
         }
-    }
-
-    /**
-     * Deletes a throwaway language and any attributes it accumulated, whether or not the row was
-     * ever created.
-     */
-    private function removeLanguageFixture(string $code): void
-    {
-        LanguageAttr::where('code', $code)->delete();
-        Language::where('code', $code)->delete();
     }
 }
