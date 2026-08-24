@@ -14,6 +14,9 @@ use Illuminate\Support\Facades\Schema;
 
 class EngineTest extends TestCase
 {
+    /** Connection name the broken-connection fixture below is wired to. */
+    public const BROKEN_CONNECTION = 'engine_test_broken';
+
     public function testInstance() 
     {
         $engine = new Engine();
@@ -307,25 +310,45 @@ class EngineTest extends TestCase
     }
 
     /**
-     * Only a missing table is recoverable. Any other query failure - a lost connection, a table
-     * that is present but wrong - has to surface, or the caller receives a short list it cannot
-     * tell apart from a complete one.
+     * Only a missing table is recoverable. Any other query failure - a lost or unhealthy
+     * connection - has to surface, or the caller receives a short list it cannot tell apart
+     * from a complete one.
      */
     public function testActionBooksAllRethrowsAFailureThatIsNotAMissingTable()
     {
-        $code = 'qqu';
-        $table = 'books_' . $code;
+        $code   = 'qqu';
+        $table  = 'books_' . $code;
+        $broken = sys_get_temp_dir() . '/bss_broken_connection_' . getmypid() . '.sqlite';
+
+        // A file that is not a SQLite database: the connection opens and then every query on it
+        // fails, which is what an unhealthy connection looks like from actionBooks. Deliberately
+        // not a missing column - SQLite reads an unknown "column" as a string literal, so that
+        // failure does not exist there.
+        file_put_contents($broken, 'not a database');
+
+        config(['database.connections.' . self::BROKEN_CONNECTION => [
+            'driver'   => 'sqlite',
+            'database' => $broken,
+            'prefix'   => '',
+        ]]);
 
         try {
-            $Language = $this->createLanguageFixture($code, 'Broken Table Test');
+            $Language = $this->createLanguageFixture($code, 'Broken Connection Test');
 
-            // The table exists, so the class generates - but it has none of the columns the
-            // query asks for, so the query fails for a reason skipping cannot fix.
+            // The table is present on the default connection, so a missing table cannot explain
+            // the failure and the exception has to propagate.
             \Schema::create($table, function($table) {
                 $table->increments('id');
+                $table->string('name');
+                $table->string('shortname')->nullable();
             });
 
-            $this->assertNotFalse(\App\Models\Books\BookAbstract::getClassNameByLanguageStrict($code));
+            // App\Models\Books\Qqu is declared at the foot of this file and points at the broken
+            // connection, so makeClassByLanguage() finds it already loaded and leaves it alone.
+            $this->assertEquals(
+                'App\Models\Books\Qqu',
+                \App\Models\Books\BookAbstract::getClassNameByLanguageStrict($code)
+            );
 
             $Language->setAttr('book_list', 1);
 
@@ -336,6 +359,22 @@ class EngineTest extends TestCase
         finally {
             \Schema::dropIfExists($table);
             $this->removeLanguageFixture($code);
+            @unlink($broken);
         }
     }
+}
+
+namespace App\Models\Books;
+
+/**
+ * Stands in for a language whose book table is present but whose connection is unusable, so
+ * Engine::actionBooks() has to rethrow rather than quietly drop the language from its result.
+ *
+ * Declared here rather than generated: makeClassByLanguage() skips a class that already exists,
+ * which is what lets this one carry a deliberately broken connection.
+ */
+class Qqu extends BookAbstract
+{
+    protected $connection = \Tests\Feature\EngineTest::BROKEN_CONNECTION;
+    protected $table = 'books_qqu';
 }
