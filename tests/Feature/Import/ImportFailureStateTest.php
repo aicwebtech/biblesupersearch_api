@@ -35,7 +35,6 @@ class ImportFailureStateTest extends TestCase
     {
         foreach(['insertable' => [], 'insert_count' => 0, 'insert_model' => NULL, 'processed_files' => []] as $name => $value) {
             $Property = new \ReflectionProperty(Importer::class, $name);
-            $Property->setAccessible(TRUE);
             $Property->setValue(NULL, $value);
         }
     }

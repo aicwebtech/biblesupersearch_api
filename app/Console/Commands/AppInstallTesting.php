@@ -335,7 +335,7 @@ class AppInstallTesting extends Command
         $Bar->finish();
         $this->newLine();
 
-        $enabled = Feature::where('enabled', 1)->count();
+        $enabled = Feature::whereIn('identifier', $identifiers)->where('enabled', 1)->count();
         $this->line('  Features enabled: ' . $enabled . ' of ' . count($Features));
 
         return !$failed;
