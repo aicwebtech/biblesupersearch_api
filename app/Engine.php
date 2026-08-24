@@ -1063,11 +1063,18 @@ class Engine implements ErrorInterface
                 try {
                     $books_by_lang[$lang] = $namespaced_class::select('id', 'name', 'shortname')->orderBy('id', 'ASC') -> get() -> all();
                 }
-                catch(\Throwable $e) {
+                catch(\Illuminate\Database\QueryException $e) {
                     // A class resolved once is cached for the rest of the process, table or no
                     // table, so the check above cannot catch a table dropped after it loaded.
-                    // Rather than probe the schema for all ~50 languages on every request, let
-                    // the one query fail and drop just that language.
+                    // Confirm that is what went wrong - probing the schema only here, on the
+                    // failure path, rather than for all ~50 languages on every request - and let
+                    // anything else through. A lost connection or a genuine query fault must
+                    // surface as an error, not as a short list the caller cannot tell from a
+                    // complete one.
+                    if(\Schema::hasTable((new $namespaced_class)->getTable())) {
+                        throw $e;
+                    }
+
                     try {
                         \Log::warning('actionBooks: skipping language ' . $lang . ' - ' . $e->getMessage());
                     }

@@ -40,12 +40,14 @@ class ImportFailureStateTest extends TestCase
     }
 
     /**
+     * No setAccessible() call: reflection has ignored visibility since PHP 8.1 and the method is
+     * deprecated in 8.5, which CI runs.
+     *
      * @return mixed
      */
     private function importerState(string $name)
     {
         $Property = new \ReflectionProperty(Importer::class, $name);
-        $Property->setAccessible(TRUE);
 
         return $Property->getValue();
     }
@@ -131,7 +133,6 @@ class ImportFailureStateTest extends TestCase
 
         // Flushing now must be a no-op rather than a delivery of the failed rows.
         $Method = new \ReflectionMethod(Importer::class, '_directInsertPush');
-        $Method->setAccessible(TRUE);
         $Method->invoke(NULL);
 
         $this->assertEquals($before, $class_name::count(), 'Rows from the failed import reached another table');

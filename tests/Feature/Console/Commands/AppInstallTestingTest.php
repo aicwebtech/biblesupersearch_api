@@ -24,13 +24,10 @@ use Tests\TestCase;
 class AppInstallTestingTest extends TestCase
 {
     /**
-     * Languages whose book lists PassageTest walks; each one skips itself when unsupported.
-     *
-     * PassageTest also walks 'zh_tw', which is not installed here: it is a regional variant of
-     * 'zh' with no `languages` row of its own, so Language::getAllCodes() installs its table
-     * from the parent language instead.
+     * Languages whose book lists PassageTest walks, mirroring its $map_request_languages. The
+     * installer has to provide every one, or those data sets quietly lose their coverage.
      */
-    private const REQUIRED_BOOK_LIST_LANGUAGES = ['ru', 'lt', 'pl', 'hi', 'zh', 'ja'];
+    private const REQUIRED_BOOK_LIST_LANGUAGES = ['ru', 'lt', 'pl', 'hi', 'zh', 'ja', 'lv'];
 
     private function bookListLanguages(): array
     {

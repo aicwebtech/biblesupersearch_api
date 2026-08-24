@@ -305,4 +305,37 @@ class EngineTest extends TestCase
             $this->removeLanguageFixture($code);
         }
     }
+
+    /**
+     * Only a missing table is recoverable. Any other query failure - a lost connection, a table
+     * that is present but wrong - has to surface, or the caller receives a short list it cannot
+     * tell apart from a complete one.
+     */
+    public function testActionBooksAllRethrowsAFailureThatIsNotAMissingTable()
+    {
+        $code = 'qqu';
+        $table = 'books_' . $code;
+
+        try {
+            $Language = $this->createLanguageFixture($code, 'Broken Table Test');
+
+            // The table exists, so the class generates - but it has none of the columns the
+            // query asks for, so the query fails for a reason skipping cannot fix.
+            \Schema::create($table, function($table) {
+                $table->increments('id');
+            });
+
+            $this->assertNotFalse(\App\Models\Books\BookAbstract::getClassNameByLanguageStrict($code));
+
+            $Language->setAttr('book_list', 1);
+
+            $this->expectException(\Illuminate\Database\QueryException::class);
+
+            (new Engine())->actionBooks(['language' => 'ALL']);
+        }
+        finally {
+            \Schema::dropIfExists($table);
+            $this->removeLanguageFixture($code);
+        }
+    }
 }

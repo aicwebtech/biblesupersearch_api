@@ -18,7 +18,7 @@ class PassageTest extends TestCase
      *
      * @var array<int, string>
      */
-    protected static array $map_request_languages = ['ru', 'lt', 'pl', 'hi', 'lv'];
+    protected static array $map_request_languages = ['ru', 'lt', 'pl', 'hi', 'lv', 'ja', 'zh'];
 
     public function testEmptyReference() 
     {
