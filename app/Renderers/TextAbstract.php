@@ -30,6 +30,17 @@ abstract class TextAbstract extends RenderAbstract
         return TRUE;
     }
 
+    /**
+     * Close the file when a verse chunk throws. _renderStart() opens the handle and only
+     * _renderFinish() closes it, so without this a failed render leaks the handle for the rest
+     * of the process - RenderManager carries on to the next Bible - and on Windows leaves the
+     * half-written file locked.
+     */
+    protected function _onVerseRenderError(\Throwable $e) 
+    {
+        $this->_closeFile();
+    }
+
     protected function _openFile() 
     {
         $filepath = $this->getRenderFilePath(TRUE);

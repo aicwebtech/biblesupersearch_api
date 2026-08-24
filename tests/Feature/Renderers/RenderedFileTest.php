@@ -506,9 +506,35 @@ class RenderedFileTest extends TestCase
             $Renderer->render(TRUE);
             $this->fail('The render was expected to throw');
         }
-        catch(\RuntimeException $e) {
+        // A dedicated class, not \RuntimeException: PHPUnit's AssertionFailedError extends
+        // RuntimeException, so the broader catch would swallow the fail() above and pass the
+        // test on the one outcome it exists to catch.
+        catch(VerseRenderFailure $e) {
             $this->assertEquals('Verse render failed', $e->getMessage());
             $this->assertEquals($locale_before, \App::getLocale(), 'The locale was left set to the failed Bible\'s language');
+        }
+        finally {
+            \App::setLocale($locale_before);
+            $Renderer->removeRenderFile();
+        }
+    }
+
+    /**
+     * _renderStart() opens the file and only _renderFinish() closes it, so a verse render that
+     * throws would leak the handle for the rest of the process - RenderManager carries on to the
+     * next Bible - and leave the half-written file locked on Windows.
+     */
+    public function testRenderClosesTheFileWhenTheVerseRenderThrows()
+    {
+        $locale_before = \App::getLocale();
+        $Renderer = new ThrowingVerseRenderCsv('luther');
+
+        try {
+            $Renderer->render(TRUE);
+            $this->fail('The render was expected to throw');
+        }
+        catch(VerseRenderFailure $e) {
+            $this->assertFalse($Renderer->hasOpenFileHandle(), 'The render file handle was left open after a failed render');
         }
         finally {
             \App::setLocale($locale_before);
@@ -557,6 +583,11 @@ abstract class LocaleRestoreCsvDouble extends \App\Renderers\Csv
         return sys_get_temp_dir() . '/bss_locale_restore_' . $this->Bible->module . '.' . $this->file_extension;
     }
 
+    public function hasOpenFileHandle(): bool
+    {
+        return is_resource($this->handle);
+    }
+
     public function removeRenderFile(): void
     {
         $path = $this->getRenderFilePath();
@@ -572,7 +603,7 @@ class ThrowingVerseRenderCsv extends LocaleRestoreCsvDouble
 {
     protected function _verseRender()
     {
-        throw new \RuntimeException('Verse render failed');
+        throw new VerseRenderFailure('Verse render failed');
     }
 }
 
@@ -583,4 +614,9 @@ class FailingRenderStartCsv extends LocaleRestoreCsvDouble
     {
         return FALSE;
     }
+}
+
+/** Distinct from \RuntimeException so a catch for it cannot also swallow PHPUnit's failures. */
+class VerseRenderFailure extends \RuntimeException
+{
 }

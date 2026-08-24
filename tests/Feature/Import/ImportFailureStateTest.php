@@ -146,33 +146,49 @@ class ImportFailureStateTest extends TestCase
     {
         $this->resetImporterState();
 
-        // A regional code carries a permanent model class, so it resolves strictly without
-        // needing its table - which lets the import get past the guard and fail on the insert.
-        $language = 'zh_cn';
+        // Everything this needs is created here and removed again: a language code no real
+        // language uses, its book-list CSV, and its table. No installed book table is touched,
+        // and no other test asserts on the class this generates.
+        $language = 'qqv';
         $table    = 'books_' . $language;
+        $csv      = database_path('dumps/bible_books/' . $language . '.csv');
 
-        $this->assertNotFalse(BookAbstract::getClassNameByLanguageStrict($language));
+        $this->assertFalse(\Schema::hasTable($table), 'The fixture book table already exists');
+        $this->assertFileDoesNotExist($csv, 'The fixture CSV already exists');
         $this->assertFalse(Model::isUnguarded(), 'Eloquent was already unguarded before this test');
 
-        $existed = \Schema::hasTable($table);
-        \Schema::dropIfExists($table);
-
         try {
-            BookAbstract::migrateFromCsv($language);
-            $this->fail('The import was expected to throw');
-        }
-        catch(\Throwable $e) {
-            $this->assertFalse(Model::isUnguarded(), 'The mass-assignment guard was left off after a failed import');
+            $this->createLanguageFixture($language, 'Import Failure Test');
+            file_put_contents($csv, "id,name,shortname,matching1,matching2\n1,Book One,B1,,\n2,Book Two,B2,,\n");
+
+            // The class is generated from the table, so the table has to exist once. It then
+            // stays loaded for the rest of the process, table or no table - which is what lets
+            // the import get past the class check and fail on the insert instead.
+            BookAbstract::createBookTable($language);
+            $this->assertNotFalse(BookAbstract::getClassNameByLanguageStrict($language));
+
+            \Schema::dropIfExists($table);
+
+            try {
+                BookAbstract::migrateFromCsv($language);
+                $this->fail('The import was expected to throw');
+            }
+            // Specifically the database failure: PHPUnit's AssertionFailedError extends
+            // RuntimeException, so a \Throwable here would swallow the fail() above and pass
+            // the test on the one outcome it is meant to catch.
+            catch(\Illuminate\Database\QueryException $e) {
+                $this->assertFalse(Model::isUnguarded(), 'The mass-assignment guard was left off after a failed import');
+            }
         }
         finally {
             $this->resetImporterState();
-
-            if($existed) {
-                BookAbstract::createTableAndMigrateFromCsv($language);
-            }
+            \Schema::dropIfExists($table);
+            @unlink($csv);
+            $this->removeLanguageFixture($language);
         }
 
-        $this->assertEquals($existed, \Schema::hasTable($table), 'The book table was not restored');
+        $this->assertFileDoesNotExist($csv, 'The fixture CSV was left behind');
+        $this->assertFalse(\Schema::hasTable($table), 'The fixture book table was left behind');
     }
 }
 
