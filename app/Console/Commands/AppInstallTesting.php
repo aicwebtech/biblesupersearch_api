@@ -31,7 +31,7 @@ class AppInstallTesting extends Command
      *
      * @var string[]
      */
-    protected const EXCLUDED_BOOK_LIST_FILES = ['template', 'art', 'zh_cn', 'zh_tw'];
+    protected const EXCLUDED_BOOK_LIST_FILES = ['template', 'art', 'zh_cn', 'zh_tw', 'jv'];
 
     /**
      * The name and signature of the console command.
