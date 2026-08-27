@@ -27,15 +27,9 @@ This file is the single source of truth for agent steering. `CLAUDE.md` imports 
 guidelines block here for every agent (`config/boost.php` points Claude Code at this file
 rather than at its `CLAUDE.md` default).
 
-* .ai/skills => all skills, canonical
-* .claude/skills, .github/skills => symlinks to .ai/skills, so each platform finds them
+* .ai/skills => all skills, canonical; .claude/skills and .github/skills mirror it per-skill so
+  Claude Code and Copilot each find them (run `php artisan boost:install` to regenerate)
 * .ai/env.md => environment-specific steering (if present); takes precedence over everything here
-
-Both skill symlinks are committed to git as symlinks. A Windows clone without symlink support
-writes each one as a plain text file instead, and then no project skills load at all. Run
-`git config --global core.symlinks true` before cloning (Developer Mode or the
-`SeCreateSymbolicLink` privilege is required), or run `php artisan boost:install` afterwards —
-Boost recreates the links and falls back to real directory copies where symlinks are unavailable.
 
 ## Paths Specific to This Application
 * app/Models => Eloquent models

@@ -7,4 +7,4 @@ project's conventions and carries the Laravel Boost generated guidelines block. 
 appends imported files after this file's own text, so look below for those conventions.
 
 Do not add project conventions here — they belong in `AGENTS.md` so every agent gets them.
-Skills live in `.ai/skills/`; `.claude/skills` and `.github/skills` are symlinks to it.
+Skills live in `.ai/skills/`; the `.claude` and `.github` skill dirs mirror it.
