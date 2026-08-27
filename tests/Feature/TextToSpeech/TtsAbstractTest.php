@@ -63,7 +63,7 @@ class TtsAbstractTest extends TestCase
         };
     }
 
-    public function test_get_meta_returns_expected_keys()
+    public function testGetMetaReturnsExpectedKeys()
     {
         $meta = (static::makeConcrete())::getMeta();
 
@@ -79,7 +79,7 @@ class TtsAbstractTest extends TestCase
         $this->assertTrue($meta['requires_voice']);
     }
 
-    public function test_format_text_strips_markers_and_normalizes_whitespace()
+    public function testFormatTextStripsMarkersAndNormalizesWhitespace()
     {
         $concrete = static::makeConcrete();
 
@@ -91,7 +91,7 @@ class TtsAbstractTest extends TestCase
         $this->assertEquals($expected, $out);
     }
 
-    public function test_get_voice_by_language_uses_config_and_falls_back_to_default()
+    public function testGetVoiceByLanguageUsesConfigAndFallsBackToDefault()
     {
         // ensure specific lang override is used when present
         Config::set('lang.en.text_to_speech.test_tts_class.voice', 'alice');

@@ -21,8 +21,21 @@ Security notes:
 * Never print secret values (passwords, tokens, private keys) in chat.
 
 ## Agent Paths
-* .github/skills => project skills
-* .ai/skills => generic skills (if present)
+
+This file is the single source of truth for agent steering. `CLAUDE.md` imports it with
+`@AGENTS.md` and holds no conventions of its own, and Laravel Boost writes its generated
+guidelines block here for every agent (`config/boost.php` points Claude Code at this file
+rather than at its `CLAUDE.md` default).
+
+* .ai/skills => all skills, canonical
+* .claude/skills, .github/skills => symlinks to .ai/skills, so each platform finds them
+* .ai/env.md => environment-specific steering (if present); takes precedence over everything here
+
+Both skill symlinks are committed to git as symlinks. A Windows clone without symlink support
+writes each one as a plain text file instead, and then no project skills load at all. Run
+`git config --global core.symlinks true` before cloning (Developer Mode or the
+`SeCreateSymbolicLink` privilege is required), or run `php artisan boost:install` afterwards —
+Boost recreates the links and falls back to real directory copies where symlinks are unavailable.
 
 ## Paths Specific to This Application
 * app/Models => Eloquent models
@@ -33,9 +46,6 @@ Security notes:
 * app/Traits => PHP traits
 * bibles/modules => Bible SuperSearch modules for Bibles we officially support. Versioned in Git.
 * bibles/unofficial => Bible SuperSearch modules for Bibles we do not officially support. Ignored by Git.
-
-## Environmental Steering Documentation
-* .ai/env.md if this file exists, it's contents take precidence over other agent steering doc
 
 ## Tests
 
@@ -55,28 +65,19 @@ Security notes:
 ### Feature tests
 * Feature tests have access to the database.
 * The database contents are generally static — Bible texts, Bible book lists, cross-reference data, etc.
-* Do NOT INSERT, UPDATE, or DELETE database contents in feature tests without explicit instruction and authorization.
-* Read and assert against existing data only.
+* Do NOT INSERT, UPDATE, or DELETE this content data in feature tests without explicit instruction and authorization. Read and assert against it only.
+* Purpose-built test fixtures are allowed — a throwaway row, table, or file the test creates and removes again. Create it inside the test, remove it in a `finally` so an assertion failure still cleans up, and never build one on top of installed content data (see `createLanguageFixture()` / `removeLanguageFixture()` in `tests/TestCase.php`).
 - Classes extend from **Tests\TestCase**
 
-## Skills
+### Running tests
 
-### shoutout
-
-Echo "hey you" for no reason.
-
-### testme
-
-Purpose: run the test suite.
-
-User options:
-* All PHP versions or just current version
+Ask the user which they want:
+* All supported PHP versions, or just the current one
 * Parallel (fast) or serial (slow) test mode
 
-Workflow:
-* Ensure terminal is in the project root
-* Prefer `php artisan test --compact` for targeted tests
-* Use project scripts only when multi-version or mode-specific testing is requested
+Run from the project root. Prefer `php artisan test --compact` with a filename or `--filter`
+for targeted runs, and use the multi-version project scripts only when the user asks for
+multi-version or mode-specific testing.
 
 Sample parallel test:
 ```bash
@@ -88,6 +89,17 @@ Sample serial test:
 php artisan test --compact
 ```
 
+## Skills
+
+Skills live in `.ai/skills/`, one directory each; read that skill's `SKILL.md` for its
+instructions. Activate a skill as soon as the work falls in its domain — don't wait until
+you are stuck.
+
+* `connect-ssh-terminal` — connecting to the project's SSH server, opening an SSH terminal,
+  or running commands on the remote host over SSH.
+* `laravel-best-practices` — writing, reviewing, or refactoring any Laravel PHP code:
+  controllers, models, migrations, form requests, policies, jobs, service classes, Eloquent
+  queries, N+1 and caching concerns, authorization, validation, and error handling.
 ===
 
 <laravel-boost-guidelines>

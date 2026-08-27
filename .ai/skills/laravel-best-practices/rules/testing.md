@@ -18,8 +18,8 @@
 ### Feature tests
 - Have access to the database.
 - Database contents are generally static (Bible texts, Bible book lists, cross-reference data, etc.).
-- Do NOT INSERT, UPDATE, or DELETE database records without explicit instruction and authorization.
-- Read and assert against existing data only.
+- Do NOT INSERT, UPDATE, or DELETE this content data without explicit instruction and authorization. Read and assert against it only.
+- Purpose-built test fixtures are allowed — a throwaway row, table, or file the test creates and removes again. Create it inside the test, remove it in a `finally` so an assertion failure still cleans up, and never build one on top of installed content data (see `createLanguageFixture()` / `removeLanguageFixture()` in `tests/TestCase.php`).
 - Classes extend from **Tests\TestCase**
 
 ## Use `LazilyRefreshDatabase` Over `RefreshDatabase`
