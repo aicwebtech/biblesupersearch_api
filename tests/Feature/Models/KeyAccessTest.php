@@ -16,6 +16,9 @@ use App\Models\IpAccessLog;
 
 class KeyAccessTest extends TestCase 
 {
+    // testBasicKey asserts a BASIC key is *not* unlimited, which only holds while the
+    // configured cap is non-zero - so it opts out of the suite-wide lift in TestCase.
+    protected $lift_daily_access_limit = FALSE;
 
     private $key_cache = [];
 

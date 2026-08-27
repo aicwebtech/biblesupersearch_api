@@ -2,6 +2,7 @@
 
 namespace App\Console\Commands;
 
+use App\Helpers;
 use App\Models\Books\BookAbstract as Book;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
@@ -108,7 +109,9 @@ class ImportCrossReferences extends Command
     public function handle(): int
     {
         $filePath = (string) ($this->argument('file') ?: base_path('bibles/misc/cross_references.txt'));
-        $chunkSize = max(1, (int) $this->option('chunk'));
+        // 11 columns per row, so the requested chunk can outrun the connection's bound-variable
+        // ceiling - 999 on SQLite builds older than 3.32, 65535 on MySQL.
+        $chunkSize = Helpers::getInsertChunkSize(11, NULL, max(1, (int) $this->option('chunk')));
 
         if(!is_file($filePath) || !is_readable($filePath)) {
             $this->error('File not found or not readable: ' . $filePath);

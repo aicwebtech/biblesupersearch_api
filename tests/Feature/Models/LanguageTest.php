@@ -66,4 +66,32 @@ class LanguageTest extends TestCase
             [ 'dne', false ], // does not exist
         ];
     }
+
+    /**
+     * denitLanguage() drops the language's book tables, so it must drop the 'book_list'
+     * attribute with them - that pairing is what initLanguage() establishes. A language left
+     * advertising book support it can no longer back resolves to no model class in
+     * Engine::actionBooks() and ExtrasAbstract::_renderBibleBookLists().
+     */
+    public function testDenitLanguageClearsBookSupport(): void
+    {
+        $code = 'qqy';
+
+        try {
+            $Language = $this->createLanguageFixture($code, 'Denit Test');
+            $Language->setAttr('book_list', 1);
+
+            $this->assertTrue(Language::hasBookSupport($code), 'Fixture was not flagged to begin with');
+
+            $Language->denitLanguage();
+
+            $this->assertFalse(Language::hasBookSupport($code));
+            $this->assertNotContains($code, Language::haveBookSupport());
+        }
+        finally {
+            // Every write is inside the try, so an assertion failure - or a throw between the
+            // two writes - cannot leave the fixture behind in the shared test database.
+            $this->removeLanguageFixture($code);
+        }
+    }
 }

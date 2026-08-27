@@ -66,23 +66,73 @@ class ParallelTest extends TestCase
         $this->assertCount(354, $results['bishops']);
     }
 
-    public function _testMaxResults() 
+    /**
+     * A broad un-paginated parallel search must stop at the configured ceilings. The flat
+     * passage formats are cut to the global maximum; the module-keyed formats are bounded only
+     * by the per-Bible parallel limit, since the global maximum has never applied to them.
+     */
+    public function testMaxResults() 
     {
-
-        // $this->markTestIncomplete('This test takes too long to run!');
-        
         if(!Bible::isEnabled('bishops')) {
             $this->markTestSkipped('Bible bishops not installed or enabled');
         }
 
+        // Lower the ceilings before the Engine is built. parallel_search_maximum_results is the
+        // SQL LIMIT applied per Bible, so this bounds the work without altering the code path
+        // under test. Laravel restores config between tests.
+        config([
+            'bss.parallel_search_maximum_results' => 60,
+            'bss.global_maximum_results'          => 20,
+        ]);
+
         if(config('bss.parallel_search_maximum_results') < config('bss.global_maximum_results')) {
-            $this->markTestSkipped('Parallel search maximum results is overall maximum results, skipping');
+            $this->markTestSkipped('Parallel search maximum results is less than overall maximum results, skipping');
         }
 
-        $Engine = Engine::getInstance();
+        $Engine = Engine::freshInstance();
+
+        // 'God' matches far more than 60 verses in each Bible, so both hit the parallel limit.
         $results = $Engine->actionQuery(['bible' => ['kjv','bishops'], 'search' => 'God', 'whole_words' => FALSE, 'page_all' => TRUE]);
+
         $this->assertTrue($Engine->hasErrors());
         $this->assertCount(config('bss.global_maximum_results'), $results);
+    }
+
+    /**
+     * The module-keyed data formats ('raw' / 'minimal' / 'simple') are keyed by Bible, so the
+     * global maximum - which slices the top level of the formatted result - never trimmed
+     * verses out of them. Each Bible keeps every row the per-Bible SQL limit allowed through,
+     * padded out to the union of matched references by the parallel aligner.
+     */
+    public function testMaxResultsRawFormatIsNotCutToGlobalMaximum() 
+    {
+        if(!Bible::isEnabled('bishops')) {
+            $this->markTestSkipped('Bible bishops not installed or enabled');
+        }
+
+        $parallel_max = 60;
+
+        config([
+            'bss.parallel_search_maximum_results' => $parallel_max,
+            'bss.global_maximum_results'          => 20,
+        ]);
+
+        $Engine = Engine::freshInstance();
+        $Engine->setDefaultDataType('raw');
+
+        $results = $Engine->actionQuery(['bible' => ['kjv','bishops'], 'search' => 'God', 'whole_words' => FALSE, 'page_all' => TRUE]);
+
+        $this->assertTrue($Engine->hasErrors());
+        $this->assertArrayHasKey('kjv', $results);
+        $this->assertArrayHasKey('bishops', $results);
+
+        // Both Bibles are aligned to the same reference list, so they come back the same size:
+        // the union of each Bible's $parallel_max matched references, and well over the global
+        // maximum that only ever applied to the flat passage formats.
+        $this->assertGreaterThan(config('bss.global_maximum_results'), count($results['kjv']));
+        $this->assertGreaterThanOrEqual($parallel_max, count($results['kjv']));
+        $this->assertLessThanOrEqual($parallel_max * 2, count($results['kjv']));
+        $this->assertCount(count($results['kjv']), $results['bishops']);
     }
 
     public function testPagination() 

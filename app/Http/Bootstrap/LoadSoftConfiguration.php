@@ -55,12 +55,21 @@ class LoadSoftConfiguration {
 
     }
 
+    /**
+     * Memoized: the server version cannot change within a process, and this bootstrapper runs
+     * on every application boot - which under PHPUnit means once per test, not once per request.
+     */
+    private static $mysql_version = NULL;
+
     private function getMysqlVersion() {
+        if(static::$mysql_version !== NULL) {
+            return static::$mysql_version;
+        }
+
         $pdo = DB::connection()->getPdo();
         $version = $pdo->query('select version()')->fetchColumn();
         preg_match("/^[0-9\.]+/", $version, $match);
 
-        $version = $match[0];
-        return $version;
+        return static::$mysql_version = $match[0];
     }
 }

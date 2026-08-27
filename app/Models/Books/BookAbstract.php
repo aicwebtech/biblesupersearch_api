@@ -494,9 +494,27 @@ class BookAbstract extends Model
             return true; // This has been successful previously
         }
 
-        Model::unguard();
-        \App\Importers\Database::importCSV($csv_file, $map, static::getClassNameByLanguage($language));
-        Model::reguard();
+        // The generated class needs its table to exist, so it can only be resolved now. The
+        // strict lookup is required here: getClassNameByLanguage() falls back to the default
+        // language's model, which would import this CSV straight into books_en (harmless only
+        // because the insert ignores existing ids) and leave the table just created empty.
+        $class_name = static::getClassNameByLanguageStrict($language);
+
+        if(!$class_name) {
+            Schema::dropIfExists($tn);
+            return false;
+        }
+
+        try {
+            Model::unguard();
+            \App\Importers\Database::importCSV($csv_file, $map, $class_name);
+        }
+        finally {
+            // An import that throws must not leave Eloquent globally unguarded for the rest of
+            // the process - app:install-testing catches one language's failure and carries on
+            // importing the next 48.
+            Model::reguard();
+        }
 
         self::clearAllBooksCache($language);
         DatabaseSeeder::setCreatedUpdated($tn);
@@ -517,9 +535,22 @@ class BookAbstract extends Model
             return false;
         }
 
-        Model::unguard();
-        \App\Importers\Database::importCSV($csv_file, $map, static::getClassNameByLanguage($language));
-        Model::reguard();
+        // Strict, for the same reason as createTableAndMigrateFromCsv(): a language that cannot
+        // resolve its own model must not have its CSV imported into the default language's table.
+        $class_name = static::getClassNameByLanguageStrict($language);
+
+        if(!$class_name) {
+            return false;
+        }
+
+        try {
+            Model::unguard();
+            \App\Importers\Database::importCSV($csv_file, $map, $class_name);
+        }
+        finally {
+            // See createTableAndMigrateFromCsv().
+            Model::reguard();
+        }
 
         self::clearAllBooksCache($language);
         DatabaseSeeder::setCreatedUpdated($tn);

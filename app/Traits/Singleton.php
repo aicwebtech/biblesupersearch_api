@@ -28,6 +28,16 @@ trait Singleton
         return static::getInstance();
     }
 
+    /**
+     * Discard the current instance without building a replacement.
+     * The next getInstance() call constructs one lazily, so callers that only
+     * need the stale instance gone (test isolation) do not pay for a new one.
+     */
+    public static function resetInstance(): void
+    {
+        static::$instance = NULL;
+    }
+
     public static function generateInstance() 
     {
         $Instance = NULL;

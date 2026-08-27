@@ -98,19 +98,36 @@ abstract class RenderAbstract
 
         App::setLocale($this->Bible->lang_short);
 
-        $success = $this->_renderStart();
+        try {
+            $success = $this->_renderStart();
 
-        if(!$success) {
-            return FALSE;
+            if(!$success) {
+                return FALSE;
+            }
+
+            $this->_beforeVerseRender();
+
+            try {
+                $this->_verseRender();
+                $this->_afterVerseRender();
+            }
+            catch(\Throwable $e) {
+                // RenderManager catches per-Bible failures and moves on to the next Bible, so any
+                // resource _beforeVerseRender() opened has to be released here or it stays open
+                // for the rest of the process.
+                $this->_onVerseRenderError($e);
+                throw $e;
+            }
+
+            $success = $this->_renderFinish();
         }
-
-        $this->_beforeVerseRender();
-        $this->_verseRender();
-        $this->_afterVerseRender();
-
-        $success = $this->_renderFinish();
-
-        App::setLocale($locale_cache);
+        finally {
+            // Neither the throw above nor the early return can be allowed to skip this. Because
+            // RenderManager moves on to the next Bible, a locale left pointing at the failed
+            // Bible's language would follow it: every later Bible would render its copyright
+            // block and book names under the wrong locale.
+            App::setLocale($locale_cache);
+        }
 
         if(function_exists('posix_getuid')) {
             // Method DNE on Windows, so we only do this on POSIX systems        
@@ -267,8 +284,10 @@ abstract class RenderAbstract
             $this->chunk_data = [];
         };
 
-        $Query->orderBy($table . '.id');
-        $Query->chunk($this->chunk_size, $closure);
+        // chunkById pages with `where id > ?` instead of OFFSET. Under chunk() each successive
+        // page made the database walk (and discard) every row before it, so the cost grew with
+        // the offset - expensive over a 31k-row verse table joined to the book table.
+        $Query->chunkById($this->chunk_size, $closure, $table . '.id', 'id');
         return true;
     }
 
@@ -333,6 +352,15 @@ abstract class RenderAbstract
      * Usage: Finishing pages
      */
     protected function _afterVerseRender() { }
+
+    /**
+     * Code to be executed when verse rendering throws, in place of _afterVerseRender().
+     * Usage: releasing whatever _beforeVerseRender() acquired. The exception is re-thrown
+     * afterwards, so this must not swallow it.
+     *
+     * @param \Throwable $e
+     */
+    protected function _onVerseRenderError(\Throwable $e) { }
 
     protected function _getBookTable() 
     {

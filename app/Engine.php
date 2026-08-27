@@ -368,7 +368,11 @@ class Engine implements ErrorInterface
         }
 
         $this->setDefaultLanguage($input['language']);
-        !empty($input['bible']) && $this->setBibles($input['bible']);
+        // Always reset the Bible set. A reused Engine (it is a singleton) would otherwise
+        // carry the previous query's Bibles into a request that named none, silently
+        // running against them - and, since $multi_bibles is derived from the resulting
+        // set below, silently taking the parallel search path too.
+        $this->setBibles(!empty($input['bible']) ? $input['bible'] : config('bss.defaults.bible'));
         $multi_bible_languages = $this->hasMultipleBibleLanguages();
         $languages = $this->getLanguagesWithDefault();
 
@@ -607,6 +611,23 @@ class Engine implements ErrorInterface
             );
         }
 
+        // Same treatment for un-paginated (page_all) parallel searches that return a flat
+        // passage list: cap the aligned set to the global maximum *before* formatting, instead
+        // of building a passage for every matched verse across every Bible and slicing the
+        // overflow off afterwards. Restricted to the flat formats on purpose - the module-keyed
+        // formats ('minimal'/'raw'/'simple') are keyed by Bible, so the post-format slice below
+        // only ever trimmed Bibles, never verses, and they must keep every row the SQL limit
+        // (parallel_search_maximum_results) let through.
+        $parallel_cap = ($input['multi_bibles'] && !$paginate && $Search &&
+            !$input['results_list'] && !$input['group_passage_search_results'] &&
+            in_array($this->_getDataFormatType($input), ['passage', 'lite']));
+
+        if($parallel_cap) {
+            list($results, ) = $this->_sliceMultiBibleResultsToPage(
+                $results, (int) config('bss.global_maximum_results'), 1
+            );
+        }
+
         $results = $this->_formatDataStructure($results, $input, $Passages, $Search);
 
         if($parallel_paginate) {
@@ -624,7 +645,8 @@ class Engine implements ErrorInterface
             $results = $Paginator->all();
             $paging = $this->_getCleanPagingData($Paginator);
         }
-        elseif(($input['multi_bibles'] || $input['results_list']) && !$paginate) {
+        elseif(!$parallel_cap && ($input['multi_bibles'] || $input['results_list']) && !$paginate) {
+            // $parallel_cap already capped this set before formatting.
             $results = array_slice($results, 0, config('bss.global_maximum_results'));
         }
 
@@ -1030,8 +1052,39 @@ class Engine implements ErrorInterface
             foreach($list as $lang) {
                 $namespaced_class = \App\Models\Books\BookAbstract::getClassNameByLanguageStrict($lang);
 
-                // $namespaced_class = 'App\Models\Books\\' . ucfirst($lang);
-                $books_by_lang[$lang] = $namespaced_class::select('id', 'name', 'shortname')->orderBy('id', 'ASC') -> get() -> all();
+                // A language keeps its 'book_list' attribute even if its books_<lang> table goes
+                // away, so an advertised language is not necessarily a queryable one. Skipping is
+                // the only safe response here: calling into FALSE is a fatal that takes down the
+                // request for every other language too.
+                if(!$namespaced_class) {
+                    continue;
+                }
+
+                try {
+                    $books_by_lang[$lang] = $namespaced_class::select('id', 'name', 'shortname')->orderBy('id', 'ASC') -> get() -> all();
+                }
+                catch(\Illuminate\Database\QueryException $e) {
+                    // A class resolved once is cached for the rest of the process, table or no
+                    // table, so the check above cannot catch a table dropped after it loaded.
+                    // Confirm that is what went wrong - probing the schema only here, on the
+                    // failure path, rather than for all ~50 languages on every request - and let
+                    // anything else through. A lost connection or a genuine query fault must
+                    // surface as an error, not as a short list the caller cannot tell from a
+                    // complete one.
+                    if(\Schema::hasTable((new $namespaced_class)->getTable())) {
+                        throw $e;
+                    }
+
+                    try {
+                        \Log::warning('actionBooks: skipping language ' . $lang . ' - ' . $e->getMessage());
+                    }
+                    catch(\Throwable $ignored) {
+                        // An unwritable log target must not turn a skipped language back into
+                        // the failed request this whole branch exists to prevent.
+                    }
+
+                    continue;
+                }
             }
 
             return $books_by_lang;
@@ -1191,7 +1244,11 @@ class Engine implements ErrorInterface
 
         $input = $this->_sanitizeInput($input, $parsing);
         $this->setDefaultLanguage($input['language']);
-        !empty($input['bible']) && $this->setBibles($input['bible']);
+        // Always reset the Bible set. A reused Engine (it is a singleton) would otherwise
+        // carry the previous query's Bibles into a request that named none, silently
+        // running against them - and, since $multi_bibles is derived from the resulting
+        // set below, silently taking the parallel search path too.
+        $this->setBibles(!empty($input['bible']) ? $input['bible'] : config('bss.defaults.bible'));
 
         $input['bible'] = array_keys($this->Bibles);
         $parallel = $input['multi_bibles'] = (count($input['bible']) > 1);
@@ -1388,10 +1445,15 @@ class Engine implements ErrorInterface
         return InstallManager::getChecklist();
     }
 
-    protected function _formatDataStructure($results, $input, $Passages, $Search) 
+    /**
+     * Resolves the requested data format (or its alias) to the formatter it maps to.
+     *
+     * @param array $input
+     * @return string One of 'minimal', 'passage', 'lite', 'simple'
+     */
+    protected function _getDataFormatType($input): string
     {
         $format_type = (!empty($input['data_format'])) ? $input['data_format'] : $this->default_data_format;
-        $parallel_unmatched_verses = TRUE;
 
         // Defines avaliable data formats and their aliases
         $format_map = array(
@@ -1402,7 +1464,13 @@ class Engine implements ErrorInterface
             'simple'    => 'simple',
         );
 
-        $format_type  = (array_key_exists($format_type, $format_map)) ? $format_map[$format_type] : 'passage';
+        return (array_key_exists($format_type, $format_map)) ? $format_map[$format_type] : 'passage';
+    }
+
+    protected function _formatDataStructure($results, $input, $Passages, $Search) 
+    {
+        $parallel_unmatched_verses = TRUE;
+        $format_type  = $this->_getDataFormatType($input);
         $format_class = '\App\Formatters\\' . ucfirst($format_type);
 
         // This doesn't work right!

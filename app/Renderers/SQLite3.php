@@ -4,6 +4,7 @@ namespace App\Renderers;
 
 use \DB;
 use \Schema;
+use App\Helpers;
 use Illuminate\Database\Schema\Blueprint;
 
 class SQLite3 extends RenderAbstract 
@@ -26,7 +27,10 @@ class SQLite3 extends RenderAbstract
     protected $file_extension = 'sqlite';
     protected $include_book_name = FALSE;
 
-    protected $chuck_size = 3000;
+    // Rows per SELECT page from the source DB, and per INSERT batch into the rendered file.
+    // Recomputed in _renderStart() from the bound-variable ceiling the SQLite build writing the
+    // file actually enforces, which varies by build - see Helpers::getMaxBoundVariables().
+    protected $chunk_size = 1000;
 
     protected $TableVerses = null;
 
@@ -71,6 +75,10 @@ class SQLite3 extends RenderAbstract
             $table->index(['book', 'chapter', 'verse'], 'ixbcv'); // Composite index on b, c, v
         });
 
+        // A chunk binds every verse column in one INSERT, so the batch has to fit the variable
+        // ceiling of the SQLite build writing this file, which is compile-time configurable.
+        $this->chunk_size = Helpers::getInsertChunkSize($this->include_book_name ? 5 : 4, $cn);
+
         $info = $this->Bible->getMeta();
         $info['copyright_statement'] = $this->_getCopyrightStatement(TRUE);
         $meta = [];
@@ -82,6 +90,30 @@ class SQLite3 extends RenderAbstract
         DB::connection($cn)->table('meta')->insert($meta);
         
         return TRUE;
+    }
+
+    /**
+     * Render every verse inside one transaction. Each chunk insert would otherwise be its own
+     * implicit transaction, so SQLite would flush the file to disk once per chunk.
+     */
+    protected function _beforeVerseRender() 
+    {
+        DB::connection( $this->getDbConnectionName('render') )->beginTransaction();
+    }
+
+    protected function _afterVerseRender() 
+    {
+        DB::connection( $this->getDbConnectionName('render') )->commit();
+    }
+
+    /**
+     * Roll the render transaction back when a verse chunk throws. RenderManager keeps going
+     * with the next Bible after an exception, so an abandoned transaction would otherwise hold
+     * a write lock and a -journal file open for the rest of the process.
+     */
+    protected function _onVerseRenderError(\Throwable $e) 
+    {
+        DB::connection( $this->getDbConnectionName('render') )->rollBack();
     }
 
     protected function _renderVerseChunk() 

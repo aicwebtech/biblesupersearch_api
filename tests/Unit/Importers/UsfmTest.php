@@ -159,6 +159,38 @@ class UsfmTest extends TestCase
         $this->assertCount(0, $imp->recorded);
     }
 
+    /**
+     * Skipping a non-book file emits a console notice, which must not reach through to a
+     * facade that has no live application behind it. Anything booting Laravel earlier in the
+     * process leaves the 'App' class alias loadable, so a guard based on class_exists() reads
+     * as satisfied here even though the facade root is gone. Pinned deterministically by
+     * installing a container that is not an Application.
+     */
+    public function testNonBookFileIsSkippedWithoutALiveFacadeRoot(): void
+    {
+        $cached = \Illuminate\Support\Facades\Facade::getFacadeApplication();
+
+        // Reproduce what an earlier feature test leaves behind: the 'App' class alias
+        // resolvable, but no Application behind the facades.
+        \Illuminate\Foundation\AliasLoader::getInstance(['App' => \Illuminate\Support\Facades\App::class])->register();
+        $this->assertTrue(class_exists('App'), 'Alias must be loadable for this test to be meaningful');
+
+        try {
+            \Illuminate\Support\Facades\Facade::setFacadeApplication(new \Illuminate\Container\Container());
+
+            $content = "\\id FRT - Front Matter\n\\p Some introduction text.\n";
+            [$Zip, $entry, $path] = $this->makeZip('00FRT.sfm', $content);
+
+            $imp = $this->makeImporter();
+            $imp->callZipImportHelper($Zip, $entry);
+            $this->cleanup($Zip, $path);
+
+            $this->assertCount(0, $imp->recorded);
+        } finally {
+            \Illuminate\Support\Facades\Facade::setFacadeApplication($cached);
+        }
+    }
+
     // -----------------------------------------------------------------------
     // Item 5: a bare "\v N" marker with the text on following lines must import
     // -----------------------------------------------------------------------

@@ -78,17 +78,22 @@ class RenderedFileTest extends TestCase
 
     /**
      *  @depen_ds testRenderedCsv
-     */ 
-    public function testRenderedCopyright() 
+     *
+     * The copyright block is assembled by _getCopyrightStatement(), so the config permutations
+     * are asserted against that directly. Force-rendering the whole KJV for each permutation
+     * costs ~300 chunked queries and a 5MB file write, to read one line back. A single real
+     * render still runs at the end, pinning the statement to its position in the file.
+     */
+    public function testRenderedCopyright()
     {
         // Cache the existing config value
         $cache_deriv_cr = config('download.derivative_copyright_statement');
         $cache_bss_link = config('download.bss_link_enable');
         $cache_app_link = config('download.app_link_enable');
-        
+
         // Set some test values
         $test_deriv_cr = 'Big test of copyright year YYYY 12343123'; // YYYY is replaced with current year
-        
+
         $find_deriv_cr = 'Big test of copyright year ' . date('Y') . ' 12343123';
         $find_bss_url = 'www.BibleSuperSearch.com';
         $find_app_url = config('app.url');
@@ -106,15 +111,7 @@ class RenderedFileTest extends TestCase
         $this->assertFalse(config('download.app_link_enable'));
         $this->assertFalse(config('download.bss_link_enable'));
 
-        $this->assertTrue( $Renderer->render(TRUE, TRUE) ); // Force render
-        $file_path = $Renderer->getRenderFilePath();
-        $this->assertFileExists($file_path);
-        $file_data = file($file_path);
-
-        $this->assertIsArray($file_data);
-        $this->assertArrayHasKey(3, $file_data);
-
-        $cr = str_getcsv($file_data[3], escape: $this->csvesc)[0];
+        $cr = $this->_copyrightStatement($Renderer);
 
         $this->assertStringNotContainsString($find_deriv_cr, $cr);
         $this->assertStringNotContainsString($find_bss_url, $cr);
@@ -132,15 +129,7 @@ class RenderedFileTest extends TestCase
         $this->assertTrue(config('download.app_link_enable'));
         $this->assertFalse(config('download.bss_link_enable'));
 
-        $this->assertTrue( $Renderer->render(TRUE, TRUE) ); // Force render
-        $file_path = $Renderer->getRenderFilePath();
-        $this->assertFileExists($file_path);
-        $file_data = file($file_path);
-
-        $this->assertIsArray($file_data);
-        $this->assertArrayHasKey(3, $file_data);
-
-        $cr = str_getcsv($file_data[3], escape: $this->csvesc)[0];
+        $cr = $this->_copyrightStatement($Renderer);
 
         $this->assertStringNotContainsString($find_deriv_cr, $cr);
         $this->assertStringNotContainsString($find_bss_url, $cr);
@@ -157,48 +146,36 @@ class RenderedFileTest extends TestCase
         $this->assertTrue(config('download.app_link_enable'));
         $this->assertTrue(config('download.bss_link_enable'));
 
-        $this->assertTrue( $Renderer->render(TRUE, TRUE) ); // Force render
-        $file_path = $Renderer->getRenderFilePath();
-        $this->assertFileExists($file_path);
-        $file_data = file($file_path);
-
-        $this->assertIsArray($file_data);
-        $this->assertArrayHasKey(3, $file_data);
-
-        $cr = str_getcsv($file_data[3], escape: $this->csvesc)[0];
+        $cr = $this->_copyrightStatement($Renderer);
 
         $this->assertStringNotContainsString($find_deriv_cr, $cr);
-        
+
+        // Guard retained from the original test: under config caching a runtime config()
+        // override may not reach the renderer.
         if(!config('app.config_cache')) {
-            // $this->assertStringContainsString($find_bss_url, $cr);
-            // $this->assertStringContainsString($find_app_url, $cr);
+            $this->assertStringContainsString($find_bss_url, $cr);
+            $this->assertStringContainsString($find_app_url, $cr);
         }
 
         // Add a deriv copyright statement
         config(['download.derivative_copyright_statement' => $test_deriv_cr]);
         $this->assertEquals($test_deriv_cr, config('download.derivative_copyright_statement'));
 
-        $this->assertTrue( $Renderer->render(TRUE, TRUE) ); // Force render
-        $file_path = $Renderer->getRenderFilePath();
-        $this->assertFileExists($file_path);
-        $file_data = file($file_path);
-
-        $this->assertIsArray($file_data);
-        $this->assertArrayHasKey(3, $file_data);
-
-        $cr = str_getcsv($file_data[3], escape: $this->csvesc)[0];
+        $cr = $this->_copyrightStatement($Renderer);
 
         $this->assertStringContainsString($find_deriv_cr, $cr);
         $this->assertStringContainsString($find_bss_url, $cr);
         $this->assertStringContainsString($find_app_url, $cr);
 
-        // Revert to cached 
+        // Revert to cached
         config([
             'download.derivative_copyright_statement' => $cache_deriv_cr,
             'download.bss_link_enable' => $cache_bss_link,
             'download.app_link_enable' => $cache_app_link,
         ]);
 
+        // The one real render: proves the statement asserted on above is exactly what lands on
+        // line 4 of the rendered file, so the direct calls above are testing the right string.
         $this->assertTrue( $Renderer->render(TRUE, TRUE) ); // Force render
         $file_path = $Renderer->getRenderFilePath();
         $this->assertFileExists($file_path);
@@ -208,6 +185,9 @@ class RenderedFileTest extends TestCase
         $this->assertArrayHasKey(3, $file_data);
 
         $cr = str_getcsv($file_data[3], escape: $this->csvesc)[0];
+
+        $this->assertEquals($this->_copyrightStatement($Renderer), $cr,
+            'The rendered copyright line must match _getCopyrightStatement()');
 
         if($cache_deriv_cr) {
             $this->assertStringNotContainsString($cache_deriv_cr, $cr);
@@ -219,7 +199,7 @@ class RenderedFileTest extends TestCase
         else {
             $this->assertStringNotContainsString($find_bss_url, $cr);
         }
-        
+
         if($cache_app_link) {
             $this->assertStringContainsString($find_app_url, $cr);
         }
@@ -368,6 +348,128 @@ class RenderedFileTest extends TestCase
         $this->assertStringContainsString('Amen', $verse->text);
     }
 
+    /**
+     * The SQLite renderer batches a whole chunk of verses into one INSERT, so the batch has to
+     * fit the bound-variable ceiling of the SQLite build writing the file. That ceiling is
+     * compile-time configurable and varies between builds, so the chunk size is derived from
+     * the render connection rather than hard-coded.
+     */
+    public function testSqliteChunkSizeFitsTheBoundVariableCeiling() 
+    {
+        $Renderer = $this->_scratchSqliteRenderer();
+
+        $Start = new \ReflectionMethod($Renderer, '_renderStart');
+        $this->assertTrue($Start->invoke($Renderer));
+
+        $connection = $Renderer->renderConnectionName();
+        $chunk_size = (new \ReflectionProperty($Renderer, 'chunk_size'))->getValue($Renderer);
+
+        // 4 columns are bound per verse row (include_book_name is FALSE on this renderer).
+        $columns = 4;
+        $max     = \App\Helpers::getMaxBoundVariables($connection);
+
+        $this->assertGreaterThan(0, $chunk_size);
+        $this->assertLessThanOrEqual($max, $chunk_size * $columns);
+        $this->assertEquals(\App\Helpers::getInsertChunkSize($columns, $connection), $chunk_size);
+
+        // Modern SQLite has headroom for the full batch; only pre-3.32 builds get less.
+        if($max >= 1000 * $columns) {
+            $this->assertEquals(1000, $chunk_size);
+        }
+
+        $Renderer->cleanUp();
+    }
+
+    /**
+     * RenderManager catches a per-Bible render failure and carries on with the next Bible, so a
+     * throw mid-render must not leave the render transaction open - it would hold a write lock
+     * and a journal file for the rest of the process.
+     */
+    public function testSqliteRollsBackTheRenderTransactionWhenAChunkFails() 
+    {
+        $Renderer = $this->_scratchSqliteRenderer(TRUE);
+
+        try {
+            $Renderer->render(TRUE);
+            $this->fail('Expected the failing verse chunk to propagate out of render()');
+        }
+        catch(\RuntimeException $e) {
+            $this->assertEquals('Simulated chunk insert failure', $e->getMessage());
+        }
+
+        $connection = $Renderer->renderConnectionName();
+
+        $this->assertEquals(0, \DB::connection($connection)->transactionLevel(), 'Render transaction was left open');
+
+        // No lock survives the rollback, so the file is still writable.
+        \DB::connection($connection)->table('verses')->insert([
+            'book' => 1, 'chapter' => 1, 'verse' => 1, 'text' => 'post-rollback write',
+        ]);
+
+        $this->assertEquals(1, \DB::connection($connection)->table('verses')->count());
+
+        $Renderer->cleanUp();
+    }
+
+    /**
+     * A SQLite3 renderer writing to a scratch file instead of the shared rendered/ directory,
+     * optionally failing on its first verse chunk.
+     */
+    private function _scratchSqliteRenderer(bool $fail_on_chunk = FALSE) 
+    {
+        $Renderer = new class('kjv') extends \App\Renderers\SQLite3 {
+            public $scratch_path;
+            public $fail_on_chunk = FALSE;
+
+            public function getRenderFilePath($create_dir = FALSE, $relative = false) 
+            {
+                return $this->scratch_path;
+            }
+
+            public function renderConnectionName() 
+            {
+                return $this->getDbConnectionName('render');
+            }
+
+            public function cleanUp() 
+            {
+                \DB::disconnect($this->renderConnectionName());
+
+                foreach(['', '-journal', '-wal', '-shm'] as $suffix) {
+                    if(is_file($this->scratch_path . $suffix)) {
+                        unlink($this->scratch_path . $suffix);
+                    }
+                }
+            }
+
+            protected function _renderVerseChunk() 
+            {
+                if($this->fail_on_chunk) {
+                    throw new \RuntimeException('Simulated chunk insert failure');
+                }
+
+                parent::_renderVerseChunk();
+            }
+        };
+
+        $Renderer->scratch_path  = tempnam(sys_get_temp_dir(), 'bss_render_');
+        $Renderer->fail_on_chunk = $fail_on_chunk;
+
+        return $Renderer;
+    }
+
+    /**
+     * Read a renderer's copyright block without widening its visibility in production code.
+     * No setAccessible() call: reflection ignores visibility from PHP 8.1, and the method is
+     * deprecated in 8.5.
+     */
+    private function _copyrightStatement($Renderer) 
+    {
+        $Method = new \ReflectionMethod($Renderer, '_getCopyrightStatement');
+
+        return $Method->invoke($Renderer, TRUE, '  ');
+    }
+
     private function _parsePlainText($row) 
     {
         // First, find chapter:verse
@@ -384,4 +486,137 @@ class RenderedFileTest extends TestCase
             'text'      => $p[1],
         ];
     }
+
+    /**
+     * A render that throws has to put the locale back. RenderManager catches per-Bible failures
+     * and continues to the next Bible, so a locale left pointing at the failed Bible's language
+     * would follow it - every later Bible would render its copyright block and book names in the
+     * wrong language.
+     */
+    public function testRenderRestoresTheLocaleWhenTheVerseRenderThrows()
+    {
+        $locale_before = \App::getLocale();
+        $Renderer = new ThrowingVerseRenderCsv('luther');
+
+        // A Bible in another language, or the locale never moves off the default and the
+        // assertion below passes no matter what render() does.
+        $this->assertNotEquals($locale_before, $Renderer->bibleLanguage());
+
+        try {
+            $Renderer->render(TRUE);
+            $this->fail('The render was expected to throw');
+        }
+        // A dedicated class, not \RuntimeException: PHPUnit's AssertionFailedError extends
+        // RuntimeException, so the broader catch would swallow the fail() above and pass the
+        // test on the one outcome it exists to catch.
+        catch(VerseRenderFailure $e) {
+            $this->assertEquals('Verse render failed', $e->getMessage());
+            $this->assertEquals($locale_before, \App::getLocale(), 'The locale was left set to the failed Bible\'s language');
+        }
+        finally {
+            \App::setLocale($locale_before);
+            $Renderer->removeRenderFile();
+        }
+    }
+
+    /**
+     * _renderStart() opens the file and only _renderFinish() closes it, so a verse render that
+     * throws would leak the handle for the rest of the process - RenderManager carries on to the
+     * next Bible - and leave the half-written file locked on Windows.
+     */
+    public function testRenderClosesTheFileWhenTheVerseRenderThrows()
+    {
+        $locale_before = \App::getLocale();
+        $Renderer = new ThrowingVerseRenderCsv('luther');
+
+        try {
+            $Renderer->render(TRUE);
+            $this->fail('The render was expected to throw');
+        }
+        catch(VerseRenderFailure $e) {
+            $this->assertFalse($Renderer->hasOpenFileHandle(), 'The render file handle was left open after a failed render');
+        }
+        finally {
+            \App::setLocale($locale_before);
+            $Renderer->removeRenderFile();
+        }
+    }
+
+    /**
+     * The same applies to the early return when _renderStart() reports failure. That path throws
+     * nothing, so a locale left behind is the only trace it leaves.
+     */
+    public function testRenderRestoresTheLocaleWhenRenderStartFails()
+    {
+        $locale_before = \App::getLocale();
+        $Renderer = new FailingRenderStartCsv('luther');
+
+        $this->assertNotEquals($locale_before, $Renderer->bibleLanguage());
+
+        try {
+            $this->assertFalse($Renderer->render(TRUE));
+            $this->assertEquals($locale_before, \App::getLocale(), 'The locale was left set to the failed Bible\'s language');
+        }
+        finally {
+            \App::setLocale($locale_before);
+            $Renderer->removeRenderFile();
+        }
+    }
+}
+
+/**
+ * A CSV renderer that writes outside the real render directory.
+ *
+ * Named rather than anonymous on purpose: getRenderFilePath() builds its directory from the
+ * class's short name, and an anonymous class's short name carries a null byte that mkdir()
+ * rejects.
+ */
+abstract class LocaleRestoreCsvDouble extends \App\Renderers\Csv
+{
+    public function bibleLanguage(): string
+    {
+        return $this->Bible->lang_short;
+    }
+
+    public function getRenderFilePath($create_dir = FALSE, $relative = false)
+    {
+        return sys_get_temp_dir() . '/bss_locale_restore_' . $this->Bible->module . '.' . $this->file_extension;
+    }
+
+    public function hasOpenFileHandle(): bool
+    {
+        return is_resource($this->handle);
+    }
+
+    public function removeRenderFile(): void
+    {
+        $path = $this->getRenderFilePath();
+
+        if(is_file($path)) {
+            unlink($path);
+        }
+    }
+}
+
+/** Fails part way through the verses, after _beforeVerseRender() has opened the file. */
+class ThrowingVerseRenderCsv extends LocaleRestoreCsvDouble
+{
+    protected function _verseRender()
+    {
+        throw new VerseRenderFailure('Verse render failed');
+    }
+}
+
+/** Fails on the way in, taking render()'s early return. */
+class FailingRenderStartCsv extends LocaleRestoreCsvDouble
+{
+    protected function _renderStart()
+    {
+        return FALSE;
+    }
+}
+
+/** Distinct from \RuntimeException so a catch for it cannot also swallow PHPUnit's failures. */
+class VerseRenderFailure extends \RuntimeException
+{
 }

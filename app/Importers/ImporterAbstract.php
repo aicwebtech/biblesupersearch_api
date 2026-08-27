@@ -53,6 +53,8 @@ abstract class ImporterAbstract
     protected $required = ['module', 'lang_short']; // Array of required fields (for specific importer type);
 
     protected $_insertable = [];
+    // Verses buffered before a batch INSERT flushes. Clamped in _insertVerses() to what the
+    // connection's bound-variable ceiling allows.
     protected $_insert_threshold = 200;
 
     // Formats for incoming markup
@@ -428,14 +430,33 @@ abstract class ImporterAbstract
      */
     protected function _echoIfConsole(string $message): void
     {
-        if(class_exists('App') && \App::runningInConsole()) {
+        // Ask the facades for their application rather than testing class_exists('App'):
+        // that only reports whether the class alias is loadable, which becomes true for the
+        // rest of the process as soon as anything boots Laravel - so a pure PHPUnit test
+        // running after a feature test would call through to a facade with no live root.
+        $App = \Illuminate\Support\Facades\Facade::getFacadeApplication();
+
+        if($App instanceof \Illuminate\Contracts\Foundation\Application && $App->runningInConsole()) {
             echo($message . PHP_EOL);
         }
     }
 
     protected function _insertVerses()
     {
-        DB::table($this->_table)->insert($this->_insertable);
+        if(empty($this->_insertable)) {
+            $this->_insertable = [];
+            return;
+        }
+
+        // Each row binds one placeholder per column, so a single INSERT of the whole buffer can
+        // outrun the connection's bound-variable ceiling - 999 on SQLite builds older than 3.32.
+        $columns = count(reset($this->_insertable));
+        $chunk   = \App\Helpers::getInsertChunkSize($columns, NULL, count($this->_insertable));
+
+        foreach(array_chunk($this->_insertable, $chunk) as $batch) {
+            DB::table($this->_table)->insert($batch);
+        }
+
         $this->_insertable = [];
     }
 
