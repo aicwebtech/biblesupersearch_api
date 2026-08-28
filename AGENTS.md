@@ -28,7 +28,7 @@ guidelines block here for every agent (`config/boost.php` points Claude Code at 
 rather than at its `CLAUDE.md` default).
 
 * .ai/skills => all skills, canonical; .claude/skills and .github/skills mirror it per-skill so
-  Claude Code and Copilot each find them (run `php artisan boost:install` to regenerate)
+  Claude Code and Copilot each find them (`php artisan boost:install --skills` regenerates them)
 * .ai/env.md => environment-specific steering (if present); takes precedence over everything here
 
 ## Paths Specific to This Application
