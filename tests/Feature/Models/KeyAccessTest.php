@@ -179,6 +179,13 @@ class KeyAccessTest extends TestCase
         $Key = new ApiKey;
         $Key->key = $key_hash;
         $Key->access_level_id = $access_level_id ?: ApiAccessLevel::BASIC;
+
+        // api_keys.user_id is NOT NULL with no default. MySQL in a non-strict mode fills it
+        // with 0 silently - which is what every existing row holds - but SQLite rejects the
+        // insert, so these tests only ever ran on MySQL. Set it explicitly to keep the same
+        // stored value on both.
+        $Key->user_id = 0;
+
         $Key->save();
 
         return $key_hash;
