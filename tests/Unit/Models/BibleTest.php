@@ -157,4 +157,161 @@ class BibleTest extends TestCase
         // Two partial-OT Bibles with overlapping books are unioned, deduped and sorted.
         $this->assertSame([1, 2, 5, 32], Bible::mergeBookLists(['1,2,32', '5,32,1']));
     }
+
+    /**
+     * Builds an unsaved Bible. Everything below reads attributes or static paths only.
+     *
+     * @param array<string, mixed> $attributes
+     */
+    private function makeBible(array $attributes = []): Bible
+    {
+        $bible = new Bible();
+
+        foreach ($attributes as $key => $value) {
+            $bible->{$key} = $value;
+        }
+
+        return $bible;
+    }
+
+    // -----------------------------------------------------------------------
+    // Module file export format
+    // -----------------------------------------------------------------------
+
+    /**
+     * The export field order is the module file format. The source warns that new fields must
+     * be appended and existing ones never reordered, or previously exported modules stop
+     * importing - so the order is pinned here exactly.
+     */
+    public function testExportFieldOrderIsFrozen(): void
+    {
+        $this->assertSame(
+            ['book', 'chapter', 'verse', 'text', 'italics', 'strongs'],
+            Bible::getExportFields()
+        );
+    }
+
+    public function testExportDelimiterIsFrozen(): void
+    {
+        $this->assertSame('|', Bible::getExportDelimiter());
+    }
+
+    /**
+     * The delimiter must not be a character the export fields themselves contain, or a row
+     * could not be split back apart.
+     */
+    public function testTheDelimiterDoesNotAppearInAnyFieldName(): void
+    {
+        foreach (Bible::getExportFields() as $field) {
+            $this->assertStringNotContainsString(Bible::getExportDelimiter(), $field);
+        }
+    }
+
+    // -----------------------------------------------------------------------
+    // Module file locations
+    // -----------------------------------------------------------------------
+
+    public function testModuleFileNameIsTheModuleWithAZipExtension(): void
+    {
+        $this->assertSame('kjv.zip', $this->makeBible(['module' => 'kjv'])->getModuleFileName());
+    }
+
+    /**
+     * Official modules are versioned in git under bibles/modules; unofficial ones are kept
+     * out of it under bibles/unofficial. Filing one in the wrong place would either commit a
+     * third-party Bible or lose an official one.
+     */
+    public function testAnOfficialModuleIsFiledUnderModules(): void
+    {
+        $bible = $this->makeBible(['module' => 'kjv', 'official' => 1]);
+
+        $this->assertStringEndsWith('bibles/modules/kjv.zip', $bible->getModuleFilePath());
+    }
+
+    public function testAnUnofficialModuleIsFiledUnderUnofficial(): void
+    {
+        $bible = $this->makeBible(['module' => 'somebible', 'official' => 0]);
+
+        $this->assertStringEndsWith('bibles/unofficial/somebible.zip', $bible->getModuleFilePath());
+    }
+
+    public function testTheShortModulePathIsRelativeToTheProjectRoot(): void
+    {
+        $this->assertSame('bibles/modules/', Bible::getModulePath(true));
+        $this->assertSame('bibles/unofficial/', Bible::getUnofficialModulePath(true));
+    }
+
+    public function testTheLongModulePathIsAbsolute(): void
+    {
+        $this->assertStringStartsWith('/', Bible::getModulePath());
+        $this->assertStringEndsWith('bibles/modules/', Bible::getModulePath());
+    }
+
+    public function testTheDedicatedShortPathHelpersMatchTheFlaggedForm(): void
+    {
+        $this->assertSame(Bible::getModulePath(true), Bible::getModulePathShort());
+        $this->assertSame(Bible::getUnofficialModulePath(true), Bible::getUnofficialModulePathShort());
+    }
+
+    // -----------------------------------------------------------------------
+    // Copyright statement
+    // -----------------------------------------------------------------------
+
+    public function testTheCopyrightStatementIsTrimmedOnWrite(): void
+    {
+        $bible = $this->makeBible(['copyright_statement' => "  Public domain.  \n"]);
+
+        $this->assertSame('Public domain.', $bible->getAttributes()['copyright_statement']);
+    }
+
+    /**
+     * A null statement is normalised to an empty string rather than stored as null, so the
+     * column has one representation of "unset".
+     */
+    public function testANullCopyrightStatementBecomesAnEmptyString(): void
+    {
+        $bible = $this->makeBible(['copyright_statement' => null]);
+
+        $this->assertSame('', $bible->getAttributes()['copyright_statement']);
+    }
+
+    public function testAnExplicitCopyrightStatementIsUsedAsIs(): void
+    {
+        $bible = $this->makeBible(['copyright_statement' => 'Used by permission.']);
+
+        $this->assertSame('Used by permission.', $bible->getCopyrightStatement());
+    }
+
+    /**
+     * With no statement and no copyright record, the description stands in - so a Bible never
+     * renders a blank copyright line.
+     */
+    public function testTheDescriptionStandsInWhenThereIsNoCopyrightRecord(): void
+    {
+        $bible = $this->makeBible([
+            'copyright_statement' => '',
+            'copyright_id'        => null,
+            'description'         => 'A public domain translation.',
+        ]);
+
+        $this->assertSame('A public domain translation.', $bible->getCopyrightStatement());
+    }
+
+    // -----------------------------------------------------------------------
+    // Downloadability
+    // -----------------------------------------------------------------------
+
+    /**
+     * Both guards short-circuit before the copyright relation is consulted, so they hold with
+     * no database behind them. A restricted Bible must never be offered for download.
+     */
+    public function testARestrictedBibleIsNotDownloadable(): void
+    {
+        $this->assertFalse($this->makeBible(['restrict' => 1, 'copyright_id' => 2])->isDownloadable());
+    }
+
+    public function testABibleWithNoCopyrightRecordIsNotDownloadable(): void
+    {
+        $this->assertFalse($this->makeBible(['restrict' => 0, 'copyright_id' => null])->isDownloadable());
+    }
 }
