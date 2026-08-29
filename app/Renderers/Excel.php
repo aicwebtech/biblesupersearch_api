@@ -54,6 +54,10 @@ class Excel extends RenderAbstract
 
         $mem_lim = $this->_getMemoryLimit();
 
+        if ((string) $mem_lim === '-1') {
+            $mem_lim = PHP_INT_MAX;
+        }
+
         // $Cache = \Cache::store('file');
         // // var_dump($Cache instanceof \Psr\SimpleCache\CacheInterface); // true
         // \PhpOffice\PhpSpreadsheet\Settings::setCache($Cache);
