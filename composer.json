@@ -26,7 +26,8 @@
         "phpunit/phpunit": "^11.0",
         "filp/whoops": "~2.0",
         "brianium/paratest": "^7.0",
-        "laravel/boost": "^2.4"
+        "laravel/boost": "^2.4",
+        "php-parallel-lint/php-parallel-lint": "^1.4"
     },
     "autoload": {
         "classmap": [
@@ -44,7 +45,21 @@
             "Tests\\": "tests/"
         }
     },
+    "scripts-descriptions": {
+        "test": "Run the full PHPUnit test suite.",
+        "coverage": "Run the suite with code coverage; writes HTML to build/coverage/html and clover.xml for CI.",
+        "coverage-text": "Run the suite with a text-only coverage summary printed to the terminal."
+    },
     "scripts": {
+        "test": "phpunit",
+        "coverage": [
+            "@putenv XDEBUG_MODE=coverage",
+            "phpunit --coverage-html build/coverage/html --coverage-clover build/coverage/clover.xml --coverage-text"
+        ],
+        "coverage-text": [
+            "@putenv XDEBUG_MODE=coverage",
+            "phpunit --coverage-text"
+        ],
         "post-install-cmd": [
             "php artisan clear-compiled"
         ],

@@ -80,4 +80,51 @@ class TtsAbstractTest extends TestCase
             ]
         ];
     }
+
+    /** Returns a TTS instance bound to an unsaved Bible with the given module name. */
+    private function makeTtsForModule(string $module): TtsAbstract
+    {
+        $bible = new Bible();
+        $bible->module = $module;
+
+        return $this->makeTtsInstance($bible);
+    }
+
+    /**
+     * The relative path is what the API hands to clients, so it must be the module name
+     * alone - no filesystem prefix that would leak the server layout.
+     */
+    public function testRelativeAudioPathIsJustTheModule(): void
+    {
+        $this->assertSame('kjv', $this->makeTtsForModule('kjv')->getAudioFilePath(false, true));
+    }
+
+    public function testAbsoluteAudioPathIsRootedAtTheAudioBasePath(): void
+    {
+        $tts = $this->makeTtsForModule('kjv');
+
+        $this->assertSame(TtsAbstract::getAudioBasePath() . 'kjv', $tts->getAudioFilePath(false, false));
+    }
+
+    /**
+     * Once the renderer has recorded an error the path is refused outright, so a caller
+     * cannot go on writing audio for a Bible that failed validation.
+     */
+    public function testAudioPathIsRefusedAfterAnError(): void
+    {
+        $tts = $this->makeTtsForModule('kjv');
+        $tts->addError('something went wrong');
+
+        $this->assertFalse($tts->getAudioFilePath(false, true));
+    }
+
+    public function testGenerateDetailsStartEmpty(): void
+    {
+        $this->assertSame([], $this->makeTtsForModule('kjv')->getGenerateDetails());
+    }
+
+    public function testDebugRenderingIsOffByDefault(): void
+    {
+        $this->assertFalse($this->makeTtsForModule('kjv')->debug);
+    }
 }
