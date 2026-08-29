@@ -1,0 +1,128 @@
+<?php
+
+namespace Tests\Feature\Renderers\Extras;
+
+use App\Renderers\Extras\Csv;
+use Tests\TestCase;
+
+/**
+ * The Csv extras renderer mostly copies the checked-in dumps in database/dumps into the
+ * render directory, and generates the shortcuts file from the database.
+ *
+ * Nothing in the suite exercised it before. Output goes to a throwaway directory; the source
+ * dumps are only read.
+ */
+class CsvExtrasTest extends TestCase
+{
+    private string $tempDir;
+
+    public function setUp(): void
+    {
+        parent::setUp();
+
+        $this->tempDir = sys_get_temp_dir() . '/bss-extras-csv-' . uniqid() . '/';
+        mkdir($this->tempDir, 0775, true);
+    }
+
+    public function tearDown(): void
+    {
+        foreach (glob($this->tempDir . '*') ?: [] as $file) {
+            unlink($file);
+        }
+
+        if (is_dir($this->tempDir)) {
+            rmdir($this->tempDir);
+        }
+
+        parent::tearDown();
+    }
+
+    private function makeRenderer(): Csv
+    {
+        $dir = $this->tempDir;
+
+        return new class ($dir) extends Csv {
+            public function __construct(private string $dir) {}
+
+            public function getRenderFileDir($create_dir = true)
+            {
+                return $this->dir;
+            }
+
+            public function callLanguages()
+            {
+                return $this->_renderLanguagesHelper();
+            }
+
+            public function callStrongs()
+            {
+                return $this->_renderStrongsDefinitionsHelper();
+            }
+
+            public function callBookList(string $lang)
+            {
+                return $this->_renderBibleBookListSingle($lang);
+            }
+
+            public function callShortcuts(string $lang)
+            {
+                return $this->_renderBibleShortcutsSingle($lang);
+            }
+        };
+    }
+
+    public function testLanguagesCsvIsCopiedIntoTheRenderDirectory(): void
+    {
+        $path = $this->makeRenderer()->callLanguages();
+
+        $this->assertSame($this->tempDir . 'languages.csv', $path);
+        $this->assertFileExists($path);
+        $this->assertFileEquals(base_path('database/dumps/languages.csv'), $path);
+    }
+
+    public function testStrongsCsvIsCopiedIntoTheRenderDirectory(): void
+    {
+        $path = $this->makeRenderer()->callStrongs();
+
+        $this->assertSame($this->tempDir . 'strongs_definitions.csv', $path);
+        $this->assertFileEquals(base_path('database/dumps/strongs_definitions.csv'), $path);
+    }
+
+    /**
+     * The book lists are stored per language under bible_books/ but published under a
+     * books_{lang} name, so the copy renames as well as moves.
+     */
+    public function testBookListIsCopiedAndRenamed(): void
+    {
+        $path = $this->makeRenderer()->callBookList('en');
+
+        $this->assertSame($this->tempDir . 'books_en.csv', $path);
+        $this->assertFileEquals(base_path('database/dumps/bible_books/en.csv'), $path);
+    }
+
+    /**
+     * The missing-source-dump path is deliberately not covered.
+     *
+     * ExtrasAbstract::_copyDbDumpFileToRendered() calls copy() unguarded, so a missing source
+     * raises a PHP warning, and the failure branch then throws \StandardException - a class
+     * that is not defined anywhere in the application or its dependencies, so it raises
+     * "Class not found" rather than the intended exception. Covering it would add a permanent
+     * warning to every suite run. Reported rather than fixed; this ticket does not change
+     * production code.
+     */
+    public function testShortcutsAreGeneratedFromTheDatabase(): void
+    {
+        $path = $this->makeRenderer()->callShortcuts('en');
+
+        $this->assertSame($this->tempDir . 'shortcuts_en.csv', $path);
+        $this->assertFileExists($path);
+
+        $rows = array_map('str_getcsv', file($path, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES));
+
+        $this->assertNotEmpty($rows);
+        $this->assertContains('name', $rows[0], 'the first row should be the column header');
+        $this->assertNotContains('created_at', $rows[0], 'bookkeeping columns are excluded');
+        $this->assertNotContains('updated_at', $rows[0]);
+        $this->assertGreaterThan(1, count($rows), 'the export should carry at least one shortcut');
+    }
+}
