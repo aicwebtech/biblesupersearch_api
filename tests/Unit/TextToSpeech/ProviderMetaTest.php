@@ -4,6 +4,7 @@ namespace Tests\Unit\TextToSpeech;
 
 use PHPUnit\Framework\TestCase;
 use PHPUnit\Framework\Attributes\DataProvider;
+use App\AudioManager;
 use App\TextToSpeech\Elevenlabs;
 use App\TextToSpeech\MurfAI;
 use App\TextToSpeech\Narakeet;
@@ -61,9 +62,31 @@ class ProviderMetaTest extends TestCase
         $this->assertTrue($meta['requires_voice']);
     }
 
-    public function testOpenAiIsLabelled(): void
+    /**
+     * OpenAI must declare $is_ai_based itself - the flag does not default to true, and an
+     * undeclared provider silently inherits false from TtsAbstract. That is what happened
+     * before BSS-285, suppressing the AI-audio disclosure the flag drives.
+     */
+    public function testOpenAiIsLabelledAndDeclaresItselfAiBased(): void
     {
-        $this->assertSame('OpenAI', OpenAI::getMeta()['name']);
+        $meta = OpenAI::getMeta();
+
+        $this->assertSame('OpenAI', $meta['name']);
+        $this->assertTrue($meta['is_ai_based']);
+    }
+
+    /**
+     * Every provider in the registry is a hosted neural TTS service, so none may report
+     * not-AI. This catches the next provider added without the flag.
+     */
+    public function testEveryRegisteredProviderDeclaresItselfAiBased(): void
+    {
+        foreach (AudioManager::$tts_apis as $key => $class) {
+            $this->assertTrue(
+                $class::getMeta()['is_ai_based'],
+                "{$key} ({$class}) should declare \$is_ai_based"
+            );
+        }
     }
 
     /**

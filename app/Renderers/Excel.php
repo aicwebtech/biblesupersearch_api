@@ -73,14 +73,10 @@ class Excel extends RenderAbstract
                 $header = ['Verse ID', 'Book Name', 'Book Number', 'Chapter', 'Verse', 'Text'];
                 $hcells = 'A5:F5';                
                 break; 
-            case 5:
-                $header = ['Verse ID', 'Book Number', 'Chapter', 'Verse', 'Text'];
-                $hcells = 'A5:E5';                
-                break;
             case 4:
+            default:
                 $header = ['Book Number', 'Chapter', 'Verse', 'Text'];
                 $hcells = 'A5:D5';
-            default:  
         }
 
         if(is_file($filepath)) {
@@ -105,9 +101,6 @@ class Excel extends RenderAbstract
             case 6:
                 $row = [$verse->id, $verse->book_name, $verse->book, $verse->chapter, $verse->verse, $verse->text];
                 break;
-            case 5:
-                $row = [$verse->id, $verse->book, $verse->chapter, $verse->verse, $verse->text];
-                break;
             case 4:
             default:  
                 $row = [$verse->book, $verse->chapter, $verse->verse, $verse->text];
@@ -125,9 +118,6 @@ class Excel extends RenderAbstract
             case 6:
                 $Sheet->getColumnDimension('B')->setAutoSize(true); // Book name
                 $Sheet->getColumnDimension('F')->setAutoSize(true); // Text
-                break;
-            case 5:
-                $Sheet->getColumnDimension('E')->setAutoSize(true); // Text
                 break;
             case 4:
             default:  

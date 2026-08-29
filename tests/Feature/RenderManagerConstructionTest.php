@@ -14,8 +14,9 @@ use Tests\TestCase;
  * rendered and no file is written; the render paths are covered by
  * Tests\Feature\RenderManagerTest.
  *
- * Note: $modules and $format must be arrays (or the strings 'ALL'/'OFFICIAL'), because the
- * constructor calls count() on them directly - a bare string would be a TypeError on PHP 8.
+ * $modules and $format each accept an array, a bare string, or the strings 'ALL'/'OFFICIAL'.
+ * The constructor casts to array before counting; it counted directly until BSS-285, which
+ * made any bare string other than 'ALL'/'OFFICIAL' a TypeError on PHP 8.
  */
 class RenderManagerConstructionTest extends TestCase
 {
@@ -37,6 +38,30 @@ class RenderManagerConstructionTest extends TestCase
         $property = new \ReflectionProperty(RenderManager::class, 'format');
 
         $this->assertSame(['text'], $property->getValue($manager));
+    }
+
+    /**
+     * A bare string format names a single format, exactly as a one-element array does. This is
+     * how App\Jobs\ProcessRender may call it, since its payload is unvalidated.
+     */
+    public function testABareStringFormatIsAcceptedLikeASingleElementArray(): void
+    {
+        $manager = new RenderManager(['kjv'], 'text');
+
+        $property = new \ReflectionProperty(RenderManager::class, 'format');
+
+        $this->assertSame(['text'], $property->getValue($manager));
+        $this->assertFalse($manager->hasErrors());
+    }
+
+    public function testABareStringModuleIsAcceptedLikeASingleElementArray(): void
+    {
+        $bare  = new RenderManager('kjv', ['text']);
+        $array = new RenderManager(['kjv'], ['text']);
+
+        $property = new \ReflectionProperty(RenderManager::class, 'modules');
+
+        $this->assertSame($property->getValue($array), $property->getValue($bare));
     }
 
     public function testFormatAllExpandsToEveryRegisteredFormat(): void

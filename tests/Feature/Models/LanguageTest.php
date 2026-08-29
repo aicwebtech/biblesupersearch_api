@@ -68,6 +68,49 @@ class LanguageTest extends TestCase
     }
 
     /**
+     * The relation is keyed on bibles.lang_short, which is where a Bible records its language
+     * code - there is no 'language_code' column. Read-only against installed content data.
+     *
+     * Nothing in the application calls bibles() yet; every Language-to-Bible path is a manual
+     * join. That is why the relation could name both a nonexistent class and a nonexistent
+     * column until BSS-285 without anything failing.
+     */
+    public function testBiblesRelationReturnsTheLanguagesBibles(): void
+    {
+        $Language = Language::findByCode('en');
+
+        $this->assertNotNull($Language, 'English should be installed');
+
+        $bibles = $Language->bibles;
+
+        $this->assertNotEmpty($bibles, 'English should have at least one Bible');
+
+        foreach ($bibles as $Bible) {
+            $this->assertInstanceOf(\App\Models\Bible::class, $Bible);
+            $this->assertSame('en', $Bible->lang_short);
+        }
+    }
+
+    /**
+     * A language with no Bibles returns an empty collection rather than failing - the fixture
+     * has no rows in bibles, so this also proves the relation filters rather than returning
+     * everything.
+     */
+    public function testBiblesRelationIsEmptyForALanguageWithNoBibles(): void
+    {
+        $code = 'qqz';
+
+        try {
+            $Language = $this->createLanguageFixture($code, 'Bibles Relation Test');
+
+            $this->assertCount(0, $Language->bibles);
+        }
+        finally {
+            $this->removeLanguageFixture($code);
+        }
+    }
+
+    /**
      * denitLanguage() drops the language's book tables, so it must drop the 'book_list'
      * attribute with them - that pairing is what initLanguage() establishes. A language left
      * advertising book support it can no longer back resolves to no model class in

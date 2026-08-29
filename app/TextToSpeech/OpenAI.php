@@ -5,6 +5,7 @@ namespace App\TextToSpeech;
 class OpenAI extends TtsAbstract 
 {
     static protected $label = 'OpenAI';
+    static protected $is_ai_based = true;
 
     public function __construct($Bible, $options = [])
     {

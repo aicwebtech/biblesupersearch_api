@@ -53,7 +53,7 @@ class Language extends Model
 
     public function bibles(): HasMany
     {
-        return $this->hasMany(App\Models\Bible::class, 'language_code', 'code');
+        return $this->hasMany(Bible::class, 'lang_short', 'code');
     }
 
     public function rtl() 
@@ -64,7 +64,7 @@ class Language extends Model
 
     public function setRtlAttribute($value) 
     {
-        $lv = strtolower($value);
+        $lv = strtolower((string) $value);
         $this->attributes['rtl'] = ($value && $lv != 'false' && $lv != 'no') ? 1 : 0;
     }
 

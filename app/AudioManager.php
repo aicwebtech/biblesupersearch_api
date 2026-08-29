@@ -3,7 +3,6 @@
 namespace App;
 
 use App\Models\Bible;
-use App\Models\Language;
 use App\Passage;
 use App\Traits\Error;
 use App\Interfaces\ErrorInterface;
@@ -126,13 +125,41 @@ class AudioManager implements ErrorInterface
         return true;
     }
 
+    /**
+     * Resolves the name of the TTS provider that would be used for the given Bible.
+     *
+     * A Bible may name its own provider; failing that its language may, and failing that the
+     * application default applies.  Passing no Bible resolves the application default only.
+     *
+     * @param  \App\Models\Bible|null  $Bible
+     * @return string
+     */
+    static public function resolveTtsApiName($Bible = null)
+    {
+        if($Bible && $Bible->tts_api) {
+            return $Bible->tts_api;
+        }
+
+        if($Bible && $Bible->lang_short) {
+            // The relation, not a fresh lookup: it is eager-loadable by callers listing many
+            // Bibles at once, and is cached on the model when it is not.
+            $Language = $Bible->language;
+
+            if($Language && $Language->tts_api) {
+                return $Language->tts_api;
+            }
+        }
+
+        return config('audio.tts_api', 'narakeet');
+    }
+
     static public function isTtsAI($Bible = null)
     {
         if($Bible && (!$Bible->audio_enable || !$Bible->tts_enable)) {
             return false;
         }
 
-        $tts_class = self::$tts_apis[ config('audio.tts_api', 'narakeet') ] ?? null;
+        $tts_class = self::$tts_apis[ self::resolveTtsApiName($Bible) ] ?? null;
 
         if(!$tts_class) {
             return false;
@@ -351,13 +378,7 @@ class AudioManager implements ErrorInterface
 
         $verse->file_name = $filename;
 
-        if($Bible->tts_api) {
-            $tts_api = $Bible->tts_api;
-        } else {
-            $Language = Language::findByCode($Bible->lang_short);
-            $tts_api = $Language && $Language->tts_api ? $Language->tts_api : config('audio.tts_api', 'narakeet');
-        }
-
+        $tts_api   = self::resolveTtsApiName($Bible);
         $tts_class = self::$tts_apis[ $tts_api ] ?? null;
 
         if(!$tts_class) {

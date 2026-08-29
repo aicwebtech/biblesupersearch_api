@@ -62,7 +62,7 @@ abstract class RenderAbstract
         }
 
         if(!$this->file_extension) {
-            throw new Exception('$this->file_extension is required on render class!');
+            throw new \Exception('$this->file_extension is required on render class!');
         }
     }
 

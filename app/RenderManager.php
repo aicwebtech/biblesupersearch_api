@@ -67,8 +67,8 @@ class RenderManager
 
     public function __construct($modules, $format, $zip = FALSE, $Output = NULL) 
     {
-        $this->multi_bibles = ($modules == 'ALL' || $modules == 'OFFICIAL' || count($modules) > 1);
-        $this->multi_format = ($format  == 'ALL' || count($format)  > 1);
+        $this->multi_bibles = ($modules == 'ALL' || $modules == 'OFFICIAL' || count((array) $modules) > 1);
+        $this->multi_format = ($format  == 'ALL' || count((array) $format)  > 1);
         $this->zip = ($this->multi_bibles && $this->multi_format) ? TRUE : $zip;
         $this->Output = $Output ?: null;
 
@@ -337,7 +337,9 @@ class RenderManager
             return ($return_file_list) ? $ExtrasRenderer->getFileList() : TRUE;
         }
 
-        return FALSE;
+        // None of the requested formats has extras. That is not a failure, so a caller asking
+        // for the file list gets an empty one - FALSE is reserved for a render that failed.
+        return ($return_file_list) ? [] : FALSE;
     }
 
     public function download($bypass_render_limit = FALSE, $make_file_only = false, $en_lang_name = false, $prev_rendered_only = false) 
@@ -513,7 +515,13 @@ class RenderManager
 
                 if($this->include_extras) {
                     $file_list = $this->renderExtras(FALSE, FALSE, TRUE);
-                    
+
+                    if($file_list === FALSE) {
+                        // The extras failed to render; shipping the archive without them would
+                        // hand the user an incomplete download that looks successful.
+                        return FALSE;
+                    }
+
                     if(!empty($file_list)) {
                         $Zip->addEmptyDir('extras');
                         $readme .= "\n\nextras - This folder contains additional helpful items\n\n";

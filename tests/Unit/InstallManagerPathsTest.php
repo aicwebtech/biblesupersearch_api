@@ -55,18 +55,13 @@ class InstallManagerPathsTest extends TestCase
     /**
      * The entries that are checked into the repository must name real namespaces under app/.
      *
-     * Two entries are excluded deliberately:
-     *  - 'Models\Misc' is generated at install time and gitignored, so it is legitimately
-     *    absent from a clean checkout.
-     *  - 'Renders\Extras' names no directory at all - the namespace is App\Renderers\Extras,
-     *    and there is no app/Renders. Nothing consumes that entry today (Helpers reads only
-     *    index 2), so it is inert rather than broken. Reported rather than fixed; this ticket
-     *    does not change production code.
+     * Only 'Models\Misc' is excluded: it is generated at install time and gitignored, so it is
+     * legitimately absent from a clean checkout.
      */
     public function testTrackedImportableDirectoriesNameRealNamespaces(): void
     {
         $appPath  = __DIR__ . '/../../app/';
-        $generated = ['Models\Misc', 'Renders\Extras'];
+        $generated = ['Models\Misc'];
 
         $checked = 0;
 
@@ -84,12 +79,14 @@ class InstallManagerPathsTest extends TestCase
         $this->assertGreaterThan(0, $checked);
     }
 
-    public function testTheRendersExtrasEntryDoesNotResolve(): void
+    /**
+     * The entry names the renderers' extras namespace, App\Renderers\Extras. It read
+     * 'Renders\Extras' until BSS-285 - a namespace that has never existed.
+     */
+    public function testTheRenderersExtrasEntryResolves(): void
     {
-        $this->assertDirectoryDoesNotExist(
-            __DIR__ . '/../../app/Renders',
-            'if app/Renders now exists, the getImportableDir typo note above is stale'
-        );
+        $this->assertContains('Renderers\Extras', InstallManager::getImportableDir());
+        $this->assertDirectoryExists(__DIR__ . '/../../app/Renderers/Extras');
     }
 
     // -----------------------------------------------------------------------

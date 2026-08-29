@@ -794,7 +794,7 @@ class Engine implements ErrorInterface
         $Bibles = Bible::select('bibles.name','shortname','module','year','owner', 'description',
             'languages.name AS lang','lang_short','copyright','italics','strongs','red_letter',
             'paragraph','rank','research','bibles.restrict','copyright_id','copyright_statement',
-            'audio_enable', 'tts_enable', 'audio_structure',
+            'audio_enable', 'tts_enable', 'audio_structure', 'bibles.tts_api',
             'languages.rtl', 'languages.native_name AS lang_native',
             'bibles.book_list', 'bibles.installed', 'bibles.id'); // all 3 needed for the book list to work
 
@@ -834,7 +834,9 @@ class Engine implements ErrorInterface
             }
         }
 
-        $Bibles = $Bibles -> where('enabled', 1) -> with('copyrightInfo') -> get() -> all();
+        // 'language' is eager loaded for the TTS gates below, which fall back to the language's
+        // provider when the Bible does not name one of its own.
+        $Bibles = $Bibles -> where('enabled', 1) -> with(['copyrightInfo', 'language']) -> get() -> all();
 
         if(empty($Bibles)) {
             $this->addError(trans('errors.no_bible_enabled'));
@@ -853,6 +855,7 @@ class Engine implements ErrorInterface
             // Remove attributes that aren't needed in the API response
             unset($bibles[$Bible->module]['id']);
             unset($bibles[$Bible->module]['installed']);
+            unset($bibles[$Bible->module]['tts_api']); // selected only to resolve tts_ai above
         }
 
         if($language_float) {
