@@ -116,7 +116,16 @@ class InstallManagerChecklistTest extends TestCase
         $checklist = InstallManager::getChecklist();
 
         foreach ($checklist['writable'] as $path) {
-            $this->assertFileExists(base_path($path), "{$path} is on the writable checklist");
+            $full = base_path($path);
+
+            // A file entry - storage/logs/laravel.log - is not in git and is created lazily on
+            // the first log write, so on a fresh checkout only its directory is guaranteed.
+            if(pathinfo($path, PATHINFO_EXTENSION)) {
+                $this->assertDirectoryExists(dirname($full), "the directory holding {$path} is on the writable checklist");
+                continue;
+            }
+
+            $this->assertDirectoryExists($full, "{$path} is on the writable checklist");
         }
     }
 

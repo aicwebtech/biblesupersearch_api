@@ -66,8 +66,21 @@ class MysqlExtrasTest extends TestCase
         };
     }
 
+    /**
+     * The generic dump path issues SHOW CREATE TABLE, which only MySQL understands. Tests that
+     * reach it are skipped on any other driver (CI runs the suite on SQLite).
+     */
+    private function requireMysqlDriver(): void
+    {
+        if(\DB::connection()->getDriverName() !== 'mysql') {
+            $this->markTestSkipped('The generic MySQL dump requires the mysql driver');
+        }
+    }
+
     public function testLanguagesDumpIsWrittenAsImportableSql(): void
     {
+        $this->requireMysqlDriver();
+
         $path = $this->makeRenderer()->callLanguages();
 
         $this->assertSame($this->tempDir . 'languages.sql', $path);
@@ -86,6 +99,8 @@ class MysqlExtrasTest extends TestCase
      */
     public function testAutoIncrementCounterIsStrippedFromTheCreateStatement(): void
     {
+        $this->requireMysqlDriver();
+
         $sql = file_get_contents($this->makeRenderer()->callLanguages());
 
         $this->assertDoesNotMatchRegularExpression('/AUTO_INCREMENT=[0-9]+/', $sql);
@@ -97,21 +112,55 @@ class MysqlExtrasTest extends TestCase
      */
     public function testLocalTablePrefixDoesNotLeakIntoTheDump(): void
     {
+        $this->requireMysqlDriver();
+
         $prefix = env('DB_PREFIX');
 
-        $this->assertNotEmpty($prefix, 'this test is only meaningful with a table prefix configured');
+        if(empty($prefix)) {
+            $this->markTestSkipped('No table prefix configured, so there is no prefix that could leak');
+        }
 
         $sql = file_get_contents($this->makeRenderer()->callLanguages());
 
         $this->assertStringNotContainsString($prefix . 'languages', $sql);
     }
 
+    /**
+     * The installed reference tables all carry NULL timestamps already, so the nulling can only
+     * be observed against a throwaway table that has real ones. The dump is produced through the
+     * private generic helper, which the two public helpers hard-code their table names into.
+     */
     public function testTimestampsAreNulledRatherThanCarriedIntoTheDump(): void
     {
-        $sql = file_get_contents($this->makeRenderer()->callLanguages());
+        $this->requireMysqlDriver();
 
-        $this->assertStringContainsString('INSERT INTO `bible_languages`', $sql);
-        $this->assertStringContainsString('NULL', $sql);
+        $stamp = '2019-04-01 12:34:56';
+        $table = env('DB_PREFIX') . 'extras_dump_fixture';
+        $path  = $this->tempDir . 'fixture.sql';
+
+        \DB::statement("DROP TABLE IF EXISTS `{$table}`");
+        \DB::statement("CREATE TABLE `{$table}` (`id` int(10) unsigned NOT NULL AUTO_INCREMENT, `name` varchar(255) NOT NULL, `created_at` timestamp NULL DEFAULT NULL, `updated_at` timestamp NULL DEFAULT NULL, PRIMARY KEY (`id`))");
+
+        try {
+            \DB::table('extras_dump_fixture')->insert([
+                'name'       => 'fixture',
+                'created_at' => $stamp,
+                'updated_at' => $stamp,
+            ]);
+
+            $dump = new \ReflectionMethod(MySQL::class, '_dumpMysqlGeneric');
+            $dump->setAccessible(true);
+            $dump->invoke($this->makeRenderer(), 'extras_dump_fixture', 'bible_extras_dump_fixture', $path);
+
+            $sql = file_get_contents($path);
+
+            $this->assertStringContainsString('INSERT INTO `bible_extras_dump_fixture`', $sql);
+            $this->assertStringNotContainsString($stamp, $sql, 'this installation\'s timestamps must not travel with the dump');
+            $this->assertStringContainsString('NULL, NULL);', $sql);
+        }
+        finally {
+            \DB::statement("DROP TABLE IF EXISTS `{$table}`");
+        }
     }
 
     public function testBookListDumpCarriesItsOwnSchemaAndRows(): void

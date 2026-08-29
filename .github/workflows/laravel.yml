@@ -16,12 +16,12 @@ jobs:
       with:
         php-version: '8.5'
     - uses: actions/checkout@v4
-    - name: LInt PHP
-      run: ./vendor/bin/parallel-lint --exclude .git  --exclude vendor .
     - name: Copy .env
       run: php -r "file_exists('.env') || copy('.env.example', '.env');"
     - name: Install Dependencies
       run: composer install -q --no-ansi --no-interaction --no-scripts --no-progress --prefer-dist
+    - name: Lint PHP
+      run: ./vendor/bin/parallel-lint --exclude .git  --exclude vendor .
     - name: Generate key
       run: php artisan key:generate --force
     - name: Directory Permissions

@@ -25,19 +25,14 @@ class ExcelTest extends TestCase
 
     private string $tempDir;
 
-    private string $originalMemoryLimit;
-
     protected function setUp(): void
     {
-        $this->originalMemoryLimit = ini_get('memory_limit');
         $this->tempDir = sys_get_temp_dir() . '/bss-excel-' . uniqid() . '/';
         mkdir($this->tempDir, 0775, true);
     }
 
     protected function tearDown(): void
     {
-        ini_set('memory_limit', $this->originalMemoryLimit);
-
         foreach (glob($this->tempDir . '*') ?: [] as $file) {
             unlink($file);
         }
@@ -47,16 +42,26 @@ class ExcelTest extends TestCase
         }
     }
 
-    private function makeRenderer(): Excel
+    /**
+     * The reported memory limit is injected through the renderer's own seam rather than applied
+     * to the process: lowering the process-wide ceiling below what the worker already holds
+     * would kill it, and paratest reuses one process across many test classes.
+     */
+    private function makeRenderer(string $memoryLimit = self::WIDE_LAYOUT_MEMORY): Excel
     {
         $bible = new Bible();
         $bible->name = 'King James Version';
 
-        return new class ($bible, $this->tempDir . 'kjv.xlsx') extends Excel {
-            public function __construct($bible, private string $path)
+        return new class ($bible, $this->tempDir . 'kjv.xlsx', $memoryLimit) extends Excel {
+            public function __construct($bible, private string $path, private string $memoryLimit)
             {
                 // The parent constructor resolves a Bible from the database; bypass it.
                 $this->Bible = $bible;
+            }
+
+            protected function _getMemoryLimit()
+            {
+                return $this->memoryLimit;
             }
 
             public function getRenderFilePath($create_dir = false, $relative = false)
@@ -108,9 +113,7 @@ class ExcelTest extends TestCase
      */
     private function renderAndRead(string $memoryLimit): array
     {
-        ini_set('memory_limit', $memoryLimit);
-
-        $renderer = $this->makeRenderer();
+        $renderer = $this->makeRenderer($memoryLimit);
         $renderer->callRenderStart();
         $renderer->callRenderVerse($this->verse(1, 1, 'Genesis', 1, 1, 'In the beginning'));
         $renderer->callRenderVerse($this->verse(2, 1, 'Genesis', 1, 2, 'And the earth was without form'));
@@ -175,13 +178,11 @@ class ExcelTest extends TestCase
      */
     public function testLayoutFollowsTheMemoryLimit(): void
     {
-        ini_set('memory_limit', self::WIDE_LAYOUT_MEMORY);
-        $wide = $this->makeRenderer();
+        $wide = $this->makeRenderer(self::WIDE_LAYOUT_MEMORY);
         $wide->callRenderStart();
         $this->assertSame(6, $wide->columnCount());
 
-        ini_set('memory_limit', self::NARROW_LAYOUT_MEMORY);
-        $narrow = $this->makeRenderer();
+        $narrow = $this->makeRenderer(self::NARROW_LAYOUT_MEMORY);
         $narrow->callRenderStart();
         $this->assertSame(4, $narrow->columnCount());
     }
@@ -201,8 +202,7 @@ class ExcelTest extends TestCase
 
     public function testRenderFinishReportsSuccessAndWritesTheFile(): void
     {
-        ini_set('memory_limit', self::WIDE_LAYOUT_MEMORY);
-        $renderer = $this->makeRenderer();
+        $renderer = $this->makeRenderer(self::WIDE_LAYOUT_MEMORY);
         $renderer->callRenderStart();
         $renderer->callRenderVerse($this->verse(1, 1, 'Genesis', 1, 1, 'In the beginning'));
 

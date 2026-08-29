@@ -32,6 +32,19 @@ class Excel extends RenderAbstract
     ];
 
     /**
+     * The memory ceiling that the column layout is chosen from.
+     *
+     * Isolated into its own method so that a test can vary it without mutating the
+     * process-wide ini setting.
+     *
+     * @return string
+     */
+    protected function _getMemoryLimit() 
+    {
+        return ini_get('memory_limit');
+    }
+
+    /**
      * This initializes the file, and does other pre-rendering work
      * @param bool $overwrite
      */
@@ -39,7 +52,7 @@ class Excel extends RenderAbstract
     {
         $filepath = $this->getRenderFilePath(TRUE);
 
-        $mem_lim = ini_get('memory_limit');
+        $mem_lim = $this->_getMemoryLimit();
 
         // $Cache = \Cache::store('file');
         // // var_dump($Cache instanceof \Psr\SimpleCache\CacheInterface); // true

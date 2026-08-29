@@ -62,15 +62,21 @@ class BibleSuperSearchTest extends TestCase
     }
 
     /**
-     * Errors are opt-in on the metadata, so a caller that asks for them gets the key.
+     * Errors are opt-in on the metadata: the plain call omits them and only a caller that asks
+     * gets the keys. Asserted in that order, because the flag decorates the metadata object
+     * in place.
      */
     public function testMetadataCanIncludeErrors(): void
     {
         $bss = new BibleSuperSearch();
         $bss->actionQuery(['bible' => 'kjv', 'reference' => 'John 3:16']);
 
+        $this->assertObjectNotHasProperty('errors', $bss->getActionMetadata());
+
         $metadata = $bss->getActionMetadata(true);
 
-        $this->assertNotNull($metadata);
+        $this->assertObjectHasProperty('errors', $metadata);
+        $this->assertObjectHasProperty('error_level', $metadata);
+        $this->assertEmpty($metadata->errors, 'a successful query reports no errors');
     }
 }

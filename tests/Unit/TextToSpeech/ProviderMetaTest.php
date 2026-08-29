@@ -40,12 +40,18 @@ class ProviderMetaTest extends TestCase
     }
 
     /**
-     * The identifier is what getApiKey() interpolates into its config lookup.
+     * getApiKey() itself cannot be called here - it reads config(), which needs a booted
+     * application - so the coupling is asserted against the method's source. A change to the
+     * prefix, or to reading the ident, detaches every provider from its configured credentials.
      */
-    #[DataProvider('providerIdentProvider')]
-    public function testIdentDrivesTheApiKeyConfigName(string $class, string $expected): void
+    public function testTheApiKeyConfigNameIsBuiltFromTheIdent(): void
     {
-        $this->assertSame('audio.tts_api_key_' . $expected, 'audio.tts_api_key_' . $class::getIdent());
+        $method = new \ReflectionMethod(TtsAbstract::class, 'getApiKey');
+        $lines  = file($method->getFileName());
+        $source = implode('', array_slice($lines, $method->getStartLine() - 1, $method->getEndLine() - $method->getStartLine() + 1));
+
+        $this->assertStringContainsString("'audio.tts_api_key_'", $source);
+        $this->assertStringContainsString('static::getIdent()', $source);
     }
 
     #[DataProvider('providerIdentProvider')]
