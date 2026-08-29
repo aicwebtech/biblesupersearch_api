@@ -149,7 +149,6 @@ class MysqlExtrasTest extends TestCase
             ]);
 
             $dump = new \ReflectionMethod(MySQL::class, '_dumpMysqlGeneric');
-            $dump->setAccessible(true);
             $dump->invoke($this->makeRenderer(), 'extras_dump_fixture', 'bible_extras_dump_fixture', $path);
 
             $sql = file_get_contents($path);
