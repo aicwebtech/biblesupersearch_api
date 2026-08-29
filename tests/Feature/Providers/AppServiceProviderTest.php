@@ -87,10 +87,18 @@ class AppServiceProviderTest extends TestCase
      * PDO::sqliteCreateFunction() is deprecated in PHP 8.5 and replaced by
      * Pdo\Sqlite::createFunction(); the helper picks whichever the runtime offers. Either way
      * it must leave a working function behind.
+     *
+     * The connection is opened the way the running PHP version would open it - via
+     * Pdo\Sqlite::connect() from 8.4 - so the helper takes the same branch here as it does in
+     * production. Opening it with `new PDO` unconditionally would force the deprecated branch
+     * on 8.5 and emit a deprecation from the suite.
      */
     public function testSqliteCreateFunctionHelperRegistersACallableFunction(): void
     {
-        $pdo      = new \PDO('sqlite::memory:');
+        $pdo = class_exists(\Pdo\Sqlite::class)
+            ? \Pdo\Sqlite::connect('sqlite::memory:')
+            : new \PDO('sqlite::memory:');
+
         $provider = new AppServiceProvider($this->app);
 
         $method = new \ReflectionMethod(AppServiceProvider::class, 'sqliteCreateFunction');

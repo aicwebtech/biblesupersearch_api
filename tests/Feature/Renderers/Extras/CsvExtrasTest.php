@@ -117,7 +117,13 @@ class CsvExtrasTest extends TestCase
         $this->assertSame($this->tempDir . 'shortcuts_en.csv', $path);
         $this->assertFileExists($path);
 
-        $rows = array_map('str_getcsv', file($path, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES));
+        // Every argument is passed explicitly: str_getcsv's $escape default is changing, and
+        // omitting it is deprecated from PHP 8.4. The escape character matches the one the
+        // renderer writes with (Csv::$escape).
+        $rows = array_map(
+            static fn (string $line): array => str_getcsv($line, ',', '"', '\\'),
+            file($path, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES)
+        );
 
         $this->assertNotEmpty($rows);
         $this->assertContains('name', $rows[0], 'the first row should be the column header');
