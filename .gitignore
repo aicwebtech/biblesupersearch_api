@@ -30,3 +30,4 @@ vendor.zip
 /database/schema/* 
 
 .~lock*
+/build

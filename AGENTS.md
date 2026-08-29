@@ -51,9 +51,15 @@ rather than at its `CLAUDE.md` default).
 
 ### Unit tests
 - No database access.
-- No access to the rest of the application (no HTTP, no models, no service providers).
+- Laravel Application not booted. 
+- No access to the *running* Laravel application: no HTTP, no container, no facades, no `config()`.
+- Model and service-provider classes may be exercised as plain PHP objects — constructor,
+  `$table` / `$fillable` / casts, static and pure helpers — but never queried, persisted, or
+  resolved from the container (see `tests/Unit/Models/`). Anything needing the database or a
+  booted application is a feature test.
 - Test pure logic, static helpers, value objects, and callbacks in isolation.
 - Validate callback contracts with `ReflectionFunction` rather than executing destructive callbacks.
+- Classes located in **test\Unit**
 - Classes extend from **PHPUnit\Framework\TestCase**
 
 ### Feature tests
@@ -61,11 +67,12 @@ rather than at its `CLAUDE.md` default).
 * The database contents are generally static — Bible texts, Bible book lists, cross-reference data, etc.
 * Do NOT INSERT, UPDATE, or DELETE this content data in feature tests without explicit instruction and authorization. Read and assert against it only.
 * Purpose-built test fixtures are allowed — a throwaway row, table, or file the test creates and removes again. Create it inside the test, remove it in a `finally` so an assertion failure still cleans up, and never build one on top of installed content data (see `createLanguageFixture()` / `removeLanguageFixture()` in `tests/TestCase.php`).
+- Classes located in **test\Feature**
 - Classes extend from **Tests\TestCase**
 
 ### Running tests
 
-Ask the user which they want:
+Agent test running options
 * All supported PHP versions, or just the current one
 * Parallel (fast) or serial (slow) test mode
 
