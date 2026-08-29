@@ -132,7 +132,13 @@ class EngineActionsTest extends TestCase
 
         try {
             $bibles  = $this->engine()->actionBibles([]);
-            $queries = array_column(\DB::getQueryLog(), 'query');
+
+            // Identifier quoting is the grammar's business - backticks on MySQL, double quotes
+            // on SQLite - so it is stripped before matching rather than assumed.
+            $queries = array_map(
+                fn (string $query): string => str_replace(['`', '"'], '', $query),
+                array_column(\DB::getQueryLog(), 'query')
+            );
         }
         finally {
             \DB::disableQueryLog();
@@ -147,13 +153,13 @@ class EngineActionsTest extends TestCase
         // by module elsewhere.
         $listing = array_values(array_filter(
             $queries,
-            fn ($query) => str_contains($query, 'from `' . $prefix . 'bibles`') && str_contains($query, 'left join')
+            fn ($query) => str_contains($query, 'from ' . $prefix . 'bibles') && str_contains($query, 'left join')
         ));
 
         $this->assertNotEmpty($listing, 'the listing query was not logged');
-        $this->assertStringContainsString('`' . $prefix . 'bibles`.`tts_api`', $listing[0]);
+        $this->assertStringContainsString($prefix . 'bibles.tts_api', $listing[0]);
 
-        $by_language = array_filter($queries, fn ($query) => str_contains($query, 'from `' . $prefix . 'languages`'));
+        $by_language = array_filter($queries, fn ($query) => str_contains($query, 'from ' . $prefix . 'languages'));
 
         $this->assertLessThanOrEqual(
             1,
