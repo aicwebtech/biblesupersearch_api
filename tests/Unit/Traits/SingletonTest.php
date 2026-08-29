@@ -53,4 +53,22 @@ class SingletonTest extends TestCase
         $instance = SingletonSubject::getInstance();
         $this->assertInstanceOf(SingletonSubject::class, $instance);
     }
+
+    /**
+     * resetInstance() returns nothing - callers rely on the lazy getInstance() that follows,
+     * not on a return value. The discard and laziness themselves are asserted in
+     * Tests\Feature\Traits\SingletonTest; this file only adds what runs with no application.
+     */
+    public function testResetInstanceReturnsNothing(): void
+    {
+        $this->assertNull(SingletonSubject::resetInstance());
+    }
+
+    public function testResetInstanceIsSafeWhenNoInstanceExists(): void
+    {
+        SingletonSubject::resetInstance();
+        SingletonSubject::resetInstance();
+
+        $this->assertInstanceOf(SingletonSubject::class, SingletonSubject::getInstance());
+    }
 }
