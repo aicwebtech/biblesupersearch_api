@@ -35,13 +35,12 @@ class Excel extends RenderAbstract
      * The memory ceiling that the column layout is chosen from.
      *
      * Isolated into its own method so that a test can vary it without mutating the
-     * process-wide ini setting.
-     *
-     * @return string
+     * process-wide ini setting. ini_get() returns FALSE for an unknown directive, which is
+     * normalized here so callers always get a string to compare against.
      */
-    protected function _getMemoryLimit() 
+    protected function _getMemoryLimit(): string 
     {
-        return ini_get('memory_limit');
+        return (string) ini_get('memory_limit');
     }
 
     /**

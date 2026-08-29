@@ -59,7 +59,7 @@ class ExcelTest extends TestCase
                 $this->Bible = $bible;
             }
 
-            protected function _getMemoryLimit()
+            protected function _getMemoryLimit(): string
             {
                 return $this->memoryLimit;
             }

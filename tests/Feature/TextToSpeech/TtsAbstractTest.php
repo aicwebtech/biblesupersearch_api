@@ -2,6 +2,11 @@
 
 namespace Tests\Feature\TextToSpeech;
 use Tests\TestCase;
+use App\Models\Bible;
+use App\TextToSpeech\Elevenlabs;
+use App\TextToSpeech\MurfAI;
+use App\TextToSpeech\Narakeet;
+use App\TextToSpeech\OpenAI;
 use App\TextToSpeech\TtsAbstract;
 use Illuminate\Support\Facades\Config;
 
@@ -103,5 +108,33 @@ class TtsAbstractTest extends TestCase
         Config::set('text_to_speech.narakeet.voice', 'brian-default');
         $voice2 = (static::makeConcrete())::getVoiceByLanguage('en', null);
         $this->assertNull($voice2);
+    }
+
+    /**
+     * getApiKey() composes its config name from getIdent(), so every provider reads its own
+     * credential and a renamed class silently detaches the provider from its configured key.
+     */
+    public function testEachProviderReadsItsOwnApiKeyFromConfig(): void
+    {
+        $Bible = Bible::findByModule('kjv');
+
+        $this->assertNotNull($Bible, 'the kjv module is needed to construct a provider');
+
+        $providers = [
+            'openai'     => OpenAI::class,
+            'narakeet'   => Narakeet::class,
+            'elevenlabs' => Elevenlabs::class,
+            'murfai'     => MurfAI::class,
+        ];
+
+        foreach($providers as $ident => $class) {
+            Config::set('audio.tts_api_key_' . $ident, 'sentinel-' . $ident);
+        }
+
+        foreach($providers as $ident => $class) {
+            $Tts = new $class($Bible);
+
+            $this->assertEquals('sentinel-' . $ident, $Tts->getApiKey(), $class . ' must read audio.tts_api_key_' . $ident);
+        }
     }
 }

@@ -16,7 +16,8 @@ use App\TextToSpeech\TtsAbstract;
  *
  * getIdent() in particular is load-bearing: getApiKey() builds the config key
  * 'audio.tts_api_key_' . getIdent(), so a change in the class short name silently detaches a
- * provider from its configured credentials.
+ * provider from its configured credentials. That lookup needs config(), so it is asserted in
+ * Tests\Feature\TextToSpeech\TtsAbstractTest instead.
  */
 class ProviderMetaTest extends TestCase
 {
@@ -37,21 +38,6 @@ class ProviderMetaTest extends TestCase
     public function testIdentIsTheLowercasedClassName(string $class, string $expected): void
     {
         $this->assertSame($expected, $class::getIdent());
-    }
-
-    /**
-     * getApiKey() itself cannot be called here - it reads config(), which needs a booted
-     * application - so the coupling is asserted against the method's source. A change to the
-     * prefix, or to reading the ident, detaches every provider from its configured credentials.
-     */
-    public function testTheApiKeyConfigNameIsBuiltFromTheIdent(): void
-    {
-        $method = new \ReflectionMethod(TtsAbstract::class, 'getApiKey');
-        $lines  = file($method->getFileName());
-        $source = implode('', array_slice($lines, $method->getStartLine() - 1, $method->getEndLine() - $method->getStartLine() + 1));
-
-        $this->assertStringContainsString("'audio.tts_api_key_'", $source);
-        $this->assertStringContainsString('static::getIdent()', $source);
     }
 
     #[DataProvider('providerIdentProvider')]
