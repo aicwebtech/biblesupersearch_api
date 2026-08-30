@@ -527,8 +527,11 @@ class RenderManager
                         $readme .= "\n\nextras - This folder contains additional helpful items\n\n";
 
                         foreach($file_list as $file) {
-                            if(!$Zip->addFile($file, 'extras/' . basename($file)) ) {
-                                return $this->addError('Unable to add file to ZIP file: ' . $file['file']);
+                            // The paths come from the extras renderer, so a missing one is a
+                            // failed render reported as a file list - checked here rather than
+                            // left to warn its way through ZipArchive::addFile()
+                            if(!is_file($file) || !$Zip->addFile($file, 'extras/' . basename($file)) ) {
+                                return $this->addError('Unable to add file to ZIP file: ' . $file);
                             }
                         }
                     }
