@@ -101,15 +101,43 @@ class CsvExtrasTest extends TestCase
     }
 
     /**
-     * The missing-source-dump path is deliberately not covered.
+     * A language with no checked-in dump must fail with a catchable exception naming the
+     * missing file, and must not emit a PHP warning on the way there.
      *
-     * ExtrasAbstract::_copyDbDumpFileToRendered() calls copy() unguarded, so a missing source
-     * raises a PHP warning, and the failure branch then throws \StandardException - a class
-     * that is not defined anywhere in the application or its dependencies, so it raises
-     * "Class not found" rather than the intended exception. Covering it would add a permanent
-     * warning to every suite run. Reported rather than fixed; this ticket does not change
-     * production code.
+     * _copyDbDumpFileToRendered() called copy() unguarded until BSS-285, so a missing source
+     * warned first and then threw \StandardException - a class that is defined nowhere, making
+     * the failure an uncatchable Error rather than the intended exception.
      */
+    public function testCopyingAMissingSourceDumpThrows(): void
+    {
+        $renderer = $this->makeRenderer();
+
+        $this->expectException(\Exception::class);
+        $this->expectExceptionMessage('source file does not exist');
+
+        $renderer->callBookList('zz');
+    }
+
+    /**
+     * The exception must be catchable as an ordinary Exception: RenderManager::renderExtras()
+     * wraps the render in catch(\Exception), which an Error would escape.
+     */
+    public function testAMissingSourceDumpFailureIsCatchableAsAnException(): void
+    {
+        $caught = null;
+
+        try {
+            $this->makeRenderer()->callBookList('zz');
+        }
+        catch (\Exception $e) {
+            $caught = $e;
+        }
+
+        $this->assertInstanceOf(\Exception::class, $caught);
+        $this->assertStringContainsString('zz.csv', $caught->getMessage());
+        $this->assertFileDoesNotExist($this->tempDir . 'books_zz.csv');
+    }
+
     public function testShortcutsAreGeneratedFromTheDatabase(): void
     {
         $path = $this->makeRenderer()->callShortcuts('en');

@@ -51,7 +51,7 @@ class ExtrasAbstract
             $Language = Language::findByCode($lang);
 
             if(!$Language) {
-                throw new \StandardException('No language for code ' . $lang);
+                throw new \Exception('No language for code ' . $lang);
             }
 
             $filepath = $this->_renderBibleBookListSingle($lang);
@@ -61,7 +61,7 @@ class ExtrasAbstract
 
     protected function _renderBibleBookListSingle($lang_code) 
     {
-        throw new \StandardException('Method Not Implemented!');
+        throw new \LogicException('Method Not Implemented!');
     }
 
     protected function _renderBibleShortcuts() 
@@ -70,7 +70,7 @@ class ExtrasAbstract
             $Language = Language::findByCode($lang);
 
             if(!$Language) {
-                throw new \StandardException('No language for code ' . $lang);
+                throw new \Exception('No language for code ' . $lang);
             }
 
             $filepath = $this->_renderBibleShortcutsSingle($lang);
@@ -81,7 +81,7 @@ class ExtrasAbstract
 
     protected function _renderBibleShortcutsSingle($lang_code) 
     {
-        throw new \StandardException('Method Not Implemented!');
+        throw new \LogicException('Method Not Implemented!');
     }
 
     protected function _renderStrongsDefinitions() 
@@ -92,7 +92,7 @@ class ExtrasAbstract
 
     protected function _renderStrongsDefinitionsHelper() 
     {
-        throw new \StandardException('Method Not Implemented!');
+        throw new \LogicException('Method Not Implemented!');
     }
 
     protected function _renderLanguages() 
@@ -103,7 +103,7 @@ class ExtrasAbstract
 
     protected function _renderLanguagesHelper() 
     {
-        throw new \StandardException('Method Not Implemented!');
+        throw new \LogicException('Method Not Implemented!');
     }
 
     protected function _pushFileInfo($list, $filepath, $filedesc) 
@@ -132,8 +132,12 @@ class ExtrasAbstract
         $src_filepath  = $this->_getDBDumpDir() . $src_filename;
         $dest_filepath = $this->getRenderFileDir() . $dest_filename;
         
+        if(!is_file($src_filepath)) {
+            throw new \Exception('Unable to copy, source file does not exist: ' . $src_filepath);
+        }
+
         if(!copy($src_filepath, $dest_filepath)) {
-            throw new \StandardException('Unable to copy');
+            throw new \Exception('Unable to copy ' . $src_filepath . ' to ' . $dest_filepath);
         }
 
         return $dest_filepath;

@@ -8,6 +8,7 @@ use App\Importers\BibleSuperSearch;
 use App\Importers\Evening;
 use App\Importers\ImporterAbstract;
 use App\Importers\Irv;
+use App\Importers\MyBible;
 use App\Importers\MySword;
 use App\Importers\Usfm;
 use App\Importers\Rvg;
@@ -29,10 +30,10 @@ use App\Importers\Text;
  * Reflection is used because the formatters are protected; the importers are constructed
  * directly, which touches neither the database nor the application.
  *
- * App\Importers\MyBible is absent from these tests on purpose: app/Importers/MyBible.php
- * declares "class MySword", duplicating app/Importers/MySword.php, so App\Importers\MyBible
- * does not exist and merely autoloading that file is a fatal "cannot declare class" error.
- * Reported rather than fixed; this ticket does not change production code.
+ * MyBible and MySword are both covered and both matter: the two formats are easily confused
+ * (MyBible .SQLite3 uses HTML-ish <i>/<J>/<S>, MySword .mybible uses GBF <FI>/<FR>), and
+ * app/Importers/MyBible.php previously declared "class MySword", making App\Importers\MyBible
+ * unloadable and leaving the MyBible delimiters entirely untested.
  */
 class ImporterMarkupTest extends TestCase
 {
@@ -48,6 +49,13 @@ class ImporterMarkupTest extends TestCase
     public function testMySwordItalicTagsBecomeBrackets(): void
     {
         $formatted = $this->format(new MySword(), '_formatItalics', 'the <FI>LORD<Fi> said');
+
+        $this->assertSame('the [LORD] said', $formatted);
+    }
+
+    public function testMyBibleItalicTagsBecomeBrackets(): void
+    {
+        $formatted = $this->format(new MyBible(), '_formatItalics', 'the <i>LORD</i> said');
 
         $this->assertSame('the [LORD] said', $formatted);
     }
@@ -92,6 +100,13 @@ class ImporterMarkupTest extends TestCase
         $this->assertSame('‹I am he›', $formatted);
     }
 
+    public function testMyBibleRedLetterTagsBecomeGuillemets(): void
+    {
+        $formatted = $this->format(new MyBible(), '_formatRedLetter', '<J>I am he</J>');
+
+        $this->assertSame('‹I am he›', $formatted);
+    }
+
     public function testUsfmRedLetterMarkersBecomeGuillemets(): void
     {
         $formatted = $this->format(new Usfm(), '_formatRedLetter', '\\wj I am he\\wj*');
@@ -122,6 +137,18 @@ class ImporterMarkupTest extends TestCase
     // -----------------------------------------------------------------------
     // Strong's numbers
     // -----------------------------------------------------------------------
+
+    /**
+     * MyBible is the only importer in this suite declaring Strong's delimiters, so it is the
+     * only one whose tags are actually rewritten to braces.
+     */
+    public function testMyBibleStrongsTagsBecomeBraces(): void
+    {
+        $formatted = $this->format(new MyBible(), '_formatStrongs', 'beginning<S>H7225</S>');
+
+        $this->assertStringContainsString('{H7225}', $formatted);
+        $this->assertStringNotContainsString('<S>', $formatted);
+    }
 
     public function testFormatsWithoutStrongsMarkupPassTextThrough(): void
     {

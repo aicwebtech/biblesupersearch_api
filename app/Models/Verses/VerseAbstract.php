@@ -92,7 +92,7 @@ abstract class VerseAbstract extends Model
      */
     public function getSearch($Passages = NULL, $Search = NULL, $parameters = []) 
     {
-        throw new StandardException('Must implement getSearch in child class!');
+        throw new \LogicException('Must implement getSearch in child class!');
     }
 
     /**
@@ -104,7 +104,7 @@ abstract class VerseAbstract extends Model
      */
     public function getAudio($Passages, $parameters = []) 
     {
-        throw new StandardException('Must implement getAudio in child class!');
+        throw new \LogicException('Must implement getAudio in child class!');
     }
 
     /**
@@ -115,7 +115,7 @@ abstract class VerseAbstract extends Model
      */
     public function getAudioAll($parameters = []) 
     {
-        throw new StandardException('Must implement getAudioAll in child class!');
+        throw new \LogicException('Must implement getAudioAll in child class!');
     }
 
     /**

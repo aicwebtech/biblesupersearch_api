@@ -410,7 +410,7 @@ class InstallManager
             'Models\Verses',
             'Models\Misc',
             'Traits',
-            'Renders\Extras',
+            'Renderers\Extras',
         ];
     }
 

@@ -15,7 +15,7 @@ use Illuminate\Http\UploadedFile;
  *
  */
 
-class MySword extends ImporterAbstract 
+class MyBible extends ImporterAbstract 
 {
     // protected $required = ['module', 'lang', 'lang_short']; // Array of required fields
 
@@ -100,7 +100,12 @@ class MySword extends ImporterAbstract
             echo('Installing: ' . $module . PHP_EOL);
         }
 
-        $res_bib = $SQLITE->query('SELECT book_number, chapter, verse, text FROM Bible ORDER BY Book ASC, Chapter ASC, Verse ASC');
+        // Warning suppressed: a module missing the table reports through the FALSE result below
+        $res_bib = @$SQLITE->query('SELECT book_number, chapter, verse, text FROM verses ORDER BY book_number ASC, chapter ASC, verse ASC');
+
+        if(!$res_bib) {
+            return $this->addError('Unable to read the verses table: ' . $SQLITE->lastErrorMsg());
+        }
         
         $i = $cur_book = $last_book = 0;
 
@@ -153,14 +158,24 @@ class MySword extends ImporterAbstract
 
     public function checkUploadedFile(UploadedFile $File): bool  
     {
-        // $path = $file_tmp_name ?: $file_name;
         $path = $File->getPathname();
 
+        if(!is_file($path)) {
+            return $this->addError('File does not exist');
+        }
+
         try {
-            $info = $this->_getMeta($SQLITE);
+            $SQLITE = new SQLite3($path);
+            // An upload that is not a MyBible module - or not a database at all - fails on the
+            // first query; as an exception it lands in the catch below instead of warning and
+            // returning FALSE into a fetch on a non-object.
+            $SQLITE->enableExceptions(TRUE);
+
+            $info   = $this->_getMeta($SQLITE);
             $map = (array_key_exists('description', $info)) ? $this->attribute_map_alt : $this->attribute_map;
 
-            $res_bib = $SQLITE->query('SELECT * FROM Bible ORDER BY Book ASC, Chapter ASC, Verse ASC LIMIT 10');
+            $res_bib = $SQLITE->query('SELECT book_number, chapter, verse, text FROM verses ORDER BY book_number ASC, chapter ASC, verse ASC LIMIT 10');
+
             $verse_found = FALSE;
             $book = 0;
             $last_book_name = NULL;
@@ -186,12 +201,21 @@ class MySword extends ImporterAbstract
             return $this->addError('Could not open MyBible file: ' . $e->getMessage());
         }
 
+        if(!$verse_found) {
+            return $this->addError('This file contains no verses, and cannot be imported.');
+        }
+
         return TRUE;
     }
 
     private function _getMeta(SQLite3 $SQLITE) 
     {
-        $res_desc = $SQLITE->query('SELECT * FROM info');
+        $res_desc = @$SQLITE->query('SELECT * FROM info');
+
+        if(!$res_desc) {
+            throw new \RuntimeException('Unable to read the info table: ' . $SQLITE->lastErrorMsg());
+        }
+
         $info = [];
 
         while($row = $res_desc->fetchArray(SQLITE3_ASSOC)) {

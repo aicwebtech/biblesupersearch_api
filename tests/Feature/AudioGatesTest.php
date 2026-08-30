@@ -12,7 +12,8 @@ use Tests\TestCase;
  * disable audio without the global switch changing.
  *
  * They read config, so these are feature tests. The Bibles are unsaved in-memory instances -
- * only the two flags are read, so nothing is persisted.
+ * only their own attributes are read, so no Bible is persisted. The one test that needs a
+ * language behind a Bible creates a throwaway one and removes it again.
  */
 class AudioGatesTest extends TestCase
 {
@@ -93,31 +94,122 @@ class AudioGatesTest extends TestCase
     // -----------------------------------------------------------------------
 
     /**
-     * isTtsAI reports whatever the configured provider declares, so the answer follows the
-     * provider rather than being hard-coded here.
-     *
-     * Worth flagging separately: App\TextToSpeech\OpenAI does not declare $is_ai_based, so it
-     * inherits FALSE from TtsAbstract - whose own comment describes the flag as "Indicates
-     * AI-based TTS (like OpenAI)". With audio.tts_api set to openai this gate therefore
-     * reports not-AI. Reported rather than fixed; this ticket does not change production code.
+     * Both registered providers are AI-based, so the gate reports true for either global
+     * default. Asserted as an explicit expectation table rather than by re-deriving the value
+     * from getMeta(), which would pass whatever the providers happened to declare.
      */
-    public function testIsTtsAiFollowsTheConfiguredProvidersDeclaration(): void
+    public function testEachConfiguredProviderIsReportedAsAiBased(): void
     {
-        foreach (AudioManager::$tts_apis as $key => $class) {
+        foreach (['narakeet' => true, 'openai' => true] as $key => $expected) {
             config(['audio.tts_api' => $key]);
 
-            $this->assertSame(
-                $class::getMeta()['is_ai_based'],
-                AudioManager::isTtsAI(),
-                "isTtsAI should mirror {$class}'s declaration"
-            );
+            $this->assertSame($expected, AudioManager::isTtsAI(), "provider {$key}");
         }
     }
 
-    public function testNarakeetIsReportedAsAiBased(): void
+    /**
+     * The gate must resolve the provider the way the generation path does - a Bible naming its
+     * own tts_api is synthesised with that provider, so the flag has to describe that provider
+     * and not the global default. isTtsAI() read the global config only until BSS-285.
+     */
+    public function testABiblesOwnProviderOverridesTheGlobalDefault(): void
     {
         config(['audio.tts_api' => 'narakeet']);
 
+        $bible = $this->bible(true, true);
+        $bible->tts_api = 'openai';
+
+        $this->assertSame(
+            'openai',
+            AudioManager::resolveTtsApiName($bible),
+            'the Bible\'s own provider should win over the global default'
+        );
+        $this->assertTrue(AudioManager::isTtsAI($bible));
+    }
+
+    /**
+     * Below the Bible's own provider sits its language's, and below that the global default.
+     * The language is read through the Bible's language relation, so a caller listing many
+     * Bibles can eager load it instead of paying a query per Bible.
+     */
+    public function testTheLanguagesProviderAppliesWhenTheBibleNamesNone(): void
+    {
+        config(['audio.tts_api' => 'narakeet']);
+
+        $code = 'qqx';
+
+        try {
+            $Language = $this->createLanguageFixture($code, 'Tts Provider Test');
+
+            $bible = $this->bible(true, true);
+            $bible->lang_short = $code;
+
+            $this->assertSame(
+                'narakeet',
+                AudioManager::resolveTtsApiName($bible),
+                'a language naming no provider leaves the global default in place'
+            );
+
+            $Language->tts_api = 'openai';
+            $Language->save();
+
+            // A fresh instance: the relation is cached on the model it was read through.
+            $bible = $this->bible(true, true);
+            $bible->lang_short = $code;
+
+            $this->assertSame('openai', AudioManager::resolveTtsApiName($bible));
+
+            $bible->tts_api = 'narakeet';
+
+            $this->assertSame(
+                'narakeet',
+                AudioManager::resolveTtsApiName($bible),
+                'the Bible\'s own provider should win over its language\'s'
+            );
+
+            // Eager loading is what keeps a listing of many Bibles from paying a languages query
+            // apiece: with the relation already loaded, resolving must not go back to the
+            // database. It called Language::findByCode() regardless until BSS-285.
+            $bible = $this->bible(true, true);
+            $bible->lang_short = $code;
+            $bible->setRelation('language', $Language);
+
+            \DB::flushQueryLog();
+            \DB::enableQueryLog();
+
+            try {
+                $this->assertSame('openai', AudioManager::resolveTtsApiName($bible));
+                $this->assertSame([], \DB::getQueryLog(), 'an eager loaded language was re-queried');
+            }
+            finally {
+                \DB::disableQueryLog();
+                \DB::flushQueryLog();
+            }
+        }
+        finally {
+            $this->removeLanguageFixture($code);
+        }
+    }
+
+    /**
+     * An unrecognised provider on the Bible must not fatal, and must not silently fall back to
+     * the global default - the gate reports not-AI because the class cannot be resolved.
+     */
+    public function testABibleNamingAnUnknownProviderIsReportedAsNotAi(): void
+    {
+        config(['audio.tts_api' => 'narakeet']);
+
+        $bible = $this->bible(true, true);
+        $bible->tts_api = 'no_such_provider';
+
+        $this->assertFalse(AudioManager::isTtsAI($bible));
+    }
+
+    public function testTheGlobalDefaultAppliesWhenNoBibleIsGiven(): void
+    {
+        config(['audio.tts_api' => 'narakeet']);
+
+        $this->assertSame('narakeet', AudioManager::resolveTtsApiName());
         $this->assertTrue(AudioManager::isTtsAI());
     }
 

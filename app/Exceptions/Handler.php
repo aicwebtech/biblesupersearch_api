@@ -78,8 +78,3 @@ class Handler extends ExceptionHandler
        return redirect()->guest('login');
    }
 }
-
-  // Declaration of App\Exceptions\Handler::unauthenticated($request, App\Except  
-  // ions\AuthenticationException $exception) should be compatible with Illumina  
-  // te\Foundation\Exceptions\Handler::unauthenticated($request, Illuminate\Auth  
-  // \AuthenticationException $exception)      

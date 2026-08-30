@@ -2,6 +2,7 @@
 
 namespace Tests\Unit\Renderers\Extras;
 
+use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 use App\Renderers\Extras\ExtrasAbstract;
 
@@ -186,22 +187,34 @@ class ExtrasAbstractTest extends TestCase
      * The base class's hooks are guards - a subclass that forgets one must fail loudly
      * rather than silently render nothing.
      *
-     * Asserted as Throwable rather than a specific class: these sites throw
-     * \StandardException, which is not defined anywhere in the application or its
-     * dependencies, so today they raise an Error ("Class not found") instead. Reported
-     * rather than fixed - this ticket does not change production code.
+     * LogicException rather than a plain Exception: forgetting to implement a hook is a
+     * programming error, not a runtime condition the caller could recover from.
+     *
+     * @return array<string, array{string}>
      */
-    public function testUnimplementedHooksThrow(): void
+    public static function unimplementedHookProvider(): array
+    {
+        return [
+            'strongs definitions' => ['_renderStrongsDefinitionsHelper'],
+            'languages'           => ['_renderLanguagesHelper'],
+            'bible book list'     => ['_renderBibleBookListSingle'],
+            'bible shortcuts'     => ['_renderBibleShortcutsSingle'],
+        ];
+    }
+
+    #[DataProvider('unimplementedHookProvider')]
+    public function testUnimplementedHooksThrow(string $hook): void
     {
         $renderer = new class extends ExtrasAbstract {
-            public function callStrongsHelper()
+            public function callHook(string $hook)
             {
-                return $this->_renderStrongsDefinitionsHelper();
+                return $this->{$hook}('en');
             }
         };
 
-        $this->expectException(\Throwable::class);
+        $this->expectException(\LogicException::class);
+        $this->expectExceptionMessage('Method Not Implemented!');
 
-        $renderer->callStrongsHelper();
+        $renderer->callHook($hook);
     }
 }

@@ -85,7 +85,7 @@ class BookAbstract extends Model
         }
 
         if(!class_exists($class_name)) {
-            throw new StandardException('Cannot find book class for default language!');
+            throw new \RuntimeException('Cannot find book class for default language!');
         }
 
         return $class_name;

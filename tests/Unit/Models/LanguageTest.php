@@ -54,16 +54,16 @@ class LanguageTest extends TestCase
      * The rtl column is written from free-form import data, so the mutator has to read
      * "false" and "no" as negatives rather than as truthy non-empty strings.
      *
-     * A null case is deliberately absent: Language::setRtlAttribute() passes its argument
-     * straight to strtolower(), which has been deprecated for null since PHP 8.1 and is an
-     * error in PHP 9. Covering it here would emit a deprecation on every run. Reported
-     * rather than fixed - this ticket does not change production code.
+     * Null is covered because an empty rtl column imports as null: setRtlAttribute() casts to
+     * string before calling strtolower(), which would otherwise be a deprecation on PHP 8.1+
+     * and an error on PHP 9.
      *
      * @return array<string, array{mixed, int}>
      */
     public static function rtlProvider(): array
     {
         return [
+            'null'                 => [null, 0],
             'literal false string' => ['false', 0],
             'uppercase FALSE'      => ['FALSE', 0],
             'no'                   => ['no', 0],
