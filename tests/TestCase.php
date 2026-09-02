@@ -88,6 +88,49 @@ class TestCase extends BaseTestCase
     }
 
     /**
+     * Names a throwaway table for the calling test.
+     *
+     * A parallel run puts several test processes on the one shared database, so a fixture table
+     * named after its purpose alone is dropped out from under whichever test is using it next.
+     * The process id keeps the name unique per worker, and the result is still a bare SQL
+     * identifier, safe to interpolate into the raw DDL these fixtures need.
+     */
+    protected function fixtureTableName(string $purpose): string
+    {
+        return $purpose . '_' . getmypid();
+    }
+
+    /**
+     * Names a throwaway rate-limit bucket for the calling test.
+     *
+     * IpAccess buckets are keyed by domain, so two tests naming the same domain share one row on
+     * the one shared database - in a parallel run each sees the other's hits, and whichever fails
+     * first leaves the row behind for every later run. The process id keeps the bucket per worker.
+     */
+    protected function fixtureDomain(string $purpose): string
+    {
+        return $purpose . getmypid() . '.com';
+    }
+
+    /**
+     * Restores the request-host superglobals a test overwrote.
+     *
+     * @param array<string, string|null> $snapshot the values captured before the test set its own,
+     *                                             NULL meaning the key was not set at all
+     */
+    protected function restoreRequestHost(array $snapshot): void
+    {
+        foreach($snapshot as $key => $value) {
+            if($value === NULL) {
+                unset($_SERVER[$key]);
+            }
+            else {
+                $_SERVER[$key] = $value;
+            }
+        }
+    }
+
+    /**
      * Deletes a throwaway language and any attributes it accumulated, whether or not the row was
      * ever created. Safe to call from a finally that may run before the row exists.
      */

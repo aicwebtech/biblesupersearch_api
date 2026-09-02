@@ -123,44 +123,82 @@ HEAD;
 
     private function _dumpMysqlGeneric($db_table, $bk_table, $filepath) 
     {
-        $db_table = env('DB_PREFIX') . $db_table;
-        $ignore_fields = ['created_at', 'updated_at'];
+        $db_table = $this->_assertSafeTableIdentifier($db_table);
+        $bk_table = $this->_assertSafeTableIdentifier($bk_table);
 
-        $sql_show = 'SHOW CREATE TABLE ' . $db_table;
+        $prefixed_table = \DB::getTablePrefix() . $db_table;
+        $quoted_table   = $this->_escapeTableIdentifier($prefixed_table);
+        $ignore_fields  = ['created_at', 'updated_at'];
+
+        $sql_show = 'SHOW CREATE TABLE `' . $quoted_table . '`';
         $results  = \DB::select($sql_show);
 
         $create = $results[0]->{'Create Table'};
         $create = preg_replace("/AUTO_INCREMENT=[0-9]+/", '', $create); // Remove auto increment value
-        $create = str_replace($db_table, $bk_table, $create);           // Rename table to backup name
+        $create = str_replace($quoted_table, $bk_table, $create);       // Rename table to backup name
 
         $contents = "DROP TABLE IF EXISTS `{$bk_table}`; \n\n" . $create . "; \n\n";
 
-        $data   = \DB::select("SELECT * FROM {$db_table}");
-        $fields = array_keys(get_object_vars($data[0]));
-        $insert = 'INSERT INTO `' . $bk_table . '` (`' . implode('`, `', $fields) . '`) VALUES (';
+        $data = \DB::table($db_table)->get()->all();
 
-        foreach($data as $key => $row) {
-            foreach($ignore_fields as $f) {
-                if(property_exists($row, $f)) {
-                    $row->$f = NULL;
+        // An empty reference table still dumps its schema; there is simply nothing to insert.
+        if(!empty($data)) {
+            $fields = array_keys(get_object_vars($data[0]));
+            $insert = 'INSERT INTO `' . $bk_table . '` (`' . implode('`, `', $fields) . '`) VALUES (';
+
+            foreach($data as $key => $row) {
+                foreach($ignore_fields as $f) {
+                    if(property_exists($row, $f)) {
+                        $row->$f = NULL;
+                    }
                 }
+
+                $values = [];
+
+                foreach($fields as $f) {
+                    if($row->$f === NULL) {
+                        $values[] = 'NULL';
+                    }
+                    else {
+                        $values[] = \DB::connection()->getPdo()->quote($row->$f);
+                    }
+                }
+
+                $contents .= $insert . implode(', ', $values) . "); \n";
             }
-
-            $values = [];
-
-            foreach($fields as $f) {
-                if($row->$f === NULL) {
-                    $values[] = 'NULL';
-                }
-                else {
-                    $values[] = \DB::connection()->getPdo()->quote($row->$f);
-                }
-            }
-
-            $contents .= $insert . implode(', ', $values) . "); \n";
         }
 
         file_put_contents($filepath, $contents);
         return $filepath;
+    }
+
+    /**
+     * Guards a table name that has to be interpolated into raw SQL.
+     *
+     * SHOW CREATE TABLE has no query builder equivalent, so the name cannot be bound or wrapped
+     * by the grammar the way DB::table() does it. Table names here are assembled from language
+     * codes rather than typed by a user, but nothing downstream would notice if that changed.
+     *
+     * @throws \InvalidArgumentException when the name is not a bare SQL identifier
+     */
+    private function _assertSafeTableIdentifier($table): string 
+    {
+        if(!is_string($table) || !preg_match('/^[A-Za-z0-9_]+$/', $table)) {
+            throw new \InvalidArgumentException('Unsafe table name: ' . var_export($table, TRUE));
+        }
+
+        return $table;
+    }
+
+    /**
+     * Escapes a table name for interpolation between backticks.
+     *
+     * Unlike the table names this class assembles, the connection's table prefix is the
+     * deployment's own configuration - MySQL accepts a backticked prefix carrying a hyphen or
+     * other punctuation - so a prefixed name is escaped rather than rejected.
+     */
+    private function _escapeTableIdentifier(string $table): string 
+    {
+        return str_replace('`', '``', $table);
     }
 }
