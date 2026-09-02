@@ -172,6 +172,13 @@ class IpAccessTest extends TestCase
         $host   = $this->fixtureDomain('testsamedomain');
         $domain = 'http://www.' . $host;
 
+        // ApiAccessManager::trustedDomain() reads these, so the host this test fakes would
+        // otherwise become the API's own host for every later test in the same worker process.
+        $server_snapshot = [
+            'HTTP_HOST'   => $_SERVER['HTTP_HOST'] ?? NULL,
+            'SERVER_NAME' => $_SERVER['SERVER_NAME'] ?? NULL,
+        ];
+
         $_SERVER['HTTP_HOST'] = $_SERVER['SERVER_NAME'] = 'www.example.com';
 
         $IP = IpAccess::findOrCreateByIpOrDomain($this->_fakeIp(), $domain);
@@ -183,8 +190,15 @@ class IpAccessTest extends TestCase
             $this->assertEquals($IP->getAccessLimit(false), 0, $IP->domain . ' should = ' . $domain);
         }
         finally {
+            $this->restoreRequestHost($server_snapshot);
             $IP->delete();
         }
+
+        $this->assertSame(
+            $server_snapshot,
+            ['HTTP_HOST' => $_SERVER['HTTP_HOST'] ?? NULL, 'SERVER_NAME' => $_SERVER['SERVER_NAME'] ?? NULL],
+            'the faked host must not outlive the test'
+        );
     }
 
     protected function _fakeIp() 

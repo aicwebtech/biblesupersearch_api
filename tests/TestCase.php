@@ -113,6 +113,24 @@ class TestCase extends BaseTestCase
     }
 
     /**
+     * Restores the request-host superglobals a test overwrote.
+     *
+     * @param array<string, string|null> $snapshot the values captured before the test set its own,
+     *                                             NULL meaning the key was not set at all
+     */
+    protected function restoreRequestHost(array $snapshot): void
+    {
+        foreach($snapshot as $key => $value) {
+            if($value === NULL) {
+                unset($_SERVER[$key]);
+            }
+            else {
+                $_SERVER[$key] = $value;
+            }
+        }
+    }
+
+    /**
      * Deletes a throwaway language and any attributes it accumulated, whether or not the row was
      * ever created. Safe to call from a finally that may run before the row exists.
      */
