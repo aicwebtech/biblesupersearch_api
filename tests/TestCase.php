@@ -101,6 +101,18 @@ class TestCase extends BaseTestCase
     }
 
     /**
+     * Names a throwaway rate-limit bucket for the calling test.
+     *
+     * IpAccess buckets are keyed by domain, so two tests naming the same domain share one row on
+     * the one shared database - in a parallel run each sees the other's hits, and whichever fails
+     * first leaves the row behind for every later run. The process id keeps the bucket per worker.
+     */
+    protected function fixtureDomain(string $purpose): string
+    {
+        return $purpose . getmypid() . '.com';
+    }
+
+    /**
      * Deletes a throwaway language and any attributes it accumulated, whether or not the row was
      * ever created. Safe to call from a finally that may run before the row exists.
      */

@@ -83,7 +83,7 @@ class IpAccessPrivateTest extends TestCase
     public function testDomainCustomLimit() 
     {
         $ip = $this->_fakeIp();
-        $IP = IpAccess::findOrCreateByIpOrDomain($ip, 'testdomaincustomlimit.com');
+        $IP = IpAccess::findOrCreateByIpOrDomain($ip, $this->fixtureDomain('testdomaincustomlimit'));
         $limit = 125;
         $IP->limit = $limit;
         $IP->save();
@@ -93,32 +93,42 @@ class IpAccessPrivateTest extends TestCase
 
     protected function helper($IP, $limit) 
     {
-        $this->assertNotEquals($limit, $IP->getAccessLimit());
-        $this->assertLessThan(0, $IP->getAccessLimit());
-        $this->assertEquals(0, $IP->getDailyHits());
+        try {
+            $this->assertNotEquals($limit, $IP->getAccessLimit());
+            $this->assertLessThan(0, $IP->getAccessLimit());
+            $this->assertEquals(0, $IP->getDailyHits());
 
-        $this->assertFalse( $IP->incrementDailyHits() );
-        $this->assertEquals(0, $IP->getDailyHits());
-        $this->assertFalse($IP->isLimitReached());
+            $this->assertFalse( $IP->incrementDailyHits() );
+            $this->assertEquals(0, $IP->getDailyHits());
+            $this->assertFalse($IP->isLimitReached());
 
-        $this->assertTrue($IP->isAccessRevoked());
-        $IP->delete();
+            $this->assertTrue($IP->isAccessRevoked());
+        }
+        finally {
+            // A bucket left behind by a failed assertion poisons every later run of this test.
+            $IP->delete();
+        }
     }
 
     public function testSameDomain() 
     {
         $_SERVER['HTTP_HOST'] = $_SERVER['SERVER_NAME'] = 'www.example.com';
-        
-        $domain = 'http://www.testsamedomain.com';
+
+        $host   = $this->fixtureDomain('testsamedomain');
+        $domain = 'http://www.' . $host;
 
         $IP = IpAccess::findOrCreateByIpOrDomain($this->_fakeIp(), $domain);
-        $this->assertTrue($IP->isAccessRevoked());
 
-        $_SERVER['HTTP_HOST'] = $_SERVER['SERVER_NAME'] = 'www.testsamedomain.com';
-        $this->assertEquals($IP->getAccessLimit(), 0);
-        $this->assertTrue($IP->hasUnlimitedAccess());
+        try {
+            $this->assertTrue($IP->isAccessRevoked());
 
-        $IP->delete();
+            $_SERVER['HTTP_HOST'] = $_SERVER['SERVER_NAME'] = 'www.' . $host;
+            $this->assertEquals($IP->getAccessLimit(), 0);
+            $this->assertTrue($IP->hasUnlimitedAccess());
+        }
+        finally {
+            $IP->delete();
+        }
     }
 
     protected function _fakeIp() 
