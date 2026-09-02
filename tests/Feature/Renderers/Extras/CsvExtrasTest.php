@@ -206,7 +206,7 @@ class CsvExtrasTest extends TestCase
      */
     public function testGenericDumpOfAnEmptyTableWritesTheHeaderRowOnly(): void
     {
-        if(\DB::connection()->getDriverName() !== 'mysql') {
+        if (\DB::connection()->getDriverName() !== 'mysql') {
             $this->markTestSkipped('The throwaway fixture table is created with MySQL syntax');
         }
 
