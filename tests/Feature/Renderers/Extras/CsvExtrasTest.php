@@ -210,15 +210,16 @@ class CsvExtrasTest extends TestCase
             $this->markTestSkipped('The throwaway fixture table is created with MySQL syntax');
         }
 
-        $table = \DB::getTablePrefix() . 'extras_dump_fixture';
-        $path  = $this->tempDir . 'empty.csv';
+        $fixture = $this->fixtureTableName('extras_dump_empty_csv');
+        $table   = \DB::getTablePrefix() . $fixture;
+        $path    = $this->tempDir . 'empty.csv';
 
         \DB::statement("DROP TABLE IF EXISTS `{$table}`");
         \DB::statement("CREATE TABLE `{$table}` (`id` int(10) unsigned NOT NULL AUTO_INCREMENT, `name` varchar(255) NOT NULL, `created_at` timestamp NULL DEFAULT NULL, `updated_at` timestamp NULL DEFAULT NULL, PRIMARY KEY (`id`))");
 
         try {
             $dump = new \ReflectionMethod(Csv::class, '_dumpCsvGeneric');
-            $dump->invoke($this->makeRenderer(), 'extras_dump_fixture', $path);
+            $dump->invoke($this->makeRenderer(), $fixture, $path);
 
             $rows = file($path, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
 

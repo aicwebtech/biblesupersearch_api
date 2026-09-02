@@ -135,26 +135,27 @@ class MysqlExtrasTest extends TestCase
     {
         $this->requireMysqlDriver();
 
-        $stamp = '2019-04-01 12:34:56';
-        $table = env('DB_PREFIX') . 'extras_dump_fixture';
-        $path  = $this->tempDir . 'fixture.sql';
+        $stamp   = '2019-04-01 12:34:56';
+        $fixture = $this->fixtureTableName('extras_dump_timestamps');
+        $table   = \DB::getTablePrefix() . $fixture;
+        $path    = $this->tempDir . 'fixture.sql';
 
         \DB::statement("DROP TABLE IF EXISTS `{$table}`");
         \DB::statement("CREATE TABLE `{$table}` (`id` int(10) unsigned NOT NULL AUTO_INCREMENT, `name` varchar(255) NOT NULL, `created_at` timestamp NULL DEFAULT NULL, `updated_at` timestamp NULL DEFAULT NULL, PRIMARY KEY (`id`))");
 
         try {
-            \DB::table('extras_dump_fixture')->insert([
+            \DB::table($fixture)->insert([
                 'name'       => 'fixture',
                 'created_at' => $stamp,
                 'updated_at' => $stamp,
             ]);
 
             $dump = new \ReflectionMethod(MySQL::class, '_dumpMysqlGeneric');
-            $dump->invoke($this->makeRenderer(), 'extras_dump_fixture', 'bible_extras_dump_fixture', $path);
+            $dump->invoke($this->makeRenderer(), $fixture, 'bible_' . $fixture, $path);
 
             $sql = file_get_contents($path);
 
-            $this->assertStringContainsString('INSERT INTO `bible_extras_dump_fixture`', $sql);
+            $this->assertStringContainsString('INSERT INTO `bible_' . $fixture . '`', $sql);
             $this->assertStringNotContainsString($stamp, $sql, 'this installation\'s timestamps must not travel with the dump');
             $this->assertStringContainsString('NULL, NULL);', $sql);
         }
@@ -247,7 +248,8 @@ class MysqlExtrasTest extends TestCase
         $this->requireMysqlDriver();
 
         $prefix   = 'bss-fixture-';
-        $table    = $prefix . 'extras_dump_fixture';
+        $fixture  = $this->fixtureTableName('extras_dump_prefixed');
+        $table    = $prefix . $fixture;
         $path     = $this->tempDir . 'prefixed.sql';
         $original = \DB::getTablePrefix();
 
@@ -256,15 +258,15 @@ class MysqlExtrasTest extends TestCase
 
         try {
             \DB::connection()->setTablePrefix($prefix);
-            \DB::table('extras_dump_fixture')->insert(['name' => 'fixture']);
+            \DB::table($fixture)->insert(['name' => 'fixture']);
 
             $dump = new \ReflectionMethod(MySQL::class, '_dumpMysqlGeneric');
-            $dump->invoke($this->makeRenderer(), 'extras_dump_fixture', 'bible_extras_dump_fixture', $path);
+            $dump->invoke($this->makeRenderer(), $fixture, 'bible_' . $fixture, $path);
 
             $sql = file_get_contents($path);
 
-            $this->assertStringContainsString('CREATE TABLE `bible_extras_dump_fixture`', $sql);
-            $this->assertStringContainsString('INSERT INTO `bible_extras_dump_fixture`', $sql);
+            $this->assertStringContainsString('CREATE TABLE `bible_' . $fixture . '`', $sql);
+            $this->assertStringContainsString('INSERT INTO `bible_' . $fixture . '`', $sql);
             $this->assertStringNotContainsString($prefix, $sql, 'the local prefix must not travel with the dump');
         }
         finally {
@@ -314,20 +316,21 @@ class MysqlExtrasTest extends TestCase
     {
         $this->requireMysqlDriver();
 
-        $table = \DB::getTablePrefix() . 'extras_dump_fixture';
-        $path  = $this->tempDir . 'empty.sql';
+        $fixture = $this->fixtureTableName('extras_dump_empty');
+        $table   = \DB::getTablePrefix() . $fixture;
+        $path    = $this->tempDir . 'empty.sql';
 
         \DB::statement("DROP TABLE IF EXISTS `{$table}`");
         \DB::statement("CREATE TABLE `{$table}` (`id` int(10) unsigned NOT NULL AUTO_INCREMENT, `name` varchar(255) NOT NULL, PRIMARY KEY (`id`))");
 
         try {
             $dump = new \ReflectionMethod(MySQL::class, '_dumpMysqlGeneric');
-            $dump->invoke($this->makeRenderer(), 'extras_dump_fixture', 'bible_extras_dump_fixture', $path);
+            $dump->invoke($this->makeRenderer(), $fixture, 'bible_' . $fixture, $path);
 
             $sql = file_get_contents($path);
 
-            $this->assertStringContainsString('DROP TABLE IF EXISTS `bible_extras_dump_fixture`;', $sql);
-            $this->assertStringContainsString('CREATE TABLE `bible_extras_dump_fixture`', $sql);
+            $this->assertStringContainsString('DROP TABLE IF EXISTS `bible_' . $fixture . '`;', $sql);
+            $this->assertStringContainsString('CREATE TABLE `bible_' . $fixture . '`', $sql);
             $this->assertStringNotContainsString('INSERT INTO', $sql, 'there is nothing to insert');
         }
         finally {
