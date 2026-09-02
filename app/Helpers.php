@@ -226,8 +226,12 @@ class Helpers {
     }
 
     /**
-     * Builds Laravel query from jqgrid search data
-     * 
+     * Builds Laravel query from the admin grid's search data
+     *
+     * The wire format (searchOper / searchField / searchString, or a filters JSON of
+     * groupOp + rules) is inherited from jqGrid. The library itself was removed in BSS-286;
+     * only the request shape the grid endpoints still accept survives here.
+     *
      * @param $data response data
      * @param $Query Laravel query builder
      */

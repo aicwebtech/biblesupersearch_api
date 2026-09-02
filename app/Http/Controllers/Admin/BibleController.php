@@ -24,37 +24,6 @@ class BibleController extends Controller
 
     /**
      * Display a listing of the resource.
-     * In this case, a page with a jqGrid
-     *
-     * @return \Illuminate\Http\Response
-     */
-    public function indexOld() 
-    {
-        Bible::updateNeedsUpdate();
-        Bible::populateBibleTable();
-        $ImportManagerClass = Helpers::find('\App\ImportManager');
-
-        $bootstrap = new \stdClass;
-        $bootstrap->devToolsEnabled  = (bool) config('bss.dev_tools');
-        $bootstrap->premToolsEnabled = config('app.premium');
-        $bootstrap->maxUploadSize    = Helpers::maxUploadSize('both');
-        $bootstrap->languages  = \App\Models\Language::orderBy('name', 'asc')->get();
-        $bootstrap->copyrights = [];
-        $bootstrap->importers  = $ImportManagerClass::getImportersList();
-
-        foreacH(\App\Models\Copyright::all() as $Copyright) {
-            $data = $Copyright->getAttributes();
-            $data['copyright_statement_processed'] = $Copyright->getProcessedCopyrightStatement();
-            $bootstrap->copyrights[] = $data;
-        }
-
-        $bootstrap = json_encode($bootstrap);
-
-        return view('admin.bibles_old', ['bootstrap' => $bootstrap]);
-    }
-
-    /**
-     * Display a listing of the resource.
      * In this case, a page with a grid
      *
      * @return \Illuminate\Http\Response
