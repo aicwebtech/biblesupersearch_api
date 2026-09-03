@@ -129,4 +129,84 @@ class VerseStandardTest extends TestCase
         $this->assertStringContainsString('AND a.chapter = b.chapter', $join);
         $this->assertStringContainsString('b.id - 2 AND b.id + 2', $join);
     }
+
+    /**
+     * Reads the ceiling from the class rather than restating it, so raising or lowering the
+     * property does not silently strand these tests on a stale number.
+     */
+    private function proximityLimitMax(): int
+    {
+        $property = new \ReflectionProperty(VerseStandard::class, 'proximity_limit_max');
+
+        return $property->getValue();
+    }
+
+    /**
+     * The window widens the BETWEEN range on every arm of an N-way self join, so an
+     * arbitrarily large request is an unauthenticated way to burn CPU and memory.
+     */
+    public function testAnOversizedProximityLimitParameterIsClampedToTheMaximum(): void
+    {
+        $max  = $this->proximityLimitMax();
+        $join = $this->buildJoin('~p', ['proximity_limit' => 100000000]);
+
+        $this->assertStringContainsString('AND a.id BETWEEN b.id - ' . $max . ' AND b.id + ' . $max, $join);
+        $this->assertStringNotContainsString('100000000', $join);
+    }
+
+    /**
+     * The inline operator form reaches the same window, so it needs the same ceiling.
+     */
+    public function testAnOversizedWindowInTheOperatorIsClampedToTheMaximum(): void
+    {
+        $max  = $this->proximityLimitMax();
+        $join = $this->buildJoin('~p(100000000)');
+
+        $this->assertStringContainsString('AND a.id BETWEEN b.id - ' . $max . ' AND b.id + ' . $max, $join);
+        $this->assertStringNotContainsString('100000000', $join);
+    }
+
+    /**
+     * A negative window would invert the BETWEEN range and silently match nothing.
+     */
+    public function testANegativeProximityLimitIsRaisedToTheFloor(): void
+    {
+        $join = $this->buildJoin('~p', ['proximity_limit' => -20]);
+
+        $this->assertStringContainsString('AND a.id BETWEEN b.id - 0 AND b.id + 0', $join);
+        $this->assertStringNotContainsString('- -20', $join);
+    }
+
+    /**
+     * PROX(0) asks for both keywords in the one verse - the join's ON clause is the sub-search's
+     * own WHERE rather than an exclusion, so a zero window is a search a user can meaningfully
+     * write. Raising it to one would silently widen the result to the neighbouring verses.
+     */
+    public function testAZeroWindowInTheOperatorIsPreserved(): void
+    {
+        $join = $this->buildJoin('~p(0)');
+
+        $this->assertStringContainsString('AND a.id BETWEEN b.id - 0 AND b.id + 0', $join);
+        $this->assertStringNotContainsString('b.id - 1', $join);
+    }
+
+    /**
+     * A non-numeric parameter must not reach the SQL, whatever a caller of the public
+     * getSearch() entry points passes in its $parameters array.
+     */
+    public function testANonNumericProximityLimitIsCastBeforeItReachesTheSql(): void
+    {
+        $join = $this->buildJoin('~p', ['proximity_limit' => '7 OR 1=1']);
+
+        $this->assertStringContainsString('AND a.id BETWEEN b.id - 7 AND b.id + 7', $join);
+        $this->assertStringNotContainsString('1=1', $join);
+    }
+
+    public function testAProximityLimitAtTheMaximumIsLeftAlone(): void
+    {
+        $max  = $this->proximityLimitMax();
+        $join = $this->buildJoin('~p', ['proximity_limit' => $max]);
+
+        $this->assertStringContainsString('AND a.id BETWEEN b.id - ' . $max . ' AND b.id + ' . $max, $join);
+    }
 }

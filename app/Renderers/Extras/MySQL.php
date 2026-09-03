@@ -6,8 +6,18 @@ use App\Models\Books\BookAbstract AS Book;
 class MySQL extends ExtrasAbstract 
 {
     
-    protected function _renderBibleBookListSingle($lang_code) 
+    /**
+     * Renders one language's book list as a MySQL dump.
+     *
+     * The language code lands inside a backticked table name in three places below, and the
+     * row values land inside quoted SQL literals, so both are escaped here rather than trusted.
+     * Book names legitimately contain apostrophes - see the Turkish, Hebrew and Somali CSVs in
+     * database/dumps/bible_books - which produced malformed dumps before the values were quoted.
+     */
+    protected function _renderBibleBookListSingle($lang_code)
     {
+        $lang_code = $this->_assertSafeTableIdentifier($lang_code);
+
         $header = <<<HEAD
 
 DROP TABLE IF EXISTS `bible_books_{$lang_code}`;
@@ -46,13 +56,16 @@ HEAD;
             unset($arr['created_at']);
             unset($arr['updated_at']);
 
+            if(array_key_exists('id', $arr)) {
+                $arr['id'] = (int) $arr['id'];
+            }
+
             foreach($arr as $key => &$val) {
-                if(is_string($val)) {
-                    $val = '\'' . $val . '\'';
-                }
-                
                 if($val === null) {
                     $val = 'NULL';
+                }
+                elseif(is_string($val)) {
+                    $val = $this->_quoteSqlValue($val);
                 }
             }
             unset($val);
@@ -70,8 +83,18 @@ HEAD;
         return $dst_file;
     }
 
+    /**
+     * Renders one language's shortcuts as a MySQL dump.
+     *
+     * The language code lands inside the backticked table names below and inside both the source
+     * and destination file paths, so it is guarded here the same way the book list guards its
+     * own. The codes come from config('bss_table_languages.shortcuts') rather than from a user,
+     * but a sibling of this method already learned not to rely on that.
+     */
     protected function _renderBibleShortcutsSingle($lang_code) 
     {
+        $lang_code = $this->_assertSafeTableIdentifier($lang_code);
+
         $header = <<<HEAD
 
 DROP TABLE IF EXISTS `bible_shortcuts_{$lang_code}`;
@@ -160,7 +183,7 @@ HEAD;
                         $values[] = 'NULL';
                     }
                     else {
-                        $values[] = \DB::connection()->getPdo()->quote($row->$f);
+                        $values[] = $this->_quoteSqlValue($row->$f);
                     }
                 }
 
@@ -188,6 +211,27 @@ HEAD;
         }
 
         return $table;
+    }
+
+    /**
+     * Quotes a value for interpolation into a MySQL dump, independent of this connection's driver.
+     *
+     * These files are MySQL artifacts imported on somebody else's server, but PDO::quote()
+     * follows whatever driver this installation happens to run on - SQLite leaves a backslash
+     * untouched where MySQL escapes it, so one book list produced two different dumps depending
+     * on where it was rendered.
+     *
+     * Apostrophes are doubled rather than backslash escaped because '' reads the same way whether
+     * or not the importing server sets NO_BACKSLASH_ESCAPES, and book names carry apostrophes -
+     * see the Turkish, Hebrew and Somali lists. A literal backslash cannot be written to satisfy
+     * both sql_modes at once, so it takes the default mode's escaping; no book name contains one.
+     */
+    private function _quoteSqlValue($value): string 
+    {
+        $value = str_replace('\\', '\\\\', (string) $value);
+        $value = str_replace("'", "''", $value);
+
+        return "'" . $value . "'";
     }
 
     /**

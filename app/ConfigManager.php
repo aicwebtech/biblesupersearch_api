@@ -5,7 +5,6 @@ namespace App;
 use App\Models\Config;
 use App\Models\ConfigValue;
 use App\Engine;
-use Illuminate\Contracts\Auth\Guard;
 
 /**
  * ConfigManager
@@ -19,12 +18,6 @@ class ConfigManager
     static function getGlobalConfigs() 
     {
         return self::getConfigs(0);
-    }
-
-    static function getUserConfigs(Guard $Guard) 
-    {
-        // Todo - implement!
-        var_dump($Guard->user->user_id);
     }
 
     static function getConfigs($user_id = 0, $return_models = FALSE) 

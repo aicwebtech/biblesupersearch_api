@@ -21,6 +21,16 @@ class VerseStandard extends VerseAbstract
     protected static $special_table = 'bible';
 
     /**
+     * Largest proximity window a search may request, in verses.
+     *
+     * The proximity join is already constrained to a single book (and to a single chapter for
+     * '~l' and for Psalms), so no legitimate search needs a wider window than this. Without a
+     * ceiling, a request such as proximity_limit=100000000 widens the BETWEEN range on every
+     * arm of an N-way self join, which is an unauthenticated way to burn CPU and memory.
+     */
+    protected static $proximity_limit_max = 500;
+
+    /**
      * Processes and executes the Bible search query
      *
      * @param array $Passages Array of App/Passage instances, represents the passages requested, if any
@@ -411,20 +421,20 @@ class VerseStandard extends VerseAbstract
         foreach($Passages as $Passage) {
             if(count($Passage->chapter_verse_normal)) {
                 foreach($Passage->chapter_verse_normal as $parsed) {
-                    $q = $table_fmt . '`book` = ' . $Passage->Book->id;
+                    $q = $table_fmt . '`book` = ' . (int) $Passage->Book->id;
 
                     // Single verses
                     if($parsed['type'] == 'single') {
-                        $q .= ' AND ' . $table_fmt . '`chapter` = ' . $parsed['c'];
-                        $q .= ($parsed['v']) ? ' AND ' . $table_fmt . '`verse` = ' . $parsed['v'] : '';
+                        $q .= ' AND ' . $table_fmt . '`chapter` = ' . (int) $parsed['c'];
+                        $q .= ($parsed['v']) ? ' AND ' . $table_fmt . '`verse` = ' . (int) $parsed['v'] : '';
                     }
                     elseif($parsed['type'] == 'range') {
                         if(!$parsed['cst'] && !$parsed['cen']) {
                             continue;
                         }
 
-                        $cvst = $parsed['cst'] * 1000 + (int) $parsed['vst'];
-                        $cven = $parsed['cen'] * 1000 + (int) $parsed['ven'];
+                        $cvst = (int) $parsed['cst'] * 1000 + (int) $parsed['vst'];
+                        $cven = (int) $parsed['cen'] * 1000 + (int) $parsed['ven'];
                         $q .= ' AND ' . $table_fmt . '`chapter_verse` BETWEEN ' . $cvst . ' AND ' . $cven;
                         
                         // Proposed modification that would eliminate the need for the `chapter_verse` db column
@@ -436,10 +446,10 @@ class VerseStandard extends VerseAbstract
             }
             else {
                 if($Passage->is_book_range) {
-                    $query[] = $table_fmt . '`book` BETWEEN ' . $Passage->Book->id . ' AND ' . $Passage->Book_En->id;
+                    $query[] = $table_fmt . '`book` BETWEEN ' . (int) $Passage->Book->id . ' AND ' . (int) $Passage->Book_En->id;
                 }
                 else {
-                    $query[] = $table_fmt . '`book` = ' . $Passage->Book->id;
+                    $query[] = $table_fmt . '`book` = ' . (int) $Passage->Book->id;
                 }
             }
         }
@@ -536,8 +546,13 @@ class VerseStandard extends VerseAbstract
                 $limit = intval(substr($operator, $lppos + 1));
             }
             else {
-                $limit = (empty($parameters['proximity_limit'])) ? 5 : $parameters['proximity_limit'];
+                $limit = (empty($parameters['proximity_limit'])) ? 5 : (int) $parameters['proximity_limit'];
             }
+
+            // Floored at zero rather than one: PROX(0) is a legitimate search for two
+            // keywords in the same verse, and only the ceiling guards against resource
+            // exhaustion. A negative proximity_limit would invert the BETWEEN range.
+            $limit = max(0, min($limit, static::$proximity_limit_max));
 
             $ps_chapter = ' AND (' . $alias . '.book != 19 OR '  . $alias . '.chapter = ' . $alias2 . '.chapter )'; // Always limit within chapter for Psalms
             $join .= (strpos($operator, '~l') === 0) ? ' AND ' . $alias . '.chapter = ' . $alias2 . '.chapter' : $ps_chapter; // Limit within chapter

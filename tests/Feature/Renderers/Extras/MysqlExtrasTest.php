@@ -189,6 +189,103 @@ class MysqlExtrasTest extends TestCase
         $this->assertSame([], glob($this->tempDir . '*') ?: []);
     }
 
+    /**
+     * Book names legitimately contain apostrophes - the Turkish, Hebrew and Somali book lists
+     * all carry them - and an apostrophe closed the SQL literal early before the values were
+     * quoted, so those shipped dumps were malformed on import.
+     *
+     * The installed book tables are content data and cannot be written to, so the awkward name
+     * goes into a throwaway language of its own. 'qqt' is not a real language code, matching the
+     * fixture convention in Tests\Feature\EngineTest.
+     *
+     * The code has to be one no other test uses: paratest workers share the one database, the
+     * language column is only three characters so it cannot carry a process id the way
+     * fixtureTableName() does, and createLanguageFixture() deletes the code's existing row before
+     * inserting - so two tests naming one code delete each other's fixture mid-run. Taken:
+     * qqu/qqw/qqz (EngineTest), qqv (ImportFailureStateTest), qqx (AudioGatesTest),
+     * qqy/qqz (LanguageTest).
+     */
+    public function testBookListQuotesNamesThatCarryAnApostrophe(): void
+    {
+        $code  = 'qqt';
+        $name  = "Mısır'dan Çıkış";
+        $short = "Samuu'eel";
+        $table = 'books_' . $code;
+
+        // Built through the schema builder rather than raw DDL so the fixture inherits the
+        // connection's own charset - the book names are not spellable in latin1.
+        \Schema::dropIfExists($table);
+        \Schema::create($table, function ($t) {
+            $t->increments('id');
+            $t->string('name');
+            $t->string('shortname')->nullable();
+            $t->string('matching1')->nullable();
+            $t->string('matching2')->nullable();
+        });
+
+        try {
+            $this->createLanguageFixture($code, 'Apostrophe Book List Test');
+
+            \DB::table($table)->insert([
+                'id'        => 1,
+                'name'      => $name,
+                'shortname' => $short,
+                'matching1' => null,
+                'matching2' => null,
+            ]);
+
+            $path = $this->makeRenderer()->callBookList($code);
+
+            $this->assertFileExists($path);
+
+            $sql = file_get_contents($path);
+
+            // The dump is a MySQL artifact wherever it was rendered, so the apostrophe is doubled
+            // rather than escaped however this installation's own driver would have done it.
+            $this->assertStringContainsString("'" . str_replace("'", "''", $name) . "'", $sql);
+            $this->assertStringContainsString("'" . str_replace("'", "''", $short) . "'", $sql);
+            $this->assertStringNotContainsString("\\'", $sql, 'a doubled quote survives NO_BACKSLASH_ESCAPES');
+
+            $this->assertStringNotContainsString("'" . $name . "'", $sql, 'the apostrophe must not close the literal early');
+            $this->assertStringContainsString('INSERT INTO `bible_books_' . $code . '` VALUES (1, ', $sql);
+            $this->assertStringContainsString(', NULL, NULL);', $sql, 'null columns stay unquoted');
+        }
+        finally {
+            \Schema::dropIfExists($table);
+            $this->removeLanguageFixture($code);
+        }
+    }
+
+    /**
+     * The language code is interpolated into the backticked table name of the DROP, CREATE and
+     * INSERT statements, none of which the query builder can wrap, so it has to be a bare
+     * identifier - and nothing may be written before it is checked.
+     *
+     * @return array<string, array{string}>
+     */
+    public static function unsafeLanguageCodeProvider(): array
+    {
+        return [
+            'quote escape'    => ['en`; DROP TABLE users; -- '],
+            'statement break' => ['en; DROP TABLE users'],
+            'space in code'   => ['en us'],
+        ];
+    }
+
+    #[DataProvider('unsafeLanguageCodeProvider')]
+    public function testBookListRejectsAnUnsafeLanguageCode(string $lang_code): void
+    {
+        try {
+            $this->makeRenderer()->callBookList($lang_code);
+            $this->fail('an unsafe language code should not have reached the dump');
+        }
+        catch (\InvalidArgumentException $e) {
+            $this->assertStringContainsString('Unsafe table name', $e->getMessage());
+        }
+
+        $this->assertSame([], glob($this->tempDir . '*') ?: []);
+    }
+
     public function testShortcutsDumpIsBuiltFromTheCheckedInDump(): void
     {
         $path = $this->makeRenderer()->callShortcuts('en');
@@ -200,6 +297,25 @@ class MysqlExtrasTest extends TestCase
 
         $this->assertStringContainsString('DROP TABLE IF EXISTS `bible_shortcuts_en`;', $sql);
         $this->assertStringContainsString('CREATE TABLE `bible_shortcuts_en`', $sql);
+    }
+
+    /**
+     * The shortcuts renderer interpolates the code into its backticked table names and into both
+     * file paths it reads and writes, so it rejects the same codes the book list does - a '../'
+     * or a backtick would otherwise reach the filesystem and the DDL.
+     */
+    #[DataProvider('unsafeLanguageCodeProvider')]
+    public function testShortcutsRejectAnUnsafeLanguageCode(string $lang_code): void
+    {
+        try {
+            $this->makeRenderer()->callShortcuts($lang_code);
+            $this->fail('an unsafe language code should not have reached the dump');
+        }
+        catch (\InvalidArgumentException $e) {
+            $this->assertStringContainsString('Unsafe table name', $e->getMessage());
+        }
+
+        $this->assertSame([], glob($this->tempDir . '*') ?: []);
     }
 
     /**
