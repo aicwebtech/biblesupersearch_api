@@ -147,12 +147,17 @@ Route::post('/admin/config/download/delete', 'Admin\ConfigController@deleteAllDo
 //Route::controller('admin', 'AdminController');
 
 // Installers
-Route::get('/install/{action?}' , 'Admin\InstallController@index')->name('admin.install');
-//Route::post('/install/{action?}', 'Admin\InstallController@genericAction'); // Inside controller actions are required to be post
-Route::post('/install/check', 'Admin\InstallController@check')->name('admin.install.check'); // Inside controller actions are required to be post
-Route::post('/install/config', 'Admin\InstallController@config')->name('admin.install.config'); // Inside controller actions are required to be post
-Route::post('/install/config/process', 'Admin\InstallController@handleConfig')->name('admin.install.config.process'); // Inside controller actions are required to be post
-Route::get('/install/config/process', 'Admin\InstallController@index');
+// Throttled because these are unauthenticated by design - first run setup has nobody to
+// authenticate yet - and /install/config/process starts a multi-minute migration, so repeated
+// attempts must not be free.
+Route::middleware('throttle:20,1')->group(function() {
+    Route::get('/install/{action?}' , 'Admin\InstallController@index')->name('admin.install');
+    //Route::post('/install/{action?}', 'Admin\InstallController@genericAction'); // Inside controller actions are required to be post
+    Route::post('/install/check', 'Admin\InstallController@check')->name('admin.install.check'); // Inside controller actions are required to be post
+    Route::post('/install/config', 'Admin\InstallController@config')->name('admin.install.config'); // Inside controller actions are required to be post
+    Route::post('/install/config/process', 'Admin\InstallController@handleConfig')->name('admin.install.config.process'); // Inside controller actions are required to be post
+    Route::get('/install/config/process', 'Admin\InstallController@index');
+});
 
 // todos
 Route::get('/admin/options', 'AdminController@todo')->name('admin.options');

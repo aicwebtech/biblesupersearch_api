@@ -32,6 +32,62 @@ class InstallManagerChecklistTest extends TestCase
     }
 
     /**
+     * checkSettings() runs before there is anyone to authenticate, so it must not hand the
+     * database password back to whoever asked. It used to build 'DB_PASSWORD (' . $password . ')'
+     * as a checklist label.
+     */
+    public function testTheChecklistNeverCarriesTheDatabasePassword(): void
+    {
+        $password = config('database.connections.' . config('database.default') . '.password');
+
+        list($checklist, $success) = InstallManager::checkSettings();
+
+        $labels = array_column($checklist, 'label');
+
+        $this->assertNotEmpty($labels);
+
+        if(!empty($password)) {
+            foreach($labels as $label) {
+                $this->assertStringNotContainsString($password, $label, 'the database password must not reach the checklist');
+            }
+        }
+
+        $password_rows = array_values(array_filter($labels, function($label) {
+            return strpos($label, 'DB_PASSWORD') === 0;
+        }));
+
+        $this->assertNotEmpty($password_rows, 'the operator still needs to know whether a password is configured');
+        $this->assertMatchesRegularExpression('/^DB_PASSWORD \((set|not set)\)$/', $password_rows[0]);
+    }
+
+    /**
+     * Every label is rendered escaped now, so no label may rely on carrying its own markup - the
+     * one that did, the database connection error, was split into a label and a detail.
+     */
+    public function testNoChecklistLabelCarriesMarkup(): void
+    {
+        list($checklist, $success) = InstallManager::checkSettings();
+
+        foreach($checklist as $row) {
+            if(!array_key_exists('label', $row)) {
+                continue;
+            }
+
+            $this->assertStringNotContainsString('<', $row['label'], 'labels are escaped, so markup in one would be shown literally');
+        }
+    }
+
+    /**
+     * The installed flag has to survive a stale config cache: LoadSoftConfiguration skips the
+     * database entirely when bootstrap/cache/config.php exists, which would otherwise freeze
+     * app.installed at its FALSE default and leave the installer reachable on a live site.
+     */
+    public function testTheInstalledFlagCanBeReadStraightFromTheDatabase(): void
+    {
+        $this->assertTrue(InstallManager::isInstalledInDatabase());
+    }
+
+    /**
      * The required PHP version is taken from composer.json rather than duplicated, so the
      * install page cannot advertise a different floor from the one Composer enforces.
      */

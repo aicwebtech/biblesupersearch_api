@@ -57,6 +57,41 @@ class InstallManager
     ];
 
     static protected $checklist_init = false;
+
+    /**
+     * Name of the file, inside storage/app, that claims the one-time install.
+     */
+    static protected $install_lock_file = 'install.lock';
+
+    /**
+     * How long a claim on disk is believed, in seconds.
+     *
+     * install() gives itself 600 seconds and then another 300, so nothing legitimate can still
+     * be holding a claim older than that. Past this age the claim is treated as leaked by a
+     * crashed attempt and reclaimed - without it, one timeout would wedge the installer for good
+     * on a server whose owner has no shell to delete the file with.
+     */
+    static protected $install_lock_ttl = 1200;
+
+    /**
+     * Path of the claim this process currently holds, or NULL when it holds none.
+     *
+     * Tracked so the shutdown release below cannot drop a claim that has since been released and
+     * handed to somebody else.
+     */
+    static protected $install_lock_held_path = NULL;
+
+    static protected $install_lock_shutdown_registered = FALSE;
+
+    /**
+     * Outcomes of install(). Anything other than INSTALL_SUCCESS is a failure the caller has to
+     * report - the installer used to return a bare FALSE for all of them, which the controller
+     * turned into a blank 200.
+     */
+    const INSTALL_SUCCESS           = 'success';
+    const INSTALL_FAILED            = 'failed';
+    const INSTALL_IN_PROGRESS       = 'in_progress';
+    const INSTALL_ALREADY_INSTALLED = 'already_installed';
     
     static function getChecklist() 
     {
@@ -73,13 +108,172 @@ class InstallManager
         return static::$checklist;
     }
     
+    /**
+     * Whether the application has already been installed.
+     *
+     * config('app.installed') is normally authoritative, but LoadSoftConfiguration returns early
+     * whenever bootstrap/cache/config.php exists, so a config cache built before the install
+     * freezes this at its config/app.php default of FALSE - which leaves the installer live on a
+     * site that is in fact installed and populated. When the cached answer is FALSE and a config
+     * cache is in play, ask the database rather than trust the frozen value.
+     */
     static function isInstalled() 
     {
         if(config('app.installed')) {
             return TRUE;
         }
 
-        return FALSE;
+        if(!app()->configurationIsCached()) {
+            return FALSE;
+        }
+
+        return static::isInstalledInDatabase();
+    }
+
+    /**
+     * Reads the installed flag straight from the soft config tables.
+     *
+     * A genuine first run has no config tables at all, and on shared hosting the database
+     * credentials may not even be valid yet, so anything short of an explicit TRUE means not
+     * installed - this must never throw its way out of the installer's own gate.
+     */
+    static function isInstalledInDatabase(): bool 
+    {
+        try {
+            if(!\Schema::hasTable('configs') || !\Schema::hasTable('config_values')) {
+                return FALSE;
+            }
+
+            $configs = ConfigManager::getGlobalConfigs();
+
+            return !empty($configs['app.installed']);
+        }
+        catch (\Exception $e) {
+            return FALSE;
+        }
+    }
+
+    /**
+     * Claims the exclusive, one-time right to run the installer.
+     *
+     * The installed flag cannot do this on its own: it is written more than forty lines and
+     * several minutes after the guard that reads it - key:generate, migrate, the Bible table and
+     * the feature sync all run in between - and on a first run there is no config table to
+     * compare and set against, because migrate has not run yet. fopen()'s 'x' mode is an atomic
+     * O_EXCL create, so exactly one concurrent request wins the claim.
+     *
+     * A cache lock would not do: the store may be unusable before migration, and an 'array'
+     * driver would silently reduce the lock to a per-process no-op.
+     *
+     * @param  string|null $dir directory to claim in, defaulting to storage/app
+     * @return bool TRUE when this process now holds the claim
+     */
+    static function claimInstallLock($dir = NULL): bool
+    {
+        $path = static::getInstallLockPath($dir);
+
+        // Only to keep the ordinary "already claimed" case quiet; fopen()'s 'x' below is still
+        // what makes the claim atomic when two requests genuinely race for it.
+        if(file_exists($path)) {
+            if(!static::installLockIsStale($path)) {
+                return FALSE;
+            }
+
+            // Leaked by an attempt that died without running its finally. Dropping it reopens
+            // the race for a moment, but the atomic create below still admits only one winner.
+            @unlink($path);
+        }
+
+        $handle = @fopen($path, 'x');
+
+        if($handle === FALSE) {
+            return FALSE;
+        }
+
+        fclose($handle);
+
+        static::$install_lock_held_path = $path;
+
+        static::registerInstallLockShutdownRelease();
+
+        return TRUE;
+    }
+
+    /**
+     * Whether a claim on disk is too old to belong to a running install.
+     *
+     * @param  string $path
+     */
+    static function installLockIsStale(string $path): bool
+    {
+        $mtime = @filemtime($path);
+
+        // An unreadable timestamp says nothing; leaving the claim alone is the safe answer.
+        if($mtime === FALSE) {
+            return FALSE;
+        }
+
+        return (time() - $mtime) > static::$install_lock_ttl;
+    }
+
+    /**
+     * Whether a claim exists on disk.
+     *
+     * Lets the caller tell "somebody else is installing" apart from "the claim could not be
+     * created at all", which is a permissions or disk problem wearing the wrong error message.
+     */
+    static function installLockExists($dir = NULL): bool
+    {
+        return file_exists(static::getInstallLockPath($dir));
+    }
+
+    /**
+     * Drops the install claim so a failed attempt can be retried.
+     */
+    static function releaseInstallLock($dir = NULL): bool
+    {
+        $path = static::getInstallLockPath($dir);
+
+        if(static::$install_lock_held_path === $path) {
+            static::$install_lock_held_path = NULL;
+        }
+
+        return (!file_exists($path)) ? TRUE : @unlink($path);
+    }
+
+    /**
+     * Arranges for a held claim to come off when the process dies.
+     *
+     * install()'s finally does not run on an uncatchable fatal, and a fatal is exactly what a
+     * multi-minute migration invites: a max execution time, a memory_limit exhaustion. Shutdown
+     * functions do run for those, so the claim is released rather than leaked. The TTL in
+     * claimInstallLock() covers what shutdown functions cannot - a SIGKILL or a PHP-FPM
+     * request_terminate_timeout.
+     */
+    static protected function registerInstallLockShutdownRelease(): void
+    {
+        if(static::$install_lock_shutdown_registered) {
+            return;
+        }
+
+        static::$install_lock_shutdown_registered = TRUE;
+
+        register_shutdown_function(function() {
+            if(static::$install_lock_held_path === NULL) {
+                return;
+            }
+
+            @unlink(static::$install_lock_held_path);
+
+            static::$install_lock_held_path = NULL;
+        });
+    }
+
+    static function getInstallLockPath($dir = NULL): string 
+    {
+        $dir = ($dir === NULL) ? storage_path('app') : rtrim($dir, '/');
+
+        return $dir . '/' . static::$install_lock_file;
     }
 
     static function modRewriteEnabled()
@@ -93,12 +287,32 @@ class InstallManager
         return $enabled;
     }
 
+    /**
+     * Installs the application.
+     *
+     * @return string one of the INSTALL_* codes; only INSTALL_SUCCESS means the app is installed
+     */
     static function install(Request $request) 
     {
-        if(config('app.installed')) {
-            return FALSE;
+        if(static::isInstalled()) {
+            return static::INSTALL_ALREADY_INSTALLED;
         }
-    
+
+        // Claimed before anything is written. The installed flag is far too late to serialise on
+        // - see claimInstallLock().
+        if(!static::claimInstallLock()) {
+            // No claim on disk means the create itself failed - storage/app is not writable, the
+            // disk is full, open_basedir is in the way. Reporting that as "already running"
+            // would send the operator looking for an install that does not exist.
+            if(!static::installLockExists()) {
+                \Log::error('Install aborted: could not create the install claim at ' . static::getInstallLockPath() . '. Check that storage/app is writable by the web server user.');
+
+                return static::INSTALL_FAILED;
+            }
+
+            return static::INSTALL_IN_PROGRESS;
+        }
+
         $start_time = time();
 
         // Ensures that this installer can run even when not on CLI
@@ -110,66 +324,134 @@ class InstallManager
 
         error_reporting(E_ERROR | E_PARSE); // Workaround for deprecation warning
 
-        set_time_limit(600); // 10 minute time limit for installation process
+        try {
+            set_time_limit(600); // 10 minute time limit for installation process
 
-        // Generate application key
-        Artisan::call('key:generate');
+            // isInstalled() above can be answered from a config cache built before another
+            // request finished the install, so the database gets the last word before anything
+            // is written. key:generate would otherwise rotate APP_KEY on a live site - the flag
+            // is only read here, no table is required, and a genuine first run answers FALSE.
+            if(static::isInstalledInDatabase()) {
+                return static::INSTALL_ALREADY_INSTALLED;
+            }
 
-        // Set up database // --force Allows migration to run in production
-        $exit_code = Artisan::call('migrate', array('--force' => TRUE));
+            // Generate application key
+            Artisan::call('key:generate');
 
-        set_time_limit(300); // 5 minute time limit for post-migration processes (like populating the Bible table)
+            // Set up database // --force Allows migration to run in production
+            $exit_code = Artisan::call('migrate', array('--force' => TRUE));
 
-        // Populate the Bible table
-        Bible::populateBibleTable();
+            set_time_limit(300); // 5 minute time limit for post-migration processes (like populating the Bible table)
 
-        // Populate the Features table
-        Feature::syncFeatures();
+            // Populate the Bible table
+            Bible::populateBibleTable();
 
-        // Add admin user
-        $User = User::create([
-            'name'          => $request->get('name'),
-            'username'      => $request->get('username'),
-            'email'         => $request->get('email'),
-            'password'      => bcrypt( $request->get('password') ),
-            'access_level'  => 100,
-        ]);
+            // Populate the Features table
+            Feature::syncFeatures();
 
-        $User->access_level = 100;
-        $User->save();
+            // The users table exists now that migrate has run, so a finished install can be
+            // recognised from the database rather than from a possibly stale config cache. Only
+            // a finished one is refused: an attempt that died between creating the administrator
+            // and writing the flag leaves a row behind while isInstalled() still says FALSE, so
+            // the installer goes on being served and every retry has to get past this point.
+            if(static::isInstalledInDatabase()) {
+                return static::INSTALL_ALREADY_INSTALLED;
+            }
 
-        // Set 'installed' config
-        ConfigManager::setConfigs(['app.installed' => TRUE]);
+            // Add admin user
+            // Adopted rather than duplicated, so retrying a half-finished install does not leave
+            // a second administrator behind. Nothing is given away by this: an application that
+            // is not installed serves the installer to anyone who asks, so whoever reaches here
+            // can become the administrator either way.
+            // NOTE: access_level is deliberately not mass assignable (see App\User), so it is set
+            // explicitly below rather than passed in here.
+            $User = User::orderBy('id')->first() ?: new User();
 
-        // Set Application URL
-        $server_url = static::getServerUrl();
-        ConfigManager::setConfigs(['app.url' => $server_url]);
+            $User->fill([
+                'name'          => $request->get('name'),
+                'username'      => $request->get('username'),
+                'email'         => $request->get('email'),
+                'password'      => bcrypt( $request->get('password') ),
+            ]);
 
-        // Set Application Email (System Mail Address)
-        ConfigManager::setConfigs(['mail.from.address' => $request->get('email')]);
+            $User->access_level = 100;
+            $User->save();
 
-        $elapsed_time = time() - $start_time;
+            $elapsed_time = time() - $start_time;
 
-        // Install default Bible (usally KJV)
-        $Bible = Bible::findByModule(config('bss.defaults.bible'));
-        if (!$Bible) {
-            error_reporting($ep);
-            return FALSE;
+            // Install default Bible (usally KJV)
+            $Bible = Bible::findByModule(config('bss.defaults.bible'));
+            if (!$Bible) {
+                \Log::error('Install failed: the default Bible module \'' . config('bss.defaults.bible') . '\' was not found.');
+
+                return static::INSTALL_FAILED;
+            }
+            $Bible->install(FALSE, TRUE);
+
+            // Set up book lists for EN language
+            \App\Models\Books\BookAbstract::createTableAndMigrateFromCsv('en');
+            $EN = Language::findByCode('en');
+
+            // Null here would raise an Error past the try, and the operator would get a raw
+            // framework 500 instead of the installer's own failure page.
+            if(!$EN) {
+                \Log::error('Install failed: the \'en\' language row is missing after migration.');
+
+                return static::INSTALL_FAILED;
+            }
+
+            $EN->setAttr('book_list', 1);
+            // English common words. This is used for the common words feature, which helps to improve search results by identifying common words in each language that should be ignored or treated differently in searches.
+            // :todo this should be part of the language CSV.
+            $EN->common_words = "a\nan\nand\nare\nas\nat\nbe\nby\nfor\nhe\nhis\nin\nis\nit\nof\non\nor\nthat\nthe\nthey\nto\nwas\nwith\nyou";
+            $EN->save();
+
+            // Written last, once there is an installed application to describe. Anything earlier
+            // and a failure below would leave the flag TRUE on a site with no Bible and no book
+            // lists: InstalledRedirect would send the retry offered by install.error to the docs
+            // page, and the install could never be completed.
+            ConfigManager::setConfigs(['app.installed' => TRUE]);
+
+            // Set Application URL
+            $server_url = static::getServerUrl();
+            ConfigManager::setConfigs(['app.url' => $server_url]);
+
+            // Set Application Email (System Mail Address)
+            ConfigManager::setConfigs(['mail.from.address' => $request->get('email')]);
+
+            // After all three writes, so a rebuilt cache carries the URL and mail address too -
+            // a cache rebuilt in between would freeze those at their pre-install defaults.
+            static::refreshConfigCache();
+
+            return static::INSTALL_SUCCESS;
         }
-        $Bible->install(FALSE, TRUE);
+        finally {
+            error_reporting($ep);
 
-        // Set up book lists for EN language
-        \App\Models\Books\BookAbstract::createTableAndMigrateFromCsv('en');
-        $EN = Language::findByCode('en');
-        $EN->setAttr('book_list', 1);   
-        // English common words. This is used for the common words feature, which helps to improve search results by identifying common words in each language that should be ignored or treated differently in searches.
-        // :todo this should be part of the language CSV. 
-        $EN->common_words = "a\nan\nand\nare\nas\nat\nbe\nby\nfor\nhe\nhis\nin\nis\nit\nof\non\nor\nthat\nthe\nthey\nto\nwas\nwith\nyou";
-        $EN->save();
+            // Once the flag is written it is the durable guard; until then the claim has to come
+            // off so a failed attempt can be retried.
+            static::releaseInstallLock();
+        }
+    }
 
-        error_reporting($ep);
+    /**
+     * Rebuilds the config cache so it agrees with the installed flag just written.
+     *
+     * Without this a cache built before the install keeps app.installed frozen at its default of
+     * FALSE, which is precisely what leaves the installer reachable on an installed site. Same
+     * handling as Admin\ConfigController::store().
+     */
+    static function refreshConfigCache(): void 
+    {
+        if(!app()->configurationIsCached()) {
+            return;
+        }
 
-        return TRUE;
+        Artisan::call('config:clear');
+
+        if(config('app.config_cache')) {
+            Artisan::call('config:cache');
+        }
     }
 
     static function checkSettings() 
@@ -198,7 +480,7 @@ class InstallManager
         $host = request()->getHost();
 
         $subdomain = $subdomain_pub_dir = false;
-        $uri = $_SERVER['REQUEST_URI'];
+        $uri = $_SERVER['REQUEST_URI'] ?? '';
         $uri_parts = explode('/', trim($uri, '/'));
 
         if($uri_parts[0] == 'public') {
@@ -320,7 +602,10 @@ class InstallManager
                 $db_connect_msg .= 'Connection timed out; Is your DB_HOST correct?';
             }
             else {
-                $db_connect_msg = 'Error Recieved: ' . $msg;
+                // The raw PDO message carries the server version, socket path and host, and this
+                // runs before there is anyone to authenticate. Keep the detail in the log.
+                \Log::error('Installer database connection failed: ' . $msg);
+                $db_connect_msg = 'Unable to connect. See the application log for the details.';
             }
         }
 
@@ -328,7 +613,11 @@ class InstallManager
             $checklist[] = ['type' => 'item', 'label' => 'DB_HOST ('. $db_info['host'] . ')', 'success' => (!empty($db_info['host'] && $able_to_connect) || $file)];
             $checklist[] = ['type' => 'item', 'label' => 'DB_DATABASE ('. $db_info['database'] . ')', 'success' => (!empty($db_info['database'] && $able_to_connect) || $file)];
             $checklist[] = ['type' => 'item', 'label' => 'DB_USERNAME ('. $db_info['username'] . ')', 'success' => (!empty($db_info['username'] && $able_to_connect) || $file)];
-            $checklist[] = ['type' => 'item', 'label' => 'DB_PASSWORD ('. $db_info['password'] . ')', 'success' => (!empty($db_info['password'] && $able_to_connect) || $file)];
+            // Never the value: this page is reachable unauthenticated before the install, and the
+            // DB_USERNAME row above plus the 'Able to Connect' row below already tell the operator
+            // everything they need in order to fix a bad password.
+            $pw_set = (!empty($db_info['password'])) ? 'set' : 'not set';
+            $checklist[] = ['type' => 'item', 'label' => 'DB_PASSWORD (' . $pw_set . ')', 'success' => (!empty($db_info['password'] && $able_to_connect) || $file)];
         }
         else {
             $db_file = database_path('database.' . $db_info['driver']);
@@ -345,7 +634,7 @@ class InstallManager
         $checklist[] = ['type' => 'item', 'label' => 'Able to Connect', 'success' => $able_to_connect];
 
         if(!$able_to_connect) {
-            $checklist[] = ['type' => 'error', 'label' => 'Unable to connect to database: <br />' . $db_connect_msg];
+            $checklist[] = ['type' => 'error', 'label' => 'Unable to connect to database:', 'detail' => $db_connect_msg];
         }
 
         $checklist[] = ['type' => 'hr'];
