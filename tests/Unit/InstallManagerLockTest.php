@@ -140,8 +140,9 @@ class InstallManagerLockTest extends TestCase
         mkdir($readonly, 0500, true);
 
         // claimInstallLock() suppresses the failed open with @, but PHPUnit's own error handler
-        // sees the diagnostic anyway and would report the test as risky for it.
-        set_error_handler(function() {
+        // sees the diagnostic anyway and would report the test as risky for it. Returning TRUE
+        // says the diagnostic is handled, so nothing propagates.
+        set_error_handler(function($errno, $errstr) {
             return true;
         });
 
