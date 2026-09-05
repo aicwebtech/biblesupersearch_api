@@ -16,6 +16,18 @@ use Illuminate\Contracts\Auth\Guard;
 class ConfigManager 
 {
 
+    /**
+     * Soft config keys that may never be written by an HTTP request.
+     *
+     * `mail.sendmail` is handed to the mail transport as a command line, so an
+     * attacker-controlled value is OS command execution. It is set at install
+     * time and by console commands only, and the admin form already renders it
+     * readonly -- this enforces that server-side.
+     *
+     * @var array<int, string>
+     */
+    protected static $http_immutable_keys = ['mail.sendmail'];
+
     static function getGlobalConfigs() 
     {
         return self::getConfigs(0);
@@ -114,9 +126,41 @@ class ConfigManager
         // Todo
     }
 
+    /**
+     * Apply global configs submitted over HTTP.
+     *
+     * Strips keys that must never be settable by a web request before
+     * delegating. Trusted callers (installer, console commands) call
+     * setConfigs() directly and are deliberately not subject to this.
+     *
+     * @param  array  $config_values
+     * @return void
+     */
     static function setGlobalConfigs($config_values) 
     {
-        self::setConfigs($config_values, 0);
+        self::setConfigs(self::rejectHttpImmutableKeys($config_values), 0);
+    }
+
+    /**
+     * Remove HTTP-immutable keys from a submitted config set.
+     *
+     * Handles both the dotted key style (`mail.sendmail`) and the form field
+     * style (`mail__sendmail`), since setConfigs() accepts either.
+     *
+     * @param  array  $config_values
+     * @return array
+     */
+    static function rejectHttpImmutableKeys($config_values) 
+    {
+        if(!is_array($config_values)) {
+            return $config_values;
+        }
+
+        foreach(static::$http_immutable_keys as $key) {
+            unset($config_values[$key], $config_values[str_replace('.', '__', $key)]);
+        }
+
+        return $config_values;
     }
 
     static function setUserConfigs($config_values) 

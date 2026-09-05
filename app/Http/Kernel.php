@@ -15,6 +15,7 @@ class Kernel extends HttpKernel
     protected $middleware = [
         \App\Http\Middleware\SetCacheHeaders::class,
         \Illuminate\Foundation\Http\Middleware\CheckForMaintenanceMode::class,
+        \App\Http\Middleware\HttpsRedirect::class,
         \App\Http\Middleware\EncryptCookies::class,
         \Illuminate\Cookie\Middleware\AddQueuedCookiesToResponse::class,
         \Illuminate\Session\Middleware\StartSession::class,

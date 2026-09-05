@@ -48,4 +48,40 @@ class ConfigManagerTest extends TestCase
             'null string to null'  => [null,           'string', null],
         ];
     }
+
+    /**
+     * `mail.sendmail` is fed to the mail transport as a command line, so it must
+     * never be writable by an HTTP request regardless of the form's readonly attribute.
+     */
+    #[DataProvider('httpImmutableKeysDataProvider')]
+    public function testRejectHttpImmutableKeys(array $submitted, array $expected): void
+    {
+        $this->assertSame($expected, ConfigManager::rejectHttpImmutableKeys($submitted));
+    }
+
+    public static function httpImmutableKeysDataProvider(): array
+    {
+        return [
+            'dotted key stripped'  => [['mail.sendmail' => '/tmp/evil'], []],
+            'form key stripped'    => [['mail__sendmail' => '/tmp/evil'], []],
+            'both styles stripped' => [
+                ['mail.sendmail' => '/tmp/evil', 'mail__sendmail' => '/tmp/evil'],
+                [],
+            ],
+            'other keys survive'   => [
+                ['app__client_url' => 'http://example.com', 'mail__sendmail' => '/tmp/evil'],
+                ['app__client_url' => 'http://example.com'],
+            ],
+            'unrelated mail keys survive' => [
+                ['mail__host' => 'smtp.example.com', 'mail__port' => 587],
+                ['mail__host' => 'smtp.example.com', 'mail__port' => 587],
+            ],
+            'empty set'            => [[], []],
+        ];
+    }
+
+    public function testRejectHttpImmutableKeysPassesThroughNonArray(): void
+    {
+        $this->assertNull(ConfigManager::rejectHttpImmutableKeys(null));
+    }
 }

@@ -93,7 +93,7 @@ $( function() {
 
                     success: function(data, statux, xhr) {
                         AICWEBTECH.jQuery.Dialogs.set('loadingShowing', false);
-                        $('#rendered_space_used').html(data.space_used);
+                        $('#rendered_space_used').text(data.space_used);
                     },
                     error: function(xhr, status, error) {
                         AICWEBTECH.jQuery.Dialogs.set('loadingShowing', false);
@@ -119,7 +119,7 @@ $( function() {
 
                     success: function(data, statux, xhr) {
                         AICWEBTECH.jQuery.Dialogs.set('loadingShowing', false);
-                        $('#rendered_space_used').html(data.space_used);
+                        $('#rendered_space_used').text(data.space_used);
                     },
                     error: function(xhr, status, error) {
                         AICWEBTECH.jQuery.Dialogs.set('loadingShowing', false);
