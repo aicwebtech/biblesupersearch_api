@@ -148,7 +148,7 @@ class InstallManager
 
             return !empty($configs['app.installed']);
         }
-        catch (\Exception $e) {
+        catch (\Throwable $e) {
             return FALSE;
         }
     }
@@ -379,7 +379,7 @@ class InstallManager
 
             $elapsed_time = time() - $start_time;
 
-            // Install default Bible (usally KJV)
+            // Install default Bible (usually KJV)
             $Bible = Bible::findByModule(config('bss.defaults.bible'));
             if (!$Bible) {
                 \Log::error('Install failed: the default Bible module \'' . config('bss.defaults.bible') . '\' was not found.');
