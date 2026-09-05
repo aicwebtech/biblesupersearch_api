@@ -48,7 +48,7 @@ class BibleController extends Controller
             $bootstrap->copyrights[] = $data;
         }
 
-        $bootstrap = json_encode($bootstrap);
+        $bootstrap = $this->encodeBootstrap($bootstrap);
 
         return view('admin.bibles_old', ['bootstrap' => $bootstrap]);
     }
@@ -65,7 +65,7 @@ class BibleController extends Controller
         Bible::populateBibleTable();
         
         $bootstrap = $this->getAdminBootstrap();
-        $bootstrap = json_encode($bootstrap);
+        $bootstrap = $this->encodeBootstrap($bootstrap);
 
         return view('admin.bibles', ['bootstrap' => $bootstrap]);
     }
@@ -354,7 +354,7 @@ class BibleController extends Controller
             $bootstrap->copyrights[] = $data;
         }
 
-        $bootstrap = json_encode($bootstrap);
+        $bootstrap = $this->encodeBootstrap($bootstrap);
 
         return view('admin.bible_editor', ['bootstrap' => $bootstrap]);
     }
@@ -592,27 +592,31 @@ class BibleController extends Controller
             ['label' => 'Last Verse', 'ref' => 'Revelation 22:21'],
         ];
 
-        $resp->messages = ['<b>Testing ' . $Bible->name . '</b>'];
+        // The test output is composed as HTML and rendered with v-html client-side
+        // (see ActionDialog.vue.js). Structural markup below is developer-authored;
+        // every interpolated value must be escaped here so it cannot inject markup.
+        // Tracked for removal: the API should not return HTML at all.
+        $resp->messages = ['<b>Testing ' . e($Bible->name) . '</b>'];
 
         $response = $Engine->actionStatistics(['bible' => $Bible->module, 'reference' => 'John 3:16']);
 
-        $resp->messages[] = 'Number of books: '     . $response[ $Bible->module ]['full']['num_books'];
-        $resp->messages[] = 'Number of chapters: '  . $response[ $Bible->module ]['full']['num_chapters'];
-        $resp->messages[] = 'Number of verses: '    . $response[ $Bible->module ]['full']['num_verses'];
+        $resp->messages[] = 'Number of books: '     . e($response[ $Bible->module ]['full']['num_books']);
+        $resp->messages[] = 'Number of chapters: '  . e($response[ $Bible->module ]['full']['num_chapters']);
+        $resp->messages[] = 'Number of verses: '    . e($response[ $Bible->module ]['full']['num_verses']);
         $resp->messages[] = $lb;
 
         $response = $Engine->actionStatistics(['bible' => $Bible->module, 'reference' => '01B-39B']);
 
-        $resp->messages[] = 'Number of OT books: '     . $response[ $Bible->module ]['book']['num_books'];
-        $resp->messages[] = 'Number of OT chapters: '  . $response[ $Bible->module ]['book']['num_chapters'];
-        $resp->messages[] = 'Number of OT verses: '    . $response[ $Bible->module ]['book']['num_verses'];
+        $resp->messages[] = 'Number of OT books: '     . e($response[ $Bible->module ]['book']['num_books']);
+        $resp->messages[] = 'Number of OT chapters: '  . e($response[ $Bible->module ]['book']['num_chapters']);
+        $resp->messages[] = 'Number of OT verses: '    . e($response[ $Bible->module ]['book']['num_verses']);
         $resp->messages[] = $lb;        
 
         $response = $Engine->actionStatistics(['bible' => $Bible->module, 'reference' => '40B-66B']);
 
-        $resp->messages[] = 'Number of NT books: '     . $response[ $Bible->module ]['book']['num_books'];
-        $resp->messages[] = 'Number of NT chapters: '  . $response[ $Bible->module ]['book']['num_chapters'];
-        $resp->messages[] = 'Number of NT verses: '    . $response[ $Bible->module ]['book']['num_verses'];
+        $resp->messages[] = 'Number of NT books: '     . e($response[ $Bible->module ]['book']['num_books']);
+        $resp->messages[] = 'Number of NT chapters: '  . e($response[ $Bible->module ]['book']['num_chapters']);
+        $resp->messages[] = 'Number of NT verses: '    . e($response[ $Bible->module ]['book']['num_verses']);
         $resp->messages[] = $lb;
 
         foreach($tests as $test) {
@@ -621,10 +625,10 @@ class BibleController extends Controller
 
             if(!$Engine->hasErrors()) {
                 $resp->success = TRUE;
-                $resp->messages[] = $test['ref'] . ' (' . $test['label'] . ')';
+                $resp->messages[] = e($test['ref']) . ' (' . e($test['label']) . ')';
 
                 foreach($results[$Bible->module] as $verse) {
-                    $resp->messages[] = $verse->verse . ')) ' . $verse->text;
+                    $resp->messages[] = e($verse->verse) . ')) ' . e($verse->text);
                 }
             }
 

@@ -17,9 +17,9 @@
     "errors": [],
     "error_level": 0,
     "results": {
-        "name": "<?php echo config('app.name') ?>",
-        "version": "<?php echo config('app.version') ?>",
-        "environment": "<?php echo config('app.env') ?>",
+        "name": <?php echo e(json_encode(config('app.name'))) ?>,
+        "version": <?php echo e(json_encode(config('app.version'))) ?>,
+        "environment": <?php echo e(json_encode(config('app.env'))) ?>,
     }
 }
 </code></pre>

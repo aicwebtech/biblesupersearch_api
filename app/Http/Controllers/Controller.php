@@ -13,6 +13,22 @@ abstract class Controller extends BaseController
 
     public function __construct() {}
 
+    /**
+     * Serialise an admin bootstrap object for embedding in a <script> block.
+     *
+     * The views emit this raw (`var bootstrap = @php echo $bootstrap @endphp;`),
+     * so the JSON_HEX_* flags keep any admin-supplied string content (copyright
+     * statements, language names, importer descriptions) from terminating the
+     * script element or breaking out of the assignment.
+     *
+     * @param  \stdClass  $bootstrap
+     * @return string
+     */
+    protected function encodeBootstrap($bootstrap): string
+    {
+        return json_encode($bootstrap, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT);
+    }
+
     protected function getAdminBootstrap()
     {
         $ImportManagerClass = \App\Helpers::find('\App\ImportManager');

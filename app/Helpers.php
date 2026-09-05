@@ -23,6 +23,31 @@ class Helpers {
         });
     }
 
+    /**
+     * Return the URL only when it is safe to place in an href, else NULL.
+     *
+     * Guards against script-capable schemes (javascript:, data:, vbscript:) in
+     * operator- or administrator-supplied URLs such as app.client_url, which is
+     * editable from the admin config form and rendered on the public docs page.
+     *
+     * @param  string|null  $url
+     * @return string|null
+     */
+    public static function safeHref($url) 
+    {
+        if(empty($url) || !is_string($url)) {
+            return NULL;
+        }
+
+        $scheme = parse_url(trim($url), PHP_URL_SCHEME);
+
+        if(!is_string($scheme) || !in_array(strtolower($scheme), ['http', 'https'], TRUE)) {
+            return NULL;
+        }
+
+        return $url;
+    }
+
     /* 
      * Check to see if premium code is present and enabled
      */
