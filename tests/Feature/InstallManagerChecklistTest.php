@@ -38,7 +38,8 @@ class InstallManagerChecklistTest extends TestCase
      */
     public function testTheChecklistNeverCarriesTheDatabasePassword(): void
     {
-        $password = config('database.connections.' . config('database.default') . '.password');
+        $connection = config('database.default');
+        $password   = config('database.connections.' . $connection . '.password');
 
         list($checklist, $success) = InstallManager::checkSettings();
 
@@ -50,6 +51,19 @@ class InstallManagerChecklistTest extends TestCase
             foreach($labels as $label) {
                 $this->assertStringNotContainsString($password, $label, 'the database password must not reach the checklist');
             }
+        }
+
+        // A file database is reached by path rather than by credentials, so checkSettings()
+        // emits the file and directory rows in place of the DB_* ones. There is no password
+        // row to check the wording of - only the absence above still has to hold.
+        if(static::databaseIsFileBased()) {
+            $file_rows = array_values(array_filter($labels, function($label) {
+                return strpos($label, 'DB file is writable') === 0;
+            }));
+
+            $this->assertNotEmpty($file_rows, 'the operator still needs to know whether the database file is usable');
+
+            return;
         }
 
         $password_rows = array_values(array_filter($labels, function($label) {

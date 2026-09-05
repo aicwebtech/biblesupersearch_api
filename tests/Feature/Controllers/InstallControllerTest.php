@@ -42,7 +42,11 @@ class InstallControllerTest extends TestCase
             $response = $this->post(route('admin.install.check'));
 
             $response->assertStatus(200);
-            $response->assertSee('DB_PASSWORD', false);
+
+            // A file database has no credentials on the page at all - see
+            // TestCase::databaseIsFileBased(). What must not leak is the same either way; only
+            // the row proving the operator was told something differs.
+            $response->assertSee(static::databaseIsFileBased() ? 'DB file is writable' : 'DB_PASSWORD', false);
 
             if(!empty($password)) {
                 $response->assertDontSee($password, false);
@@ -59,11 +63,13 @@ class InstallControllerTest extends TestCase
         $connection = config('database.default');
 
         $this->asUninstalled(function() use ($connection) {
-            $original = config('database.connections.' . $connection . '.host');
+            $original = config('database.connections.' . $connection . '.prefix');
 
-            // Display only - checkSettings() probes the connection through the already resolved
-            // DB facade, not through this value.
-            config(['database.connections.' . $connection . '.host' => '<script>alert(1)</script>']);
+            // The prefix is the one connection value the checklist reports for every driver -
+            // the host and credential rows are skipped for a file database. Display only:
+            // checkSettings() probes the connection through the already resolved DB facade, and
+            // a connection carries the prefix it was built with, not this value.
+            config(['database.connections.' . $connection . '.prefix' => '<script>alert(1)</script>']);
 
             try {
                 $response = $this->post(route('admin.install.check'));
@@ -73,7 +79,7 @@ class InstallControllerTest extends TestCase
                 $response->assertSee('&lt;script&gt;', false);
             }
             finally {
-                config(['database.connections.' . $connection . '.host' => $original]);
+                config(['database.connections.' . $connection . '.prefix' => $original]);
             }
         });
     }
