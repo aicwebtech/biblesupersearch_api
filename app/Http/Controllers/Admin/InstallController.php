@@ -73,15 +73,41 @@ class InstallController extends Controller
 
     /**
      * Step 4: Using provided hard and soft configs, install application to database
+     *
+     * A failed install used to fall out of an empty else branch and return a blank HTTP 200, so
+     * the three ways it can fail are now reported apart from one another.
      */
     public function install(Request $request) 
     {
-        if(Installer::install($request)) {
+        $result = Installer::install($request);
+
+        if($result === Installer::INSTALL_SUCCESS) {
             return view('install.done');
         }
-        else {
-            // error has happened...
-        }
+
+        return $this->installError($result);
+    }
+
+    /**
+     * Renders the reason an install did not happen.
+     *
+     * @param  string $result one of the Installer::INSTALL_* codes
+     */
+    protected function installError(string $result) 
+    {
+        $messages = [
+            Installer::INSTALL_ALREADY_INSTALLED => 'This application is already installed.',
+            Installer::INSTALL_IN_PROGRESS       => 'An installation is already running. Wait for it to finish, then reload this page.',
+            Installer::INSTALL_FAILED            => 'The installation could not be completed. See the application log for the details.',
+        ];
+
+        $message = array_key_exists($result, $messages) ? $messages[$result] : $messages[Installer::INSTALL_FAILED];
+        $status  = ($result === Installer::INSTALL_FAILED) ? 500 : 409;
+
+        return response()->view('install.error', [
+            'message' => $message,
+            'retry'   => ($result !== Installer::INSTALL_ALREADY_INSTALLED),
+        ], $status);
     }
 
     /**
