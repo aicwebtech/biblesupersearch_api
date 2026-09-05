@@ -75,6 +75,134 @@ class InstallManagerChecklistTest extends TestCase
     }
 
     /**
+     * Finds the checklist row whose label begins with the given text.
+     *
+     * @return array<string, mixed>|null
+     */
+    private function findChecklistRow(array $checklist, string $label_prefix): ?array
+    {
+        foreach($checklist as $row) {
+            if(array_key_exists('label', $row) && strpos($row['label'], $label_prefix) === 0) {
+                return $row;
+            }
+        }
+
+        return NULL;
+    }
+
+    /**
+     * A credential row is green only when that value is configured and the connection it feeds
+     * came up. Both halves are asserted here because the two tests used to sit inside a single
+     * empty() over the pair, where the connection half was easy to read straight past.
+     */
+    public function testACredentialRowIsGreenOnlyWhenItsValueIsConfigured(): void
+    {
+        if(static::databaseIsFileBased()) {
+            $this->markTestSkipped('a file database reports no credential rows - see checkSettings()');
+        }
+
+        $connection = config('database.default');
+        $db_info    = config('database.connections.' . $connection);
+
+        list($checklist, $success) = InstallManager::checkSettings();
+
+        $connected = $this->findChecklistRow($checklist, 'Able to Connect');
+
+        $this->assertNotNull($connected);
+        $this->assertTrue($connected['success'], 'the suite is running against this database, so it must be reachable');
+
+        // Whichever credentials this environment actually sets must read as good while connected.
+        foreach(['host' => 'DB_HOST', 'database' => 'DB_DATABASE', 'username' => 'DB_USERNAME'] as $key => $label_prefix) {
+            if(empty($db_info[$key])) {
+                continue;
+            }
+
+            $row = $this->findChecklistRow($checklist, $label_prefix);
+
+            $this->assertNotNull($row, $label_prefix . ' must be reported');
+            $this->assertTrue($row['success'], $label_prefix . ' is set and the database is reachable');
+        }
+    }
+
+    /**
+     * The other half: an unset value is not excused by a working connection. Display only - a
+     * connection carries the credentials it was built with, not these values.
+     */
+    public function testACredentialRowIsNotGreenWhenItsValueIsMissing(): void
+    {
+        if(static::databaseIsFileBased()) {
+            $this->markTestSkipped('a file database reports no credential rows - see checkSettings()');
+        }
+
+        $connection = config('database.default');
+        $original   = config('database.connections.' . $connection . '.username');
+
+        config(['database.connections.' . $connection . '.username' => '']);
+
+        try {
+            list($checklist, $success) = InstallManager::checkSettings();
+
+            $row = $this->findChecklistRow($checklist, 'DB_USERNAME');
+
+            $this->assertNotNull($row);
+            $this->assertFalse($row['success'], 'an unset username must not be reported as good');
+            $this->assertFalse($success, 'and it must fail the checklist as a whole');
+        }
+        finally {
+            config(['database.connections.' . $connection . '.username' => $original]);
+        }
+    }
+
+    /**
+     * And the connection half: fully configured credentials are still not good news when nothing
+     * answers at the other end. This is the half that was easiest to lose, since every value
+     * being set makes the rows look green if the connection is forgotten.
+     */
+    public function testCredentialRowsAreNotGreenWhenTheDatabaseIsUnreachable(): void
+    {
+        if(static::databaseIsFileBased()) {
+            $this->markTestSkipped('a file database reports no credential rows - see checkSettings()');
+        }
+
+        $connection = config('database.default');
+        $unreachable = 'bss_unreachable_' . getmypid();
+
+        // A copy of the real connection pointed at a port nothing listens on, so the credentials
+        // stay set while the connection cannot come up. Port 1 is refused outright rather than
+        // left to time out.
+        config([
+            'database.connections.' . $unreachable => array_merge(config('database.connections.' . $connection), [
+                'host' => '127.0.0.1',
+                'port' => 1,
+            ]),
+            'database.default' => $unreachable,
+        ]);
+
+        try {
+            list($checklist, $success) = InstallManager::checkSettings();
+
+            $connected = $this->findChecklistRow($checklist, 'Able to Connect');
+
+            $this->assertNotNull($connected);
+            $this->assertFalse($connected['success'], 'nothing is listening, so the probe must fail');
+
+            foreach(['DB_HOST', 'DB_DATABASE', 'DB_USERNAME'] as $label_prefix) {
+                $row = $this->findChecklistRow($checklist, $label_prefix);
+
+                $this->assertNotNull($row, $label_prefix . ' must be reported');
+                $this->assertFalse($row['success'], $label_prefix . ' is set, but it is not good news while the database is unreachable');
+            }
+
+            $this->assertFalse($success);
+        }
+        finally {
+            config(['database.default' => $connection]);
+
+            \DB::purge($unreachable);
+        }
+    }
+
+    /**
      * Every label is rendered escaped now, so no label may rely on carrying its own markup - the
      * one that did, the database connection error, was split into a label and a detail.
      */

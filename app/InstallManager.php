@@ -610,14 +610,18 @@ class InstallManager
         }
 
         if(!$file) {
-            $checklist[] = ['type' => 'item', 'label' => 'DB_HOST ('. $db_info['host'] . ')', 'success' => (!empty($db_info['host'] && $able_to_connect) || $file)];
-            $checklist[] = ['type' => 'item', 'label' => 'DB_DATABASE ('. $db_info['database'] . ')', 'success' => (!empty($db_info['database'] && $able_to_connect) || $file)];
-            $checklist[] = ['type' => 'item', 'label' => 'DB_USERNAME ('. $db_info['username'] . ')', 'success' => (!empty($db_info['username'] && $able_to_connect) || $file)];
+            // Each credential row is green only when that value is configured AND the connection
+            // it feeds actually came up. The two tests used to sit inside one empty(), which read
+            // as though it asked about the value alone, and the trailing '|| $file' decided
+            // nothing: $file is FALSE for the whole of this branch.
+            $checklist[] = ['type' => 'item', 'label' => 'DB_HOST ('. $db_info['host'] . ')', 'success' => (!empty($db_info['host']) && $able_to_connect)];
+            $checklist[] = ['type' => 'item', 'label' => 'DB_DATABASE ('. $db_info['database'] . ')', 'success' => (!empty($db_info['database']) && $able_to_connect)];
+            $checklist[] = ['type' => 'item', 'label' => 'DB_USERNAME ('. $db_info['username'] . ')', 'success' => (!empty($db_info['username']) && $able_to_connect)];
             // Never the value: this page is reachable unauthenticated before the install, and the
             // DB_USERNAME row above plus the 'Able to Connect' row below already tell the operator
             // everything they need in order to fix a bad password.
             $pw_set = (!empty($db_info['password'])) ? 'set' : 'not set';
-            $checklist[] = ['type' => 'item', 'label' => 'DB_PASSWORD (' . $pw_set . ')', 'success' => (!empty($db_info['password'] && $able_to_connect) || $file)];
+            $checklist[] = ['type' => 'item', 'label' => 'DB_PASSWORD (' . $pw_set . ')', 'success' => (!empty($db_info['password']) && $able_to_connect)];
         }
         else {
             $db_file = database_path('database.' . $db_info['driver']);
