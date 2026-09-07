@@ -15,14 +15,14 @@ Let's check to see if you're ready to install {{ config('app.name') }} on your s
 
     <?php 
         if($row['type'] == 'header'): ?>
-            <tr><th colspan='2'><?php echo $row['label']; ?></th></tr>        
+            <tr><th colspan='2'>{{ $row['label'] }}</th></tr>        
         <?php elseif($row['type'] == 'error'): ?>
-            <tr><th colspan='2' class='bad'><?php echo $row['label']; ?></th></tr>
+            <tr><th colspan='2' class='bad'>{{ $row['label'] }}@if(!empty($row['detail']))<br />{{ $row['detail'] }}@endif</th></tr>
         <?php elseif($row['type'] == 'hr'): ?>
             <tr><td colspan='2'><hr /></td></tr>
         <?php else: ?>
             <tr <?php if($rowcount %2 == 0):?>class='zebra'<?php endif;?> >
-                <td><?php echo $row['label']; ?></td>
+                <td>{{ $row['label'] }}</td>
                 <?php if($row['success'] === NULL): ?>
                     <td class='ok'>Okay</td>
                 <?php elseif($row['success'] == TRUE): ?>

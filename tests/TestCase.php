@@ -88,6 +88,19 @@ class TestCase extends BaseTestCase
     }
 
     /**
+     * Whether the configured database is reached by file path rather than by credentials.
+     *
+     * Development runs on MySQL and CI runs on SQLite, and the installer checklist reports the
+     * two differently: a file database has no host, user or password to show, so those rows are
+     * replaced by the file and directory ones. Tests asserting on either shape have to ask which
+     * they are looking at.
+     */
+    protected static function databaseIsFileBased(): bool
+    {
+        return config('database.connections.' . config('database.default') . '.driver') === 'sqlite';
+    }
+
+    /**
      * Names a throwaway table for the calling test.
      *
      * A parallel run puts several test processes on the one shared database, so a fixture table
