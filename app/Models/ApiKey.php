@@ -8,10 +8,11 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Str;
 use App\Interfaces\AccessLogInterface;
 use App\Models\IpAccess;
+use App\Traits\DailyHitCounter;
 
 class ApiKey extends Model implements AccessLogInterface
 {
-    use HasFactory, SoftDeletes;
+    use HasFactory, SoftDeletes, DailyHitCounter;
 
     protected $attributes = [
         'access_level_id' => null,
@@ -83,19 +84,13 @@ class ApiKey extends Model implements AccessLogInterface
             return FALSE;
         }
 
-        $Log = ApiKeyAccessLog::firstOrNew(['key_id' => $this->id, 'date' => date('Y-m-d')]);
-
-        if($Log->limit_reached && $limit > 0) {
+        if(!$this->incrementDailyHitsAtomic(
+            ApiKeyAccessLog::class,
+            ['key_id' => $this->id, 'date' => date('Y-m-d')],
+            $limit
+        )) {
             return FALSE;
         }
-
-        $Log->count ++;
-
-        if($limit > 0 && $Log->count >= $limit) {
-            $Log->limit_reached = 1;
-        }
-
-        $Log->save();
 
         // For tracking purposes, we also log the hits against the IP with the key, however, this count is not used to determine limit overage, ect.
         $IP = IpAccess::findOrCreateByIpOrDomain(true);

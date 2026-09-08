@@ -1,0 +1,71 @@
+<?php
+
+namespace App\Traits;
+
+use Illuminate\Support\Facades\DB;
+
+/**
+ * Atomic daily quota accounting shared by IpAccess and ApiKey.
+ *
+ * The previous read-then-write sequence (firstOrNew -> count++ -> save) let
+ * concurrent requests overwrite each other's increments, so a client could
+ * exceed the configured daily limit by issuing requests in parallel. Both the
+ * row creation and the increment below are performed by the database:
+ *
+ *  - creation relies on the existing unique indexes
+ *    (ux_ip_access_log_ip_id_date, ux_api_key_access_log_key_id_date), so a
+ *    concurrent insert is ignored rather than duplicated;
+ *  - the increment is a single conditional UPDATE, and the affected-row count
+ *    decides whether this request was within quota.
+ */
+trait DailyHitCounter
+{
+    /**
+     * Record one hit against the given daily log row.
+     *
+     * @param  string  $log_class  Eloquent log model (IpAccessLog / ApiKeyAccessLog)
+     * @param  array   $keys       Row identity, e.g. ['ip_id' => 1, 'date' => '2026-09-05']
+     * @param  int     $limit      Daily limit; 0 or less means unlimited
+     * @return bool                FALSE when the request exceeds the quota
+     */
+    protected function incrementDailyHitsAtomic($log_class, array $keys, $limit)
+    {
+        $Log = new $log_class();
+        $table = $Log->getTable();
+        $now = $Log->freshTimestampString();
+
+        // Create the row if it is not there yet. A racing insert loses harmlessly
+        // to the unique index instead of creating a second row for the same day.
+        $log_class::insertOrIgnore($keys + [
+            'count'         => 0,
+            'limit_reached' => 0,
+            'created_at'    => $now,
+            'updated_at'    => $now,
+        ]);
+
+        $query = DB::table($table)->where($keys);
+
+        if($limit > 0) {
+            // Only increment while still under the limit. If no row matches, the
+            // quota is already spent and this request is refused.
+            $query->where('count', '<', $limit);
+        }
+
+        $affected = $query->increment('count', 1, ['updated_at' => $now]);
+
+        if(!$affected) {
+            return FALSE;
+        }
+
+        // Cached marker only; the conditional update above is the real gate.
+        // Written separately so it does not depend on whether the database
+        // evaluates SET expressions against pre- or post-update column values.
+        if($limit > 0) {
+            DB::table($table)->where($keys)
+                ->where('count', '>=', $limit)
+                ->update(['limit_reached' => 1, 'updated_at' => $now]);
+        }
+
+        return TRUE;
+    }
+}

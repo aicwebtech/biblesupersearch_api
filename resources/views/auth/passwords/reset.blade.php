@@ -8,7 +8,7 @@
                 <!--<div class="panel-heading">Reset Password</div>-->
 
                 <div class="panel-body">
-                    <form class="form-horizontal" method="POST" action="{{ route('password.reset') }}">
+                    <form class="form-horizontal" method="POST" action="{{ route('password.update') }}">
                         {{ csrf_field() }}
 
                         <input type="hidden" name="token" value="{{ $token }}">
@@ -17,7 +17,7 @@
                             <!--<label for="email" class="col-md-4 control-label">E-Mail Address</label>-->
 
                             <div class="col-md-6">
-                                <input id="email" type="email" class="form-control text" name="email" value="{{ $email or old('email') }}"
+                                <input id="email" type="email" class="form-control text" name="email" value="{{ $email ?? old('email') }}"
                                        required autofocus placeholder="E-Mail Address">
 
                                 @if ($errors->has('email'))

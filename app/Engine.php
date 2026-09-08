@@ -1217,10 +1217,10 @@ class Engine implements ErrorInterface
         $response->research_desc            = config('bss.research_description');
         $response->parallel_lang_search     = config('bss.parallel_search_different_languages');
         $response->access                   = new \stdClass;
-        $response->access->allowed          = !$Access->isAccessRevoked();
-        $response->access->limit            = $Access->getAccessLimit();
-        $response->access->limit_reached    = $Access->isLimitReached();
-        $response->access->hits             = $Access->getDailyHits();
+        $response->access->allowed          = $Access ? !$Access->isAccessRevoked() : FALSE;
+        $response->access->limit            = $Access ? $Access->getAccessLimit() : 0;
+        $response->access->limit_reached    = $Access ? $Access->isLimitReached() : TRUE;
+        $response->access->hits             = $Access ? $Access->getDailyHits() : 0;
         return $response;
     }
 
