@@ -15,13 +15,16 @@ $api_middleware = in_array(env('APP_ENV', 'production'), ['local','testing']) ? 
 
 // 'api_testing' middleware has higher access rate allowance, for testing purposes
 
-/* Routes for the Webservice API  */
+/* Routes for the Public Webservice API  */
 
 // "Versioned API" route is experimental ... current version is v2 (legacy software (release version < 4.0) is API v1)
 // API versioning is not yet implemented, but the routes are in place
 // Webservice API is versioned, but internal API is not 
 Route::get('/api/v2/{action?}' , 'ApiController@genericAction')->middleware($api_middleware); // 'Action' defaults to 'query'
 Route::post('/api/v2/{action?}', 'ApiController@genericAction')->middleware($api_middleware); // 'Action' defaults to 'query'
+
+Route::get('/api/v/{version}/{action?}' , 'ApiController@versionedAction')->middleware($api_middleware); // 'Action' defaults to 'query'
+Route::post('/api/v/{version}/{action?}', 'ApiController@versionedAction')->middleware($api_middleware); // 'Action' defaults to 'query'
 
 // Default webservice API routes
 Route::get('/api/{action?}' , 'ApiController@genericAction')->middleware($api_middleware); // 'Action' defaults to 'query'

@@ -1163,8 +1163,10 @@ class SqlSearch {
         $terms_fmt = [];
         $pre = '&&';    // Regex safe, reused search alias
         $post = '%';    // Regex safe, reused search wildcard
-        $pre_tag  = '<'  . $highlight_tag . '>';
-        $post_tag = '</' . $highlight_tag . '>';
+
+        // An HTML tag name is wrapped; a Markdown marker ('**') is symmetrical and used as-is
+        list($pre_tag, $post_tag) = Helpers::buildHighlightTags($highlight_tag);
+
         // $pre_pattern  = '/' . $pre . '([^' . $pre . ' ]*)' . $pre .  '/'; // alt pattern
         // $post_pattern = '/' . $post . '([^' . $post . ' ]*)' .  $post .  '/';    // alt pattern    
         $pre_pattern  = '/' . $pre . '([^' . $pre . $post . ']*)' . $pre .  '/';

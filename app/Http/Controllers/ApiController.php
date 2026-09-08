@@ -7,11 +7,23 @@ use Illuminate\Http\Response;
 use App\Http\Requests;
 use App\Http\Controllers\Controller;
 use App\Engine;
+use App\Factories\EngineFactory;
 
 class ApiController extends Controller 
 {
 
-    public function genericAction(Request $Request, $action = 'query') 
+    public function versionedAction(Request $Request, $version, $action = 'query') 
+    {
+        $vv = 'v' . $version;
+    
+        if(!in_array($vv, config('app.api_version_list'))) {
+            return $this->_makeResponse('API version not found: ' . $vv, 404);
+        }
+    
+        return $this->genericAction($Request, $action, $version);
+    }
+
+    public function genericAction(Request $Request, $action = 'query', $version = 2)
     {
         $allowed_actions = ['query', 'bibles', 'books', 'statics', 'statics_changed', 'version', 'readcache', 'strongs', 'requirements'];
 
@@ -35,7 +47,6 @@ class ApiController extends Controller
 
         $input = $Request->input();
         $pretty_print = (array_key_exists('pretty_print', $input) && $input['pretty_print']);
-        $Engine = new Engine();
         $actionMethod = 'action' . \Illuminate\Support\Str::studly($action);
 
         if($debug_input) {
@@ -43,6 +54,9 @@ class ApiController extends Controller
         }
 
         try {
+            // Inside the try: the factory resolves the engine class by name, so a version that
+            // is advertised without a matching App\Engines\EngineV{n} raises an \Error here.
+            $Engine = EngineFactory::getNewEngine($version);
             $results = $Engine->$actionMethod($input);
 
             if(config('app.debug_query') && $action == 'query') {
@@ -53,7 +67,7 @@ class ApiController extends Controller
             $response->results = $results;
             $code = ($Engine->hasErrors()) ? 400 : 200;
         }
-        catch (Exception $ex) {        
+        catch (\Throwable $ex) {        
             if( config('app.env') == 'production') {
                 return $this->_makeResponse($ex->getMessage(), 500);
             }

@@ -34,9 +34,9 @@ return [
     |
     */
 
-    'api_version' => 'v2',          // The current API version for this application
+    'api_version' => 'v3',          // The current API version for this application
 
-    'api_version_list' => ['v2'],   // List of all API versions supported by this application
+    'api_version_list' => ['v2', 'v3'],   // List of all API versions supported by this application
 
     /*
     |--------------------------------------------------------------------------

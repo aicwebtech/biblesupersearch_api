@@ -403,6 +403,119 @@ class Helpers {
     }
 
     /**
+     * The element names accepted as a highlight tag.
+     *
+     * Highlighting runs after sanitizeHtml(), so whatever this returns is emitted into the
+     * response untouched - an unrestricted tag name would let a caller inject '<script>' or
+     * '<iframe>' through the highlight_tag parameter. Inline formatting elements only.
+     */
+    public const HIGHLIGHT_TAG_WHITELIST = ['b', 'i', 'em', 'strong', 'u', 'span', 'small', 'sub', 'sup'];
+
+    /** The element a rejected tag name falls back to; mirrors config('bss.defaults.highlight_tag'). */
+    public const DEFAULT_HIGHLIGHT_TAG = 'b';
+
+    /**
+     * Resolves a highlight tag into the pair of markers that wrap a highlighted match.
+     *
+     * A bare tag name ('b', 'em', 'span') is an HTML element and is wrapped into an opening
+     * and a closing tag; a name outside HIGHLIGHT_TAG_WHITELIST falls back to
+     * DEFAULT_HIGHLIGHT_TAG. Anything else is a Markdown (or other plain-text) marker such as
+     * '**' or '__', which is symmetrical and is used verbatim on both sides.
+     *
+     * @param string $highlight_tag
+     * @return array{0: string, 1: string} The opening and closing markers
+     */
+    public static function buildHighlightTags($highlight_tag): array
+    {
+        $tag = (string) $highlight_tag;
+
+        if(preg_match('/^[a-zA-Z0-9]+$/', $tag)) {
+            if(!in_array(strtolower($tag), self::HIGHLIGHT_TAG_WHITELIST, TRUE)) {
+                $tag = self::DEFAULT_HIGHLIGHT_TAG;
+            }
+
+            return ['<' . $tag . '>', '</' . $tag . '>'];
+        }
+
+        return [$highlight_tag, $highlight_tag];
+    }
+
+    /**
+     * The elements and attributes sanitizeHtml() lets through.
+     *
+     */
+    public const SANITIZE_HTML_ALLOWED = 'div,p,b,i,u,a[href],ul,ol,li,br,strong,em,sub,sup,small,'
+        . 'h1,h2,h3,h4,h5,h6,span[style],table,tr,td,th,tbody,thead,tfoot';
+
+    /** @var \HTMLPurifier|NULL Built once per process - see getHtmlPurifier(). */
+    private static $Purifier = NULL;
+
+    /**
+     * Sanitizes HTML content to allow only a safe subset of tags.
+     *
+     * NULL is accepted because most of the columns this guards are nullable - a Bible with no
+     * description, a Strong's definition with no 'tvm' - and an absent field must not fatal
+     * the request. An absent value answers the empty string, so callers get a string back
+     * whatever the column held.
+     *
+     * @param string|null $html The HTML content to sanitize
+     * @return string The sanitized HTML content
+     */
+    public static function sanitizeHtml(?string $html): string
+    {
+        if($html === NULL || $html === '') {
+            return '';
+        }
+
+        return trim(static::getHtmlPurifier()->purify($html));
+    }
+
+    /**
+     * The shared HTMLPurifier.
+     *
+     * The configuration is identical on every call and building it is the expensive part -
+     * roughly 4ms against this whitelist, and Engine::_processMarkup() sanitizes once per
+     * verse, so a 500-verse page_all request spent over two seconds rebuilding it. Held here
+     * instead, that becomes one build per process.
+     *
+     * The serializer cache is off deliberately. It writes into vendor/, which fails outright
+     * on a deployment where vendor/ is read-only and warns on every call when the web user
+     * owns the cache directory and the CLI user does not. With the purifier itself held here
+     * it saves nothing measurable.
+     *
+     * @return \HTMLPurifier
+     */
+    private static function getHtmlPurifier(): \HTMLPurifier
+    {
+        if(static::$Purifier === NULL) {
+            $config = \HTMLPurifier_Config::createDefault();
+            $config->set('HTML.Allowed', self::SANITIZE_HTML_ALLOWED);
+            $config->set('Cache.DefinitionImpl', NULL);
+
+            static::$Purifier = new \HTMLPurifier($config);
+        }
+
+        return static::$Purifier;
+    }
+    
+    /**
+     * convertHtmlToMarkdown() - Converts HTML to Markdown using the league/html-to-markdown library
+     * @param string|null $html The HTML content to convert
+     * @return string The converted Markdown content
+     */
+    public static function convertHtmlToMarkdown(?string $html): string
+    {
+        $html = self::sanitizeHtml($html);
+
+        $converter = new \League\HTMLToMarkdown\HtmlConverter([
+            'strip_tags' => TRUE,
+            'hard_break' => TRUE,
+        ]);
+
+        return $converter->convert($html);
+    }
+
+    /**
      * Asks the connection itself what its ceiling is. See getMaxBoundVariables().
      *
      * @param string|null $connection Connection name, NULL for the default connection

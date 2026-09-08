@@ -24,6 +24,8 @@ class Engine implements ErrorInterface
     use Traits\Input;
     use Traits\Singleton;
 
+    protected static $api_version = 2;
+
     protected $Bibles = array(); // Array of Bible objects
     protected $Bible_Primary = NULL; // Primary Bible version
     protected $languages = array();
@@ -790,7 +792,6 @@ class Engine implements ErrorInterface
     {
         $language_float = isset($input['language_float']) ? $input['language_float'] : null;
 
-        $include_desc = FALSE;
         $Bibles = Bible::select('bibles.name','shortname','module','year','owner', 'description',
             'languages.name AS lang','lang_short','copyright','italics','strongs','red_letter',
             'paragraph','rank','research','bibles.restrict','copyright_id','copyright_statement',
@@ -803,10 +804,6 @@ class Engine implements ErrorInterface
 
         $order_by_default = 'lang_native_name|rank';
         $order_by = array_key_exists('bible_order_by', $input) ? $input['bible_order_by'] : $order_by_default;
-
-        if($include_desc) {
-            $Bibles -> addSelect('description');
-        }
 
         // Legacy order by flag - still supported for now
         if(array_key_exists('order_by_lang_name', $input) && !empty($input['order_by_lang_name'])) {
@@ -850,8 +847,10 @@ class Engine implements ErrorInterface
             $bibles[$Bible->module]['tts_ai'] = \App\AudioManager::isTtsAI($Bible);
             $bibles[$Bible->module]['audio_structure'] = $Bible->audio_structure ?: 'chapter';
             $bibles[$Bible->module]['downloadable'] = $Bible->isDownloadable();
-            $bibles[$Bible->module]['copyright_statement'] = $Bible->getCopyrightStatement();
+            $bibles[$Bible->module]['copyright_statement'] = $this->_sanitizeHtml($Bible->getCopyrightStatement());
             $bibles[$Bible->module]['book_list'] = $Bible->getBookList();
+            $bibles[$Bible->module]['description'] = $this->_sanitizeHtml($Bible->description);
+
             // Remove attributes that aren't needed in the API response
             unset($bibles[$Bible->module]['id']);
             unset($bibles[$Bible->module]['installed']);
@@ -1211,7 +1210,7 @@ class Engine implements ErrorInterface
         $response->name                     = config('app.name');
         $response->hash                     = $this->_getNameHash();
         $response->version                  = config('app.version');
-        $response->api_version              = config('app.api_version');
+        $response->api_version              = 'v' . static::$api_version;
         $response->api_version_list         = config('app.api_version_list');
         $response->environment              = config('app.env');
         $response->research_desc            = config('bss.research_description');
@@ -1366,7 +1365,7 @@ class Engine implements ErrorInterface
         $response->name             = config('app.name');
         $response->hash             = $this->_getNameHash();
         $response->version          = config('app.version');
-        $response->api_version      = config('app.api_version');
+        $response->api_version      = 'v' . static::$api_version;
         $response->api_version_list = config('app.api_version_list');
         $response->environment      = config('app.env');
 
@@ -1419,6 +1418,10 @@ class Engine implements ErrorInterface
     protected function _formatStrongs($attr) 
     {
         $attr['tvm'] = $attr['tvm'] ? preg_replace('/<b>Count:<\/b> [0-9]+.*?<br>/', '', $attr['tvm']) : null; // Remove 'count' from TVM
+        $attr['tvm'] = $this->_sanitizeHtml($attr['tvm']);
+        $attr['entry'] = $this->_sanitizeHtml($attr['entry']);
+        $attr['root_word'] = $this->_sanitizeHtml($attr['root_word']);
+        
         unset($attr['created_at']);
         unset($attr['updated_at']);
         return $attr;
@@ -1555,24 +1558,30 @@ class Engine implements ErrorInterface
         return $results;
     }
 
-    protected function _processMarkup($results, $mode) {
-        if($mode == 'raw') {
-            return $results;
-        }
-
+    protected function _processMarkup($results, $mode) 
+    {
         $find = ['‹','›', '[', ']', '} {'];
         $pattern = '/\{[^\}]+}/';
 
         foreach($results as $bible => &$bible_results) {
             foreach($bible_results as &$verse) {
-                $verse->text = str_replace($find, '', $verse->text);
-                $verse->text = preg_replace($pattern, '', $verse->text);
+                if($mode != 'raw') {
+                    $verse->text = str_replace($find, '', $verse->text);
+                    $verse->text = preg_replace($pattern, '', $verse->text);
+                }
+
+                $verse->text = $this->_sanitizeHtml($verse->text);
             }
             unset($verse);
         }
         unset($bible_results);
 
         return $results;
+    }
+
+    protected function _sanitizeHtml($html)
+    {
+        return Helpers::sanitizeHtml($html);
     }
 
     protected function _parallelUnmatchedVerses($results, $Search) 
