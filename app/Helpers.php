@@ -24,6 +24,71 @@ class Helpers {
     }
 
     /**
+     * PHP words that cannot be used as a class name.
+     *
+     * Keywords are rejected by the parser; the "soft" types (int, string, ...)
+     * are rejected by the engine with "Cannot use X as class name as it is
+     * reserved". Comparison is case-insensitive because PHP keywords are.
+     *
+     * @var array<int, string>
+     */
+    protected static $php_reserved_words = [
+        'abstract', 'and', 'array', 'as', 'break', 'callable', 'case', 'catch', 'class',
+        'clone', 'const', 'continue', 'declare', 'default', 'die', 'do', 'echo', 'else',
+        'elseif', 'empty', 'enddeclare', 'endfor', 'endforeach', 'endif', 'endswitch',
+        'endwhile', 'eval', 'exit', 'extends', 'final', 'finally', 'fn', 'for', 'foreach',
+        'function', 'global', 'goto', 'if', 'implements', 'include', 'include_once',
+        'instanceof', 'insteadof', 'interface', 'isset', 'list', 'match', 'namespace',
+        'new', 'or', 'print', 'private', 'protected', 'public', 'readonly', 'require',
+        'require_once', 'return', 'static', 'switch', 'throw', 'trait', 'try', 'unset',
+        'use', 'var', 'while', 'xor', 'yield',
+        // Soft-reserved type names, also illegal as class names.
+        'bool', 'false', 'float', 'int', 'iterable', 'mixed', 'never', 'null', 'object',
+        'parent', 'self', 'string', 'true', 'void',
+    ];
+
+    /**
+     * The reserved word list, for sharing with the front end.
+     *
+     * @return array<int, string>
+     */
+    public static function phpReservedWords() 
+    {
+        return static::$php_reserved_words;
+    }
+
+    /**
+     * Is the given word illegal as a PHP class name?
+     *
+     * @param  string|null  $word
+     * @return bool
+     */
+    public static function isReservedPhpWord($word) 
+    {
+        if(!is_string($word) || $word === '') {
+            return FALSE;
+        }
+
+        return in_array(strtolower($word), static::$php_reserved_words, TRUE);
+    }
+
+    /**
+     * Prefix a generated class base name when it would collide with a PHP
+     * reserved word, otherwise return it unchanged.
+     *
+     * Names that are already legal are returned as-is so existing generated
+     * classes (En, De, Kjv, ...) keep their names and no migration is needed.
+     *
+     * @param  string  $base
+     * @param  string  $prefix
+     * @return string
+     */
+    public static function safeGeneratedClassName($base, $prefix = 'Lang') 
+    {
+        return static::isReservedPhpWord($base) ? $prefix . $base : $base;
+    }
+
+    /**
      * Return the URL only when it is safe to place in an href, else NULL.
      *
      * Guards against script-capable schemes (javascript:, data:, vbscript:) in

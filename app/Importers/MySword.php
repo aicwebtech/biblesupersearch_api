@@ -231,12 +231,27 @@ class MySword extends ImporterAbstract
         $this->bible_attributes['year'] = $this->bible_attributes['year'] ? date('Y', strtotime($this->bible_attributes['year'])) : null;
     }
 
+    /**
+     * Open the SQLite database inside an uploaded MySword file.
+     *
+     * $orig_filename may be the raw client filename (preflight) or the stored
+     * name (commit), so it is sanitized to a bare basename here and every
+     * derived path is required to stay inside the importer directory.
+     *
+     * @param  string  $path           Path to the archive on disk
+     * @param  string  $orig_filename  Untrusted filename
+     * @return \SQLite3|bool
+     */
     private function _getSQLite($path, $orig_filename) 
     {
+        $orig_filename = static::sanitizeFileName((string) $orig_filename);
+
+        if($orig_filename === '' || $orig_filename !== basename($orig_filename)) {
+            return $this->addError('Invalid import filename');
+        }
+
         $path_lc = strtolower($orig_filename);
-        $temp_fn = tempnam(sys_get_temp_dir(), 'mybib');
         $dir = $this->getImportDir();
-        $new_path = $dir . $orig_filename;
 
         if(!is_file($path)) {
             return $this->addError('File does not exist');
@@ -244,12 +259,26 @@ class MySword extends ImporterAbstract
 
         if(str_ends_with($path_lc, '.mybible.zip')) {
             $uz_file = substr($orig_filename, 0, -4);
-            $uz_path = $dir . '' . $uz_file;
+            $uz_path = $this->_containedImportPath($uz_file);
+
+            if(!$uz_path) {
+                return $this->addError('Invalid import filename');
+            }
+
             $Zip = new \ZipArchive;
 
             if($Zip->open($path) === TRUE) {
-                if(!$Zip->extractTo($dir, $uz_file)) {
-                    return $this->addError('Could not extract from .zip file');
+                try {
+                    if(!$this->_zipEntryWithinLimit($Zip, $uz_file)) {
+                        return $this->addError('Refusing to extract .zip file: uncompressed size exceeds the allowed limit');
+                    }
+
+                    if(!$Zip->extractTo($dir, $uz_file)) {
+                        return $this->addError('Could not extract from .zip file');
+                    }
+                }
+                finally {
+                    $Zip->close();
                 }
 
                 return new SQLite3($uz_path);
@@ -260,24 +289,65 @@ class MySword extends ImporterAbstract
         }        
         else if(str_ends_with($path_lc, '.mybible.gz')) {
             $uz_file = substr($orig_filename, 0, -3);
-            $uz_path = $dir . '' . $uz_file;
+            $uz_path = $this->_containedImportPath($uz_file);
+
+            if(!$uz_path) {
+                return $this->addError('Invalid import filename');
+            }
             
             // 'Extracting' from a .gz file
             // Raising this value may increase performance
             $buffer_size = 4096; // read 4kb at a time
+            $limit = static::maxDecompressedBytes();
+            $written = 0;
 
             // Open our files (in binary mode)
             $in_file  = gzopen($path, 'rb');
             $out_file = fopen($uz_path, 'wb');
 
-            // Keep repeating until the end of the input file
-            while(!gzeof($in_file)) {
-                // Both fwrite and gzread and binary-safe
-                fwrite($out_file, gzread($in_file, $buffer_size));
+            if(!$in_file || !$out_file) {
+                if($in_file) { gzclose($in_file); }
+                if($out_file) { fclose($out_file); }
+                return $this->addError('Could not open .gz file');
             }
 
-            fclose($out_file);
-            gzclose($in_file);
+            $failed = FALSE;
+
+            try {
+                // Keep repeating until the end of the input file
+                while(!gzeof($in_file)) {
+                    // Both fwrite and gzread and binary-safe
+                    $chunk = gzread($in_file, $buffer_size);
+
+                    if($chunk === FALSE) {
+                        $failed = 'Could not read .gz file';
+                        break;
+                    }
+
+                    $written += strlen($chunk);
+
+                    // A small archive can expand without bound; stop rather than
+                    // filling the disk.
+                    if($written > $limit) {
+                        $failed = 'Refusing to extract .gz file: uncompressed size exceeds the allowed limit';
+                        break;
+                    }
+
+                    if(fwrite($out_file, $chunk) === FALSE) {
+                        $failed = 'Could not write extracted file';
+                        break;
+                    }
+                }
+            }
+            finally {
+                fclose($out_file);
+                gzclose($in_file);
+            }
+
+            if($failed) {
+                @unlink($uz_path); // do not leave a partial database behind
+                return $this->addError($failed);
+            }
 
             return new SQLite3($uz_path);
         }        
@@ -286,5 +356,60 @@ class MySword extends ImporterAbstract
         }
 
         return FALSE;
+    }
+
+    /**
+     * Maximum permitted size of a decompressed MySword database, in bytes.
+     *
+     * @return int
+     */
+    public static function maxDecompressedBytes() 
+    {
+        return (int) config('bible.max_decompressed_bytes', 1073741824); // 1 GiB
+    }
+
+    /**
+     * Build a path for an extracted file and require it to stay inside the
+     * importer directory.
+     *
+     * @param  string  $basename
+     * @return string|null
+     */
+    protected function _containedImportPath($basename) 
+    {
+        $basename = static::sanitizeFileName((string) $basename);
+
+        if($basename === '' || $basename !== basename($basename)) {
+            return NULL;
+        }
+
+        $dir = realpath($this->getImportDir());
+
+        if($dir === FALSE) {
+            return NULL;
+        }
+
+        $path = $dir . DIRECTORY_SEPARATOR . $basename;
+
+        // The file does not exist yet, so canonicalize the parent instead.
+        return (dirname($path) === $dir) ? $path : NULL;
+    }
+
+    /**
+     * Is the named zip entry within the decompressed-size limit?
+     *
+     * @param  \ZipArchive  $Zip
+     * @param  string       $entry
+     * @return bool
+     */
+    protected function _zipEntryWithinLimit(\ZipArchive $Zip, $entry) 
+    {
+        $stat = $Zip->statName($entry);
+
+        if($stat === FALSE) {
+            return TRUE; // entry absent; extractTo will fail on its own
+        }
+
+        return ($stat['size'] ?? 0) <= static::maxDecompressedBytes();
     }
 }

@@ -234,6 +234,13 @@ abstract class TtsAbstract implements ErrorInterface
 
     public static function getAudioFilePathStatic($module, $create_dir = FALSE, $relative = false) 
     {
+        // Defense in depth: this builds a filesystem path from a value that has
+        // reached us from request input in the past, and mkdir() below would
+        // happily create a traversed directory. Callers validate too.
+        if(!\App\Models\Bible::validateModule($module)) {
+            throw new \InvalidArgumentException('Invalid Bible module name');
+        }
+
         $dir = $relative ? '' : static::getAudioBasePath();
         $dir .= $module;
 

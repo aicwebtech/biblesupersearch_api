@@ -47,6 +47,10 @@ abstract class Controller extends BaseController
         $bootstrap->tts_api_default = config('audio.tts_api') ?? null;
         $bootstrap->tts_filename_matches = \App\AudioManager::getFilenameMatchesList();
 
+        // Shared with the Bible edit form so its module rule matches
+        // Bible::validateModule() rather than keeping a second copy in JS.
+        $bootstrap->php_reserved_words = \App\Helpers::phpReservedWords();
+
         $bootstrap->book_lists = new \stdClass();
 
         $bootstrap->book_lists->en = \App\Models\Books\En::get();

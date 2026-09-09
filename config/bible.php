@@ -38,6 +38,10 @@ return [
         'chinese_union_trad',
     ],
 
+    // Ceiling on the decompressed size of an uploaded Bible archive, in bytes.
+    // Guards against a small archive expanding without bound and filling the disk.
+    'max_decompressed_bytes' => 1073741824, // 1 GiB
+
     'books_in_bible' => 66,
     // 'books_in_deuterocanon' => 14, // Not used currently, need to vet this number
     // 'books_in_apocrypha' => 7,     // Not used currently, need to vet this number
