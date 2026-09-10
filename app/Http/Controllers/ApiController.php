@@ -15,8 +15,22 @@ class ApiController extends Controller
     public function versionedAction(Request $Request, $version, $action = 'query') 
     {
         $vv = 'v' . $version;
-    
+
+        $disamb = ['version'];
+
+        if(in_array($vv, $disamb)) {
+            // $vv is actually the action, and the version is v2 
+            $action = $vv;
+            $version = 2;
+            $vv = 'v' . $version;
+        }
+        
         if(!in_array($vv, config('app.api_version_list'))) {
+            // Check if the version is past its end-of-life
+            if($version >= 1 && $vv <= config('app.api_version_eol')) {
+                return $this->_makeResponse('API version is End of Life and no longer supported: ' . $vv, 410);
+            }
+
             return $this->_makeResponse('API version not found: ' . $vv, 404);
         }
     
@@ -36,6 +50,12 @@ class ApiController extends Controller
         if(config('audio.enable')) {
             $allowed_actions[] = 'audio';
             $allowed_actions[] = 'audio_check';
+        }
+
+        $post_only = ['render', 'download'];
+
+        if($version >= 3 && in_array($action, $post_only) && !$Request->isMethod('post')) {
+            return $this->_makeResponse('Action requires POST method', 405);
         }
 
         $debug_input = FALSE;

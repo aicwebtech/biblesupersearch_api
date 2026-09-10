@@ -3,6 +3,8 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Casts\Attribute;
+use App\Helpers;
 
 class StrongsDefinition extends Model
 {
@@ -16,5 +18,29 @@ class StrongsDefinition extends Model
         ];
 
         \App\Importers\Database::importCSV('strongs_definitions.csv', $map, '\\' . get_called_class(), 'number', NULL, 1000);
+    }
+
+    /**
+     * Root word accessor / mutator.
+     *
+     */
+    protected function rootWord(): Attribute
+    {
+        return Attribute::make(
+            get: fn (?string $value) => Helpers::sanitizeHtml($value),
+            set: fn (?string $value) => Helpers::sanitizeHtml($value),
+        );
+    }
+
+    /**
+     * Entry accessor / mutator.
+     *
+     */
+    protected function entry(): Attribute
+    {
+        return Attribute::make(
+            get: fn (?string $value) => Helpers::sanitizeHtml($value),
+            set: fn (?string $value) => Helpers::sanitizeHtml($value),
+        );
     }
 }

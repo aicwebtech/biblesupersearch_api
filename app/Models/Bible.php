@@ -971,9 +971,6 @@ class Bible extends Model
     /**
      * Description accessor / mutator - imported module HTML, sanitized on the way in and out.
      *
-     * Both columns are nullable and several installed modules leave them NULL, so the closures
-     * have to accept NULL. Either way the sanitizer's contract applies: an absent value reads
-     * back, and is stored, as the empty string.
      */
     protected function description(): Attribute
     {
@@ -986,15 +983,6 @@ class Bible extends Model
     /**
      * Copyright statement accessor / mutator.
      *
-     * The method name has to be the camelCase form of the column: Eloquent looks the attribute
-     * up with Str::camel('copyright_statement'), so a method named copyright_statement() is
-     * never called and the column would ship unsanitized.
-     *
-     * This supersedes the setCopyrightStatementAttribute() mutator that used to trim the
-     * column. setAttribute() consults hasSetMutator() before hasAttributeSetMutator(), so the
-     * two cannot coexist - the older form wins and the sanitizing one never runs. The trim,
-     * and its coercion of NULL to the empty string, are kept here so what is stored does not
-     * change.
      */
     protected function copyrightStatement(): Attribute
     {

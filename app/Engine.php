@@ -847,9 +847,9 @@ class Engine implements ErrorInterface
             $bibles[$Bible->module]['tts_ai'] = \App\AudioManager::isTtsAI($Bible);
             $bibles[$Bible->module]['audio_structure'] = $Bible->audio_structure ?: 'chapter';
             $bibles[$Bible->module]['downloadable'] = $Bible->isDownloadable();
-            $bibles[$Bible->module]['copyright_statement'] = $this->_sanitizeHtml($Bible->getCopyrightStatement());
+            $bibles[$Bible->module]['copyright_statement'] = $this->_processHtml($Bible->getCopyrightStatement());
             $bibles[$Bible->module]['book_list'] = $Bible->getBookList();
-            $bibles[$Bible->module]['description'] = $this->_sanitizeHtml($Bible->description);
+            $bibles[$Bible->module]['description'] = $this->_processHtml($Bible->description);
 
             // Remove attributes that aren't needed in the API response
             unset($bibles[$Bible->module]['id']);
@@ -1419,8 +1419,8 @@ class Engine implements ErrorInterface
     {
         $attr['tvm'] = $attr['tvm'] ? preg_replace('/<b>Count:<\/b> [0-9]+.*?<br>/', '', $attr['tvm']) : null; // Remove 'count' from TVM
         $attr['tvm'] = $this->_sanitizeHtml($attr['tvm']);
-        $attr['entry'] = $this->_sanitizeHtml($attr['entry']);
-        $attr['root_word'] = $this->_sanitizeHtml($attr['root_word']);
+        $attr['entry'] = $this->_processHtml($attr['entry']);
+        $attr['root_word'] = $this->_processHtml($attr['root_word']);
         
         unset($attr['created_at']);
         unset($attr['updated_at']);
@@ -1578,10 +1578,27 @@ class Engine implements ErrorInterface
 
         return $results;
     }
-
-    protected function _sanitizeHtml($html)
+                
+    /**
+     * Sanitizes HTML for safe output in the API. This is a hook for subclasses to override.
+     * @param string|null $html
+     * @return string
+     */
+    protected function _sanitizeHtml(?string $html): string
     {
-        return Helpers::sanitizeHtml($html);
+        $html = Helpers::sanitizeHtml($html);
+        return $this->_processHtml($html);
+    }
+    
+    /** 
+     * Assumes the HTML has already been sanitized (iE by accessor on model) and 
+     * performs any additional processing needed for the API output. This is a hook for subclasses to override.
+     * @param string $html
+     * @return string
+    */
+    protected function _processHtml(?string $html): string
+    {
+        return $html;
     }
 
     protected function _parallelUnmatchedVerses($results, $Search) 

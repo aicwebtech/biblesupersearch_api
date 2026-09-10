@@ -18,14 +18,13 @@ class EngineV3 extends BaseEngine
 
     /**
      * Sanitize HTML for API responses by converting it to Markdown
-     * @param string $html
+     * @param string|null $html
      * @return string
      */
-    protected function _sanitizeHtml($html)
+    protected function _processHtml(?string $html): string
     {
         return Helpers::convertHtmlToMarkdown($html);
     }
-
 
     protected function _highlightResults($results, $Search, $Passages, $input) 
     {

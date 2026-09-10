@@ -24,20 +24,24 @@ class EngineVersionTest extends TestCase
         return (new \ReflectionClass($class))->newInstanceWithoutConstructor();
     }
 
-    /** Calls one of the engine's protected methods. */
+    /**
+     * Calls one of the engine's protected methods. No setAccessible() call: reflection has
+     * ignored visibility since PHP 8.1 and the method is deprecated in 8.5.
+     */
     private function call(Engine $Engine, string $method, array $args = [])
     {
         $Method = new \ReflectionMethod($Engine, $method);
-        $Method->setAccessible(true);
 
         return $Method->invokeArgs($Engine, $args);
     }
 
-    /** Reads the engine's protected static $api_version. */
+    /**
+     * Reads the engine's protected static $api_version. No setAccessible() call: reflection has
+     * ignored visibility since PHP 8.1 and the method is deprecated in 8.5.
+     */
     private function apiVersion(string $class)
     {
         $Property = new \ReflectionProperty($class, 'api_version');
-        $Property->setAccessible(true);
 
         return $Property->getValue();
     }
