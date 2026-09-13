@@ -517,6 +517,16 @@ class VerseStandard extends VerseAbstract
         return count($results);
     }
 
+    /**
+     * Hard ceiling on proximity distance, and the default for the tunable
+     * bss.proximity_limit_max.
+     *
+     * Deliberately a constant rather than a config lookup: this method is
+     * exercised by unit tests as a plain static, where no application is booted
+     * and config() would throw. It is the backstop, not the knob.
+     */
+    const PROXIMITY_LIMIT_MAX = 100;
+
     protected static function _buildSpecialSearchJoin($table, $alias, $operator, $alias2, $parameters, $on_clause) 
     {
         $join  = 'INNER JOIN ' . $table . ' AS ' . $alias . ' ON ';
@@ -533,11 +543,16 @@ class VerseStandard extends VerseAbstract
             $lppos = strpos($operator, '(');
 
             if($lppos !== FALSE) {
-                $limit = intval(substr($operator, $lppos + 1));
+                $limit = (int) substr($operator, $lppos + 1);
             }
             else {
-                $limit = (empty($parameters['proximity_limit'])) ? 5 : $parameters['proximity_limit'];
+                $limit = (empty($parameters['proximity_limit'])) ? 5 : (int) $parameters['proximity_limit'];
             }
+
+            // $limit is interpolated into the join below, not bound, so clamp it
+            // here as well as at input validation: an unbounded range turns the
+            // self-join into an arbitrarily expensive query.
+            $limit = max(0, min($limit, static::PROXIMITY_LIMIT_MAX));
 
             $ps_chapter = ' AND (' . $alias . '.book != 19 OR '  . $alias . '.chapter = ' . $alias2 . '.chapter )'; // Always limit within chapter for Psalms
             $join .= (strpos($operator, '~l') === 0) ? ' AND ' . $alias . '.chapter = ' . $alias2 . '.chapter' : $ps_chapter; // Limit within chapter

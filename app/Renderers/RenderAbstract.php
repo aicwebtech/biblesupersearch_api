@@ -132,7 +132,7 @@ abstract class RenderAbstract
         if(function_exists('posix_getuid')) {
             // Method DNE on Windows, so we only do this on POSIX systems        
             if(posix_getuid() == fileowner($file_path)) {
-                chmod($file_path, 0775);
+                chmod($file_path, 0644);
             }
         }
  

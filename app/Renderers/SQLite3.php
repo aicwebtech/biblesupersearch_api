@@ -41,7 +41,10 @@ class SQLite3 extends RenderAbstract
     {
         $filepath = $this->getRenderFilePath(TRUE);
         
-        if(file_exists($filepath)) {
+        // is_link() is checked before file_exists(): a *dangling* symlink is
+        // invisible to file_exists(), so touch() would have created the file at
+        // the link target instead of in the render directory.
+        if(is_link($filepath) || file_exists($filepath)) {
             unlink($filepath);
         }
         

@@ -281,7 +281,8 @@ class Engine implements ErrorInterface
                 'type' => 'string',
             ],
             'proximity_limit' => [
-                'type' => 'int',
+                'type' => 'int_bounded',
+                'max'  => config('bss.proximity_limit_max', \App\Models\Verses\VerseStandard::PROXIMITY_LIMIT_MAX),
             ],
             'keyword_limit' => [
                 'type' => 'int',
@@ -693,11 +694,16 @@ class Engine implements ErrorInterface
 
     public function actionAudio($input)
     {
-        list($input, $Bible) = $this->audioValidateHelper($input);
+        $validated = $this->audioValidateHelper($input);
 
-        if($this->hasErrors()) {
+        // audioValidateHelper() returns FALSE via addError() on any failure, so
+        // the result must be checked before it is destructured -- unpacking a
+        // bool raises "Cannot use bool as array" on PHP 8.5.
+        if(!is_array($validated) || $this->hasErrors()) {
             return FALSE;
         }
+
+        list($input, $Bible) = $validated;
 
         $response  = new \stdClass();
         $response->audio = [];
@@ -722,11 +728,16 @@ class Engine implements ErrorInterface
 
     public function actionAudioCheck($input)
     {
-        list($input, $Bible) = $this->audioValidateHelper($input);
+        $validated = $this->audioValidateHelper($input);
 
-        if($this->hasErrors()) {
+        // audioValidateHelper() returns FALSE via addError() on any failure, so
+        // the result must be checked before it is destructured -- unpacking a
+        // bool raises "Cannot use bool as array" on PHP 8.5.
+        if(!is_array($validated) || $this->hasErrors()) {
             return FALSE;
         }
+
+        list($input, $Bible) = $validated;
 
         $response  = new \stdClass();
         $response->audio = [];
@@ -776,6 +787,13 @@ class Engine implements ErrorInterface
         $Bible = Bible::findByModule($input['bible']);
 
         if(!$Bible) {
+            return $this->addError(trans('errors.bible_no_exist', ['module' => $input['bible']]));
+        }
+
+        // Audio previously only checked that the module existed, skipping the
+        // installed/enabled gate that addBible() applies to every other Bible
+        // selection. Reuse the existing helper rather than duplicating it.
+        if(!static::isBibleEnabled($input['bible']) && !$this->allow_disabled_bibles) {
             return $this->addError(trans('errors.bible_no_exist', ['module' => $input['bible']]));
         }
 
@@ -944,8 +962,6 @@ class Engine implements ErrorInterface
             $zip = FALSE;
         }
 
-        $bypass_limit = (array_key_exists('bypass_limit', $input) && $input['bypass_limit']);
-
         $sanitized = [
             'format'    => $format,
             'modules'   => $modules,
@@ -982,14 +998,14 @@ class Engine implements ErrorInterface
             }
         }
         else {
-            // if($bypass_limit) {
-            //     $success = $Manager->render(FALSE, TRUE, TRUE);
-            //     $success = ($download) ? $Manager->download() : $success;
-            // }
-            // else {
-                $success = ($download) ? $Manager->download($bypass_limit) : $Manager->render(FALSE, TRUE, $bypass_limit);
-                // $success = ($download) ? $Manager->download() :  $Manager->getBiblesNeedingRender();
-            // }
+            // The render limit is an anti-DoS control on how many Bibles may be
+            // rendered synchronously in one request. It is deliberately not
+            // bypassable from request input: `bypass_limit` used to be read
+            // straight from $input, was never sent by the UI, and a bare truthy
+            // check meant even the string "false" switched it on.
+            // RenderManager::render()/download() still take the flag for
+            // trusted internal callers.
+            $success = ($download) ? $Manager->download() : $Manager->render(FALSE, TRUE);
         }
 
         if(!$success) {
@@ -1747,6 +1763,13 @@ class Engine implements ErrorInterface
                     case 'int_pos':
                         $value = (int) $input[$index];
                         $value = $value < 0 ? NULL : $value;
+                        break;
+                    case 'int_bounded':
+                        // Clamped rather than rejected so an oversized request
+                        // still returns results, just not an unbounded query.
+                        $value = (int) $input[$index];
+                        $max = array_key_exists('max', $s) ? (int) $s['max'] : PHP_INT_MAX;
+                        $value = ($value < 0) ? 0 : min($value, $max);
                         break;
                     case 'string':
                         $value = (string) $input[$index];

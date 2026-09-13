@@ -203,6 +203,18 @@ class AudioManager implements ErrorInterface
         try {
             $verses = $Bible->getAudio([$Passage], []);
 
+            // Each missing verse costs one external TTS call, so an unbounded
+            // range lets a single request drive an unbounded amount of provider
+            // work, spend and storage.
+            $verse_limit = (int) config('audio.max_verses_per_request', 200);
+
+            if($mode == 'generate' && $verse_limit > 0 && count($verses) > $verse_limit) {
+                return $this->addError(
+                    'Too many verses requested for audio generation. The maximum is ' . $verse_limit . '.',
+                    4
+                );
+            }
+
             $compat_mode = !Ffmpeg::canUse();
             $mp3_str = null;
             $single_verse = (count($verses) == 1);
