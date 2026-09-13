@@ -1570,13 +1570,34 @@ class Engine implements ErrorInterface
                     $verse->text = preg_replace($pattern, '', $verse->text);
                 }
 
-                $verse->text = $this->_sanitizeHtml($verse->text);
+                // The ampersands are held out across the whole chain, not just the purify
+                // step - see Helpers::protectBareAmpersands() for why verse text cannot be
+                // treated as an HTML document.
+                $text = $this->_sanitizeHtml(Helpers::protectBareAmpersands($verse->text));
+                $text = Helpers::restoreBareAmpersands($text);
+
+                $verse->text = ($mode == 'raw') ? $this->_unescapeBibleMarkup($text) : $text;
             }
             unset($verse);
         }
         unset($bible_results);
 
         return $results;
+    }
+
+    /**
+     * Undoes any escaping a version's _processHtml() applied to the Bible's own markup.
+     *
+     * 'raw' exists to hand back the module's markers - the quotation carets, the square
+     * brackets around added words, the Strong's braces - so a version that escapes them has
+     * taken away the only thing the mode is for. Nothing to undo on v2; see EngineV3.
+     *
+     * @param string $text
+     * @return string
+     */
+    protected function _unescapeBibleMarkup(string $text): string
+    {
+        return $text;
     }
                 
     /**
@@ -1593,12 +1614,17 @@ class Engine implements ErrorInterface
     /** 
      * Assumes the HTML has already been sanitized (iE by accessor on model) and 
      * performs any additional processing needed for the API output. This is a hook for subclasses to override.
-     * @param string $html
+     *
+     * NULL is accepted and answers the empty string, following the same contract as
+     * Helpers::sanitizeHtml() - Bible::getCopyrightStatement() can reach here through
+     * Copyright::getProcessedCopyrightStatement(), which has no return type of its own.
+     *
+     * @param string|null $html
      * @return string
     */
     protected function _processHtml(?string $html): string
     {
-        return $html;
+        return $html ?? '';
     }
 
     protected function _parallelUnmatchedVerses($results, $Search) 

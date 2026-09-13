@@ -4,6 +4,7 @@ namespace Tests\Feature\Controllers;
 
 use Tests\TestCase;
 use Illuminate\Routing\Middleware\ThrottleRequests;
+use Illuminate\Support\Facades\Log;
 
 /**
  * BSS-290: ApiController::genericAction() catches \Throwable around the engine call.
@@ -14,6 +15,11 @@ use Illuminate\Routing\Middleware\ThrottleRequests;
  * was written to send. Naming \Exception fixed that but still missed \Error, which is what a
  * TypeError from a sanitizer or a missing engine class actually raises. Both arms of the block
  * are exercised here, for an Exception and for an Error.
+ *
+ * Because the block never ran before, nothing had ever returned $ex->getMessage() to a client;
+ * making the catch work turned that into a leak - a QueryException's message carries the
+ * failing SQL along with the connection's host, port and database name - so the message now
+ * goes to the log and the client gets errors.500.
  *
  * The engine that throws is a test double registered under a synthetic API version; it is
  * declared at the foot of this file, in the namespace EngineFactory looks in.
@@ -69,11 +75,26 @@ class ApiExceptionHandlingTest extends TestCase
 
         $response->assertStatus(500);
 
-        // The controller's own response, not the framework's: the body is exactly the message
-        // and it carries the API's headers. An uncaught exception renders neither.
-        $this->assertSame(self::BOOM, $response->getContent());
+        // The controller's own response, not the framework's: it carries the API's headers
+        // and the generic message. An uncaught exception renders neither.
+        $this->assertSame(__('errors.500'), $response->getContent());
+        $this->assertStringNotContainsString(self::BOOM, $response->getContent());
         $this->assertStringStartsWith('application/json', $response->headers->get('Content-Type'));
         $this->assertSame('*', $response->headers->get('Access-Control-Allow-Origin'));
+    }
+
+    /** What the client is not told still has to reach the log. */
+    public function testTheEngineExceptionIsLoggedInProduction(): void
+    {
+        config(['app.env' => 'production']);
+
+        Log::shouldReceive('error')
+            ->once()
+            ->withArgs(function($message, $context) {
+                return str_contains($message, self::BOOM) && ($context['exception'] ?? NULL) instanceof \RuntimeException;
+            });
+
+        $this->get($this->url())->assertStatus(500);
     }
 
     public function testAnEngineExceptionBecomesA500InProductionOnPostToo(): void
@@ -87,7 +108,8 @@ class ApiExceptionHandlingTest extends TestCase
         }
 
         $response->assertStatus(500);
-        $this->assertSame(self::BOOM, $response->getContent());
+        $this->assertSame(__('errors.500'), $response->getContent());
+        $this->assertStringNotContainsString(self::BOOM, $response->getContent());
         $this->assertSame('*', $response->headers->get('Access-Control-Allow-Origin'));
     }
 
@@ -145,7 +167,8 @@ class ApiExceptionHandlingTest extends TestCase
         }
 
         $response->assertStatus(500);
-        $this->assertSame(self::KABOOM, $response->getContent());
+        $this->assertSame(__('errors.500'), $response->getContent());
+        $this->assertStringNotContainsString(self::KABOOM, $response->getContent());
         $this->assertStringStartsWith('application/json', $response->headers->get('Content-Type'));
         $this->assertSame('*', $response->headers->get('Access-Control-Allow-Origin'));
     }
@@ -181,6 +204,8 @@ class ApiExceptionHandlingTest extends TestCase
         }
 
         $response->assertStatus(500);
+        $this->assertSame(__('errors.500'), $response->getContent());
+        $this->assertStringNotContainsString('EngineV' . self::MISSING_VERSION, $response->getContent());
         $this->assertSame('*', $response->headers->get('Access-Control-Allow-Origin'));
     }
 

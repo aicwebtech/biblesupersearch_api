@@ -64,6 +64,24 @@ class ModelHtmlSanitizationTest extends TestCase
     }
 
     /**
+     * Imported module descriptions are a whole HTML document with the import credit appended
+     * after </html> - Importers\MyBible builds exactly that. HTMLPurifier discards anything
+     * past the document close, so 16 of the Bibles installed here were reading back without
+     * their credit, and since the accessor is also the mutator a re-import made it permanent.
+     */
+    public function testReadingADescriptionKeepsTheImportCreditAppendedAfterTheDocument(): void
+    {
+        $Bible = $this->withRawAttributes(Bible::class, [
+            'description' => '<html><head><title>T</title></head><body><p>Module desc</p></body></html>'
+                . '<br /><br />This Bible imported from The Unbound Bible <a href="http://unbound.biola.edu/">unbound.biola.edu</a>',
+        ]);
+
+        $this->assertStringContainsString('<p>Module desc</p>', $Bible->description);
+        $this->assertStringContainsString('This Bible imported from The Unbound Bible', $Bible->description);
+        $this->assertStringContainsString('unbound.biola.edu', $Bible->description);
+    }
+
+    /**
      * 'tvm' deliberately has no accessor: Engine::_formatStrongs() has to strip the
      * '<b>Count:</b> n ...<br>' prefix off the raw column before anything sanitizes it, so
      * that field alone is still sanitized by the engine.

@@ -219,9 +219,68 @@ class ApiVersionRoutingTest extends TestCase
         $response->assertSee('API version not found: v0');
     }
 
+    /**
+     * The end-of-life comparison is on integers. As strings 'v2' <= 'v10' is false, so a
+     * lexical check would answer 404 'never existed' for a version that had been retired.
+     */
+    public function testTheEndOfLifeCheckIsNotALexicalComparison()
+    {
+        config(['app.api_version_eol' => 'v10']);
+        config(['app.api_version_list' => ['v11']]);
+
+        $response = $this->get('/api/v2/version');
+
+        if($response->status() == 429) {
+            $this->markTestSkipped('429 Skipping due to rate limiting');
+        }
+
+        $response->assertStatus(410);
+        $response->assertSee('API version is End of Life and no longer supported: v2');
+
+        // The boundary itself is retired; the version above it is simply unknown.
+        $this->get('/api/v10/version')->assertStatus(410);
+        $this->get('/api/v12/version')->assertStatus(404);
+    }
+
+    /** A version that is not a whole number was never a version, whatever the EOL mark is. */
+    public function testANonNumericVersionIsNeverTreatedAsEndOfLife()
+    {
+        config(['app.api_version_eol' => 'v10']);
+
+        foreach(['/api/v1x/version', '/api/v2x/version', '/api/vfoo/version'] as $url) {
+            $response = $this->get($url);
+
+            if($response->status() == 429) {
+                $this->markTestSkipped('429 Skipping due to rate limiting');
+            }
+
+            $response->assertStatus(404, $url);
+        }
+    }
+
     // -----------------------------------------------------------------------
     // Actions that v3 accepts on POST only
     // -----------------------------------------------------------------------
+
+    /**
+     * The POST-only gate sits after the allowed-action check, so a disabled action is 404
+     * 'not found' rather than a 405 that tells the caller the feature exists.
+     */
+    public function testADisabledActionIs404RatherThan405()
+    {
+        config(['download.enable' => FALSE]);
+
+        $response = $this->get('/api/v3/render');
+
+        if($response->status() == 429) {
+            $this->markTestSkipped('429 Skipping due to rate limiting');
+        }
+
+        $response->assertStatus(404);
+        $response->assertSee('Action not found');
+
+        $this->get('/api/v3/download')->assertStatus(404);
+    }
 
     /**
      * From v3 on, the actions that hand back a file are POST-only; the legacy versions still
@@ -229,6 +288,13 @@ class ApiVersionRoutingTest extends TestCase
      */
     public function testTheFileActionsArePostOnlyFromV3On()
     {
+        // Both actions are behind the same gate, and the legacy-version half of this test
+        // expects them to reach the engine - on an install with downloads off they are not
+        // allowed actions at all and answer 404.
+        if(!config('download.enable')) {
+            $this->markTestSkipped('Downloads disabled');
+        }
+
         foreach(['render', 'download'] as $action) {
             $response = $this->get('/api/v3/' . $action);
 

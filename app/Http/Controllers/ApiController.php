@@ -26,8 +26,13 @@ class ApiController extends Controller
         }
         
         if(!in_array($vv, config('app.api_version_list'))) {
-            // Check if the version is past its end-of-life
-            if($version >= 1 && $vv <= config('app.api_version_eol')) {
+            // A retired version is told so; anything that is not a whole number was never a
+            // version at all. Both comparisons are on integers - as strings 'v2' <= 'v10' is
+            // false, so a lexical check would start answering 404 'not found' for a retired
+            // v2 the day a two-digit version exists.
+            $eol = (int) ltrim(config('app.api_version_eol'), 'v');
+
+            if(ctype_digit((string) $version) && (int) $version >= 1 && (int) $version <= $eol) {
                 return $this->_makeResponse('API version is End of Life and no longer supported: ' . $vv, 410);
             }
 
@@ -52,17 +57,19 @@ class ApiController extends Controller
             $allowed_actions[] = 'audio_check';
         }
 
-        $post_only = ['render', 'download'];
-
-        if($version >= 3 && in_array($action, $post_only) && !$Request->isMethod('post')) {
-            return $this->_makeResponse('Action requires POST method', 405);
-        }
-
         $debug_input = FALSE;
         $_SESSION['debug'] = [];
 
         if(!in_array($action, $allowed_actions)) {
             return $this->_makeResponse('Action not found', 404);
+        }
+
+        // After the allowed-action check, not before it: on an install with downloads off,
+        // answering 405 here would report that a disabled action exists.
+        $post_only = ['render', 'download'];
+
+        if($version >= 3 && in_array($action, $post_only) && !$Request->isMethod('post')) {
+            return $this->_makeResponse('Action requires POST method', 405);
         }
 
         $input = $Request->input();
@@ -89,7 +96,14 @@ class ApiController extends Controller
         }
         catch (\Throwable $ex) {        
             if( config('app.env') == 'production') {
-                return $this->_makeResponse($ex->getMessage(), 500);
+                // The message goes to the log, not to the client. Until this block caught
+                // \Throwable it never ran - the old catch named an unqualified Exception,
+                // which resolves to App\Http\Controllers\Exception - so nothing had returned
+                // $ex->getMessage() to a caller before. A QueryException's message carries the
+                // failing SQL along with the connection's host, port and database name.
+                \Log::error('API error on action \'' . $action . '\': ' . $ex->getMessage(), ['exception' => $ex]);
+
+                return $this->_makeResponse(__('errors.500'), 500);
             }
 
             throw $ex;

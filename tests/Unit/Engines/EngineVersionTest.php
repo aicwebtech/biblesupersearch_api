@@ -214,6 +214,69 @@ class EngineVersionTest extends TestCase
         $this->assertSame('two', $processed['asv'][1]->text);
     }
 
+    /**
+     * The purifier rewrites a bare '&' to '&amp;', which would change v2's verse text for
+     * 4,480 Bishops and 3,535 Geneva verses and shift every 'italics' character offset past
+     * the ampersand. _processMarkup() holds them out across the whole sanitize chain.
+     */
+    public function testProcessMarkupKeepsBareAmpersandsInVerseText(): void
+    {
+        $text = 'And the earth was without fourme, and was voyde: & darknes was <b>vpon</b> the face';
+
+        $v2 = $this->call($this->engine(EngineV2::class), '_processMarkup', [$this->results($text), 'none']);
+        $v3 = $this->call($this->engine(EngineV3::class), '_processMarkup', [$this->results($text), 'none']);
+
+        $this->assertSame('And the earth was without fourme, and was voyde: & darknes was <b>vpon</b> the face', $v2['kjv'][0]->text);
+        $this->assertSame('And the earth was without fourme, and was voyde: & darknes was **vpon** the face', $v3['kjv'][0]->text);
+    }
+
+    /** Holding the ampersands out must not let anything else through with them. */
+    public function testProcessMarkupStillStripsScriptsAlongsideAnAmpersand(): void
+    {
+        $processed = $this->call(
+            $this->engine(EngineV2::class),
+            '_processMarkup',
+            [$this->results('a & b <script>alert(1)</script> c'), 'none']
+        );
+
+        $this->assertStringNotContainsString('<script', $processed['kjv'][0]->text);
+        $this->assertStringNotContainsString('alert(1)', $processed['kjv'][0]->text);
+        $this->assertStringContainsString('a & b', $processed['kjv'][0]->text);
+    }
+
+    /**
+     * The Markdown converter escapes '[' and ']' - the very markers 'raw' exists to expose,
+     * so Psalms 23:1 was coming back as 'The LORD \[is\] my shepherd'. v3 undoes that for raw
+     * mode only; the carets and Strong's braces are never escaped.
+     */
+    public function testProcessMarkupRawKeepsTheBibleMarkersUnescapedOnV3(): void
+    {
+        $text = 'The LORD [is] my shepherd ‹Let› {H1961}';
+
+        $processed = $this->call($this->engine(EngineV3::class), '_processMarkup', [$this->results($text), 'raw']);
+
+        $this->assertSame('The LORD [is] my shepherd ‹Let› {H1961}', $processed['kjv'][0]->text);
+        $this->assertStringNotContainsString('\\[', $processed['kjv'][0]->text);
+    }
+
+    /** Only the base class leaves the markers alone already; the undo is v3's. */
+    public function testOnlyTheV3EngineOverridesTheMarkupUnescapeHook(): void
+    {
+        $this->assertSame(Engine::class, (new \ReflectionMethod(EngineV2::class, '_unescapeBibleMarkup'))->getDeclaringClass()->getName());
+        $this->assertSame(EngineV3::class, (new \ReflectionMethod(EngineV3::class, '_unescapeBibleMarkup'))->getDeclaringClass()->getName());
+    }
+
+    /**
+     * _processHtml() declares a nullable parameter and a non-nullable return, so passing NULL
+     * through unchanged was a guaranteed TypeError. Copyright::getProcessedCopyrightStatement()
+     * is one hop from that call site and has no return type of its own.
+     */
+    public function testTheProcessHookAcceptsNullOnBothEngines(): void
+    {
+        $this->assertSame('', $this->call($this->engine(EngineV2::class), '_processHtml', [NULL]));
+        $this->assertSame('', $this->call($this->engine(EngineV3::class), '_processHtml', [NULL]));
+    }
+
     // -----------------------------------------------------------------------
     // _formatStrongs - the Strong's definition fields
     // -----------------------------------------------------------------------

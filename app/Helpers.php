@@ -450,6 +450,12 @@ class Helpers {
     /** @var \HTMLPurifier|NULL Built once per process - see getHtmlPurifier(). */
     private static $Purifier = NULL;
 
+    /** @var \League\HTMLToMarkdown\HtmlConverter|NULL Built once per process - see getHtmlConverter(). */
+    private static $Converter = NULL;
+
+    /** Stands in for a bare '&' across sanitization - a private-use codepoint, absent from Bible text. */
+    private const BARE_AMPERSAND = "\u{E000}";
+
     /**
      * Sanitizes HTML content to allow only a safe subset of tags.
      *
@@ -467,7 +473,66 @@ class Helpers {
             return '';
         }
 
-        return trim(static::getHtmlPurifier()->purify($html));
+        return trim(static::getHtmlPurifier()->purify(static::flattenHtmlDocument($html)));
+    }
+
+    /**
+     * Reduces an HTML document to a fragment.
+     *
+     * HTMLPurifier discards anything that follows </html>, and several imported modules store
+     * a whole document with the import credit appended after it - see Importers\MyBible, which
+     * builds $description . '<br /><br />' . $source. Stripping the scaffolding first leaves
+     * one flat fragment, so the credit survives the purifier instead of being deleted. 16 of
+     * the Bibles installed here were losing text this way, and because sanitizeHtml() is the
+     * mutator as well as the accessor, a re-import was writing the truncation to the database.
+     *
+     * A no-op for the ordinary case: a description that is already a fragment is unchanged.
+     *
+     * @param string $html
+     * @return string
+     */
+    private static function flattenHtmlDocument(string $html): string
+    {
+        $html = preg_replace('/<!DOCTYPE[^>]*>/i', '', $html);
+        $html = preg_replace('#<head\b[^>]*>.*?</head>#is', '', $html);
+        $html = preg_replace('#</?(?:html|body)\b[^>]*>#i', '', $html);
+
+        return $html;
+    }
+
+    /**
+     * Replaces bare ampersands with a sentinel, leaving existing entities alone.
+     *
+     * HTMLPurifier normalizes a bare '&' to '&amp;'. That is right for an HTML document and
+     * wrong for Bible verse text, which the API emits as text and which the 'italics' field
+     * indexes by character offset - the four-character expansion moves every offset past the
+     * ampersand, so a client italicizes the wrong span. 4,480 Bishops and 3,535 Geneva verses
+     * carry a bare '&'.
+     *
+     * A bare '&' cannot open a tag, so holding it out of the sanitizer costs nothing in
+     * safety. Any sentinel already in the input is dropped first, so none can be smuggled in.
+     *
+     * @param string|null $text
+     * @return string
+     */
+    public static function protectBareAmpersands(?string $text): string
+    {
+        $text = str_replace(self::BARE_AMPERSAND, '', (string) $text);
+
+        return preg_replace('/&(?![A-Za-z#][A-Za-z0-9]*;)/', self::BARE_AMPERSAND, $text);
+    }
+
+    /**
+     * Puts back what protectBareAmpersands() held out. Call it after the whole sanitize and
+     * convert chain has run, not between its steps - the v3 engine converts to Markdown after
+     * sanitizing, and the sentinel has to survive that too.
+     *
+     * @param string $text
+     * @return string
+     */
+    public static function restoreBareAmpersands(string $text): string
+    {
+        return str_replace(self::BARE_AMPERSAND, '&', $text);
     }
 
     /**
@@ -500,19 +565,48 @@ class Helpers {
     
     /**
      * convertHtmlToMarkdown() - Converts HTML to Markdown using the league/html-to-markdown library
+     *
+     * $sanitize is turned off by callers that have already sanitized. Engine::_processHtml()
+     * and its subclass hooks are documented as receiving values the purifier has already been
+     * over - either through Engine::_sanitizeHtml() or from a model accessor - and purifying a
+     * second time costs about 0.4ms per call for nothing. It stays on by default so any other
+     * caller is still safe.
+     *
      * @param string|null $html The HTML content to convert
+     * @param bool $sanitize Whether to sanitize $html before converting it
      * @return string The converted Markdown content
      */
-    public static function convertHtmlToMarkdown(?string $html): string
+    public static function convertHtmlToMarkdown(?string $html, bool $sanitize = TRUE): string
     {
-        $html = self::sanitizeHtml($html);
+        if($sanitize) {
+            $html = self::sanitizeHtml($html);
+        }
 
-        $converter = new \League\HTMLToMarkdown\HtmlConverter([
-            'strip_tags' => TRUE,
-            'hard_break' => TRUE,
-        ]);
+        if($html === NULL || $html === '') {
+            return '';
+        }
 
-        return $converter->convert($html);
+        return static::getHtmlConverter()->convert($html);
+    }
+
+    /**
+     * The shared HTML to Markdown converter.
+     *
+     * Held for the same reason as the purifier: Engine::_processMarkup() converts once per
+     * verse, so a 500-verse page_all request was building 500 of these.
+     *
+     * @return \League\HTMLToMarkdown\HtmlConverter
+     */
+    private static function getHtmlConverter(): \League\HTMLToMarkdown\HtmlConverter
+    {
+        if(static::$Converter === NULL) {
+            static::$Converter = new \League\HTMLToMarkdown\HtmlConverter([
+                'strip_tags' => TRUE,
+                'hard_break' => TRUE,
+            ]);
+        }
+
+        return static::$Converter;
     }
 
     /**

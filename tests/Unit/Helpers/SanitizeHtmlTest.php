@@ -222,4 +222,134 @@ class SanitizeHtmlTest extends TestCase
     {
         $this->assertSame('', Helpers::convertHtmlToMarkdown(null));
     }
+
+    /**
+     * Engine::_processHtml() and its subclass hooks are handed values that have already been
+     * purified, so they turn the sanitize step off. It must be the only thing that changes -
+     * the Markdown is identical either way.
+     */
+    public function testConvertHtmlToMarkdownCanSkipTheRedundantSanitize(): void
+    {
+        $sanitized = Helpers::sanitizeHtml('<b>bold</b> and <i>ital</i>');
+
+        $this->assertSame(
+            Helpers::convertHtmlToMarkdown($sanitized, TRUE),
+            Helpers::convertHtmlToMarkdown($sanitized, FALSE)
+        );
+
+        $this->assertSame('', Helpers::convertHtmlToMarkdown(null, FALSE));
+        $this->assertSame('', Helpers::convertHtmlToMarkdown('', FALSE));
+    }
+
+    /** The converter is held between calls, so repeated conversions must not drift. */
+    public function testConvertHtmlToMarkdownIsStableAcrossCalls(): void
+    {
+        $first = Helpers::convertHtmlToMarkdown('<p>one</p><ul><li>a</li><li>b</li></ul>');
+
+        for($i = 0; $i < 5; $i++) {
+            $this->assertSame($first, Helpers::convertHtmlToMarkdown('<p>one</p><ul><li>a</li><li>b</li></ul>'));
+        }
+    }
+
+    // -----------------------------------------------------------------------
+    // Whole documents - the import credit that follows </html>
+    // -----------------------------------------------------------------------
+
+    /**
+     * HTMLPurifier discards everything after </html>, and Importers\MyBible stores exactly
+     * that shape: a full document from the module metadata with the import credit appended
+     * after it. Flattening the document to a fragment first is what keeps the credit.
+     */
+    public function testSanitizeHtmlKeepsContentAppendedAfterADocument(): void
+    {
+        $html = '<html><head><title>T</title></head><body><p>Module desc</p></body></html>'
+            . '<br /><br />Imported from <a href="http://unbound.biola.edu/">The Unbound Bible</a>';
+
+        $sanitized = Helpers::sanitizeHtml($html);
+
+        $this->assertStringContainsString('<p>Module desc</p>', $sanitized);
+        $this->assertStringContainsString('Imported from', $sanitized);
+        $this->assertStringContainsString('unbound.biola.edu', $sanitized);
+    }
+
+    /** The document scaffolding itself is dropped - only its body content is kept. */
+    public function testSanitizeHtmlDropsTheDocumentScaffolding(): void
+    {
+        $sanitized = Helpers::sanitizeHtml(
+            '<!DOCTYPE html><html><head><title>Title</title><style>body{color:red}</style></head>'
+            . '<body><p>Body</p></body></html>'
+        );
+
+        $this->assertSame('<p>Body</p>', $sanitized);
+        $this->assertStringNotContainsString('Title', $sanitized);
+        $this->assertStringNotContainsString('color:red', $sanitized);
+    }
+
+    /** Flattening must not disturb a value that was already a fragment. */
+    public function testSanitizeHtmlLeavesOrdinaryFragmentsAlone(): void
+    {
+        $this->assertSame('<p>Just a <b>fragment</b></p>', Helpers::sanitizeHtml('<p>Just a <b>fragment</b></p>'));
+    }
+
+    // -----------------------------------------------------------------------
+    // Bare ampersands
+    // -----------------------------------------------------------------------
+
+    /**
+     * A bare '&' is not valid HTML and the purifier rewrites it to '&amp;'. Verse text is not
+     * an HTML document, and the 'italics' field indexes it by character offset, so the
+     * four-character expansion moves every offset past the ampersand.
+     */
+    public function testTheSanitizerWouldOtherwiseExpandABareAmpersand(): void
+    {
+        $this->assertSame('a &amp; b', Helpers::sanitizeHtml('a & b'));
+    }
+
+    public function testBareAmpersandsSurviveSanitizationWhenProtected(): void
+    {
+        $protected = Helpers::protectBareAmpersands('and was voyde: & darknes was <b>vpon</b>');
+        $restored  = Helpers::restoreBareAmpersands(Helpers::sanitizeHtml($protected));
+
+        $this->assertSame('and was voyde: & darknes was <b>vpon</b>', $restored);
+    }
+
+    /** Existing entities are left as they are - only a bare '&' is held out. */
+    public function testProtectingAmpersandsLeavesExistingEntitiesAlone(): void
+    {
+        $protected = Helpers::protectBareAmpersands('A & B &amp; C &lt;script&gt; D &#39;E');
+        $restored  = Helpers::restoreBareAmpersands(Helpers::sanitizeHtml($protected));
+
+        $this->assertStringContainsString('A & B', $restored);
+        $this->assertStringContainsString('&amp;', $restored);
+        $this->assertStringContainsString('&lt;script&gt;', $restored);
+    }
+
+    /** Protection is not a way past the whitelist. */
+    public function testProtectingAmpersandsDoesNotWeakenTheSanitizer(): void
+    {
+        $protected = Helpers::protectBareAmpersands('a & b <script>alert(1)</script> c');
+        $restored  = Helpers::restoreBareAmpersands(Helpers::sanitizeHtml($protected));
+
+        $this->assertStringNotContainsString('<script', $restored);
+        $this->assertStringNotContainsString('alert(1)', $restored);
+        $this->assertStringContainsString('a & b', $restored);
+    }
+
+    /**
+     * The sentinel is a private-use codepoint, but a crafted module could still carry one;
+     * it is dropped on the way in so it cannot be used to inject an ampersand.
+     */
+    public function testASentinelInTheSourceTextIsDiscarded(): void
+    {
+        $restored = Helpers::restoreBareAmpersands(
+            Helpers::sanitizeHtml(Helpers::protectBareAmpersands("smuggled \u{E000} here"))
+        );
+
+        $this->assertSame('smuggled  here', $restored);
+    }
+
+    public function testProtectBareAmpersandsAcceptsNull(): void
+    {
+        $this->assertSame('', Helpers::protectBareAmpersands(null));
+    }
 }

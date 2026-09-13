@@ -18,12 +18,31 @@ class EngineV3 extends BaseEngine
 
     /**
      * Sanitize HTML for API responses by converting it to Markdown
+     *
+     * Everything reaching this hook has already been through the purifier - either via
+     * Engine::_sanitizeHtml() or from a model accessor - so the converter is told not to
+     * repeat that work.
+     *
      * @param string|null $html
      * @return string
      */
     protected function _processHtml(?string $html): string
     {
-        return Helpers::convertHtmlToMarkdown($html);
+        return Helpers::convertHtmlToMarkdown($html, FALSE);
+    }
+
+    /**
+     * The Markdown converter escapes '[' and ']', which is exactly the markup 'raw' exists to
+     * expose - Psalms 23:1 came back as 'The LORD \[is\] my shepherd', so a client scanning
+     * for the bracket pair found nothing. The carets and the Strong's braces are not escaped
+     * and need no undoing.
+     *
+     * @param string $text
+     * @return string
+     */
+    protected function _unescapeBibleMarkup(string $text): string
+    {
+        return str_replace(['\\[', '\\]'], ['[', ']'], $text);
     }
 
     protected function _highlightResults($results, $Search, $Passages, $input) 
