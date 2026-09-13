@@ -9,8 +9,13 @@ use Tests\TestCase;
  * rather than as a per-route alias, so the installer, admin, auth and
  * password-reset surfaces are all covered rather than just the docs controller.
  *
- * The redirect itself stays gated on config('app.redirect_https'), so plain-http
- * deployments are unaffected.
+ * The redirect itself stays gated on config('app.redirect_https'), which
+ * defaults to FALSE (see Tests\Feature\Config\SecureDefaultsTest), so a
+ * plain-http deployment that never set REDIRECT_HTTPS is unaffected.
+ *
+ * Where TLS is terminated upstream, TrustProxies must run first or
+ * Request::secure() is never TRUE and this redirects forever -- see
+ * Tests\Feature\Middleware\TrustProxiesTest.
  *
  * Note: requests are issued against an explicit http:// base URL. APP_URL is
  * https in the test environment, so a relative $this->get() would already be
@@ -65,12 +70,26 @@ class HttpsRedirectTest extends TestCase
     }
 
     /**
-     * Guard the default: with the setting off nothing is forced to https, which
-     * is what keeps the middleware inert for plain-http deployments.
+     * With the setting off nothing is forced to https, which is what keeps the
+     * middleware inert for plain-http deployments.
      */
     public function testRequestIsNotRedirectedWhenDisabled(): void
     {
         config(['app.redirect_https' => false]);
+
+        $response = $this->get('http://example.com/auth/reset');
+
+        $response->assertStatus(200);
+    }
+
+    /**
+     * The middleware compares against TRUE identically, so an absent or
+     * unparsed setting must also leave the request alone rather than fall
+     * through to a truthy comparison.
+     */
+    public function testRequestIsNotRedirectedWhenSettingIsAbsent(): void
+    {
+        config(['app.redirect_https' => null]);
 
         $response = $this->get('http://example.com/auth/reset');
 

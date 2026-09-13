@@ -130,6 +130,61 @@ class DailyHitCounterTest extends TestCase
     }
 
     /**
+     * The cached flag must track the limit in both directions. An operator who
+     * raises bss.daily_access_limit (or a key's access level) part way through
+     * the day starts getting requests served again, so isLimitReached() -- which
+     * Engine::actionStatics() reports to the client -- must stop claiming a
+     * block that is no longer enforced.
+     */
+    public function testLimitReachedFlagIsClearedWhenTheLimitIsRaised(): void
+    {
+        $Access = null;
+
+        try {
+            $Access = $this->makeIpFixture(2);
+
+            $Access->incrementDailyHits();
+            $Access->incrementDailyHits();
+
+            $this->assertTrue($Access->isLimitReached(), 'reached after 2 of 2');
+            $this->assertFalse($Access->incrementDailyHits(), 'a third hit is refused at the old limit');
+
+            $Access->limit = 10;
+            $Access->save();
+
+            $this->assertTrue($Access->incrementDailyHits(), 'the raised limit must serve the request');
+            $this->assertFalse($Access->isLimitReached(), 'the stale flag must be cleared, not just ignored');
+            $this->assertSame(3, $Access->getDailyHits());
+        }
+        finally {
+            $this->removeIpFixture($Access);
+        }
+    }
+
+    /**
+     * The mirror case: the flag must still be set on the request that exhausts
+     * the quota, not only cleared.
+     */
+    public function testLimitReachedFlagIsSetOnTheExhaustingRequest(): void
+    {
+        $Access = null;
+
+        try {
+            $Access = $this->makeIpFixture(3);
+
+            $Access->incrementDailyHits();
+            $Access->incrementDailyHits();
+            $this->assertFalse($Access->isLimitReached(), 'not reached after 2 of 3');
+
+            $Access->incrementDailyHits();
+            $this->assertTrue($Access->isLimitReached(), 'reached after 3 of 3');
+        }
+        finally {
+            $this->removeIpFixture($Access);
+        }
+    }
+
+    /**
      * A limit of 0 means unlimited and must keep incrementing.
      */
     public function testUnlimitedAccessKeepsCounting(): void

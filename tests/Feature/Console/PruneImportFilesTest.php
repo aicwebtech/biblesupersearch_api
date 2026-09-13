@@ -27,6 +27,44 @@ class PruneImportFilesTest extends TestCase
     }
 
     /**
+     * bibles/mybible was missed when the command was written, because the
+     * directory is not in the repository -- it is created by the first MyBible
+     * upload -- so abandoned uploads there accumulated forever.
+     *
+     * Asserted against the importers themselves rather than a hardcoded list,
+     * so the next importer with its own directory cannot be missed either.
+     */
+    public function testEveryDedicatedImporterDirectoryIsPrunable(): void
+    {
+        $Command = new \App\Console\Commands\PruneImportFiles();
+        $property = new \ReflectionProperty($Command, 'prunable_dirs');
+        $prunable = $property->getValue($Command);
+
+        foreach(glob(app_path('Importers') . '/*.php') as $file) {
+            $class = 'App\\Importers\\' . basename($file, '.php');
+
+            if(!class_exists($class) || (new \ReflectionClass($class))->isAbstract()) {
+                continue;
+            }
+
+            $defaults = (new \ReflectionClass($class))->getDefaultProperties();
+            $short = $defaults['path_short'] ?? null;
+
+            // bibles/unofficial also holds installed module archives, so it is
+            // deliberately excluded -- pruning it could delete a real module.
+            if($short === null || $short === 'unofficial') {
+                continue;
+            }
+
+            $this->assertContains(
+                $short,
+                $prunable,
+                $class . ' uploads into bibles/' . $short . ', which is never pruned'
+            );
+        }
+    }
+
+    /**
      * An old upload is removed; a recent one is kept.
      */
     public function testRemovesOnlyOldFiles(): void

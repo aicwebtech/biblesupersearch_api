@@ -11,6 +11,7 @@ use App\Search;
 use App\CacheManager;
 use App\Helpers;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Pagination\LengthAwarePaginator as Paginator;
 use App\Interfaces\ErrorInterface;
 
@@ -999,13 +1000,19 @@ class Engine implements ErrorInterface
         }
         else {
             // The render limit is an anti-DoS control on how many Bibles may be
-            // rendered synchronously in one request. It is deliberately not
-            // bypassable from request input: `bypass_limit` used to be read
-            // straight from $input, was never sent by the UI, and a bare truthy
-            // check meant even the string "false" switched it on.
-            // RenderManager::render()/download() still take the flag for
-            // trusted internal callers.
-            $success = ($download) ? $Manager->download() : $Manager->render(FALSE, TRUE);
+            // rendered synchronously in one request. `bypass_limit` used to be
+            // read straight from $input with a bare truthy check, so any caller
+            // could switch the control off -- and even the string "false" did.
+            //
+            // The no-JavaScript download widget genuinely needs it: with JS off
+            // there is no client to drive the multi-request render flow. It is
+            // therefore still honoured, but only for an authenticated
+            // administrator and only for a genuinely true value.
+            $bypass_limit = $this->_bypassRenderLimitRequested($input);
+
+            $success = ($download)
+                ? $Manager->download($bypass_limit)
+                : $Manager->render(FALSE, TRUE, $bypass_limit);
         }
 
         if(!$success) {
@@ -1031,6 +1038,29 @@ class Engine implements ErrorInterface
         }
         
         return $response;
+    }
+
+    /**
+     * Whether this request may bypass the synchronous render limit.
+     *
+     * Authorisation is server side -- the request may ask, but only an
+     * administrator is granted it. Parsed strictly so that "false", "0" and ""
+     * mean no.
+     *
+     * @param  array  $input
+     * @return bool
+     */
+    protected function _bypassRenderLimitRequested($input) 
+    {
+        if(!array_key_exists('bypass_limit', $input)) {
+            return FALSE;
+        }
+
+        if(!filter_var($input['bypass_limit'], FILTER_VALIDATE_BOOLEAN)) {
+            return FALSE;
+        }
+
+        return Gate::allows('admin-access');
     }
 
     protected function _startQueueProcess($queue = 'default') 

@@ -296,7 +296,24 @@ return [
      */
     'query_use_named_placeholders' => TRUE,
 
-    'redirect_https' => env('REDIRECT_HTTPS', TRUE),
+    /* Force every request to https.
+     *
+     * Off by default: this middleware is global, so an existing deployment that
+     * serves plain http would become unreachable, and one behind a
+     * TLS-terminating proxy would redirect forever unless 'trusted_proxies'
+     * below is configured. Operators opt in with REDIRECT_HTTPS.
+     */
+    'redirect_https' => env('REDIRECT_HTTPS', FALSE),
+
+    /* Proxies whose X-Forwarded-* headers may be trusted.
+     *
+     * Required when TLS is terminated upstream (load balancer, nginx,
+     * Cloudflare), otherwise the forwarded scheme is ignored, Request::secure()
+     * is permanently FALSE and REDIRECT_HTTPS produces a redirect loop.
+     * Accepts a comma separated list of IPs/CIDRs, or '*' to trust the
+     * immediate peer. NULL trusts nothing.
+     */
+    'trusted_proxies' => env('TRUSTED_PROXIES', NULL),
 
     'client_url' => env('CLIENT_URL', NULL),
 ];

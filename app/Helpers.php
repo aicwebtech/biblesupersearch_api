@@ -95,6 +95,16 @@ class Helpers {
      * operator- or administrator-supplied URLs such as app.client_url, which is
      * editable from the admin config form and rendered on the public docs page.
      *
+     * A value carrying no scheme at all -- 'www.example.com/client',
+     * '//cdn.example.com/client', '/client' -- cannot invoke script and is
+     * passed through, since those are all legitimate ways to configure
+     * app.client_url. A scheme-like prefix must be http or https; that means an
+     * unschemed 'host:port' form is rejected, which is ambiguous by RFC anyway.
+     *
+     * The scheme is detected on a copy stripped of whitespace and control
+     * characters, because browsers strip those before acting on an href and
+     * would otherwise run 'java\nscript:...'.
+     *
      * @param  string|null  $url
      * @return string|null
      */
@@ -104,13 +114,13 @@ class Helpers {
             return NULL;
         }
 
-        $scheme = parse_url(trim($url), PHP_URL_SCHEME);
+        $probe = preg_replace('/[\x00-\x20\x7F]/', '', $url);
 
-        if(!is_string($scheme) || !in_array(strtolower($scheme), ['http', 'https'], TRUE)) {
-            return NULL;
+        if(!preg_match('/^([a-zA-Z][a-zA-Z0-9+.\-]*):/', $probe, $match)) {
+            return $url; // relative or protocol-relative
         }
 
-        return $url;
+        return in_array(strtolower($match[1]), ['http', 'https'], TRUE) ? $url : NULL;
     }
 
     /* 

@@ -60,10 +60,17 @@ trait DailyHitCounter
         // Cached marker only; the conditional update above is the real gate.
         // Written separately so it does not depend on whether the database
         // evaluates SET expressions against pre- or post-update column values.
+        //
+        // Cleared as well as set: raising bss.daily_access_limit (or a key's
+        // access level) part way through the day must not leave
+        // isLimitReached() reporting a block that is no longer enforced.
         if($limit > 0) {
-            DB::table($table)->where($keys)
-                ->where('count', '>=', $limit)
-                ->update(['limit_reached' => 1, 'updated_at' => $now]);
+            $count_column = DB::connection()->getQueryGrammar()->wrap('count');
+
+            DB::table($table)->where($keys)->update([
+                'limit_reached' => DB::raw('CASE WHEN ' . $count_column . ' >= ' . (int) $limit . ' THEN 1 ELSE 0 END'),
+                'updated_at'    => $now,
+            ]);
         }
 
         return TRUE;

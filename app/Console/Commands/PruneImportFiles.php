@@ -31,7 +31,7 @@ class PruneImportFiles extends Command
      *
      * @var array<int, string>
      */
-    protected $prunable_dirs = ['mysword', 'usfm', 'unbound', 'evening', 'analyzer', 'misc'];
+    protected $prunable_dirs = ['mysword', 'mybible', 'usfm', 'unbound', 'evening', 'analyzer', 'misc'];
 
     /**
      * Filenames that are part of the repository rather than uploads, and must

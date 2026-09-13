@@ -146,9 +146,14 @@ return [
     | to the server if the browser has a HTTPS connection. This will keep
     | the cookie from being sent to you if it can not be done securely.
     |
+    | Defaults to whatever the operator stated about TLS via REDIRECT_HTTPS
+    | rather than to APP_ENV: a production install served over plain http would
+    | otherwise have the browser drop the cookie, so the admin login would
+    | succeed and then bounce straight back to the login form with no error.
+    |
     */
 
-    'secure' => env('SESSION_SECURE_COOKIE', env('APP_ENV') === 'production'),
+    'secure' => env('SESSION_SECURE_COOKIE', env('REDIRECT_HTTPS', FALSE)),
 
     /*
     |--------------------------------------------------------------------------
