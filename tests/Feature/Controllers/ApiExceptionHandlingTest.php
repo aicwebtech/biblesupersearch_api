@@ -50,7 +50,7 @@ class ApiExceptionHandlingTest extends TestCase
 
     private function url(string $action = 'version'): string
     {
-        return '/api/v/' . self::THROWING_VERSION . '/' . $action;
+        return '/api/v' . self::THROWING_VERSION . '/' . $action;
     }
 
     /**
@@ -174,7 +174,7 @@ class ApiExceptionHandlingTest extends TestCase
 
         $this->assertFalse(class_exists('App\\Engines\\EngineV' . self::MISSING_VERSION));
 
-        $response = $this->get('/api/v/' . self::MISSING_VERSION . '/version');
+        $response = $this->get('/api/v' . self::MISSING_VERSION . '/version');
 
         if($response->status() == 429) {
             $this->markTestSkipped('429 Skipping due to rate limiting');

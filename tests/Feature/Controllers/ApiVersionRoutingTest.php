@@ -7,7 +7,7 @@ use Illuminate\Routing\Middleware\ThrottleRequests;
 use App\Factories\EngineFactory;
 
 /**
- * BSS-290: the /api/v/{version}/{action?} routes, which pick the engine that answers a request
+ * BSS-290: the /api/v{version}/{action?} routes, which pick the engine that answers a request
  * instead of every request sharing one.
  *
  * Two things have to hold together: the controller rejects any version the application does
@@ -57,7 +57,7 @@ class ApiVersionRoutingTest extends TestCase
         foreach(config('app.api_version_list') as $vv) {
             $version = ltrim($vv, 'v');
 
-            $response = $this->getJson('/api/v/' . $version . '/version');
+            $response = $this->getJson('/api/v' . $version . '/version');
 
             if($response->status() == 429) {
                 $this->markTestSkipped('429 Skipping due to rate limiting');
@@ -71,7 +71,7 @@ class ApiVersionRoutingTest extends TestCase
 
     public function testTheVersionedRouteAcceptsPost()
     {
-        $response = $this->postJson('/api/v/3/version');
+        $response = $this->postJson('/api/v3/version');
 
         if($response->status() == 429) {
             $this->markTestSkipped('429 Skipping due to rate limiting');
@@ -87,7 +87,7 @@ class ApiVersionRoutingTest extends TestCase
      */
     public function testAnUnsupportedVersionIs404()
     {
-        $response = $this->get('/api/v/9/version');
+        $response = $this->get('/api/v9/version');
 
         if($response->status() == 429) {
             $this->markTestSkipped('429 Skipping due to rate limiting');
@@ -101,16 +101,16 @@ class ApiVersionRoutingTest extends TestCase
 
     public function testAnUnsupportedVersionIs404OnPostAndForEveryAction()
     {
-        $this->post('/api/v/9/version')->assertStatus(404);
-        $this->get('/api/v/9/bibles')->assertStatus(404);
-        $this->get('/api/v/9')->assertStatus(404);
+        $this->post('/api/v9/version')->assertStatus(404);
+        $this->get('/api/v9/bibles')->assertStatus(404);
+        $this->get('/api/v9')->assertStatus(404);
         // Non-numeric versions must not slip through the list check either.
-        $this->get('/api/v/2x/version')->assertStatus(404);
+        $this->get('/api/v2x/version')->assertStatus(404);
     }
 
     public function testAnUnknownActionOnAVersionedRouteIs404()
     {
-        $response = $this->get('/api/v/3/no_such_action');
+        $response = $this->get('/api/v3/no_such_action');
 
         if($response->status() == 429) {
             $this->markTestSkipped('429 Skipping due to rate limiting');
@@ -123,7 +123,7 @@ class ApiVersionRoutingTest extends TestCase
     /** The action is optional on the versioned route and defaults to 'query', as elsewhere. */
     public function testTheVersionedRouteDefaultsToTheQueryAction()
     {
-        $response = $this->getJson('/api/v/3');
+        $response = $this->getJson('/api/v3');
 
         if($response->status() == 429) {
             $this->markTestSkipped('429 Skipping due to rate limiting');
@@ -133,26 +133,133 @@ class ApiVersionRoutingTest extends TestCase
         $this->assertEquals(4, $response['error_level']);
         $this->assertContains(__('errors.no_query'), $response['errors']);
 
-        $response = $this->getJson('/api/v/3?request=faith&bible=kjv');
+        $response = $this->getJson('/api/v3?request=faith&bible=kjv');
         $response->assertStatus(200);
         $this->assertEquals(0, $response['error_level']);
         $this->assertEquals(338, $response['paging']['total']);
     }
 
     /**
-     * '/api/v3' is NOT a version - it falls through to the generic route and is read as an
-     * action name. Only '/api/v/3' selects the v3 engine.
+     * The versioned route is '/api/v{version}', so it claims every path whose first segment
+     * begins with 'v' - '/api/version' included, read as version 'ersion'. The controller's
+     * disambiguation list rescues that one and serves it as the v2 'version' action; without
+     * it the legacy '/api/version' endpoint would answer 'API version not found: version'.
      */
-    public function testTheUnversionedRouteDoesNotTreatV3AsAVersion()
+    public function testTheVersionActionIsNotMistakenForAVersion()
     {
-        $response = $this->get('/api/v3');
+        $response = $this->getJson('/api/version');
+
+        if($response->status() == 429) {
+            $this->markTestSkipped('429 Skipping due to rate limiting');
+        }
+
+        $response->assertStatus(200);
+        $this->assertEquals(0, $response['error_level']);
+        $this->assertEquals('v2', $response['results']['api_version']);
+
+        $this->postJson('/api/version')->assertStatus(200);
+    }
+
+    /**
+     * 'version' is the only action whose name begins with 'v', which is why a one-entry
+     * disambiguation list is enough. The action names are taken from the engine's own
+     * action*() methods rather than restated here, so a new action named 'v...' fails this
+     * the day it is added - otherwise the versioned route swallows it and the generic route
+     * never sees it.
+     */
+    public function testNoOtherActionNameCollidesWithTheVersionPrefix()
+    {
+        foreach((new \ReflectionClass(\App\Engine::class))->getMethods(\ReflectionMethod::IS_PUBLIC) as $Method) {
+            if(!str_starts_with($Method->getName(), 'action')) {
+                continue;
+            }
+
+            $action = \Illuminate\Support\Str::snake(substr($Method->getName(), strlen('action')));
+
+            if($action == 'version') {
+                continue;
+            }
+
+            $this->assertStringStartsNotWith('v', $action, $action . ' collides with the versioned route prefix - add it to the disambiguation list in ApiController::versionedAction()');
+        }
+    }
+
+    /**
+     * A version at or below the end-of-life mark is a 410 rather than the 404 an unknown
+     * version gets - the client is told the version existed and is gone, not that it was
+     * never a version at all.
+     */
+    public function testAnEndOfLifeVersionIs410()
+    {
+        $response = $this->get('/api/v1/version');
+
+        if($response->status() == 429) {
+            $this->markTestSkipped('429 Skipping due to rate limiting');
+        }
+
+        $response->assertStatus(410);
+        $response->assertSee('API version is End of Life and no longer supported: v1');
+
+        $this->post('/api/v1/query')->assertStatus(410);
+    }
+
+    /**
+     * The end-of-life check is floored at v1 deliberately: there was never a v0, so it is an
+     * unknown version rather than a retired one and gets the 404, not the 410.
+     */
+    public function testAVersionBelowTheEndOfLifeMarkIsStill404()
+    {
+        $response = $this->get('/api/v0/version');
 
         if($response->status() == 429) {
             $this->markTestSkipped('429 Skipping due to rate limiting');
         }
 
         $response->assertStatus(404);
-        $response->assertSee('Action not found');
+        $response->assertSee('API version not found: v0');
+    }
+
+    // -----------------------------------------------------------------------
+    // Actions that v3 accepts on POST only
+    // -----------------------------------------------------------------------
+
+    /**
+     * From v3 on, the actions that hand back a file are POST-only; the legacy versions still
+     * answer either method, so existing GET clients are not broken by the new rule.
+     */
+    public function testTheFileActionsArePostOnlyFromV3On()
+    {
+        foreach(['render', 'download'] as $action) {
+            $response = $this->get('/api/v3/' . $action);
+
+            if($response->status() == 429) {
+                $this->markTestSkipped('429 Skipping due to rate limiting');
+            }
+
+            $response->assertStatus(405);
+            $response->assertSee('Action requires POST method');
+
+            // The same action on v2 is not turned away for being a GET.
+            $this->getJson('/api/v2/' . $action)->assertStatus(400);
+            $this->getJson('/api/' . $action)->assertStatus(400);
+        }
+    }
+
+    public function testThePostOnlyActionsStillAnswerAPost()
+    {
+        if(!config('download.enable')) {
+            $this->markTestSkipped('Downloads disabled');
+        }
+
+        // An empty request is a 400 from the engine, not a 405 from the method check.
+        $response = $this->postJson('/api/v3/download');
+
+        if($response->status() == 429) {
+            $this->markTestSkipped('429 Skipping due to rate limiting');
+        }
+
+        $response->assertStatus(400);
+        $this->assertEquals(4, $response['error_level']);
     }
 
     // -----------------------------------------------------------------------
@@ -179,7 +286,7 @@ class ApiVersionRoutingTest extends TestCase
 
     public function testTheStaticsActionReportsTheEnginesVersionToo()
     {
-        $v2 = $this->getJson('/api/v/2/statics');
+        $v2 = $this->getJson('/api/v2/statics');
 
         if($v2->status() == 429) {
             $this->markTestSkipped('429 Skipping due to rate limiting');
@@ -188,7 +295,7 @@ class ApiVersionRoutingTest extends TestCase
         $v2->assertStatus(200);
         $this->assertEquals('v2', $v2['results']['api_version']);
 
-        $v3 = $this->getJson('/api/v/3/statics');
+        $v3 = $this->getJson('/api/v3/statics');
         $v3->assertStatus(200);
         $this->assertEquals('v3', $v3['results']['api_version']);
     }
@@ -196,7 +303,7 @@ class ApiVersionRoutingTest extends TestCase
     /** Every version the application supports is advertised on every response. */
     public function testTheSupportedVersionListIsAdvertised()
     {
-        $response = $this->getJson('/api/v/2/version');
+        $response = $this->getJson('/api/v2/version');
 
         if($response->status() == 429) {
             $this->markTestSkipped('429 Skipping due to rate limiting');

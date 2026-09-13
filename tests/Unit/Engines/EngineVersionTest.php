@@ -10,7 +10,8 @@ use App\Engines\EngineV3;
 /**
  * BSS-290: the versioned engines. EngineV2 is the legacy behaviour (HTML in, whitelisted HTML
  * out) and EngineV3 answers the same requests with Markdown, the two differing only in the
- * _sanitizeHtml() hook every HTML-bearing field is routed through.
+ * _processHtml() hook every HTML-bearing field ends up in - either directly, when the value was
+ * already sanitized by its model accessor, or through _sanitizeHtml(), which whitelists first.
  *
  * The hook and the fields that call it are pure, so they are exercised here on engines built
  * without their database-dependent constructor. The wiring of a version onto a route lives in
@@ -93,7 +94,7 @@ class EngineVersionTest extends TestCase
     }
 
     // -----------------------------------------------------------------------
-    // _sanitizeHtml - the one hook that differs between the versions
+    // _sanitizeHtml / _processHtml - the hooks that differ between the versions
     // -----------------------------------------------------------------------
 
     public function testTheV2EngineReturnsWhitelistedHtml(): void
@@ -114,13 +115,33 @@ class EngineVersionTest extends TestCase
     }
 
     /**
-     * EngineV2 is a stub - the v2 behaviour lives on the base class, and the override must
-     * come from EngineV3 alone.
+     * The sanitizing half of the hook is shared: _sanitizeHtml() whitelists the HTML and then
+     * defers to _processHtml(), and only that second half is overridden. EngineV2 is a stub -
+     * the v2 behaviour is the base class's - so both methods must still be declared on
+     * App\Engine for it, and EngineV3 must override _processHtml() and nothing else.
+     *
+     * An EngineV3 that overrode _sanitizeHtml() instead would skip the whitelist, and the
+     * fields that are sanitized by their model accessor and only processed here (see
+     * _formatStrongs()) would come back as HTML rather than Markdown.
      */
-    public function testOnlyTheV3EngineOverridesTheSanitizeHook(): void
+    public function testOnlyTheV3EngineOverridesTheProcessHook(): void
     {
-        $this->assertSame(Engine::class, (new \ReflectionMethod(EngineV2::class, '_sanitizeHtml'))->getDeclaringClass()->getName());
-        $this->assertSame(EngineV3::class, (new \ReflectionMethod(EngineV3::class, '_sanitizeHtml'))->getDeclaringClass()->getName());
+        foreach(['_sanitizeHtml', '_processHtml'] as $method) {
+            $this->assertSame(Engine::class, (new \ReflectionMethod(EngineV2::class, $method))->getDeclaringClass()->getName(), $method);
+        }
+
+        $this->assertSame(Engine::class, (new \ReflectionMethod(EngineV3::class, '_sanitizeHtml'))->getDeclaringClass()->getName());
+        $this->assertSame(EngineV3::class, (new \ReflectionMethod(EngineV3::class, '_processHtml'))->getDeclaringClass()->getName());
+    }
+
+    /**
+     * _processHtml() is for values that arrive already sanitized, so the base class hands them
+     * straight back and only v3 rewrites them.
+     */
+    public function testTheProcessHookPassesSanitizedHtmlThroughOnV2AndConvertsItOnV3(): void
+    {
+        $this->assertSame('<b>bold</b>', $this->call($this->engine(EngineV2::class), '_processHtml', ['<b>bold</b>']));
+        $this->assertSame('**bold**', $this->call($this->engine(EngineV3::class), '_processHtml', ['<b>bold</b>']));
     }
 
     // -----------------------------------------------------------------------
@@ -197,22 +218,28 @@ class EngineVersionTest extends TestCase
     // _formatStrongs - the Strong's definition fields
     // -----------------------------------------------------------------------
 
-    public function testFormatStrongsSanitizesTheHtmlBearingFields(): void
+    /**
+     * 'entry' and 'root_word' are sanitized by their accessors on App\Models\StrongsDefinition,
+     * so by the time _formatStrongs() sees them the whitelist has already run and only the
+     * version's own _processHtml() is left to apply - on v2, nothing. 'tvm' has no accessor
+     * (the count prefix has to be stripped from the raw column first) and is still sanitized
+     * here, so the script in it does not survive.
+     */
+    public function testFormatStrongsProcessesTheHtmlBearingFields(): void
     {
         $Engine = $this->engine(EngineV2::class);
 
         $formatted = $this->call($Engine, '_formatStrongs', [[
             'id'         => 1234,
             'number'     => 'H1234',
-            'root_word'  => '<span>בּקע</span><script>alert(1)</script>',
+            'root_word'  => '<span>בּקע</span>',
             'tvm'        => '<b>Count:</b> 12 total<br>a <b>verb</b><script>alert(1)</script>',
-            'entry'      => 'to <i>cleave</i><script>alert(1)</script>',
+            'entry'      => 'to <i>cleave</i>',
             'created_at' => '2020-01-01 00:00:00',
             'updated_at' => '2020-01-01 00:00:00',
         ]]);
 
-        // <span> is on the widened whitelist (Helpers::SANITIZE_HTML_ALLOWED) and survives;
-        // the script alongside it does not.
+        // <span> is on the widened whitelist (Helpers::SANITIZE_HTML_ALLOWED) and survives.
         $this->assertSame('<span>בּקע</span>', $formatted['root_word']);
         $this->assertSame('to <i>cleave</i>', $formatted['entry']);
         $this->assertSame('a <b>verb</b>', $formatted['tvm']);

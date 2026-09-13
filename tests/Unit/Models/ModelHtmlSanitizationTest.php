@@ -4,6 +4,7 @@ namespace Tests\Unit\Models;
 
 use App\Models\Bible;
 use App\Models\Post;
+use App\Models\StrongsDefinition;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 
@@ -54,7 +55,22 @@ class ModelHtmlSanitizationTest extends TestCase
             // Post::$content, not $description: content is what the admin writes through
             // CKEditor and what resources/views/docs/{tos,privacy}.php echo unescaped.
             'Post content'              => [Post::class,  'content'],
+            // The Strong's lexicon is imported HTML like the rest. Sanitizing it here rather
+            // than in Engine::_formatStrongs() is what lets the v3 engine hand those two
+            // fields to _processHtml() alone and get Markdown back instead of HTML.
+            'Strongs root word'         => [StrongsDefinition::class, 'root_word'],
+            'Strongs entry'             => [StrongsDefinition::class, 'entry'],
         ];
+    }
+
+    /**
+     * 'tvm' deliberately has no accessor: Engine::_formatStrongs() has to strip the
+     * '<b>Count:</b> n ...<br>' prefix off the raw column before anything sanitizes it, so
+     * that field alone is still sanitized by the engine.
+     */
+    public function testTheStrongsTvmColumnIsLeftToTheEngine(): void
+    {
+        $this->assertFalse((new StrongsDefinition())->hasAttributeGetMutator('tvm'));
     }
 
     // -----------------------------------------------------------------------
