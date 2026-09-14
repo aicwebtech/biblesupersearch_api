@@ -13,12 +13,28 @@ use App\Models\Bible;
  */
 class OfficialFlagWorkflowTest extends TestCase
 {
+    /**
+     * Every NOT NULL column on `bibles` that has no default is set explicitly:
+     * name, shortname, module, year and lang_short. MySQL in a non-strict mode
+     * fills the omitted ones with '' silently, but SQLite rejects the insert, so
+     * leaving them out made this test pass locally and fail on CI. Compare
+     * KeyAccessTest::_fakeKey(), which sets api_keys.user_id for the same reason.
+     *
+     * @param  int  $official
+     * @return \App\Models\Bible
+     */
     protected function makeBibleFixture(int $official): Bible
     {
+        $suffix = bin2hex(random_bytes(3));
+
         $Bible = new Bible();
-        $Bible->module   = 'offlag_' . bin2hex(random_bytes(3));
-        $Bible->name     = 'Official Flag Fixture';
-        $Bible->official = $official;
+        $Bible->module     = 'offlag_' . $suffix;
+        $Bible->name       = 'Official Flag Fixture';
+        // Validated as unique on the model, so do not reuse a fixed string.
+        $Bible->shortname  = 'OffFlag ' . $suffix;
+        $Bible->year       = '2000';
+        $Bible->lang_short = 'en';
+        $Bible->official   = $official;
         $Bible->save();
 
         return $Bible;
