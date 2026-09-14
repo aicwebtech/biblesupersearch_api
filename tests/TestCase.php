@@ -153,6 +153,38 @@ class TestCase extends BaseTestCase
         \App\Models\Language::where('code', $code)->delete();
     }
 
+    /**
+     * Asserts an API error response is the envelope a failed action answers with, carrying
+     * $message and $level.
+     *
+     * The paths that never reach an engine - an unknown or retired version, an unknown
+     * action, a GET on a POST-only action, the production 500 - used to answer with a bare
+     * string under a 'Content-Type: application/json' header, so json_decode(), and
+     * response.json() in a browser, failed on the error before the message could be read.
+     * ApiController::_makeErrorResponse() builds them now.
+     *
+     * @param \Illuminate\Testing\TestResponse $response
+     * @param string $message
+     * @param int $level
+     */
+    protected function assertIsTheApiErrorEnvelope($response, string $message, int $level = 4): void
+    {
+        $body = json_decode($response->getContent(), TRUE);
+
+        $this->assertSame(
+            JSON_ERROR_NONE,
+            json_last_error(),
+            'The body is not JSON, but the Content-Type says it is: ' . $response->getContent()
+        );
+
+        $this->assertIsArray($body);
+        $this->assertArrayHasKey('errors', $body);
+        $this->assertArrayHasKey('error_level', $body);
+        $this->assertContains($message, $body['errors']);
+        $this->assertSame($level, $body['error_level']);
+        $this->assertStringStartsWith('application/json', $response->headers->get('Content-Type'));
+    }
+
     public function setUp(): void
     {
         parent::setUp();
@@ -168,7 +200,15 @@ class TestCase extends BaseTestCase
         // page_all) and Bible set across test classes. Reset lazily: the next
         // getInstance() builds a fresh one, so tests that never touch the Engine pay
         // nothing.
+        //
+        // Every version has a slot of its own - EngineV2 and EngineV3 each redeclare
+        // $instance, see the note on EngineV2 - so clearing the base class alone leaves
+        // whatever EngineFactory::getEngineInstance() built behind for the next test.
         \App\Engine::resetInstance();
+
+        foreach(config('app.api_version_list') as $version) {
+            \App\Factories\EngineFactory::resetEngineInstance(ltrim($version, 'v'));
+        }
     }
 }
 

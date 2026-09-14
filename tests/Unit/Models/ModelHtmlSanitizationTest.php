@@ -118,22 +118,46 @@ class ModelHtmlSanitizationTest extends TestCase
     }
 
     /**
-     * Several installed Bibles have no description and both seeded posts have none, so a NULL
-     * column has to read back as the sanitizer's empty string rather than fataling.
+     * Several installed Bibles have no description and 14,248 of the 14,696 Strong's
+     * definitions have no 'tvm', so a NULL column has to read back without fataling - and as
+     * NULL, not as the sanitizer's empty string. The API has always reported an absent field
+     * as null and '/api/{action}' is kept for backward compatibility, so a client testing
+     * '=== null' has to keep working.
      */
-    #[DataProvider('sanitizedColumnDataProvider')]
-    public function testReadingANullColumnReturnsTheEmptyString(string $class, string $column): void
+    #[DataProvider('nullPreservingColumnDataProvider')]
+    public function testReadingANullColumnReturnsNull(string $class, string $column): void
     {
         $Model = $this->withRawAttributes($class, [$column => NULL]);
 
-        $this->assertSame('', $Model->{$column});
+        $this->assertNull($Model->{$column});
+    }
+
+    /**
+     * Every sanitized column except Bible::$copyright_statement, which normalises an absent
+     * value to '' instead - see the note on Bible::copyrightStatement(). The API never
+     * reports that column directly, so the distinction cannot reach a client.
+     */
+    public static function nullPreservingColumnDataProvider(): array
+    {
+        $columns = self::sanitizedColumnDataProvider();
+
+        unset($columns['Bible copyright statement']);
+
+        return $columns;
+    }
+
+    public function testReadingANullCopyrightStatementReturnsTheEmptyString(): void
+    {
+        $Bible = $this->withRawAttributes(Bible::class, ['copyright_statement' => NULL]);
+
+        $this->assertSame('', $Bible->copyright_statement);
     }
 
     // -----------------------------------------------------------------------
     // Writing
     // -----------------------------------------------------------------------
 
-    #[DataProvider('sanitizedColumnDataProvider')]
+    #[DataProvider('mutatedColumnDataProvider')]
     public function testWritingTheColumnStoresSanitizedMarkup(string $class, string $column): void
     {
         $Model = new $class();
@@ -146,31 +170,77 @@ class ModelHtmlSanitizationTest extends TestCase
     }
 
     /**
-     * The Bible columns follow the sanitizer's contract on write: an absent value is stored
-     * as ''. Both were nullable before, so this is the one place a save changes shape.
+     * The columns whose value arrives from an import and can be restored by re-importing it -
+     * so sanitizing on the way in costs nothing that cannot be got back. Post::$content is
+     * not one of them; see testThePostContentHasNoMutator().
      */
-    #[DataProvider('bibleColumnDataProvider')]
-    public function testWritingNullToABibleColumnStoresTheEmptyString(string $column): void
-    {
-        $Bible = new Bible();
-        $Bible->{$column} = NULL;
-
-        $this->assertSame('', $Bible->getAttributes()[$column]);
-    }
-
-    public static function bibleColumnDataProvider(): array
+    public static function mutatedColumnDataProvider(): array
     {
         return [
-            'description'         => ['description'],
-            'copyright statement' => ['copyright_statement'],
+            'Bible description'         => [Bible::class, 'description'],
+            'Bible copyright statement' => [Bible::class, 'copyright_statement'],
+            'Strongs root word'         => [StrongsDefinition::class, 'root_word'],
+            'Strongs entry'             => [StrongsDefinition::class, 'entry'],
         ];
     }
 
     /**
-     * Post::$content keeps NULL rather than storing '', which is the opposite of the Bible
-     * columns above. Recorded rather than asserted as the house rule - the two mutators
-     * genuinely differ, and posts.content NULL-vs-'' is the admin form's business.
+     * An absent description is stored as NULL, not as ''. The column is nullable and reads
+     * back as NULL, so a save must not quietly turn one shape into the other.
      */
+    public function testWritingNullToTheDescriptionStoresNull(): void
+    {
+        $Bible = new Bible();
+        $Bible->description = NULL;
+
+        $this->assertNull($Bible->getAttributes()['description']);
+    }
+
+    /** The copyright statement is the exception - see testReadingANullCopyrightStatement(). */
+    public function testWritingNullToTheCopyrightStatementStoresTheEmptyString(): void
+    {
+        $Bible = new Bible();
+        $Bible->copyright_statement = NULL;
+
+        $this->assertSame('', $Bible->getAttributes()['copyright_statement']);
+    }
+
+    /**
+     * Post::$content is sanitized on read only.
+     *
+     * It is the one sanitized column with no importable source behind it: an admin types it
+     * into CKEditor, and that build ships the image, horizontal-line, highlight, strikethrough,
+     * code, page-break and font plugins, none of whose markup survives SANITIZE_HTML_ALLOWED.
+     * A mutator would strip an inserted image on Save and write the loss over the column, with
+     * nothing left to restore it from - and it would buy nothing, because the accessor
+     * sanitizes the value again on the way out.
+     */
+    public function testThePostContentHasNoMutator(): void
+    {
+        $this->assertFalse(
+            (new Post())->hasAttributeSetMutator('content'),
+            'Post::$content must sanitize on read only - a mutator destroys what the admin typed'
+        );
+    }
+
+    public function testWritingThePostContentStoresItUnchanged(): void
+    {
+        $Post = new Post();
+        $Post->content = '<p>Terms</p><figure class="image"><img src="/logo.png"></figure>';
+
+        $this->assertSame('<p>Terms</p><figure class="image"><img src="/logo.png"></figure>', $Post->getAttributes()['content']);
+    }
+
+    /** What the accessor hands back is still sanitized, which is what the views rely on. */
+    public function testReadingThePostContentSanitizesWhatTheMutatorNoLongerDoes(): void
+    {
+        $Post = new Post();
+        $Post->content = '<p>Terms</p><script>alert(1)</script>';
+
+        $this->assertStringContainsString('<p>Terms</p>', $Post->content);
+        $this->assertStringNotContainsString('<script', $Post->content);
+    }
+
     public function testWritingNullToThePostContentLeavesItNull(): void
     {
         $Post = new Post();

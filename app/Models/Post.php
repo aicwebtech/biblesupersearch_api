@@ -12,18 +12,25 @@ class Post extends Model
     use SoftDeletes;    
 
     /**
-     * Content accessor / mutator.
+     * Content accessor.
      *
      * This is the Terms of Service / privacy body: written through the CKEditor field in
      * admin/postconfig.blade.php and echoed unescaped by resources/views/docs/{tos,privacy}.php,
-     * so it is the one Post column that carries HTML. The column is nullable, and unlike the
-     * Bible columns a NULL is stored back as NULL rather than as the empty string.
+     * so it is the one Post column that carries HTML.
+     *
+     * Read-time only, deliberately. The editor ships the image, horizontal-line, highlight,
+     * strikethrough, code, page-break and font plugins, and none of 'img', 'figure', 'hr',
+     * 'mark', 's' or 'code' survives SANITIZE_HTML_ALLOWED - so a mutator would strip an
+     * admin's image the moment they pressed Save and write the loss back over the column,
+     * with nothing to restore it from. Sanitizing on the way out protects the page just as
+     * well and keeps what was typed.
+     *
+     * The column is nullable and a NULL stays NULL.
      */
     protected function content(): Attribute
     {
         return Attribute::make(
-            get: fn (?string $value) => Helpers::sanitizeHtml($value),
-            set: fn (?string $value) => ($value === NULL) ? NULL : Helpers::sanitizeHtml($value),
+            get: fn (?string $value) => ($value === NULL) ? NULL : Helpers::sanitizeHtml($value),
         );
     }
 }

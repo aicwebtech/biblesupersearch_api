@@ -33,10 +33,10 @@ class ApiController extends Controller
             $eol = (int) ltrim(config('app.api_version_eol'), 'v');
 
             if(ctype_digit((string) $version) && (int) $version >= 1 && (int) $version <= $eol) {
-                return $this->_makeResponse('API version is End of Life and no longer supported: ' . $vv, 410);
+                return $this->_makeErrorResponse('API version is End of Life and no longer supported: ' . $vv, 410);
             }
 
-            return $this->_makeResponse('API version not found: ' . $vv, 404);
+            return $this->_makeErrorResponse('API version not found: ' . $vv, 404);
         }
     
         return $this->genericAction($Request, $action, $version);
@@ -61,7 +61,7 @@ class ApiController extends Controller
         $_SESSION['debug'] = [];
 
         if(!in_array($action, $allowed_actions)) {
-            return $this->_makeResponse('Action not found', 404);
+            return $this->_makeErrorResponse('Action not found', 404);
         }
 
         // After the allowed-action check, not before it: on an install with downloads off,
@@ -69,7 +69,7 @@ class ApiController extends Controller
         $post_only = ['render', 'download'];
 
         if($version >= 3 && in_array($action, $post_only) && !$Request->isMethod('post')) {
-            return $this->_makeResponse('Action requires POST method', 405);
+            return $this->_makeErrorResponse('Action requires POST method', 405);
         }
 
         $input = $Request->input();
@@ -96,14 +96,9 @@ class ApiController extends Controller
         }
         catch (\Throwable $ex) {        
             if( config('app.env') == 'production') {
-                // The message goes to the log, not to the client. Until this block caught
-                // \Throwable it never ran - the old catch named an unqualified Exception,
-                // which resolves to App\Http\Controllers\Exception - so nothing had returned
-                // $ex->getMessage() to a caller before. A QueryException's message carries the
-                // failing SQL along with the connection's host, port and database name.
+                // Just send a generic 500 error message to the client, but log the exception
                 \Log::error('API error on action \'' . $action . '\': ' . $ex->getMessage(), ['exception' => $ex]);
-
-                return $this->_makeResponse(__('errors.500'), 500);
+                return $this->_makeErrorResponse(__('errors.500'), 500);
             }
 
             throw $ex;
@@ -125,6 +120,30 @@ class ApiController extends Controller
         return (new Response($content, $code))
             -> header('Content-Type', 'application/json; charset=utf-8')
             -> header('Access-Control-Allow-Origin', '*');
+    }
+
+    /**
+     * Answers with an error in the envelope a failed action uses.
+     *
+     * These paths never reach an engine - the version, the action or the request method is
+     * rejected before one is built - so there is no getMetadata() to carry the message, and
+     * the body was a bare string under a 'Content-Type: application/json' header. A client
+     * calling response.json() threw on it before it could read the message.
+     *
+     * The level defaults to 4 (fatal): every one of these answers without results.
+     *
+     * @param string $message
+     * @param int $code HTTP status
+     * @param int $level Error level, see App\Traits\Error
+     * @return \Illuminate\Http\Response
+     */
+    private function _makeErrorResponse($message, $code, $level = 4)
+    {
+        $response = new \stdClass();
+        $response->errors = [$message];
+        $response->error_level = $level;
+
+        return $this->_makeResponse(json_encode($response), $code);
     }
 
     private function _prettyPrintErrors($input, $response) 

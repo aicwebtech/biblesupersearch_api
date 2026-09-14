@@ -37,6 +37,13 @@ class HighlightTagsTest extends TestCase
             'strong'           => ['strong', '<strong>', '</strong>'],
             // Off the whitelist - answered with the default element rather than the request.
             'custom element'   => ['high',   '<b>',      '</b>'],
+            // A hyphen makes a legal custom element, not a Markdown marker - emitting it
+            // verbatim on both sides ran it into the words around the match.
+            'hyphenated'       => ['my-tag', '<b>',      '</b>'],
+            'trailing hyphen'  => ['b-',     '<b>',      '</b>'],
+            // Not a legal element name, but plainly meant as one - highlighted, not echoed.
+            'leading digit'    => ['1b',     '<b>',      '</b>'],
+            'digits only'      => ['42',     '<b>',      '</b>'],
             // Off the whitelist because HTMLPurifier has no definition for it either.
             'mark'             => ['mark',   '<b>',      '</b>'],
             'heading'          => ['h1',     '<b>',      '</b>'],
@@ -49,15 +56,71 @@ class HighlightTagsTest extends TestCase
     }
 
     /**
-     * A tag that already carries its own angle brackets is not an element name, so it is left
-     * alone rather than being wrapped a second time into '<<b>>'.
+     * A tag that already carries its own angle brackets is not an element name and not a
+     * plain-text marker either, so it falls back to the default rather than being wrapped a
+     * second time into '<<b>>' or echoed into the response as it stands.
      */
     public function testAnAngleBracketedTagIsNotWrappedAgain(): void
     {
         list($pre, $post) = Helpers::buildHighlightTags('<b>');
 
+        $this->assertSame(['<b>', '</b>'], [$pre, $post]);
         $this->assertStringNotContainsString('<<', $pre);
         $this->assertStringNotContainsString('</<', $post);
+    }
+
+    /**
+     * The markers reach the response after sanitizeHtml() has run and are never escaped, so
+     * anything able to open a tag or an entity has to be refused here. Nothing upstream is
+     * doing it: Engine::sanitizeString() runs strip_tags(), which leaves '<img src=x ...'
+     * with an attribute and no closing bracket entirely intact.
+     */
+    #[DataProvider('rejectedMarkerDataProvider')]
+    public function testAMarkerCarryingMarkupFallsBackToTheDefault(string $tag): void
+    {
+        $this->assertSame(['<b>', '</b>'], Helpers::buildHighlightTags($tag));
+    }
+
+    public static function rejectedMarkerDataProvider(): array
+    {
+        return [
+            'open tag'        => ['<script>'],
+            'unclosed tag'    => ['<img src=x onerror=alert(1)'],
+            'closing bracket' => ['>'],
+            'entity'          => ['&amp;'],
+            // SqlSearch::highlightResults() uses '&&' as its own internal alias.
+            'search alias'    => ['&&'],
+            'double quote'    => ['"'],
+            'single quote'    => ["'"],
+            'empty'           => [''],
+        ];
+    }
+
+    /**
+     * The two sides of the decision, asserted directly: EngineV3 asks the same question to
+     * decide whether the caller handed it something usable in a Markdown response.
+     */
+    #[DataProvider('plainTextMarkerDataProvider')]
+    public function testIsPlainTextHighlightMarker(string $tag, bool $expected): void
+    {
+        $this->assertSame($expected, Helpers::isPlainTextHighlightMarker($tag));
+    }
+
+    public static function plainTextMarkerDataProvider(): array
+    {
+        return [
+            'markdown bold'   => ['**',       TRUE],
+            'markdown italic' => ['*',        TRUE],
+            'underscores'     => ['__',       TRUE],
+            'backtick'        => ['`',        TRUE],
+            'tilde'           => ['~~',       TRUE],
+            'element name'    => ['b',        FALSE],
+            'custom element'  => ['my-tag',   FALSE],
+            'leading digit'   => ['1b',       FALSE],
+            'angle bracketed' => ['<b>',      FALSE],
+            'ampersand'       => ['&&',       FALSE],
+            'empty'           => ['',         FALSE],
+        ];
     }
 
     public function testAMarkdownTagIsSymmetrical(): void

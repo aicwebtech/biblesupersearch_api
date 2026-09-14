@@ -4,6 +4,8 @@ namespace Tests\Feature\Controllers;
 
 use Tests\TestCase;
 use Illuminate\Routing\Middleware\ThrottleRequests;
+use PHPUnit\Framework\Attributes\Depends;
+use PHPUnit\Framework\Attributes\DataProvider;
 use App\Factories\EngineFactory;
 
 /**
@@ -94,7 +96,7 @@ class ApiVersionRoutingTest extends TestCase
         }
 
         $response->assertStatus(404);
-        $response->assertSee('API version not found: v9');
+        $this->assertIsTheApiErrorEnvelope($response, 'API version not found: v9');
 
         $this->assertFalse(class_exists(EngineFactory::getClassName(9)));
     }
@@ -117,7 +119,7 @@ class ApiVersionRoutingTest extends TestCase
         }
 
         $response->assertStatus(404);
-        $response->assertSee('Action not found');
+        $this->assertIsTheApiErrorEnvelope($response, 'Action not found');
     }
 
     /** The action is optional on the versioned route and defaults to 'query', as elsewhere. */
@@ -198,7 +200,7 @@ class ApiVersionRoutingTest extends TestCase
         }
 
         $response->assertStatus(410);
-        $response->assertSee('API version is End of Life and no longer supported: v1');
+        $this->assertIsTheApiErrorEnvelope($response, 'API version is End of Life and no longer supported: v1');
 
         $this->post('/api/v1/query')->assertStatus(410);
     }
@@ -216,7 +218,7 @@ class ApiVersionRoutingTest extends TestCase
         }
 
         $response->assertStatus(404);
-        $response->assertSee('API version not found: v0');
+        $this->assertIsTheApiErrorEnvelope($response, 'API version not found: v0');
     }
 
     /**
@@ -235,7 +237,7 @@ class ApiVersionRoutingTest extends TestCase
         }
 
         $response->assertStatus(410);
-        $response->assertSee('API version is End of Life and no longer supported: v2');
+        $this->assertIsTheApiErrorEnvelope($response, 'API version is End of Life and no longer supported: v2');
 
         // The boundary itself is retired; the version above it is simply unknown.
         $this->get('/api/v10/version')->assertStatus(410);
@@ -277,7 +279,7 @@ class ApiVersionRoutingTest extends TestCase
         }
 
         $response->assertStatus(404);
-        $response->assertSee('Action not found');
+        $this->assertIsTheApiErrorEnvelope($response, 'Action not found');
 
         $this->get('/api/v3/download')->assertStatus(404);
     }
@@ -303,7 +305,7 @@ class ApiVersionRoutingTest extends TestCase
             }
 
             $response->assertStatus(405);
-            $response->assertSee('Action requires POST method');
+            $this->assertIsTheApiErrorEnvelope($response, 'Action requires POST method');
 
             // The same action on v2 is not turned away for being a GET.
             $this->getJson('/api/v2/' . $action)->assertStatus(400);
@@ -364,6 +366,59 @@ class ApiVersionRoutingTest extends TestCase
         $v3 = $this->getJson('/api/v3/statics');
         $v3->assertStatus(200);
         $this->assertEquals('v3', $v3['results']['api_version']);
+    }
+
+    /**
+     * config('app.api_version') is reported as 'api_version_current' - the version the
+     * application recommends - alongside 'api_version', which is the version that actually
+     * answered. The two are different numbers on a legacy request and must not be conflated:
+     * writing the config value over 'api_version' made '/api/v2/statics' answer 'v3'.
+     *
+     * @param string $action
+     */
+    #[DataProvider('versionReportingActionDataProvider')]
+    public function testTheCurrentVersionIsReportedSeparatelyFromTheAnsweringVersion(string $action)
+    {
+        $response = $this->getJson('/api/v2/' . $action);
+
+        if($response->status() == 429) {
+            $this->markTestSkipped('429 Skipping due to rate limiting');
+        }
+
+        $response->assertStatus(200);
+
+        $this->assertEquals('v2', $response['results']['api_version'], $action);
+        $this->assertEquals(config('app.api_version'), $response['results']['api_version_current'], $action);
+        $this->assertNotEquals(
+            $response['results']['api_version'],
+            $response['results']['api_version_current'],
+            $action . ': the answering version was overwritten by the configured one'
+        );
+    }
+
+    /** The version that answered is the engine's own on every version. */
+    #[DataProvider('versionReportingActionDataProvider')]
+    public function testTheCurrentVersionIsTheSameOnEveryVersionedRoute(string $action)
+    {
+        $v3 = $this->getJson('/api/v3/' . $action);
+
+        if($v3->status() == 429) {
+            $this->markTestSkipped('429 Skipping due to rate limiting');
+        }
+
+        $v3->assertStatus(200);
+
+        $this->assertEquals('v3', $v3['results']['api_version'], $action);
+        $this->assertEquals(config('app.api_version'), $v3['results']['api_version_current'], $action);
+    }
+
+    /** Both actions that report a version carry the same two fields. */
+    public static function versionReportingActionDataProvider(): array
+    {
+        return [
+            'version' => ['version'],
+            'statics' => ['statics'],
+        ];
     }
 
     /** Every version the application supports is advertised on every response. */
@@ -462,6 +517,46 @@ class ApiVersionRoutingTest extends TestCase
         finally {
             EngineFactory::resetEngineInstance(2);
             EngineFactory::resetEngineInstance(3);
+        }
+    }
+
+    /**
+     * Deliberately leaves its engines in their slots - no finally - so the test below can
+     * assert the shared setUp() cleared them anyway.
+     *
+     * @return array<string, \App\Engine> The engines left behind, keyed by version
+     */
+    public function testAVersionedEngineIsLeftInItsSlot(): array
+    {
+        $left = [];
+
+        foreach(config('app.api_version_list') as $version) {
+            $number = ltrim($version, 'v');
+
+            $left[$number] = EngineFactory::getEngineInstance($number);
+        }
+
+        $this->assertNotEmpty($left, 'No API version is advertised');
+
+        return $left;
+    }
+
+    /**
+     * Every version has a singleton slot of its own - EngineV2 and EngineV3 each redeclare
+     * $instance - so resetting App\Engine alone left whichever engine a test built behind,
+     * with its Bible set and its defaults, for every later test in the process to inherit.
+     *
+     * @param array<string, \App\Engine> $left
+     */
+    #[Depends('testAVersionedEngineIsLeftInItsSlot')]
+    public function testTheSharedSetupClearsEveryEngineSlot(array $left): void
+    {
+        foreach($left as $version => $Engine) {
+            $this->assertNotSame(
+                $Engine,
+                EngineFactory::getEngineInstance($version),
+                'The API v' . $version . ' engine leaked out of the previous test'
+            );
         }
     }
 

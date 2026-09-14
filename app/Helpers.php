@@ -415,12 +415,54 @@ class Helpers {
     public const DEFAULT_HIGHLIGHT_TAG = 'b';
 
     /**
+     * Matches anything the caller could have meant as an element name - 'b', 'em', 'my-tag'.
+     *
+     * Deliberately wider than the HTML spec: a name is checked against the whitelist and, off
+     * it, answered with DEFAULT_HIGHLIGHT_TAG, so a spelling that is not quite legal ('1b')
+     * still ends up highlighted rather than treated as a marker. The hyphen is what matters
+     * most - 'my-tag' is a legal custom element, and taking it for a plain-text marker
+     * emitted it on both sides of the match and ran it into the surrounding words
+     * ('my-tagshepherdmy-tag').
+     */
+    private const HIGHLIGHT_ELEMENT_PATTERN = '/^[a-zA-Z0-9][a-zA-Z0-9-]*$/';
+
+    /**
+     * The characters a plain-text marker may not contain.
+     *
+     * The marker is emitted after sanitizeHtml() and is never escaped, so anything that could
+     * open a tag or an entity has to be refused here rather than upstream. '&' is also what
+     * SqlSearch::highlightResults() uses for its own internal alias, which a caller-supplied
+     * '&&' would collide with.
+     */
+    private const HIGHLIGHT_MARKER_FORBIDDEN = '/[<>&"\']/';
+
+    /**
+     * Whether a highlight tag is a plain-text marker - '**', '__', '`' - rather than an HTML
+     * element name, and is safe to emit verbatim on both sides of a match.
+     *
+     * EngineV3 asks this to decide whether the caller gave it something usable in a Markdown
+     * response, so the two stay on the same definition of what a marker is.
+     *
+     * @param string|null $highlight_tag
+     * @return bool
+     */
+    public static function isPlainTextHighlightMarker($highlight_tag): bool
+    {
+        $tag = (string) $highlight_tag;
+
+        return $tag !== ''
+            && !preg_match(self::HIGHLIGHT_ELEMENT_PATTERN, $tag)
+            && !preg_match(self::HIGHLIGHT_MARKER_FORBIDDEN, $tag);
+    }
+
+    /**
      * Resolves a highlight tag into the pair of markers that wrap a highlighted match.
      *
-     * A bare tag name ('b', 'em', 'span') is an HTML element and is wrapped into an opening
-     * and a closing tag; a name outside HIGHLIGHT_TAG_WHITELIST falls back to
-     * DEFAULT_HIGHLIGHT_TAG. Anything else is a Markdown (or other plain-text) marker such as
-     * '**' or '__', which is symmetrical and is used verbatim on both sides.
+     * An element name ('b', 'em', 'span') is wrapped into an opening and a closing tag; a name
+     * outside HIGHLIGHT_TAG_WHITELIST falls back to DEFAULT_HIGHLIGHT_TAG. A Markdown (or
+     * other plain-text) marker such as '**' or '__' is symmetrical and is used verbatim on
+     * both sides. Anything that is neither - an angle-bracketed tag, an entity, a fragment of
+     * markup - falls back to the default element rather than being echoed into the response.
      *
      * @param string $highlight_tag
      * @return array{0: string, 1: string} The opening and closing markers
@@ -429,15 +471,15 @@ class Helpers {
     {
         $tag = (string) $highlight_tag;
 
-        if(preg_match('/^[a-zA-Z0-9]+$/', $tag)) {
-            if(!in_array(strtolower($tag), self::HIGHLIGHT_TAG_WHITELIST, TRUE)) {
-                $tag = self::DEFAULT_HIGHLIGHT_TAG;
-            }
-
-            return ['<' . $tag . '>', '</' . $tag . '>'];
+        if(self::isPlainTextHighlightMarker($tag)) {
+            return [$tag, $tag];
         }
 
-        return [$highlight_tag, $highlight_tag];
+        if(!preg_match(self::HIGHLIGHT_ELEMENT_PATTERN, $tag) || !in_array(strtolower($tag), self::HIGHLIGHT_TAG_WHITELIST, TRUE)) {
+            $tag = self::DEFAULT_HIGHLIGHT_TAG;
+        }
+
+        return ['<' . $tag . '>', '</' . $tag . '>'];
     }
 
     /**

@@ -23,11 +23,18 @@ class EngineV3 extends BaseEngine
      * Engine::_sanitizeHtml() or from a model accessor - so the converter is told not to
      * repeat that work.
      *
+     * An absent value is answered with NULL rather than the empty string - see
+     * Engine::_sanitizeHtml().
+     *
      * @param string|null $html
-     * @return string
+     * @return string|null
      */
-    protected function _processHtml(?string $html): string
+    protected function _processHtml(?string $html): ?string
     {
+        if($html === NULL) {
+            return NULL;
+        }
+
         return Helpers::convertHtmlToMarkdown($html, FALSE);
     }
 
@@ -37,20 +44,30 @@ class EngineV3 extends BaseEngine
      * for the bracket pair found nothing. The carets and the Strong's braces are not escaped
      * and need no undoing.
      *
+     * The brackets are not the only ones: TextConverter escapes '*', '_', '[', ']' and '\',
+     * plus a leading '#', and ParagraphConverter escapes a leading '>', '-', '+' or '~', a
+     * '<' opening a comment, and the '.' or ')' after a leading number. All of them are
+     * undone here, because a backslash in the output can only have come from that escaping -
+     * a backslash in the module's own text is escaped to '\\' on the way through.
+     *
+     * Scanning left to right and not overlapping, so a module's literal '\[' arrives as
+     * '\\\[', loses the escape of the backslash first and the escape of the bracket second.
+     *
      * @param string $text
      * @return string
      */
     protected function _unescapeBibleMarkup(string $text): string
     {
-        return str_replace(['\\[', '\\]'], ['[', ']'], $text);
+        return preg_replace('/\\\\([*_\\[\\]\\\\#>\\-+~<.)])/u', '$1', $text);
     }
 
     protected function _highlightResults($results, $Search, $Passages, $input) 
     {
         $highlight_tag = array_key_exists('highlight_tag', $input) ? $input['highlight_tag'] : config('bss.defaults.highlight_tag');
 
-        // Force highlight tag to markdown bold if it's not a valid Markdown tag (alphanumeric only)
-        if(preg_match('/^[a-zA-Z0-9]+$/', $highlight_tag)) {
+        // An element name has no place in a Markdown response, and neither has a fragment of
+        // markup - anything that is not a plain-text marker becomes Markdown bold.
+        if(!Helpers::isPlainTextHighlightMarker($highlight_tag)) {
             $highlight_tag = '**'; // Markdown bold
         }
 

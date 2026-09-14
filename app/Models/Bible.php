@@ -971,18 +971,25 @@ class Bible extends Model
     /**
      * Description accessor / mutator - imported module HTML, sanitized on the way in and out.
      *
+     * A NULL stays NULL: the column is nullable and the API reports an absent description as
+     * null, not as an empty string.
      */
     protected function description(): Attribute
     {
         return Attribute::make(
-            get: fn (?string $value) => Helpers::sanitizeHtml($value),
-            set: fn (?string $value) => Helpers::sanitizeHtml($value),
+            get: fn (?string $value) => ($value === NULL) ? NULL : Helpers::sanitizeHtml($value),
+            set: fn (?string $value) => ($value === NULL) ? NULL : Helpers::sanitizeHtml($value),
         );
     }
 
     /**
      * Copyright statement accessor / mutator.
      *
+     * Unlike description(), an absent value is normalised to '' rather than kept as NULL -
+     * the column has one representation of "unset", which is what the setCopyrightStatement-
+     * Attribute() mutator this replaced was for. Nothing downstream can tell the two apart
+     * anyway: getCopyrightStatement() treats both as absent and falls through to the
+     * copyright record, so the API never reports this column directly.
      */
     protected function copyrightStatement(): Attribute
     {

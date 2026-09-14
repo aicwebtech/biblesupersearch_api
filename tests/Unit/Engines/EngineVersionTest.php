@@ -3,6 +3,7 @@
 namespace Tests\Unit\Engines;
 
 use PHPUnit\Framework\TestCase;
+use PHPUnit\Framework\Attributes\DataProvider;
 use App\Engine;
 use App\Engines\EngineV2;
 use App\Engines\EngineV3;
@@ -259,6 +260,42 @@ class EngineVersionTest extends TestCase
         $this->assertStringNotContainsString('\\[', $processed['kjv'][0]->text);
     }
 
+    /**
+     * The brackets are not the only characters the converter escapes - TextConverter also
+     * escapes '*', '_' and '\\', and a leading '#'. 'raw' exists to hand back the module's
+     * text as it is, so every one of them has to be undone, not just the pair that was
+     * noticed first.
+     *
+     * @param string $text
+     */
+    #[DataProvider('rawMarkupDataProvider')]
+    public function testProcessMarkupRawUndoesEveryMarkdownEscapeOnV3(string $text): void
+    {
+        $processed = $this->call($this->engine(EngineV3::class), '_processMarkup', [$this->results($text), 'raw']);
+
+        $this->assertSame($text, $processed['kjv'][0]->text);
+        $this->assertStringNotContainsString('\\', $processed['kjv'][0]->text);
+    }
+
+    public static function rawMarkupDataProvider(): array
+    {
+        return [
+            'square brackets' => ['The LORD [is] my shepherd'],
+            'asterisk'        => ['a *marked* word'],
+            'underscore'      => ['a _marked_ word'],
+            'leading hash'    => ['#1 of the tribe'],
+            'both markers'    => ['[is] and *also* and _this_'],
+        ];
+    }
+
+    /** A backslash in the module's own text survives the round trip as one backslash. */
+    public function testProcessMarkupRawKeepsALiteralBackslashOnV3(): void
+    {
+        $processed = $this->call($this->engine(EngineV3::class), '_processMarkup', [$this->results('a \\ b'), 'raw']);
+
+        $this->assertSame('a \\ b', $processed['kjv'][0]->text);
+    }
+
     /** Only the base class leaves the markers alone already; the undo is v3's. */
     public function testOnlyTheV3EngineOverridesTheMarkupUnescapeHook(): void
     {
@@ -267,14 +304,29 @@ class EngineVersionTest extends TestCase
     }
 
     /**
-     * _processHtml() declares a nullable parameter and a non-nullable return, so passing NULL
-     * through unchanged was a guaranteed TypeError. Copyright::getProcessedCopyrightStatement()
-     * is one hop from that call site and has no return type of its own.
+     * _processHtml() takes NULL and answers NULL on every version - an absent column stays
+     * absent all the way to the response. Copyright::getProcessedCopyrightStatement() is one
+     * hop from that call site and has no return type of its own, so the parameter has to stay
+     * nullable too.
      */
-    public function testTheProcessHookAcceptsNullOnBothEngines(): void
+    public function testTheProcessHookAnswersNullWithNullOnBothEngines(): void
     {
-        $this->assertSame('', $this->call($this->engine(EngineV2::class), '_processHtml', [NULL]));
-        $this->assertSame('', $this->call($this->engine(EngineV3::class), '_processHtml', [NULL]));
+        $this->assertNull($this->call($this->engine(EngineV2::class), '_processHtml', [NULL]));
+        $this->assertNull($this->call($this->engine(EngineV3::class), '_processHtml', [NULL]));
+    }
+
+    /** Same contract one level up: the sanitize hook must not invent a value either. */
+    public function testTheSanitizeHookAnswersNullWithNullOnBothEngines(): void
+    {
+        $this->assertNull($this->call($this->engine(EngineV2::class), '_sanitizeHtml', [NULL]));
+        $this->assertNull($this->call($this->engine(EngineV3::class), '_sanitizeHtml', [NULL]));
+    }
+
+    /** An empty string is a value, not an absent one, and stays an empty string. */
+    public function testTheSanitizeHookKeepsTheEmptyStringDistinctFromNull(): void
+    {
+        $this->assertSame('', $this->call($this->engine(EngineV2::class), '_sanitizeHtml', ['']));
+        $this->assertSame('', $this->call($this->engine(EngineV3::class), '_sanitizeHtml', ['']));
     }
 
     // -----------------------------------------------------------------------
@@ -343,16 +395,17 @@ class EngineVersionTest extends TestCase
     }
 
     /**
-     * Most definitions have no TVM. The field used to come back as NULL; running it through
-     * the sanitizer turns it into an empty string.
+     * 14,248 of the 14,696 definitions have no TVM, and the field has always come back as
+     * NULL. Sanitizing it must not turn that into an empty string - '/api/strongs' is reached
+     * through the legacy route that exists for backward compatibility.
      */
-    public function testFormatStrongsReturnsAnEmptyStringForAMissingTvm(): void
+    public function testFormatStrongsReturnsNullForAMissingTvm(): void
     {
         $Engine = $this->engine(EngineV2::class);
 
         $formatted = $this->call($Engine, '_formatStrongs', [['root_word' => '', 'tvm' => null, 'entry' => 'x']]);
 
-        $this->assertSame('', $formatted['tvm']);
+        $this->assertNull($formatted['tvm']);
     }
 
     public function testFormatStrongsDropsTheTimestamps(): void

@@ -77,7 +77,7 @@ class ApiExceptionHandlingTest extends TestCase
 
         // The controller's own response, not the framework's: it carries the API's headers
         // and the generic message. An uncaught exception renders neither.
-        $this->assertSame(__('errors.500'), $response->getContent());
+        $this->assertIsTheApiErrorEnvelope($response, __('errors.500'));
         $this->assertStringNotContainsString(self::BOOM, $response->getContent());
         $this->assertStringStartsWith('application/json', $response->headers->get('Content-Type'));
         $this->assertSame('*', $response->headers->get('Access-Control-Allow-Origin'));
@@ -108,7 +108,7 @@ class ApiExceptionHandlingTest extends TestCase
         }
 
         $response->assertStatus(500);
-        $this->assertSame(__('errors.500'), $response->getContent());
+        $this->assertIsTheApiErrorEnvelope($response, __('errors.500'));
         $this->assertStringNotContainsString(self::BOOM, $response->getContent());
         $this->assertSame('*', $response->headers->get('Access-Control-Allow-Origin'));
     }
@@ -144,7 +144,7 @@ class ApiExceptionHandlingTest extends TestCase
         }
 
         $response->assertStatus(404);
-        $response->assertSee('Action not found');
+        $this->assertIsTheApiErrorEnvelope($response, 'Action not found');
     }
 
     // -----------------------------------------------------------------------
@@ -167,7 +167,7 @@ class ApiExceptionHandlingTest extends TestCase
         }
 
         $response->assertStatus(500);
-        $this->assertSame(__('errors.500'), $response->getContent());
+        $this->assertIsTheApiErrorEnvelope($response, __('errors.500'));
         $this->assertStringNotContainsString(self::KABOOM, $response->getContent());
         $this->assertStringStartsWith('application/json', $response->headers->get('Content-Type'));
         $this->assertSame('*', $response->headers->get('Access-Control-Allow-Origin'));
@@ -204,7 +204,7 @@ class ApiExceptionHandlingTest extends TestCase
         }
 
         $response->assertStatus(500);
-        $this->assertSame(__('errors.500'), $response->getContent());
+        $this->assertIsTheApiErrorEnvelope($response, __('errors.500'));
         $this->assertStringNotContainsString('EngineV' . self::MISSING_VERSION, $response->getContent());
         $this->assertSame('*', $response->headers->get('Access-Control-Allow-Origin'));
     }

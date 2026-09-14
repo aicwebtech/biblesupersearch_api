@@ -322,6 +322,50 @@ class EngineSanitizationTest extends TestCase
         $this->assertStringNotContainsString('<em>', $results['kjv'][0]->text);
     }
 
+    /**
+     * A hyphen makes a legal custom element, so 'my-tag' used to be taken for a Markdown
+     * marker and emitted on both sides of the match - 'the men are my-tagshepherdmy-tag'.
+     * The word itself was corrupted, not merely left unhighlighted.
+     */
+    public function testACustomElementHighlightTagDoesNotRunIntoTheWord(): void
+    {
+        $Engine  = new EngineV2();
+        $results = $Engine->actionQuery([
+            'bible'         => 'kjv',
+            'search'        => 'faith',
+            'highlight'     => 1,
+            'highlight_tag' => 'my-tag',
+            'data_format'   => 'raw',
+        ]);
+
+        $this->assertFalse($Engine->hasErrors());
+
+        $text = $results['kjv'][0]->text;
+
+        $this->assertStringNotContainsString('my-tag', $text);
+        $this->assertStringContainsString('<b>faith</b>', $text);
+    }
+
+    /** The same tag on v3: not a plain-text marker, so the response stays Markdown. */
+    public function testACustomElementHighlightTagIsMarkdownOnV3(): void
+    {
+        $Engine  = new EngineV3();
+        $results = $Engine->actionQuery([
+            'bible'         => 'kjv',
+            'search'        => 'faith',
+            'highlight'     => 1,
+            'highlight_tag' => 'my-tag',
+            'data_format'   => 'raw',
+        ]);
+
+        $this->assertFalse($Engine->hasErrors());
+
+        $text = $results['kjv'][0]->text;
+
+        $this->assertStringNotContainsString('my-tag', $text);
+        $this->assertStringContainsString('**faith**', $text);
+    }
+
     /** A Markdown marker other than the default is the caller's choice and is honoured. */
     public function testTheV3EngineHonoursAnExplicitMarkdownTag(): void
     {
@@ -440,9 +484,11 @@ class EngineSanitizationTest extends TestCase
     }
 
     /**
-     * The great majority of Strong's definitions have no 'tvm', and _formatStrongs() sets the
-     * field to NULL before handing it to the sanitizer. A non-nullable sanitizer raised a
-     * TypeError there, which took out /api/strongs for very nearly every lookup.
+     * The great majority of Strong's definitions have no 'tvm' - 14,248 of the 14,696 rows -
+     * and _formatStrongs() sets the field to NULL before handing it to the sanitizer. A
+     * non-nullable sanitizer raised a TypeError there, which took out /api/strongs for very
+     * nearly every lookup; answering '' instead would silently change the shape a client
+     * branching on '=== null' has always seen.
      */
     public function testStrongsEntriesWithoutATvmAreReturned(): void
     {
@@ -451,7 +497,7 @@ class EngineSanitizationTest extends TestCase
 
         $this->assertFalse($Engine->hasErrors());
         $this->assertSame(1, $results[0]['id']);
-        $this->assertSame('', $results[0]['tvm']);
+        $this->assertNull($results[0]['tvm']);
         $this->assertStringContainsString('<i>father</i>', $results[0]['entry']);
     }
 
@@ -461,8 +507,18 @@ class EngineSanitizationTest extends TestCase
         $results = $Engine->actionStrongs(['strongs' => 'H1']);
 
         $this->assertFalse($Engine->hasErrors());
-        $this->assertSame('', $results[0]['tvm']);
+        $this->assertNull($results[0]['tvm']);
         $this->assertStringContainsString('*father*', $results[0]['entry']);
+    }
+
+    /** The NULL columns come back as JSON null, not as empty strings. */
+    public function testAStrongsEntryWithoutATvmSerializesItAsNull(): void
+    {
+        $Engine  = new EngineV2();
+        $results = $Engine->actionStrongs(['strongs' => 'H1']);
+
+        $this->assertFalse($Engine->hasErrors());
+        $this->assertStringContainsString('"tvm":null', json_encode($results[0]));
     }
 
     // -----------------------------------------------------------------------
@@ -474,8 +530,9 @@ class EngineSanitizationTest extends TestCase
      * back to that same column. The listing selects it unconditionally and sanitizes it, so a
      * NULL there took out the whole Bible listing - the response every client opens with.
      *
-     * A missing field arrives as the empty string, matching the sanitizer's contract in
-     * tests/Unit/Helpers/SanitizeHtmlTest.php.
+     * A missing field stays null. Helpers::sanitizeHtml() answers NULL with '' and always
+     * has, but the engine hooks hold the distinction so the listing reports an absent
+     * description the way it always did.
      */
     public function testBiblesWithoutADescriptionAreListed(): void
     {
@@ -490,7 +547,84 @@ class EngineSanitizationTest extends TestCase
 
             foreach($missing as $module) {
                 $this->assertArrayHasKey($module, $bibles, $module . ' is missing from the listing');
-                $this->assertSame('', $bibles[$module]['description'], $module);
+                $this->assertNull($bibles[$module]['description'], $module);
+            }
+        }
+    }
+
+    // -----------------------------------------------------------------------
+    // actionBibles - the generated copyright statement
+    // -----------------------------------------------------------------------
+
+    /**
+     * When bibles.copyright_statement is empty the statement is built by
+     * Copyright::getProcessedCopyrightStatement() instead, and no accessor purifies that -
+     * Bible::copyrightStatement() only guards the column. The listing has to run the
+     * generated statement through _sanitizeHtml(), not through _processHtml(), which assumes
+     * its input has already been purified.
+     *
+     * The escaping that keeps the copyright row's URL inside its href is pinned in
+     * tests/Unit/Models/CopyrightStatementTest.php.
+     */
+    public function testTheGeneratedCopyrightStatementGoesThroughTheSanitizer(): void
+    {
+        $Engine = new class extends EngineV2 {
+            /** Everything this engine has handed back from the sanitize hook. */
+            public $sanitized = [];
+
+            protected function _sanitizeHtml(?string $html): ?string
+            {
+                return $this->sanitized[] = parent::_sanitizeHtml($html);
+            }
+        };
+
+        $generated = \App\Models\Bible::where('enabled', 1)
+            ->whereNotNull('copyright_id')
+            ->where(function($Query) {
+                $Query->whereNull('copyright_statement')->orWhere('copyright_statement', '');
+            })
+            ->pluck('module')
+            ->all();
+
+        if(empty($generated)) {
+            $this->markTestSkipped('Every enabled Bible carries its own copyright statement');
+        }
+
+        $bibles = $Engine->actionBibles([]);
+
+        $this->assertFalse($Engine->hasErrors());
+
+        foreach($generated as $module) {
+            $this->assertArrayHasKey($module, $bibles, $module . ' is missing from the listing');
+
+            $statement = $bibles[$module]['copyright_statement'];
+
+            if($statement === NULL || $statement === '') {
+                continue;
+            }
+
+            $this->assertContains(
+                $statement,
+                $Engine->sanitized,
+                $module . ': the copyright statement did not come out of _sanitizeHtml()'
+            );
+        }
+    }
+
+    /**
+     * The whole listing, both versions: nothing in a copyright statement carries an event
+     * handler or a javascript scheme, whichever branch of getCopyrightStatement() built it.
+     */
+    public function testNoCopyrightStatementCarriesAnExecutableAttribute(): void
+    {
+        foreach([new EngineV2(), new EngineV3()] as $Engine) {
+            $bibles = $Engine->actionBibles([]);
+
+            foreach($bibles as $module => $bible) {
+                $statement = (string) ($bible['copyright_statement'] ?? '');
+
+                $this->assertDoesNotMatchRegularExpression('/\bon[a-z]+\s*=/i', $statement, $module);
+                $this->assertStringNotContainsStringIgnoringCase('javascript:', $statement, $module);
             }
         }
     }
