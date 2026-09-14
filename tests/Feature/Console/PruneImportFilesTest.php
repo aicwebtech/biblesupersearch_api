@@ -151,4 +151,20 @@ class PruneImportFilesTest extends TestCase
     {
         $this->artisan('bibles:prune-imports', ['--days' => 0])->assertExitCode(1);
     }
+
+    /**
+     * Registering the command was not enough: without a schedule entry an
+     * untouched install still grows unbounded, because nobody runs it by hand.
+     */
+    public function testCommandIsScheduled(): void
+    {
+        $schedule = app(\Illuminate\Console\Scheduling\Schedule::class);
+
+        $matches = array_filter(
+            $schedule->events(),
+            fn($event) => str_contains($event->command ?? '', 'bibles:prune-imports')
+        );
+
+        $this->assertCount(1, $matches, 'bibles:prune-imports must be scheduled exactly once');
+    }
 }

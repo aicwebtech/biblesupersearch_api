@@ -66,6 +66,13 @@ class Kernel extends ConsoleKernel
             $CM = new \App\CacheManager();
             $CM->cleanUpCache();
         })->weekly();
+
+        // Abandoned import uploads accumulate without bound otherwise: an
+        // import check that is never completed leaves its upload behind, and
+        // nothing else removes it. Registering the command was not enough -
+        // an untouched install never runs it by hand.
+        $schedule->command('bibles:prune-imports')
+                 ->daily();
     }
 
     public function __construct(\Illuminate\Contracts\Foundation\Application $app, \Illuminate\Contracts\Events\Dispatcher $events) 

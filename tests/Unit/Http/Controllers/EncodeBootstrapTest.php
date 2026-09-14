@@ -66,6 +66,29 @@ class EncodeBootstrapTest extends TestCase
     }
 
     /**
+     * Malformed UTF-8 reaches this payload through third-party module metadata.
+     * json_encode() returns FALSE for it, which against the string return type
+     * raised a TypeError and 500'd every admin Bibles/Features/Languages page.
+     */
+    public function testInvalidUtf8DoesNotThrow(): void
+    {
+        $json = $this->encode((object)['copyright' => "Public Domain \xB1 1611"]);
+
+        $this->assertJson($json, 'Invalid UTF-8 must still yield parseable JSON');
+    }
+
+    /**
+     * Whatever cannot be encoded at all must still leave the page loadable.
+     */
+    public function testUnencodablePayloadFallsBackToAnEmptyObject(): void
+    {
+        $recursive = new \stdClass();
+        $recursive->self = $recursive;
+
+        $this->assertSame('{}', $this->encode($recursive));
+    }
+
+    /**
      * The escaping must be transport-only: the value a browser parses back out
      * has to be byte-identical to what went in.
      */

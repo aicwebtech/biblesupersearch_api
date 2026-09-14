@@ -199,14 +199,33 @@ abstract class RenderAbstract
         return TRUE;
     }
 
+    /**
+     * Remove any existing artifact at the render path, so the caller can write a
+     * fresh one.
+     *
+     * is_link() is checked before file_exists(): a *dangling* symlink is
+     * invisible to file_exists() and to is_file(), both of which report on the
+     * link's (missing) target. Such a link would therefore survive an is_file()
+     * guard, and the write that follows - touch(), fopen(..., 'w'), or a
+     * spreadsheet save - would resolve through it and create or truncate the
+     * link target instead of the file in the render directory.
+     *
+     * @param  string  $file_path
+     * @return void
+     */
+    protected static function removeStaleRenderFile($file_path): void
+    {
+        if(is_link($file_path) || file_exists($file_path)) {
+            unlink($file_path);
+        }
+    }
+
     public function deleteRenderFile() 
     {
         $Rendering = $this->_getRenderingRecord();
         $file_path = $this->getRenderFilePath();
 
-        if(is_file($file_path)) {
-            unlink($file_path);
-        }
+        static::removeStaleRenderFile($file_path);
 
         $Rendering->rendered_at = NULL;
         $Rendering->save();

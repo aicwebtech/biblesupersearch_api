@@ -69,11 +69,31 @@ class AudioBibleGateTest extends TestCase
      */
     public function testBulkGenerationCapIsConfigured(): void
     {
-        $limit = (int) config('audio.max_verses_per_request', 200);
+        $limit = (int) config('text_to_speech.max_verses_per_request', 200);
 
         $this->assertGreaterThan(0, $limit);
 
         $source = file_get_contents(app_path('AudioManager.php'));
         $this->assertStringContainsString('max_verses_per_request', $source);
+    }
+
+    /**
+     * The cap used to be read from an 'audio.' key that nothing defined, so it
+     * was pinned to its inline default and could not be tuned. Reading it with
+     * a fallback (as the assertion above does) passes either way, so this
+     * asserts the config file itself supplies the value.
+     */
+    public function testBulkGenerationCapIsDefinedInConfigNotJustDefaulted(): void
+    {
+        $config = require config_path('text_to_speech.php');
+
+        $this->assertArrayHasKey('max_verses_per_request', $config);
+        $this->assertIsInt($config['max_verses_per_request']);
+        $this->assertGreaterThan(0, $config['max_verses_per_request']);
+
+        $this->assertNull(
+            config('audio.max_verses_per_request'),
+            'The cap must no longer live in the audio.* namespace'
+        );
     }
 }

@@ -302,8 +302,19 @@ return [
      * serves plain http would become unreachable, and one behind a
      * TLS-terminating proxy would redirect forever unless 'trusted_proxies'
      * below is configured. Operators opt in with REDIRECT_HTTPS.
+     *
+     * Note for existing installs: the docs page used to force https on its own
+     * (a 'https' route middleware alias with this setting defaulting to on). It
+     * no longer does unless REDIRECT_HTTPS is set.
+     *
+     * Normalised to a real bool rather than left to env(): Laravel's
+     * Env::getOption() only maps 'true'/'false'/'null'/'empty' to scalars, so
+     * REDIRECT_HTTPS=1 (or yes/on) would otherwise stay the *string* "1" --
+     * truthy enough to mark the session cookie Secure (see config/session.php)
+     * while failing the strict === TRUE test in HttpsRedirect, which is exactly
+     * the mismatch that locks an operator out of the admin login.
      */
-    'redirect_https' => env('REDIRECT_HTTPS', FALSE),
+    'redirect_https' => filter_var(env('REDIRECT_HTTPS', FALSE), FILTER_VALIDATE_BOOLEAN),
 
     /* Proxies whose X-Forwarded-* headers may be trusted.
      *

@@ -4,6 +4,8 @@ namespace Tests\Feature\Models;
 
 use Tests\TestCase;
 use App\ApiAccessManager;
+use App\Models\ApiKey;
+use App\Models\ApiAccessLevel;
 
 /**
  * lookUpHelper() declared a non-nullable AccessLogInterface return type but
@@ -37,6 +39,63 @@ class InvalidApiKeyTest extends TestCase
         $Access = ApiAccessManager::lookUpByInput([]);
 
         $this->assertNotNull($Access);
+    }
+
+    /**
+     * lookUpHelper() documents NULL for an unknown *or revoked* key, but the
+     * revoked branch handed the ApiKey back: ApiAccess::handle happens to
+     * re-check isAccessRevoked(), so a caller that trusted the documented
+     * contract and skipped that check would have granted the revoked key access.
+     *
+     * The key row is a purpose-built fixture, removed in the finally below.
+     */
+    public function testLookUpByInputReturnsNullForRevokedKey(): void
+    {
+        config(['app.experimental' => true]);
+
+        $key = ApiKey::generateKeyHash();
+
+        $Key = new ApiKey;
+        $Key->key = $key;
+        $Key->access_level_id = ApiAccessLevel::NONE;
+        // api_keys.user_id is NOT NULL with no default - see KeyAccessTest::_fakeKey()
+        $Key->user_id = 0;
+        $Key->save();
+
+        try {
+            $this->assertTrue(ApiKey::findByKey($key)->isAccessRevoked(), 'Precondition: the key is revoked');
+
+            $this->assertNull(ApiAccessManager::lookUpByInput(['key' => $key]));
+        }
+        finally {
+            ApiKey::withTrashed()->where('key', $key)->forceDelete();
+        }
+    }
+
+    /**
+     * A revoked key must not silently fall through to the keyless IP record
+     * either - that would hand back working access for a key that was cut off.
+     */
+    public function testRevokedKeyDoesNotFallBackToKeylessAccess(): void
+    {
+        config(['app.experimental' => true]);
+
+        $key = ApiKey::generateKeyHash();
+
+        $Key = new ApiKey;
+        $Key->key = $key;
+        $Key->access_level_id = ApiAccessLevel::NONE;
+        $Key->user_id = 0;
+        $Key->save();
+
+        try {
+            $response = $this->getJson('/api/v2/query?bible=kjv&reference=John+3:16&key=' . $key);
+
+            $response->assertStatus(403);
+        }
+        finally {
+            ApiKey::withTrashed()->where('key', $key)->forceDelete();
+        }
     }
 
     /**

@@ -118,10 +118,17 @@ class ApiAccessManager
             }
         }
         
-        if(!$err) {        
-            // look up IP/domain record for keyless access                       
-            $Access = $Access ?: IpAccess::findOrCreateByIpOrDomain(true, $dom);
+        if($err) {
+            // An unknown *or revoked* key grants no access at all. Returning the
+            // revoked ApiKey here would match neither the documented contract
+            // nor what callers expect: ApiAccess::handle re-checks
+            // isAccessRevoked(), but a caller that trusted the NULL contract and
+            // skipped that check would let a revoked key through.
+            return null;
         }
+
+        // look up IP/domain record for keyless access
+        $Access = $Access ?: IpAccess::findOrCreateByIpOrDomain(true, $dom);
 
         return $Access ?: null;
     }

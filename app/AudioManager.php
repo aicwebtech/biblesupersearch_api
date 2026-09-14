@@ -178,6 +178,44 @@ class AudioManager implements ErrorInterface
         return $this->getAudioByInput($input, 'get', $module);
     }
 
+    /**
+     * How many of these verses have no audio file yet, and therefore cost one
+     * external TTS call each to generate.
+     *
+     * @param  iterable<int, object>  $verses
+     * @param  string  $audio_path  Directory holding the Bible's audio files
+     * @return int
+     */
+    static public function countVersesNeedingAudio($verses, string $audio_path): int
+    {
+        $needed = 0;
+
+        foreach($verses as $verse) {
+            if(!static::verseAudioFileExists($verse, $audio_path)) {
+                $needed++;
+            }
+        }
+
+        return $needed;
+    }
+
+    /**
+     * Whether the verse's audio is already on disk. A verse with a file_name
+     * recorded but no file behind it still needs generating.
+     *
+     * @param  object  $verse
+     * @param  string  $audio_path  Directory holding the Bible's audio files
+     * @return bool
+     */
+    static public function verseAudioFileExists($verse, string $audio_path): bool
+    {
+        if(empty($verse->file_name)) {
+            return false;
+        }
+
+        return is_file($audio_path . '/' . $verse->file_name);
+    }
+
     public function getAudioByInput($input, $mode = 'check', $module = null)
     {
         $Passage = new Passage();
@@ -203,16 +241,25 @@ class AudioManager implements ErrorInterface
         try {
             $verses = $Bible->getAudio([$Passage], []);
 
+            $audio_path = TtsAbstract::getAudioFilePathStatic($Bible->module);
+
             // Each missing verse costs one external TTS call, so an unbounded
             // range lets a single request drive an unbounded amount of provider
-            // work, spend and storage.
-            $verse_limit = (int) config('audio.max_verses_per_request', 200);
+            // work, spend and storage. Verses whose audio is already on disk
+            // cost nothing and are therefore not counted -- otherwise a check
+            // over a fully generated book would be refused despite making no
+            // provider calls at all.
+            $verse_limit = (int) config('text_to_speech.max_verses_per_request', 200);
 
-            if($mode == 'generate' && $verse_limit > 0 && count($verses) > $verse_limit) {
-                return $this->addError(
-                    'Too many verses requested for audio generation. The maximum is ' . $verse_limit . '.',
-                    4
-                );
+            if($mode == 'generate' && $verse_limit > 0) {
+                $verses_needing_audio = static::countVersesNeedingAudio($verses, $audio_path);
+
+                if($verses_needing_audio > $verse_limit) {
+                    return $this->addError(
+                        'Too many verses requested for audio generation. The maximum is ' . $verse_limit . '.',
+                        4
+                    );
+                }
             }
 
             $compat_mode = !Ffmpeg::canUse();
@@ -227,11 +274,7 @@ class AudioManager implements ErrorInterface
             }
 
             foreach($verses as &$verse) {
-                $verse_has_audio = false;
-            
-                if($verse->file_name && is_file(TtsAbstract::getAudioFilePathStatic($Bible->module) . '/' . $verse->file_name)) {
-                    $verse_has_audio = true;
-                }
+                $verse_has_audio = static::verseAudioFileExists($verse, $audio_path);
                 
                 if(!$verse_has_audio && $mode == 'generate') {
                     if($this->checkCanRenderTts($Bible) !== true) {

@@ -36,12 +36,40 @@ class TtsHardeningTest extends TestCase
 
     public function testTimeoutDefaultsAreSane(): void
     {
-        $connect = (int) config('audio.tts_connect_timeout', 10);
-        $total = (int) config('audio.tts_timeout', 120);
+        $connect = (int) config('text_to_speech.connect_timeout', 10);
+        $total = (int) config('text_to_speech.timeout', 120);
 
         $this->assertGreaterThan(0, $connect);
         $this->assertGreaterThan(0, $total);
         $this->assertGreaterThanOrEqual($connect, $total);
+    }
+
+    /**
+     * The timeouts used to be read from 'audio.' keys that nothing defined -
+     * there is no config/audio.php, and that namespace comes only from
+     * soft-config rows - so they were pinned to their inline defaults. Reading
+     * them with a fallback passes either way, so this asserts the config file
+     * itself supplies them.
+     */
+    public function testTimeoutsAreDefinedInConfigNotJustDefaulted(): void
+    {
+        $config = require config_path('text_to_speech.php');
+
+        // New key => the audio.* key it replaced, which must now resolve to NULL.
+        $moved = [
+            'connect_timeout' => 'audio.tts_connect_timeout',
+            'timeout'         => 'audio.tts_timeout',
+        ];
+
+        foreach($moved as $key => $old_key) {
+            $this->assertArrayHasKey($key, $config);
+            $this->assertIsInt($config[$key]);
+            $this->assertGreaterThan(0, $config[$key]);
+
+            $this->assertNull(config($old_key), $old_key . ' must no longer be read from');
+        }
+
+        $this->assertGreaterThanOrEqual($config['connect_timeout'], $config['timeout']);
     }
 
     /**

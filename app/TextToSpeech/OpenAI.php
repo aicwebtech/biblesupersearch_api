@@ -45,8 +45,8 @@ class OpenAI extends TtsAbstract
             CURLOPT_FILE => $file_handle,
             // Without these a stalled provider pins a PHP-FPM worker until the
             // request times out, so a slow upstream can exhaust the pool.
-            CURLOPT_CONNECTTIMEOUT => (int) config('audio.tts_connect_timeout', 10),
-            CURLOPT_TIMEOUT => (int) config('audio.tts_timeout', 120),
+            CURLOPT_CONNECTTIMEOUT => (int) config('text_to_speech.connect_timeout', 10),
+            CURLOPT_TIMEOUT => (int) config('text_to_speech.timeout', 120),
         ];
 
         $curl = curl_init();

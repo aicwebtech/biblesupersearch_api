@@ -97,6 +97,34 @@ class HttpsRedirectTest extends TestCase
     }
 
     /**
+     * The middleware is global, so it now covers /api/* as well. A 302 makes the
+     * client re-issue the request as a GET, which silently discards an API
+     * POST's body; 307 preserves both the method and the body.
+     */
+    public function testUnsafeMethodIsRedirectedWithoutLosingTheBody(): void
+    {
+        config(['app.redirect_https' => true]);
+
+        $response = $this->post('http://example.com/api/v2/query', ['bible' => 'kjv', 'reference' => 'John 3:16']);
+
+        $response->assertStatus(307);
+        $this->assertSame('https://example.com/api/v2/query', $response->headers->get('Location'));
+    }
+
+    /**
+     * Safe methods keep 302 rather than a permanent redirect, so turning
+     * REDIRECT_HTTPS back off is not defeated by a cached 301/308.
+     */
+    public function testSafeMethodKeepsATemporaryRedirect(): void
+    {
+        config(['app.redirect_https' => true]);
+
+        $response = $this->get('http://example.com/api/v2/query?bible=kjv&reference=John+3:16');
+
+        $response->assertStatus(302);
+    }
+
+    /**
      * An already-secure request must pass straight through rather than loop.
      */
     public function testSecureRequestIsNotRedirected(): void

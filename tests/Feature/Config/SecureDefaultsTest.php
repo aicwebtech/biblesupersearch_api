@@ -129,6 +129,59 @@ class SecureDefaultsTest extends TestCase
     }
 
     /**
+     * HttpsRedirect tests config('app.redirect_https') === TRUE, so anything
+     * other than a real bool leaves the redirect off. Laravel's Env::getOption()
+     * only converts 'true'/'false'/'null'/'empty', so REDIRECT_HTTPS=1 would
+     * otherwise arrive as the string "1": no redirect, yet truthy enough to mark
+     * the session cookie Secure -- an admin login that bounces with no error.
+     */
+    public function testTruthyRedirectHttpsValuesBecomeBoolTrue(): void
+    {
+        foreach(['true', 'TRUE', '1', 'yes', 'on'] as $value) {
+            $config = $this->configWithEnv('app', ['REDIRECT_HTTPS' => $value]);
+
+            $this->assertTrue(
+                $config['redirect_https'],
+                'REDIRECT_HTTPS=' . $value . ' must normalise to bool TRUE, not "' . $value . '"'
+            );
+        }
+    }
+
+    public function testFalsyRedirectHttpsValuesBecomeBoolFalse(): void
+    {
+        foreach(['false', 'FALSE', '0', 'no', 'off', ''] as $value) {
+            $config = $this->configWithEnv('app', ['REDIRECT_HTTPS' => $value]);
+
+            $this->assertFalse(
+                $config['redirect_https'],
+                'REDIRECT_HTTPS=' . $value . ' must normalise to bool FALSE'
+            );
+        }
+    }
+
+    /**
+     * The two settings must never disagree: a Secure cookie without the matching
+     * redirect is what drops the session on a plain-http install.
+     */
+    public function testSessionCookieAgreesWithRedirectHttpsForEveryForm(): void
+    {
+        foreach(['true', '1', 'yes', 'on', 'false', '0', 'no', 'off'] as $value) {
+            $app = $this->configWithEnv('app', ['REDIRECT_HTTPS' => $value]);
+
+            $session = $this->configWithEnv('session', [
+                'SESSION_SECURE_COOKIE' => NULL,
+                'REDIRECT_HTTPS'        => $value,
+            ]);
+
+            $this->assertSame(
+                $app['redirect_https'],
+                $session['secure'],
+                'REDIRECT_HTTPS=' . $value . ' must mean the same thing to both settings'
+            );
+        }
+    }
+
+    /**
      * An explicit setting still wins over the REDIRECT_HTTPS fallback, in both
      * directions.
      */

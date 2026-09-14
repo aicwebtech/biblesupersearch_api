@@ -151,9 +151,14 @@ return [
     | otherwise have the browser drop the cookie, so the admin login would
     | succeed and then bounce straight back to the login form with no error.
     |
+    | Both settings are read through FILTER_VALIDATE_BOOLEAN so that they agree
+    | on values env() leaves as strings (1 / yes / on). Without that, the cookie
+    | here would be truthy while HttpsRedirect's strict === TRUE test failed,
+    | producing precisely the silent login bounce described above.
+    |
     */
 
-    'secure' => env('SESSION_SECURE_COOKIE', env('REDIRECT_HTTPS', FALSE)),
+    'secure' => filter_var(env('SESSION_SECURE_COOKIE', env('REDIRECT_HTTPS', FALSE)), FILTER_VALIDATE_BOOLEAN),
 
     /*
     |--------------------------------------------------------------------------

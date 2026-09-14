@@ -21,12 +21,25 @@ abstract class Controller extends BaseController
      * statements, language names, importer descriptions) from terminating the
      * script element or breaking out of the assignment.
      *
+     * Encoding must not be allowed to fail: json_encode() returns FALSE for
+     * malformed UTF-8, which reaches this payload through third-party module
+     * metadata (copyright statements, descriptions) and would otherwise raise a
+     * TypeError against the string return type and 500 every admin page.
+     * JSON_INVALID_UTF8_SUBSTITUTE handles that case; the FALSE fallback covers
+     * the rest (recursion, depth, INF/NAN) with a payload the page can still
+     * parse.
+     *
      * @param  \stdClass  $bootstrap
      * @return string
      */
     protected function encodeBootstrap($bootstrap): string
     {
-        return json_encode($bootstrap, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT);
+        $json = json_encode(
+            $bootstrap,
+            JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_INVALID_UTF8_SUBSTITUTE
+        );
+
+        return $json === FALSE ? '{}' : $json;
     }
 
     protected function getAdminBootstrap()

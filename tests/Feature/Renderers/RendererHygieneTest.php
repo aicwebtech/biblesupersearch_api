@@ -49,11 +49,45 @@ class RendererHygieneTest extends TestCase
         }
     }
 
-    public function testRendererGuardsAgainstSymlinkBeforeTouch(): void
+    /**
+     * The guard lives in one place now (RenderAbstract::removeStaleRenderFile,
+     * unit-tested in Tests\Unit\Renderers\RenderAbstractTest). It was
+     * originally applied to SQLite3 alone while three sibling renderers with the
+     * same remove-then-write pattern kept the is_file() guard, so this asserts
+     * every one of them routes through the shared helper.
+     */
+    public function testEveryRendererUsesTheSharedStaleFileGuard(): void
     {
-        $source = file_get_contents(app_path('Renderers/SQLite3.php'));
+        $renderers = ['SQLite3.php', 'TextAbstract.php', 'Excel.php', 'ExcelFromCsv.php'];
 
-        $this->assertStringContainsString('is_link($filepath)', $source, 'Renderer must check is_link() before touch()');
+        foreach($renderers as $file) {
+            $source = file_get_contents(app_path('Renderers/' . $file));
+
+            $this->assertStringContainsString(
+                'removeStaleRenderFile($filepath)',
+                $source,
+                $file . ' must clear the render path through the shared guard'
+            );
+
+            $this->assertStringNotContainsString(
+                'if(is_file($filepath)) {',
+                $source,
+                $file . ' must not guard with is_file(), which cannot see a dangling symlink'
+            );
+        }
+    }
+
+    /**
+     * deleteRenderFile() is the other way a stale artifact is cleared, and had
+     * the same is_file() guard: a dangling link left behind there is what the
+     * next render would write through.
+     */
+    public function testDeleteRenderFileUsesTheSharedStaleFileGuard(): void
+    {
+        $source = file_get_contents(app_path('Renderers/RenderAbstract.php'));
+
+        $this->assertStringContainsString('static::removeStaleRenderFile($file_path);', $source);
+        $this->assertStringNotContainsString('if(is_file($file_path)) {', $source);
     }
 
     public function testRenderedArtifactsAreNotGroupWritable(): void
