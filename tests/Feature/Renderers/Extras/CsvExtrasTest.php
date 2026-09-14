@@ -159,4 +159,74 @@ class CsvExtrasTest extends TestCase
         $this->assertNotContains('updated_at', $rows[0]);
         $this->assertGreaterThan(1, count($rows), 'the export should carry at least one shortcut');
     }
+
+    /**
+     * The generic dump takes a bare table name and lets the query builder apply the connection's
+     * table prefix. It used to prepend env('DB_PREFIX') by hand, which silently resolves to null
+     * once php artisan config:cache has run - the prefix has to come from config instead.
+     */
+    public function testGenericDumpResolvesTheTablePrefixFromTheConnection(): void
+    {
+        $path = $this->tempDir . 'languages_generic.csv';
+        $dump = new \ReflectionMethod(Csv::class, '_dumpCsvGeneric');
+
+        $dump->invoke($this->makeRenderer(), 'languages', $path);
+
+        $this->assertFileExists($path);
+        $this->assertGreaterThan(0, filesize($path), 'the dump should carry the languages table');
+    }
+
+    /**
+     * The table name reaches the dump as an interpolated identifier. Routing it through the query
+     * builder means the grammar wraps the whole string, so an appended clause becomes part of a
+     * table name that does not exist rather than SQL the database runs.
+     *
+     * The payload is chosen to tell the two implementations apart: the raw
+     * SELECT * FROM {$db_table} this replaced executed it happily and dumped a single row.
+     */
+    public function testGenericDumpDoesNotExecuteAnInjectedTableName(): void
+    {
+        $path = $this->tempDir . 'injected.csv';
+        $dump = new \ReflectionMethod(Csv::class, '_dumpCsvGeneric');
+
+        $this->expectException(\Illuminate\Database\QueryException::class);
+
+        try {
+            $dump->invoke($this->makeRenderer(), 'languages LIMIT 1', $path);
+        }
+        finally {
+            $this->assertFileDoesNotExist($path);
+        }
+    }
+
+    /**
+     * A table that exists but holds no rows still has a header row worth writing. Reading the
+     * column list off the first row raised a TypeError instead - after fopen() had already
+     * truncated the target, leaving a zero byte CSV in the render directory.
+     */
+    public function testGenericDumpOfAnEmptyTableWritesTheHeaderRowOnly(): void
+    {
+        if (\DB::connection()->getDriverName() !== 'mysql') {
+            $this->markTestSkipped('The throwaway fixture table is created with MySQL syntax');
+        }
+
+        $fixture = $this->fixtureTableName('extras_dump_empty_csv');
+        $table   = \DB::getTablePrefix() . $fixture;
+        $path    = $this->tempDir . 'empty.csv';
+
+        \DB::statement("DROP TABLE IF EXISTS `{$table}`");
+        \DB::statement("CREATE TABLE `{$table}` (`id` int(10) unsigned NOT NULL AUTO_INCREMENT, `name` varchar(255) NOT NULL, `created_at` timestamp NULL DEFAULT NULL, `updated_at` timestamp NULL DEFAULT NULL, PRIMARY KEY (`id`))");
+
+        try {
+            $dump = new \ReflectionMethod(Csv::class, '_dumpCsvGeneric');
+            $dump->invoke($this->makeRenderer(), $fixture, $path);
+
+            $rows = file($path, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
+
+            $this->assertSame(['id,name'], $rows, 'the header comes from the schema, minus the bookkeeping columns');
+        }
+        finally {
+            \DB::statement("DROP TABLE IF EXISTS `{$table}`");
+        }
+    }
 }

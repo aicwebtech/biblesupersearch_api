@@ -21,6 +21,19 @@ class VerseStandard extends VerseAbstract
     protected static $special_table = 'bible';
 
     /**
+     * Largest proximity window a search may request, in verses.
+     *
+     * The proximity join is already constrained to a single book (and to a single chapter for
+     * '~l' and for Psalms), so no legitimate search needs a wider window than this. Without a
+     * ceiling, a request such as proximity_limit=100000000 widens the BETWEEN range on every
+     * arm of an N-way self join, which is an unauthenticated way to burn CPU and memory.
+     *
+     * Takes its value from PROXIMITY_LIMIT_MAX so the backstop applied here and the ceiling
+     * Engine advertises for the bss.proximity_limit_max setting cannot drift apart.
+     */
+    protected static $proximity_limit_max = self::PROXIMITY_LIMIT_MAX;
+
+    /**
      * Processes and executes the Bible search query
      *
      * @param array $Passages Array of App/Passage instances, represents the passages requested, if any
@@ -411,20 +424,20 @@ class VerseStandard extends VerseAbstract
         foreach($Passages as $Passage) {
             if(count($Passage->chapter_verse_normal)) {
                 foreach($Passage->chapter_verse_normal as $parsed) {
-                    $q = $table_fmt . '`book` = ' . $Passage->Book->id;
+                    $q = $table_fmt . '`book` = ' . (int) $Passage->Book->id;
 
                     // Single verses
                     if($parsed['type'] == 'single') {
-                        $q .= ' AND ' . $table_fmt . '`chapter` = ' . $parsed['c'];
-                        $q .= ($parsed['v']) ? ' AND ' . $table_fmt . '`verse` = ' . $parsed['v'] : '';
+                        $q .= ' AND ' . $table_fmt . '`chapter` = ' . (int) $parsed['c'];
+                        $q .= ($parsed['v']) ? ' AND ' . $table_fmt . '`verse` = ' . (int) $parsed['v'] : '';
                     }
                     elseif($parsed['type'] == 'range') {
                         if(!$parsed['cst'] && !$parsed['cen']) {
                             continue;
                         }
 
-                        $cvst = $parsed['cst'] * 1000 + (int) $parsed['vst'];
-                        $cven = $parsed['cen'] * 1000 + (int) $parsed['ven'];
+                        $cvst = (int) $parsed['cst'] * 1000 + (int) $parsed['vst'];
+                        $cven = (int) $parsed['cen'] * 1000 + (int) $parsed['ven'];
                         $q .= ' AND ' . $table_fmt . '`chapter_verse` BETWEEN ' . $cvst . ' AND ' . $cven;
                         
                         // Proposed modification that would eliminate the need for the `chapter_verse` db column
@@ -436,10 +449,10 @@ class VerseStandard extends VerseAbstract
             }
             else {
                 if($Passage->is_book_range) {
-                    $query[] = $table_fmt . '`book` BETWEEN ' . $Passage->Book->id . ' AND ' . $Passage->Book_En->id;
+                    $query[] = $table_fmt . '`book` BETWEEN ' . (int) $Passage->Book->id . ' AND ' . (int) $Passage->Book_En->id;
                 }
                 else {
-                    $query[] = $table_fmt . '`book` = ' . $Passage->Book->id;
+                    $query[] = $table_fmt . '`book` = ' . (int) $Passage->Book->id;
                 }
             }
         }
@@ -521,9 +534,10 @@ class VerseStandard extends VerseAbstract
      * Hard ceiling on proximity distance, and the default for the tunable
      * bss.proximity_limit_max.
      *
-     * Deliberately a constant rather than a config lookup: this method is
-     * exercised by unit tests as a plain static, where no application is booted
-     * and config() would throw. It is the backstop, not the knob.
+     * Deliberately a constant rather than a config lookup: _buildSpecialSearchJoin()
+     * is exercised by unit tests as a plain static, where no application is booted
+     * and config() would throw. It is the backstop, not the knob, and it is what
+     * $proximity_limit_max (clamped against in that method) is initialised from.
      */
     const PROXIMITY_LIMIT_MAX = 100;
 
@@ -549,10 +563,14 @@ class VerseStandard extends VerseAbstract
                 $limit = (empty($parameters['proximity_limit'])) ? 5 : (int) $parameters['proximity_limit'];
             }
 
-            // $limit is interpolated into the join below, not bound, so clamp it
-            // here as well as at input validation: an unbounded range turns the
-            // self-join into an arbitrarily expensive query.
-            $limit = max(0, min($limit, static::PROXIMITY_LIMIT_MAX));
+            // $limit is interpolated into the join below, not bound, so clamp it here as
+            // well as at input validation: an unbounded range turns the self-join into an
+            // arbitrarily expensive query.
+            //
+            // Floored at zero rather than one: PROX(0) is a legitimate search for two
+            // keywords in the same verse, and only the ceiling guards against resource
+            // exhaustion. A negative proximity_limit would invert the BETWEEN range.
+            $limit = max(0, min($limit, static::$proximity_limit_max));
 
             $ps_chapter = ' AND (' . $alias . '.book != 19 OR '  . $alias . '.chapter = ' . $alias2 . '.chapter )'; // Always limit within chapter for Psalms
             $join .= (strpos($operator, '~l') === 0) ? ' AND ' . $alias . '.chapter = ' . $alias2 . '.chapter' : $ps_chapter; // Limit within chapter

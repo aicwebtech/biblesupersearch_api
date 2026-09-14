@@ -3,6 +3,7 @@
 namespace Tests\Feature\Renderers\Extras;
 
 use App\Renderers\Extras\MySQL;
+use PHPUnit\Framework\Attributes\DataProvider;
 use Tests\TestCase;
 
 /**
@@ -134,26 +135,27 @@ class MysqlExtrasTest extends TestCase
     {
         $this->requireMysqlDriver();
 
-        $stamp = '2019-04-01 12:34:56';
-        $table = env('DB_PREFIX') . 'extras_dump_fixture';
-        $path  = $this->tempDir . 'fixture.sql';
+        $stamp   = '2019-04-01 12:34:56';
+        $fixture = $this->fixtureTableName('extras_dump_timestamps');
+        $table   = \DB::getTablePrefix() . $fixture;
+        $path    = $this->tempDir . 'fixture.sql';
 
         \DB::statement("DROP TABLE IF EXISTS `{$table}`");
         \DB::statement("CREATE TABLE `{$table}` (`id` int(10) unsigned NOT NULL AUTO_INCREMENT, `name` varchar(255) NOT NULL, `created_at` timestamp NULL DEFAULT NULL, `updated_at` timestamp NULL DEFAULT NULL, PRIMARY KEY (`id`))");
 
         try {
-            \DB::table('extras_dump_fixture')->insert([
+            \DB::table($fixture)->insert([
                 'name'       => 'fixture',
                 'created_at' => $stamp,
                 'updated_at' => $stamp,
             ]);
 
             $dump = new \ReflectionMethod(MySQL::class, '_dumpMysqlGeneric');
-            $dump->invoke($this->makeRenderer(), 'extras_dump_fixture', 'bible_extras_dump_fixture', $path);
+            $dump->invoke($this->makeRenderer(), $fixture, 'bible_' . $fixture, $path);
 
             $sql = file_get_contents($path);
 
-            $this->assertStringContainsString('INSERT INTO `bible_extras_dump_fixture`', $sql);
+            $this->assertStringContainsString('INSERT INTO `bible_' . $fixture . '`', $sql);
             $this->assertStringNotContainsString($stamp, $sql, 'this installation\'s timestamps must not travel with the dump');
             $this->assertStringContainsString('NULL, NULL);', $sql);
         }
@@ -187,6 +189,103 @@ class MysqlExtrasTest extends TestCase
         $this->assertSame([], glob($this->tempDir . '*') ?: []);
     }
 
+    /**
+     * Book names legitimately contain apostrophes - the Turkish, Hebrew and Somali book lists
+     * all carry them - and an apostrophe closed the SQL literal early before the values were
+     * quoted, so those shipped dumps were malformed on import.
+     *
+     * The installed book tables are content data and cannot be written to, so the awkward name
+     * goes into a throwaway language of its own. 'qqt' is not a real language code, matching the
+     * fixture convention in Tests\Feature\EngineTest.
+     *
+     * The code has to be one no other test uses: paratest workers share the one database, the
+     * language column is only three characters so it cannot carry a process id the way
+     * fixtureTableName() does, and createLanguageFixture() deletes the code's existing row before
+     * inserting - so two tests naming one code delete each other's fixture mid-run. Taken:
+     * qqu/qqw/qqz (EngineTest), qqv (ImportFailureStateTest), qqx (AudioGatesTest),
+     * qqy/qqz (LanguageTest).
+     */
+    public function testBookListQuotesNamesThatCarryAnApostrophe(): void
+    {
+        $code  = 'qqt';
+        $name  = "Mısır'dan Çıkış";
+        $short = "Samuu'eel";
+        $table = 'books_' . $code;
+
+        // Built through the schema builder rather than raw DDL so the fixture inherits the
+        // connection's own charset - the book names are not spellable in latin1.
+        \Schema::dropIfExists($table);
+        \Schema::create($table, function ($t) {
+            $t->increments('id');
+            $t->string('name');
+            $t->string('shortname')->nullable();
+            $t->string('matching1')->nullable();
+            $t->string('matching2')->nullable();
+        });
+
+        try {
+            $this->createLanguageFixture($code, 'Apostrophe Book List Test');
+
+            \DB::table($table)->insert([
+                'id'        => 1,
+                'name'      => $name,
+                'shortname' => $short,
+                'matching1' => null,
+                'matching2' => null,
+            ]);
+
+            $path = $this->makeRenderer()->callBookList($code);
+
+            $this->assertFileExists($path);
+
+            $sql = file_get_contents($path);
+
+            // The dump is a MySQL artifact wherever it was rendered, so the apostrophe is doubled
+            // rather than escaped however this installation's own driver would have done it.
+            $this->assertStringContainsString("'" . str_replace("'", "''", $name) . "'", $sql);
+            $this->assertStringContainsString("'" . str_replace("'", "''", $short) . "'", $sql);
+            $this->assertStringNotContainsString("\\'", $sql, 'a doubled quote survives NO_BACKSLASH_ESCAPES');
+
+            $this->assertStringNotContainsString("'" . $name . "'", $sql, 'the apostrophe must not close the literal early');
+            $this->assertStringContainsString('INSERT INTO `bible_books_' . $code . '` VALUES (1, ', $sql);
+            $this->assertStringContainsString(', NULL, NULL);', $sql, 'null columns stay unquoted');
+        }
+        finally {
+            \Schema::dropIfExists($table);
+            $this->removeLanguageFixture($code);
+        }
+    }
+
+    /**
+     * The language code is interpolated into the backticked table name of the DROP, CREATE and
+     * INSERT statements, none of which the query builder can wrap, so it has to be a bare
+     * identifier - and nothing may be written before it is checked.
+     *
+     * @return array<string, array{string}>
+     */
+    public static function unsafeLanguageCodeProvider(): array
+    {
+        return [
+            'quote escape'    => ['en`; DROP TABLE users; -- '],
+            'statement break' => ['en; DROP TABLE users'],
+            'space in code'   => ['en us'],
+        ];
+    }
+
+    #[DataProvider('unsafeLanguageCodeProvider')]
+    public function testBookListRejectsAnUnsafeLanguageCode(string $lang_code): void
+    {
+        try {
+            $this->makeRenderer()->callBookList($lang_code);
+            $this->fail('an unsafe language code should not have reached the dump');
+        }
+        catch (\InvalidArgumentException $e) {
+            $this->assertStringContainsString('Unsafe table name', $e->getMessage());
+        }
+
+        $this->assertSame([], glob($this->tempDir . '*') ?: []);
+    }
+
     public function testShortcutsDumpIsBuiltFromTheCheckedInDump(): void
     {
         $path = $this->makeRenderer()->callShortcuts('en');
@@ -198,5 +297,160 @@ class MysqlExtrasTest extends TestCase
 
         $this->assertStringContainsString('DROP TABLE IF EXISTS `bible_shortcuts_en`;', $sql);
         $this->assertStringContainsString('CREATE TABLE `bible_shortcuts_en`', $sql);
+    }
+
+    /**
+     * The shortcuts renderer interpolates the code into its backticked table names and into both
+     * file paths it reads and writes, so it rejects the same codes the book list does - a '../'
+     * or a backtick would otherwise reach the filesystem and the DDL.
+     */
+    #[DataProvider('unsafeLanguageCodeProvider')]
+    public function testShortcutsRejectAnUnsafeLanguageCode(string $lang_code): void
+    {
+        try {
+            $this->makeRenderer()->callShortcuts($lang_code);
+            $this->fail('an unsafe language code should not have reached the dump');
+        }
+        catch (\InvalidArgumentException $e) {
+            $this->assertStringContainsString('Unsafe table name', $e->getMessage());
+        }
+
+        $this->assertSame([], glob($this->tempDir . '*') ?: []);
+    }
+
+    /**
+     * Table names that have to be interpolated into raw SQL - SHOW CREATE TABLE and the
+     * DROP/INSERT statements, none of which the query builder can wrap - must be bare
+     * identifiers. Anything carrying a quote, a space or a comment marker is rejected before
+     * it reaches the database, and no half-written dump is left behind.
+     *
+     * @return array<string, array{string, string}>
+     */
+    public static function unsafeTableIdentifierProvider(): array
+    {
+        return [
+            'quote escape in source table'  => ['languages` WHERE 1=1 -- ', 'bible_languages'],
+            'statement break in source'     => ['languages; DROP TABLE users', 'bible_languages'],
+            'quote escape in backup table'  => ['languages', 'bible_languages`; DROP TABLE users; -- '],
+            'space in backup table'         => ['languages', 'bible languages'],
+        ];
+    }
+
+    #[DataProvider('unsafeTableIdentifierProvider')]
+    public function testGenericDumpRejectsAnUnsafeTableIdentifier(string $db_table, string $bk_table): void
+    {
+        $path = $this->tempDir . 'unsafe.sql';
+        $dump = new \ReflectionMethod(MySQL::class, '_dumpMysqlGeneric');
+
+        try {
+            $dump->invoke($this->makeRenderer(), $db_table, $bk_table, $path);
+            $this->fail('an unsafe table identifier should not have reached the database');
+        }
+        catch (\InvalidArgumentException $e) {
+            $this->assertStringContainsString('Unsafe table name', $e->getMessage());
+        }
+
+        $this->assertFileDoesNotExist($path);
+    }
+
+    /**
+     * The connection's table prefix is the deployment's own configuration rather than a name this
+     * renderer assembles, and MySQL accepts a backticked prefix carrying a hyphen or other
+     * punctuation. Such a prefix has to be escaped into the raw statements; rejecting it would
+     * abort the whole extras render on installations that use one.
+     */
+    public function testGenericDumpAcceptsATablePrefixCarryingPunctuation(): void
+    {
+        $this->requireMysqlDriver();
+
+        $prefix   = 'bss-fixture-';
+        $fixture  = $this->fixtureTableName('extras_dump_prefixed');
+        $table    = $prefix . $fixture;
+        $path     = $this->tempDir . 'prefixed.sql';
+        $original = \DB::getTablePrefix();
+
+        \DB::statement("DROP TABLE IF EXISTS `{$table}`");
+        \DB::statement("CREATE TABLE `{$table}` (`id` int(10) unsigned NOT NULL AUTO_INCREMENT, `name` varchar(255) NOT NULL, PRIMARY KEY (`id`))");
+
+        try {
+            \DB::connection()->setTablePrefix($prefix);
+            \DB::table($fixture)->insert(['name' => 'fixture']);
+
+            $dump = new \ReflectionMethod(MySQL::class, '_dumpMysqlGeneric');
+            $dump->invoke($this->makeRenderer(), $fixture, 'bible_' . $fixture, $path);
+
+            $sql = file_get_contents($path);
+
+            $this->assertStringContainsString('CREATE TABLE `bible_' . $fixture . '`', $sql);
+            $this->assertStringContainsString('INSERT INTO `bible_' . $fixture . '`', $sql);
+            $this->assertStringNotContainsString($prefix, $sql, 'the local prefix must not travel with the dump');
+        }
+        finally {
+            \DB::connection()->setTablePrefix($original);
+            \DB::statement("DROP TABLE IF EXISTS `{$table}`");
+        }
+    }
+
+    /**
+     * @return array<string, array{mixed}>
+     */
+    public static function nonStringTableIdentifierProvider(): array
+    {
+        return [
+            'array'  => [['languages']],
+            'object' => [new \stdClass],
+        ];
+    }
+
+    /**
+     * The guard's own error contract: a non-string argument has to raise the documented
+     * InvalidArgumentException rather than an Error or a warning from concatenating it into the
+     * message.
+     */
+    #[DataProvider('nonStringTableIdentifierProvider')]
+    public function testGenericDumpRejectsANonStringTableIdentifier(mixed $db_table): void
+    {
+        $path = $this->tempDir . 'unsafe.sql';
+        $dump = new \ReflectionMethod(MySQL::class, '_dumpMysqlGeneric');
+
+        try {
+            $dump->invoke($this->makeRenderer(), $db_table, 'bible_languages', $path);
+            $this->fail('a non-string table identifier should not have reached the database');
+        }
+        catch (\InvalidArgumentException $e) {
+            $this->assertStringContainsString('Unsafe table name', $e->getMessage());
+        }
+
+        $this->assertFileDoesNotExist($path);
+    }
+
+    /**
+     * A table that exists but holds no rows still has a schema worth dumping. Reading the column
+     * list off the first row meant an empty table raised a TypeError instead.
+     */
+    public function testGenericDumpOfAnEmptyTableCarriesItsSchemaWithoutInserts(): void
+    {
+        $this->requireMysqlDriver();
+
+        $fixture = $this->fixtureTableName('extras_dump_empty');
+        $table   = \DB::getTablePrefix() . $fixture;
+        $path    = $this->tempDir . 'empty.sql';
+
+        \DB::statement("DROP TABLE IF EXISTS `{$table}`");
+        \DB::statement("CREATE TABLE `{$table}` (`id` int(10) unsigned NOT NULL AUTO_INCREMENT, `name` varchar(255) NOT NULL, PRIMARY KEY (`id`))");
+
+        try {
+            $dump = new \ReflectionMethod(MySQL::class, '_dumpMysqlGeneric');
+            $dump->invoke($this->makeRenderer(), $fixture, 'bible_' . $fixture, $path);
+
+            $sql = file_get_contents($path);
+
+            $this->assertStringContainsString('DROP TABLE IF EXISTS `bible_' . $fixture . '`;', $sql);
+            $this->assertStringContainsString('CREATE TABLE `bible_' . $fixture . '`', $sql);
+            $this->assertStringNotContainsString('INSERT INTO', $sql, 'there is nothing to insert');
+        }
+        finally {
+            \DB::statement("DROP TABLE IF EXISTS `{$table}`");
+        }
     }
 }

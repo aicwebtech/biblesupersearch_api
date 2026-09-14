@@ -134,26 +134,31 @@ class IpAccessTest extends TestCase
     public function testDomainCustomLimit() 
     {
         $ip = $this->_fakeIp();
-        $IP = IpAccess::findOrCreateByIpOrDomain($ip, 'testdomaincustomlimit.com');
+        $IP = IpAccess::findOrCreateByIpOrDomain($ip, $this->fixtureDomain('testdomaincustomlimit'));
         $limit = 25;
         $IP->limit = $limit;
         $IP->save();
-        
-        $this->assertEquals($limit, $IP->getAccessLimit());
-        $this->assertEquals(0, $IP->getDailyHits());
 
-        $IP->incrementDailyHits();
-        $this->assertEquals(1, $IP->getDailyHits());
-        $this->assertFalse($IP->isLimitReached());
+        try {
+            $this->assertEquals($limit, $IP->getAccessLimit());
+            $this->assertEquals(0, $IP->getDailyHits());
 
-        for($hits = 2; $hits < $limit; $hits ++) {
             $IP->incrementDailyHits();
-        }
+            $this->assertEquals(1, $IP->getDailyHits());
+            $this->assertFalse($IP->isLimitReached());
 
-        $this->assertFalse($IP->isLimitReached());
-        $IP->incrementDailyHits();
-        $this->assertTrue($IP->isLimitReached());
-        $IP->delete();
+            for($hits = 2; $hits < $limit; $hits ++) {
+                $IP->incrementDailyHits();
+            }
+
+            $this->assertFalse($IP->isLimitReached());
+            $IP->incrementDailyHits();
+            $this->assertTrue($IP->isLimitReached());
+        }
+        finally {
+            // A bucket left behind by a failed assertion poisons every later run of this test.
+            $IP->delete();
+        }
     }
 
 
@@ -164,17 +169,36 @@ class IpAccessTest extends TestCase
         */
     public function testSameDomain() 
     {
-        $domain = 'http://www.testsamedomain.com';
+        $host   = $this->fixtureDomain('testsamedomain');
+        $domain = 'http://www.' . $host;
+
+        // ApiAccessManager::trustedDomain() reads these, so the host this test fakes would
+        // otherwise become the API's own host for every later test in the same worker process.
+        $server_snapshot = [
+            'HTTP_HOST'   => $_SERVER['HTTP_HOST'] ?? NULL,
+            'SERVER_NAME' => $_SERVER['SERVER_NAME'] ?? NULL,
+        ];
 
         $_SERVER['HTTP_HOST'] = $_SERVER['SERVER_NAME'] = 'www.example.com';
 
         $IP = IpAccess::findOrCreateByIpOrDomain($this->_fakeIp(), $domain);
-        $this->assertEquals($IP->getAccessLimit(false), config('bss.daily_access_limit'));
 
-        $_SERVER['HTTP_HOST'] = $_SERVER['SERVER_NAME'] = 'www.testsamedomain.com';
-        $this->assertEquals($IP->getAccessLimit(false), 0, $IP->domain . ' should = ' . $domain);
+        try {
+            $this->assertEquals($IP->getAccessLimit(false), config('bss.daily_access_limit'));
 
-        $IP->delete();
+            $_SERVER['HTTP_HOST'] = $_SERVER['SERVER_NAME'] = 'www.' . $host;
+            $this->assertEquals($IP->getAccessLimit(false), 0, $IP->domain . ' should = ' . $domain);
+        }
+        finally {
+            $this->restoreRequestHost($server_snapshot);
+            $IP->delete();
+        }
+
+        $this->assertSame(
+            $server_snapshot,
+            ['HTTP_HOST' => $_SERVER['HTTP_HOST'] ?? NULL, 'SERVER_NAME' => $_SERVER['SERVER_NAME'] ?? NULL],
+            'the faked host must not outlive the test'
+        );
     }
 
     protected function _fakeIp() 

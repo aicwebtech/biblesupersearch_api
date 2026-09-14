@@ -33,16 +33,13 @@ class Csv extends ExtrasAbstract
 
     private function _dumpCsvGeneric($db_table, $filepath)
     {
-        $db_table = env('DB_PREFIX') . $db_table;
-        $data = \DB::select("SELECT * FROM {$db_table}");
+        $data = \DB::table($db_table)->get()->all();
+
+        // An empty table still gets its header row, so the columns come from the schema instead.
+        $fields = $data ? array_keys(get_object_vars($data[0])) : \Schema::getColumnListing($db_table);
+        $fields = array_values(array_diff($fields, ['created_at', 'updated_at']));
 
         $handle = fopen($filepath, 'w');
-
-        $fields = get_object_vars($data[0]);
-        unset($fields['created_at']);
-        unset($fields['updated_at']);
-        
-        $fields = array_keys($fields);
 
         fputcsv($handle, $fields, escape: $this->escape);
 

@@ -150,4 +150,43 @@ class JsonExtrasTest extends TestCase
         $this->assertStringEndsWith('books_en.json', $renderer->callBookList('en'));
         $this->assertStringEndsWith('shortcuts_en.json', $renderer->callShortcuts('en'));
     }
+
+    /**
+     * The generic dump takes a bare table name and lets the query builder apply the connection's
+     * table prefix. It used to prepend env('DB_PREFIX') by hand, which silently resolves to null
+     * once php artisan config:cache has run - the prefix has to come from config instead.
+     */
+    public function testGenericDumpResolvesTheTablePrefixFromTheConnection(): void
+    {
+        $path = $this->tempDir . 'languages_generic.json';
+        $dump = new \ReflectionMethod(Json::class, '_dumpJsonGeneric');
+
+        $dump->invoke($this->makeRenderer(), 'languages', $path);
+
+        $this->assertFileExists($path);
+        $this->assertGreaterThan(0, filesize($path), 'the dump should carry the languages table');
+    }
+
+    /**
+     * The table name reaches the dump as an interpolated identifier. Routing it through the query
+     * builder means the grammar wraps the whole string, so an appended clause becomes part of a
+     * table name that does not exist rather than SQL the database runs.
+     *
+     * The payload is chosen to tell the two implementations apart: the raw
+     * SELECT * FROM {$db_table} this replaced executed it happily and dumped a single row.
+     */
+    public function testGenericDumpDoesNotExecuteAnInjectedTableName(): void
+    {
+        $path = $this->tempDir . 'injected.json';
+        $dump = new \ReflectionMethod(Json::class, '_dumpJsonGeneric');
+
+        $this->expectException(\Illuminate\Database\QueryException::class);
+
+        try {
+            $dump->invoke($this->makeRenderer(), 'languages LIMIT 1', $path);
+        }
+        finally {
+            $this->assertFileDoesNotExist($path);
+        }
+    }
 }

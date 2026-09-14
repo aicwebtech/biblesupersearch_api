@@ -6,8 +6,18 @@ use App\Models\Books\BookAbstract AS Book;
 class MySQL extends ExtrasAbstract 
 {
     
-    protected function _renderBibleBookListSingle($lang_code) 
+    /**
+     * Renders one language's book list as a MySQL dump.
+     *
+     * The language code lands inside a backticked table name in three places below, and the
+     * row values land inside quoted SQL literals, so both are escaped here rather than trusted.
+     * Book names legitimately contain apostrophes - see the Turkish, Hebrew and Somali CSVs in
+     * database/dumps/bible_books - which produced malformed dumps before the values were quoted.
+     */
+    protected function _renderBibleBookListSingle($lang_code)
     {
+        $lang_code = $this->_assertSafeTableIdentifier($lang_code);
+
         $header = <<<HEAD
 
 DROP TABLE IF EXISTS `bible_books_{$lang_code}`;
@@ -46,13 +56,16 @@ HEAD;
             unset($arr['created_at']);
             unset($arr['updated_at']);
 
+            if(array_key_exists('id', $arr)) {
+                $arr['id'] = (int) $arr['id'];
+            }
+
             foreach($arr as $key => &$val) {
-                if(is_string($val)) {
-                    $val = '\'' . $val . '\'';
-                }
-                
                 if($val === null) {
                     $val = 'NULL';
+                }
+                elseif(is_string($val)) {
+                    $val = $this->_quoteSqlValue($val);
                 }
             }
             unset($val);
@@ -70,8 +83,18 @@ HEAD;
         return $dst_file;
     }
 
+    /**
+     * Renders one language's shortcuts as a MySQL dump.
+     *
+     * The language code lands inside the backticked table names below and inside both the source
+     * and destination file paths, so it is guarded here the same way the book list guards its
+     * own. The codes come from config('bss_table_languages.shortcuts') rather than from a user,
+     * but a sibling of this method already learned not to rely on that.
+     */
     protected function _renderBibleShortcutsSingle($lang_code) 
     {
+        $lang_code = $this->_assertSafeTableIdentifier($lang_code);
+
         $header = <<<HEAD
 
 DROP TABLE IF EXISTS `bible_shortcuts_{$lang_code}`;
@@ -123,44 +146,103 @@ HEAD;
 
     private function _dumpMysqlGeneric($db_table, $bk_table, $filepath) 
     {
-        $db_table = env('DB_PREFIX') . $db_table;
-        $ignore_fields = ['created_at', 'updated_at'];
+        $db_table = $this->_assertSafeTableIdentifier($db_table);
+        $bk_table = $this->_assertSafeTableIdentifier($bk_table);
 
-        $sql_show = 'SHOW CREATE TABLE ' . $db_table;
+        $prefixed_table = \DB::getTablePrefix() . $db_table;
+        $quoted_table   = $this->_escapeTableIdentifier($prefixed_table);
+        $ignore_fields  = ['created_at', 'updated_at'];
+
+        $sql_show = 'SHOW CREATE TABLE `' . $quoted_table . '`';
         $results  = \DB::select($sql_show);
 
         $create = $results[0]->{'Create Table'};
         $create = preg_replace("/AUTO_INCREMENT=[0-9]+/", '', $create); // Remove auto increment value
-        $create = str_replace($db_table, $bk_table, $create);           // Rename table to backup name
+        $create = str_replace($quoted_table, $bk_table, $create);       // Rename table to backup name
 
         $contents = "DROP TABLE IF EXISTS `{$bk_table}`; \n\n" . $create . "; \n\n";
 
-        $data   = \DB::select("SELECT * FROM {$db_table}");
-        $fields = array_keys(get_object_vars($data[0]));
-        $insert = 'INSERT INTO `' . $bk_table . '` (`' . implode('`, `', $fields) . '`) VALUES (';
+        $data = \DB::table($db_table)->get()->all();
 
-        foreach($data as $key => $row) {
-            foreach($ignore_fields as $f) {
-                if(property_exists($row, $f)) {
-                    $row->$f = NULL;
+        // An empty reference table still dumps its schema; there is simply nothing to insert.
+        if(!empty($data)) {
+            $fields = array_keys(get_object_vars($data[0]));
+            $insert = 'INSERT INTO `' . $bk_table . '` (`' . implode('`, `', $fields) . '`) VALUES (';
+
+            foreach($data as $key => $row) {
+                foreach($ignore_fields as $f) {
+                    if(property_exists($row, $f)) {
+                        $row->$f = NULL;
+                    }
                 }
+
+                $values = [];
+
+                foreach($fields as $f) {
+                    if($row->$f === NULL) {
+                        $values[] = 'NULL';
+                    }
+                    else {
+                        $values[] = $this->_quoteSqlValue($row->$f);
+                    }
+                }
+
+                $contents .= $insert . implode(', ', $values) . "); \n";
             }
-
-            $values = [];
-
-            foreach($fields as $f) {
-                if($row->$f === NULL) {
-                    $values[] = 'NULL';
-                }
-                else {
-                    $values[] = \DB::connection()->getPdo()->quote($row->$f);
-                }
-            }
-
-            $contents .= $insert . implode(', ', $values) . "); \n";
         }
 
         file_put_contents($filepath, $contents);
         return $filepath;
+    }
+
+    /**
+     * Guards a table name that has to be interpolated into raw SQL.
+     *
+     * SHOW CREATE TABLE has no query builder equivalent, so the name cannot be bound or wrapped
+     * by the grammar the way DB::table() does it. Table names here are assembled from language
+     * codes rather than typed by a user, but nothing downstream would notice if that changed.
+     *
+     * @throws \InvalidArgumentException when the name is not a bare SQL identifier
+     */
+    private function _assertSafeTableIdentifier($table): string 
+    {
+        if(!is_string($table) || !preg_match('/^[A-Za-z0-9_]+$/', $table)) {
+            throw new \InvalidArgumentException('Unsafe table name: ' . var_export($table, TRUE));
+        }
+
+        return $table;
+    }
+
+    /**
+     * Quotes a value for interpolation into a MySQL dump, independent of this connection's driver.
+     *
+     * These files are MySQL artifacts imported on somebody else's server, but PDO::quote()
+     * follows whatever driver this installation happens to run on - SQLite leaves a backslash
+     * untouched where MySQL escapes it, so one book list produced two different dumps depending
+     * on where it was rendered.
+     *
+     * Apostrophes are doubled rather than backslash escaped because '' reads the same way whether
+     * or not the importing server sets NO_BACKSLASH_ESCAPES, and book names carry apostrophes -
+     * see the Turkish, Hebrew and Somali lists. A literal backslash cannot be written to satisfy
+     * both sql_modes at once, so it takes the default mode's escaping; no book name contains one.
+     */
+    private function _quoteSqlValue($value): string 
+    {
+        $value = str_replace('\\', '\\\\', (string) $value);
+        $value = str_replace("'", "''", $value);
+
+        return "'" . $value . "'";
+    }
+
+    /**
+     * Escapes a table name for interpolation between backticks.
+     *
+     * Unlike the table names this class assembles, the connection's table prefix is the
+     * deployment's own configuration - MySQL accepts a backticked prefix carrying a hyphen or
+     * other punctuation - so a prefixed name is escaped rather than rejected.
+     */
+    private function _escapeTableIdentifier(string $table): string 
+    {
+        return str_replace('`', '``', $table);
     }
 }
