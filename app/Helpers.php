@@ -26,9 +26,21 @@ class Helpers {
     /**
      * PHP words that cannot be used as a class name.
      *
-     * Keywords are rejected by the parser; the "soft" types (int, string, ...)
-     * are rejected by the engine with "Cannot use X as class name as it is
-     * reserved". Comparison is case-insensitive because PHP keywords are.
+     * Keywords and magic constants are rejected by the parser; the "soft" types
+     * (int, string, ...) are rejected by the engine with "Cannot use X as class
+     * name as it is reserved". Comparison is case-insensitive because PHP
+     * keywords are.
+     *
+     * Verified empirically against PHP 8.2, 8.3, 8.4 and 8.5 (the supported
+     * range) by attempting `class <word> {}` in a subprocess -- see
+     * Tests\Unit\Helpers\ReservedPhpWordTest::testEveryListedWordIsRejectedByPhp.
+     * This is the union across those versions, so a word reserved only in a
+     * newer release is still listed.
+     *
+     * Deliberately excluded: names that merely collide with a built-in class
+     * (Attribute, Closure, Generator, ...). Those are legal inside a namespace,
+     * which is where every generated class lives, so rejecting them would turn
+     * working module names away for no reason.
      *
      * @var array<int, string>
      */
@@ -45,6 +57,11 @@ class Helpers {
         // Soft-reserved type names, also illegal as class names.
         'bool', 'false', 'float', 'int', 'iterable', 'mixed', 'never', 'null', 'object',
         'parent', 'self', 'string', 'true', 'void',
+        // Magic constants. The parser rejects these as an identifier, so they are
+        // illegal as a class name even inside a namespace. __PROPERTY__ is 8.4+,
+        // listed anyway because 8.4 and 8.5 are supported.
+        '__class__', '__dir__', '__file__', '__function__', '__line__', '__method__',
+        '__namespace__', '__property__', '__trait__',
     ];
 
     /**

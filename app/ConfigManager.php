@@ -140,13 +140,22 @@ class ConfigManager
      * Handles both the dotted key style (`mail.sendmail`) and the form field
      * style (`mail__sendmail`), since setConfigs() accepts either.
      *
-     * @param  array  $config_values
+     * Anything that is not an array yields an empty array rather than being
+     * handed back untouched. setConfigs() iterates its argument with foreach,
+     * which walks an object's public properties as readily as an array's keys,
+     * so returning a non-array unchanged let an object carrying `mail.sendmail`
+     * past this filter entirely. No current caller passes one -- the only HTTP
+     * path is ConfigController::store(), which uses $request->toArray() -- but a
+     * guard against command execution must not depend on the shape a caller
+     * happens to use today.
+     *
+     * @param  mixed  $config_values
      * @return array
      */
     static function rejectHttpImmutableKeys($config_values) 
     {
         if(!is_array($config_values)) {
-            return $config_values;
+            return [];
         }
 
         foreach(static::$http_immutable_keys as $key) {

@@ -80,8 +80,47 @@ class ConfigManagerTest extends TestCase
         ];
     }
 
-    public function testRejectHttpImmutableKeysPassesThroughNonArray(): void
+    /**
+     * The filter guards an RCE key, so an input shape it cannot inspect must yield
+     * nothing rather than be handed back untouched. It previously returned the input
+     * unchanged, which fails open -- see the object case below.
+     *
+     * @param  mixed  $input
+     */
+    #[DataProvider('nonArrayInputProvider')]
+    public function testRejectHttpImmutableKeysReturnsAnEmptyArrayForNonArrays($input): void
     {
-        $this->assertNull(ConfigManager::rejectHttpImmutableKeys(null));
+        $this->assertSame([], ConfigManager::rejectHttpImmutableKeys($input));
+    }
+
+    public static function nonArrayInputProvider(): array
+    {
+        return [
+            'null'   => [null],
+            'string' => ['mail.sendmail'],
+            'int'    => [0],
+            'false'  => [false],
+            'object' => [(object) ['mail__host' => 'smtp.example.com']],
+        ];
+    }
+
+    /**
+     * setConfigs() iterates its argument with foreach, which walks an object's public
+     * properties exactly as it walks an array's keys. An object carrying the immutable
+     * key therefore used to pass straight through the filter and reach setConfigs().
+     */
+    public function testImmutableKeyCannotSurviveInsideAnObject(): void
+    {
+        $payload = (object) ['mail.sendmail' => '/bin/sh -c evil', 'mail__sendmail' => '/bin/sh -c evil'];
+
+        $filtered = ConfigManager::rejectHttpImmutableKeys($payload);
+
+        $this->assertIsArray($filtered, 'A non-array must not be handed back for setConfigs() to iterate');
+
+        foreach($filtered as $key => $value) {
+            $this->assertStringNotContainsString('sendmail', (string) $key, 'Immutable key reached setConfigs()');
+        }
+
+        $this->assertSame([], $filtered);
     }
 }
