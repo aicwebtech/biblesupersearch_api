@@ -852,7 +852,9 @@ class Engine implements ErrorInterface
             // accessor purifies on the way out.
             $bibles[$Bible->module]['copyright_statement'] = $this->_sanitizeHtml($Bible->getCopyrightStatement());
             $bibles[$Bible->module]['book_list'] = $Bible->getBookList();
-            $bibles[$Bible->module]['description'] = $this->_processHtml($Bible->description);
+            // _sanitizeHtml() as above: the accessor purifies against the wider editor
+            // allowlist, so the API narrows it back to SANITIZE_HTML_ALLOWED here.
+            $bibles[$Bible->module]['description'] = $this->_sanitizeHtml($Bible->description);
 
             // Remove attributes that aren't needed in the API response
             unset($bibles[$Bible->module]['id']);

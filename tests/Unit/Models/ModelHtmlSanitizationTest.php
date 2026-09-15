@@ -154,6 +154,104 @@ class ModelHtmlSanitizationTest extends TestCase
     }
 
     // -----------------------------------------------------------------------
+    // The editor columns
+    // -----------------------------------------------------------------------
+
+    /**
+     * The columns an administrator edits in a WYSIWYG field go through
+     * Helpers::sanitizeEditorHtml(), which is wider than what the API emits.
+     *
+     * admin/postconfig.blade.php reads Post::$content back into CKEditor through this very
+     * accessor, so the allowlist decides what the administrator is shown when the page loads
+     * - and therefore what PostConfigController writes back when they press Save without
+     * changing anything. On the API allowlist that round trip destroyed the document's
+     * images, rules and code spans, with nothing left to restore them from.
+     *
+     * @param string $class
+     * @param string $column
+     */
+    #[DataProvider('editorColumnDataProvider')]
+    public function testReadingAnEditorColumnKeepsTheEditorsMarkup(string $class, string $column): void
+    {
+        $Model = $this->withRawAttributes($class, [
+            $column => '<p>Terms</p><img src="/logo.png" alt="Logo"><hr><p>A <code>span</code> and <s>struck</s></p>',
+        ]);
+
+        $value = $Model->{$column};
+
+        $this->assertStringContainsString('<img src="/logo.png"', $value, $column);
+        $this->assertStringContainsString('<hr />', $value, $column);
+        $this->assertStringContainsString('<code>span</code>', $value, $column);
+        $this->assertStringContainsString('<s>struck</s>', $value, $column);
+    }
+
+    /** Wider, not weaker - these columns are echoed unescaped by the documentation views. */
+    #[DataProvider('editorColumnDataProvider')]
+    public function testReadingAnEditorColumnStillStripsTheVectors(string $class, string $column): void
+    {
+        $Model = $this->withRawAttributes($class, [
+            $column => '<p>Ok</p><script>alert(1)</script><img src=x onerror=alert(1)><a href="javascript:alert(1)">x</a>',
+        ]);
+
+        $value = $Model->{$column};
+
+        $this->assertStringContainsString('<p>Ok</p>', $value, $column);
+        $this->assertStringNotContainsString('<script', $value, $column);
+        $this->assertStringNotContainsStringIgnoringCase('onerror', $value, $column);
+        $this->assertStringNotContainsStringIgnoringCase('javascript:', $value, $column);
+    }
+
+    public static function editorColumnDataProvider(): array
+    {
+        return [
+            'Post content'              => [Post::class,  'content'],
+            'Bible description'         => [Bible::class, 'description'],
+            'Bible copyright statement' => [Bible::class, 'copyright_statement'],
+        ];
+    }
+
+    /**
+     * The round trip the admin form performs: read into the editor, save back unchanged,
+     * read again. Unless that is a fixed point the document erodes on every save.
+     */
+    public function testThePostEditorRoundTripIsLossless(): void
+    {
+        $original = '<p>Terms</p><img src="/logo.png" alt="Logo"><hr><p><code>x = 1</code></p>';
+
+        $first = $this->withRawAttributes(Post::class, ['content' => $original])->content;
+
+        $Saved = new Post();
+        $Saved->content = $first;
+
+        $this->assertSame($first, $Saved->getAttributes()['content'], 'Save altered what the editor was given');
+        $this->assertSame($first, $Saved->content, 'Reading it back altered it again');
+    }
+
+    /**
+     * The Strong's columns are imported lexicon HTML, not something anybody edits, so they
+     * stay on the narrower API allowlist - the split only exists for the editor columns.
+     */
+    #[DataProvider('strongsColumnDataProvider')]
+    public function testTheStrongsColumnsStayOnTheApiAllowlist(string $column): void
+    {
+        $Model = $this->withRawAttributes(StrongsDefinition::class, [$column => '<p>Ok</p><img src="/l.png"><hr>']);
+
+        $value = $Model->{$column};
+
+        $this->assertStringContainsString('<p>Ok</p>', $value);
+        $this->assertStringNotContainsString('<img', $value);
+        $this->assertStringNotContainsString('<hr', $value);
+    }
+
+    public static function strongsColumnDataProvider(): array
+    {
+        return [
+            'root word' => ['root_word'],
+            'entry'     => ['entry'],
+        ];
+    }
+
+    // -----------------------------------------------------------------------
     // Writing
     // -----------------------------------------------------------------------
 

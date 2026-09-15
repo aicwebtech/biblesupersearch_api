@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use Tests\TestCase;
+use PHPUnit\Framework\Attributes\DataProvider;
 use App\Engines\EngineV2;
 use App\Engines\EngineV3;
 
@@ -364,6 +365,70 @@ class EngineSanitizationTest extends TestCase
 
         $this->assertStringNotContainsString('my-tag', $text);
         $this->assertStringContainsString('**faith**', $text);
+    }
+
+    /**
+     * A Markdown payload is not a marker. '![x](javascript:alert(1))' carries no character a
+     * tag filter would catch, and emitting it on both sides of a match hands the client an
+     * executable image the moment it renders the v3 response.
+     *
+     * @param string $tag
+     */
+    #[DataProvider('unsafeMarkerDataProvider')]
+    public function testAnUnsafeMarkerIsNotEmittedIntoVerseText(string $tag): void
+    {
+        foreach([new EngineV2(), new EngineV3()] as $Engine) {
+            $results = $Engine->actionQuery([
+                'bible'         => 'kjv',
+                'search'        => 'faith',
+                'highlight'     => 1,
+                'highlight_tag' => $tag,
+                'data_format'   => 'raw',
+            ]);
+
+            $this->assertFalse($Engine->hasErrors(), $tag);
+
+            $text = $results['kjv'][0]->text;
+
+            $this->assertStringNotContainsString($tag, $text, $tag . ' was emitted into verse text');
+            $this->assertStringNotContainsStringIgnoringCase('javascript:', $text, $tag);
+        }
+    }
+
+    public static function unsafeMarkerDataProvider(): array
+    {
+        return [
+            'markdown image' => ['![x](javascript:alert(1))'],
+            'markdown link'  => ['[x](javascript:alert(1))'],
+            'pipes'          => ['||'],
+        ];
+    }
+
+    /**
+     * '%' is the delimiter SqlSearch::highlightResults() marks the end of a match with before
+     * swapping it for the resolved tag, so a caller asking to highlight with it was writing
+     * over the highlighter's own bookkeeping.
+     */
+    public function testTheHighlightersOwnDelimitersAreNotAcceptedAsMarkers(): void
+    {
+        foreach(['%', '&&'] as $tag) {
+            $Engine  = new EngineV2();
+            $results = $Engine->actionQuery([
+                'bible'         => 'kjv',
+                'search'        => 'faith',
+                'highlight'     => 1,
+                'highlight_tag' => $tag,
+                'data_format'   => 'raw',
+            ]);
+
+            $this->assertFalse($Engine->hasErrors(), $tag);
+
+            $text = $results['kjv'][0]->text;
+
+            $this->assertStringContainsString('<b>faith</b>', $text, $tag . ' did not fall back');
+            $this->assertStringNotContainsString('%', $text, $tag);
+            $this->assertStringNotContainsString('&&', $text, $tag);
+        }
     }
 
     /** A Markdown marker other than the default is the caller's choice and is honoured. */

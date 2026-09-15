@@ -322,6 +322,26 @@ class EngineVersionTest extends TestCase
         $this->assertNull($this->call($this->engine(EngineV3::class), '_sanitizeHtml', [NULL]));
     }
 
+    /**
+     * The Bible columns are purified by their accessors against the wider editor allowlist,
+     * so actionBibles() sends them through _sanitizeHtml() rather than _processHtml() to
+     * narrow them back to what the API documents. An image stored in a description must not
+     * reach the response just because an administrator is allowed to put one there.
+     */
+    public function testTheSanitizeHookNarrowsEditorMarkupBackOut(): void
+    {
+        $editor = \App\Helpers::sanitizeEditorHtml('<p>Desc</p><img src="/logo.png"><hr><code>x</code>');
+
+        $this->assertStringContainsString('<img', $editor, 'The editor allowlist should have kept the image');
+
+        $v2 = $this->call($this->engine(EngineV2::class), '_sanitizeHtml', [$editor]);
+
+        $this->assertStringContainsString('Desc', $v2);
+        $this->assertStringNotContainsString('<img', $v2);
+        $this->assertStringNotContainsString('<hr', $v2);
+        $this->assertStringNotContainsString('<code', $v2);
+    }
+
     /** An empty string is a value, not an absent one, and stays an empty string. */
     public function testTheSanitizeHookKeepsTheEmptyStringDistinctFromNull(): void
     {

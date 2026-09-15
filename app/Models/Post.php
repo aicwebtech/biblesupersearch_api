@@ -18,19 +18,21 @@ class Post extends Model
      * admin/postconfig.blade.php and echoed unescaped by resources/views/docs/{tos,privacy}.php,
      * so it is the one Post column that carries HTML.
      *
-     * Read-time only, deliberately. The editor ships the image, horizontal-line, highlight,
-     * strikethrough, code, page-break and font plugins, and none of 'img', 'figure', 'hr',
-     * 'mark', 's' or 'code' survives SANITIZE_HTML_ALLOWED - so a mutator would strip an
-     * admin's image the moment they pressed Save and write the loss back over the column,
-     * with nothing to restore it from. Sanitizing on the way out protects the page just as
-     * well and keeps what was typed.
+     * sanitizeEditorHtml(), not sanitizeHtml(): admin/postconfig.blade.php reads this column
+     * back into CKEditor through this very accessor, so the editor allowlist is what decides
+     * what the administrator sees when the page loads - and therefore what PostConfigController
+     * writes back when they press Save without touching anything. Against the API allowlist
+     * that round trip silently destroyed every image, rule and code span in the document.
+     *
+     * Read-time only, deliberately: with no mutator, whatever is in the column stays there
+     * until an administrator actually saves the form, so the original survives this change.
      *
      * The column is nullable and a NULL stays NULL.
      */
     protected function content(): Attribute
     {
         return Attribute::make(
-            get: fn (?string $value) => ($value === NULL) ? NULL : Helpers::sanitizeHtml($value),
+            get: fn (?string $value) => ($value === NULL) ? NULL : Helpers::sanitizeEditorHtml($value),
         );
     }
 }

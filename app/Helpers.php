@@ -2,7 +2,8 @@
 
 namespace App;
 
-class Helpers {
+class Helpers 
+{
 
     /**
      * Memoized bound-variable ceilings, keyed by connection name ('' for the default).
@@ -427,14 +428,21 @@ class Helpers {
     private const HIGHLIGHT_ELEMENT_PATTERN = '/^[a-zA-Z0-9][a-zA-Z0-9-]*$/';
 
     /**
-     * The characters a plain-text marker may not contain.
+     * The plain-text markers a caller may highlight with.
      *
-     * The marker is emitted after sanitizeHtml() and is never escaped, so anything that could
-     * open a tag or an entity has to be refused here rather than upstream. '&' is also what
-     * SqlSearch::highlightResults() uses for its own internal alias, which a caller-supplied
-     * '&&' would collide with.
+     * An allowlist rather than a character filter. The marker is emitted after sanitizeHtml()
+     * and is never escaped, so excluding the characters that open a tag is not enough on its
+     * own: '![x](javascript:alert(1))' contains none of them and is still an executable image
+     * once a client renders the v3 Markdown. Only a marker on this list is echoed.
+     *
+     * Two delimiters are the highlighter's own and must never appear in one:
+     * SqlSearch::highlightResults() marks matches internally with '&&' and '%' before
+     * str_replace()ing them for the pair this resolves to, so a caller-supplied marker
+     * containing either is indistinguishable from the highlighter's own bookkeeping.
+     *
+     * Symmetrical markers only - the same string opens and closes a match.
      */
-    private const HIGHLIGHT_MARKER_FORBIDDEN = '/[<>&"\']/';
+    public const HIGHLIGHT_PLAIN_TEXT_MARKERS = ['*', '**', '***', '_', '__', '~', '~~', '`', '``', '=='];
 
     /**
      * Whether a highlight tag is a plain-text marker - '**', '__', '`' - rather than an HTML
@@ -448,21 +456,18 @@ class Helpers {
      */
     public static function isPlainTextHighlightMarker($highlight_tag): bool
     {
-        $tag = (string) $highlight_tag;
-
-        return $tag !== ''
-            && !preg_match(self::HIGHLIGHT_ELEMENT_PATTERN, $tag)
-            && !preg_match(self::HIGHLIGHT_MARKER_FORBIDDEN, $tag);
+        return in_array((string) $highlight_tag, self::HIGHLIGHT_PLAIN_TEXT_MARKERS, TRUE);
     }
 
     /**
      * Resolves a highlight tag into the pair of markers that wrap a highlighted match.
      *
      * An element name ('b', 'em', 'span') is wrapped into an opening and a closing tag; a name
-     * outside HIGHLIGHT_TAG_WHITELIST falls back to DEFAULT_HIGHLIGHT_TAG. A Markdown (or
-     * other plain-text) marker such as '**' or '__' is symmetrical and is used verbatim on
-     * both sides. Anything that is neither - an angle-bracketed tag, an entity, a fragment of
-     * markup - falls back to the default element rather than being echoed into the response.
+     * outside HIGHLIGHT_TAG_WHITELIST falls back to DEFAULT_HIGHLIGHT_TAG. A marker on
+     * HIGHLIGHT_PLAIN_TEXT_MARKERS ('**', '__') is symmetrical and is used verbatim on both
+     * sides. Anything that is neither - an angle-bracketed tag, an entity, a fragment of
+     * Markdown, a fragment of markup - falls back to the default element rather than being
+     * echoed into the response.
      *
      * @param string $highlight_tag
      * @return array{0: string, 1: string} The opening and closing markers
@@ -489,8 +494,31 @@ class Helpers {
     public const SANITIZE_HTML_ALLOWED = 'div,p,b,i,u,a[href],ul,ol,li,br,strong,em,sub,sup,small,'
         . 'h1,h2,h3,h4,h5,h6,span[style],table,tr,td,th,tbody,thead,tfoot';
 
-    /** @var \HTMLPurifier|NULL Built once per process - see getHtmlPurifier(). */
-    private static $Purifier = NULL;
+    /**
+     * The elements and attributes sanitizeEditorHtml() lets through.
+     *
+     * Wider than SANITIZE_HTML_ALLOWED because it guards what an administrator typed into a
+     * WYSIWYG editor rather than what the API emits. The CKEditor build in
+     * admin/postconfig.blade.php ships the image, horizontal-line, strikethrough, code,
+     * block-quote and font plugins, and the editor reads the column back through the same
+     * accessor that sanitizes it - so anything missing here is stripped when the page loads
+     * and then saved over the original, with nothing to restore it from.
+     *
+     * 'class' comes with the elements CKEditor styles through it; a class name cannot
+     * execute anything.
+     *
+     * Three of the editor's elements are deliberately absent: HTMLPurifier defines neither
+     * 'figure', 'figcaption' nor 'mark', so naming them raises "Element 'x' is not supported"
+     * on every definition build and strips them regardless. Dropping <figure> is not the same
+     * as dropping the picture - the <img> inside it survives on its own, and the caption
+     * survives as text.
+     */
+    public const SANITIZE_EDITOR_HTML_ALLOWED = 'div[class],p[class],b,i,u,a[href],ul,ol,li,br,strong,em,sub,sup,small,'
+        . 'h1,h2,h3,h4,h5,h6,span[style|class],table[class],tr,td,th,tbody,thead,tfoot,'
+        . 'img[src|alt|title|width|height|class],hr,s,strike,del,ins,code,pre,blockquote';
+
+    /** @var \HTMLPurifier[] One per allowlist - see getHtmlPurifier(). */
+    private static $Purifiers = [];
 
     /** @var \League\HTMLToMarkdown\HtmlConverter|NULL Built once per process - see getHtmlConverter(). */
     private static $Converter = NULL;
@@ -511,11 +539,39 @@ class Helpers {
      */
     public static function sanitizeHtml(?string $html): string
     {
+        return static::_purify($html, self::SANITIZE_HTML_ALLOWED);
+    }
+
+    /**
+     * Sanitizes HTML that an administrator wrote in a WYSIWYG editor.
+     *
+     * Same guarantee as sanitizeHtml() - the purifier still refuses scripts, event handlers
+     * and 'javascript:' - against the wider SANITIZE_EDITOR_HTML_ALLOWED, so an image or a
+     * horizontal rule the editor inserted survives being read back into the editor. Use this
+     * for a column an administrator edits; use sanitizeHtml() for what the API emits.
+     *
+     * @param string|null $html The HTML content to sanitize
+     * @return string The sanitized HTML content
+     */
+    public static function sanitizeEditorHtml(?string $html): string
+    {
+        return static::_purify($html, self::SANITIZE_EDITOR_HTML_ALLOWED);
+    }
+
+    /**
+     * Runs one allowlist over one value.
+     *
+     * @param string|null $html
+     * @param string $allowed An HTML.Allowed specification
+     * @return string
+     */
+    private static function _purify(?string $html, string $allowed): string
+    {
         if($html === NULL || $html === '') {
             return '';
         }
 
-        return trim(static::getHtmlPurifier()->purify(static::flattenHtmlDocument($html)));
+        return trim(static::getHtmlPurifier($allowed)->purify(static::flattenHtmlDocument($html)));
     }
 
     /**
@@ -590,19 +646,24 @@ class Helpers {
      * owns the cache directory and the CLI user does not. With the purifier itself held here
      * it saves nothing measurable.
      *
+     * There is one of these per allowlist, not one per process - the editor allowlist is a
+     * second configuration and needs a purifier of its own - and the pages that use the
+     * editor one never touch the API one, so neither is built for nothing.
+     *
+     * @param string $allowed An HTML.Allowed specification
      * @return \HTMLPurifier
      */
-    private static function getHtmlPurifier(): \HTMLPurifier
+    private static function getHtmlPurifier(string $allowed = self::SANITIZE_HTML_ALLOWED): \HTMLPurifier
     {
-        if(static::$Purifier === NULL) {
+        if(!array_key_exists($allowed, static::$Purifiers)) {
             $config = \HTMLPurifier_Config::createDefault();
-            $config->set('HTML.Allowed', self::SANITIZE_HTML_ALLOWED);
+            $config->set('HTML.Allowed', $allowed);
             $config->set('Cache.DefinitionImpl', NULL);
 
-            static::$Purifier = new \HTMLPurifier($config);
+            static::$Purifiers[$allowed] = new \HTMLPurifier($config);
         }
 
-        return static::$Purifier;
+        return static::$Purifiers[$allowed];
     }
     
     /**

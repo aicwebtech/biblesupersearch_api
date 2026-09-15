@@ -70,13 +70,18 @@ class HighlightTagsTest extends TestCase
     }
 
     /**
-     * The markers reach the response after sanitizeHtml() has run and are never escaped, so
-     * anything able to open a tag or an entity has to be refused here. Nothing upstream is
-     * doing it: Engine::sanitizeString() runs strip_tags(), which leaves '<img src=x ...'
-     * with an attribute and no closing bracket entirely intact.
+     * Only a marker on HIGHLIGHT_PLAIN_TEXT_MARKERS is echoed; everything else falls back to
+     * the default element.
+     *
+     * An allowlist rather than a character filter, because the marker reaches the response
+     * after sanitizeHtml() has run and is never escaped. Excluding the characters that open a
+     * tag is not sufficient on its own - a Markdown image payload contains none of them and
+     * is executable all the same once a client renders the v3 response - and nothing upstream
+     * is filtering either: Engine::sanitizeString() runs strip_tags(), which leaves
+     * '<img src=x onerror=...' with an attribute and no closing bracket entirely intact.
      */
     #[DataProvider('rejectedMarkerDataProvider')]
-    public function testAMarkerCarryingMarkupFallsBackToTheDefault(string $tag): void
+    public function testAMarkerOffTheAllowlistFallsBackToTheDefault(string $tag): void
     {
         $this->assertSame(['<b>', '</b>'], Helpers::buildHighlightTags($tag));
     }
@@ -84,16 +89,61 @@ class HighlightTagsTest extends TestCase
     public static function rejectedMarkerDataProvider(): array
     {
         return [
-            'open tag'        => ['<script>'],
-            'unclosed tag'    => ['<img src=x onerror=alert(1)'],
-            'closing bracket' => ['>'],
-            'entity'          => ['&amp;'],
-            // SqlSearch::highlightResults() uses '&&' as its own internal alias.
-            'search alias'    => ['&&'],
-            'double quote'    => ['"'],
-            'single quote'    => ["'"],
-            'empty'           => [''],
+            'open tag'          => ['<script>'],
+            'unclosed tag'      => ['<img src=x onerror=alert(1)'],
+            'closing bracket'   => ['>'],
+            'entity'            => ['&amp;'],
+            'double quote'      => ['"'],
+            'single quote'      => ["'"],
+            'empty'             => [''],
+            // Markdown that renders to something executable. None of these carries a
+            // character a tag filter would catch.
+            'markdown image'    => ['![x](javascript:alert(1))'],
+            'markdown link'     => ['[x](javascript:alert(1))'],
+            'markdown autolink' => ['<javascript:alert(1)>'],
+            'html entity ref'   => ['&#106;'],
+            // The two delimiters SqlSearch::highlightResults() marks matches with internally,
+            // before swapping them for whatever pair this resolves to.
+            'search alias'      => ['&&'],
+            'search wildcard'   => ['%'],
+            'wildcard pair'     => ['%%'],
+            'alias fragment'    => ['&'],
+            // Punctuation that is not a Markdown marker at all.
+            'pipes'             => ['||'],
+            'colons'            => ['::'],
+            'braces'            => ['{{'],
+            'dollar'            => ['$1'],
+            'backslash'         => ['\\'],
         ];
+    }
+
+    /** The allowlist itself: every entry is a marker, and every marker round-trips. */
+    public function testEveryAllowedMarkerIsEmittedVerbatim(): void
+    {
+        foreach(Helpers::HIGHLIGHT_PLAIN_TEXT_MARKERS as $marker) {
+            $this->assertTrue(Helpers::isPlainTextHighlightMarker($marker), $marker);
+            $this->assertSame([$marker, $marker], Helpers::buildHighlightTags($marker), $marker);
+        }
+    }
+
+    /**
+     * The highlighter's own delimiters cannot appear in an allowed marker, or a caller could
+     * forge the bookkeeping SqlSearch::highlightResults() does before substituting the pair.
+     */
+    public function testNoAllowedMarkerCarriesTheHighlightersOwnDelimiters(): void
+    {
+        foreach(Helpers::HIGHLIGHT_PLAIN_TEXT_MARKERS as $marker) {
+            $this->assertStringNotContainsString('&', $marker, $marker);
+            $this->assertStringNotContainsString('%', $marker, $marker);
+        }
+    }
+
+    /** Nor anything that could open an element or an entity. */
+    public function testNoAllowedMarkerCarriesMarkup(): void
+    {
+        foreach(Helpers::HIGHLIGHT_PLAIN_TEXT_MARKERS as $marker) {
+            $this->assertDoesNotMatchRegularExpression('/[<>&"\'\\\\\\[\\]()]/', $marker, $marker);
+        }
     }
 
     /**
@@ -119,6 +169,8 @@ class HighlightTagsTest extends TestCase
             'leading digit'   => ['1b',       FALSE],
             'angle bracketed' => ['<b>',      FALSE],
             'ampersand'       => ['&&',       FALSE],
+            'wildcard'        => ['%',        FALSE],
+            'markdown image'  => ['![x](javascript:alert(1))', FALSE],
             'empty'           => ['',         FALSE],
         ];
     }

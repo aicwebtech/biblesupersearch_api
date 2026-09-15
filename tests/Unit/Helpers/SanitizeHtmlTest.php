@@ -185,6 +185,145 @@ class SanitizeHtmlTest extends TestCase
     }
 
     // -----------------------------------------------------------------------
+    // sanitizeEditorHtml - what an administrator typed
+    // -----------------------------------------------------------------------
+
+    /**
+     * The CKEditor build in admin/postconfig.blade.php inserts these, and the editor reads
+     * the column back through the accessor that sanitizes it - so anything the allowlist
+     * drops is gone from the editor when the page loads and written over the original on the
+     * next Save. Against SANITIZE_HTML_ALLOWED that lost every one of them.
+     *
+     * @param string $html
+     * @param string $expected_fragment
+     */
+    #[DataProvider('editorMarkupDataProvider')]
+    public function testSanitizeEditorHtmlKeepsWhatTheEditorInserts(string $html, string $expected_fragment): void
+    {
+        $this->assertStringContainsString($expected_fragment, Helpers::sanitizeEditorHtml($html));
+    }
+
+    public static function editorMarkupDataProvider(): array
+    {
+        return [
+            'image'          => ['<img src="/logo.png" alt="Logo">', '<img src="/logo.png"'],
+            'image width'    => ['<img src="/l.png" width="120">',   'width="120"'],
+            'horizontal rule'=> ['<p>a</p><hr><p>b</p>',             '<hr />'],
+            'strikethrough'  => ['<s>struck</s>',                    '<s>struck</s>'],
+            'legacy strike'  => ['<strike>struck</strike>',          '<strike>struck</strike>'],
+            'deletion'       => ['<del>removed</del>',               '<del>removed</del>'],
+            'insertion'      => ['<ins>added</ins>',                 '<ins>added</ins>'],
+            'inline code'    => ['<code>x = 1</code>',               '<code>x = 1</code>'],
+            'code block'     => ['<pre>block</pre>',                 '<pre>block</pre>'],
+            'block quote'    => ['<blockquote><p>q</p></blockquote>','<blockquote>'],
+            'class'          => ['<p class="lead">lead</p>',         'class="lead"'],
+        ];
+    }
+
+    /** None of these reach SANITIZE_HTML_ALLOWED, which is the whole point of the split. */
+    #[DataProvider('editorMarkupDataProvider')]
+    public function testTheApiAllowlistIsStillNarrower(string $html, string $expected_fragment): void
+    {
+        $this->assertStringNotContainsString($expected_fragment, Helpers::sanitizeHtml($html));
+    }
+
+    /**
+     * HTMLPurifier has no definition for 'figure', so the wrapper goes - but the picture
+     * inside it is the thing that must not, and it survives on its own.
+     */
+    public function testSanitizeEditorHtmlKeepsTheImageOutOfACkeditorFigure(): void
+    {
+        $sanitized = Helpers::sanitizeEditorHtml('<figure class="image"><img src="/l.png"><figcaption>Cap</figcaption></figure>');
+
+        $this->assertStringContainsString('<img src="/l.png"', $sanitized);
+        $this->assertStringContainsString('Cap', $sanitized);
+    }
+
+    /** 'mark' is undefined too; the highlighted words stay, the element does not. */
+    public function testSanitizeEditorHtmlKeepsTheTextInsideAnUnsupportedElement(): void
+    {
+        $sanitized = Helpers::sanitizeEditorHtml('<p>a <mark>highlit</mark> word</p>');
+
+        $this->assertStringContainsString('highlit', $sanitized);
+        $this->assertStringNotContainsString('<mark', $sanitized);
+    }
+
+    /**
+     * The editor allowlist is wider, not weaker. Everything sanitizeHtml() refuses it refuses
+     * too - it guards a page that resources/views/docs/{tos,privacy}.php echo unescaped.
+     *
+     * @param string $html
+     */
+    #[DataProvider('editorVectorDataProvider')]
+    public function testSanitizeEditorHtmlStillRefusesTheVectors(string $html): void
+    {
+        $sanitized = Helpers::sanitizeEditorHtml($html);
+
+        $this->assertStringNotContainsString('<script', $sanitized);
+        $this->assertStringNotContainsStringIgnoringCase('onerror', $sanitized);
+        $this->assertStringNotContainsStringIgnoringCase('onclick', $sanitized);
+        $this->assertStringNotContainsStringIgnoringCase('javascript:', $sanitized);
+        $this->assertStringNotContainsString('<iframe', $sanitized);
+    }
+
+    public static function editorVectorDataProvider(): array
+    {
+        return [
+            'script'        => ['<script>alert(1)</script>'],
+            'image handler' => ['<img src=x onerror=alert(1)>'],
+            'click handler' => ['<p onclick="steal()">x</p>'],
+            'js href'       => ['<a href="javascript:alert(1)">x</a>'],
+            'iframe'        => ['<iframe src="//evil.test"></iframe>'],
+            'js image src'  => ['<img src="javascript:alert(1)">'],
+        ];
+    }
+
+    /**
+     * The round trip the editor performs: the accessor sanitizes, the administrator saves it
+     * back unchanged, the accessor sanitizes again. Unless that is a fixed point the document
+     * erodes a little on every save.
+     *
+     * @param string $html
+     */
+    #[DataProvider('editorMarkupDataProvider')]
+    public function testSanitizeEditorHtmlIsIdempotent(string $html): void
+    {
+        $once = Helpers::sanitizeEditorHtml($html);
+
+        $this->assertSame($once, Helpers::sanitizeEditorHtml($once));
+    }
+
+    /**
+     * Same guard as testEveryWhitelistedElementIsSupportedByThePurifier(), for the editor
+     * allowlist - naming 'figure', 'figcaption' or 'mark' there raises "Element 'x' is not
+     * supported" on every definition build and strips them anyway.
+     */
+    public function testEveryEditorAllowlistElementIsSupportedByThePurifier(): void
+    {
+        $raised = [];
+
+        set_error_handler(function ($errno, $message) use (&$raised) {
+            $raised[] = $message;
+
+            return TRUE;
+        });
+
+        try {
+            Helpers::sanitizeEditorHtml('<p>trigger the definition build</p>');
+        }
+        finally {
+            restore_error_handler();
+        }
+
+        $this->assertSame([], $raised, 'HTMLPurifier rejected an element in SANITIZE_EDITOR_HTML_ALLOWED');
+    }
+
+    public function testSanitizeEditorHtmlAcceptsNull(): void
+    {
+        $this->assertSame('', Helpers::sanitizeEditorHtml(null));
+    }
+
+    // -----------------------------------------------------------------------
     // convertHtmlToMarkdown - the API v3 output format
     // -----------------------------------------------------------------------
 

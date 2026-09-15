@@ -971,19 +971,26 @@ class Bible extends Model
     /**
      * Description accessor / mutator - imported module HTML, sanitized on the way in and out.
      *
+     * sanitizeEditorHtml(), because this column is administrator-editable as well as
+     * imported: narrowing it to what the API emits would strip an image or a rule out of the
+     * stored description on the next save. Engine::actionBibles() purifies again on the way
+     * out, so the API still answers within SANITIZE_HTML_ALLOWED.
+     *
      * A NULL stays NULL: the column is nullable and the API reports an absent description as
      * null, not as an empty string.
      */
     protected function description(): Attribute
     {
         return Attribute::make(
-            get: fn (?string $value) => ($value === NULL) ? NULL : Helpers::sanitizeHtml($value),
-            set: fn (?string $value) => ($value === NULL) ? NULL : Helpers::sanitizeHtml($value),
+            get: fn (?string $value) => ($value === NULL) ? NULL : Helpers::sanitizeEditorHtml($value),
+            set: fn (?string $value) => ($value === NULL) ? NULL : Helpers::sanitizeEditorHtml($value),
         );
     }
 
     /**
      * Copyright statement accessor / mutator.
+     *
+     * On the editor allowlist for the same reason as description().
      *
      * Unlike description(), an absent value is normalised to '' rather than kept as NULL -
      * the column has one representation of "unset", which is what the setCopyrightStatement-
@@ -994,8 +1001,8 @@ class Bible extends Model
     protected function copyrightStatement(): Attribute
     {
         return Attribute::make(
-            get: fn (?string $value) => Helpers::sanitizeHtml($value),
-            set: fn (?string $value) => Helpers::sanitizeHtml($value),
+            get: fn (?string $value) => Helpers::sanitizeEditorHtml($value),
+            set: fn (?string $value) => Helpers::sanitizeEditorHtml($value),
         );
     }
 
