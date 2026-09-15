@@ -153,6 +153,88 @@ class PruneImportFilesTest extends TestCase
     }
 
     /**
+     * Run the command with a stubbed getFileMtime(), which is otherwise only
+     * reachable by racing the filesystem.
+     *
+     * @param  int|false  $mtime
+     * @param  array  $options
+     * @return array{code: int, output: string}
+     */
+    protected function runWithStubbedMtime($mtime, array $options = []): array
+    {
+        $command = new class($mtime) extends \App\Console\Commands\PruneImportFiles {
+            /** @var int|false */
+            private $stub_mtime;
+
+            public function __construct($stub_mtime)
+            {
+                $this->stub_mtime = $stub_mtime;
+
+                parent::__construct();
+            }
+
+            protected function getFileMtime(string $path)
+            {
+                return $this->stub_mtime;
+            }
+        };
+
+        $command->setLaravel(app());
+
+        $output = new \Symfony\Component\Console\Output\BufferedOutput();
+        $code = $command->run(new \Symfony\Component\Console\Input\ArrayInput($options), $output);
+
+        return ['code' => $code, 'output' => $output->fetch()];
+    }
+
+    /**
+     * filemtime() returns FALSE when the file cannot be stat'ed -- it may have been
+     * removed between scandir() and the check. FALSE does not compare as "newer than
+     * the cutoff", so it used to fall through to unlink() and delete a file whose age
+     * was never established. A pruner must leave anything it cannot date.
+     */
+    public function testFileWithAnUnreadableMtimeIsNotDeleted(): void
+    {
+        $dir = $this->importDir('mysword');
+        $file = $dir . 'prune_nomtime_' . bin2hex(random_bytes(4)) . '.mybible';
+
+        file_put_contents($file, 'keep me');
+        touch($file, time() - (30 * 86400)); // old enough that it would otherwise be pruned
+
+        try {
+            $result = $this->runWithStubbedMtime(FALSE, ['--days' => 1]);
+
+            $this->assertFileExists($file, 'A file of unknown age must not be deleted');
+            $this->assertStringContainsString('Could not read the modification time', $result['output']);
+            $this->assertStringContainsString('Removed 0 abandoned import file(s)', $result['output']);
+        }
+        finally {
+            $this->removeIfPresent($file);
+        }
+    }
+
+    /**
+     * The guard must not swallow the ordinary case: a readable, old mtime still prunes.
+     */
+    public function testFileWithAReadableMtimeIsStillDeleted(): void
+    {
+        $dir = $this->importDir('mysword');
+        $file = $dir . 'prune_mtime_ok_' . bin2hex(random_bytes(4)) . '.mybible';
+
+        file_put_contents($file, 'delete me');
+
+        try {
+            $result = $this->runWithStubbedMtime(time() - (30 * 86400), ['--days' => 1]);
+
+            $this->assertFileDoesNotExist($file, 'An old file must still be pruned');
+            $this->assertStringNotContainsString('Could not read the modification time', $result['output']);
+        }
+        finally {
+            $this->removeIfPresent($file);
+        }
+    }
+
+    /**
      * Registering the command was not enough: without a schedule entry an
      * untouched install still grows unbounded, because nobody runs it by hand.
      */

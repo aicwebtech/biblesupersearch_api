@@ -84,11 +84,26 @@ class PruneImportFiles extends Command
                     continue;
                 }
 
-                if(filemtime($path) > $cutoff) {
+                $mtime = $this->getFileMtime($path);
+
+                // An unreadable timestamp says nothing about the file's age, and FALSE
+                // does not compare as "newer than the cutoff" -- it would fall straight
+                // through to the unlink() below and delete a file of unknown age. Skip
+                // it instead: leaving one stale upload behind is always cheaper than
+                // deleting something that should have been kept.
+                if($mtime === FALSE) {
+                    $this->error('Could not read the modification time of ' . $path . '; skipping');
                     continue;
                 }
 
-                $size = filesize($path);
+                if($mtime > $cutoff) {
+                    continue;
+                }
+
+                // Only feeds the summary total, so a failure here is cosmetic.
+                $size = @filesize($path);
+                $size = ($size === FALSE) ? 0 : $size;
+
                 $this->line(($dry_run ? '[dry run] ' : '') . 'Removing ' . $short . '/' . $entry);
 
                 if(!$dry_run && !unlink($path)) {
@@ -109,6 +124,22 @@ class PruneImportFiles extends Command
         ));
 
         return 0;
+    }
+
+    /**
+     * Modification time of $path, or FALSE if it cannot be read.
+     *
+     * Wrapped rather than called inline so the failure path -- a race against the
+     * file being removed between scandir() and here -- can be exercised by a test.
+     * Suppressed because the FALSE return is handled by the caller; compare
+     * InstallManager::installLockIsStale().
+     *
+     * @param  string  $path
+     * @return int|false
+     */
+    protected function getFileMtime(string $path)
+    {
+        return @filemtime($path);
     }
 
     /**
