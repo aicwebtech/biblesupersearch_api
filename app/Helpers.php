@@ -2,7 +2,8 @@
 
 namespace App;
 
-class Helpers {
+class Helpers 
+{
 
     /**
      * Memoized bound-variable ceilings, keyed by connection name ('' for the default).
@@ -400,6 +401,322 @@ class Helpers {
     public static function clearMaxBoundVariablesCache(): void
     {
         static::$max_bound_variables = [];
+    }
+
+    /**
+     * The element names accepted as a highlight tag.
+     *
+     * Highlighting runs after sanitizeHtml(), so whatever this returns is emitted into the
+     * response untouched - an unrestricted tag name would let a caller inject '<script>' or
+     * '<iframe>' through the highlight_tag parameter. Inline formatting elements only.
+     */
+    public const HIGHLIGHT_TAG_WHITELIST = ['b', 'i', 'em', 'strong', 'u', 'span', 'small', 'sub', 'sup'];
+
+    /** The element a rejected tag name falls back to; mirrors config('bss.defaults.highlight_tag'). */
+    public const DEFAULT_HIGHLIGHT_TAG = 'b';
+
+    /**
+     * Matches anything the caller could have meant as an element name - 'b', 'em', 'my-tag'.
+     *
+     * Deliberately wider than the HTML spec: a name is checked against the whitelist and, off
+     * it, answered with DEFAULT_HIGHLIGHT_TAG, so a spelling that is not quite legal ('1b')
+     * still ends up highlighted rather than treated as a marker. The hyphen is what matters
+     * most - 'my-tag' is a legal custom element, and taking it for a plain-text marker
+     * emitted it on both sides of the match and ran it into the surrounding words
+     * ('my-tagshepherdmy-tag').
+     */
+    private const HIGHLIGHT_ELEMENT_PATTERN = '/^[a-zA-Z0-9][a-zA-Z0-9-]*$/';
+
+    /**
+     * The plain-text markers a caller may highlight with.
+     *
+     * An allowlist rather than a character filter. The marker is emitted after sanitizeHtml()
+     * and is never escaped, so excluding the characters that open a tag is not enough on its
+     * own: '![x](javascript:alert(1))' contains none of them and is still an executable image
+     * once a client renders the v3 Markdown. Only a marker on this list is echoed.
+     *
+     * Two delimiters are the highlighter's own and must never appear in one:
+     * SqlSearch::highlightResults() marks matches internally with '&&' and '%' before
+     * str_replace()ing them for the pair this resolves to, so a caller-supplied marker
+     * containing either is indistinguishable from the highlighter's own bookkeeping.
+     *
+     * Symmetrical markers only - the same string opens and closes a match.
+     */
+    public const HIGHLIGHT_PLAIN_TEXT_MARKERS = ['*', '**', '***', '_', '__', '~', '~~', '`', '``', '=='];
+
+    /**
+     * Whether a highlight tag is a plain-text marker - '**', '__', '`' - rather than an HTML
+     * element name, and is safe to emit verbatim on both sides of a match.
+     *
+     * EngineV3 asks this to decide whether the caller gave it something usable in a Markdown
+     * response, so the two stay on the same definition of what a marker is.
+     *
+     * @param string|null $highlight_tag
+     * @return bool
+     */
+    public static function isPlainTextHighlightMarker($highlight_tag): bool
+    {
+        return in_array((string) $highlight_tag, self::HIGHLIGHT_PLAIN_TEXT_MARKERS, TRUE);
+    }
+
+    /**
+     * Resolves a highlight tag into the pair of markers that wrap a highlighted match.
+     *
+     * An element name ('b', 'em', 'span') is wrapped into an opening and a closing tag; a name
+     * outside HIGHLIGHT_TAG_WHITELIST falls back to DEFAULT_HIGHLIGHT_TAG. A marker on
+     * HIGHLIGHT_PLAIN_TEXT_MARKERS ('**', '__') is symmetrical and is used verbatim on both
+     * sides. Anything that is neither - an angle-bracketed tag, an entity, a fragment of
+     * Markdown, a fragment of markup - falls back to the default element rather than being
+     * echoed into the response.
+     *
+     * @param string $highlight_tag
+     * @return array{0: string, 1: string} The opening and closing markers
+     */
+    public static function buildHighlightTags($highlight_tag): array
+    {
+        $tag = (string) $highlight_tag;
+
+        if(self::isPlainTextHighlightMarker($tag)) {
+            return [$tag, $tag];
+        }
+
+        if(!preg_match(self::HIGHLIGHT_ELEMENT_PATTERN, $tag) || !in_array(strtolower($tag), self::HIGHLIGHT_TAG_WHITELIST, TRUE)) {
+            $tag = self::DEFAULT_HIGHLIGHT_TAG;
+        }
+
+        return ['<' . $tag . '>', '</' . $tag . '>'];
+    }
+
+    /**
+     * The elements and attributes sanitizeHtml() lets through.
+     *
+     */
+    public const SANITIZE_HTML_ALLOWED = 'div,p,b,i,u,a[href],ul,ol,li,br,strong,em,sub,sup,small,'
+        . 'h1,h2,h3,h4,h5,h6,span[style],table,tr,td,th,tbody,thead,tfoot';
+
+    /**
+     * The elements and attributes sanitizeEditorHtml() lets through.
+     *
+     * Wider than SANITIZE_HTML_ALLOWED because it guards what an administrator typed into a
+     * WYSIWYG editor rather than what the API emits. The CKEditor build in
+     * admin/postconfig.blade.php ships the image, horizontal-line, strikethrough, code,
+     * block-quote and font plugins, and the editor reads the column back through the same
+     * accessor that sanitizes it - so anything missing here is stripped when the page loads
+     * and then saved over the original, with nothing to restore it from.
+     *
+     * 'class' comes with the elements CKEditor styles through it; a class name cannot
+     * execute anything.
+     *
+     * Three of the editor's elements are deliberately absent: HTMLPurifier defines neither
+     * 'figure', 'figcaption' nor 'mark', so naming them raises "Element 'x' is not supported"
+     * on every definition build and strips them regardless. Dropping <figure> is not the same
+     * as dropping the picture - the <img> inside it survives on its own, and the caption
+     * survives as text.
+     */
+    public const SANITIZE_EDITOR_HTML_ALLOWED = 'div[class],p[class],b,i,u,a[href],ul,ol,li,br,strong,em,sub,sup,small,'
+        . 'h1,h2,h3,h4,h5,h6,span[style|class],table[class],tr,td,th,tbody,thead,tfoot,'
+        . 'img[src|alt|title|width|height|class],hr,s,strike,del,ins,code,pre,blockquote';
+
+    /** @var \HTMLPurifier[] One per allowlist - see getHtmlPurifier(). */
+    private static $Purifiers = [];
+
+    /** @var \League\HTMLToMarkdown\HtmlConverter|NULL Built once per process - see getHtmlConverter(). */
+    private static $Converter = NULL;
+
+    /** Stands in for a bare '&' across sanitization - a private-use codepoint, absent from Bible text. */
+    private const BARE_AMPERSAND = "\u{E000}";
+
+    /**
+     * Sanitizes HTML content to allow only a safe subset of tags.
+     *
+     * NULL is accepted because most of the columns this guards are nullable - a Bible with no
+     * description, a Strong's definition with no 'tvm' - and an absent field must not fatal
+     * the request. An absent value answers NULL, so a column that held nothing is still
+     * reported as nothing rather than as an empty string.
+     *
+     * @param string|null $html The HTML content to sanitize
+     * @return string|null The sanitized HTML content, NULL if there was none
+     */
+    public static function sanitizeHtml(?string $html): ?string
+    {
+        return static::_purify($html, self::SANITIZE_HTML_ALLOWED);
+    }
+
+    /**
+     * Sanitizes HTML that an administrator wrote in a WYSIWYG editor.
+     *
+     * Same guarantee as sanitizeHtml() - the purifier still refuses scripts, event handlers
+     * and 'javascript:' - against the wider SANITIZE_EDITOR_HTML_ALLOWED, so an image or a
+     * horizontal rule the editor inserted survives being read back into the editor. Use this
+     * for a column an administrator edits; use sanitizeHtml() for what the API emits.
+     *
+     * @param string|null $html The HTML content to sanitize
+     * @return string|null The sanitized HTML content, NULL if there was none
+     */
+    public static function sanitizeEditorHtml(?string $html): ?string
+    {
+        return static::_purify($html, self::SANITIZE_EDITOR_HTML_ALLOWED);
+    }
+
+    /**
+     * Runs one allowlist over one value.
+     *
+     * An absent value answers NULL rather than '', so the columns this guards have one shape
+     * for "nothing" instead of two - a cleared description used to persist as '' and be
+     * reported as "" while an untouched one was reported as null.
+     *
+     * Absent means NULL or the empty string. '0' is content, and a value that survives to the
+     * purifier and is emptied by it answers '' - it held something, all of which was refused.
+     *
+     * @param string|null $html
+     * @param string $allowed An HTML.Allowed specification
+     * @return string|null
+     */
+    private static function _purify(?string $html, string $allowed): ?string
+    {
+        if($html === NULL || $html === '') {
+            return NULL;
+        }
+
+        return trim(static::getHtmlPurifier($allowed)->purify(static::flattenHtmlDocument($html)));
+    }
+
+    /**
+     * Reduces an HTML document to a fragment.
+     *
+     * HTMLPurifier discards anything that follows </html>, and several imported modules store
+     * a whole document with the import credit appended after it - see Importers\MyBible, which
+     * builds $description . '<br /><br />' . $source. Stripping the scaffolding first leaves
+     * one flat fragment, so the credit survives the purifier instead of being deleted. 16 of
+     * the Bibles installed here were losing text this way, and because sanitizeHtml() is the
+     * mutator as well as the accessor, a re-import was writing the truncation to the database.
+     *
+     * A no-op for the ordinary case: a description that is already a fragment is unchanged.
+     *
+     * @param string $html
+     * @return string
+     */
+    private static function flattenHtmlDocument(string $html): string
+    {
+        $html = preg_replace('/<!DOCTYPE[^>]*>/i', '', $html);
+        $html = preg_replace('#<head\b[^>]*>.*?</head>#is', '', $html);
+        $html = preg_replace('#</?(?:html|body)\b[^>]*>#i', '', $html);
+
+        return $html;
+    }
+
+    /**
+     * Replaces bare ampersands with a sentinel, leaving existing entities alone.
+     *
+     * HTMLPurifier normalizes a bare '&' to '&amp;'. That is right for an HTML document and
+     * wrong for Bible verse text, which the API emits as text and which the 'italics' field
+     * indexes by character offset - the four-character expansion moves every offset past the
+     * ampersand, so a client italicizes the wrong span. 4,480 Bishops and 3,535 Geneva verses
+     * carry a bare '&'.
+     *
+     * A bare '&' cannot open a tag, so holding it out of the sanitizer costs nothing in
+     * safety. Any sentinel already in the input is dropped first, so none can be smuggled in.
+     *
+     * @param string|null $text
+     * @return string
+     */
+    public static function protectBareAmpersands(?string $text): string
+    {
+        $text = str_replace(self::BARE_AMPERSAND, '', (string) $text);
+
+        return preg_replace('/&(?![A-Za-z#][A-Za-z0-9]*;)/', self::BARE_AMPERSAND, $text);
+    }
+
+    /**
+     * Puts back what protectBareAmpersands() held out. Call it after the whole sanitize and
+     * convert chain has run, not between its steps - the v3 engine converts to Markdown after
+     * sanitizing, and the sentinel has to survive that too.
+     *
+     * @param string $text
+     * @return string
+     */
+    public static function restoreBareAmpersands(string $text): string
+    {
+        return str_replace(self::BARE_AMPERSAND, '&', $text);
+    }
+
+    /**
+     * The shared HTMLPurifier.
+     *
+     * The configuration is identical on every call and building it is the expensive part -
+     * roughly 4ms against this whitelist, and Engine::_processMarkup() sanitizes once per
+     * verse, so a 500-verse page_all request spent over two seconds rebuilding it. Held here
+     * instead, that becomes one build per process.
+     *
+     * The serializer cache is off deliberately. It writes into vendor/, which fails outright
+     * on a deployment where vendor/ is read-only and warns on every call when the web user
+     * owns the cache directory and the CLI user does not. With the purifier itself held here
+     * it saves nothing measurable.
+     *
+     * There is one of these per allowlist, not one per process - the editor allowlist is a
+     * second configuration and needs a purifier of its own - and the pages that use the
+     * editor one never touch the API one, so neither is built for nothing.
+     *
+     * @param string $allowed An HTML.Allowed specification
+     * @return \HTMLPurifier
+     */
+    private static function getHtmlPurifier(string $allowed = self::SANITIZE_HTML_ALLOWED): \HTMLPurifier
+    {
+        if(!array_key_exists($allowed, static::$Purifiers)) {
+            $config = \HTMLPurifier_Config::createDefault();
+            $config->set('HTML.Allowed', $allowed);
+            $config->set('Cache.DefinitionImpl', NULL);
+
+            static::$Purifiers[$allowed] = new \HTMLPurifier($config);
+        }
+
+        return static::$Purifiers[$allowed];
+    }
+    
+    /**
+     * convertHtmlToMarkdown() - Converts HTML to Markdown using the league/html-to-markdown library
+     *
+     * $sanitize is turned off by callers that have already sanitized. Engine::_processHtml()
+     * and its subclass hooks are documented as receiving values the purifier has already been
+     * over - either through Engine::_sanitizeHtml() or from a model accessor - and purifying a
+     * second time costs about 0.4ms per call for nothing. It stays on by default so any other
+     * caller is still safe.
+     *
+     * @param string|null $html The HTML content to convert
+     * @param bool $sanitize Whether to sanitize $html before converting it
+     * @return string The converted Markdown content
+     */
+    public static function convertHtmlToMarkdown(?string $html, bool $sanitize = TRUE): string
+    {
+        if($sanitize) {
+            $html = self::sanitizeHtml($html);
+        }
+
+        if($html === NULL || $html === '') {
+            return '';
+        }
+
+        return static::getHtmlConverter()->convert($html);
+    }
+
+    /**
+     * The shared HTML to Markdown converter.
+     *
+     * Held for the same reason as the purifier: Engine::_processMarkup() converts once per
+     * verse, so a 500-verse page_all request was building 500 of these.
+     *
+     * @return \League\HTMLToMarkdown\HtmlConverter
+     */
+    private static function getHtmlConverter(): \League\HTMLToMarkdown\HtmlConverter
+    {
+        if(static::$Converter === NULL) {
+            static::$Converter = new \League\HTMLToMarkdown\HtmlConverter([
+                'strip_tags' => TRUE,
+                'hard_break' => TRUE,
+            ]);
+        }
+
+        return static::$Converter;
     }
 
     /**

@@ -24,6 +24,8 @@ class Engine implements ErrorInterface
     use Traits\Input;
     use Traits\Singleton;
 
+    protected static $api_version = 2;
+
     protected $Bibles = array(); // Array of Bible objects
     protected $Bible_Primary = NULL; // Primary Bible version
     protected $languages = array();
@@ -790,7 +792,6 @@ class Engine implements ErrorInterface
     {
         $language_float = isset($input['language_float']) ? $input['language_float'] : null;
 
-        $include_desc = FALSE;
         $Bibles = Bible::select('bibles.name','shortname','module','year','owner', 'description',
             'languages.name AS lang','lang_short','copyright','italics','strongs','red_letter',
             'paragraph','rank','research','bibles.restrict','copyright_id','copyright_statement',
@@ -803,10 +804,6 @@ class Engine implements ErrorInterface
 
         $order_by_default = 'lang_native_name|rank';
         $order_by = array_key_exists('bible_order_by', $input) ? $input['bible_order_by'] : $order_by_default;
-
-        if($include_desc) {
-            $Bibles -> addSelect('description');
-        }
 
         // Legacy order by flag - still supported for now
         if(array_key_exists('order_by_lang_name', $input) && !empty($input['order_by_lang_name'])) {
@@ -850,8 +847,10 @@ class Engine implements ErrorInterface
             $bibles[$Bible->module]['tts_ai'] = \App\AudioManager::isTtsAI($Bible);
             $bibles[$Bible->module]['audio_structure'] = $Bible->audio_structure ?: 'chapter';
             $bibles[$Bible->module]['downloadable'] = $Bible->isDownloadable();
-            $bibles[$Bible->module]['copyright_statement'] = $Bible->getCopyrightStatement();
+            $bibles[$Bible->module]['copyright_statement'] = $this->_processHtml($Bible->getCopyrightStatement());
             $bibles[$Bible->module]['book_list'] = $Bible->getBookList();
+            $bibles[$Bible->module]['description'] = $this->_processHtml($Bible->description);
+
             // Remove attributes that aren't needed in the API response
             unset($bibles[$Bible->module]['id']);
             unset($bibles[$Bible->module]['installed']);
@@ -1211,8 +1210,9 @@ class Engine implements ErrorInterface
         $response->name                     = config('app.name');
         $response->hash                     = $this->_getNameHash();
         $response->version                  = config('app.version');
-        $response->api_version              = config('app.api_version');
+        $response->api_version              = 'v' . static::$api_version;
         $response->api_version_list         = config('app.api_version_list');
+        $response->api_version_current      = config('app.api_version');
         $response->environment              = config('app.env');
         $response->research_desc            = config('bss.research_description');
         $response->parallel_lang_search     = config('bss.parallel_search_different_languages');
@@ -1363,12 +1363,13 @@ class Engine implements ErrorInterface
     public function actionVersion($input) 
     {
         $response = new \stdClass;
-        $response->name             = config('app.name');
-        $response->hash             = $this->_getNameHash();
-        $response->version          = config('app.version');
-        $response->api_version      = config('app.api_version');
-        $response->api_version_list = config('app.api_version_list');
-        $response->environment      = config('app.env');
+        $response->name                 = config('app.name');
+        $response->hash                 = $this->_getNameHash();
+        $response->version              = config('app.version');
+        $response->api_version          = 'v' . static::$api_version;
+        $response->api_version_list     = config('app.api_version_list');
+        $response->api_version_current  = config('app.api_version');
+        $response->environment          = config('app.env');
 
         // pher - unpublished property 'php version' checks against current required PHP version
         if(array_key_exists('pher', $input) && $input['pher']) {
@@ -1416,9 +1417,30 @@ class Engine implements ErrorInterface
         return $response;
     }
 
+    /**
+     * Shapes one Strong's definition for the response.
+     *
+     * $attr must come from StrongsDefinition::toArray(), which is what both call sites pass.
+     * That is not a detail: toArray() runs the model's Attribute accessors, so 'entry' and
+     * 'root_word' have already been through Helpers::sanitizeHtml() by the time they arrive
+     * and only the version's own _processHtml() is left to apply. Hand this a raw array -
+     * a hand-built row, a query that bypasses the model - and those two fields reach the
+     * response unpurified, because nothing here purifies them a second time.
+     *
+     * 'tvm' is the exception and is sanitized here. It has no accessor: the
+     * '<b>Count:</b> n ...<br>' prefix has to come off the raw column first, which is the
+     * line above.
+     *
+     * @param array $attr One definition, as StrongsDefinition::toArray() returns it
+     * @return array
+     */
     protected function _formatStrongs($attr) 
     {
         $attr['tvm'] = $attr['tvm'] ? preg_replace('/<b>Count:<\/b> [0-9]+.*?<br>/', '', $attr['tvm']) : null; // Remove 'count' from TVM
+        $attr['tvm'] = $this->_sanitizeHtml($attr['tvm']);
+        $attr['entry'] = $this->_processHtml($attr['entry']);
+        $attr['root_word'] = $this->_processHtml($attr['root_word']);
+        
         unset($attr['created_at']);
         unset($attr['updated_at']);
         return $attr;
@@ -1555,24 +1577,81 @@ class Engine implements ErrorInterface
         return $results;
     }
 
-    protected function _processMarkup($results, $mode) {
-        if($mode == 'raw') {
-            return $results;
-        }
-
+    protected function _processMarkup($results, $mode) 
+    {
         $find = ['‹','›', '[', ']', '} {'];
         $pattern = '/\{[^\}]+}/';
 
         foreach($results as $bible => &$bible_results) {
             foreach($bible_results as &$verse) {
-                $verse->text = str_replace($find, '', $verse->text);
-                $verse->text = preg_replace($pattern, '', $verse->text);
+                if($mode != 'raw') {
+                    $verse->text = str_replace($find, '', $verse->text);
+                    $verse->text = preg_replace($pattern, '', $verse->text);
+                }
+
+                // The ampersands are held out across the whole chain, not just the purify
+                // step - see Helpers::protectBareAmpersands() for why verse text cannot be
+                // treated as an HTML document.
+                $text = $this->_sanitizeHtml(Helpers::protectBareAmpersands($verse->text));
+                $text = Helpers::restoreBareAmpersands($text ?? '');
+
+                $verse->text = ($mode == 'raw') ? $this->_unescapeBibleMarkup($text) : $text;
             }
             unset($verse);
         }
         unset($bible_results);
 
         return $results;
+    }
+
+    /**
+     * Undoes any escaping a version's _processHtml() applied to the Bible's own markup.
+     *
+     * 'raw' exists to hand back the module's markers - the quotation carets, the square
+     * brackets around added words, the Strong's braces - so a version that escapes them has
+     * taken away the only thing the mode is for. Nothing to undo on v2; see EngineV3.
+     *
+     * @param string $text
+     * @return string
+     */
+    protected function _unescapeBibleMarkup(string $text): string
+    {
+        return $text;
+    }
+                
+    /**
+     * Sanitizes HTML for safe output in the API. This is a hook for subclasses to override.
+     *
+     * An absent column stays absent: 14,248 of the Strong's definitions have no 'tvm' and six
+     * of the installed Bibles have no description, and the legacy '/api/{action}' route is
+     * kept for backward compatibility, so a client testing '=== null' must keep working.
+     *
+     * @param string|null $html
+     * @return string|null
+     */
+    protected function _sanitizeHtml(?string $html): ?string
+    {
+        if($html === NULL) {
+            return NULL;
+        }
+
+        return $this->_processHtml(Helpers::sanitizeHtml($html));
+    }
+    
+    /** 
+     * Assumes the HTML has already been sanitized (iE by accessor on model) and 
+     * performs any additional processing needed for the API output. This is a hook for subclasses to override.
+     *
+     * NULL is accepted and answered with NULL - see _sanitizeHtml(). It reaches here from the
+     * nullable columns and from Bible::getCopyrightStatement(), which has no return type of
+     * its own.
+     *
+     * @param string|null $html
+     * @return string|null
+    */
+    protected function _processHtml(?string $html): ?string
+    {
+        return $html;
     }
 
     protected function _parallelUnmatchedVerses($results, $Search) 

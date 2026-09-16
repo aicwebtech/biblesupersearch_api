@@ -392,6 +392,19 @@ abstract class RenderAbstract
         return $meta_string;
     }
 
+    /**
+     * The Bible's copyright statement, with the configured derivative and link notices.
+     *
+     * Bible::getCopyrightStatement() purifies against the editor allowlist, so what arrives
+     * here is already safe HTML - and HTML is what this needs: PdfAbstract passes the result
+     * to TCPDF->writeHTMLCell() with $plain_text FALSE, so it must never be the Markdown the
+     * v3 engine produces. A rendered file is built straight from the model and never goes
+     * through an engine, so no engine hook applies here.
+     *
+     * @param bool $plain_text
+     * @param string|null $line_break_replacement
+     * @return string
+     */
     protected function _getCopyrightStatement($plain_text = FALSE, $line_break_replacement = NULL) 
     {
         $cr_statement = $this->Bible->getCopyrightStatement();
