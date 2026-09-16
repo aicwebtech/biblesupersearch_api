@@ -41,7 +41,6 @@ class SanitizeHtmlTest extends TestCase
             'anchor href'   => ['<a href="https://example.com">link</a>', '<a href="https://example.com">link</a>'],
             'plain text'    => ['plain text',                    'plain text'],
             'entities kept' => ['Alpha &amp; Omega',             'Alpha &amp; Omega'],
-            'empty string'  => ['',                              ''],
             // Widened whitelist: imported descriptions and the Terms of Service use these.
             'strong'        => ['<strong>s</strong>',            '<strong>s</strong>'],
             'em'            => ['<em>e</em>',                    '<em>e</em>'],
@@ -147,13 +146,41 @@ class SanitizeHtmlTest extends TestCase
     }
 
     /**
-     * Strong's 'tvm' is NULL for most definitions, and _formatStrongs() feeds it straight in.
-     * The declared return type is string, so the NULL short-circuit has to answer '' - handing
-     * the argument straight back raises "Return value must be of type string, null returned".
+     * Strong's 'tvm' is NULL for most definitions, and _formatStrongs() feeds it straight in,
+     * so NULL has to be accepted rather than fatal.
+     *
+     * It answers NULL rather than '': the columns this guards are nullable and the API has
+     * always reported an absent one as null, so inventing an empty string here would change
+     * the shape a client sees.
      */
-    public function testSanitizeHtmlAcceptsNull(): void
+    public function testSanitizeHtmlAnswersNullWithNull(): void
     {
-        $this->assertSame('', Helpers::sanitizeHtml(null));
+        $this->assertNull(Helpers::sanitizeHtml(null));
+    }
+
+    /** The empty string is absent too - one shape for "nothing", not two. */
+    public function testSanitizeHtmlAnswersTheEmptyStringWithNull(): void
+    {
+        $this->assertNull(Helpers::sanitizeHtml(''));
+    }
+
+    /**
+     * '0' is content, not absence. A falsey test rather than an explicit empty-string one
+     * would drop a field whose entire value is a zero.
+     */
+    public function testSanitizeHtmlKeepsAZeroString(): void
+    {
+        $this->assertSame('0', Helpers::sanitizeHtml('0'));
+    }
+
+    /**
+     * A value that reached the purifier and was emptied by it is not absent - it held
+     * something, all of which was refused - so it stays the empty string.
+     */
+    public function testAValueEmptiedByThePurifierIsNotNull(): void
+    {
+        $this->assertSame('', Helpers::sanitizeHtml('<script>alert(1)</script>'));
+        $this->assertSame('', Helpers::sanitizeHtml('    '));
     }
 
     // -----------------------------------------------------------------------
@@ -318,9 +345,17 @@ class SanitizeHtmlTest extends TestCase
         $this->assertSame([], $raised, 'HTMLPurifier rejected an element in SANITIZE_EDITOR_HTML_ALLOWED');
     }
 
-    public function testSanitizeEditorHtmlAcceptsNull(): void
+    public function testSanitizeEditorHtmlAnswersNullWithNull(): void
     {
-        $this->assertSame('', Helpers::sanitizeEditorHtml(null));
+        $this->assertNull(Helpers::sanitizeEditorHtml(null));
+        $this->assertNull(Helpers::sanitizeEditorHtml(''));
+    }
+
+    /** The same two edges as the API sanitizer - see testSanitizeHtmlKeepsAZeroString(). */
+    public function testSanitizeEditorHtmlKeepsAZeroStringAndAnEmptiedValue(): void
+    {
+        $this->assertSame('0', Helpers::sanitizeEditorHtml('0'));
+        $this->assertSame('', Helpers::sanitizeEditorHtml('<script>alert(1)</script>'));
     }
 
     // -----------------------------------------------------------------------

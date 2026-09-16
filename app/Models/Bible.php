@@ -410,17 +410,42 @@ class Bible extends Model
         return TRUE;
     }
 
+    /**
+     * The copyright statement for this Bible, unpurified.
+     *
+     * The three branches used to have different amounts of sanitizing in front of them - the
+     * column was purified by its accessor, the statement generated from the copyright record
+     * by nothing at all - so whether a caller got a safe value depended on which Bible it
+     * asked about. Purifying here covers all three, and every caller inherits it: the API
+     * through Engine::_processHtml(), a rendered file through RenderAbstract.
+     *
+     * sanitizeEditorHtml(), because a copyright statement is written in the admin editor and
+     * the wider allowlist is what keeps it intact. HTML, never Markdown - RenderAbstract hands
+     * this to TCPDF->writeHTMLCell(), which reads it as HTML.
+     *
+     * A string always, never NULL: RenderAbstract concatenates onto this and hands it to
+     * _htmlToPlainText(), whose str_replace() would raise a deprecation on a NULL subject.
+     *
+     * Read from the attribute array, not $this->copyright_statement: the accessor would
+     * purify the column a second time. The array rather than getRawOriginal(), which answers
+     * only what was loaded from the database - a Bible built in memory and never saved, as an
+     * importer or an admin create does, has no original and would report no statement at all.
+     *
+     * @return string
+     */
     public function getCopyrightStatement() 
     {
-        if($this->copyright_statement) {
-            return $this->copyright_statement;
+        $attributes = $this->getAttributes();
+
+        if(!empty($attributes['copyright_statement'])) {
+            return Helpers::sanitizeEditorHtml($attributes['copyright_statement']) ?? '';
         }
 
         if($this->copyright_id && $this->copyrightInfo) {
-            return $this->copyrightInfo->getProcessedCopyrightStatement($this);
+            return Helpers::sanitizeEditorHtml($this->copyrightInfo->getProcessedCopyrightStatement($this)) ?? '';
         }
 
-        return $this->description;
+        return Helpers::sanitizeEditorHtml($attributes['description'] ?? NULL) ?? '';
     }
 
     public function copyrightInfo() 
@@ -982,8 +1007,8 @@ class Bible extends Model
     protected function description(): Attribute
     {
         return Attribute::make(
-            get: fn (?string $value) => ($value === NULL) ? NULL : Helpers::sanitizeEditorHtml($value),
-            set: fn (?string $value) => ($value === NULL) ? NULL : Helpers::sanitizeEditorHtml($value),
+            get: fn (?string $value) => Helpers::sanitizeEditorHtml($value),
+            set: fn (?string $value) => Helpers::sanitizeEditorHtml($value),
         );
     }
 
@@ -991,6 +1016,8 @@ class Bible extends Model
      * Copyright statement accessor / mutator.
      *
      * On the editor allowlist for the same reason as description().
+     *
+     * The '?? ' is what keeps that so now that Helpers::sanitizeEditorHtml() answers NULL.
      *
      * Unlike description(), an absent value is normalised to '' rather than kept as NULL -
      * the column has one representation of "unset", which is what the setCopyrightStatement-
@@ -1001,8 +1028,8 @@ class Bible extends Model
     protected function copyrightStatement(): Attribute
     {
         return Attribute::make(
-            get: fn (?string $value) => Helpers::sanitizeEditorHtml($value),
-            set: fn (?string $value) => Helpers::sanitizeEditorHtml($value),
+            get: fn (?string $value) => Helpers::sanitizeEditorHtml($value) ?? '',
+            set: fn (?string $value) => Helpers::sanitizeEditorHtml($value) ?? '',
         );
     }
 

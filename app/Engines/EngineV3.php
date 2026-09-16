@@ -2,7 +2,8 @@
 
 namespace App\Engines;
 
-use App\Engine as BaseEngine;
+// We extend the previous engine version. 
+use App\Engines\EngineV2 as BaseEngine;
 use App\Helpers;
 
 // V3 and newer API engines do NOT return HTML in API responses, instead they return Markdown 

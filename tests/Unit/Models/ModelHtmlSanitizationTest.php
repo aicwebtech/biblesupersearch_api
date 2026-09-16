@@ -252,6 +252,79 @@ class ModelHtmlSanitizationTest extends TestCase
     }
 
     // -----------------------------------------------------------------------
+    // Absence has one shape
+    // -----------------------------------------------------------------------
+
+    /**
+     * An empty column reads back as NULL, not ''. The accessors preserved a NULL but let an
+     * empty string through as '', so a column could report absence two different ways
+     * depending on whether anything had ever written to it - and a client branching on
+     * '=== null' saw one of them and not the other.
+     *
+     * @param string $class
+     * @param string $column
+     */
+    #[DataProvider('nullPreservingColumnDataProvider')]
+    public function testReadingAnEmptyColumnReturnsNull(string $class, string $column): void
+    {
+        $Model = $this->withRawAttributes($class, [$column => '']);
+
+        $this->assertNull($Model->{$column});
+    }
+
+    /** And writing an empty value stores NULL, so it cannot be persisted as '' either. */
+    #[DataProvider('nullPreservingMutatedColumnDataProvider')]
+    public function testWritingAnEmptyValueStoresNull(string $class, string $column): void
+    {
+        $Model = new $class();
+        $Model->{$column} = '';
+
+        $this->assertNull($Model->getAttributes()[$column]);
+    }
+
+    /**
+     * The columns with a mutator, less Bible::$copyright_statement, which normalises absence
+     * the other way - see testTheCopyrightStatementStillNormalisesAbsenceToTheEmptyString().
+     */
+    public static function nullPreservingMutatedColumnDataProvider(): array
+    {
+        $columns = self::mutatedColumnDataProvider();
+
+        unset($columns['Bible copyright statement']);
+
+        return $columns;
+    }
+
+    /**
+     * '0' is content. Helpers::sanitizeHtml() tests the empty string rather than falsiness
+     * precisely so a column holding a single zero is not read as absent.
+     *
+     * @param string $class
+     * @param string $column
+     */
+    #[DataProvider('nullPreservingColumnDataProvider')]
+    public function testAZeroIsNotTreatedAsAbsent(string $class, string $column): void
+    {
+        $Model = $this->withRawAttributes($class, [$column => '0']);
+
+        $this->assertSame('0', $Model->{$column});
+    }
+
+    /**
+     * The exception, in both directions: Bible::$copyright_statement keeps its own contract
+     * that absence is '' - see the note on Bible::copyrightStatement().
+     */
+    public function testTheCopyrightStatementStillNormalisesAbsenceToTheEmptyString(): void
+    {
+        $Bible = new Bible();
+        $Bible->copyright_statement = '';
+
+        $this->assertSame('', $Bible->getAttributes()['copyright_statement']);
+        $this->assertSame('', $this->withRawAttributes(Bible::class, ['copyright_statement' => ''])->copyright_statement);
+        $this->assertSame('', $this->withRawAttributes(Bible::class, ['copyright_statement' => NULL])->copyright_statement);
+    }
+
+    // -----------------------------------------------------------------------
     // Writing
     // -----------------------------------------------------------------------
 

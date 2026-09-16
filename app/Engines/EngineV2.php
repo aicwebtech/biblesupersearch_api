@@ -2,7 +2,8 @@
 
 namespace App\Engines;
 
-use App\Engine as BaseEngine;
+// We extend the previous engine version, in this case, the unversioned V2 engine.
+use App\Engine as BaseEngine; 
 
 // This class is just a stub as App\Engine contains all the V2 code.
 

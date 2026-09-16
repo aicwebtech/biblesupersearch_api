@@ -624,54 +624,35 @@ class EngineSanitizationTest extends TestCase
     /**
      * When bibles.copyright_statement is empty the statement is built by
      * Copyright::getProcessedCopyrightStatement() instead, and no accessor purifies that -
-     * Bible::copyrightStatement() only guards the column. The listing has to run the
-     * generated statement through _sanitizeHtml(), not through _processHtml(), which assumes
-     * its input has already been purified.
+     * Bible::copyrightStatement() only guards the column. Bible::getCopyrightStatement()
+     * purifies all three of its branches so every consumer inherits it, the API and a
+     * rendered file alike.
      *
      * The escaping that keeps the copyright row's URL inside its href is pinned in
      * tests/Unit/Models/CopyrightStatementTest.php.
      */
-    public function testTheGeneratedCopyrightStatementGoesThroughTheSanitizer(): void
+    public function testTheGeneratedCopyrightStatementIsPurifiedByTheModel(): void
     {
-        $Engine = new class extends EngineV2 {
-            /** Everything this engine has handed back from the sanitize hook. */
-            public $sanitized = [];
-
-            protected function _sanitizeHtml(?string $html): ?string
-            {
-                return $this->sanitized[] = parent::_sanitizeHtml($html);
-            }
-        };
-
         $generated = \App\Models\Bible::where('enabled', 1)
             ->whereNotNull('copyright_id')
             ->where(function($Query) {
                 $Query->whereNull('copyright_statement')->orWhere('copyright_statement', '');
             })
-            ->pluck('module')
-            ->all();
+            ->get();
 
-        if(empty($generated)) {
+        if($generated->isEmpty()) {
             $this->markTestSkipped('Every enabled Bible carries its own copyright statement');
         }
 
-        $bibles = $Engine->actionBibles([]);
+        foreach($generated as $Bible) {
+            $statement = (string) $Bible->getCopyrightStatement();
 
-        $this->assertFalse($Engine->hasErrors());
-
-        foreach($generated as $module) {
-            $this->assertArrayHasKey($module, $bibles, $module . ' is missing from the listing');
-
-            $statement = $bibles[$module]['copyright_statement'];
-
-            if($statement === NULL || $statement === '') {
-                continue;
-            }
-
-            $this->assertContains(
+            // Purified already, before any engine sees it: running the same allowlist over it
+            // again changes nothing.
+            $this->assertSame(
                 $statement,
-                $Engine->sanitized,
-                $module . ': the copyright statement did not come out of _sanitizeHtml()'
+                \App\Helpers::sanitizeEditorHtml($statement),
+                $Bible->module . ': the generated statement was not purified by the model'
             );
         }
     }

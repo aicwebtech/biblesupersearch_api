@@ -32,7 +32,7 @@ class Post extends Model
     protected function content(): Attribute
     {
         return Attribute::make(
-            get: fn (?string $value) => ($value === NULL) ? NULL : Helpers::sanitizeEditorHtml($value),
+            get: fn (?string $value) => Helpers::sanitizeEditorHtml($value),
         );
     }
 }

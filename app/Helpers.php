@@ -531,13 +531,13 @@ class Helpers
      *
      * NULL is accepted because most of the columns this guards are nullable - a Bible with no
      * description, a Strong's definition with no 'tvm' - and an absent field must not fatal
-     * the request. An absent value answers the empty string, so callers get a string back
-     * whatever the column held.
+     * the request. An absent value answers NULL, so a column that held nothing is still
+     * reported as nothing rather than as an empty string.
      *
      * @param string|null $html The HTML content to sanitize
-     * @return string The sanitized HTML content
+     * @return string|null The sanitized HTML content, NULL if there was none
      */
-    public static function sanitizeHtml(?string $html): string
+    public static function sanitizeHtml(?string $html): ?string
     {
         return static::_purify($html, self::SANITIZE_HTML_ALLOWED);
     }
@@ -551,9 +551,9 @@ class Helpers
      * for a column an administrator edits; use sanitizeHtml() for what the API emits.
      *
      * @param string|null $html The HTML content to sanitize
-     * @return string The sanitized HTML content
+     * @return string|null The sanitized HTML content, NULL if there was none
      */
-    public static function sanitizeEditorHtml(?string $html): string
+    public static function sanitizeEditorHtml(?string $html): ?string
     {
         return static::_purify($html, self::SANITIZE_EDITOR_HTML_ALLOWED);
     }
@@ -561,14 +561,21 @@ class Helpers
     /**
      * Runs one allowlist over one value.
      *
+     * An absent value answers NULL rather than '', so the columns this guards have one shape
+     * for "nothing" instead of two - a cleared description used to persist as '' and be
+     * reported as "" while an untouched one was reported as null.
+     *
+     * Absent means NULL or the empty string. '0' is content, and a value that survives to the
+     * purifier and is emptied by it answers '' - it held something, all of which was refused.
+     *
      * @param string|null $html
      * @param string $allowed An HTML.Allowed specification
-     * @return string
+     * @return string|null
      */
-    private static function _purify(?string $html, string $allowed): string
+    private static function _purify(?string $html, string $allowed): ?string
     {
         if($html === NULL || $html === '') {
-            return '';
+            return NULL;
         }
 
         return trim(static::getHtmlPurifier($allowed)->purify(static::flattenHtmlDocument($html)));

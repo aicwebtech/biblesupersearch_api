@@ -29,8 +29,8 @@ class StrongsDefinition extends Model
     protected function rootWord(): Attribute
     {
         return Attribute::make(
-            get: fn (?string $value) => ($value === NULL) ? NULL : Helpers::sanitizeHtml($value),
-            set: fn (?string $value) => ($value === NULL) ? NULL : Helpers::sanitizeHtml($value),
+            get: fn (?string $value) => Helpers::sanitizeHtml($value),
+            set: fn (?string $value) => Helpers::sanitizeHtml($value),
         );
     }
 
@@ -41,8 +41,8 @@ class StrongsDefinition extends Model
     protected function entry(): Attribute
     {
         return Attribute::make(
-            get: fn (?string $value) => ($value === NULL) ? NULL : Helpers::sanitizeHtml($value),
-            set: fn (?string $value) => ($value === NULL) ? NULL : Helpers::sanitizeHtml($value),
+            get: fn (?string $value) => Helpers::sanitizeHtml($value),
+            set: fn (?string $value) => Helpers::sanitizeHtml($value),
         );
     }
 }

@@ -342,11 +342,14 @@ class EngineVersionTest extends TestCase
         $this->assertStringNotContainsString('<code', $v2);
     }
 
-    /** An empty string is a value, not an absent one, and stays an empty string. */
-    public function testTheSanitizeHookKeepsTheEmptyStringDistinctFromNull(): void
+    /**
+     * An empty column is absent, not present-and-empty: Helpers::sanitizeHtml() answers NULL
+     * for it, so the hook does too and the response reports null either way.
+     */
+    public function testTheSanitizeHookAnswersTheEmptyStringWithNull(): void
     {
-        $this->assertSame('', $this->call($this->engine(EngineV2::class), '_sanitizeHtml', ['']));
-        $this->assertSame('', $this->call($this->engine(EngineV3::class), '_sanitizeHtml', ['']));
+        $this->assertNull($this->call($this->engine(EngineV2::class), '_sanitizeHtml', ['']));
+        $this->assertNull($this->call($this->engine(EngineV3::class), '_sanitizeHtml', ['']));
     }
 
     // -----------------------------------------------------------------------
