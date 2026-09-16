@@ -8,4 +8,5 @@ return [
     'chapter_n'         => 'ምዕራፍ :n', // chapter with number, ie 'Chapter 5'
     'psalm_n'           => 'መዝሙር :n',   // Psalm with number, ie 'Psalm 119'
     'table_of_contents' => 'የትምህርት ይዘት',
+    'copyright'         => 'የቅጅ መብት',
 ];

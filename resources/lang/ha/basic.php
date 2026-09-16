@@ -8,4 +8,5 @@ return [
     'chapter_n'         => 'Babi :n', // chapter with number, ie 'Chapter 5'
     'psalm_n'           => 'Zabura :n',   // Psalm with number, ie 'Psalm 119'
     'table_of_contents' => 'Jerin Abubuwan Ciki',
+    'copyright'         => 'Haƙƙin mallaka',
 ];

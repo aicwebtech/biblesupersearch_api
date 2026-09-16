@@ -5,6 +5,7 @@ namespace App\Http\Middleware;
 use Closure;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
+use App\Helpers;
 
 /*
  * Sends cacheable response headers (Cache-Control + ETag) on the public,
@@ -27,7 +28,7 @@ class SetCacheHeaders
     {
         $response = $next($request);
 
-        $action = $this->resolveAction($request);
+        $action = Helpers::resolveApiAction($request->path());
 
         if($action === null || !$this->shouldCache($request, $response)) {
             return $response;
@@ -85,31 +86,6 @@ class SetCacheHeaders
         }
 
         return true;
-    }
-
-    /**
-     * Resolve the API action for the request, or null when this is not an
-     * /api/ read request. Mirrors the routes: /api/{action?} and
-     * /api/v2/{action?}, both defaulting to 'query'.
-     *
-     * @param  \Illuminate\Http\Request  $request
-     * @return string|null
-     */
-    protected function resolveAction(Request $request): ?string
-    {
-        $segments = explode('/', $request->path());
-
-        if(array_shift($segments) !== 'api') {
-            return null; // not an API request
-        }
-
-        if(($segments[0] ?? null) === 'v2') {
-            array_shift($segments); // remove version segment
-        }
-
-        $action = $segments[0] ?? '';
-
-        return ($action === '') ? 'query' : $action;
     }
 
     /**

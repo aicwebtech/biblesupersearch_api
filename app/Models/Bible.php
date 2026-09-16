@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Validation\Rule;
 use App\Models\Verses\VerseStandard As StandardVerses;
 use App\Models\Language;
@@ -11,6 +12,8 @@ use App\Search;
 use Illuminate\Support\Arr;
 use ZipArchive;
 use App\Traits\Error;
+use App\Helpers;
+
 
 class Bible extends Model 
 {
@@ -407,22 +410,62 @@ class Bible extends Model
         return TRUE;
     }
 
-    public function setCopyrightStatementAttribute($value)
-    {
-        $this->attributes['copyright_statement'] = trim($value ?? '');
-    }
-
+    /**
+     * The copyright statement for this Bible, unpurified.
+     *
+     * The three branches used to have different amounts of sanitizing in front of them - the
+     * column was purified by its accessor, the statement generated from the copyright record
+     * by nothing at all - so whether a caller got a safe value depended on which Bible it
+     * asked about. Purifying here covers all three, and every caller inherits it: the API
+     * through Engine::_processHtml(), a rendered file through RenderAbstract.
+     *
+     * sanitizeEditorHtml(), because a copyright statement is written in the admin editor and
+     * the wider allowlist is what keeps it intact. HTML, never Markdown - RenderAbstract hands
+     * this to TCPDF->writeHTMLCell(), which reads it as HTML.
+     *
+     * A string always, never NULL: RenderAbstract concatenates onto this and hands it to
+     * _htmlToPlainText(), whose str_replace() would raise a deprecation on a NULL subject.
+     *
+     * Read from the attribute array, not $this->copyright_statement: the accessor would
+     * purify the column a second time. The array rather than getRawOriginal(), which answers
+     * only what was loaded from the database - a Bible built in memory and never saved, as an
+     * importer or an admin create does, has no original and would report no statement at all.
+     *
+     * @return string
+     */
     public function getCopyrightStatement() 
     {
-        if($this->copyright_statement) {
-            return $this->copyright_statement;
+        $attributes = $this->getAttributes();
+
+        if(!empty($attributes['copyright_statement'])) {
+            return Helpers::sanitizeEditorHtml($attributes['copyright_statement']) ?? '';
         }
 
         if($this->copyright_id && $this->copyrightInfo) {
-            return $this->copyrightInfo->getProcessedCopyrightStatement($this);
+            $html = $this->copyrightInfo->getProcessedCopyrightStatement(true);
+
+            $yp_text = null;
+
+            $yr = $this->year;
+            $ow = $this->owner;
+
+            if(!$yr && !$ow) {
+                $yp_text = null;
+            } else {
+                $yp_text = __('basic.copyright') . ' &copy;';
+                $yp_text .= ($yr) ? ' ' . $yr : '';
+                $yp_text .= ($ow) ? ' ' . $ow : '';
+            }
+            
+            if($yp_text) {
+                $html .= ' ' . $yp_text;
+            }
+
+            // Default CR statement doesn't need editor sanitization 
+            return Helpers::sanitizeHtml($html) ?? '';
         }
 
-        return $this->description;
+        return Helpers::sanitizeEditorHtml($attributes['description'] ?? NULL) ?? '';
     }
 
     public function copyrightInfo() 
@@ -968,6 +1011,46 @@ class Bible extends Model
     {
         $this->enabled = 0;
         $this->save();
+    }
+
+    /**
+     * Description accessor / mutator - imported module HTML, sanitized on the way in and out.
+     *
+     * sanitizeEditorHtml(), because this column is administrator-editable as well as
+     * imported: narrowing it to what the API emits would strip an image or a rule out of the
+     * stored description on the next save. Engine::actionBibles() purifies again on the way
+     * out, so the API still answers within SANITIZE_HTML_ALLOWED.
+     *
+     * A NULL stays NULL: the column is nullable and the API reports an absent description as
+     * null, not as an empty string.
+     */
+    protected function description(): Attribute
+    {
+        return Attribute::make(
+            get: fn (?string $value) => Helpers::sanitizeEditorHtml($value),
+            set: fn (?string $value) => Helpers::sanitizeEditorHtml($value),
+        );
+    }
+
+    /**
+     * Copyright statement accessor / mutator.
+     *
+     * On the editor allowlist for the same reason as description().
+     *
+     * The '?? ' is what keeps that so now that Helpers::sanitizeEditorHtml() answers NULL.
+     *
+     * Unlike description(), an absent value is normalised to '' rather than kept as NULL -
+     * the column has one representation of "unset", which is what the setCopyrightStatement-
+     * Attribute() mutator this replaced was for. Nothing downstream can tell the two apart
+     * anyway: getCopyrightStatement() treats both as absent and falls through to the
+     * copyright record, so the API never reports this column directly.
+     */
+    protected function copyrightStatement(): Attribute
+    {
+        return Attribute::make(
+            get: fn (?string $value) => Helpers::sanitizeEditorHtml($value) ?? '',
+            set: fn (?string $value) => Helpers::sanitizeEditorHtml($value) ?? '',
+        );
     }
 
     /**

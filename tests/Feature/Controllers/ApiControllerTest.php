@@ -343,6 +343,85 @@ class ApiControllerTest extends TestCase
     }
 
     /**
+     * The versioned routes are cached on the same terms as the unversioned ones.
+     *
+     * SetCacheHeaders parsed the path itself and recognized only the literal 'v2', so a
+     * '/api/v3/bibles' request resolved to the action 'v3', matched nothing in
+     * bss.cache_headers.actions and went out with no Cache-Control at all. Both middlewares
+     * read the action through Helpers::resolveApiAction() now.
+     *
+     * @return void
+     */
+    public function testCacheHeadersOnVersionedReadEndpoints()
+    {
+        $cases = [
+            '/api/v2/books?language=es'   => 86400,
+            '/api/v3/books?language=es'   => 86400,
+            '/api/v2/statics?language=es' => 3600,
+            '/api/v3/statics?language=es' => 3600,
+        ];
+
+        foreach($cases as $uri => $maxAge) {
+            $response = $this->getJson($uri);
+
+            if($response->status() == 429) {
+                $this->markTestSkipped('429 Skipping due to rate limiting');
+            }
+
+            $response->assertStatus(200);
+
+            $cacheControl = (string) $response->headers->get('Cache-Control');
+
+            $this->assertStringContainsString('public', $cacheControl, "Cache-Control public missing for {$uri}");
+            $this->assertStringContainsString('max-age=' . $maxAge, $cacheControl, "max-age missing for {$uri}");
+            $this->assertNotEmpty($response->headers->get('ETag'), "ETag missing for {$uri}");
+            $this->assertEmpty($response->headers->get('Set-Cookie'), "Set-Cookie present for {$uri}");
+        }
+    }
+
+    /**
+     * A versioned request with no action is the 'query' action, and is cached as one - the
+     * route defaults it, and the resolver has to default it the same way.
+     *
+     * @return void
+     */
+    public function testCacheHeadersOnAVersionedRouteWithNoAction()
+    {
+        $response = $this->getJson('/api/v3?request=faith&bible=kjv');
+
+        if($response->status() == 429) {
+            $this->markTestSkipped('429 Skipping due to rate limiting');
+        }
+
+        $response->assertStatus(200);
+
+        $cacheControl = (string) $response->headers->get('Cache-Control');
+
+        $this->assertStringContainsString('public', $cacheControl);
+        $this->assertStringContainsString('max-age=3600', $cacheControl);
+    }
+
+    /**
+     * An action with no configured max-age is not cached, on a versioned route either - the
+     * version segment must not be mistaken for the action and vice versa.
+     *
+     * @return void
+     */
+    public function testAnUncachedActionIsNotCachedOnAVersionedRoute()
+    {
+        foreach(['/api/version', '/api/v2/version', '/api/v3/version'] as $uri) {
+            $response = $this->getJson($uri);
+
+            if($response->status() == 429) {
+                $this->markTestSkipped('429 Skipping due to rate limiting');
+            }
+
+            $response->assertStatus(200);
+            $this->assertStringNotContainsString('public', (string) $response->headers->get('Cache-Control'), $uri);
+        }
+    }
+
+    /**
      * A matching If-None-Match should yield a 304 Not Modified (BSS-272).
      *
      * @return void

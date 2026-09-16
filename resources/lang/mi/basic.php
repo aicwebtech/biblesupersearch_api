@@ -8,4 +8,5 @@ return [
     'chapter_n'         => 'Upoko :n', // chapter with number, ie 'Chapter 5'
     'psalm_n'           => 'Waiata :n',   // Psalm with number, ie 'Psalm 119'
     'table_of_contents' => 'Rārangi Upoko',
+    'copyright'         => 'Manatārua',
 ];

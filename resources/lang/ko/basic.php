@@ -8,4 +8,5 @@ return [
     'chapter_n'         => '제 :n 장', // chapter with number, ie 'Chapter 5'
     'psalm_n'           => '시편 :n',   // Psalm with number, ie 'Psalm 119'
     'table_of_contents' => '목차',
+    'copyright'         => '저작권',
 ];

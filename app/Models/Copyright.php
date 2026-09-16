@@ -17,42 +17,30 @@ class Copyright extends Model
         return $this->belongsTo('App\Models\Bible');
     }
 
-    public function getProcessedCopyrightStatement(?Bible &$Bible = null) 
+    /**
+     * Builds the copyright statement shown for a text that has none of its own.
+     *
+     *
+     * @param bool $raw If true, returns the raw copyright statement without any HTML sanitization, 
+     *             on the assumption that the caller will handle it. If false, returns a sanitized HTML string.
+     * @return string|null
+     */
+    public function getProcessedCopyrightStatement(bool $raw = false) 
     {
         $cr = $this->default_copyright_statement;
-        $include_year_pub = false;
 
         if($this->type == 'creative_commons') {
             $cr = 'This Bible is made available under the terms of the ';
             $cr .= $this->name;
-            $cr .= " <a href='{$this->url}' target='_NEW'>license</a>.";
+            $cr .= " <a href='" . e($this->url) . "' target='_NEW'>license</a>.";
             $cr .= "&nbsp; This work has been reformated to work with Bible SuperSearch";
             $cr .= "&nbsp; However, no changes to the text or punctuation have been made.";
-            $include_year_pub = true;
-        }
-        elseif($this->url) {
-            $cr .= " &nbsp; The terms of this license can be found <a href='{$this->url}' target='_NEW'>here</a>";
+        } elseif($this->url) {
+            $cr .= " &nbsp; The terms of this license can be found <a href='" . e($this->url) . "' target='_NEW'>here</a>";
         }
 
-        if($include_year_pub) {
-            if(!$Bible) {
-                $yp_text = 'Copyright &copy; [year] [owner]';
-            } else {
-                $yr = $Bible->year;
-                $ow = $Bible->owner;
-
-                if(!$yr && !$ow) {
-                    $yp_text = null;
-                } else {
-                    $yp_text = 'Copyright &copy;';
-                    $yp_text .= ($yr) ? ' ' . $yr : '';
-                    $yp_text .= ($ow) ? ' ' . $ow : '';
-                }
-            }
-
-            if($yp_text) {
-                $cr = $yp_text . '<br /><br />' . $cr;
-            }
+        if(!$raw) {
+            $cr = \App\Helpers::sanitizeHtml($cr);
         }
 
         return $cr;

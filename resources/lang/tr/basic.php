@@ -8,4 +8,5 @@ return [
     'chapter_n'         => 'Bölüm :n', // chapter with number, ie 'Chapter 5'
     'psalm_n'           => 'Mezmur :n', // Psalm with number, ie 'Psalm 119'
     'table_of_contents' => 'İçindekiler',
+    'copyright'         => 'Telif hakkı',
 ];

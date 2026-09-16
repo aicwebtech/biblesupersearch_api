@@ -8,4 +8,5 @@ return [
     'chapter_n'         => 'Chapter :n',
     'psalm_n'           => 'Psalm :n',
     'table_of_contents' => 'Table of Contents',
+    'copyright'         => 'Copyright',
 ];

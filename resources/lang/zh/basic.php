@@ -10,4 +10,5 @@ return [
     'chapter_n'         => '章節 :n',
     'psalm_n'           => '詩篇 :n',
     'table_of_contents' => '目錄',
+    'copyright'         => '版權',
 ];
