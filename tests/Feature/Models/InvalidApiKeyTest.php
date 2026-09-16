@@ -99,6 +99,71 @@ class InvalidApiKeyTest extends TestCase
     }
 
     /**
+     * '0' is falsey in PHP but is a perfectly well-formed key parameter. It used to be
+     * collapsed to "no key given" and quietly granted the keyless IP bucket, which
+     * contradicts the documented contract that a supplied-but-unknown key yields NULL.
+     *
+     * @param  mixed  $key
+     */
+    #[\PHPUnit\Framework\Attributes\DataProvider('suppliedButUnknownKeyProvider')]
+    public function testASuppliedButUnknownKeyIsRefused($key): void
+    {
+        config(['app.experimental' => true]);
+
+        $this->assertNull(
+            ApiAccessManager::lookUpByInput(['key' => $key]),
+            'A supplied key that matches nothing must not fall through to keyless access'
+        );
+    }
+
+    public static function suppliedButUnknownKeyProvider(): array
+    {
+        return [
+            'zero string'  => ['0'],
+            'zero int'     => [0],
+            'false'        => [false],
+            'unknown hash' => ['not-a-real-key'],
+            'array'        => [['kjv']],
+        ];
+    }
+
+    /**
+     * The other half: an absent or blank key still reaches keyless IP access, so the
+     * stricter contract has not broken ordinary anonymous requests.
+     *
+     * @param  array  $input
+     */
+    #[\PHPUnit\Framework\Attributes\DataProvider('absentKeyProvider')]
+    public function testAnAbsentOrBlankKeyStillGetsKeylessAccess($input): void
+    {
+        config(['app.experimental' => true]);
+
+        $this->assertNotNull(ApiAccessManager::lookUpByInput($input));
+    }
+
+    public static function absentKeyProvider(): array
+    {
+        return [
+            'omitted'    => [[]],
+            'null'       => [['key' => null]],
+            'empty'      => [['key' => '']],
+            'whitespace' => [['key' => '   ']],
+        ];
+    }
+
+    /**
+     * End to end: key=0 must be a 403, not a served response off the IP bucket.
+     */
+    public function testZeroKeyIsRefusedOverHttp(): void
+    {
+        config(['app.experimental' => true]);
+
+        $response = $this->getJson('/api/v2/query?bible=kjv&reference=John+3:16&key=0');
+
+        $response->assertStatus(403);
+    }
+
+    /**
      * The end-to-end contract: a bogus key is refused with 403, not a 500.
      */
     public function testUnknownKeyIsRefusedWithForbiddenNotServerError(): void

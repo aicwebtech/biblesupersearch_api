@@ -91,10 +91,14 @@ class RendererHygieneTest extends TestCase
         $files = ['ExtrasAbstract.php', 'Csv.php', 'Json.php', 'MySQL.php'];
 
         foreach($files as $file) {
-            $source = file_get_contents(app_path('Renderers/Extras/' . $file));
+            $code = $this->sourceWithoutComments(app_path('Renderers/Extras/' . $file));
 
-            $writes = preg_match_all("/\bfile_put_contents\(|\bfopen\(/", $source);
-            $guards = preg_match_all('/removeStaleFile\(/', $source);
+            // copy() and rename() follow a destination symlink as readily as
+            // file_put_contents() and fopen() do -- copy() silently, returning TRUE while
+            // it overwrites the link target. The first version of this test counted only
+            // file_put_contents/fopen, which is how the copy() writer stayed unguarded.
+            $writes = preg_match_all('/\\b(?:file_put_contents|fopen|copy|rename)\\s*\\(/', $code);
+            $guards = preg_match_all('/removeStaleFile\\s*\\(/', $code);
 
             if($writes === 0) {
                 continue;
@@ -106,6 +110,37 @@ class RendererHygieneTest extends TestCase
                 $file . ' has ' . $writes . ' file write(s) but ' . $guards . ' stale-file guard(s)'
             );
         }
+    }
+
+    /**
+     * Source with comments and docblocks removed.
+     *
+     * The counting above runs over code only: prose naming a function (this very test
+     * describes copy() and rename()) would otherwise be counted as a call site and make
+     * the totals meaningless.
+     *
+     * @param  string  $path
+     * @return string
+     */
+    protected function sourceWithoutComments(string $path): string
+    {
+        $code = '';
+
+        foreach(token_get_all(file_get_contents($path)) as $token) {
+            if(!is_array($token)) {
+                $code .= $token;
+
+                continue;
+            }
+
+            if($token[0] === T_COMMENT || $token[0] === T_DOC_COMMENT) {
+                continue;
+            }
+
+            $code .= $token[1];
+        }
+
+        return $code;
     }
 
     /**

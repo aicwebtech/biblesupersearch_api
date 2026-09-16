@@ -971,6 +971,14 @@ class Bible extends Model
 
     public static function validateModule($module) 
     {
+        // Callers pass request input straight in, and module[]=kjv arrives as an array.
+        // empty() does not reject a non-empty array, so preg_match() below used to raise
+        // a TypeError and surface as a 500 instead of the intended invalid-module answer.
+        if(!is_string($module)) {
+            static::$module_invalid_reason = 'Module name is empty';
+            return FALSE;
+        }
+
         if(empty($module)) {
             static::$module_invalid_reason = 'Module name is empty';
             return FALSE;

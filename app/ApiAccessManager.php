@@ -18,8 +18,10 @@ class ApiAccessManager
      */
     public static function lookUp(Request $request): ?AccessLogInterface
     {
-        $key = $request->input('key') ?: null;
-        return static::lookUpHelper($key, static::trustedDomain());
+        // Deliberately not `?: null`: that collapsed the supplied key '0' to "no key
+        // given", which then fell through to keyless IP access instead of being refused
+        // as unknown. keyWasSupplied() draws the line instead.
+        return static::lookUpHelper($request->input('key'), static::trustedDomain());
     }
 
     /**
@@ -28,7 +30,8 @@ class ApiAccessManager
      */
     public static function lookUpByInput($input): ?AccessLogInterface
     {
-        $key = isset($input['key']) ? $input['key'] : null;
+        $key = is_array($input) && array_key_exists('key', $input) ? $input['key'] : null;
+
         return static::lookUpHelper($key, static::trustedDomain());
     }
 
@@ -98,7 +101,39 @@ class ApiAccessManager
     }
 
     /**
-     * @param  string|null  $key
+     * Was an API key actually supplied with the request?
+     *
+     * Only an *absent* key may fall through to keyless IP access; a supplied one must be
+     * resolved or refused. The distinction cannot be a truthiness test: '0' is a perfectly
+     * well-formed key parameter that PHP considers falsey, and it used to be mistaken for
+     * "no key given" and quietly granted the IP bucket. An empty or whitespace-only value
+     * is treated as absent, since `?key=` is how a client spells "no key". Every other
+     * present value -- int, bool, array, object -- counts as supplied: malformed, but an
+     * attempt to pass one, and refusing is the fail-closed answer.
+     *
+     * @param  mixed  $key
+     * @return bool
+     */
+    protected static function keyWasSupplied($key): bool
+    {
+        if($key === NULL) {
+            return FALSE;
+        }
+
+        if(is_string($key)) {
+            return trim($key) !== '';
+        }
+
+        // Anything else present -- int, bool, array, object -- is a supplied value that
+        // cannot be a valid key, so it is refused rather than waved through. Casting to
+        // string first would be wrong: (string) FALSE is '', which would read as absent.
+        return TRUE;
+    }
+
+    /**
+     * Resolve the access record, or NULL when a supplied key is unknown or revoked.
+     *
+     * @param  mixed  $key  Raw key parameter; NULL or blank means none was supplied
      * @param  string|null  $dom
      * @return \App\Interfaces\AccessLogInterface|null
      */
@@ -108,9 +143,12 @@ class ApiAccessManager
         $code = NULL;
         $Access = null;
 
-        if(config('app.experimental') && !$err && $key) {
-            // keyed access - look up key
-            $Access = ApiKey::findByKey($key);
+        // Gated on app.experimental exactly as before: where keyed access is switched
+        // off, a key parameter is ignored entirely and every request is bucketed by IP.
+        if(config('app.experimental') && static::keyWasSupplied($key)) {
+            // keyed access - look up key. A non-string key (module[]-style input) cannot
+            // match a stored hash, so it is refused rather than handed to the query.
+            $Access = is_string($key) ? ApiKey::findByKey($key) : null;
 
             if(!$Access || $Access->isAccessRevoked()) {
                 // Key not found - no access granted

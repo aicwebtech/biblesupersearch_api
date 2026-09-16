@@ -137,6 +137,10 @@ class ExtrasAbstract
             throw new \Exception('Unable to copy, source file does not exist: ' . $src_filepath);
         }
 
+        // copy() follows a pre-existing destination symlink and writes through to its
+        // target, returning TRUE while doing so.
+        static::removeStaleFile($dest_filepath);
+
         if(!copy($src_filepath, $dest_filepath)) {
             throw new \Exception('Unable to copy ' . $src_filepath . ' to ' . $dest_filepath);
         }
