@@ -372,6 +372,13 @@ class MySword extends ImporterAbstract
      * Build a path for an extracted file and require it to stay inside the
      * importer directory.
      *
+     * Also refuses a destination that already exists as a symlink. Both writers
+     * fed by this path follow one and write through to its target: fopen($path,
+     * 'wb') on the .gz branch, and ZipArchive::extractTo() on the .zip branch --
+     * verified, extractTo() returns TRUE while overwriting the link target. The
+     * importer only ever writes real files here, so a link is never something it
+     * left behind; refuse rather than unlink and write through it.
+     *
      * @param  string  $basename
      * @return string|null
      */
@@ -392,7 +399,15 @@ class MySword extends ImporterAbstract
         $path = $dir . DIRECTORY_SEPARATOR . $basename;
 
         // The file does not exist yet, so canonicalize the parent instead.
-        return (dirname($path) === $dir) ? $path : NULL;
+        if(dirname($path) !== $dir) {
+            return NULL;
+        }
+
+        if(is_link($path)) {
+            return NULL;
+        }
+
+        return $path;
     }
 
     /**

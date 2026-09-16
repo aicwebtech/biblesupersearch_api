@@ -235,6 +235,56 @@ class PruneImportFilesTest extends TestCase
     }
 
     /**
+     * realpath() follows a symlinked prunable directory, and the per-file is_link()
+     * guard cannot help once it has: the files inside the target are ordinary files,
+     * so the command would delete data that has nothing to do with imports.
+     *
+     * bibles/misc is used because it is prunable but not tracked in the repository,
+     * so it can be replaced with a link and put back.
+     */
+    public function testASymlinkedPrunableDirectoryIsNotFollowed(): void
+    {
+        $base = base_path('bibles') . DIRECTORY_SEPARATOR;
+        $target = $base . 'misc';
+        $outside = sys_get_temp_dir() . '/bss_prune_escape_' . bin2hex(random_bytes(4));
+        $victim = $outside . '/important.db';
+        $moved = $target . '_moved_' . bin2hex(random_bytes(3));
+
+        mkdir($outside);
+        file_put_contents($victim, 'keep me');
+        touch($victim, time() - (30 * 86400)); // old enough to be pruned
+
+        $existed = is_dir($target) && !is_link($target);
+
+        try {
+            if($existed) {
+                rename($target, $moved);
+            }
+
+            symlink($outside, $target);
+
+            $this->artisan('bibles:prune-imports', ['--days' => 1])->assertExitCode(0);
+
+            $this->assertFileExists($victim, 'The command escaped the bibles directory via a symlink');
+        }
+        finally {
+            if(is_link($target)) {
+                unlink($target);
+            }
+
+            if($existed && is_dir($moved)) {
+                rename($moved, $target);
+            }
+
+            $this->removeIfPresent($victim);
+
+            if(is_dir($outside)) {
+                rmdir($outside);
+            }
+        }
+    }
+
+    /**
      * Registering the command was not enough: without a schedule entry an
      * untouched install still grows unbounded, because nobody runs it by hand.
      */

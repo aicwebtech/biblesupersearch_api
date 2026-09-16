@@ -57,13 +57,41 @@ class PruneImportFiles extends Command
 
         $dry_run = (bool) $this->option('dry-run');
         $cutoff = time() - ($days * 86400);
-        $base = base_path('bibles') . DIRECTORY_SEPARATOR;
+        $base = realpath(base_path('bibles'));
         $deleted = $bytes = 0;
 
+        if($base === FALSE) {
+            $this->error('Could not resolve the bibles directory');
+
+            return 1;
+        }
+
         foreach($this->prunable_dirs as $short) {
-            $dir = realpath($base . $short);
+            $expected = $base . DIRECTORY_SEPARATOR . $short;
+
+            // A prunable directory that is itself a symlink would have realpath()
+            // resolve to wherever it points, and the per-file is_link() check below
+            // cannot help: the files inside that target are ordinary files, so the
+            // command would happily delete somebody else's data. Refuse to follow it,
+            // and say so rather than skipping silently.
+            if(is_link($expected)) {
+                $this->error('Skipping ' . $short . ': the directory is a symlink');
+
+                continue;
+            }
+
+            $dir = realpath($expected);
 
             if($dir === FALSE || !is_dir($dir)) {
+                continue;
+            }
+
+            // Belt and braces: with no link on the directory itself, realpath() must
+            // return the canonical path unchanged. Anything else means a link higher
+            // up resolved the scan outside the bibles root.
+            if($dir !== $expected) {
+                $this->error('Skipping ' . $short . ': resolves outside the bibles directory');
+
                 continue;
             }
 

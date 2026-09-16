@@ -321,8 +321,20 @@ return [
      * Required when TLS is terminated upstream (load balancer, nginx,
      * Cloudflare), otherwise the forwarded scheme is ignored, Request::secure()
      * is permanently FALSE and REDIRECT_HTTPS produces a redirect loop.
-     * Accepts a comma separated list of IPs/CIDRs, or '*' to trust the
-     * immediate peer. NULL trusts nothing.
+     * Accepts a comma separated list of IPs/CIDRs. NULL trusts nothing, which is
+     * the default.
+     *
+     * '*' is also accepted, but read this first: Laravel resolves it to the IP
+     * that opened the connection -- see setTrustedProxyIpAddressesToTheCallingIp()
+     * in Illuminate\Http\Middleware\TrustProxies -- so whoever is talking to the
+     * application is trusted, not one known proxy. If the origin is reachable
+     * directly, any client can then set
+     * X-Forwarded-For and X-Forwarded-Proto to whatever it likes: IP-based daily
+     * limits are attributed to a forged address, and Request::secure() reports
+     * TRUE over plain http, which silently satisfies REDIRECT_HTTPS above.
+     * Only use it when the origin accepts connections from the proxy alone
+     * (firewall, private network, or a socket the proxy owns). Otherwise name the
+     * proxy's addresses explicitly.
      */
     'trusted_proxies' => env('TRUSTED_PROXIES', NULL),
 
