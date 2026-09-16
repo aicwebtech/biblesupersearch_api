@@ -20,17 +20,35 @@ class Csv extends TextAbstract
     protected function _renderStart() 
     {
         $this->_openFile();
-        fputcsv($this->handle, [$this->Bible->name], escape: $this->escape);
-        fwrite($this->handle, PHP_EOL . PHP_EOL);
-        fwrite($this->handle, '"' . $this->_getCopyrightStatement(TRUE, '  ') . '"');
-        fwrite($this->handle, PHP_EOL . PHP_EOL);
-        fputcsv($this->handle, ['Verse ID','Book Name', 'Book Number', 'Chapter', 'Verse', 'Text'], escape: $this->escape);
+        $this->_writeCsvRow([$this->Bible->name]);
+        $this->_write(PHP_EOL . PHP_EOL);
+        $this->_write('"' . $this->_getCopyrightStatement(TRUE, '  ') . '"');
+        $this->_write(PHP_EOL . PHP_EOL);
+        $this->_writeCsvRow(['Verse ID','Book Name', 'Book Number', 'Chapter', 'Verse', 'Text']);
         return TRUE;
     }
 
     protected function _renderSingleVerse($verse) 
     {
-        fputcsv($this->handle, [$verse->id, $verse->book_name, $verse->book, $verse->chapter, $verse->verse, $verse->text], escape: $this->escape);
+        $this->_writeCsvRow([$verse->id, $verse->book_name, $verse->book, $verse->chapter, $verse->verse, $verse->text]);
     }
 
+    /**
+     * Write one CSV row, failing loudly rather than silently dropping it.
+     *
+     * fputcsv() returns the number of bytes written, or FALSE on failure. It formats the
+     * row itself, so there is no expected length to compare against the way _write() can;
+     * FALSE is the signal available here. A short write that does not report FALSE is
+     * still caught, one row later or by the fclose() check in _closeFile().
+     *
+     * @param  array  $row
+     * @return void
+     * @throws \Exception
+     */
+    protected function _writeCsvRow(array $row) 
+    {
+        if(fputcsv($this->handle, $row, escape: $this->escape) === FALSE) {
+            $this->_throwWriteFailure(FALSE);
+        }
+    }
 }

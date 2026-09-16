@@ -38,7 +38,55 @@ abstract class TextAbstract extends RenderAbstract
      */
     protected function _onVerseRenderError(\Throwable $e) 
     {
-        $this->_closeFile();
+        // Unchecked: the render is being abandoned already, and a close failure raised
+        // here would replace the exception that actually explains the failure.
+        $this->_closeFile(FALSE);
+    }
+
+    /**
+     * Write to the open render file, failing loudly on a short write.
+     *
+     * fwrite() reports the number of bytes it actually wrote, which can be fewer than it
+     * was given without being FALSE -- a full disk is the usual cause. Ignoring the count
+     * produces a silently truncated Bible download that still looks like a clean render,
+     * so the byte count is compared rather than just checked for FALSE.
+     *
+     * @param  string  $text
+     * @return void
+     * @throws \Exception
+     */
+    protected function _write($text) 
+    {
+        $length = strlen($text);
+
+        if($length === 0) {
+            return;
+        }
+
+        $written = fwrite($this->handle, $text);
+
+        if($written !== $length) {
+            $this->_throwWriteFailure($written, $length);
+        }
+    }
+
+    /**
+     * @param  int|false  $written
+     * @param  int|null   $expected
+     * @return void
+     * @throws \Exception
+     */
+    protected function _throwWriteFailure($written, $expected = NULL) 
+    {
+        $detail = 'Please contact the administrator.';
+
+        if(config('app.debug')) {
+            $detail = 'wrote ' . var_export($written, TRUE)
+                . ($expected === NULL ? '' : ' of ' . $expected . ' bytes')
+                . ' to ' . $this->getRenderFilePath();
+        }
+
+        throw new \Exception('Failed to write render file, ' . $detail);
     }
 
     protected function _openFile() 
@@ -55,11 +103,30 @@ abstract class TextAbstract extends RenderAbstract
         }
     }
 
-    protected function _closeFile() 
+    /**
+     * Close the render file.
+     *
+     * fclose() flushes whatever is still buffered, so a disk that filled mid-render can
+     * surface here rather than at any individual write. That makes the close result part
+     * of the "did this render actually succeed" answer, not a formality.
+     *
+     * @param  bool  $check  FALSE on an error path, where throwing would mask the cause
+     * @return void
+     * @throws \Exception
+     */
+    protected function _closeFile($check = TRUE) 
     {
-        if ($this->handle) {
-            fclose($this->handle);
-            $this->handle = null;
+        if (!$this->handle) {
+            return;
+        }
+
+        $handle = $this->handle;
+        $this->handle = null;
+
+        if(!fclose($handle) && $check) {
+            $detail = config('app.debug') ? $this->getRenderFilePath() : 'Please contact the administrator.';
+
+            throw new \Exception('Failed to close render file, ' . $detail);
         }
     }
 }

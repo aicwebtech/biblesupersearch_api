@@ -43,7 +43,11 @@ class Csv extends ExtrasAbstract
 
         $handle = fopen($filepath, 'w');
 
-        fputcsv($handle, $fields, escape: $this->escape);
+        if($handle === FALSE) {
+            throw new \Exception('Unable to open extras file for writing: ' . $filepath);
+        }
+
+        $this->_writeCsvRow($handle, $fields, $filepath);
 
         foreach($data as $key => &$row) {
             $csv_row = [];
@@ -52,13 +56,38 @@ class Csv extends ExtrasAbstract
                 $csv_row[] = $row->$f;
             }
 
-            fputcsv($handle, $csv_row, escape: $this->escape);
+            $this->_writeCsvRow($handle, $csv_row, $filepath);
         }
         unset($row);
-        
-        fclose($handle);
+
+        // fclose() flushes what is still buffered, so a disk that filled mid-dump can
+        // surface here rather than at any individual row.
+        if(!fclose($handle)) {
+            throw new \Exception('Unable to finish writing extras file: ' . $filepath);
+        }
 
         return $filepath;
     }
 
+
+    /**
+     * Write one CSV row, failing loudly rather than silently dropping it.
+     *
+     * fputcsv() returns FALSE on failure; an unchecked call leaves a dump that is short
+     * some rows but otherwise looks complete, which is worse than no dump at all.
+     *
+     * @param  resource  $handle
+     * @param  array     $row
+     * @param  string    $filepath  For the error message only
+     * @return void
+     * @throws \Exception
+     */
+    private function _writeCsvRow($handle, array $row, string $filepath): void
+    {
+        if(fputcsv($handle, $row, escape: $this->escape) === FALSE) {
+            fclose($handle);
+
+            throw new \Exception('Unable to write extras file: ' . $filepath);
+        }
+    }
 }

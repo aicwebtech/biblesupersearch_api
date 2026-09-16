@@ -58,7 +58,7 @@ class Json extends TextAbstract
 
     protected function _renderFinish() 
     {
-        fwrite($this->handle, json_encode($this->data));
+        $this->_write(json_encode($this->data));
         $this->_closeFile();
         return TRUE;
     }
