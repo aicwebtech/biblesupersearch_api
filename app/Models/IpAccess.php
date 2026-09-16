@@ -6,9 +6,11 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use App\Interfaces\AccessLogInterface;
 use App\ApiAccessManager;
+use App\Traits\DailyHitCounter;
 
 class IpAccess extends Model implements AccessLogInterface 
 {
+    use DailyHitCounter;
 
     protected $table = 'ip_access';
     protected $fillable = ['ip_address','domain', 'limit'];
@@ -88,20 +90,11 @@ class IpAccess extends Model implements AccessLogInterface
             return FALSE;
         }
 
-        $Log = IpAccessLog::firstOrNew(['ip_id' => $this->id, 'date' => date('Y-m-d')]);
-
-        if($Log->limit_reached && $limit > 0) {
-            return FALSE;
-        }
-
-        $Log->count ++;
-
-        if($limit > 0 && $Log->count >= $limit) {
-            $Log->limit_reached = 1;
-        }
-
-        $Log->save();
-        return TRUE;
+        return $this->incrementDailyHitsAtomic(
+            IpAccessLog::class,
+            ['ip_id' => $this->id, 'date' => date('Y-m-d')],
+            $limit
+        );
     }
 
     public function getDailyHits($date = null) 

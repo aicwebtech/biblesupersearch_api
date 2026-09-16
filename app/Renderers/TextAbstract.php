@@ -45,9 +45,7 @@ abstract class TextAbstract extends RenderAbstract
     {
         $filepath = $this->getRenderFilePath(TRUE);
 
-        if(is_file($filepath)) {
-            unlink($filepath);
-        }
+        static::removeStaleRenderFile($filepath);
 
         $this->handle = fopen($filepath, 'w');
         

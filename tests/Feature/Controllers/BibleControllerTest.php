@@ -142,6 +142,43 @@ class BibleControllerTest extends TestCase
         return $shared;
     }    
 
+    /**
+     * The test endpoint composes HTML that ActionDialog renders with v-html, so
+     * every interpolated value must be escaped server-side.
+     *
+     * This mutates the Bible imported by testImport -- a fixture this test class
+     * created -- and restores it in a finally, so no installed content is touched.
+     */
+    #[Depends('testTest')]
+    public function testTestOutputEscapesBibleName(array $shared) 
+    {
+        $Bible = Bible::findByModule($shared['module']);
+        $original_name = $Bible->name;
+        $payload = 'Evil <img src=x onerror=alert(1)>';
+
+        try {
+            $Bible->name = $payload;
+            $Bible->save();
+
+            $response = $this->actingAs($shared['User'])
+                        ->withSession(['banned' => FALSE])
+                        ->postJson('/admin/bibles/test/' . $shared['bible_id']);
+
+            $response->assertStatus(200);
+
+            $messages = implode("\n", $response->json('messages'));
+
+            $this->assertStringNotContainsString($payload, $messages);
+            $this->assertStringContainsString(e($payload), $messages);
+        }
+        finally {
+            $Bible->name = $original_name;
+            $Bible->save();
+        }
+
+        return $shared;
+    }
+
     #[Depends('testTest')]
     public function testDisable(array $shared) 
     {

@@ -9,13 +9,24 @@ use App\Interfaces\AccessLogInterface;
 
 class ApiAccessManager
 {
-    public static function lookUp(Request $request): AccessLogInterface
+    /**
+     * Resolve the access record for a request, or NULL when the supplied API key
+     * is unknown or revoked. Callers must treat NULL as "no access granted".
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @return \App\Interfaces\AccessLogInterface|null
+     */
+    public static function lookUp(Request $request): ?AccessLogInterface
     {
         $key = $request->input('key') ?: null;
         return static::lookUpHelper($key, static::trustedDomain());
     }
 
-    public static function lookUpByInput($input): AccessLogInterface
+    /**
+     * @param  array  $input
+     * @return \App\Interfaces\AccessLogInterface|null
+     */
+    public static function lookUpByInput($input): ?AccessLogInterface
     {
         $key = isset($input['key']) ? $input['key'] : null;
         return static::lookUpHelper($key, static::trustedDomain());
@@ -86,7 +97,12 @@ class ApiAccessManager
         return static::isWhitelisted(null, $domain) || $domain === static::currentHost();
     }
 
-    protected static function lookUpHelper($key, $dom): AccessLogInterface
+    /**
+     * @param  string|null  $key
+     * @param  string|null  $dom
+     * @return \App\Interfaces\AccessLogInterface|null
+     */
+    protected static function lookUpHelper($key, $dom): ?AccessLogInterface
     {
         $err  = NULL;
         $code = NULL;
@@ -102,12 +118,19 @@ class ApiAccessManager
             }
         }
         
-        if(!$err) {        
-            // look up IP/domain record for keyless access                       
-            $Access = $Access ?: IpAccess::findOrCreateByIpOrDomain(true, $dom);
+        if($err) {
+            // An unknown *or revoked* key grants no access at all. Returning the
+            // revoked ApiKey here would match neither the documented contract
+            // nor what callers expect: ApiAccess::handle re-checks
+            // isAccessRevoked(), but a caller that trusted the NULL contract and
+            // skipped that check would let a revoked key through.
+            return null;
         }
 
-        return $Access ?: false;
+        // look up IP/domain record for keyless access
+        $Access = $Access ?: IpAccess::findOrCreateByIpOrDomain(true, $dom);
+
+        return $Access ?: null;
     }
 
     public static function isWhitelisted($ip = null, $domain = null)

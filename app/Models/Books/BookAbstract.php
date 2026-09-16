@@ -7,6 +7,7 @@ use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 use Database\Seeders\DatabaseSeeder;
 use App\Models\Language;
+use App\Helpers;
 
 class BookAbstract extends Model
 {
@@ -49,8 +50,24 @@ class BookAbstract extends Model
     {
         $language = $language ?: config('bss.defaults.language_short');
         
-        $class_name = $language ? __NAMESPACE__ . '\\' . studly_case(strtolower($language)) : null;
+        $class_name = $language ? __NAMESPACE__ . '\\' . static::getClassBaseName($language) : null;
         return $class_name;
+    }
+
+    /**
+     * Map a language code to the base name of its generated class.
+     *
+     * Several real ISO 639-1 codes studly-case into PHP reserved words -- 'as'
+     * (Assamese) and 'or' (Odia) become As and Or, both of which are fatal as
+     * class names. Those get a prefix; every other code is returned unchanged so
+     * existing generated classes (En, De, ...) keep their names.
+     *
+     * @param  string  $language
+     * @return string
+     */
+    public static function getClassBaseName($language) 
+    {
+        return Helpers::safeGeneratedClassName(studly_case(strtolower($language)));
     }
 
     public static function getEffectiveClassName($language = null)
@@ -118,7 +135,7 @@ class BookAbstract extends Model
             return;
         }
         
-        $model_class = studly_case(strtolower($language));
+        $model_class = static::getClassBaseName($language);
         $namespace = __NAMESPACE__;
         $class_name = $namespace . '\\' . $model_class;
 

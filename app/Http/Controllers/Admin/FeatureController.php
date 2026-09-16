@@ -28,7 +28,7 @@ class FeatureController extends Controller
         Feature::syncFeatures();
 
         $bootstrap = $this->getAdminBootstrap();
-        $bootstrap = json_encode($bootstrap);
+        $bootstrap = $this->encodeBootstrap($bootstrap);
 
         return view('admin.features', ['bootstrap' => $bootstrap]);
     }

@@ -17,6 +17,7 @@ class Bible extends Model
     use Error;
 
     static $_cache = [];
+    static protected $module_invalid_reason = null;
 
     static public function getUpdateRules($bible_id = NULL) 
     {
@@ -44,7 +45,7 @@ class Bible extends Model
                     $valid = static::validateModule($value);
 
                     if(!$valid) {
-                        $fail('Module can contain only lowercase letters, numbers, and underscores.  The first two characters must be letters');
+                        $fail('Module name is invalid: ' . static::$module_invalid_reason);
                     }
                 },
                 'max:100'
@@ -501,6 +502,13 @@ class Bible extends Model
 
     public function migrateModuleFile($dry_run = FALSE) 
     {
+        // These paths are built from the stored module name and drive unlink()
+        // and rename(). Refuse to act on a record whose module name would not
+        // pass validation rather than trusting whatever is in the column.
+        if(!static::validateModule($this->module)) {
+            return FALSE;
+        }
+
         $path_of = static::getModulePath();
         $path_un = static::getUnofficialModulePath();
 
@@ -540,6 +548,10 @@ class Bible extends Model
 
     public function deleteModuleFile($include_official = FALSE) 
     {
+        if(!static::validateModule($this->module)) {
+            return FALSE;
+        }
+
         $path_of = static::getModulePath();
         $path_un = static::getUnofficialModulePath();
 
@@ -640,7 +652,7 @@ class Bible extends Model
 
     public static function createFromModuleFile($module) 
     {
-        if(!$module) {
+        if(!static::validateModule($module)) {
             return FALSE;
         }
 
@@ -667,6 +679,13 @@ class Bible extends Model
             if (empty($attr['module_version'])) {
                 $attr['module_version'] = config('app.version');
             }
+
+            // `official` is trusted from the filesystem, never from info.json:
+            // only a server-side provisioning step can place a file in the
+            // official module directory, whereas anyone able to upload can put
+            // "official": true in an archive.
+            $attr['module']   = $module;
+            $attr['official'] = static::moduleFileIsOfficial($module) ? 1 : 0;
 
             $Bible = static::create($attr);
             $Zip->close();
@@ -696,6 +715,10 @@ class Bible extends Model
             if(is_array($fields) && !empty($fields)) {
                 $attr = Arr::only($attr, $fields);
             }
+
+            // Same rule as createFromModuleFile(): official status follows the
+            // directory the archive is in, never info.json inside it.
+            unset($attr['official'], $attr['module']);
 
             $Bible->fill($attr);
             $Bible->save();
@@ -777,6 +800,24 @@ class Bible extends Model
             $module = substr($file, 0, strlen($file) - 4);
             $Bible  = static::updateFromModuleFile($module, $fields);
         }
+    }
+
+    /**
+     * Is this module's archive stored in the official module directory?
+     *
+     * The official directory is only writable by server-side provisioning, so
+     * its contents are trusted; the unofficial directory receives HTTP uploads.
+     *
+     * @param  string  $module
+     * @return bool
+     */
+    public static function moduleFileIsOfficial($module) 
+    {
+        if(!static::validateModule($module)) {
+            return FALSE;
+        }
+
+        return is_file(static::getModulePath() . $module . '.zip');
     }
 
     public static function openModuleFileByModule($module) 
@@ -873,6 +914,11 @@ class Bible extends Model
 
         $model_class = studly_case($module);
         $namespace = __NAMESPACE__ . '\Verses';
+
+        if(\App\Helpers::isReservedPhpWord($model_class)) {
+            return FALSE;
+        }
+
         $class_name = $namespace . '\\' . $model_class;
 
         if (!class_exists($class_name)) {
@@ -926,14 +972,25 @@ class Bible extends Model
     public static function validateModule($module) 
     {
         if(empty($module)) {
+            static::$module_invalid_reason = 'Module name is empty';
             return FALSE;
         }
 
         if(preg_match('/[^a-z_0-9]/', $module)) {
+            static::$module_invalid_reason = 'Module name contains invalid characters';
             return FALSE;
         }        
 
         if(!preg_match('/^[a-z]{2}/', $module)) {
+            static::$module_invalid_reason = 'Module name must start with at least two letters';
+            return FALSE;
+        }
+
+        // A module name is used to generate a PHP class, so it must not be a
+        // reserved word: 'class For extends VerseStandard' is a fatal parse
+        // error that would break every request for the affected Bible.
+        if(\App\Helpers::isReservedPhpWord($module)) {
+            static::$module_invalid_reason = 'Module name is a reserved word';
             return FALSE;
         }
 

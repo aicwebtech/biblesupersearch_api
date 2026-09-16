@@ -146,8 +146,48 @@ return [
     | to the server if the browser has a HTTPS connection. This will keep
     | the cookie from being sent to you if it can not be done securely.
     |
+    | Defaults to whatever the operator stated about TLS via REDIRECT_HTTPS
+    | rather than to APP_ENV: a production install served over plain http would
+    | otherwise have the browser drop the cookie, so the admin login would
+    | succeed and then bounce straight back to the login form with no error.
+    |
+    | Both settings are read through FILTER_VALIDATE_BOOLEAN so that they agree
+    | on values env() leaves as strings (1 / yes / on). Without that, the cookie
+    | here would be truthy while HttpsRedirect's strict === TRUE test failed,
+    | producing precisely the silent login bounce described above.
+    |
     */
 
-    'secure' => env('SESSION_SECURE_COOKIE', NULL),
+    'secure' => filter_var(env('SESSION_SECURE_COOKIE', env('REDIRECT_HTTPS', FALSE)), FILTER_VALIDATE_BOOLEAN),
+
+    /*
+    |--------------------------------------------------------------------------
+    | HTTP Access Only
+    |--------------------------------------------------------------------------
+    |
+    | Setting this value to true will prevent JavaScript from accessing the
+    | value of the cookie and the cookie will only be accessible through
+    | the HTTP protocol. You are free to modify this option if needed.
+    |
+    */
+
+    'http_only' => true,
+
+    /*
+    |--------------------------------------------------------------------------
+    | Same-Site Cookies
+    |--------------------------------------------------------------------------
+    |
+    | This option determines how your cookies behave when cross-site requests
+    | take place, and can be used to mitigate CSRF attacks. By default, we
+    | will set this value to "lax" to permit secure cross-site requests.
+    |
+    | See: https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Set-Cookie#samesitesamesite-value
+    |
+    | Supported: "lax", "strict", "none", null
+    |
+    */
+
+    'same_site' => 'lax',
 
 ];

@@ -123,7 +123,11 @@ abstract class TtsAbstract implements ErrorInterface
             $file_handle = fopen($file_path, 'w+');
 
             if(!$file_handle) {
-                return $this->addError('Unable to open file for writing: ' . $file_path);
+                // The client-facing message must not disclose server paths: this
+                // error travels out through AudioManager -> Engine -> the API
+                // response. Keep the detail in the log only.
+                \Illuminate\Support\Facades\Log::error('TTS: unable to open file for writing: ' . $file_path);
+                return $this->addError('Unable to generate audio');
             }
 
             $text = $this->_formatText($text);
@@ -234,6 +238,13 @@ abstract class TtsAbstract implements ErrorInterface
 
     public static function getAudioFilePathStatic($module, $create_dir = FALSE, $relative = false) 
     {
+        // Defense in depth: this builds a filesystem path from a value that has
+        // reached us from request input in the past, and mkdir() below would
+        // happily create a traversed directory. Callers validate too.
+        if(!\App\Models\Bible::validateModule($module)) {
+            throw new \InvalidArgumentException('Invalid Bible module name');
+        }
+
         $dir = $relative ? '' : static::getAudioBasePath();
         $dir .= $module;
 

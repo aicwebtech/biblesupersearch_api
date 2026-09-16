@@ -65,9 +65,9 @@ Route::get('/logout', 'Auth\AuthController@logout')->name('logout');
 Route::get('/landing', 'Auth\AuthController@landing')->name('auth.landing')->middleware('auth');
 Route::get('/auth/reset', 'Auth\PasswordController@showLinkRequestForm')->name('password.request');
 //Route::get('/auth/reset', 'Auth\PasswordController@showResetForm')->name('password.request');
-Route::post('/auth/reset', 'Auth\PasswordController@sendResetLinkEmail')->name('password.email');
-Route::get('/auth/change', 'Auth\PasswordController@showResetForm')->name('password.reset');
-Route::post('/auth/change', 'Auth\PasswordController@reset');
+Route::post('/auth/reset', 'Auth\PasswordController@sendResetLinkEmail')->name('password.email')->middleware('throttle:5,1');
+Route::get('/auth/change/{token}', 'Auth\PasswordController@showResetForm')->name('password.reset');
+Route::post('/auth/change', 'Auth\PasswordController@reset')->name('password.update');
 Route::post('/auth/success', 'Auth\PasswordController@success');
 Route::get('/auth/success', 'Auth\PasswordController@success');
 
