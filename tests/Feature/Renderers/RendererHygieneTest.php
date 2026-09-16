@@ -58,13 +58,13 @@ class RendererHygieneTest extends TestCase
      */
     public function testEveryRendererUsesTheSharedStaleFileGuard(): void
     {
-        $renderers = ['SQLite3.php', 'TextAbstract.php', 'Excel.php', 'ExcelFromCsv.php'];
+        $renderers = ['SQLite3.php', 'TextAbstract.php', 'Excel.php', 'ExcelFromCsv.php', 'PdfAbstract.php'];
 
         foreach($renderers as $file) {
             $source = file_get_contents(app_path('Renderers/' . $file));
 
             $this->assertStringContainsString(
-                'removeStaleRenderFile($filepath)',
+                'removeStaleFile($filepath)',
                 $source,
                 $file . ' must clear the render path through the shared guard'
             );
@@ -78,6 +78,57 @@ class RendererHygieneTest extends TestCase
     }
 
     /**
+     * The Extras renderers write into the same rendered tree but are a separate class
+     * hierarchy (ExtrasAbstract does not extend RenderAbstract), which is how they came
+     * to be missed when the guard lived on RenderAbstract. It is a trait now, so every
+     * writer on both sides can reach it.
+     *
+     * Asserted by counting writes rather than naming them, so a new unguarded write
+     * cannot be added without this failing.
+     */
+    public function testEveryExtrasWriteIsGuarded(): void
+    {
+        $files = ['ExtrasAbstract.php', 'Csv.php', 'Json.php', 'MySQL.php'];
+
+        foreach($files as $file) {
+            $source = file_get_contents(app_path('Renderers/Extras/' . $file));
+
+            $writes = preg_match_all("/\bfile_put_contents\(|\bfopen\(/", $source);
+            $guards = preg_match_all('/removeStaleFile\(/', $source);
+
+            if($writes === 0) {
+                continue;
+            }
+
+            $this->assertSame(
+                $writes,
+                $guards,
+                $file . ' has ' . $writes . ' file write(s) but ' . $guards . ' stale-file guard(s)'
+            );
+        }
+    }
+
+    /**
+     * One guard, one implementation: the bug this protects against was first fixed in
+     * SQLite3 alone while its siblings kept an is_file() check, and again when the PDF
+     * and Extras writers were found still bypassing it.
+     */
+    public function testTheGuardHasASingleImplementation(): void
+    {
+        $trait = file_get_contents(app_path('Traits/RemovesStaleFiles.php'));
+
+        $this->assertStringContainsString('is_link($file_path) || file_exists($file_path)', $trait);
+
+        foreach(['Renderers/RenderAbstract.php', 'Renderers/Extras/ExtrasAbstract.php'] as $file) {
+            $this->assertStringContainsString(
+                'use \\App\\Traits\\RemovesStaleFiles;',
+                file_get_contents(app_path($file)),
+                $file . ' must take the guard from the trait'
+            );
+        }
+    }
+
+    /**
      * deleteRenderFile() is the other way a stale artifact is cleared, and had
      * the same is_file() guard: a dangling link left behind there is what the
      * next render would write through.
@@ -86,7 +137,7 @@ class RendererHygieneTest extends TestCase
     {
         $source = file_get_contents(app_path('Renderers/RenderAbstract.php'));
 
-        $this->assertStringContainsString('static::removeStaleRenderFile($file_path);', $source);
+        $this->assertStringContainsString('static::removeStaleFile($file_path);', $source);
         $this->assertStringNotContainsString('if(is_file($file_path)) {', $source);
     }
 

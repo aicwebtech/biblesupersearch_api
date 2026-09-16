@@ -239,49 +239,105 @@ class PruneImportFilesTest extends TestCase
      * guard cannot help once it has: the files inside the target are ordinary files,
      * so the command would delete data that has nothing to do with imports.
      *
-     * bibles/misc is used because it is prunable but not tracked in the repository,
-     * so it can be replaced with a link and put back.
+     * Built entirely in a scratch directory via the getBiblesPath() seam. An earlier
+     * version of this test renamed the real bibles/misc and replaced it with a link,
+     * which is unsafe twice over: that directory is shared with the other tests in
+     * this class, and bibles/misc/readme.txt is tracked in the repository, so a crash
+     * between the rename and the cleanup would have left the working tree damaged.
      */
     public function testASymlinkedPrunableDirectoryIsNotFollowed(): void
     {
-        $base = base_path('bibles') . DIRECTORY_SEPARATOR;
-        $target = $base . 'misc';
-        $outside = sys_get_temp_dir() . '/bss_prune_escape_' . bin2hex(random_bytes(4));
+        $root = sys_get_temp_dir() . '/bss_prune_root_' . bin2hex(random_bytes(6));
+        $outside = $root . '/outside';
         $victim = $outside . '/important.db';
-        $moved = $target . '_moved_' . bin2hex(random_bytes(3));
+        $real = $root . '/bibles/mysword';
+        $stale = $real . '/abandoned.mybible';
 
-        mkdir($outside);
+        mkdir($outside, 0775, TRUE);
+        mkdir($real, 0775, TRUE);
+
+        // Something old in a genuine prunable directory, so the run is not a no-op
+        // and the assertion below distinguishes "did not follow" from "did nothing".
+        file_put_contents($stale, 'abandoned');
+        touch($stale, time() - (30 * 86400));
+
         file_put_contents($victim, 'keep me');
-        touch($victim, time() - (30 * 86400)); // old enough to be pruned
+        touch($victim, time() - (30 * 86400));
 
-        $existed = is_dir($target) && !is_link($target);
+        // bibles/misc is a prunable directory replaced by a link to $outside.
+        symlink($outside, $root . '/bibles/misc');
 
         try {
-            if($existed) {
-                rename($target, $moved);
-            }
+            $result = $this->runWithBiblesPath($root . '/bibles', ['--days' => 1]);
 
-            symlink($outside, $target);
-
-            $this->artisan('bibles:prune-imports', ['--days' => 1])->assertExitCode(0);
-
-            $this->assertFileExists($victim, 'The command escaped the bibles directory via a symlink');
+            $this->assertFileExists($victim, 'The command escaped the bibles root via a symlink');
+            $this->assertStringContainsString('misc', $result['output'], 'The skip must be reported');
+            $this->assertFileDoesNotExist($stale, 'A genuine prunable directory must still be pruned');
         }
         finally {
-            if(is_link($target)) {
-                unlink($target);
-            }
-
-            if($existed && is_dir($moved)) {
-                rename($moved, $target);
-            }
-
-            $this->removeIfPresent($victim);
-
-            if(is_dir($outside)) {
-                rmdir($outside);
-            }
+            $this->removeTree($root);
         }
+    }
+
+    /**
+     * Run the command against a scratch bibles root.
+     *
+     * @param  string  $path
+     * @param  array  $options
+     * @return array{code: int, output: string}
+     */
+    protected function runWithBiblesPath(string $path, array $options = []): array
+    {
+        $command = new class($path) extends \App\Console\Commands\PruneImportFiles {
+            /** @var string */
+            private $bibles_path;
+
+            public function __construct(string $bibles_path)
+            {
+                $this->bibles_path = $bibles_path;
+
+                parent::__construct();
+            }
+
+            protected function getBiblesPath(): string
+            {
+                return $this->bibles_path;
+            }
+        };
+
+        $command->setLaravel(app());
+
+        $output = new \Symfony\Component\Console\Output\BufferedOutput();
+        $code = $command->run(new \Symfony\Component\Console\Input\ArrayInput($options), $output);
+
+        return ['code' => $code, 'output' => $output->fetch()];
+    }
+
+    /**
+     * Remove a scratch tree, links included.
+     *
+     * @param  string  $dir
+     * @return void
+     */
+    protected function removeTree(string $dir): void
+    {
+        if(!is_dir($dir) || is_link($dir)) {
+            if(is_link($dir) || file_exists($dir)) {
+                unlink($dir);
+            }
+
+            return;
+        }
+
+        foreach(scandir($dir) as $entry) {
+            if($entry === '.' || $entry === '..') {
+                continue;
+            }
+
+            $this->removeTree($dir . DIRECTORY_SEPARATOR . $entry);
+        }
+
+        rmdir($dir);
     }
 
     /**

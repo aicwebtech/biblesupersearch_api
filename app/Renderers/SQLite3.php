@@ -41,7 +41,7 @@ class SQLite3 extends RenderAbstract
     {
         $filepath = $this->getRenderFilePath(TRUE);
         
-        static::removeStaleRenderFile($filepath);
+        static::removeStaleFile($filepath);
 
         touch($filepath);
 

@@ -26,15 +26,15 @@ class RenderAbstractTest extends TestCase
                 return $this->_htmlToPlainText($html, $sep);
             }
 
-            public static function callRemoveStaleRenderFile($file_path): void
+            public static function callRemoveStaleFile($file_path): void
             {
-                static::removeStaleRenderFile($file_path);
+                static::removeStaleFile($file_path);
             }
         };
     }
 
     // -----------------------------------------------------------------------
-    // removeStaleRenderFile
+    // removeStaleFile (App\Traits\RemovesStaleFiles)
     //
     // Every renderer removes whatever sits at the render path before writing a
     // new artifact there. The guard used to be is_file(), which reports on a
@@ -91,7 +91,7 @@ class RenderAbstractTest extends TestCase
         $this->assertFalse(is_file($link), 'Precondition: is_file() cannot see a dangling link');
         $this->assertTrue(is_link($link), 'Precondition: is_link() can');
 
-        $this->makeRenderer()::callRemoveStaleRenderFile($link);
+        $this->makeRenderer()::callRemoveStaleFile($link);
 
         $this->assertFalse(is_link($link), 'The link must be gone');
 
@@ -115,7 +115,7 @@ class RenderAbstractTest extends TestCase
 
         $this->assertFalse(is_file($link), 'Precondition: is_file() is false for a link to a directory');
 
-        $this->makeRenderer()::callRemoveStaleRenderFile($link);
+        $this->makeRenderer()::callRemoveStaleFile($link);
 
         $this->assertFalse(is_link($link), 'The link must be gone');
         $this->assertDirectoryExists($target, 'Only the link is removed, never its target');
@@ -134,7 +134,7 @@ class RenderAbstractTest extends TestCase
         file_put_contents($target, 'keep me');
         symlink($target, $link);
 
-        $this->makeRenderer()::callRemoveStaleRenderFile($link);
+        $this->makeRenderer()::callRemoveStaleFile($link);
 
         $this->assertFalse(is_link($link), 'The link must be gone');
         $this->assertSame('keep me', file_get_contents($target), 'The target must be untouched');
@@ -145,7 +145,7 @@ class RenderAbstractTest extends TestCase
         $file = $this->scratchDir() . '/render.txt';
         file_put_contents($file, 'stale');
 
-        $this->makeRenderer()::callRemoveStaleRenderFile($file);
+        $this->makeRenderer()::callRemoveStaleFile($file);
 
         $this->assertFileDoesNotExist($file);
     }
@@ -154,7 +154,7 @@ class RenderAbstractTest extends TestCase
     {
         $file = $this->scratchDir() . '/never_existed.txt';
 
-        $this->makeRenderer()::callRemoveStaleRenderFile($file);
+        $this->makeRenderer()::callRemoveStaleFile($file);
 
         $this->assertFileDoesNotExist($file);
     }

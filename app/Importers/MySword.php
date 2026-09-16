@@ -333,7 +333,13 @@ class MySword extends ImporterAbstract
                         break;
                     }
 
-                    if(fwrite($out_file, $chunk) === FALSE) {
+                    // fwrite() can return a short count without returning FALSE -- a full
+                    // disk is the usual cause. Treating that as success would hand a
+                    // silently truncated SQLite database to the importer, so compare the
+                    // byte count rather than just checking for FALSE.
+                    $bytes_written = fwrite($out_file, $chunk);
+
+                    if($bytes_written === FALSE || $bytes_written !== strlen($chunk)) {
                         $failed = 'Could not write extracted file';
                         break;
                     }

@@ -79,7 +79,7 @@ class Excel extends RenderAbstract
                 $hcells = 'A5:D5';
         }
 
-        static::removeStaleRenderFile($filepath);
+        static::removeStaleFile($filepath);
 
         $this->Spreadsheet = new Spreadsheet();
         $Sheet = $this->Spreadsheet->getActiveSheet();

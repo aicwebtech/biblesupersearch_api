@@ -39,6 +39,8 @@ class Csv extends ExtrasAbstract
         $fields = $data ? array_keys(get_object_vars($data[0])) : \Schema::getColumnListing($db_table);
         $fields = array_values(array_diff($fields, ['created_at', 'updated_at']));
 
+        static::removeStaleFile($filepath);
+
         $handle = fopen($filepath, 'w');
 
         fputcsv($handle, $fields, escape: $this->escape);

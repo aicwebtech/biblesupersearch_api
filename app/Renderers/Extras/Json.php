@@ -54,7 +54,9 @@ class Json extends ExtrasAbstract
         }
         unset($row);
 
+        static::removeStaleFile($filepath);
         file_put_contents($filepath, json_encode($data));
+
         return $filepath;
     }
 }

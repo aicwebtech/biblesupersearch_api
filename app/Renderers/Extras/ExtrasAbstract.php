@@ -7,6 +7,7 @@ Use App\Models\Language;
 class ExtrasAbstract 
 {
     use \App\Traits\Error;
+    use \App\Traits\RemovesStaleFiles;
 
     protected $overwrite = FALSE;
     protected $filelist = [];
@@ -157,6 +158,7 @@ class ExtrasAbstract
             }
         } 
 
+        static::removeStaleFile($filepath);
         file_put_contents($filepath, $readme);
         $this->filelist[] = $filepath;
     }

@@ -57,7 +57,7 @@ class PruneImportFiles extends Command
 
         $dry_run = (bool) $this->option('dry-run');
         $cutoff = time() - ($days * 86400);
-        $base = realpath(base_path('bibles'));
+        $base = realpath($this->getBiblesPath());
         $deleted = $bytes = 0;
 
         if($base === FALSE) {
@@ -152,6 +152,21 @@ class PruneImportFiles extends Command
         ));
 
         return 0;
+    }
+
+    /**
+     * Root directory holding the importer directories.
+     *
+     * A seam for tests: the symlink-escape case has to replace a prunable directory
+     * with a link, which must never be done to the real bibles/ tree -- those
+     * directories are shared with other tests and bibles/misc/readme.txt is tracked
+     * in the repository.
+     *
+     * @return string
+     */
+    protected function getBiblesPath(): string
+    {
+        return base_path('bibles');
     }
 
     /**
