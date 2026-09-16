@@ -8,4 +8,5 @@ return [
     'chapter_n'         => 'अध्याय :n', // chapter with number, ie 'Chapter 5'
     'psalm_n'           => 'स्तोत्र :n',   // Psalm with number, ie 'Psalm 119'
     'table_of_contents' => 'सामग्रीची सूची',
+    'copyright'         => 'कॉपीराइट',
 ];

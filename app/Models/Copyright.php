@@ -18,20 +18,16 @@ class Copyright extends Model
     }
 
     /**
-     * Builds the statement shown for a Bible that has none of its own.
+     * Builds the copyright statement shown for a text that has none of its own.
      *
-     * The URL is escaped because it lands inside an href attribute and is admin-supplied -
-     * an unescaped apostrophe closed the attribute and let the rest of the column through as
-     * markup. Escaping here is not the whole guard: Engine::_sanitizeHtml() still purifies
-     * the result, which is what refuses a 'javascript:' scheme.
      *
-     * @param \App\Models\Bible|null $Bible
+     * @param bool $raw If true, returns the raw copyright statement without any HTML sanitization, 
+     *             on the assumption that the caller will handle it. If false, returns a sanitized HTML string.
      * @return string|null
      */
-    public function getProcessedCopyrightStatement(?Bible &$Bible = null) 
+    public function getProcessedCopyrightStatement(bool $raw = false) 
     {
         $cr = $this->default_copyright_statement;
-        $include_year_pub = false;
 
         if($this->type == 'creative_commons') {
             $cr = 'This Bible is made available under the terms of the ';
@@ -39,31 +35,12 @@ class Copyright extends Model
             $cr .= " <a href='" . e($this->url) . "' target='_NEW'>license</a>.";
             $cr .= "&nbsp; This work has been reformated to work with Bible SuperSearch";
             $cr .= "&nbsp; However, no changes to the text or punctuation have been made.";
-            $include_year_pub = true;
-        }
-        elseif($this->url) {
+        } elseif($this->url) {
             $cr .= " &nbsp; The terms of this license can be found <a href='" . e($this->url) . "' target='_NEW'>here</a>";
         }
 
-        if($include_year_pub) {
-            if(!$Bible) {
-                $yp_text = 'Copyright &copy; [year] [owner]';
-            } else {
-                $yr = $Bible->year;
-                $ow = $Bible->owner;
-
-                if(!$yr && !$ow) {
-                    $yp_text = null;
-                } else {
-                    $yp_text = 'Copyright &copy;';
-                    $yp_text .= ($yr) ? ' ' . $yr : '';
-                    $yp_text .= ($ow) ? ' ' . $ow : '';
-                }
-            }
-
-            if($yp_text) {
-                $cr = $yp_text . '<br /><br />' . $cr;
-            }
+        if(!$raw) {
+            $cr = \App\Helpers::sanitizeHtml($cr);
         }
 
         return $cr;

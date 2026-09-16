@@ -8,4 +8,5 @@ return [
     'chapter_n'         => 'Боби :n', // chapter with number, ie 'Chapter 5'
     'psalm_n'           => 'Забур :n',   // Psalm with number, ie 'Psalm 119'
     'table_of_contents' => 'Феҳристи Мундариҷа',
+    'copyright'         => 'Ҳуқуқи муаллиф',
 ];

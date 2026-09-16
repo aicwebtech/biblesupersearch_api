@@ -8,4 +8,5 @@ return [
     'chapter_n'         => '第:n章', // chapter with number, ie 'Chapter 5'
     'psalm_n'           => '詩篇:n篇',   // Psalm with number, ie 'Psalm 119'
     'table_of_contents' => '目次',
+    'copyright'         => '著作権',
 ];

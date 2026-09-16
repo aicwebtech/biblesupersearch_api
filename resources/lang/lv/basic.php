@@ -8,4 +8,5 @@ return [
     'chapter_n'         => 'Nodaļa :n', // nodaļa ar numuru, piemēram, 'Nodaļa 5'
     'psalm_n'           => 'Psalms :n', // psalms ar numuru, piemēram, 'Psalms 119'
     'table_of_contents' => 'Satura rādītājs',
+    'copyright'         => 'Autortiesības',
 ];

@@ -18,7 +18,7 @@ class ApiController extends Controller
 
         $disamb = ['version'];
 
-        if(in_array($vv, $disamb)) {
+        if($action == 'query' && in_array($vv, $disamb)) {
             // $vv is actually the action, and the version is v2 
             $action = $vv;
             $version = 2;

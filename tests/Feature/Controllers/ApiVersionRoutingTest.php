@@ -521,6 +521,26 @@ class ApiVersionRoutingTest extends TestCase
     }
 
     /**
+     * The advertised list is configuration; the class behind a version is not. Advertising one
+     * with no App\Engines\EngineV{n} behind it must not take down the shared setUp() - it
+     * would fatal for every feature test in the suite rather than failing the one test that
+     * wanted that engine, and ApiExceptionHandlingTest advertises exactly that on purpose.
+     */
+    public function testResettingSkipsAnAdvertisedVersionWithNoEngineClass()
+    {
+        $missing = 998;
+
+        $this->assertFalse(class_exists(EngineFactory::getClassName($missing)));
+
+        config(['app.api_version_list' => array_merge(config('app.api_version_list'), ['v' . $missing])]);
+
+        $this->resetEngineInstances();
+
+        // Reached at all, and the real versions were still cleared on the way past it.
+        $this->assertInstanceOf('App\Engines\EngineV2', EngineFactory::getEngineInstance(2));
+    }
+
+    /**
      * Deliberately leaves its engines in their slots - no finally - so the test below can
      * assert the shared setUp() cleared them anyway.
      *

@@ -403,6 +403,52 @@ class Helpers
         static::$max_bound_variables = [];
     }
 
+    /** The action an API request names when its path does not name one. */
+    public const DEFAULT_API_ACTION = 'query';
+
+    /**
+     * Matches a version segment in an API path - 'v2', 'v3', 'v10'.
+     *
+     * The digits are what make it a version. '/api/version' is the 'version' action on the
+     * unversioned route, not version 'ersion' of the API, and ApiController::versionedAction()
+     * disambiguates it the same way through its $disamb list.
+     */
+    private const API_VERSION_SEGMENT_PATTERN = '/^v\d+$/';
+
+    /**
+     * The API action a request path names, or NULL when the path is not an API request.
+     *
+     * Both route shapes resolve here - '/api/{action?}' and '/api/v{version}/{action?}' - so
+     * the version segment is skipped when one is present and the action that follows is the
+     * answer either way. Neither form has to name an action: both default to 'query', as the
+     * routes themselves do.
+     *
+     * Shared deliberately. ApiAccess decides from this whether a request is rate limited and
+     * whether the caller's access level permits it, and SetCacheHeaders decides from it how
+     * long the response may be cached. Two parsers meant two answers: the cache middleware
+     * recognized only the literal 'v2', so every '/api/v3/...' request resolved to the action
+     * 'v3', matched nothing in bss.cache_headers.actions, and went out uncached.
+     *
+     * @param string|null $path Request path, as Request::path() returns it - no leading slash
+     * @return string|null The action, or NULL when $path is not under '/api'
+     */
+    public static function resolveApiAction(?string $path): ?string
+    {
+        $segments = explode('/', trim((string) $path, '/'));
+
+        if(array_shift($segments) !== 'api') {
+            return NULL;
+        }
+
+        if(isset($segments[0]) && preg_match(self::API_VERSION_SEGMENT_PATTERN, $segments[0])) {
+            array_shift($segments);
+        }
+
+        $action = $segments[0] ?? '';
+
+        return ($action === '') ? self::DEFAULT_API_ACTION : $action;
+    }
+
     /**
      * The element names accepted as a highlight tag.
      *

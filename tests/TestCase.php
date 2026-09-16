@@ -204,10 +204,33 @@ class TestCase extends BaseTestCase
         // Every version has a slot of its own - EngineV2 and EngineV3 each redeclare
         // $instance, see the note on EngineV2 - so clearing the base class alone leaves
         // whatever EngineFactory::getEngineInstance() built behind for the next test.
+        $this->resetEngineInstances();
+    }
+
+    /**
+     * Discards the singleton every engine version holds.
+     *
+     * Config itself does not need this treatment - Laravel rebuilds the application, and with
+     * it the config, for every test method - but a static property is not part of the
+     * application, and phpunit.xml sets backupStaticProperties="false", so an engine built by
+     * one test is still there for the next one unless it is cleared here.
+     *
+     * A version is only reset if its class exists. The advertised list is configuration and
+     * the class behind it is not: adding 'v4' to config/app.php before writing EngineV4 would
+     * otherwise fatal in setUp() for every feature test in the suite, rather than failing in
+     * whichever test actually wanted that engine. ApiExceptionHandlingTest advertises a
+     * version with no class on purpose, to exercise the controller's 500 path.
+     */
+    protected function resetEngineInstances(): void
+    {
         \App\Engine::resetInstance();
 
         foreach(config('app.api_version_list') as $version) {
-            \App\Factories\EngineFactory::resetEngineInstance(ltrim($version, 'v'));
+            $class = \App\Factories\EngineFactory::getClassName(ltrim($version, 'v'));
+
+            if(class_exists($class)) {
+                $class::resetInstance();
+            }
         }
     }
 }

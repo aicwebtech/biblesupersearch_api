@@ -3,7 +3,6 @@
 namespace Tests\Unit\Models;
 
 use PHPUnit\Framework\TestCase;
-use App\Models\Bible;
 use App\Models\Copyright;
 
 /**
@@ -63,10 +62,14 @@ class CopyrightTest extends TestCase
     }
 
     /**
-     * Creative Commons statements are generated rather than stored, and carry a copyright
-     * line. With no Bible to read a year and owner from, the placeholders remain.
+     * The Creative Commons statement is generated rather than stored, from the licence's own
+     * name and URL.
+     *
+     * It no longer carries the copyright year and owner line: those live on the Bible, not on
+     * the licence, so Bible::getCopyrightStatement() appends them - see
+     * tests/Feature/Models/BibleCopyrightStatementTest.php. This method never sees a Bible.
      */
-    public function testCreativeCommonsWithoutABibleKeepsThePlaceholders(): void
+    public function testCreativeCommonsIsBuiltFromTheLicenceNameAndUrl(): void
     {
         $copyright = $this->copyright([
             'type' => 'creative_commons',
@@ -76,64 +79,95 @@ class CopyrightTest extends TestCase
 
         $statement = $copyright->getProcessedCopyrightStatement();
 
-        $this->assertStringContainsString('Copyright &copy; [year] [owner]', $statement);
+        $this->assertStringContainsString('This Bible is made available', $statement);
         $this->assertStringContainsString('CC BY-SA 4.0', $statement);
         $this->assertStringContainsString('https://example.test/cc', $statement);
     }
 
-    public function testCreativeCommonsUsesTheBibleYearAndOwner(): void
+    /** The year and owner are the Bible's, and no placeholder for them is left behind. */
+    public function testCreativeCommonsCarriesNoCopyrightYearOrOwner(): void
     {
         $copyright = $this->copyright([
             'type' => 'creative_commons',
-            'name' => 'CC BY 4.0',
+            'name' => 'CC BY-SA 4.0',
             'url'  => 'https://example.test/cc',
         ]);
 
-        $bible        = new Bible();
-        $bible->year  = 1611;
-        $bible->owner = 'Example Society';
+        $statement = $copyright->getProcessedCopyrightStatement();
 
-        $statement = $copyright->getProcessedCopyrightStatement($bible);
-
-        $this->assertStringContainsString('Copyright &copy; 1611 Example Society', $statement);
-    }
-
-    public function testCreativeCommonsWithOnlyAYear(): void
-    {
-        $copyright = $this->copyright(['type' => 'creative_commons', 'name' => 'CC', 'url' => 'u']);
-
-        $bible        = new Bible();
-        $bible->year  = 1769;
-        $bible->owner = null;
-
-        $this->assertStringContainsString('Copyright &copy; 1769<br />', $copyright->getProcessedCopyrightStatement($bible));
-    }
-
-    public function testCreativeCommonsWithOnlyAnOwner(): void
-    {
-        $copyright = $this->copyright(['type' => 'creative_commons', 'name' => 'CC', 'url' => 'u']);
-
-        $bible        = new Bible();
-        $bible->year  = null;
-        $bible->owner = 'Example Society';
-
-        $this->assertStringContainsString('Copyright &copy; Example Society', $copyright->getProcessedCopyrightStatement($bible));
+        $this->assertStringNotContainsString('[year]', $statement);
+        $this->assertStringNotContainsString('[owner]', $statement);
+        $this->assertStringNotContainsStringIgnoringCase('copyright &copy;', $statement);
     }
 
     /**
-     * A Bible with neither year nor owner must not emit a bare "Copyright ©" line.
+     * The method takes no Bible any more. Pinned because the old signature accepted one by
+     * reference, so a stale caller passing one would be a TypeError rather than a no-op.
      */
-    public function testCreativeCommonsOmitsTheCopyrightLineWhenTheBibleHasNeither(): void
+    public function testItTakesNoBible(): void
     {
-        $copyright = $this->copyright(['type' => 'creative_commons', 'name' => 'CC', 'url' => 'u']);
+        $Parameters = (new \ReflectionMethod(Copyright::class, 'getProcessedCopyrightStatement'))->getParameters();
 
-        $bible        = new Bible();
-        $bible->year  = null;
-        $bible->owner = null;
+        $this->assertCount(1, $Parameters);
+        $this->assertSame('raw', $Parameters[0]->getName());
+        $this->assertSame('bool', (string) $Parameters[0]->getType());
+    }
 
-        $statement = $copyright->getProcessedCopyrightStatement($bible);
+    // -----------------------------------------------------------------------
+    // $raw - who purifies the result
+    // -----------------------------------------------------------------------
 
-        $this->assertStringNotContainsString('Copyright &copy;', $statement);
-        $this->assertStringContainsString('This Bible is made available', $statement);
+    /**
+     * default_copyright_statement is admin-supplied and is concatenated in as it stands, so
+     * by default the method purifies what it returns rather than trusting the column.
+     */
+    public function testTheStatementIsPurifiedByDefault(): void
+    {
+        $copyright = $this->copyright([
+            'type'                        => 'public_domain',
+            'url'                         => null,
+            'default_copyright_statement' => 'Public domain. <script>alert(1)</script><img src=x onerror=alert(1)>',
+        ]);
+
+        $statement = $copyright->getProcessedCopyrightStatement();
+
+        $this->assertStringContainsString('Public domain.', $statement);
+        $this->assertStringNotContainsString('<script', $statement);
+        $this->assertStringNotContainsStringIgnoringCase('onerror', $statement);
+    }
+
+    /**
+     * $raw hands the statement back unpurified, for a caller that is going to add to it and
+     * purify the whole thing itself - which is what Bible::getCopyrightStatement() does when
+     * it appends the copyright year and owner.
+     */
+    public function testRawReturnsTheStatementUnpurified(): void
+    {
+        $copyright = $this->copyright([
+            'type'                        => 'public_domain',
+            'url'                         => null,
+            'default_copyright_statement' => 'Public domain. <script>alert(1)</script>',
+        ]);
+
+        $this->assertStringContainsString('<script>alert(1)</script>', $copyright->getProcessedCopyrightStatement(TRUE));
+    }
+
+    /**
+     * The URL lands inside a single-quoted href and is admin-supplied, so an apostrophe in it
+     * would close the attribute. It is escaped even in raw mode, because raw only defers the
+     * purifier - it does not hand back an unescaped interpolation.
+     */
+    public function testAHostileUrlIsEscapedEvenInRawMode(): void
+    {
+        $copyright = $this->copyright([
+            'type'                        => 'other',
+            'url'                         => "x' onmouseover='alert(1)",
+            'default_copyright_statement' => 'Used by permission.',
+        ]);
+
+        $raw = $copyright->getProcessedCopyrightStatement(TRUE);
+
+        $this->assertStringContainsString('&#039;', $raw);
+        $this->assertStringNotContainsString("x' onmouseover", $raw);
     }
 }

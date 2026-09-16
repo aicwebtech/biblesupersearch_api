@@ -6,6 +6,7 @@ use Closure;
 use App\Models\IpAccess;
 use App\Models\ApiKey;
 use App\ApiAccessManager;
+use App\Helpers;
 use Illuminate\Http\Response;
 
 /*
@@ -28,9 +29,11 @@ class ApiAccess
         $code = NULL;
         // $key = $request->input('key') ?: null;
         // $dom = ApiAccessManager::trustedDomain(); // never trust a client-supplied domain - see ApiAccessManager
-        $uri = $request->path();
-        $parts = explode('/', $uri);
-        $action = isset($parts[1]) ? $parts[1] : 'query';
+        // Versioned or not, the action is what decides the rate limit and the access-level
+        // check. SetCacheHeaders resolves the same thing for its own decision, so the parsing
+        // lives in one place - see Helpers::resolveApiAction().
+        $action = Helpers::resolveApiAction($request->path()) ?? Helpers::DEFAULT_API_ACTION;
+
         $Access = null;
         $key_id = null;
 

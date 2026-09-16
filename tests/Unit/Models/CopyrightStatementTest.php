@@ -77,7 +77,7 @@ class CopyrightStatementTest extends TestCase
             'default_copyright_statement' => 'Public domain.',
         ]);
 
-        $this->assertStatementHasNothingButTheIntendedLink($Copyright->getProcessedCopyrightStatement());
+        $this->assertStatementHasNothingButTheIntendedLink($Copyright->getProcessedCopyrightStatement(TRUE));
     }
 
     /** The creative-commons branch builds its own link and needs the same guard. */
@@ -90,10 +90,16 @@ class CopyrightStatementTest extends TestCase
             'url'  => $url,
         ]);
 
-        $this->assertStatementHasNothingButTheIntendedLink($Copyright->getProcessedCopyrightStatement());
+        $this->assertStatementHasNothingButTheIntendedLink($Copyright->getProcessedCopyrightStatement(TRUE));
     }
 
-    /** Left unescaped, the apostrophe in the URL closed the attribute - it is an entity now. */
+    /**
+     * Left unescaped, the apostrophe in the URL closed the attribute - it is an entity now.
+     *
+     * Read raw, so the escaping is what the assertion is about: the purifier would neutralize
+     * this URL anyway, and asserting on the purified output would pass whether or not the
+     * interpolation escaped anything.
+     */
     public function testTheApostropheInAHostileUrlIsEscaped(): void
     {
         $Copyright = $this->copyright([
@@ -102,7 +108,7 @@ class CopyrightStatementTest extends TestCase
             'default_copyright_statement' => 'Public domain.',
         ]);
 
-        $statement = $Copyright->getProcessedCopyrightStatement();
+        $statement = $Copyright->getProcessedCopyrightStatement(TRUE);
 
         $this->assertStringContainsString('&#039;', $statement);
         $this->assertStringNotContainsString("x' onmouseover", $statement);
@@ -130,7 +136,7 @@ class CopyrightStatementTest extends TestCase
             'default_copyright_statement' => 'Public domain. <script>alert(1)</script><img src=x onerror=alert(1)>',
         ]);
 
-        $sanitized = Helpers::sanitizeHtml($Copyright->getProcessedCopyrightStatement());
+        $sanitized = $Copyright->getProcessedCopyrightStatement();
 
         $this->assertStringContainsString('Public domain.', $sanitized);
         $this->assertStringNotContainsString('<script', $sanitized);
@@ -147,7 +153,7 @@ class CopyrightStatementTest extends TestCase
             'default_copyright_statement' => 'Used by permission.',
         ]);
 
-        $sanitized = Helpers::sanitizeHtml($Copyright->getProcessedCopyrightStatement());
+        $sanitized = $Copyright->getProcessedCopyrightStatement();
 
         $this->assertStringContainsString('Used by permission.', $sanitized);
         $this->assertStringContainsString('https://example.com/license', $sanitized);
@@ -163,7 +169,7 @@ class CopyrightStatementTest extends TestCase
             'default_copyright_statement' => 'Used by permission.',
         ]);
 
-        $this->assertStringContainsString('a=1&amp;b=2', $Copyright->getProcessedCopyrightStatement());
+        $this->assertStringContainsString('a=1&amp;b=2', $Copyright->getProcessedCopyrightStatement(TRUE));
     }
 
     // -----------------------------------------------------------------------
@@ -248,22 +254,28 @@ class CopyrightStatementTest extends TestCase
         $this->assertStringContainsString('Used by permission.', $Bible->getCopyrightStatement());
     }
 
-    /** The year-and-owner prefix is unaffected by the escaping. */
-    public function testTheCreativeCommonsStatementStillCarriesTheYearAndOwner(): void
+    /**
+     * The generated branch is purified against the API allowlist, not the editor one - a
+     * generated statement is built from a licence record rather than typed into the admin
+     * editor, so it has no reason to carry an image or a rule.
+     *
+     * Bible::$copyright_statement, which an administrator does edit, keeps the wider
+     * allowlist - see testTheStatementKeepsEditorMarkup() above.
+     */
+    public function testTheGeneratedBranchUsesTheApiAllowlist(): void
     {
-        $Copyright = $this->copyright([
-            'type' => 'creative_commons',
-            'name' => 'CC BY-SA 4.0',
-            'url'  => 'https://example.com/by-sa',
-        ]);
-
         $Bible = new Bible();
-        $Bible->setRawAttributes(['year' => 2011, 'owner' => 'Example Trust']);
+        $Bible->setRawAttributes(['copyright_statement' => '', 'copyright_id' => 7]);
+        $Bible->setRelation('copyrightInfo', $this->copyright([
+            'type'                        => 'public_domain',
+            'url'                         => '',
+            'default_copyright_statement' => '<p>Ok</p><img src="/logo.png"><hr>',
+        ]));
 
-        $statement = $Copyright->getProcessedCopyrightStatement($Bible);
+        $statement = $Bible->getCopyrightStatement();
 
-        $this->assertStringContainsString('2011', $statement);
-        $this->assertStringContainsString('Example Trust', $statement);
-        $this->assertStringContainsString('CC BY-SA 4.0', $statement);
+        $this->assertStringContainsString('<p>Ok</p>', $statement);
+        $this->assertStringNotContainsString('<img', $statement);
+        $this->assertStringNotContainsString('<hr', $statement);
     }
 }

@@ -442,7 +442,27 @@ class Bible extends Model
         }
 
         if($this->copyright_id && $this->copyrightInfo) {
-            return Helpers::sanitizeEditorHtml($this->copyrightInfo->getProcessedCopyrightStatement($this)) ?? '';
+            $html = $this->copyrightInfo->getProcessedCopyrightStatement(true);
+
+            $yp_text = null;
+
+            $yr = $this->year;
+            $ow = $this->owner;
+
+            if(!$yr && !$ow) {
+                $yp_text = null;
+            } else {
+                $yp_text = __('basic.copyright') . ' &copy;';
+                $yp_text .= ($yr) ? ' ' . $yr : '';
+                $yp_text .= ($ow) ? ' ' . $ow : '';
+            }
+            
+            if($yp_text) {
+                $html .= ' ' . $yp_text;
+            }
+
+            // Default CR statement doesn't need editor sanitization 
+            return Helpers::sanitizeHtml($html) ?? '';
         }
 
         return Helpers::sanitizeEditorHtml($attributes['description'] ?? NULL) ?? '';
