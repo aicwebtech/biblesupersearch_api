@@ -44,7 +44,11 @@ class Csv extends ExtrasAbstract
         $handle = fopen($filepath, 'w');
 
         if($handle === FALSE) {
-            throw new \Exception('Unable to open extras file for writing: ' . $filepath);
+            // The path goes to the log, not into the exception: these messages can surface
+            // to a caller, and naming the file discloses the server's filesystem layout.
+            \Log::error('Extras CSV: unable to open for writing: ' . $filepath);
+
+            throw new \Exception('Unable to open extras file for writing');
         }
 
         $this->_writeCsvRow($handle, $fields, $filepath);
@@ -63,7 +67,13 @@ class Csv extends ExtrasAbstract
         // fclose() flushes what is still buffered, so a disk that filled mid-dump can
         // surface here rather than at any individual row.
         if(!fclose($handle)) {
-            throw new \Exception('Unable to finish writing extras file: ' . $filepath);
+            // Same cleanup as the row-write path: a truncated dump left in the rendered
+            // tree would be picked up by a later request as though it were complete.
+            static::removeCreatedFile($filepath);
+
+            \Log::error('Extras CSV: unable to finish writing: ' . $filepath);
+
+            throw new \Exception('Unable to finish writing extras file');
         }
 
         return $filepath;
@@ -79,17 +89,21 @@ class Csv extends ExtrasAbstract
      *
      * @param  resource  $handle
      * @param  array     $row
-     * @param  string    $filepath  For the error message only
+     * @param  string    $filepath  Removed on failure; never named in the exception
      * @return void
      * @throws \RuntimeException
      */
     private function _writeCsvRow($handle, array $row, string $filepath): void
     {
         try {
-            static::putCsvRowOrFail($handle, $row, $this->escape, $filepath);
+            // No path passed through: putCsvRowOrFail() would interpolate it into the
+            // message, and that message can reach a caller.
+            static::putCsvRowOrFail($handle, $row, $this->escape);
         }
         catch(\RuntimeException $e) {
             fclose($handle);
+
+            \Log::error('Extras CSV: unable to write a row to ' . $filepath);
 
             // A truncated CSV left at the destination would be picked up by a later
             // caller, or downloaded, as though it were a complete dump.

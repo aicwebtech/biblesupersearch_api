@@ -30,6 +30,11 @@ class RenderAbstractTest extends TestCase
             {
                 static::removeStaleFile($file_path);
             }
+
+            public static function callIsRealFile($file_path): bool
+            {
+                return static::isRealFile($file_path);
+            }
         };
     }
 
@@ -225,5 +230,61 @@ class RenderAbstractTest extends TestCase
         $renderer = $this->makeRenderer();
         $result   = $renderer->callHtmlToPlainText('line one<br />line two', ' | ');
         $this->assertSame('line one | line two', $result);
+    }
+
+    // -----------------------------------------------------------------------
+    // isRealFile
+    //
+    // is_file() and file_exists() answer about a symlink's *target*, so a link planted at
+    // the render path read as a finished artifact. With the Rendering metadata from an
+    // earlier genuine render still intact, isRenderNeeded() returned FALSE and
+    // RenderManager handed the link to readfile() -- serving the link target.
+    // -----------------------------------------------------------------------
+
+    public function testARealFileIsRecognised(): void
+    {
+        $path = $this->scratchDir() . '/real.txt';
+        file_put_contents($path, 'render output');
+
+        $this->assertTrue($this->makeRenderer()::callIsRealFile($path));
+    }
+
+    /**
+     * The case that mattered: a *live* link, which is_file() happily calls a file.
+     */
+    public function testALiveSymlinkIsNotARealFile(): void
+    {
+        $dir = $this->scratchDir();
+        $target = $dir . '/target.txt';
+        $link = $dir . '/render.txt';
+
+        file_put_contents($target, 'somebody else\'s data');
+        symlink($target, $link);
+
+        $this->assertTrue(is_file($link), 'Precondition: is_file() follows the link');
+        $this->assertFalse(
+            $this->makeRenderer()::callIsRealFile($link),
+            'A symlink must never count as a finished render'
+        );
+    }
+
+    public function testADanglingSymlinkIsNotARealFile(): void
+    {
+        $dir = $this->scratchDir();
+        $link = $dir . '/render.txt';
+
+        symlink($dir . '/never_existed', $link);
+
+        $this->assertFalse($this->makeRenderer()::callIsRealFile($link));
+    }
+
+    public function testAMissingPathIsNotARealFile(): void
+    {
+        $this->assertFalse($this->makeRenderer()::callIsRealFile($this->scratchDir() . '/absent.txt'));
+    }
+
+    public function testADirectoryIsNotARealFile(): void
+    {
+        $this->assertFalse($this->makeRenderer()::callIsRealFile($this->scratchDir()));
     }
 }

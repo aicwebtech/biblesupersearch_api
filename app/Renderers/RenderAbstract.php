@@ -86,7 +86,9 @@ abstract class RenderAbstract
         $file_path = $this->getRenderFilePath();
         $this->overwrite = $overwrite;
 
-        if(!$overwrite && is_file($file_path)) {
+        // A symlink here is not an existing render, so it must not block one: refusing
+        // would leave the link in place, and _renderStart()'s guard never runs.
+        if(!$overwrite && static::isRealFile($file_path)) {
             if($suppress_overwrite_error) {
                 return TRUE;
             }
@@ -160,7 +162,11 @@ abstract class RenderAbstract
     {
         $file_path = $this->getRenderFilePath();
 
-        if(!is_file($file_path)) {
+        // is_file() follows a symlink, so a link planted at the render path used to look
+        // like a finished render: with the Rendering metadata from an earlier, genuine
+        // render still intact this returned FALSE, and RenderManager handed the link
+        // straight to readfile() -- serving whatever it pointed at.
+        if(!static::isRealFile($file_path)) {
             return TRUE;
         }
 

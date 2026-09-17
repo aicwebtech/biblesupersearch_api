@@ -10,6 +10,8 @@ use Illuminate\Support\Facades\Gate;
 
 class RenderManager 
 {
+    use \App\Traits\RemovesStaleFiles;
+
     use Traits\Error;
 
     static public $format_kinds = [
@@ -568,7 +570,10 @@ class RenderManager
             // Send file to browser as download
         }
 
-        if(!$make_file_only && file_exists($download_file_path)) {
+        // Defence in depth at the point of no return: readfile() follows a symlink and
+        // would send whatever it points at. isRenderNeeded() already refuses to treat a
+        // link as a finished render, but this is the line that actually serves bytes.
+        if(!$make_file_only && static::isRealFile($download_file_path)) {
             header('Content-Description: File Transfer');
             header('Content-Type: application/octet-stream');
             header('Content-Disposition: attachment; filename=' . $download_file_name);

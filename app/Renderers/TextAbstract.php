@@ -131,6 +131,12 @@ abstract class TextAbstract extends RenderAbstract
         $this->handle = null;
 
         if(!fclose($handle) && $check) {
+            // _renderFinish() calls this from outside render()'s inner try/catch, so an
+            // exception raised here never reaches _onVerseRenderError() and its cleanup.
+            // Without removing the artifact, the previous render's metadata would still
+            // make isRenderNeeded() report FALSE and this partial file would be served.
+            static::removeCreatedFile($this->getRenderFilePath());
+
             $detail = config('app.debug') ? $this->getRenderFilePath() : 'Please contact the administrator.';
 
             throw new \Exception('Failed to close render file, ' . $detail);

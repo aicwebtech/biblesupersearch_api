@@ -190,4 +190,100 @@ class RendererHygieneTest extends TestCase
         $this->assertStringContainsString('chmod($file_path, 0644)', $source);
         $this->assertStringNotContainsString('chmod($file_path, 0775)', $source);
     }
+
+    /**
+     * The decision points that let a planted link be *served* rather than merely written
+     * through. isRenderNeeded() gates whether a render happens at all, render() gates
+     * whether an existing artifact blocks one, and RenderManager is what finally calls
+     * readfile() -- all three followed links through is_file()/file_exists().
+     */
+    public function testTheRenderDecisionPointsAreLinkAware(): void
+    {
+        $render = $this->sourceWithoutComments(app_path('Renderers/RenderAbstract.php'));
+
+        $this->assertStringContainsString(
+            'if(!static::isRealFile($file_path)) {',
+            $render,
+            'isRenderNeeded() must not accept a symlink as a finished render'
+        );
+
+        $this->assertStringContainsString(
+            'if(!$overwrite && static::isRealFile($file_path)) {',
+            $render,
+            'A symlink must not block a render from replacing it'
+        );
+
+        $this->assertStringNotContainsString(
+            'if(!is_file($file_path)) {',
+            $render,
+            'The link-following check must be gone'
+        );
+
+        $manager = $this->sourceWithoutComments(app_path('RenderManager.php'));
+
+        $this->assertStringContainsString(
+            'static::isRealFile($download_file_path)',
+            $manager,
+            'readfile() is the point of no return and must not follow a link'
+        );
+    }
+
+    /**
+     * A close failure in _renderFinish() is raised outside render()'s inner try/catch, so
+     * it never reaches _onVerseRenderError(); the artifact has to be dropped where the
+     * exception is thrown instead.
+     */
+    public function testAFailedCloseDropsTheArtifact(): void
+    {
+        $source = $this->sourceWithoutComments(app_path('Renderers/TextAbstract.php'));
+
+        $this->assertMatchesRegularExpression(
+            '/if\(!fclose\(\$handle\) && \$check\) \{\s*static::removeCreatedFile/',
+            $source,
+            'A failed final flush must remove the partial render before throwing'
+        );
+    }
+
+    /**
+     * Both failure paths in the extras CSV writer -- a row write and the final flush --
+     * must leave nothing behind.
+     */
+    public function testExtrasCsvCleansUpOnBothFailurePaths(): void
+    {
+        $source = $this->sourceWithoutComments(app_path('Renderers/Extras/Csv.php'));
+
+        $this->assertSame(
+            2,
+            preg_match_all('/removeCreatedFile\s*\(/', $source),
+            'Both the row-write and fclose failure paths must remove the partial dump'
+        );
+    }
+
+    /**
+     * The extras CSV writer's exceptions can reach a caller, so none of them may name the
+     * file being written. The path still goes to the log, where an operator can read it
+     * and a client cannot.
+     */
+    public function testExtrasCsvExceptionsDoNotNameTheFile(): void
+    {
+        $source = $this->sourceWithoutComments(app_path('Renderers/Extras/Csv.php'));
+
+        preg_match_all('/throw new [^;]+;/', $source, $matches);
+
+        $this->assertNotEmpty($matches[0], 'Expected to find the throw statements');
+
+        foreach($matches[0] as $statement) {
+            $this->assertStringNotContainsString(
+                '$filepath',
+                $statement,
+                'The path must not be interpolated into a thrown message: ' . trim($statement)
+            );
+        }
+
+        $this->assertStringContainsString(
+            'Log::error',
+            $source,
+            'The path must still be recorded somewhere an operator can read it'
+        );
+    }
 }
