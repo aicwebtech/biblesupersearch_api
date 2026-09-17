@@ -11,6 +11,8 @@ use App\Helpers;
 
 class BookAbstract extends Model
 {
+    use \App\Traits\WritesFilesSafely;
+
     protected $language;
     protected static $accent_folding_map = null;
 
@@ -177,13 +179,19 @@ class BookAbstract extends Model
                 ';
 
                 $filepath = dirname(__FILE__) . '/' . $model_class . '.php';
-                file_put_contents($filepath, '<?php ' . $code);
+
+                // Permanent file: a truncated one fatals on every later request, so the
+                // write is verified and a partial file removed rather than included.
+                static::putFileContentsOrFail($filepath, '<?php ' . $code, 'book model class');
+
                 include($filepath);
             }
             else if(is_writable(sys_get_temp_dir())) {
                 // Create temp class file, include it, then delete it
                 $tempfile = tempnam(sys_get_temp_dir(), $model_class . '.php');
-                file_put_contents($tempfile, '<?php ' . $code);
+
+                static::putFileContentsOrFail($tempfile, '<?php ' . $code, 'book model class');
+
                 include($tempfile);
                 unlink($tempfile);
             }

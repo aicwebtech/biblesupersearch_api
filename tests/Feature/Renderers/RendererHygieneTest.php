@@ -93,11 +93,18 @@ class RendererHygieneTest extends TestCase
         foreach($files as $file) {
             $code = $this->sourceWithoutComments(app_path('Renderers/Extras/' . $file));
 
-            // copy() and rename() follow a destination symlink as readily as
-            // file_put_contents() and fopen() do -- copy() silently, returning TRUE while
-            // it overwrites the link target. The first version of this test counted only
-            // file_put_contents/fopen, which is how the copy() writer stayed unguarded.
-            $writes = preg_match_all('/\\b(?:file_put_contents|fopen|copy|rename)\\s*\\(/', $code);
+            // Every call that can *create* the destination file needs the guard, because
+            // each one follows a symlink there -- copy() silently, returning TRUE while it
+            // overwrites the link target. Per-row writers (putCsvRowOrFail, fputcsv,
+            // fwrite) are deliberately not counted: they write into a handle that one of
+            // these calls already opened and guarded.
+            //
+            // putFileContentsOrFail is the checked form of file_put_contents; both are
+            // counted so that swapping one for the other cannot quietly drop a guard.
+            $writes = preg_match_all(
+                '/\\b(?:file_put_contents|putFileContentsOrFail|fopen|copy|rename)\\s*\\(/',
+                $code
+            );
             $guards = preg_match_all('/removeStaleFile\\s*\\(/', $code);
 
             if($writes === 0) {

@@ -93,10 +93,17 @@ class ApiKey extends Model implements AccessLogInterface
         }
 
         // For tracking purposes, we also log the hits against the IP with the key, however, this count is not used to determine limit overage, ect.
+        // Atomic like the quota counter above: api_ip_key_count carries a unique index on
+        // (key_id, ip_id, date), so the old firstOrNew -> count++ -> save() sequence let a
+        // racing request lose to that index and raise -- turning an access this key had
+        // already been charged for into a 500.
         $IP = IpAccess::findOrCreateByIpOrDomain(true);
-        $IpKeyCount = ApiIpKeyCount::firstOrNew(['key_id' => $this->id, 'ip_id' => $IP->id, 'date' => date('Y-m-d')]);
-        $IpKeyCount->count ++;
-        $IpKeyCount->save();
+
+        $this->incrementTrackingCountAtomic(ApiIpKeyCount::class, [
+            'key_id' => $this->id,
+            'ip_id'  => $IP->id,
+            'date'   => date('Y-m-d'),
+        ]);
 
         return TRUE;
     }

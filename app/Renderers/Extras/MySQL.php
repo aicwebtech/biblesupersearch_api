@@ -80,7 +80,7 @@ HEAD;
         if($has_results && (!file_exists($dst_file) || $this->overwrite)) {
             $contents = $header . $contents;
             static::removeStaleFile($dst_file);
-            file_put_contents($dst_file, $contents);
+            static::putFileContentsOrFail($dst_file, $contents, 'extras SQL dump');
         }
 
         return $dst_file;
@@ -128,7 +128,7 @@ HEAD;
             $contents = str_replace($find, $repl, $contents);
             $contents = $header . $contents;
             static::removeStaleFile($dst_file);
-            file_put_contents($dst_file, $contents);
+            static::putFileContentsOrFail($dst_file, $contents, 'extras SQL dump');
         }
 
         return $dst_file;
@@ -196,7 +196,7 @@ HEAD;
         }
 
         static::removeStaleFile($filepath);
-        file_put_contents($filepath, $contents);
+        static::putFileContentsOrFail($filepath, $contents, 'extras SQL dump');
 
         return $filepath;
     }

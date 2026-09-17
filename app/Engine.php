@@ -1056,6 +1056,10 @@ class Engine implements ErrorInterface
             return FALSE;
         }
 
+        // Array and object input is denied here rather than raising: filter_var() returns
+        // FALSE for both. Verified on 8.2-8.5 and pinned by
+        // Tests\Feature\Engine\BypassLimitInputTest, which is where a change in that
+        // behaviour would surface rather than on the render endpoint.
         if(!filter_var($input['bypass_limit'], FILTER_VALIDATE_BOOLEAN)) {
             return FALSE;
         }

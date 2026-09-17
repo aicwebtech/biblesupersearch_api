@@ -179,6 +179,30 @@ class AudioManager implements ErrorInterface
     }
 
     /**
+     * Append one verse's mp3 bytes to the concatenation stream.
+     *
+     * Every verse is written into a single temp stream that is then sent as the response
+     * body. fwrite() can write fewer bytes than it was given without returning FALSE -- a
+     * full disk is the usual cause -- and a short write here means the listener is served
+     * truncated or garbled audio with nothing reporting a problem, so the byte count is
+     * compared rather than just checked for FALSE.
+     *
+     * @param  resource  $handle
+     * @param  string    $chunk
+     * @return bool
+     */
+    static public function appendMp3Chunk($handle, $chunk): bool
+    {
+        $length = strlen($chunk);
+
+        if($length === 0) {
+            return TRUE;
+        }
+
+        return fwrite($handle, $chunk) === $length;
+    }
+
+    /**
      * How many of these verses have no audio file yet, and therefore cost one
      * external TTS call each to generate.
      *
@@ -312,8 +336,8 @@ class AudioManager implements ErrorInterface
                         $MP3 = new Mp3($file_path);                        
                         $MP3->stripTags();
 
-                        if ($compat_mode) {
-                            fwrite($mp3_tmp, $MP3->getStr());
+                        if ($compat_mode && !static::appendMp3Chunk($mp3_tmp, $MP3->getStr())) {
+                            return $this->addError('Failed to assemble the audio file.', 4);
                         }
                     } else {
                         $this->addTransError('errors.audio_file_missing', ['bcv' => $verse->book . ' ' . $verse->chapter . ':' . $verse->verse]);

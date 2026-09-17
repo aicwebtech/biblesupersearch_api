@@ -75,4 +75,33 @@ trait DailyHitCounter
 
         return TRUE;
     }
+
+    /**
+     * Record one hit against a tracking row that has no quota attached.
+     *
+     * Same race as the quota counters, different consequence: firstOrNew -> count++ ->
+     * save() lets two concurrent requests both find no row, both insert, and the loser
+     * hit the unique index. That surfaced as a 500 *after* the request's quota had
+     * already been spent -- the caller was charged for an access it never received.
+     *
+     * insertOrIgnore lets the unique index absorb the racing insert, and the increment is
+     * a single UPDATE, so neither path can raise.
+     *
+     * @param  string  $model_class  Eloquent model for the tracking table
+     * @param  array   $keys         Row identity, e.g. ['key_id' => 1, 'ip_id' => 2, 'date' => '...']
+     * @return void
+     */
+    protected function incrementTrackingCountAtomic($model_class, array $keys)
+    {
+        $Model = new $model_class();
+        $now = $Model->freshTimestampString();
+
+        $model_class::insertOrIgnore($keys + [
+            'count'      => 0,
+            'created_at' => $now,
+            'updated_at' => $now,
+        ]);
+
+        DB::table($Model->getTable())->where($keys)->increment('count', 1, ['updated_at' => $now]);
+    }
 }

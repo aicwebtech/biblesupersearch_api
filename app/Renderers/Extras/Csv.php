@@ -71,23 +71,27 @@ class Csv extends ExtrasAbstract
 
 
     /**
-     * Write one CSV row, failing loudly rather than silently dropping it.
+     * Write one CSV row, failing loudly rather than silently dropping or truncating it.
      *
-     * fputcsv() returns FALSE on failure; an unchecked call leaves a dump that is short
-     * some rows but otherwise looks complete, which is worse than no dump at all.
+     * Delegates to the shared checked writer: fputcsv() alone cannot be verified, because
+     * it reports a refused write as 0 and a short write as the count it managed rather
+     * than as FALSE.
      *
      * @param  resource  $handle
      * @param  array     $row
      * @param  string    $filepath  For the error message only
      * @return void
-     * @throws \Exception
+     * @throws \RuntimeException
      */
     private function _writeCsvRow($handle, array $row, string $filepath): void
     {
-        if(fputcsv($handle, $row, escape: $this->escape) === FALSE) {
+        try {
+            static::putCsvRowOrFail($handle, $row, $this->escape, $filepath);
+        }
+        catch(\RuntimeException $e) {
             fclose($handle);
 
-            throw new \Exception('Unable to write extras file: ' . $filepath);
+            throw $e;
         }
     }
 }

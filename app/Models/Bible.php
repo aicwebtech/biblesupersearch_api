@@ -14,6 +14,8 @@ use App\Traits\Error;
 
 class Bible extends Model 
 {
+    use \App\Traits\WritesFilesSafely;
+
     use Error;
 
     static $_cache = [];
@@ -492,6 +494,11 @@ class Bible extends Model
             $json  = $Zip->getFromName('info.json');
             $attr  = json_decode($json, TRUE);
 
+            // Reverting metadata must not revert provenance: an uploaded unofficial
+            // archive declaring "official": true would otherwise be promoted here, and
+            // migrateModuleFile() would then move it into bibles/modules.
+            $attr = static::stripFileProvenanceAttributes($attr);
+
             $this->fill($attr);
             $this->save();
             $Zip->close();
@@ -695,6 +702,33 @@ class Bible extends Model
         return FALSE;
     }
 
+    /**
+     * Strip the attributes that must never be taken from an archive's info.json.
+     *
+     * `official` decides which directory the module file belongs in, and `module` is the
+     * identity the file paths are built from. Anyone able to upload an archive can put
+     * "official": true (or a different module name) inside it, so both are owned by the
+     * server: `official` follows the directory the file is actually in, and `module` is
+     * the name the caller looked the record up by.
+     *
+     * Applied by every path that fills a model from info.json -- createFromModuleFile()
+     * sets them explicitly, updateFromModuleFile() and revertMetaInfo() drop them and keep
+     * what the record already holds.
+     *
+     * @param  array  $attr
+     * @return array
+     */
+    protected static function stripFileProvenanceAttributes($attr)
+    {
+        if(!is_array($attr)) {
+            return [];
+        }
+
+        unset($attr['official'], $attr['module']);
+
+        return $attr;
+    }
+
     public static function updateFromModuleFile($module, $fields = [])
     {
         if(!$module) {
@@ -716,9 +750,7 @@ class Bible extends Model
                 $attr = Arr::only($attr, $fields);
             }
 
-            // Same rule as createFromModuleFile(): official status follows the
-            // directory the archive is in, never info.json inside it.
-            unset($attr['official'], $attr['module']);
+            $attr = static::stripFileProvenanceAttributes($attr);
 
             $Bible->fill($attr);
             $Bible->save();
@@ -944,13 +976,20 @@ class Bible extends Model
             if($perm_file && is_writable(dirname(__FILE__) . '/Verses')) {
                 // Create permanent class file and include it
                 $filepath = dirname(__FILE__) . '/Verses/' . $model_class . '.php';
-                file_put_contents($filepath, '<?php ' . $code);
+
+                // A truncated class file is a parse error on the include below, and this
+                // one is permanent: it would fatal every later request until somebody
+                // deleted it by hand. Fail the write instead, removing the partial file.
+                static::putFileContentsOrFail($filepath, '<?php ' . $code, 'verse model class');
+
                 include($filepath);
             }
             else if(is_writable(sys_get_temp_dir())) {
                 // Create temp class file, include it, then delete it
                 $tempfile = tempnam(sys_get_temp_dir(), $model_class . '.php');
-                file_put_contents($tempfile, '<?php ' . $code);
+
+                static::putFileContentsOrFail($tempfile, '<?php ' . $code, 'verse model class');
+
                 include($tempfile);
                 unlink($tempfile);
             }

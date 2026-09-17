@@ -11,6 +11,8 @@ use \DB;
 
 class Database 
 {
+    use \App\Traits\WritesFilesSafely;
+
     public static $use_queue = FALSE;
     protected static $queue = [];
     protected static $processing_queue = FALSE;
@@ -117,10 +119,17 @@ class Database
         }
 
         $fp = fopen($path, 'w'); // w option truncates file to 0 length
-        fputcsv($fp, $map, escape: static::$csvescape); // use map as header row in CSV
+
+        if($fp === FALSE) {
+            throw new \Exception('Could not open CSV export file for writing: ' . $display_path);
+        }
+
+        // Every row is checked: an unreported failure here leaves an export that looks
+        // complete but is quietly missing rows, and the import side has no way to tell.
+        static::putCsvRowOrFail($fp, $map, static::$csvescape, $display_path); // use map as header row in CSV
         $csvescape = static::$csvescape;
 
-        $model_class::chunk(500, function(Collection $Objects) use ($fp, $map, $csvescape) {
+        $model_class::chunk(500, function(Collection $Objects) use ($fp, $map, $csvescape, $display_path) {
             foreach($Objects as $Object) {
                 $raw = $Object->attributesToArray();
                 $mapped = [];
@@ -148,11 +157,14 @@ class Database
                     $mapped[] = $val;
                 }
 
-                fputcsv($fp, $mapped, escape: $csvescape);
+                static::putCsvRowOrFail($fp, $mapped, $csvescape, $display_path);
             }
         });
 
-        fclose($fp);
+        // Buffered rows are flushed here, so a disk that filled part way can surface at
+        // close rather than at any single row.
+        static::closeFileOrFail($fp, $display_path);
+
         return true;
     }
 

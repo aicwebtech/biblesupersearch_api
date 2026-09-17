@@ -4,6 +4,8 @@ namespace App\Renderers;
 
 class Csv extends TextAbstract 
 {
+    use \App\Traits\WritesFilesSafely;
+
     static public $name = 'CSV';
     static public $description = 'Comma separated values.  UTF-8 encoding.';
 
@@ -34,12 +36,12 @@ class Csv extends TextAbstract
     }
 
     /**
-     * Write one CSV row, failing loudly rather than silently dropping it.
+     * Write one CSV row, failing loudly rather than silently dropping or truncating it.
      *
-     * fputcsv() returns the number of bytes written, or FALSE on failure. It formats the
-     * row itself, so there is no expected length to compare against the way _write() can;
-     * FALSE is the signal available here. A short write that does not report FALSE is
-     * still caught, one row later or by the fclose() check in _closeFile().
+     * The row is formatted first and then written through _write(), which compares the
+     * byte count. Handing it straight to fputcsv() and testing for FALSE is not enough:
+     * fputcsv() reports a refused write as 0 and a short write as the count it managed,
+     * so the disk-full case never produces FALSE at all.
      *
      * @param  array  $row
      * @return void
@@ -47,8 +49,6 @@ class Csv extends TextAbstract
      */
     protected function _writeCsvRow(array $row) 
     {
-        if(fputcsv($this->handle, $row, escape: $this->escape) === FALSE) {
-            $this->_throwWriteFailure(FALSE);
-        }
+        $this->_write(static::csvRowToString($row, $this->escape));
     }
 }

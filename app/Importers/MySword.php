@@ -301,13 +301,23 @@ class MySword extends ImporterAbstract
             $limit = static::maxDecompressedBytes();
             $written = 0;
 
+            // Decompress to a sibling temp file rather than straight onto $uz_path.
+            // fopen(..., 'wb') truncates, so writing directly destroyed an already
+            // extracted database before a single byte of the new one had been verified --
+            // and the failure cleanup below then deleted what was left of it. The
+            // destination is only replaced once the whole stream has been written.
+            $tmp_path = $uz_path . '.part_' . bin2hex(random_bytes(6));
+
             // Open our files (in binary mode)
             $in_file  = gzopen($path, 'rb');
-            $out_file = fopen($uz_path, 'wb');
+            $out_file = fopen($tmp_path, 'wb');
 
             if(!$in_file || !$out_file) {
                 if($in_file) { gzclose($in_file); }
                 if($out_file) { fclose($out_file); }
+
+                @unlink($tmp_path);
+
                 return $this->addError('Could not open .gz file');
             }
 
@@ -351,8 +361,22 @@ class MySword extends ImporterAbstract
             }
 
             if($failed) {
-                @unlink($uz_path); // do not leave a partial database behind
+                // Only the partial temp file goes; anything already at $uz_path is
+                // untouched, because nothing was written there.
+                @unlink($tmp_path);
+
                 return $this->addError($failed);
+            }
+
+            // Replace the destination only now that the extraction is known to be whole.
+            // rename() over an existing file is atomic on the same filesystem, and the temp
+            // file is a sibling so that holds here. No stale-file guard is needed: rename()
+            // replaces a symlink at the destination rather than writing through it (and
+            // _containedImportPath() refuses a symlinked destination anyway).
+            if(!rename($tmp_path, $uz_path)) {
+                @unlink($tmp_path);
+
+                return $this->addError('Could not write extracted file');
             }
 
             return new SQLite3($uz_path);

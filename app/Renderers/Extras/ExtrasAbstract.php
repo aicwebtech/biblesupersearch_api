@@ -8,6 +8,7 @@ class ExtrasAbstract
 {
     use \App\Traits\Error;
     use \App\Traits\RemovesStaleFiles;
+    use \App\Traits\WritesFilesSafely;
 
     protected $overwrite = FALSE;
     protected $filelist = [];
@@ -163,7 +164,8 @@ class ExtrasAbstract
         } 
 
         static::removeStaleFile($filepath);
-        file_put_contents($filepath, $readme);
+        static::putFileContentsOrFail($filepath, $readme, 'extras readme');
+
         $this->filelist[] = $filepath;
     }
 
