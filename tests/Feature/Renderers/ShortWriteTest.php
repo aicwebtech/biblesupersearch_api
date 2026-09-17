@@ -166,4 +166,59 @@ class ShortWriteTest extends TestCase
 
         $this->assertTrue(TRUE, 'The error path must not raise');
     }
+
+    /**
+     * render() writes in place, and a throw skips the bookkeeping that would update the
+     * Rendering record -- so the *previous* render's rendered_at, version and meta_hash all
+     * survive. isRenderNeeded() then sees a file on disk plus intact metadata, reports
+     * FALSE, and the truncated artifact is served as the current render.
+     *
+     * The error path therefore has to take the half-written file with it.
+     */
+    public function testTheErrorPathRemovesTheTruncatedArtifact(): void
+    {
+        $dir = sys_get_temp_dir() . '/bss_render_err_' . bin2hex(random_bytes(6));
+        mkdir($dir);
+
+        $artifact = $dir . '/partial.txt';
+        file_put_contents($artifact, 'TRUNCATED OUTPUT');
+
+        $renderer = new class($artifact) extends PlainText {
+            /** @var string */
+            private $path;
+
+            public function __construct(string $path)
+            {
+                $this->path = $path;
+            }
+
+            public function getRenderFilePath($create_dir = FALSE, $relative = false)
+            {
+                return $this->path;
+            }
+
+            public function callOnVerseRenderError(\Throwable $e): void
+            {
+                $this->_onVerseRenderError($e);
+            }
+        };
+
+        try {
+            $this->assertFileExists($artifact, 'Precondition: the partial render is on disk');
+
+            $renderer->callOnVerseRenderError(new \Exception('verse chunk failed'));
+
+            $this->assertFileDoesNotExist(
+                $artifact,
+                'A truncated render must not be left where isRenderNeeded() would serve it'
+            );
+        }
+        finally {
+            foreach(glob($dir . '/*') ?: [] as $path) {
+                @unlink($path);
+            }
+
+            @rmdir($dir);
+        }
+    }
 }

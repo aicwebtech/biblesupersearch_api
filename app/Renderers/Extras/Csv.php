@@ -91,6 +91,10 @@ class Csv extends ExtrasAbstract
         catch(\RuntimeException $e) {
             fclose($handle);
 
+            // A truncated CSV left at the destination would be picked up by a later
+            // caller, or downloaded, as though it were a complete dump.
+            static::removeCreatedFile($filepath);
+
             throw $e;
         }
     }

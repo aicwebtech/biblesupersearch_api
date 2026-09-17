@@ -41,6 +41,13 @@ abstract class TextAbstract extends RenderAbstract
         // Unchecked: the render is being abandoned already, and a close failure raised
         // here would replace the exception that actually explains the failure.
         $this->_closeFile(FALSE);
+
+        // The half-written file has to go too. render() writes in place, and the throw
+        // skips the bookkeeping that would have updated the Rendering record -- so the
+        // *previous* render's rendered_at, version and meta_hash all survive, and
+        // isRenderNeeded() would report FALSE and hand this truncated file out as the
+        // current render. Removing it forces a re-render instead.
+        static::removeCreatedFile($this->getRenderFilePath());
     }
 
     /**

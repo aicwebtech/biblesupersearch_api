@@ -46,7 +46,12 @@ class Ffmpeg
         }
 
         if(!is_writable($output_file)) {
-            self::$useErrors[] = ' PHP cannot write file ' . $output_file;
+            // $useErrors is interpolated into the errors.audio.merge_failed API response
+            // (AudioManager::getAudio), so nothing here may name a server path. The detail
+            // goes to the log, where an operator can still find it.
+            \Log::error('ffmpeg merge: output file is not writable: ' . $output_file);
+            self::$useErrors[] = 'The audio file could not be written.';
+
             return false;
         }
 
@@ -65,7 +70,10 @@ class Ffmpeg
         @unlink($input_list_file);
 
         if($return_var !== 0) {
-            self::$useErrors[] = "ffmpeg merge failed: " . implode("\n", $output);
+            // ffmpeg echoes both the input-list and output paths on failure, so its output
+            // is logged rather than returned to the caller.
+            \Log::error("ffmpeg merge failed: " . implode("\n", $output));
+            self::$useErrors[] = 'The audio files could not be merged.';
         }
 
         // var_dump($return_var); die();
@@ -93,7 +101,8 @@ class Ffmpeg
         $handle = @fopen($path, 'w');
 
         if(!$handle) {
-            self::$useErrors[] = 'Could not open the ffmpeg input list for writing: ' . $path;
+            \Log::error('ffmpeg merge: could not open the input list for writing: ' . $path);
+            self::$useErrors[] = 'The audio file could not be assembled.';
 
             return false;
         }

@@ -26,4 +26,24 @@ trait RemovesStaleFiles
             unlink($file_path);
         }
     }
+
+    /**
+     * Remove a file this code created, after a failure.
+     *
+     * Same mechanics as removeStaleFile(), different intent, and named apart so the two
+     * cannot be confused: this is cleanup of our own half-written artifact, not a guard
+     * run *before* a write to stop a planted symlink being followed. Keeping the names
+     * distinct also keeps the guard coverage in
+     * Tests\Feature\Renderers\RendererHygieneTest countable -- a cleanup call must not
+     * read as though a write were guarded.
+     *
+     * @param  string  $file_path
+     * @return void
+     */
+    protected static function removeCreatedFile($file_path): void
+    {
+        if(is_link($file_path) || file_exists($file_path)) {
+            unlink($file_path);
+        }
+    }
 }

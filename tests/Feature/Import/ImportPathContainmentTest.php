@@ -45,6 +45,45 @@ class ImportPathContainmentTest extends TestCase
     }
 
     /**
+     * sanitizeFileName() strips separators and collapses '..', so validating *after* it
+     * turned "../existing.mybible" into "existing.mybible" -- a name that passed the
+     * basename test and resolved to a real staged file. Containment was never broken (the
+     * resolved path still had to sit under the importer directory), but a traversing name
+     * silently aliasing onto another staged file means the commit step can address a file
+     * other than the one that was preflighted.
+     */
+    public function testATraversingNameIsNotAliasedOntoAnExistingFile(): void
+    {
+        $Importer = $this->importer();
+        $dir = realpath($Importer->getImportDir());
+        $name = 'alias_target_' . bin2hex(random_bytes(4)) . '.mybible';
+        $path = $dir . DIRECTORY_SEPARATOR . $name;
+
+        file_put_contents($path, 'a real staged file');
+
+        try {
+            // Precondition: the bare name resolves, so a NULL below is the guard working
+            // rather than the file simply being absent.
+            $this->assertNotNull($Importer->resolveImportFile($name));
+
+            foreach(['../' . $name, '..\\' . $name, './' . $name, 'sub/' . $name] as $attempt) {
+                $this->assertNull(
+                    $Importer->resolveImportFile($attempt),
+                    'Expected NULL for: ' . $attempt
+                );
+
+                $this->assertNull(
+                    $Importer->safeImportFileName($attempt),
+                    'safeImportFileName must agree: ' . $attempt
+                );
+            }
+        }
+        finally {
+            @unlink($path);
+        }
+    }
+
+    /**
      * A real file in the importer's own directory still resolves, so the guard
      * has not broken normal imports.
      */

@@ -116,4 +116,74 @@ class ConcatListWriteTest extends TestCase
             stream_wrapper_unregister('concatshort');
         }
     }
+
+    /**
+     * Ffmpeg::$useErrors is interpolated straight into the errors.audio.merge_failed API
+     * response (AudioManager::getAudio), so an ordinary permission or disk-full failure
+     * must not hand the caller the server's filesystem layout. The detail belongs in the
+     * log, which an operator can read and a client cannot.
+     */
+    #[\PHPUnit\Framework\Attributes\WithoutErrorHandler]
+    public function testFailuresDoNotDiscloseServerPaths(): void
+    {
+        $secret = $this->dir . '/no_such_dir/list.txt';
+
+        $this->assertFalse($this->writeList($secret, ['/a/one.mp3']));
+
+        $this->assertNotEmpty(Ffmpeg::$useErrors);
+
+        foreach(Ffmpeg::$useErrors as $message) {
+            $this->assertStringNotContainsString($secret, $message, 'The path must not reach the client');
+            $this->assertStringNotContainsString($this->dir, $message, 'No part of the path may leak');
+            $this->assertStringNotContainsString('/tmp', $message, 'No filesystem layout may leak');
+        }
+    }
+
+    /**
+     * The same rule for every other message this class can produce.
+     */
+    public function testNoErrorMessageInterpolatesAPath(): void
+    {
+        $source = $this->sourceWithoutComments(app_path('TextToSpeech/Ffmpeg.php'));
+
+        preg_match_all('/useErrors\[\]\s*=\s*([^;]+);/', $source, $matches);
+
+        $this->assertNotEmpty($matches[1], 'Expected to find the error assignments');
+
+        foreach($matches[1] as $expression) {
+            $this->assertStringNotContainsString(
+                '$path',
+                $expression,
+                'A path variable must not be interpolated into a client-visible error: ' . trim($expression)
+            );
+            $this->assertStringNotContainsString('$output_file', $expression, trim($expression));
+            $this->assertStringNotContainsString('$input_list_file', $expression, trim($expression));
+            $this->assertStringNotContainsString('$output', $expression, trim($expression));
+        }
+    }
+
+    /**
+     * @param  string  $path
+     * @return string
+     */
+    protected function sourceWithoutComments(string $path): string
+    {
+        $code = '';
+
+        foreach(token_get_all(file_get_contents($path)) as $token) {
+            if(!is_array($token)) {
+                $code .= $token;
+
+                continue;
+            }
+
+            if($token[0] === T_COMMENT || $token[0] === T_DOC_COMMENT) {
+                continue;
+            }
+
+            $code .= $token[1];
+        }
+
+        return $code;
+    }
 }

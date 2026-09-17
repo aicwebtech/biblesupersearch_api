@@ -236,7 +236,7 @@ abstract class ImporterAbstract
      */
     public function resolveImportFile($file_name) 
     {
-        if(!is_string($file_name)) {
+        if(!static::rawNameIsBare($file_name)) {
             return NULL;
         }
 
@@ -728,6 +728,37 @@ abstract class ImporterAbstract
         }
 
         return $module_suggestion;
+    }
+
+    /**
+     * Is this raw, client-supplied name a bare filename?
+     *
+     * Checked *before* sanitizeFileName(), which strips '/' and collapses '..' and so
+     * turns "../existing.mybible" into "existing.mybible" -- a name that then passes a
+     * basename() test and resolves to a real staged file. Containment was never broken by
+     * that (the resolved path is still required to sit under the importer directory), but
+     * a traversing name silently aliasing onto another staged file is not what the
+     * surrounding code claims to do, and it lets a commit step address a file other than
+     * the one that was preflighted.
+     *
+     * @param  mixed  $file_name
+     * @return bool
+     */
+    public static function rawNameIsBare($file_name) 
+    {
+        if(!is_string($file_name) || $file_name === '') {
+            return FALSE;
+        }
+
+        // Backslash is checked explicitly: basename() does not treat it as a separator on
+        // POSIX, so "..\\existing.mybible" would otherwise survive.
+        foreach(['/', '\\', "\0"] as $needle) {
+            if(strpos($file_name, $needle) !== FALSE) {
+                return FALSE;
+            }
+        }
+
+        return $file_name === basename($file_name);
     }
 
     public static function sanitizeFileName($file_name) 

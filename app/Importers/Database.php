@@ -118,52 +118,78 @@ class Database
             }
         }
 
-        $fp = fopen($path, 'w'); // w option truncates file to 0 length
+        // Built at a sibling temp path and moved into place only once it is complete.
+        // Writing straight to $path truncates it up front, so a row failure part way
+        // through left a corrupt export behind -- and because this method refuses to
+        // overwrite an existing file, that corpse then blocked every later export until
+        // somebody deleted it by hand.
+        $tmp_path = $path . '.part_' . bin2hex(random_bytes(6));
+        $fp = fopen($tmp_path, 'w');
 
         if($fp === FALSE) {
             throw new \Exception('Could not open CSV export file for writing: ' . $display_path);
         }
 
-        // Every row is checked: an unreported failure here leaves an export that looks
-        // complete but is quietly missing rows, and the import side has no way to tell.
-        static::putCsvRowOrFail($fp, $map, static::$csvescape, $display_path); // use map as header row in CSV
         $csvescape = static::$csvescape;
 
-        $model_class::chunk(500, function(Collection $Objects) use ($fp, $map, $csvescape, $display_path) {
-            foreach($Objects as $Object) {
-                $raw = $Object->attributesToArray();
-                $mapped = [];
+        try {
+            // Every row is checked: an unreported failure here leaves an export that looks
+            // complete but is quietly missing rows, and the import side cannot tell.
+            static::putCsvRowOrFail($fp, $map, $csvescape, $display_path); // use map as header row in CSV
 
-                foreach($map as $mkey => $lr) {
-                    $lr = explode('|', $lr);
-                    $l = $lr[0];
-                    $format = array_key_exists(1, $lr) ? $lr[1] : 'null';
+            $model_class::chunk(500, function(Collection $Objects) use ($fp, $map, $csvescape, $display_path) {
+                foreach($Objects as $Object) {
+                    $raw = $Object->attributesToArray();
+                    $mapped = [];
 
-                    if(array_key_exists($l, $raw)) {
-                        $val = $raw[$l];
+                    foreach($map as $mkey => $lr) {
+                        $lr = explode('|', $lr);
+                        $l = $lr[0];
+                        $format = array_key_exists(1, $lr) ? $lr[1] : 'null';
 
-                        switch($format) {
-                            case 'boolstr':
-                                $val = $val && $val != 'no' && $val != 'false' ? 'yes' : 'no';
-                                break;
-                            default:    
-                                $val = $val ?: '';
+                        if(array_key_exists($l, $raw)) {
+                            $val = $raw[$l];
+
+                            switch($format) {
+                                case 'boolstr':
+                                    $val = $val && $val != 'no' && $val != 'false' ? 'yes' : 'no';
+                                    break;
+                                default:    
+                                    $val = $val ?: '';
+                            }
                         }
-                    }
-                    else {
-                        $val = '';
+                        else {
+                            $val = '';
+                        }
+
+                        $mapped[] = $val;
                     }
 
-                    $mapped[] = $val;
+                    static::putCsvRowOrFail($fp, $mapped, $csvescape, $display_path);
                 }
+            });
 
-                static::putCsvRowOrFail($fp, $mapped, $csvescape, $display_path);
+            // Buffered rows are flushed here, so a disk that filled part way can surface
+            // at close rather than at any single row.
+            static::closeFileOrFail($fp, $display_path);
+        }
+        catch(\Throwable $e) {
+            // The handle may still be open (a row failure) or already closed (a close
+            // failure); is_resource() tells them apart. Either way the partial export goes.
+            if(is_resource($fp)) {
+                fclose($fp);
             }
-        });
 
-        // Buffered rows are flushed here, so a disk that filled part way can surface at
-        // close rather than at any single row.
-        static::closeFileOrFail($fp, $display_path);
+            @unlink($tmp_path);
+
+            throw $e;
+        }
+
+        if(!rename($tmp_path, $path)) {
+            @unlink($tmp_path);
+
+            throw new \Exception('Could not write CSV export file: ' . $display_path);
+        }
 
         return true;
     }
