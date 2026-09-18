@@ -135,7 +135,11 @@ class ExtrasAbstract
         $dest_filepath = $this->getRenderFileDir() . $dest_filename;
         
         if(!is_file($src_filepath)) {
-            throw new \Exception('Unable to copy, source file does not exist: ' . $src_filepath);
+            // Paths go to the log, not into the exception: these can surface to a caller,
+            // and naming the files discloses the server's filesystem layout.
+            \Log::error('Extras: source file does not exist: ' . $src_filepath);
+
+            throw new \Exception('Unable to copy, source file does not exist');
         }
 
         // copy() follows a pre-existing destination symlink and writes through to its
@@ -143,7 +147,9 @@ class ExtrasAbstract
         static::removeStaleFile($dest_filepath);
 
         if(!copy($src_filepath, $dest_filepath)) {
-            throw new \Exception('Unable to copy ' . $src_filepath . ' to ' . $dest_filepath);
+            \Log::error('Extras: unable to copy ' . $src_filepath . ' to ' . $dest_filepath);
+
+            throw new \Exception('Unable to copy the extras source file');
         }
 
         return $dest_filepath;

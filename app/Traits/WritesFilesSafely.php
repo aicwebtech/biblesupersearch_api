@@ -37,13 +37,18 @@ trait WritesFilesSafely
 
         @unlink($path);
 
-        throw new \RuntimeException(sprintf(
+        // The path and byte counts identify the problem but also describe the server's
+        // filesystem, and these exceptions can reach a caller. The detail is logged; the
+        // message names only what was being written.
+        \Log::error(sprintf(
             'Failed to write %s "%s": wrote %s of %d bytes',
             $what,
             $path,
             var_export($written, TRUE),
             $length
         ));
+
+        throw new \RuntimeException('Failed to write ' . $what);
     }
 
     /**
@@ -94,7 +99,11 @@ trait WritesFilesSafely
         }
 
         if(fwrite($handle, $line) !== $length) {
-            throw new \RuntimeException('Failed to write CSV row' . ($path === '' ? '' : ' to "' . $path . '"'));
+            if($path !== '') {
+                \Log::error('Failed to write CSV row to "' . $path . '"');
+            }
+
+            throw new \RuntimeException('Failed to write CSV row');
         }
     }
 
@@ -112,7 +121,11 @@ trait WritesFilesSafely
     protected static function closeFileOrFail($handle, $path = '')
     {
         if(!fclose($handle)) {
-            throw new \RuntimeException('Failed to finish writing' . ($path === '' ? ' file' : ' "' . $path . '"'));
+            if($path !== '') {
+                \Log::error('Failed to finish writing "' . $path . '"');
+            }
+
+            throw new \RuntimeException('Failed to finish writing file');
         }
     }
 }

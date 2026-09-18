@@ -3,6 +3,7 @@
 namespace Tests\Feature\Renderers;
 
 use Tests\TestCase;
+use PHPUnit\Framework\Attributes\DataProvider;
 
 /**
  * SQLite3::_renderStart() used file_exists() -> unlink() -> touch(). A
@@ -260,30 +261,53 @@ class RendererHygieneTest extends TestCase
     }
 
     /**
-     * The extras CSV writer's exceptions can reach a caller, so none of them may name the
-     * file being written. The path still goes to the log, where an operator can read it
-     * and a client cannot.
+     * Exceptions from the extras subsystem and from the shared write helpers can reach a
+     * caller, so none of them may name a file on the server. The paths still go to the
+     * log, where an operator can read them and a client cannot.
+     *
+     * Asserted across the whole directory rather than one file, because this started as a
+     * fix to Csv.php alone while its siblings went on naming their paths.
      */
-    public function testExtrasCsvExceptionsDoNotNameTheFile(): void
+    #[DataProvider('pathBearingSourceProvider')]
+    public function testExceptionsDoNotNameServerPaths(string $file, array $path_variables): void
     {
-        $source = $this->sourceWithoutComments(app_path('Renderers/Extras/Csv.php'));
+        $source = $this->sourceWithoutComments(app_path($file));
 
         preg_match_all('/throw new [^;]+;/', $source, $matches);
 
-        $this->assertNotEmpty($matches[0], 'Expected to find the throw statements');
+        $this->assertNotEmpty($matches[0], $file . ': expected to find throw statements');
 
         foreach($matches[0] as $statement) {
-            $this->assertStringNotContainsString(
-                '$filepath',
-                $statement,
-                'The path must not be interpolated into a thrown message: ' . trim($statement)
-            );
+            foreach($path_variables as $variable) {
+                $this->assertStringNotContainsString(
+                    $variable,
+                    $statement,
+                    $file . ': ' . $variable . ' must not be interpolated into a thrown message: '
+                        . trim($statement)
+                );
+            }
         }
+    }
 
+    public static function pathBearingSourceProvider(): array
+    {
+        return [
+            'extras csv'      => ['Renderers/Extras/Csv.php', ['$filepath']],
+            'extras abstract' => ['Renderers/Extras/ExtrasAbstract.php', ['$src_filepath', '$dest_filepath', '$filepath']],
+            'write helpers'   => ['Traits/WritesFilesSafely.php', ['$path']],
+        ];
+    }
+
+    /**
+     * The detail is not simply discarded: it has to land somewhere an operator can find it.
+     */
+    #[DataProvider('pathBearingSourceProvider')]
+    public function testThePathIsStillLogged(string $file, array $path_variables): void
+    {
         $this->assertStringContainsString(
             'Log::error',
-            $source,
-            'The path must still be recorded somewhere an operator can read it'
+            $this->sourceWithoutComments(app_path($file)),
+            $file . ': the path must still be recorded for operators'
         );
     }
 }
