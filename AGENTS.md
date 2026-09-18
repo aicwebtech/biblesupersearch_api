@@ -41,6 +41,23 @@ rather than at its `CLAUDE.md` default).
 * bibles/modules => Bible SuperSearch modules for Bibles we officially support. Versioned in Git.
 * bibles/unofficial => Bible SuperSearch modules for Bibles we do not officially support. Ignored by Git.
 
+## PHP Conventions
+
+### Type conversion
+Use a type cast, not the equivalent function:
+
+```php
+$count = (int) $input;      // not intval($input)
+$speed = (float) $input;    // not floatval($input) / doubleval($input)
+$flag  = (bool) $input;     // not boolval($input)
+$text  = (string) $input;   // not strval($input)
+```
+
+Casts are a language construct rather than a function call, they read consistently with the
+type hints used elsewhere, and they avoid the misleading second parameter on `intval()`.
+The only reason to reach for `intval()` is a non-decimal base (`intval($hex, 16)`), which
+has no cast equivalent.
+
 ## Tests
 
 ### All tests

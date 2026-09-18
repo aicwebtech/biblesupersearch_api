@@ -46,7 +46,7 @@ class LanguageConfigController extends Controller
         $bootstrap = $this->getAdminBootstrap();
 
         return view('admin.languages', [
-            'bootstrap' => json_encode($bootstrap),
+            'bootstrap' => $this->encodeBootstrap($bootstrap),
         ]);        
     }
 

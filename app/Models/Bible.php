@@ -14,9 +14,12 @@ use App\Traits\Error;
 
 class Bible extends Model 
 {
+    use \App\Traits\WritesFilesSafely;
+
     use Error;
 
     static $_cache = [];
+    static protected $module_invalid_reason = null;
 
     static public function getUpdateRules($bible_id = NULL) 
     {
@@ -44,7 +47,7 @@ class Bible extends Model
                     $valid = static::validateModule($value);
 
                     if(!$valid) {
-                        $fail('Module can contain only lowercase letters, numbers, and underscores.  The first two characters must be letters');
+                        $fail('Module name is invalid: ' . static::$module_invalid_reason);
                     }
                 },
                 'max:100'
@@ -491,6 +494,11 @@ class Bible extends Model
             $json  = $Zip->getFromName('info.json');
             $attr  = json_decode($json, TRUE);
 
+            // Reverting metadata must not revert provenance: an uploaded unofficial
+            // archive declaring "official": true would otherwise be promoted here, and
+            // migrateModuleFile() would then move it into bibles/modules.
+            $attr = static::stripFileProvenanceAttributes($attr);
+
             $this->fill($attr);
             $this->save();
             $Zip->close();
@@ -501,6 +509,13 @@ class Bible extends Model
 
     public function migrateModuleFile($dry_run = FALSE) 
     {
+        // These paths are built from the stored module name and drive unlink()
+        // and rename(). Refuse to act on a record whose module name would not
+        // pass validation rather than trusting whatever is in the column.
+        if(!static::validateModule($this->module)) {
+            return FALSE;
+        }
+
         $path_of = static::getModulePath();
         $path_un = static::getUnofficialModulePath();
 
@@ -540,6 +555,10 @@ class Bible extends Model
 
     public function deleteModuleFile($include_official = FALSE) 
     {
+        if(!static::validateModule($this->module)) {
+            return FALSE;
+        }
+
         $path_of = static::getModulePath();
         $path_un = static::getUnofficialModulePath();
 
@@ -640,7 +659,7 @@ class Bible extends Model
 
     public static function createFromModuleFile($module) 
     {
-        if(!$module) {
+        if(!static::validateModule($module)) {
             return FALSE;
         }
 
@@ -668,12 +687,46 @@ class Bible extends Model
                 $attr['module_version'] = config('app.version');
             }
 
+            // `official` is trusted from the filesystem, never from info.json:
+            // only a server-side provisioning step can place a file in the
+            // official module directory, whereas anyone able to upload can put
+            // "official": true in an archive.
+            $attr['module']   = $module;
+            $attr['official'] = static::moduleFileIsOfficial($module) ? 1 : 0;
+
             $Bible = static::create($attr);
             $Zip->close();
             return $Bible;
         }
 
         return FALSE;
+    }
+
+    /**
+     * Strip the attributes that must never be taken from an archive's info.json.
+     *
+     * `official` decides which directory the module file belongs in, and `module` is the
+     * identity the file paths are built from. Anyone able to upload an archive can put
+     * "official": true (or a different module name) inside it, so both are owned by the
+     * server: `official` follows the directory the file is actually in, and `module` is
+     * the name the caller looked the record up by.
+     *
+     * Applied by every path that fills a model from info.json -- createFromModuleFile()
+     * sets them explicitly, updateFromModuleFile() and revertMetaInfo() drop them and keep
+     * what the record already holds.
+     *
+     * @param  array  $attr
+     * @return array
+     */
+    protected static function stripFileProvenanceAttributes($attr)
+    {
+        if(!is_array($attr)) {
+            return [];
+        }
+
+        unset($attr['official'], $attr['module']);
+
+        return $attr;
     }
 
     public static function updateFromModuleFile($module, $fields = [])
@@ -696,6 +749,8 @@ class Bible extends Model
             if(is_array($fields) && !empty($fields)) {
                 $attr = Arr::only($attr, $fields);
             }
+
+            $attr = static::stripFileProvenanceAttributes($attr);
 
             $Bible->fill($attr);
             $Bible->save();
@@ -777,6 +832,24 @@ class Bible extends Model
             $module = substr($file, 0, strlen($file) - 4);
             $Bible  = static::updateFromModuleFile($module, $fields);
         }
+    }
+
+    /**
+     * Is this module's archive stored in the official module directory?
+     *
+     * The official directory is only writable by server-side provisioning, so
+     * its contents are trusted; the unofficial directory receives HTTP uploads.
+     *
+     * @param  string  $module
+     * @return bool
+     */
+    public static function moduleFileIsOfficial($module) 
+    {
+        if(!static::validateModule($module)) {
+            return FALSE;
+        }
+
+        return is_file(static::getModulePath() . $module . '.zip');
     }
 
     public static function openModuleFileByModule($module) 
@@ -873,6 +946,11 @@ class Bible extends Model
 
         $model_class = studly_case($module);
         $namespace = __NAMESPACE__ . '\Verses';
+
+        if(\App\Helpers::isReservedPhpWord($model_class)) {
+            return FALSE;
+        }
+
         $class_name = $namespace . '\\' . $model_class;
 
         if (!class_exists($class_name)) {
@@ -898,13 +976,20 @@ class Bible extends Model
             if($perm_file && is_writable(dirname(__FILE__) . '/Verses')) {
                 // Create permanent class file and include it
                 $filepath = dirname(__FILE__) . '/Verses/' . $model_class . '.php';
-                file_put_contents($filepath, '<?php ' . $code);
+
+                // A truncated class file is a parse error on the include below, and this
+                // one is permanent: it would fatal every later request until somebody
+                // deleted it by hand. Fail the write instead, removing the partial file.
+                static::putFileContentsOrFail($filepath, '<?php ' . $code, 'verse model class');
+
                 include($filepath);
             }
             else if(is_writable(sys_get_temp_dir())) {
                 // Create temp class file, include it, then delete it
                 $tempfile = tempnam(sys_get_temp_dir(), $model_class . '.php');
-                file_put_contents($tempfile, '<?php ' . $code);
+
+                static::putFileContentsOrFail($tempfile, '<?php ' . $code, 'verse model class');
+
                 include($tempfile);
                 unlink($tempfile);
             }
@@ -925,15 +1010,34 @@ class Bible extends Model
 
     public static function validateModule($module) 
     {
+        // Callers pass request input straight in, and module[]=kjv arrives as an array.
+        // empty() does not reject a non-empty array, so preg_match() below used to raise
+        // a TypeError and surface as a 500 instead of the intended invalid-module answer.
+        if(!is_string($module)) {
+            static::$module_invalid_reason = 'Module name is empty';
+            return FALSE;
+        }
+
         if(empty($module)) {
+            static::$module_invalid_reason = 'Module name is empty';
             return FALSE;
         }
 
         if(preg_match('/[^a-z_0-9]/', $module)) {
+            static::$module_invalid_reason = 'Module name contains invalid characters';
             return FALSE;
         }        
 
         if(!preg_match('/^[a-z]{2}/', $module)) {
+            static::$module_invalid_reason = 'Module name must start with at least two letters';
+            return FALSE;
+        }
+
+        // A module name is used to generate a PHP class, so it must not be a
+        // reserved word: 'class For extends VerseStandard' is a fatal parse
+        // error that would break every request for the affected Bible.
+        if(\App\Helpers::isReservedPhpWord($module)) {
+            static::$module_invalid_reason = 'Module name is a reserved word';
             return FALSE;
         }
 

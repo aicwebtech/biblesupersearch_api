@@ -178,6 +178,68 @@ class AudioManager implements ErrorInterface
         return $this->getAudioByInput($input, 'get', $module);
     }
 
+    /**
+     * Append one verse's mp3 bytes to the concatenation stream.
+     *
+     * Every verse is written into a single temp stream that is then sent as the response
+     * body. fwrite() can write fewer bytes than it was given without returning FALSE -- a
+     * full disk is the usual cause -- and a short write here means the listener is served
+     * truncated or garbled audio with nothing reporting a problem, so the byte count is
+     * compared rather than just checked for FALSE.
+     *
+     * @param  resource  $handle
+     * @param  string    $chunk
+     * @return bool
+     */
+    static public function appendMp3Chunk($handle, $chunk): bool
+    {
+        $length = strlen($chunk);
+
+        if($length === 0) {
+            return TRUE;
+        }
+
+        return fwrite($handle, $chunk) === $length;
+    }
+
+    /**
+     * How many of these verses have no audio file yet, and therefore cost one
+     * external TTS call each to generate.
+     *
+     * @param  iterable<int, object>  $verses
+     * @param  string  $audio_path  Directory holding the Bible's audio files
+     * @return int
+     */
+    static public function countVersesNeedingAudio($verses, string $audio_path): int
+    {
+        $needed = 0;
+
+        foreach($verses as $verse) {
+            if(!static::verseAudioFileExists($verse, $audio_path)) {
+                $needed++;
+            }
+        }
+
+        return $needed;
+    }
+
+    /**
+     * Whether the verse's audio is already on disk. A verse with a file_name
+     * recorded but no file behind it still needs generating.
+     *
+     * @param  object  $verse
+     * @param  string  $audio_path  Directory holding the Bible's audio files
+     * @return bool
+     */
+    static public function verseAudioFileExists($verse, string $audio_path): bool
+    {
+        if(empty($verse->file_name)) {
+            return false;
+        }
+
+        return is_file($audio_path . '/' . $verse->file_name);
+    }
+
     public function getAudioByInput($input, $mode = 'check', $module = null)
     {
         $Passage = new Passage();
@@ -203,6 +265,27 @@ class AudioManager implements ErrorInterface
         try {
             $verses = $Bible->getAudio([$Passage], []);
 
+            $audio_path = TtsAbstract::getAudioFilePathStatic($Bible->module);
+
+            // Each missing verse costs one external TTS call, so an unbounded
+            // range lets a single request drive an unbounded amount of provider
+            // work, spend and storage. Verses whose audio is already on disk
+            // cost nothing and are therefore not counted -- otherwise a check
+            // over a fully generated book would be refused despite making no
+            // provider calls at all.
+            $verse_limit = (int) config('text_to_speech.max_verses_per_request', 200);
+
+            if($mode == 'generate' && $verse_limit > 0) {
+                $verses_needing_audio = static::countVersesNeedingAudio($verses, $audio_path);
+
+                if($verses_needing_audio > $verse_limit) {
+                    return $this->addError(
+                        'Too many verses requested for audio generation. The maximum is ' . $verse_limit . '.',
+                        4
+                    );
+                }
+            }
+
             $compat_mode = !Ffmpeg::canUse();
             $mp3_str = null;
             $single_verse = (count($verses) == 1);
@@ -215,11 +298,7 @@ class AudioManager implements ErrorInterface
             }
 
             foreach($verses as &$verse) {
-                $verse_has_audio = false;
-            
-                if($verse->file_name && is_file(TtsAbstract::getAudioFilePathStatic($Bible->module) . '/' . $verse->file_name)) {
-                    $verse_has_audio = true;
-                }
+                $verse_has_audio = static::verseAudioFileExists($verse, $audio_path);
                 
                 if(!$verse_has_audio && $mode == 'generate') {
                     if($this->checkCanRenderTts($Bible) !== true) {
@@ -257,8 +336,8 @@ class AudioManager implements ErrorInterface
                         $MP3 = new Mp3($file_path);                        
                         $MP3->stripTags();
 
-                        if ($compat_mode) {
-                            fwrite($mp3_tmp, $MP3->getStr());
+                        if ($compat_mode && !static::appendMp3Chunk($mp3_tmp, $MP3->getStr())) {
+                            return $this->addError('Failed to assemble the audio file.', 4);
                         }
                     } else {
                         $this->addTransError('errors.audio_file_missing', ['bcv' => $verse->book . ' ' . $verse->chapter . ':' . $verse->verse]);

@@ -121,6 +121,9 @@ class CsvExtrasTest extends TestCase
     /**
      * The exception must be catchable as an ordinary Exception: RenderManager::renderExtras()
      * wraps the render in catch(\Exception), which an Error would escape.
+     *
+     * It must also stay useful without naming the file -- the type and the reason are what
+     * the caller needs; the path belongs in the log.
      */
     public function testAMissingSourceDumpFailureIsCatchableAsAnException(): void
     {
@@ -134,8 +137,13 @@ class CsvExtrasTest extends TestCase
         }
 
         $this->assertInstanceOf(\Exception::class, $caught);
-        $this->assertStringContainsString('zz.csv', $caught->getMessage());
         $this->assertFileDoesNotExist($this->tempDir . 'books_zz.csv');
+
+        // The message deliberately no longer names the file. These exceptions can reach a
+        // caller, and the source path describes the server's filesystem; the path is
+        // logged instead (see RendererHygieneTest::testExceptionsDoNotNameServerPaths).
+        $this->assertStringNotContainsString('zz.csv', $caught->getMessage());
+        $this->assertStringContainsString('source file does not exist', $caught->getMessage());
     }
 
     public function testShortcutsAreGeneratedFromTheDatabase(): void

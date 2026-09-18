@@ -296,7 +296,47 @@ return [
      */
     'query_use_named_placeholders' => TRUE,
 
-    'redirect_https' => env('REDIRECT_HTTPS', TRUE),
+    /* Force every request to https.
+     *
+     * Off by default: this middleware is global, so an existing deployment that
+     * serves plain http would become unreachable, and one behind a
+     * TLS-terminating proxy would redirect forever unless 'trusted_proxies'
+     * below is configured. Operators opt in with REDIRECT_HTTPS.
+     *
+     * Note for existing installs: the docs page used to force https on its own
+     * (a 'https' route middleware alias with this setting defaulting to on). It
+     * no longer does unless REDIRECT_HTTPS is set.
+     *
+     * Normalised to a real bool rather than left to env(): Laravel's
+     * Env::getOption() only maps 'true'/'false'/'null'/'empty' to scalars, so
+     * REDIRECT_HTTPS=1 (or yes/on) would otherwise stay the *string* "1" --
+     * truthy enough to mark the session cookie Secure (see config/session.php)
+     * while failing the strict === TRUE test in HttpsRedirect, which is exactly
+     * the mismatch that locks an operator out of the admin login.
+     */
+    'redirect_https' => filter_var(env('REDIRECT_HTTPS', FALSE), FILTER_VALIDATE_BOOLEAN),
+
+    /* Proxies whose X-Forwarded-* headers may be trusted.
+     *
+     * Required when TLS is terminated upstream (load balancer, nginx,
+     * Cloudflare), otherwise the forwarded scheme is ignored, Request::secure()
+     * is permanently FALSE and REDIRECT_HTTPS produces a redirect loop.
+     * Accepts a comma separated list of IPs/CIDRs. NULL trusts nothing, which is
+     * the default.
+     *
+     * '*' is also accepted, but read this first: Laravel resolves it to the IP
+     * that opened the connection -- see setTrustedProxyIpAddressesToTheCallingIp()
+     * in Illuminate\Http\Middleware\TrustProxies -- so whoever is talking to the
+     * application is trusted, not one known proxy. If the origin is reachable
+     * directly, any client can then set
+     * X-Forwarded-For and X-Forwarded-Proto to whatever it likes: IP-based daily
+     * limits are attributed to a forged address, and Request::secure() reports
+     * TRUE over plain http, which silently satisfies REDIRECT_HTTPS above.
+     * Only use it when the origin accepts connections from the proxy alone
+     * (firewall, private network, or a socket the proxy owns). Otherwise name the
+     * proxy's addresses explicitly.
+     */
+    'trusted_proxies' => env('TRUSTED_PROXIES', NULL),
 
     'client_url' => env('CLIENT_URL', NULL),
 ];

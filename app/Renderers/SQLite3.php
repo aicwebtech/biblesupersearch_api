@@ -41,10 +41,8 @@ class SQLite3 extends RenderAbstract
     {
         $filepath = $this->getRenderFilePath(TRUE);
         
-        if(file_exists($filepath)) {
-            unlink($filepath);
-        }
-        
+        static::removeStaleFile($filepath);
+
         touch($filepath);
 
         // Dynamically create 'render' as a DB connection

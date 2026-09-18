@@ -10,6 +10,7 @@ use App;
 abstract class RenderAbstract 
 {
     use \App\Traits\Error;
+    use \App\Traits\RemovesStaleFiles;
 
     static public $name;
     static public $description = '';
@@ -85,7 +86,9 @@ abstract class RenderAbstract
         $file_path = $this->getRenderFilePath();
         $this->overwrite = $overwrite;
 
-        if(!$overwrite && is_file($file_path)) {
+        // A symlink here is not an existing render, so it must not block one: refusing
+        // would leave the link in place, and _renderStart()'s guard never runs.
+        if(!$overwrite && static::isRealFile($file_path)) {
             if($suppress_overwrite_error) {
                 return TRUE;
             }
@@ -99,27 +102,38 @@ abstract class RenderAbstract
         App::setLocale($this->Bible->lang_short);
 
         try {
-            $success = $this->_renderStart();
-
-            if(!$success) {
-                return FALSE;
-            }
-
-            $this->_beforeVerseRender();
-
             try {
-                $this->_verseRender();
-                $this->_afterVerseRender();
+                $success = $this->_renderStart();
+
+                if(!$success) {
+                    return FALSE;
+                }
+
+                $this->_beforeVerseRender();
+
+                try {
+                    $this->_verseRender();
+                    $this->_afterVerseRender();
+                }
+                catch(\Throwable $e) {
+                    // RenderManager catches per-Bible failures and moves on to the next Bible, so any
+                    // resource _beforeVerseRender() opened has to be released here or it stays open
+                    // for the rest of the process.
+                    $this->_onVerseRenderError($e);
+                    throw $e;
+                }
+
+                $success = $this->_renderFinish();
             }
             catch(\Throwable $e) {
-                // RenderManager catches per-Bible failures and moves on to the next Bible, so any
-                // resource _beforeVerseRender() opened has to be released here or it stays open
-                // for the rest of the process.
-                $this->_onVerseRenderError($e);
+                // Every stage from _renderStart() onwards writes to the destination, so every
+                // stage can leave a partial artifact behind -- not just verse rendering. The
+                // header row _renderStart() writes onto a full disk is the same failure as a
+                // verse chunk, and _renderFinish()'s final flush is too late to be anyone
+                // else's problem. All three are cleaned up here.
+                $this->_onRenderError($e);
                 throw $e;
             }
-
-            $success = $this->_renderFinish();
         }
         finally {
             // Neither the throw above nor the early return can be allowed to skip this. Because
@@ -132,7 +146,7 @@ abstract class RenderAbstract
         if(function_exists('posix_getuid')) {
             // Method DNE on Windows, so we only do this on POSIX systems        
             if(posix_getuid() == fileowner($file_path)) {
-                chmod($file_path, 0775);
+                chmod($file_path, 0644);
             }
         }
  
@@ -159,7 +173,11 @@ abstract class RenderAbstract
     {
         $file_path = $this->getRenderFilePath();
 
-        if(!is_file($file_path)) {
+        // is_file() follows a symlink, so a link planted at the render path used to look
+        // like a finished render: with the Rendering metadata from an earlier, genuine
+        // render still intact this returned FALSE, and RenderManager handed the link
+        // straight to readfile() -- serving whatever it pointed at.
+        if(!static::isRealFile($file_path)) {
             return TRUE;
         }
 
@@ -204,9 +222,7 @@ abstract class RenderAbstract
         $Rendering = $this->_getRenderingRecord();
         $file_path = $this->getRenderFilePath();
 
-        if(is_file($file_path)) {
-            unlink($file_path);
-        }
+        static::removeStaleFile($file_path);
 
         $Rendering->rendered_at = NULL;
         $Rendering->save();
@@ -361,6 +377,27 @@ abstract class RenderAbstract
      * @param \Throwable $e
      */
     protected function _onVerseRenderError(\Throwable $e) { }
+
+    /**
+     * Code to be executed when any render stage throws, after _onVerseRenderError() where
+     * both apply. Usage: releasing whatever _renderStart() acquired, and discarding the
+     * half-written artifact.
+     *
+     * The artifact matters because render() writes in place and the throw skips the
+     * bookkeeping that would have updated the Rendering record -- the *previous* render's
+     * rendered_at, version and meta_hash all survive it. isRenderNeeded() then sees a file
+     * on disk plus intact metadata, reports FALSE, and download() hands the truncated file
+     * out as the current render. Dropping it forces a re-render instead.
+     *
+     * Implemented by TextAbstract, which truncates the destination in _renderStart() and so
+     * has a partial artifact to answer for from that moment on. Renderers that build their
+     * output elsewhere and only place it at the end have nothing to do here.
+     *
+     * The exception is re-thrown afterwards, so this must not swallow it.
+     *
+     * @param \Throwable $e
+     */
+    protected function _onRenderError(\Throwable $e) { }
 
     protected function _getBookTable() 
     {

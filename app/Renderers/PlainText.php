@@ -28,8 +28,8 @@ class PlainText extends TextAbstract
     protected function _renderStart() 
     {
         $this->_openFile();
-        fwrite($this->handle, $this->Bible->name . PHP_EOL . PHP_EOL);
-        fwrite($this->handle, $this->_wordwrap( $this->_getCopyrightStatement(TRUE) ) . PHP_EOL . PHP_EOL . PHP_EOL);
+        $this->_write($this->Bible->name . PHP_EOL . PHP_EOL);
+        $this->_write($this->_wordwrap( $this->_getCopyrightStatement(TRUE) ) . PHP_EOL . PHP_EOL . PHP_EOL);
         return TRUE;
     }
 
@@ -37,18 +37,18 @@ class PlainText extends TextAbstract
     {
         if($verse->book != $this->current_book) {
             $line_above = ($this->current_book) ? PHP_EOL . PHP_EOL : '';
-            fwrite($this->handle, $line_above . $this->_wordwrap($verse->book_name) . PHP_EOL);
+            $this->_write($line_above . $this->_wordwrap($verse->book_name) . PHP_EOL);
             $this->current_chapter = NULL;
         }
 
         if($verse->chapter != $this->current_chapter) {
             $ch_param = ($verse->book == 19) ? 'basic.psalm_n' : 'basic.chapter_n';
             $chapter_name = __($ch_param, ['n' => $verse->chapter]);
-            fwrite($this->handle, PHP_EOL . $chapter_name . PHP_EOL . PHP_EOL);
+            $this->_write(PHP_EOL . $chapter_name . PHP_EOL . PHP_EOL);
         }
 
         $text = $verse->verse . ' '  . $verse->text . PHP_EOL;
-        fwrite($this->handle, $this->_wordwrap($text) );
+        $this->_write($this->_wordwrap($text) );
         $this->current_book    = $verse->book;
         $this->current_chapter = $verse->chapter;
     }

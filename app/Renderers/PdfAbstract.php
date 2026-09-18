@@ -407,6 +407,12 @@ abstract class PdfAbstract extends RenderAbstract
         
 
         $filepath = $this->getRenderFilePath(TRUE);
+
+        // TCPDF writes with fopen($name, 'wb') (TCPDF_STATIC::fopenLocal), which
+        // follows a symlink at the destination and writes through to its target.
+        // RenderAbstract::render()'s is_file() check cannot see a dangling one.
+        static::removeStaleFile($filepath);
+
         $this->TCPDF->Output($filepath, 'F');
 
         return TRUE;

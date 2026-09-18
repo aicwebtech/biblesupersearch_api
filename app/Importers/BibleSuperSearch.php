@@ -83,7 +83,10 @@ class BibleSuperSearch extends ImporterAbstract
                     return $this->addError('Cannot add Bible module \'' . $attr['module'] . '\', because it already exists.  <br />Please refresh your Bible list to find it.');
                 }
                 
-                $this->path_short = $attr['official'] ? 'modules' : 'unofficial';
+                // An uploaded archive does not get to nominate its own storage
+                // directory. Official modules are provisioned server-side into
+                // bibles/modules; anything arriving over HTTP is unofficial.
+                unset($this->bible_attributes['official']);
             }
             catch(\Exception $e) {
                 return $this->addError('Could not read zip file: ' . $file);

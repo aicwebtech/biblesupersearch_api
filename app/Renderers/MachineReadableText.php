@@ -28,14 +28,14 @@ class MachineReadableText extends TextAbstract
     protected function _renderStart() 
     {
         $this->_openFile();
-        fwrite($this->handle, $this->Bible->name . PHP_EOL . PHP_EOL);
-        fwrite($this->handle, $this->_getCopyrightStatement(TRUE) . PHP_EOL . PHP_EOL . PHP_EOL);
+        $this->_write($this->Bible->name . PHP_EOL . PHP_EOL);
+        $this->_write($this->_getCopyrightStatement(TRUE) . PHP_EOL . PHP_EOL . PHP_EOL);
         return TRUE;
     }
 
     protected function _renderSingleVerse($verse) 
     {
         $text = $verse->book_name . ' ' . $verse->chapter . ':' . $verse->verse . ' '  . $verse->text . PHP_EOL;
-        fwrite($this->handle, $text);
+        $this->_write($text);
     }
 }

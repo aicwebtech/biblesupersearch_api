@@ -221,6 +221,60 @@ abstract class ImporterAbstract
         return dirname(__FILE__) . '/../../bibles/' . $this->path_short . '/';
     }
 
+    /**
+     * Resolve a client-supplied import filename to a real path inside this
+     * importer's own directory.
+     *
+     * The preflight step (checkImportFile) sanitizes the upload and hands the
+     * safe name back to the client, but the commit step receives that name back
+     * as arbitrary request input. Everything below therefore treats it as
+     * untrusted: it is re-sanitized, forced to a bare basename, and the resolved
+     * path must still sit beneath the importer directory.
+     *
+     * @param  string|null  $file_name
+     * @return string|null  Canonical path, or NULL when invalid or missing
+     */
+    public function resolveImportFile($file_name) 
+    {
+        if(!static::rawNameIsBare($file_name)) {
+            return NULL;
+        }
+
+        $file_name = static::sanitizeFileName($file_name);
+
+        if($file_name === '' || $file_name !== basename($file_name)) {
+            return NULL;
+        }
+
+        $dir = realpath($this->getImportDir());
+
+        if($dir === FALSE) {
+            return NULL;
+        }
+
+        $path = realpath($dir . DIRECTORY_SEPARATOR . $file_name);
+
+        // Separator-aware containment: "bibles/unofficial_evil" must not pass
+        // as being inside "bibles/unofficial".
+        if($path === FALSE || strpos($path, $dir . DIRECTORY_SEPARATOR) !== 0) {
+            return NULL;
+        }
+
+        return is_file($path) ? $path : NULL;
+    }
+
+    /**
+     * Sanitized basename of the import file, for callers that build their own
+     * paths from $this->file.
+     *
+     * @param  string|null  $file_name
+     * @return string|null
+     */
+    public function safeImportFileName($file_name) 
+    {
+        return $this->resolveImportFile($file_name) ? static::sanitizeFileName($file_name) : NULL;
+    }
+
     public function acceptUploadedFile(UploadedFile $File) 
     {
         if(!$this->checkUploadedFile($File)) {
@@ -674,6 +728,37 @@ abstract class ImporterAbstract
         }
 
         return $module_suggestion;
+    }
+
+    /**
+     * Is this raw, client-supplied name a bare filename?
+     *
+     * Checked *before* sanitizeFileName(), which strips '/' and collapses '..' and so
+     * turns "../existing.mybible" into "existing.mybible" -- a name that then passes a
+     * basename() test and resolves to a real staged file. Containment was never broken by
+     * that (the resolved path is still required to sit under the importer directory), but
+     * a traversing name silently aliasing onto another staged file is not what the
+     * surrounding code claims to do, and it lets a commit step address a file other than
+     * the one that was preflighted.
+     *
+     * @param  mixed  $file_name
+     * @return bool
+     */
+    public static function rawNameIsBare($file_name) 
+    {
+        if(!is_string($file_name) || $file_name === '') {
+            return FALSE;
+        }
+
+        // Backslash is checked explicitly: basename() does not treat it as a separator on
+        // POSIX, so "..\\existing.mybible" would otherwise survive.
+        foreach(['/', '\\', "\0"] as $needle) {
+            if(strpos($file_name, $needle) !== FALSE) {
+                return FALSE;
+            }
+        }
+
+        return $file_name === basename($file_name);
     }
 
     public static function sanitizeFileName($file_name) 

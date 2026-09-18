@@ -13,6 +13,35 @@ abstract class Controller extends BaseController
 
     public function __construct() {}
 
+    /**
+     * Serialise an admin bootstrap object for embedding in a <script> block.
+     *
+     * The views emit this raw (`var bootstrap = @php echo $bootstrap @endphp;`),
+     * so the JSON_HEX_* flags keep any admin-supplied string content (copyright
+     * statements, language names, importer descriptions) from terminating the
+     * script element or breaking out of the assignment.
+     *
+     * Encoding must not be allowed to fail: json_encode() returns FALSE for
+     * malformed UTF-8, which reaches this payload through third-party module
+     * metadata (copyright statements, descriptions) and would otherwise raise a
+     * TypeError against the string return type and 500 every admin page.
+     * JSON_INVALID_UTF8_SUBSTITUTE handles that case; the FALSE fallback covers
+     * the rest (recursion, depth, INF/NAN) with a payload the page can still
+     * parse.
+     *
+     * @param  \stdClass  $bootstrap
+     * @return string
+     */
+    protected function encodeBootstrap($bootstrap): string
+    {
+        $json = json_encode(
+            $bootstrap,
+            JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_INVALID_UTF8_SUBSTITUTE
+        );
+
+        return $json === FALSE ? '{}' : $json;
+    }
+
     protected function getAdminBootstrap()
     {
         $ImportManagerClass = \App\Helpers::find('\App\ImportManager');
@@ -30,6 +59,10 @@ abstract class Controller extends BaseController
         $bootstrap->tts_apis = \App\AudioManager::getTtsApisList();
         $bootstrap->tts_api_default = config('audio.tts_api') ?? null;
         $bootstrap->tts_filename_matches = \App\AudioManager::getFilenameMatchesList();
+
+        // Shared with the Bible edit form so its module rule matches
+        // Bible::validateModule() rather than keeping a second copy in JS.
+        $bootstrap->php_reserved_words = \App\Helpers::phpReservedWords();
 
         $bootstrap->book_lists = new \stdClass();
 

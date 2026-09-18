@@ -172,6 +172,103 @@ class KeyAccessTest extends TestCase
         $this->assertEmpty($IpAccessLog); // No IpAccessLog because we're not counting against the IP
     }
 
+    /**
+     * api_ip_key_count carries a unique index on (key_id, ip_id, date), and the tracking
+     * update used firstOrNew -> count++ -> save(). Two concurrent requests for the same
+     * key and IP could both find no row, both insert, and the loser raise -- a 500 handed
+     * back for an access whose quota had already been spent.
+     *
+     * A row that already exists is the deterministic stand-in for the losing racer's
+     * insert: the old code would have tried to create a second one.
+     */
+    public function testTrackingCountIsAtomicAndNeverDuplicates(): void
+    {
+        if(!config('app.experimental')) {
+            $this->markTestSkipped('Experimental functionality, skipping tests.');
+        }
+
+        $key = $this->_fakeKey(ApiAccessLevel::BASIC);
+        $Key = ApiKey::findByKey($key);
+        $date = date('Y-m-d');
+
+        try {
+            $this->assertTrue($Key->incrementDailyHits(), 'First access should be granted');
+
+            $rows = ApiIpKeyCount::where('key_id', $Key->id)->where('date', $date)->get();
+            $this->assertCount(1, $rows, 'One tracking row per key/ip/date');
+            $this->assertSame(1, (int) $rows->first()->count);
+
+            // The row now exists, which is the state a racing insert would collide with.
+            $this->assertTrue($Key->incrementDailyHits(), 'Second access should not raise');
+
+            $rows = ApiIpKeyCount::where('key_id', $Key->id)->where('date', $date)->get();
+            $this->assertCount(1, $rows, 'Still exactly one tracking row');
+            $this->assertSame(2, (int) $rows->first()->count, 'The count must accumulate');
+        }
+        finally {
+            ApiIpKeyCount::where('key_id', $Key->id)->delete();
+            ApiKeyAccessLog::where('key_id', $Key->id)->delete();
+            $Key->forceDelete();
+        }
+    }
+
+    /**
+     * The race itself, made deterministic: two model instances are built while the row
+     * does not exist yet -- exactly the state two concurrent requests are in -- and then
+     * saved. The old firstOrNew -> count++ -> save() sequence makes the second one INSERT
+     * into the unique index and raise; the atomic helper absorbs it.
+     */
+    public function testTheTrackingRaceIsAbsorbedRatherThanRaised(): void
+    {
+        if(!config('app.experimental')) {
+            $this->markTestSkipped('Experimental functionality, skipping tests.');
+        }
+
+        $key = $this->_fakeKey(ApiAccessLevel::BASIC);
+        $Key = ApiKey::findByKey($key);
+        $IP  = IpAccess::findOrCreateByIpOrDomain(true);
+        $keys = ['key_id' => $Key->id, 'ip_id' => $IP->id, 'date' => date('Y-m-d')];
+
+        $helper = new \ReflectionMethod(ApiKey::class, 'incrementTrackingCountAtomic');
+
+        try {
+            // Both "requests" look first and find nothing.
+            $stale_a = ApiIpKeyCount::firstOrNew($keys);
+            $stale_b = ApiIpKeyCount::firstOrNew($keys);
+
+            $this->assertFalse($stale_a->exists, 'Precondition: no row yet');
+            $this->assertFalse($stale_b->exists, 'Precondition: both racers saw no row');
+
+            $stale_a->count++;
+            $stale_a->save();
+
+            // What the old code did next, and why it had to change.
+            $stale_b->count++;
+
+            try {
+                $stale_b->save();
+                $this->fail('The old sequence should collide with the unique index');
+            }
+            catch(\Illuminate\Database\UniqueConstraintViolationException $e) {
+                // expected
+            }
+
+            // The atomic helper, given the same already-occupied row, simply counts.
+            $helper->invoke($Key, ApiIpKeyCount::class, $keys);
+            $helper->invoke($Key, ApiIpKeyCount::class, $keys);
+
+            $rows = ApiIpKeyCount::where($keys)->get();
+
+            $this->assertCount(1, $rows, 'Still one row');
+            $this->assertSame(3, (int) $rows->first()->count, 'Every increment landed');
+        }
+        finally {
+            ApiIpKeyCount::where('key_id', $Key->id)->delete();
+            ApiKeyAccessLog::where('key_id', $Key->id)->delete();
+            $Key->forceDelete();
+        }
+    }
+
     protected function _fakeKey($access_level_id = null)
     {
         $key_hash = ApiKey::generateKeyHash();

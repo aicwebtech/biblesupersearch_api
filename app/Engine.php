@@ -11,6 +11,7 @@ use App\Search;
 use App\CacheManager;
 use App\Helpers;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Pagination\LengthAwarePaginator as Paginator;
 use App\Interfaces\ErrorInterface;
 
@@ -281,7 +282,8 @@ class Engine implements ErrorInterface
                 'type' => 'string',
             ],
             'proximity_limit' => [
-                'type' => 'int',
+                'type' => 'int_bounded',
+                'max'  => config('bss.proximity_limit_max', \App\Models\Verses\VerseStandard::PROXIMITY_LIMIT_MAX),
             ],
             'keyword_limit' => [
                 'type' => 'int',
@@ -693,11 +695,16 @@ class Engine implements ErrorInterface
 
     public function actionAudio($input)
     {
-        list($input, $Bible) = $this->audioValidateHelper($input);
+        $validated = $this->audioValidateHelper($input);
 
-        if($this->hasErrors()) {
+        // audioValidateHelper() returns FALSE via addError() on any failure, so
+        // the result must be checked before it is destructured -- unpacking a
+        // bool raises "Cannot use bool as array" on PHP 8.5.
+        if(!is_array($validated) || $this->hasErrors()) {
             return FALSE;
         }
+
+        list($input, $Bible) = $validated;
 
         $response  = new \stdClass();
         $response->audio = [];
@@ -722,11 +729,16 @@ class Engine implements ErrorInterface
 
     public function actionAudioCheck($input)
     {
-        list($input, $Bible) = $this->audioValidateHelper($input);
+        $validated = $this->audioValidateHelper($input);
 
-        if($this->hasErrors()) {
+        // audioValidateHelper() returns FALSE via addError() on any failure, so
+        // the result must be checked before it is destructured -- unpacking a
+        // bool raises "Cannot use bool as array" on PHP 8.5.
+        if(!is_array($validated) || $this->hasErrors()) {
             return FALSE;
         }
+
+        list($input, $Bible) = $validated;
 
         $response  = new \stdClass();
         $response->audio = [];
@@ -776,6 +788,13 @@ class Engine implements ErrorInterface
         $Bible = Bible::findByModule($input['bible']);
 
         if(!$Bible) {
+            return $this->addError(trans('errors.bible_no_exist', ['module' => $input['bible']]));
+        }
+
+        // Audio previously only checked that the module existed, skipping the
+        // installed/enabled gate that addBible() applies to every other Bible
+        // selection. Reuse the existing helper rather than duplicating it.
+        if(!static::isBibleEnabled($input['bible']) && !$this->allow_disabled_bibles) {
             return $this->addError(trans('errors.bible_no_exist', ['module' => $input['bible']]));
         }
 
@@ -944,8 +963,6 @@ class Engine implements ErrorInterface
             $zip = FALSE;
         }
 
-        $bypass_limit = (array_key_exists('bypass_limit', $input) && $input['bypass_limit']);
-
         $sanitized = [
             'format'    => $format,
             'modules'   => $modules,
@@ -982,14 +999,20 @@ class Engine implements ErrorInterface
             }
         }
         else {
-            // if($bypass_limit) {
-            //     $success = $Manager->render(FALSE, TRUE, TRUE);
-            //     $success = ($download) ? $Manager->download() : $success;
-            // }
-            // else {
-                $success = ($download) ? $Manager->download($bypass_limit) : $Manager->render(FALSE, TRUE, $bypass_limit);
-                // $success = ($download) ? $Manager->download() :  $Manager->getBiblesNeedingRender();
-            // }
+            // The render limit is an anti-DoS control on how many Bibles may be
+            // rendered synchronously in one request. `bypass_limit` used to be
+            // read straight from $input with a bare truthy check, so any caller
+            // could switch the control off -- and even the string "false" did.
+            //
+            // The no-JavaScript download widget genuinely needs it: with JS off
+            // there is no client to drive the multi-request render flow. It is
+            // therefore still honoured, but only for an authenticated
+            // administrator and only for a genuinely true value.
+            $bypass_limit = $this->_bypassRenderLimitRequested($input);
+
+            $success = ($download)
+                ? $Manager->download($bypass_limit)
+                : $Manager->render(FALSE, TRUE, $bypass_limit);
         }
 
         if(!$success) {
@@ -1015,6 +1038,33 @@ class Engine implements ErrorInterface
         }
         
         return $response;
+    }
+
+    /**
+     * Whether this request may bypass the synchronous render limit.
+     *
+     * Authorisation is server side -- the request may ask, but only an
+     * administrator is granted it. Parsed strictly so that "false", "0" and ""
+     * mean no.
+     *
+     * @param  array  $input
+     * @return bool
+     */
+    protected function _bypassRenderLimitRequested($input) 
+    {
+        if(!array_key_exists('bypass_limit', $input)) {
+            return FALSE;
+        }
+
+        // Array and object input is denied here rather than raising: filter_var() returns
+        // FALSE for both. Verified on 8.2-8.5 and pinned by
+        // Tests\Feature\Engine\BypassLimitInputTest, which is where a change in that
+        // behaviour would surface rather than on the render endpoint.
+        if(!filter_var($input['bypass_limit'], FILTER_VALIDATE_BOOLEAN)) {
+            return FALSE;
+        }
+
+        return Gate::allows('admin-access');
     }
 
     protected function _startQueueProcess($queue = 'default') 
@@ -1217,10 +1267,10 @@ class Engine implements ErrorInterface
         $response->research_desc            = config('bss.research_description');
         $response->parallel_lang_search     = config('bss.parallel_search_different_languages');
         $response->access                   = new \stdClass;
-        $response->access->allowed          = !$Access->isAccessRevoked();
-        $response->access->limit            = $Access->getAccessLimit();
-        $response->access->limit_reached    = $Access->isLimitReached();
-        $response->access->hits             = $Access->getDailyHits();
+        $response->access->allowed          = $Access ? !$Access->isAccessRevoked() : FALSE;
+        $response->access->limit            = $Access ? $Access->getAccessLimit() : 0;
+        $response->access->limit_reached    = $Access ? $Access->isLimitReached() : TRUE;
+        $response->access->hits             = $Access ? $Access->getDailyHits() : 0;
         return $response;
     }
 
@@ -1747,6 +1797,13 @@ class Engine implements ErrorInterface
                     case 'int_pos':
                         $value = (int) $input[$index];
                         $value = $value < 0 ? NULL : $value;
+                        break;
+                    case 'int_bounded':
+                        // Clamped rather than rejected so an oversized request
+                        // still returns results, just not an unbounded query.
+                        $value = (int) $input[$index];
+                        $max = array_key_exists('max', $s) ? (int) $s['max'] : PHP_INT_MAX;
+                        $value = ($value < 0) ? 0 : min($value, $max);
                         break;
                     case 'string':
                         $value = (string) $input[$index];

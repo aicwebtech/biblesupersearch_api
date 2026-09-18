@@ -39,6 +39,14 @@ return [
         'range' => 5
     ],
     
+    // Ceiling on how far apart proximity search terms may be. The value is
+    // interpolated into a self-join range (BETWEEN id-N AND id+N), so an
+    // unbounded N makes an arbitrarily expensive query.
+    // Note: VerseStandard::PROXIMITY_LIMIT_MAX is a hard backstop applied in the
+    // query builder regardless of this setting, so raising this above it has no
+    // effect.
+    'proximity_limit_max' => 100,
+
     // Maximum number of verses that can be displayed at once
     'global_maximum_results' => 500, 
     // Maximum number of verses returned by parallel search, displayed or not

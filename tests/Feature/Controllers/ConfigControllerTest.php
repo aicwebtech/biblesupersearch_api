@@ -110,4 +110,50 @@ class ConfigControllerTest extends TestCase
         $Post->save();
     }    
 
+    /**
+     * `mail.sendmail` is a registered soft config whose value is handed to the
+     * mail transport as a command line. The admin form renders it readonly, but
+     * that is client-side only -- the server must reject it as well.
+     */
+    public function testSendmailPathCannotBeChangedOverHttp() 
+    {
+        $this->_init();
+
+        $User = User::find(1);
+        $this->assertGreaterThanOrEqual(100, $User->access_level);
+
+        $original = ConfigManager::getConfigs()['mail.sendmail'];
+
+        $response = $this->actingAs($User)
+                            ->post('/admin/config', ['mail__sendmail' => '/tmp/pwned -bs']);
+
+        $response->assertStatus(302);
+
+        $this->assertEquals($original, ConfigManager::getConfigs()['mail.sendmail']);
+        $this->assertNotEquals('/tmp/pwned -bs', config('mail.sendmail'));
+    }
+
+    /**
+     * The block must be surgical: legitimate mail settings on the same form
+     * still save.
+     */
+    public function testOtherMailConfigsStillSaveOverHttp() 
+    {
+        $this->_init();
+
+        $User = User::find(1);
+        $cache = ConfigManager::getConfigs();
+
+        $response = $this->actingAs($User)
+                            ->post('/admin/config', ['mail__host' => 'smtp.testhost.com']);
+
+        $response->assertStatus(302);
+
+        try {
+            $this->assertEquals('smtp.testhost.com', ConfigManager::getConfigs()['mail.host']);
+        }
+        finally {
+            ConfigManager::setGlobalConfigs(['mail.host' => $cache['mail.host']]); // revert
+        }
+    }
 }

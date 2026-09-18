@@ -22,7 +22,7 @@
 
 <form action='<?php echo $BibleSuperSearchAPIURL ?>/api/download' method='POST' id='bible_download_form'>
     <input type='hidden' name='pretty_print' id='bible_download_pretty_print' value='1' />
-    <input type='hidden' name='bypass_limit' id='bible_download_bypass_limit' value='1' /> <!-- will be set to 0 if JavaScript is enabled -->
+    <input type='hidden' name='bypass_limit' id='bible_download_bypass_limit' value='1' /> <!-- set to 0 if JavaScript is enabled; only honoured for admins -->
 
     <div class='container format_container'>
         <h2>Select a Format</h2>
@@ -52,6 +52,15 @@
             <b>NOTE: You are logged in as ADMIN - all Bibles are downloadable regardless of copyright status!</b><br /><br />
         <?php else: ?>
             Some Bibles may not be available due to copyright restrictions. <br /><br />
+        <?php endif; ?>
+
+        <?php if(!$BibleSuperSearchIsAdmin): ?>
+            <noscript>
+                <b>NOTE: JavaScript is disabled.</b>
+                Without it there is nothing to drive the multi-request render, so only a few
+                not-yet-rendered Bibles can be prepared per request. A larger selection is queued
+                instead -- come back in an hour and request the same download again.<br /><br />
+            </noscript>
         <?php endif; ?>
         <?php $lang_colspan = $BibleSuperSearchDownloadVerbose ? 5 : 3; ?>
 
