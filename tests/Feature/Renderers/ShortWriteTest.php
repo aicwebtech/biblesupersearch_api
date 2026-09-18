@@ -197,16 +197,16 @@ class ShortWriteTest extends TestCase
                 return $this->path;
             }
 
-            public function callOnVerseRenderError(\Throwable $e): void
+            public function callOnRenderError(\Throwable $e): void
             {
-                $this->_onVerseRenderError($e);
+                $this->_onRenderError($e);
             }
         };
 
         try {
             $this->assertFileExists($artifact, 'Precondition: the partial render is on disk');
 
-            $renderer->callOnVerseRenderError(new \Exception('verse chunk failed'));
+            $renderer->callOnRenderError(new \Exception('verse chunk failed'));
 
             $this->assertFileDoesNotExist(
                 $artifact,
@@ -220,5 +220,205 @@ class ShortWriteTest extends TestCase
 
             @rmdir($dir);
         }
+    }
+
+    /**
+     * A render directory that cleans itself up whatever the test does.
+     *
+     * @param  callable  $test  Receives the artifact path
+     * @return void
+     */
+    protected function withRenderDir(callable $test): void
+    {
+        $dir = sys_get_temp_dir() . '/bss_render_err_' . bin2hex(random_bytes(6));
+        mkdir($dir);
+
+        try {
+            $test($dir . '/partial.txt');
+        }
+        finally {
+            foreach(glob($dir . '/*') ?: [] as $path) {
+                @unlink($path);
+            }
+
+            @rmdir($dir);
+        }
+    }
+
+    /**
+     * _openFile() truncates the destination at the top of _renderStart(), and every text
+     * renderer writes its header from there -- Csv writes six rows before the first verse.
+     * A disk that fills during that header throws outside verse rendering entirely, so the
+     * cleanup has to hang off the whole render rather than the verse loop: otherwise
+     * RenderManager moves on, the previous render's metadata survives untouched, and
+     * isRenderNeeded() hands the 0-byte file out as a finished Bible.
+     */
+    public function testARenderStartFailureRemovesTheTruncatedArtifact(): void
+    {
+        $this->withRenderDir(function(string $artifact) {
+            $renderer = $this->failingRenderer($artifact, 'start');
+
+            try {
+                $renderer->render();
+                $this->fail('The render failure must reach the caller');
+            }
+            catch(\Exception $e) {
+                $this->assertStringContainsString('disk full', $e->getMessage());
+            }
+
+            $this->assertFileDoesNotExist(
+                $artifact,
+                'A header written onto a full disk must not be left behind as a finished render'
+            );
+        });
+    }
+
+    /**
+     * The same applies at the other end: _renderFinish() writes the trailing bytes (MySQL)
+     * or the whole encoded document (Json) and then flushes.
+     */
+    public function testARenderFinishFailureRemovesTheTruncatedArtifact(): void
+    {
+        $this->withRenderDir(function(string $artifact) {
+            $renderer = $this->failingRenderer($artifact, 'finish');
+
+            try {
+                $renderer->render();
+                $this->fail('The render failure must reach the caller');
+            }
+            catch(\Exception $e) {
+                $this->assertStringContainsString('disk full', $e->getMessage());
+            }
+
+            $this->assertFileDoesNotExist(
+                $artifact,
+                'A render abandoned at the final flush must not be left behind'
+            );
+        });
+    }
+
+    /**
+     * The locale swap still has to be undone on the widened error path: RenderManager
+     * carries on to the next Bible, which would otherwise render under this one's language.
+     */
+    public function testAFailedRenderStillRestoresTheLocale(): void
+    {
+        $this->withRenderDir(function(string $artifact) {
+            $locale = \App::getLocale();
+
+            try {
+                $this->failingRenderer($artifact, 'start')->render();
+            }
+            catch(\Exception $e) {
+                // The point of the test is what happens around it.
+            }
+
+            $this->assertSame($locale, \App::getLocale(), 'The locale must be restored');
+        });
+    }
+
+    /**
+     * json_encode() returns FALSE rather than throwing on malformed UTF-8, and third-party
+     * module text is where that turns up. strlen(FALSE) is 0, so the write was skipped, the
+     * close succeeded and a 0-byte JSON Bible was stamped as a complete render.
+     */
+    public function testAJsonEncodingFailureIsReportedRatherThanWrittenAsAnEmptyFile(): void
+    {
+        $this->withRenderDir(function(string $artifact) {
+            $renderer = new class($artifact) extends \App\Renderers\Json {
+                /** @var string */
+                private $path;
+
+                public function __construct(string $path)
+                {
+                    $this->path  = $path;
+                    $this->Bible = (object) ['lang_short' => 'en'];
+                }
+
+                public function getRenderFilePath($create_dir = FALSE, $relative = false)
+                {
+                    return $this->path;
+                }
+
+                protected function _renderStart()
+                {
+                    // What a module carrying text in some other encoding produces.
+                    $this->data = ['verses' => [['text' => "In the beginning \xB1\x31"]]];
+
+                    $this->_openFile();
+
+                    return TRUE;
+                }
+
+                protected function _verseRender()
+                {
+                    // No database behind this renderer.
+                }
+            };
+
+            try {
+                $renderer->render();
+                $this->fail('A failed encode must not read as a successful render');
+            }
+            catch(\RuntimeException $e) {
+                $this->assertStringContainsString('Failed to encode', $e->getMessage());
+            }
+
+            $this->assertFileDoesNotExist($artifact, 'No empty artifact may be left behind');
+        });
+    }
+
+    /**
+     * A renderer whose only job is to fail at a chosen stage, with no Bible or database
+     * behind it. Only lang_short is needed: render() sets the locale from it and throws
+     * before anything else touches the model.
+     *
+     * @param  string  $artifact
+     * @param  string  $fail_at  'start' or 'finish'
+     * @return \App\Renderers\PlainText
+     */
+    protected function failingRenderer(string $artifact, string $fail_at)
+    {
+        return new class($artifact, $fail_at) extends PlainText {
+            /** @var string */
+            private $path;
+
+            /** @var string */
+            private $fail_at;
+
+            public function __construct(string $path, string $fail_at)
+            {
+                $this->path    = $path;
+                $this->fail_at = $fail_at;
+                $this->Bible   = (object) ['lang_short' => 'en'];
+            }
+
+            public function getRenderFilePath($create_dir = FALSE, $relative = false)
+            {
+                return $this->path;
+            }
+
+            protected function _renderStart()
+            {
+                $this->_openFile();
+                $this->_write('PARTIAL HEADER');
+
+                if($this->fail_at === 'start') {
+                    throw new \Exception('disk full while writing the header');
+                }
+
+                return TRUE;
+            }
+
+            protected function _verseRender()
+            {
+                // No database behind this renderer.
+            }
+
+            protected function _renderFinish()
+            {
+                throw new \Exception('disk full during the final flush');
+            }
+        };
     }
 }

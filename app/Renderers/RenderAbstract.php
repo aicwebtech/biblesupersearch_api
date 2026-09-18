@@ -102,27 +102,38 @@ abstract class RenderAbstract
         App::setLocale($this->Bible->lang_short);
 
         try {
-            $success = $this->_renderStart();
-
-            if(!$success) {
-                return FALSE;
-            }
-
-            $this->_beforeVerseRender();
-
             try {
-                $this->_verseRender();
-                $this->_afterVerseRender();
+                $success = $this->_renderStart();
+
+                if(!$success) {
+                    return FALSE;
+                }
+
+                $this->_beforeVerseRender();
+
+                try {
+                    $this->_verseRender();
+                    $this->_afterVerseRender();
+                }
+                catch(\Throwable $e) {
+                    // RenderManager catches per-Bible failures and moves on to the next Bible, so any
+                    // resource _beforeVerseRender() opened has to be released here or it stays open
+                    // for the rest of the process.
+                    $this->_onVerseRenderError($e);
+                    throw $e;
+                }
+
+                $success = $this->_renderFinish();
             }
             catch(\Throwable $e) {
-                // RenderManager catches per-Bible failures and moves on to the next Bible, so any
-                // resource _beforeVerseRender() opened has to be released here or it stays open
-                // for the rest of the process.
-                $this->_onVerseRenderError($e);
+                // Every stage from _renderStart() onwards writes to the destination, so every
+                // stage can leave a partial artifact behind -- not just verse rendering. The
+                // header row _renderStart() writes onto a full disk is the same failure as a
+                // verse chunk, and _renderFinish()'s final flush is too late to be anyone
+                // else's problem. All three are cleaned up here.
+                $this->_onRenderError($e);
                 throw $e;
             }
-
-            $success = $this->_renderFinish();
         }
         finally {
             // Neither the throw above nor the early return can be allowed to skip this. Because
@@ -366,6 +377,27 @@ abstract class RenderAbstract
      * @param \Throwable $e
      */
     protected function _onVerseRenderError(\Throwable $e) { }
+
+    /**
+     * Code to be executed when any render stage throws, after _onVerseRenderError() where
+     * both apply. Usage: releasing whatever _renderStart() acquired, and discarding the
+     * half-written artifact.
+     *
+     * The artifact matters because render() writes in place and the throw skips the
+     * bookkeeping that would have updated the Rendering record -- the *previous* render's
+     * rendered_at, version and meta_hash all survive it. isRenderNeeded() then sees a file
+     * on disk plus intact metadata, reports FALSE, and download() hands the truncated file
+     * out as the current render. Dropping it forces a re-render instead.
+     *
+     * Implemented by TextAbstract, which truncates the destination in _renderStart() and so
+     * has a partial artifact to answer for from that moment on. Renderers that build their
+     * output elsewhere and only place it at the end have nothing to do here.
+     *
+     * The exception is re-thrown afterwards, so this must not swallow it.
+     *
+     * @param \Throwable $e
+     */
+    protected function _onRenderError(\Throwable $e) { }
 
     protected function _getBookTable() 
     {

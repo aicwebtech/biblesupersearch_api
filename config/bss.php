@@ -39,7 +39,6 @@ return [
         'range' => 5
     ],
     
-    // Maximum number of verses that can be displayed at once
     // Ceiling on how far apart proximity search terms may be. The value is
     // interpolated into a self-join range (BETWEEN id-N AND id+N), so an
     // unbounded N makes an arbitrarily expensive query.
@@ -48,6 +47,7 @@ return [
     // effect.
     'proximity_limit_max' => 100,
 
+    // Maximum number of verses that can be displayed at once
     'global_maximum_results' => 500, 
     // Maximum number of verses returned by parallel search, displayed or not
     'parallel_search_maximum_results' => 2000, 

@@ -26,6 +26,11 @@ class SafeWriter
     {
         static::closeFileOrFail($handle, $path);
     }
+
+    public static function encode($data, $what = 'data', $flags = 0): string
+    {
+        return static::jsonEncodeOrFail($data, $what, $flags);
+    }
 }
 
 /**
@@ -33,6 +38,10 @@ class SafeWriter
  * A partial write leaves a file every later step treats as complete -- a generated PHP
  * class that fatals on include, an export quietly missing rows, an extras artifact served
  * to users as whole.
+ *
+ * The tests that drive a write failure carry #[WithoutErrorHandler]: PHPUnit's error
+ * handler reports the warning even though the call site suppresses it, and the failure
+ * these tests assert on is the return value, not the diagnostic.
  */
 class SafeFileWriteTest extends TestCase
 {
@@ -190,6 +199,83 @@ class SafeFileWriteTest extends TestCase
         $this->assertSame(
             file_get_contents($path),
             $method->invoke(null, ['plain', 'has,comma', 'has"quote'], '\\')
+        );
+    }
+
+    /**
+     * json_encode() returns FALSE on malformed UTF-8, and FALSE reaches every one of these
+     * writers as a zero-length string: strlen(FALSE) is 0, file_put_contents() writes ''
+     * and returns 0, and 0 === 0 reports the empty file as a complete write. The caller is
+     * then told its extras dump or rendered Bible shipped.
+     */
+    public function testANonStringIsRefusedRatherThanWrittenAsAnEmptyFile(): void
+    {
+        $path = $this->dir . '/encoded.json';
+
+        try {
+            SafeWriter::put($path, json_encode("\xB1\x31"), 'extras JSON');
+            $this->fail('FALSE must not be accepted as file contents');
+        }
+        catch(\RuntimeException $e) {
+            $this->assertStringContainsString('Failed to write extras JSON', $e->getMessage());
+        }
+
+        $this->assertFileDoesNotExist($path, 'Nothing may be written for a refused payload');
+    }
+
+    /**
+     * Caught at the encode instead, where the actual cause is still known.
+     */
+    public function testAFailedEncodeThrowsWithItsReason(): void
+    {
+        $this->expectException(\RuntimeException::class);
+        $this->expectExceptionMessage('Failed to encode extras JSON as JSON');
+
+        SafeWriter::encode(["text" => "In the beginning \xB1\x31"], 'extras JSON');
+    }
+
+    /**
+     * And must not fire on encodable data, including the values json_encode() renders as
+     * something falsy.
+     */
+    public function testAnEncodableValueIsReturned(): void
+    {
+        $this->assertSame('{"book":"Genesis"}', SafeWriter::encode(['book' => 'Genesis']));
+        $this->assertSame('""', SafeWriter::encode(''));
+        $this->assertSame('0', SafeWriter::encode(0));
+        $this->assertSame('null', SafeWriter::encode(NULL));
+    }
+
+    /**
+     * Suppressing the warning is only safe if what it said survives somewhere. PHP's
+     * reason for the failure is the one thing the return value does not carry -- FALSE
+     * says a write failed, not that the directory does not exist -- so it has to reach the
+     * log, which an operator can read and a client cannot.
+     */
+    #[\PHPUnit\Framework\Attributes\WithoutErrorHandler]
+    public function testTheLoggedFailureCarriesPhpsOwnReason(): void
+    {
+        $logged = [];
+
+        \Log::shouldReceive('error')->andReturnUsing(function($message) use (&$logged) {
+            $logged[] = $message;
+        });
+
+        try {
+            SafeWriter::put($this->dir . '/no_such_dir/x.php', 'content', 'verse model class');
+            $this->fail('An unwritable path must throw');
+        }
+        catch(\RuntimeException $e) {
+            $this->assertSame('Failed to write verse model class', $e->getMessage());
+        }
+
+        $this->assertCount(1, $logged);
+        $this->assertStringContainsString('Failed to write verse model class', $logged[0]);
+        $this->assertStringContainsString('wrote false of 7 bytes', $logged[0]);
+        $this->assertStringContainsString(
+            'No such file or directory',
+            $logged[0],
+            "PHP's explanation must not be lost with the warning"
         );
     }
 }

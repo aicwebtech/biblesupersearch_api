@@ -28,27 +28,82 @@ trait WritesFilesSafely
      */
     protected static function putFileContentsOrFail($path, $contents, $what = 'file')
     {
-        $length  = strlen($contents);
-        $written = file_put_contents($path, $contents);
+        // FALSE from a failed json_encode() is the case this catches. Without it,
+        // strlen(FALSE) is 0, file_put_contents() writes '' and returns 0, and 0 === 0
+        // reports the empty file as a complete write.
+        if(!is_string($contents)) {
+            \Log::error(sprintf(
+                'Refusing to write %s "%s": %s given instead of a string',
+                $what,
+                $path,
+                gettype($contents)
+            ));
+
+            throw new \RuntimeException('Failed to write ' . $what);
+        }
+
+        $length = strlen($contents);
+
+        // Suppressed, and the diagnostic taken by hand below instead. The return value is
+        // what this method acts on, so the warning is duplicate output -- and PHP's wording
+        // for it ("possibly out of free disk space") is a guess that sends operators off to
+        // check a disk that is usually fine.
+        error_clear_last();
+
+        $written = @file_put_contents($path, $contents);
 
         if($written === $length) {
             return;
         }
 
+        // Read before the unlink: a failed unlink would otherwise become the last error and
+        // bury the one that explains the write.
+        $error = error_get_last();
+
         @unlink($path);
 
-        // The path and byte counts identify the problem but also describe the server's
-        // filesystem, and these exceptions can reach a caller. The detail is logged; the
-        // message names only what was being written.
+        // The path, byte counts and PHP's own reason identify the problem but also describe
+        // the server's filesystem, and these exceptions can reach a caller. The detail is
+        // logged; the message names only what was being written.
         \Log::error(sprintf(
-            'Failed to write %s "%s": wrote %s of %d bytes',
+            'Failed to write %s "%s": wrote %s of %d bytes%s',
             $what,
             $path,
             var_export($written, TRUE),
-            $length
+            $length,
+            ($error === NULL) ? '' : ' (' . $error['message'] . ')'
         ));
 
         throw new \RuntimeException('Failed to write ' . $what);
+    }
+
+    /**
+     * json_encode() that throws rather than handing FALSE to a writer.
+     *
+     * json_encode() returns FALSE on malformed UTF-8 -- third-party Bible module text is
+     * the realistic source -- and every writer downstream treats FALSE as a zero-length
+     * string. The result is a 0-byte artifact that the Rendering bookkeeping then stamps
+     * as a finished render. Failing at the encode reports the actual cause instead.
+     *
+     * @param  mixed   $data
+     * @param  string  $what   Named in the exception message
+     * @param  int     $flags  Passed through to json_encode()
+     * @return string
+     * @throws \RuntimeException
+     */
+    protected static function jsonEncodeOrFail($data, $what = 'data', $flags = 0)
+    {
+        $json = json_encode($data, $flags);
+
+        if($json === FALSE) {
+            $reason = json_last_error_msg();
+
+            \Log::error('Failed to encode ' . $what . ' as JSON: ' . $reason);
+
+            throw new \RuntimeException('Failed to encode ' . $what . ' as JSON: ' . $reason);
+        }
+
+        return $json;
     }
 
     /**

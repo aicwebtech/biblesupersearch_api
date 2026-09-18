@@ -54,8 +54,13 @@ class Json extends ExtrasAbstract
         }
         unset($row);
 
+        // Encoded before the destination is cleared: a json_encode() failure must not cost
+        // the previous dump as well. FALSE from json_encode() would otherwise reach
+        // file_put_contents() as '' and be written out as a complete, empty extras file.
+        $json = static::jsonEncodeOrFail($data, 'extras JSON');
+
         static::removeStaleFile($filepath);
-        static::putFileContentsOrFail($filepath, json_encode($data), 'extras JSON');
+        static::putFileContentsOrFail($filepath, $json, 'extras JSON');
 
         return $filepath;
     }

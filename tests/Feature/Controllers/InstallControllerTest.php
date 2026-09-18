@@ -147,12 +147,17 @@ class InstallControllerTest extends TestCase
     /**
      * The installer endpoints carry no authentication, so a throttle is the only thing bounding
      * repeated attempts at a multi-minute migration.
+     *
+     * It has to be the install-specific throttle rather than the stock one: these routes run
+     * before migrate, so the default cache store may not be usable yet -- see
+     * Tests\Feature\Middleware\ThrottleInstallRequestsTest.
      */
     public function testTheInstallerRoutesAreThrottled(): void
     {
         $route = app('router')->getRoutes()->getByName('admin.install.config.process');
 
         $this->assertNotNull($route);
-        $this->assertContains('throttle:20,1', $route->gatherMiddleware());
+        $this->assertContains('throttle.install:20,1', $route->gatherMiddleware());
+        $this->assertNotContains('throttle:20,1', $route->gatherMiddleware());
     }
 }
