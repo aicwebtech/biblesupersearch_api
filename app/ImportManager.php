@@ -273,11 +273,19 @@ class ImportManager {
         
         $Importer   = new $this->import_class();
 
+        // `_file` is echoed back by the client and is not trusted. Validate it
+        // before creating the Bible row so a rejected import leaves nothing behind.
+        $safe_file = $Importer->safeImportFileName($file);
+
+        if($safe_file === NULL) {
+            return $this->addError('Import file is missing or invalid.  Please upload the file again.');
+        }
+
         $Bible->fill($data);
         $Bible->save();
 
         $Importer->module       = $Bible->module;
-        $Importer->file         = $file;
+        $Importer->file         = $safe_file;
         $Importer->overwrite    = FALSE;
         $Importer->insert_into_bible_table = FALSE; // We just saved the Bible above
         

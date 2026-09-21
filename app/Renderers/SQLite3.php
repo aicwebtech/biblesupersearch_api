@@ -41,10 +41,8 @@ class SQLite3 extends RenderAbstract
     {
         $filepath = $this->getRenderFilePath(TRUE);
         
-        if(file_exists($filepath)) {
-            unlink($filepath);
-        }
-        
+        static::removeStaleFile($filepath);
+
         touch($filepath);
 
         // Dynamically create 'render' as a DB connection
@@ -114,6 +112,57 @@ class SQLite3 extends RenderAbstract
     protected function _onVerseRenderError(\Throwable $e) 
     {
         DB::connection( $this->getDbConnectionName('render') )->rollBack();
+    }
+
+    /**
+     * Drop the half-built database when any render stage throws.
+     *
+     * _renderStart() unlinks whatever was at the render path and builds the schema in
+     * place, so from that point on the *previous* render no longer exists while its
+     * Rendering record -- rendered_at, version, meta_hash -- is still intact: the throw
+     * skips the bookkeeping that would have replaced it. isRenderNeeded() would then
+     * report FALSE and RenderManager::download() would hand this empty or partial SQLite
+     * file out as the current render, indefinitely. TextAbstract drops its artifact for
+     * the same reason; an in-place writer cannot leave one behind.
+     *
+     * The connection goes first, both to release the write lock and -journal that a
+     * throw between beginTransaction() and commit() leaves open -- RenderManager carries
+     * on to the next Bible with this process -- and so the file being removed is not one
+     * SQLite still holds open.
+     */
+    protected function _onRenderError(\Throwable $e) 
+    {
+        $connection = $this->connection_map['render'] ?? NULL;
+
+        if($connection !== NULL) {
+            try {
+                $Connection = DB::connection($connection);
+
+                // _onVerseRenderError() has already rolled back when the throw came from a
+                // verse chunk; a throw from _renderStart() or _renderFinish() has not, and
+                // rolling back twice would raise an error of its own.
+                if($Connection->transactionLevel() > 0) {
+                    $Connection->rollBack();
+                }
+
+                DB::purge($connection);
+            }
+            catch(\Throwable $ignored) {
+                // The render is being abandoned already. Tidying the connection is best
+                // effort; removing the file below is not.
+            }
+        }
+
+        // Raised rather than swallowed, and with $e as the previous exception: render()
+        // rethrows whatever leaves this method, and a partial file left at the render
+        // path is the failure described above rather than an untidy detail.
+        if(!static::removeCreatedFile($this->getRenderFilePath())) {
+            throw new \RuntimeException(
+                'Render failed and the partial file could not be removed; it would be served as the current render',
+                0,
+                $e
+            );
+        }
     }
 
     protected function _renderVerseChunk() 

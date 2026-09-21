@@ -15,7 +15,7 @@
 <!DOCTYPE html>
 <html>
     <head>
-        <title><?php echo config('app.name') ?></title>
+        <title><?php echo e(config('app.name')) ?></title>
         
         <?php if(config('download.enable')): ?>
             <link rel="stylesheet" href="<?php echo $u ?>/widgets/download/download.css">
@@ -44,8 +44,8 @@
     ?>
     <body>
         <div id='container'>
-            <h1 class='hcenter'><?php echo config('app.name') ?> <?php echo trans('app.documentation') ?></h1>
-            <h6 class='hcenter'>Version <?php echo config('app.version'); ?></h6>
+            <h1 class='hcenter'><?php echo e(config('app.name')) ?> <?php echo trans('app.documentation') ?></h1>
+            <h6 class='hcenter'>Version <?php echo e(config('app.version')); ?></h6>
             <?php if(config('app.env') != 'production'): ?>
                 <h2 class='hcenter warning'><?php echo trans('app.env_warnings.' . config('app.env')) ?></h2>
             <?php endif; ?>
@@ -89,7 +89,7 @@
         </div>
 
         <div id='footer'>
-            <b><?php echo config('app.name') ?>&nbsp; &nbsp;Version <?php echo config('app.version'); ?></b><br /><br />
+            <b><?php echo e(config('app.name')) ?>&nbsp; &nbsp;Version <?php echo e(config('app.version')); ?></b><br /><br />
             This API is Free and Open Source software, licenced under the GNU GPL v3.0.<br /><br />
             To learn how to install it in it's entirety on your website, please visit:<br /><br />
             <a class='footer-link' href='http://www.biblesupersearch.com/downloads' target='_NEW'>http://www.BibleSuperSearch.com</a>

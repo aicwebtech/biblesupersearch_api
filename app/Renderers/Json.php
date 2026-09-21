@@ -4,6 +4,8 @@ namespace App\Renderers;
 
 class Json extends TextAbstract 
 {
+    use \App\Traits\WritesFilesSafely;
+
     static public $name = 'JSON';
     static public $description = 'JavaScript Object Notation';
 
@@ -56,9 +58,15 @@ class Json extends TextAbstract
         $this->current_chapter = $verse->chapter;
     }
 
+    /**
+     * The whole Bible is encoded in one go here, and json_encode() returns FALSE rather
+     * than throwing when the module text contains malformed UTF-8. Encoding through the
+     * checked helper reports that as the encoding failure it is, instead of writing a
+     * 0-byte file that the Rendering record would then stamp as a finished render.
+     */
     protected function _renderFinish() 
     {
-        fwrite($this->handle, json_encode($this->data));
+        $this->_write(static::jsonEncodeOrFail($this->data, 'the rendered Bible'));
         $this->_closeFile();
         return TRUE;
     }

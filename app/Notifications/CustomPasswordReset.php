@@ -35,6 +35,25 @@ class CustomPasswordReset extends Notification
     }
 
     /**
+     * Build the password reset URL.
+     *
+     * The token is a named route parameter so it lands in the path rather than
+     * as a bare, keyless query string, and the email is carried through so the
+     * reset form can prefill it.
+     *
+     * @return string
+     */
+    protected function resetUrl()
+    {
+        $route = route('password.reset', [
+            'token' => $this->token,
+            'email' => $this->User->getEmailForPasswordReset(),
+        ], false);
+
+        return url(config('app.url') . $route);
+    }
+
+    /**
      * Get the notification's channels.
      *
      * @param  mixed  $notifiable
@@ -54,13 +73,13 @@ class CustomPasswordReset extends Notification
     public function toMail($notifiable)
     {
         $data = [
-            'url' => url(config('app.url').route('password.reset', $this->token, false)),
+            'url' => $this->resetUrl(),
             'User' => $this->User,
         ];
 
         return (new MailMessage)
             ->line('You are receiving this email because we received a password reset request for your account.')
-            ->action('Reset Password', url(config('app.url').route('password.reset', $this->token, false)))
+            ->action('Reset Password', $this->resetUrl())
             ->line('If you did not request a password reset, no further action is required.')
             ->greeting('Hello, ' . $this->User->name . ' ( ' . $this->User->username . ' )')
             ->view('mail.pwreset', $data) // Giving up on nice, prepackaged, buggy template for now and hacking out my own

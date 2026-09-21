@@ -382,10 +382,13 @@ class RenderedFileTest extends TestCase
 
     /**
      * RenderManager catches a per-Bible render failure and carries on with the next Bible, so a
-     * throw mid-render must not leave the render transaction open - it would hold a write lock
-     * and a journal file for the rest of the process.
+     * throw mid-render must leave nothing behind: no open transaction holding a write lock and a
+     * journal file for the rest of the process, no open connection, and above all no half-built
+     * database at the render path. _renderStart() unlinked the previous render and the throw
+     * skips the bookkeeping that would have replaced its Rendering record, so a file left there
+     * is one isRenderNeeded() reports as current and download() hands out.
      */
-    public function testSqliteRollsBackTheRenderTransactionWhenAChunkFails() 
+    public function testSqliteDropsTheHalfBuiltDatabaseWhenAChunkFails() 
     {
         $Renderer = $this->_scratchSqliteRenderer(TRUE);
 
@@ -397,16 +400,28 @@ class RenderedFileTest extends TestCase
             $this->assertEquals('Simulated chunk insert failure', $e->getMessage());
         }
 
+        $this->assertSame(
+            0,
+            $Renderer->transaction_level_on_error,
+            'Render transaction was still open when the render was abandoned'
+        );
+
+        // Read from the recorded name rather than by resolving the connection again: a
+        // reconnect would recreate the very file the renderer just removed.
         $connection = $Renderer->renderConnectionName();
 
-        $this->assertEquals(0, \DB::connection($connection)->transactionLevel(), 'Render transaction was left open');
+        $this->assertArrayNotHasKey(
+            $connection,
+            \DB::getConnections(),
+            'The render connection was left open on the removed file'
+        );
 
-        // No lock survives the rollback, so the file is still writable.
-        \DB::connection($connection)->table('verses')->insert([
-            'book' => 1, 'chapter' => 1, 'verse' => 1, 'text' => 'post-rollback write',
-        ]);
-
-        $this->assertEquals(1, \DB::connection($connection)->table('verses')->count());
+        foreach(['', '-journal', '-wal', '-shm'] as $suffix) {
+            $this->assertFileDoesNotExist(
+                $Renderer->scratch_path . $suffix,
+                'A failed render must not leave ' . ($suffix ?: 'its database') . ' behind'
+            );
+        }
 
         $Renderer->cleanUp();
     }
@@ -420,6 +435,9 @@ class RenderedFileTest extends TestCase
         $Renderer = new class('kjv') extends \App\Renderers\SQLite3 {
             public $scratch_path;
             public $fail_on_chunk = FALSE;
+
+            /** Recorded before _onRenderError() purges the connection and drops the file. */
+            public $transaction_level_on_error;
 
             public function getRenderFilePath($create_dir = FALSE, $relative = false) 
             {
@@ -449,6 +467,13 @@ class RenderedFileTest extends TestCase
                 }
 
                 parent::_renderVerseChunk();
+            }
+
+            protected function _onRenderError(\Throwable $e) 
+            {
+                $this->transaction_level_on_error = \DB::connection($this->renderConnectionName())->transactionLevel();
+
+                parent::_onRenderError($e);
             }
         };
 

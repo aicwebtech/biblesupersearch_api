@@ -75,9 +75,12 @@ HEAD;
 
         $this->overwrite = true;
 
+        // file_exists() is FALSE for a dangling symlink, so this branch is exactly the
+        // one a planted link slips through; clear the path before writing.
         if($has_results && (!file_exists($dst_file) || $this->overwrite)) {
             $contents = $header . $contents;
-            file_put_contents($dst_file, $contents);
+            static::removeStaleFile($dst_file);
+            static::putFileContentsOrFail($dst_file, $contents, 'extras SQL dump');
         }
 
         return $dst_file;
@@ -124,7 +127,8 @@ HEAD;
             $contents = file_get_contents($src_file);
             $contents = str_replace($find, $repl, $contents);
             $contents = $header . $contents;
-            file_put_contents($dst_file, $contents);
+            static::removeStaleFile($dst_file);
+            static::putFileContentsOrFail($dst_file, $contents, 'extras SQL dump');
         }
 
         return $dst_file;
@@ -191,7 +195,9 @@ HEAD;
             }
         }
 
-        file_put_contents($filepath, $contents);
+        static::removeStaleFile($filepath);
+        static::putFileContentsOrFail($filepath, $contents, 'extras SQL dump');
+
         return $filepath;
     }
 

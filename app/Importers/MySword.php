@@ -63,7 +63,7 @@ class MySword extends ImporterAbstract
         }
 
         // Script settings
-        $dir    = $this->getImportDir();
+        $dir    = $this->getImportFileDir();
         $file   = $this->file;   
         $module = $this->module; // Module and db name
 
@@ -231,12 +231,33 @@ class MySword extends ImporterAbstract
         $this->bible_attributes['year'] = $this->bible_attributes['year'] ? date('Y', strtotime($this->bible_attributes['year'])) : null;
     }
 
+    /**
+     * Open the SQLite database inside an uploaded MySword file.
+     *
+     * $orig_filename may be the raw client filename (preflight) or the stored
+     * name (commit), so it is sanitized to a bare basename here and every
+     * derived path is required to stay inside the importer directory.
+     *
+     * @param  string  $path           Path to the archive on disk
+     * @param  string  $orig_filename  Untrusted filename
+     * @return \SQLite3|bool
+     */
     private function _getSQLite($path, $orig_filename) 
     {
+        // Validated before sanitizing: sanitizeFileName() strips separators, so a
+        // traversing name would otherwise be aliased onto an existing staged file and
+        // extraction would overwrite that file instead of the uploaded one.
+        if(!static::rawNameIsBare($orig_filename)) {
+            return $this->addError('Invalid import filename');
+        }
+
+        $orig_filename = static::sanitizeFileName($orig_filename);
+
+        if($orig_filename === '' || $orig_filename !== basename($orig_filename)) {
+            return $this->addError('Invalid import filename');
+        }
+
         $path_lc = strtolower($orig_filename);
-        $temp_fn = tempnam(sys_get_temp_dir(), 'mybib');
-        $dir = $this->getImportDir();
-        $new_path = $dir . $orig_filename;
 
         if(!is_file($path)) {
             return $this->addError('File does not exist');
@@ -244,12 +265,52 @@ class MySword extends ImporterAbstract
 
         if(str_ends_with($path_lc, '.mybible.zip')) {
             $uz_file = substr($orig_filename, 0, -4);
-            $uz_path = $dir . '' . $uz_file;
+            $uz_path = $this->_containedImportPath($uz_file);
+
+            if(!$uz_path) {
+                return $this->addError('Invalid import filename');
+            }
+
             $Zip = new \ZipArchive;
 
             if($Zip->open($path) === TRUE) {
-                if(!$Zip->extractTo($dir, $uz_file)) {
-                    return $this->addError('Could not extract from .zip file');
+                try {
+                    // Cheap pre-check against the size the archive declares. The copy below
+                    // counts the bytes it actually writes, which is what a lying header or a
+                    // zip bomb is caught by.
+                    if(!$this->_zipEntryWithinLimit($Zip, $uz_file)) {
+                        return $this->addError('Refusing to extract .zip file: uncompressed size exceeds the allowed limit');
+                    }
+
+                    // Deliberately not extractTo(): that writes straight onto $uz_path and
+                    // truncates an already extracted database before this upload has been
+                    // shown to be whole. Streaming to a sibling temp file and moving it into
+                    // place only on success matches the .gz branch below.
+                    $stream = $Zip->getStream($uz_file);
+
+                    if(!$stream) {
+                        return $this->addError('Could not extract from .zip file');
+                    }
+
+                    try {
+                        $failed = $this->_extractStreamToFile(
+                            $uz_path,
+                            function() use ($stream) { return feof($stream); },
+                            function($size) use ($stream) { return fread($stream, $size); },
+                            'Could not read from .zip file',
+                            'Refusing to extract .zip file: uncompressed size exceeds the allowed limit'
+                        );
+                    }
+                    finally {
+                        fclose($stream);
+                    }
+
+                    if($failed !== TRUE) {
+                        return $this->addError($failed);
+                    }
+                }
+                finally {
+                    $Zip->close();
                 }
 
                 return new SQLite3($uz_path);
@@ -260,24 +321,35 @@ class MySword extends ImporterAbstract
         }        
         else if(str_ends_with($path_lc, '.mybible.gz')) {
             $uz_file = substr($orig_filename, 0, -3);
-            $uz_path = $dir . '' . $uz_file;
+            $uz_path = $this->_containedImportPath($uz_file);
+
+            if(!$uz_path) {
+                return $this->addError('Invalid import filename');
+            }
             
             // 'Extracting' from a .gz file
-            // Raising this value may increase performance
-            $buffer_size = 4096; // read 4kb at a time
+            $in_file = gzopen($path, 'rb');
 
-            // Open our files (in binary mode)
-            $in_file  = gzopen($path, 'rb');
-            $out_file = fopen($uz_path, 'wb');
-
-            // Keep repeating until the end of the input file
-            while(!gzeof($in_file)) {
-                // Both fwrite and gzread and binary-safe
-                fwrite($out_file, gzread($in_file, $buffer_size));
+            if(!$in_file) {
+                return $this->addError('Could not open .gz file');
             }
 
-            fclose($out_file);
-            gzclose($in_file);
+            try {
+                $failed = $this->_extractStreamToFile(
+                    $uz_path,
+                    function() use ($in_file) { return gzeof($in_file); },
+                    function($size) use ($in_file) { return gzread($in_file, $size); },
+                    'Could not read .gz file',
+                    'Refusing to extract .gz file: uncompressed size exceeds the allowed limit'
+                );
+            }
+            finally {
+                gzclose($in_file);
+            }
+
+            if($failed !== TRUE) {
+                return $this->addError($failed);
+            }
 
             return new SQLite3($uz_path);
         }        
@@ -286,5 +358,173 @@ class MySword extends ImporterAbstract
         }
 
         return FALSE;
+    }
+
+    /**
+     * Maximum permitted size of a decompressed MySword database, in bytes.
+     *
+     * @return int
+     */
+    public static function maxDecompressedBytes() 
+    {
+        return (int) config('bible.max_decompressed_bytes', 1073741824); // 1 GiB
+    }
+
+    /**
+     * Copy a decompressed stream onto $uz_path, but only once it is known to be whole.
+     *
+     * The destination is written via a sibling temp file and moved into place with
+     * rename(). Writing straight to $uz_path truncates whatever is already there before a
+     * single byte of the replacement has been verified, so a rejected upload used to cost
+     * the operator a working database.
+     *
+     * Every failure mode is treated as a failure of the whole extraction:
+     *  - a read error, or an upload that expands past the decompressed-size cap;
+     *  - a short fwrite(), which a full disk produces without returning FALSE;
+     *  - a failed fclose(), which is where a full disk can surface instead, because that
+     *    is when the last buffered bytes are actually written.
+     *
+     * @param  string    $uz_path      Final destination
+     * @param  callable  $eof          fn(): bool
+     * @param  callable  $read         fn(int $size): string|false
+     * @param  string    $read_error   Message for a read failure
+     * @param  string    $limit_error  Message for exceeding the size cap
+     * @return true|string             TRUE on success, else the error message
+     */
+    private function _extractStreamToFile($uz_path, callable $eof, callable $read, $read_error, $limit_error)
+    {
+        $buffer_size = 4096; // read 4kb at a time
+        $limit = static::maxDecompressedBytes();
+        $written = 0;
+
+        $tmp_path = $uz_path . '.part_' . bin2hex(random_bytes(6));
+        $out_file = fopen($tmp_path, 'wb');
+
+        if(!$out_file) {
+            @unlink($tmp_path);
+
+            return 'Could not write extracted file';
+        }
+
+        $failed = FALSE;
+
+        try {
+            while(!$eof()) {
+                $chunk = $read($buffer_size);
+
+                if($chunk === FALSE) {
+                    $failed = $read_error;
+                    break;
+                }
+
+                // Nothing more is coming; treating this as EOF avoids spinning if the
+                // stream never reports it.
+                if($chunk === '') {
+                    break;
+                }
+
+                $written += strlen($chunk);
+
+                // A small archive can expand without bound; stop rather than
+                // filling the disk.
+                if($written > $limit) {
+                    $failed = $limit_error;
+                    break;
+                }
+
+                if(fwrite($out_file, $chunk) !== strlen($chunk)) {
+                    $failed = 'Could not write extracted file';
+                    break;
+                }
+            }
+        }
+        finally {
+            // The final flush happens here, so this is the last chance to learn that the
+            // bytes never reached the disk. Without it a partial file could be renamed
+            // over a good database.
+            if(!fclose($out_file) && !$failed) {
+                $failed = 'Could not write extracted file';
+            }
+        }
+
+        if($failed) {
+            // Only the partial temp file goes; anything already at $uz_path is untouched,
+            // because nothing was written there.
+            @unlink($tmp_path);
+
+            return $failed;
+        }
+
+        // rename() over an existing file is atomic on the same filesystem, and the temp
+        // file is a sibling so that holds here. No stale-file guard is needed: rename()
+        // replaces a symlink at the destination rather than writing through it (and
+        // _containedImportPath() refuses a symlinked destination anyway).
+        if(!rename($tmp_path, $uz_path)) {
+            @unlink($tmp_path);
+
+            return 'Could not write extracted file';
+        }
+
+        return TRUE;
+    }
+
+    /**
+     * Build a path for an extracted file and require it to stay inside the
+     * importer directory.
+     *
+     * Also refuses a destination that already exists as a symlink. Both writers
+     * fed by this path follow one and write through to its target: fopen($path,
+     * 'wb') on the .gz branch, and ZipArchive::extractTo() on the .zip branch --
+     * verified, extractTo() returns TRUE while overwriting the link target. The
+     * importer only ever writes real files here, so a link is never something it
+     * left behind; refuse rather than unlink and write through it.
+     *
+     * @param  string  $basename
+     * @return string|null
+     */
+    protected function _containedImportPath($basename) 
+    {
+        $basename = static::sanitizeFileName((string) $basename);
+
+        if($basename === '' || $basename !== basename($basename)) {
+            return NULL;
+        }
+
+        $dir = realpath($this->getImportFileDir());
+
+        if($dir === FALSE) {
+            return NULL;
+        }
+
+        $path = $dir . DIRECTORY_SEPARATOR . $basename;
+
+        // The file does not exist yet, so canonicalize the parent instead.
+        if(dirname($path) !== $dir) {
+            return NULL;
+        }
+
+        if(is_link($path)) {
+            return NULL;
+        }
+
+        return $path;
+    }
+
+    /**
+     * Is the named zip entry within the decompressed-size limit?
+     *
+     * @param  \ZipArchive  $Zip
+     * @param  string       $entry
+     * @return bool
+     */
+    protected function _zipEntryWithinLimit(\ZipArchive $Zip, $entry) 
+    {
+        $stat = $Zip->statName($entry);
+
+        if($stat === FALSE) {
+            return TRUE; // entry absent; extractTo will fail on its own
+        }
+
+        return ($stat['size'] ?? 0) <= static::maxDecompressedBytes();
     }
 }

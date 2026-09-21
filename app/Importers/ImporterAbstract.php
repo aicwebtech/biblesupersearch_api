@@ -43,7 +43,23 @@ abstract class ImporterAbstract
     protected $has_cli = TRUE; // Whether there is a command-line interface access to this importer
     protected $has_gui = FALSE; // Whether there is a user interface access (via the Bible manager) to this importer
     protected $path_short = 'misc';  // Path (inside /bibles) to where import files are located
+    protected $upload_dir_short = 'uploads'; // Subdirectory of $path_short holding HTTP uploads, and nothing else.  Empty means uploads go into $path_short itself
     protected $has_dedicated_dir = NULL; // Whether or not $path_short is dedicated to this specific importer.  Defaults to TRUE if $path_short is 'misc' and FALSE otherwise
+
+    /**
+     * TRUE while an HTTP upload is being checked, before it has been stored.
+     *
+     * getImportFileDir() tells an upload from an operator-placed source by looking for
+     * the file in the upload directory, which cannot work during the preflight step:
+     * the upload is still in PHP's temp directory and $this->file is not set yet. The
+     * MySword and MyBible checks have to decompress the archive before they can read
+     * it, so without this the extracted database was written to the importer directory
+     * -- the one bibles:prune-imports deliberately never touches -- and an import
+     * abandoned at the confirmation step left it there for good.
+     *
+     * @var bool
+     */
+    protected $_accepting_upload = FALSE;
     
     protected $file_extensions = []; // White list of allowable file extensions
     protected $settings = []; // User-selectible settings, specific to each importer
@@ -221,27 +237,179 @@ abstract class ImporterAbstract
         return dirname(__FILE__) . '/../../bibles/' . $this->path_short . '/';
     }
 
+    /**
+     * Directory HTTP uploads are written to: a subdirectory of the importer's own
+     * directory, never the directory itself.
+     *
+     * The two kinds of file are not interchangeable, and sharing a directory is what
+     * made them indistinguishable. An upload is transient -- the preflight step stores
+     * it, the commit step reads it, and an import that is never completed leaves it
+     * behind, which is the only thing bibles:prune-imports is meant to remove. The
+     * importer directory itself is where an operator is told to put a source file (the
+     * CLI import commands print the path in their help, and App\Importers\Text reads a
+     * fixed file from bibles/misc), and those are kept indefinitely.
+     *
+     * An importer whose upload is not transient opts out with an empty
+     * $upload_dir_short and stores into its own directory instead; see
+     * App\Importers\BibleSuperSearch.
+     *
+     * @return string
+     */
+    public function getUploadDir() 
+    {
+        return ((string) $this->upload_dir_short === '')
+            ? $this->getImportDir()
+            : $this->getImportDir() . $this->upload_dir_short . '/';
+    }
+
+    /**
+     * The same directory as a path relative to the 'bibles' disk, for storeAs().
+     *
+     * @return string
+     */
+    public function getUploadStoragePath() 
+    {
+        return ((string) $this->upload_dir_short === '')
+            ? $this->path_short
+            : $this->path_short . '/' . $this->upload_dir_short;
+    }
+
+    /**
+     * Directory the file this import is working with actually lives in.
+     *
+     * Uploads first: a name present in both trees is the one that was just uploaded.
+     * The fallback is what keeps CLI imports working -- they read a source the operator
+     * placed in the importer directory -- and it also covers an upload staged by an
+     * older version of this code, before uploads moved into their own directory.
+     *
+     * An upload still being checked has nothing on disk to find yet, so
+     * $_accepting_upload answers for it; see the note on that property.
+     *
+     * @return string
+     */
+    public function getImportFileDir() 
+    {
+        $upload_dir = $this->getUploadDir();
+
+        if($this->_accepting_upload) {
+            return $upload_dir;
+        }
+
+        return ((string) $this->file !== '' && is_file($upload_dir . $this->file))
+            ? $upload_dir
+            : $this->getImportDir();
+    }
+
+    /**
+     * Resolve a client-supplied import filename to a real path inside this
+     * importer's own directories.
+     *
+     * The preflight step (checkImportFile) sanitizes the upload and hands the
+     * safe name back to the client, but the commit step receives that name back
+     * as arbitrary request input. Everything below therefore treats it as
+     * untrusted: it is re-sanitized, forced to a bare basename, and the resolved
+     * path must still sit beneath one of this importer's own directories.
+     *
+     * Both are searched, uploads first, for the reasons given on getImportFileDir().
+     *
+     * @param  string|null  $file_name
+     * @return string|null  Canonical path, or NULL when invalid or missing
+     */
+    public function resolveImportFile($file_name) 
+    {
+        if(!static::rawNameIsBare($file_name)) {
+            return NULL;
+        }
+
+        $file_name = static::sanitizeFileName($file_name);
+
+        if($file_name === '' || $file_name !== basename($file_name)) {
+            return NULL;
+        }
+
+        foreach([$this->getUploadDir(), $this->getImportDir()] as $dir) {
+            $path = $this->_containedFilePath($dir, $file_name);
+
+            if($path !== NULL) {
+                return $path;
+            }
+        }
+
+        return NULL;
+    }
+
+    /**
+     * Canonical path to an existing $file_name directly inside $dir, or NULL.
+     *
+     * $file_name must already be a sanitized bare basename; this establishes the other
+     * half of the guarantee, that what it resolves to really does sit in $dir.
+     *
+     * @param  string  $dir
+     * @param  string  $file_name
+     * @return string|null
+     */
+    protected function _containedFilePath($dir, $file_name) 
+    {
+        $dir = realpath($dir);
+
+        if($dir === FALSE) {
+            return NULL;
+        }
+
+        $path = realpath($dir . DIRECTORY_SEPARATOR . $file_name);
+
+        // Separator-aware containment: "bibles/unofficial_evil" must not pass
+        // as being inside "bibles/unofficial".
+        if($path === FALSE || strpos($path, $dir . DIRECTORY_SEPARATOR) !== 0) {
+            return NULL;
+        }
+
+        return is_file($path) ? $path : NULL;
+    }
+
+    /**
+     * Sanitized basename of the import file, for callers that build their own
+     * paths from $this->file.
+     *
+     * @param  string|null  $file_name
+     * @return string|null
+     */
+    public function safeImportFileName($file_name) 
+    {
+        return $this->resolveImportFile($file_name) ? static::sanitizeFileName($file_name) : NULL;
+    }
+
     public function acceptUploadedFile(UploadedFile $File) 
     {
-        if(!$this->checkUploadedFile($File)) {
-            return FALSE;
-        }
+        // The checks decompress into the upload directory, and storeAs() below only
+        // creates it once they have already run.
+        Storage::disk('bibles')->makeDirectory($this->getUploadStoragePath());
 
-        if(!$this->test_mode) {        
-            try {
-                $this->file = static::sanitizeFileName( $File->getClientOriginalName() );
-                $dest_path = $this->getImportDir() . $this->file;
+        $this->_accepting_upload = TRUE;
 
-                // if(!file_exists($dest_path)) {
-                    $npath = $File->storeAs($this->path_short, $this->file, 'bibles');
-                // }
+        try {
+            if(!$this->checkUploadedFile($File)) {
+                return FALSE;
             }
-            catch(\Exception $e) {
-                return $this->addError('Could not save import file: ' . $e->getMessage());
-            }
-        }
 
-        return TRUE;
+            if(!$this->test_mode) {        
+                try {
+                    $this->file = static::sanitizeFileName( $File->getClientOriginalName() );
+
+                    // Into the upload subdirectory, never the importer directory itself:
+                    // that one holds operator-placed sources, which nothing may prune.
+                    $npath = $File->storeAs($this->getUploadStoragePath(), $this->file, 'bibles');
+                }
+                catch(\Exception $e) {
+                    return $this->addError('Could not save import file: ' . $e->getMessage());
+                }
+            }
+
+            return TRUE;
+        }
+        finally {
+            $this->_accepting_upload = FALSE;
+        }
     }
 
     public function mapMetaToAttributes($meta, $preserve_attributes = FALSE, $map = NULL) 
@@ -674,6 +842,37 @@ abstract class ImporterAbstract
         }
 
         return $module_suggestion;
+    }
+
+    /**
+     * Is this raw, client-supplied name a bare filename?
+     *
+     * Checked *before* sanitizeFileName(), which strips '/' and collapses '..' and so
+     * turns "../existing.mybible" into "existing.mybible" -- a name that then passes a
+     * basename() test and resolves to a real staged file. Containment was never broken by
+     * that (the resolved path is still required to sit under the importer directory), but
+     * a traversing name silently aliasing onto another staged file is not what the
+     * surrounding code claims to do, and it lets a commit step address a file other than
+     * the one that was preflighted.
+     *
+     * @param  mixed  $file_name
+     * @return bool
+     */
+    public static function rawNameIsBare($file_name) 
+    {
+        if(!is_string($file_name) || $file_name === '') {
+            return FALSE;
+        }
+
+        // Backslash is checked explicitly: basename() does not treat it as a separator on
+        // POSIX, so "..\\existing.mybible" would otherwise survive.
+        foreach(['/', '\\', "\0"] as $needle) {
+            if(strpos($file_name, $needle) !== FALSE) {
+                return FALSE;
+            }
+        }
+
+        return $file_name === basename($file_name);
     }
 
     public static function sanitizeFileName($file_name) 

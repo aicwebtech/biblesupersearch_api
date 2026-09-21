@@ -6,11 +6,11 @@
 </div>
 
 <?php
-    $client_url = config('app.client_url');
+    $client_url = \App\Helpers::safeHref(config('app.client_url'));
     if($client_url): ?>
 
     <div>
-        <?php echo trans('api.overview.see_in_action') ?>: <a href='<?php echo $client_url ?>' target='_NEW'><?php echo $client_url ?></a>
+        <?php echo trans('api.overview.see_in_action') ?>: <a href='<?php echo e($client_url) ?>' target='_NEW'><?php echo e($client_url) ?></a>
     </div>
 <?php endif; ?>
 <br />

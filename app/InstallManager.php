@@ -52,6 +52,21 @@ class InstallManager
             'bibles/unofficial', 
             'bibles/rendered', 
             'bibles/misc',
+
+            // Where the Bible manager stores an upload while an import is being checked.
+            // One per importer that is reachable over HTTP (App\ImportManager's type map).
+            // They ship in the repository, so an upgrade that leaves them owned by the
+            // deploying user rather than the web server breaks importing from the GUI,
+            // with nothing else on this list catching it.
+            //
+            // App\Importers\BibleSuperSearch is absent on purpose: it opts out of an
+            // uploads subdirectory with an empty $upload_dir_short and stores into
+            // bibles/unofficial itself, which is already listed above.
+            'bibles/analyzer/uploads',
+            'bibles/misc/uploads',
+            'bibles/mysword/uploads',
+            'bibles/unbound/uploads',
+            'bibles/usfm/uploads',
             // 'public/index.php', // For future use (Automatic Upgrades)
         ]
     ];
@@ -92,6 +107,16 @@ class InstallManager
     const INSTALL_FAILED            = 'failed';
     const INSTALL_IN_PROGRESS       = 'in_progress';
     const INSTALL_ALREADY_INSTALLED = 'already_installed';
+
+    /**
+     * The database holds accounts but does not say it is installed.
+     *
+     * Kept apart from INSTALL_ALREADY_INSTALLED, which it used to share: that one means the
+     * site is up and the installer has nothing to do, where this one means app.installed is
+     * missing and nothing else on the site works. Telling the operator the application is
+     * already installed in that state sends them looking for a working site that is not there.
+     */
+    const INSTALL_NOT_FRESH         = 'not_fresh';
     
     static function getChecklist() 
     {
@@ -288,6 +313,29 @@ class InstallManager
     }
 
     /**
+     * How many accounts the users table already holds.
+     *
+     * Answers 0 for a genuine first run, where the table does not exist yet and the database
+     * credentials may not even be valid - like isInstalledInDatabase(), this must never throw
+     * its way out of the installer's own gate.
+     *
+     * @return int
+     */
+    static protected function existingUserCount(): int
+    {
+        try {
+            if(!\Schema::hasTable('users')) {
+                return 0;
+            }
+
+            return (int) User::count();
+        }
+        catch (\Throwable $e) {
+            return 0;
+        }
+    }
+
+    /**
      * Installs the application.
      *
      * @return string one of the INSTALL_* codes; only INSTALL_SUCCESS means the app is installed
@@ -313,8 +361,6 @@ class InstallManager
             return static::INSTALL_IN_PROGRESS;
         }
 
-        $start_time = time();
-
         // Ensures that this installer can run even when not on CLI
         if(!defined('STDIN')) {
             define('STDIN', fopen('php://stdin', 'r'));
@@ -335,49 +381,68 @@ class InstallManager
                 return static::INSTALL_ALREADY_INSTALLED;
             }
 
+            // The flag is not the only evidence of a live site, and it is the one most easily
+            // lost - a restored dump, a hand-cleared config value. A genuine first run has no
+            // users table at all, so any account whatsoever means this database is not a first
+            // run and the installer has no business writing to it. Refused here, above
+            // key:generate, because rotating APP_KEY is itself destructive on such a site.
+            //
+            // This can no longer be tripped by an install of its own that died half way: the
+            // administrator row and the installed flag are written together and last, so there
+            // is no longer a window in which one exists without the other - see
+            // createAdministratorAndMarkInstalled().
+            $user_count = static::existingUserCount();
+
+            if($user_count > 0) {
+                \Log::error('Install aborted: the users table already holds ' . $user_count . ' account(s), so this database is not a fresh installation. Restore the app.installed config value rather than re-running the installer, or point the application at an empty database.');
+
+                return static::INSTALL_NOT_FRESH;
+            }
+
             // Generate application key
             Artisan::call('key:generate');
 
             // Set up database // --force Allows migration to run in production
             $exit_code = Artisan::call('migrate', array('--force' => TRUE));
 
+            // Reported rather than ignored. A migration that fails on missing grants, a lock
+            // timeout or a partially applied schema used to fall through into the steps below,
+            // where it surfaced as an unrelated framework exception and a raw 500 - the blank,
+            // unexplained response the rest of this rewrite exists to remove.
+            if((int) $exit_code !== 0) {
+                \Log::error('Install failed: migrate exited with code ' . $exit_code . '. The database user may not have the grants needed to create tables, or the schema may be partially applied.');
+
+                return static::INSTALL_FAILED;
+            }
+
             set_time_limit(300); // 5 minute time limit for post-migration processes (like populating the Bible table)
+
+            // Both guards above ran against a database that may not have been readable at all,
+            // where isInstalledInDatabase() answers FALSE and existingUserCount() answers 0 by
+            // design. Migrate has since proved the connection, so they are asked again - here,
+            // before the Bible table and the feature list are written, rather than after.
+            if(static::isInstalledInDatabase()) {
+                return static::INSTALL_ALREADY_INSTALLED;
+            }
+
+            // The installer must never take over an account that is already there and hand it
+            // access_level 100: it is unauthenticated by nature, so an application whose
+            // app.installed flag has gone missing would otherwise let anyone who reaches this
+            // page rewrite the real administrator's username, email and password and lock the
+            // owner out of their own site.
+            $user_count = static::existingUserCount();
+
+            if($user_count > 0) {
+                \Log::error('Install aborted after migration: the users table holds ' . $user_count . ' account(s), so this database is not a fresh installation. The installer will not take over an existing account.');
+
+                return static::INSTALL_NOT_FRESH;
+            }
 
             // Populate the Bible table
             Bible::populateBibleTable();
 
             // Populate the Features table
             Feature::syncFeatures();
-
-            // The users table exists now that migrate has run, so a finished install can be
-            // recognised from the database rather than from a possibly stale config cache. Only
-            // a finished one is refused: an attempt that died between creating the administrator
-            // and writing the flag leaves a row behind while isInstalled() still says FALSE, so
-            // the installer goes on being served and every retry has to get past this point.
-            if(static::isInstalledInDatabase()) {
-                return static::INSTALL_ALREADY_INSTALLED;
-            }
-
-            // Add admin user
-            // Adopted rather than duplicated, so retrying a half-finished install does not leave
-            // a second administrator behind. Nothing is given away by this: an application that
-            // is not installed serves the installer to anyone who asks, so whoever reaches here
-            // can become the administrator either way.
-            // NOTE: access_level is deliberately not mass assignable (see App\User), so it is set
-            // explicitly below rather than passed in here.
-            $User = User::orderBy('id')->first() ?: new User();
-
-            $User->fill([
-                'name'          => $request->get('name'),
-                'username'      => $request->get('username'),
-                'email'         => $request->get('email'),
-                'password'      => bcrypt( $request->get('password') ),
-            ]);
-
-            $User->access_level = 100;
-            $User->save();
-
-            $elapsed_time = time() - $start_time;
 
             // Install default Bible (usually KJV)
             $Bible = Bible::findByModule(config('bss.defaults.bible'));
@@ -406,24 +471,38 @@ class InstallManager
             $EN->common_words = "a\nan\nand\nare\nas\nat\nbe\nby\nfor\nhe\nhis\nin\nis\nit\nof\non\nor\nthat\nthe\nthey\nto\nwas\nwith\nyou";
             $EN->save();
 
-            // Written last, once there is an installed application to describe. Anything earlier
-            // and a failure below would leave the flag TRUE on a site with no Bible and no book
-            // lists: InstalledRedirect would send the retry offered by install.error to the docs
-            // page, and the install could never be completed.
-            ConfigManager::setConfigs(['app.installed' => TRUE]);
+            // Last, and together. Written any earlier, a failure below would leave the flag TRUE
+            // on a site with no Bible and no book lists: InstalledRedirect would send the retry
+            // offered by install.error to the docs page, and the install could never be
+            // completed. Written apart, a failure between them would leave an administrator the
+            // user count guard then refuses to install over.
+            static::createAdministratorAndMarkInstalled($request);
 
             // Set Application URL
             $server_url = static::getServerUrl();
             ConfigManager::setConfigs(['app.url' => $server_url]);
 
             // Set Application Email (System Mail Address)
-            ConfigManager::setConfigs(['mail.from.address' => $request->get('email')]);
+            ConfigManager::setConfigs(['mail.from.address' => $request->input('email')]);
 
             // After all three writes, so a rebuilt cache carries the URL and mail address too -
             // a cache rebuilt in between would freeze those at their pre-install defaults.
             static::refreshConfigCache();
 
             return static::INSTALL_SUCCESS;
+        }
+        // Every step above can throw, and several of them do so by design: the Bible and
+        // feature writes, the transaction in createAdministratorAndMarkInstalled(), and the
+        // book list build, which raises a RuntimeException on a short write. Uncaught, they
+        // would pass this method and reach the operator as a raw framework 500 - the blank,
+        // unexplained response the rest of this rewrite exists to remove - and the @return
+        // above would not hold. The detail goes to the log, where install.error already sends
+        // the operator, rather than to the browser: this page is unauthenticated, and the
+        // message can carry connection strings and paths.
+        catch (\Throwable $e) {
+            \Log::error('Install failed: ' . $e->getMessage(), ['exception' => $e]);
+
+            return static::INSTALL_FAILED;
         }
         finally {
             error_reporting($ep);
@@ -432,6 +511,53 @@ class InstallManager
             // off so a failed attempt can be retried.
             static::releaseInstallLock();
         }
+    }
+
+    /**
+     * Creates the administrator and marks the application installed, as one database write.
+     *
+     * These two are the last steps of the install and they cannot be allowed to happen apart.
+     * An administrator without the flag wedges the site for good: existingUserCount() sees the
+     * orphan and refuses every retry, while InstallRedirect pins every other URL to /install,
+     * so the only page that loads is the one that will not run. The flag without an
+     * administrator is a site nobody can log in to. Everything that can time out - the default
+     * Bible, the book lists - has already run by the time this is reached, so the only failures
+     * left are these two statements, and a transaction makes them one.
+     *
+     * No DDL may be moved in here: MySQL commits implicitly on CREATE TABLE, which would end
+     * the transaction underneath these writes.
+     *
+     * NOTE: access_level is deliberately not mass assignable (see App\User), so it is set
+     * explicitly below rather than passed to fill().
+     */
+    static protected function createAdministratorAndMarkInstalled(Request $request): void
+    {
+        \DB::transaction(function() use ($request) {
+            $User = new User();
+
+            $User->fill([
+                'name'          => $request->input('name'),
+                'username'      => $request->input('username'),
+                'email'         => $request->input('email'),
+                'password'      => bcrypt( $request->input('password') ),
+            ]);
+
+            $User->access_level = 100;
+            $User->save();
+
+            static::markInstalled();
+        });
+    }
+
+    /**
+     * Writes the installed flag.
+     *
+     * Split out so the transaction above can be shown to roll the administrator back, which is
+     * not otherwise reachable without running a real install against a live database.
+     */
+    static protected function markInstalled(): void
+    {
+        ConfigManager::setConfigs(['app.installed' => TRUE]);
     }
 
     /**

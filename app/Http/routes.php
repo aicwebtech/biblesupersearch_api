@@ -65,9 +65,9 @@ Route::get('/logout', 'Auth\AuthController@logout')->name('logout');
 Route::get('/landing', 'Auth\AuthController@landing')->name('auth.landing')->middleware('auth');
 Route::get('/auth/reset', 'Auth\PasswordController@showLinkRequestForm')->name('password.request');
 //Route::get('/auth/reset', 'Auth\PasswordController@showResetForm')->name('password.request');
-Route::post('/auth/reset', 'Auth\PasswordController@sendResetLinkEmail')->name('password.email');
-Route::get('/auth/change', 'Auth\PasswordController@showResetForm')->name('password.reset');
-Route::post('/auth/change', 'Auth\PasswordController@reset');
+Route::post('/auth/reset', 'Auth\PasswordController@sendResetLinkEmail')->name('password.email')->middleware('throttle:5,1');
+Route::get('/auth/change/{token}', 'Auth\PasswordController@showResetForm')->name('password.reset');
+Route::post('/auth/change', 'Auth\PasswordController@reset')->name('password.update');
 Route::post('/auth/success', 'Auth\PasswordController@success');
 Route::get('/auth/success', 'Auth\PasswordController@success');
 
@@ -150,7 +150,10 @@ Route::post('/admin/config/download/delete', 'Admin\ConfigController@deleteAllDo
 // Throttled because these are unauthenticated by design - first run setup has nobody to
 // authenticate yet - and /install/config/process starts a multi-minute migration, so repeated
 // attempts must not be free.
-Route::middleware('throttle:20,1')->group(function() {
+//
+// throttle.install rather than throttle: these routes run before migrate, where the default
+// cache store may not exist yet - see App\Http\Middleware\ThrottleInstallRequests.
+Route::middleware('throttle.install:20,1')->group(function() {
     Route::get('/install/{action?}' , 'Admin\InstallController@index')->name('admin.install');
     //Route::post('/install/{action?}', 'Admin\InstallController@genericAction'); // Inside controller actions are required to be post
     Route::post('/install/check', 'Admin\InstallController@check')->name('admin.install.check'); // Inside controller actions are required to be post

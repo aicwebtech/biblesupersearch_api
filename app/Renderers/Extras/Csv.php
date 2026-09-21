@@ -39,9 +39,19 @@ class Csv extends ExtrasAbstract
         $fields = $data ? array_keys(get_object_vars($data[0])) : \Schema::getColumnListing($db_table);
         $fields = array_values(array_diff($fields, ['created_at', 'updated_at']));
 
+        static::removeStaleFile($filepath);
+
         $handle = fopen($filepath, 'w');
 
-        fputcsv($handle, $fields, escape: $this->escape);
+        if($handle === FALSE) {
+            // The path goes to the log, not into the exception: these messages can surface
+            // to a caller, and naming the file discloses the server's filesystem layout.
+            \Log::error('Extras CSV: unable to open for writing: ' . $filepath);
+
+            throw new \Exception('Unable to open extras file for writing');
+        }
+
+        $this->_writeCsvRow($handle, $fields, $filepath);
 
         foreach($data as $key => &$row) {
             $csv_row = [];
@@ -50,13 +60,56 @@ class Csv extends ExtrasAbstract
                 $csv_row[] = $row->$f;
             }
 
-            fputcsv($handle, $csv_row, escape: $this->escape);
+            $this->_writeCsvRow($handle, $csv_row, $filepath);
         }
         unset($row);
-        
-        fclose($handle);
+
+        // fclose() flushes what is still buffered, so a disk that filled mid-dump can
+        // surface here rather than at any individual row.
+        if(!fclose($handle)) {
+            // Same cleanup as the row-write path: a truncated dump left in the rendered
+            // tree would be picked up by a later request as though it were complete.
+            static::removeCreatedFile($filepath);
+
+            \Log::error('Extras CSV: unable to finish writing: ' . $filepath);
+
+            throw new \Exception('Unable to finish writing extras file');
+        }
 
         return $filepath;
     }
 
+
+    /**
+     * Write one CSV row, failing loudly rather than silently dropping or truncating it.
+     *
+     * Delegates to the shared checked writer: fputcsv() alone cannot be verified, because
+     * it reports a refused write as 0 and a short write as the count it managed rather
+     * than as FALSE.
+     *
+     * @param  resource  $handle
+     * @param  array     $row
+     * @param  string    $filepath  Removed on failure; never named in the exception
+     * @return void
+     * @throws \RuntimeException
+     */
+    private function _writeCsvRow($handle, array $row, string $filepath): void
+    {
+        try {
+            // No path passed through: putCsvRowOrFail() would interpolate it into the
+            // message, and that message can reach a caller.
+            static::putCsvRowOrFail($handle, $row, $this->escape);
+        }
+        catch(\RuntimeException $e) {
+            fclose($handle);
+
+            \Log::error('Extras CSV: unable to write a row to ' . $filepath);
+
+            // A truncated CSV left at the destination would be picked up by a later
+            // caller, or downloaded, as though it were a complete dump.
+            static::removeCreatedFile($filepath);
+
+            throw $e;
+        }
+    }
 }

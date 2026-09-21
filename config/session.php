@@ -146,8 +146,68 @@ return [
     | to the server if the browser has a HTTPS connection. This will keep
     | the cookie from being sent to you if it can not be done securely.
     |
+    | NULL is Laravel's "auto", and it is what an install that has said nothing
+    | gets: a NULL cookie carries Symfony's secure default, which Response::prepare()
+    | sets from the request, so the cookie is marked Secure over https and plain
+    | over http. Hard-coding FALSE here instead would strip the flag from every
+    | existing https install whose .env predates these settings -- the session
+    | cookie would then travel over any stray plaintext request to the same host.
+    |
+    | REDIRECT_HTTPS=true opts the cookie in outright, so a TLS-only install is
+    | covered from the first request of a session rather than from the first
+    | *secure* one. A falsy REDIRECT_HTTPS is deliberately not read as an opt out:
+    | an install behind a TLS-terminating proxy turns the redirect off precisely
+    | because the proxy already did it, and auto is right there too. Only
+    | SESSION_SECURE_COOKIE itself can force the cookie off.
+    |
+    | Note the reason this must never be merely truthy: HttpsRedirect tests
+    | config('app.redirect_https') === TRUE, and Laravel's Env::getOption() only
+    | converts 'true'/'false'/'null'/'empty', so REDIRECT_HTTPS=1 would arrive as
+    | the string "1" -- no redirect, yet enough to mark the cookie Secure, which
+    | is an admin login that bounces back to the form with no error. Both
+    | settings go through FILTER_VALIDATE_BOOLEAN so they cannot disagree.
+    |
     */
 
-    'secure' => env('SESSION_SECURE_COOKIE', NULL),
+    'secure' => (static function() {
+        $explicit = env('SESSION_SECURE_COOKIE');
+
+        if($explicit !== NULL && $explicit !== '') {
+            return filter_var($explicit, FILTER_VALIDATE_BOOLEAN);
+        }
+
+        // TRUE or NULL, never FALSE: see above.
+        return filter_var(env('REDIRECT_HTTPS', FALSE), FILTER_VALIDATE_BOOLEAN) ?: NULL;
+    })(),
+
+    /*
+    |--------------------------------------------------------------------------
+    | HTTP Access Only
+    |--------------------------------------------------------------------------
+    |
+    | Setting this value to true will prevent JavaScript from accessing the
+    | value of the cookie and the cookie will only be accessible through
+    | the HTTP protocol. You are free to modify this option if needed.
+    |
+    */
+
+    'http_only' => true,
+
+    /*
+    |--------------------------------------------------------------------------
+    | Same-Site Cookies
+    |--------------------------------------------------------------------------
+    |
+    | This option determines how your cookies behave when cross-site requests
+    | take place, and can be used to mitigate CSRF attacks. By default, we
+    | will set this value to "lax" to permit secure cross-site requests.
+    |
+    | See: https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Set-Cookie#samesitesamesite-value
+    |
+    | Supported: "lax", "strict", "none", null
+    |
+    */
+
+    'same_site' => 'lax',
 
 ];

@@ -23,6 +23,123 @@ class Helpers {
         });
     }
 
+    /**
+     * PHP words that cannot be used as a class name.
+     *
+     * Keywords and magic constants are rejected by the parser; the "soft" types
+     * (int, string, ...) are rejected by the engine with "Cannot use X as class
+     * name as it is reserved". Comparison is case-insensitive because PHP
+     * keywords are.
+     *
+     * Verified empirically against PHP 8.2, 8.3, 8.4 and 8.5 (the supported
+     * range) by attempting `class <word> {}` in a subprocess -- see
+     * Tests\Unit\Helpers\ReservedPhpWordTest::testEveryListedWordIsRejectedByPhp.
+     * This is the union across those versions, so a word reserved only in a
+     * newer release is still listed.
+     *
+     * Deliberately excluded: names that merely collide with a built-in class
+     * (Attribute, Closure, Generator, ...). Those are legal inside a namespace,
+     * which is where every generated class lives, so rejecting them would turn
+     * working module names away for no reason.
+     *
+     * @var array<int, string>
+     */
+    protected static $php_reserved_words = [
+        'abstract', 'and', 'array', 'as', 'break', 'callable', 'case', 'catch', 'class',
+        'clone', 'const', 'continue', 'declare', 'default', 'die', 'do', 'echo', 'else',
+        'elseif', 'empty', 'enddeclare', 'endfor', 'endforeach', 'endif', 'endswitch',
+        'endwhile', 'eval', 'exit', 'extends', 'final', 'finally', 'fn', 'for', 'foreach',
+        'function', 'global', 'goto', 'if', 'implements', 'include', 'include_once',
+        'instanceof', 'insteadof', 'interface', 'isset', 'list', 'match', 'namespace',
+        'new', 'or', 'print', 'private', 'protected', 'public', 'readonly', 'require',
+        'require_once', 'return', 'static', 'switch', 'throw', 'trait', 'try', 'unset',
+        'use', 'var', 'while', 'xor', 'yield',
+        // Soft-reserved type names, also illegal as class names.
+        'bool', 'false', 'float', 'int', 'iterable', 'mixed', 'never', 'null', 'object',
+        'parent', 'self', 'string', 'true', 'void',
+        // Magic constants. The parser rejects these as an identifier, so they are
+        // illegal as a class name even inside a namespace. __PROPERTY__ is 8.4+,
+        // listed anyway because 8.4 and 8.5 are supported.
+        '__class__', '__dir__', '__file__', '__function__', '__line__', '__method__',
+        '__namespace__', '__property__', '__trait__',
+    ];
+
+    /**
+     * The reserved word list, for sharing with the front end.
+     *
+     * @return array<int, string>
+     */
+    public static function phpReservedWords() 
+    {
+        return static::$php_reserved_words;
+    }
+
+    /**
+     * Is the given word illegal as a PHP class name?
+     *
+     * @param  string|null  $word
+     * @return bool
+     */
+    public static function isReservedPhpWord($word) 
+    {
+        if(!is_string($word) || $word === '') {
+            return FALSE;
+        }
+
+        return in_array(strtolower($word), static::$php_reserved_words, TRUE);
+    }
+
+    /**
+     * Prefix a generated class base name when it would collide with a PHP
+     * reserved word, otherwise return it unchanged.
+     *
+     * Names that are already legal are returned as-is so existing generated
+     * classes (En, De, Kjv, ...) keep their names and no migration is needed.
+     *
+     * @param  string  $base
+     * @param  string  $prefix
+     * @return string
+     */
+    public static function safeGeneratedClassName($base, $prefix = 'Lang') 
+    {
+        return static::isReservedPhpWord($base) ? $prefix . $base : $base;
+    }
+
+    /**
+     * Return the URL only when it is safe to place in an href, else NULL.
+     *
+     * Guards against script-capable schemes (javascript:, data:, vbscript:) in
+     * operator- or administrator-supplied URLs such as app.client_url, which is
+     * editable from the admin config form and rendered on the public docs page.
+     *
+     * A value carrying no scheme at all -- 'www.example.com/client',
+     * '//cdn.example.com/client', '/client' -- cannot invoke script and is
+     * passed through, since those are all legitimate ways to configure
+     * app.client_url. A scheme-like prefix must be http or https; that means an
+     * unschemed 'host:port' form is rejected, which is ambiguous by RFC anyway.
+     *
+     * The scheme is detected on a copy stripped of whitespace and control
+     * characters, because browsers strip those before acting on an href and
+     * would otherwise run 'java\nscript:...'.
+     *
+     * @param  string|null  $url
+     * @return string|null
+     */
+    public static function safeHref($url) 
+    {
+        if(empty($url) || !is_string($url)) {
+            return NULL;
+        }
+
+        $probe = preg_replace('/[\x00-\x20\x7F]/', '', $url);
+
+        if(!preg_match('/^([a-zA-Z][a-zA-Z0-9+.\-]*):/', $probe, $match)) {
+            return $url; // relative or protocol-relative
+        }
+
+        return in_array(strtolower($match[1]), ['http', 'https'], TRUE) ? $url : NULL;
+    }
+
     /* 
      * Check to see if premium code is present and enabled
      */

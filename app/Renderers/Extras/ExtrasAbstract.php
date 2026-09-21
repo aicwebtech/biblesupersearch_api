@@ -7,6 +7,8 @@ Use App\Models\Language;
 class ExtrasAbstract 
 {
     use \App\Traits\Error;
+    use \App\Traits\RemovesStaleFiles;
+    use \App\Traits\WritesFilesSafely;
 
     protected $overwrite = FALSE;
     protected $filelist = [];
@@ -133,11 +135,21 @@ class ExtrasAbstract
         $dest_filepath = $this->getRenderFileDir() . $dest_filename;
         
         if(!is_file($src_filepath)) {
-            throw new \Exception('Unable to copy, source file does not exist: ' . $src_filepath);
+            // Paths go to the log, not into the exception: these can surface to a caller,
+            // and naming the files discloses the server's filesystem layout.
+            \Log::error('Extras: source file does not exist: ' . $src_filepath);
+
+            throw new \Exception('Unable to copy, source file does not exist');
         }
 
+        // copy() follows a pre-existing destination symlink and writes through to its
+        // target, returning TRUE while doing so.
+        static::removeStaleFile($dest_filepath);
+
         if(!copy($src_filepath, $dest_filepath)) {
-            throw new \Exception('Unable to copy ' . $src_filepath . ' to ' . $dest_filepath);
+            \Log::error('Extras: unable to copy ' . $src_filepath . ' to ' . $dest_filepath);
+
+            throw new \Exception('Unable to copy the extras source file');
         }
 
         return $dest_filepath;
@@ -157,7 +169,9 @@ class ExtrasAbstract
             }
         } 
 
-        file_put_contents($filepath, $readme);
+        static::removeStaleFile($filepath);
+        static::putFileContentsOrFail($filepath, $readme, 'extras readme');
+
         $this->filelist[] = $filepath;
     }
 

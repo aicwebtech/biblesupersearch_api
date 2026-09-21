@@ -44,7 +44,7 @@ class Analyzer extends ImporterAbstract
         }
 
         // Script settings
-        $dir    = $this->getImportDir();
+        $dir    = $this->getImportFileDir();
         $file   = $this->file;   
         $module = $this->module; // Module and db name
 

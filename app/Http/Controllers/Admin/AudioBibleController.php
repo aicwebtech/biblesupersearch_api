@@ -48,6 +48,36 @@ class AudioBibleController extends Controller
         return response($resp, 200);
     }
 
+    /**
+     * Require that $module names a real, installed Bible before it is used to
+     * build a filesystem path.
+     *
+     * upload() and scan() previously passed the raw request value straight into
+     * the audio directory path, where Symfony's File::move() would happily
+     * mkdir() a traversed location. delete() already performed this check.
+     *
+     * @param  string  $module
+     * @return \App\Models\Bible
+     */
+    protected function _requireInstalledBible($module)
+    {
+        if(!Bible::validateModule($module)) {
+            abort(404, 'Bible not found');
+        }
+
+        $Bible = Bible::findByModule($module);
+
+        if(!$Bible) {
+            abort(404, 'Bible not found');
+        }
+
+        if(!$Bible->installed) {
+            abort(404, 'Bible not installed');
+        }
+
+        return $Bible;
+    }
+
     public function upload(Request $request)
     {
         $Manager = new AudioManager();
@@ -60,6 +90,8 @@ class AudioBibleController extends Controller
         if(empty($module) || empty($files)) {
             return response(['error' => 'Invalid parameters'], 400);
         }
+
+        $this->_requireInstalledBible($module);
 
         $resp = new \stdClass();
         $resp->success = true;
@@ -78,6 +110,8 @@ class AudioBibleController extends Controller
         if(empty($module)) {
             return response(['error' => 'Invalid parameters'], 400);
         }
+
+        $this->_requireInstalledBible($module);
 
         $resp = new \stdClass();
         $resp->success = true;

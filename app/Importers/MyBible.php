@@ -59,7 +59,7 @@ class MyBible extends ImporterAbstract
         ini_set("memory_limit", "50M");
 
         // Script settings
-        $dir    = $this->getImportDir();
+        $dir    = $this->getImportFileDir();
         $file   = $this->file;   
         $module = $this->module; // Module and db name
 
