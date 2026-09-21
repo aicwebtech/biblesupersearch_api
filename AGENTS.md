@@ -41,6 +41,45 @@ rather than at its `CLAUDE.md` default).
 * bibles/modules => Bible SuperSearch modules for Bibles we officially support. Versioned in Git.
 * bibles/unofficial => Bible SuperSearch modules for Bibles we do not officially support. Ignored by Git.
 
+## PHP Conventions
+
+### Type conversion
+Use a type cast, not the equivalent function:
+
+```php
+$count = (int) $input;      // not intval($input)
+$speed = (float) $input;    // not floatval($input) / doubleval($input)
+$flag  = (bool) $input;     // not boolval($input)
+$text  = (string) $input;   // not strval($input)
+```
+
+Casts are a language construct rather than a function call, they read consistently with the
+type hints used elsewhere, and they avoid the misleading second parameter on `intval()`.
+The only reason to reach for `intval()` is a non-decimal base (`intval($hex, 16)`), which
+has no cast equivalent.
+
+### Reflection
+NEVER call `ReflectionMethod::setAccessible()` or `ReflectionProperty::setAccessible()`.
+Reflection has ignored visibility since PHP 8.1, so the call is a no-op on every version
+this project supports (8.2 - 8.5), and PHP 8.5 deprecates it outright — which CI runs, so
+it turns a passing test into a deprecation.
+
+```php
+$method = new \ReflectionMethod(Thing::class, 'privateHelper');
+$method->invoke($Thing);        // just invoke it
+
+// $method->setAccessible(TRUE);   // never: no-op since 8.1, deprecated in 8.5
+```
+
+Where the absence might read as an oversight, say so rather than let someone reinstate it:
+
+```php
+/**
+ * No setAccessible() call: reflection has ignored visibility since PHP 8.1 and the method is
+ * deprecated in 8.5, which CI runs.
+ */
+```
+
 ## Tests
 
 ### All tests

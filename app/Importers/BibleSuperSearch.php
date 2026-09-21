@@ -22,6 +22,22 @@ class BibleSuperSearch extends ImporterAbstract
     protected $strongs_en   = NULL;
     protected $paragraph    = '¶ ';
     protected $path_short   = 'unofficial';
+
+    /**
+     * Bible SuperSearch modules are not transient uploads, so they stay in the module
+     * directory rather than moving into an uploads subdirectory.
+     *
+     * Unlike every other importer, this one never reads $this->file: import() installs
+     * the archive through Bible::createFromModuleFile() and Bible::install(), and
+     * Bible::openModuleFileByModule() looks for it at bibles/unofficial/{module}.zip
+     * and nowhere else. VerseStandard::install() opens it again on every reinstall, so
+     * the file has to remain there for as long as the Bible does -- which also puts it
+     * out of reach of bibles:prune-imports, as an installed module archive must be.
+     *
+     * @var string
+     */
+    protected $upload_dir_short = '';
+
     protected $file_extensions = ['.zip'];
     protected $source = ""; // Where did you get this Bible?
 
@@ -83,7 +99,10 @@ class BibleSuperSearch extends ImporterAbstract
                     return $this->addError('Cannot add Bible module \'' . $attr['module'] . '\', because it already exists.  <br />Please refresh your Bible list to find it.');
                 }
                 
-                $this->path_short = $attr['official'] ? 'modules' : 'unofficial';
+                // An uploaded archive does not get to nominate its own storage
+                // directory. Official modules are provisioned server-side into
+                // bibles/modules; anything arriving over HTTP is unofficial.
+                unset($this->bible_attributes['official']);
             }
             catch(\Exception $e) {
                 return $this->addError('Could not read zip file: ' . $file);

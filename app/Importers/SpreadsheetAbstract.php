@@ -52,7 +52,7 @@ abstract class SpreadsheetAbstract extends ImporterAbstract
             // Confirmed working with thaikjv .xls AND .csv (10+ MB files)
 
         // $Bible     = $this->_getBible($this->module);
-        $file_path = $this->getImportDir() . $this->file;
+        $file_path = $this->getImportFileDir() . $this->file;
 
         if(!$this->overwrite && $this->_existing && $this->insert_into_bible_table) {
             // return $this->addError('Module already exists: \'' . $this->module . '\' Use --overwrite to overwrite it.', 4);

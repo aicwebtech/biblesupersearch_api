@@ -1,0 +1,186 @@
+<?php
+
+namespace App\Traits;
+
+/**
+ * Write helpers that refuse to report a partial write as success.
+ *
+ * file_put_contents(), fwrite() and fputcsv() all return the number of bytes written, and
+ * that can be fewer than they were given without being FALSE -- a full disk is the usual
+ * cause. An unchecked call therefore produces a truncated file that every later step
+ * treats as complete: a generated PHP class that fatals on include, an import CSV quietly
+ * missing rows, a rendered artifact served to users as though it were whole.
+ *
+ * A failed write also removes whatever it managed to produce. A truncated file left on
+ * disk is worse than no file at all -- a half-written class file under app/Models/Verses
+ * would fatal on every subsequent request until somebody deleted it by hand.
+ */
+trait WritesFilesSafely
+{
+    /**
+     * file_put_contents() that throws unless the whole string reached the disk.
+     *
+     * @param  string  $path
+     * @param  string  $contents
+     * @param  string  $what      Named in the exception message
+     * @return void
+     * @throws \RuntimeException
+     */
+    protected static function putFileContentsOrFail($path, $contents, $what = 'file')
+    {
+        // FALSE from a failed json_encode() is the case this catches. Without it,
+        // strlen(FALSE) is 0, file_put_contents() writes '' and returns 0, and 0 === 0
+        // reports the empty file as a complete write.
+        if(!is_string($contents)) {
+            \Log::error(sprintf(
+                'Refusing to write %s "%s": %s given instead of a string',
+                $what,
+                $path,
+                gettype($contents)
+            ));
+
+            throw new \RuntimeException('Failed to write ' . $what);
+        }
+
+        $length = strlen($contents);
+
+        // Suppressed, and the diagnostic taken by hand below instead. The return value is
+        // what this method acts on, so the warning is duplicate output -- and PHP's wording
+        // for it ("possibly out of free disk space") is a guess that sends operators off to
+        // check a disk that is usually fine.
+        error_clear_last();
+
+        $written = @file_put_contents($path, $contents);
+
+        if($written === $length) {
+            return;
+        }
+
+        // Read before the unlink: a failed unlink would otherwise become the last error and
+        // bury the one that explains the write.
+        $error = error_get_last();
+
+        @unlink($path);
+
+        // The path, byte counts and PHP's own reason identify the problem but also describe
+        // the server's filesystem, and these exceptions can reach a caller. The detail is
+        // logged; the message names only what was being written.
+        \Log::error(sprintf(
+            'Failed to write %s "%s": wrote %s of %d bytes%s',
+            $what,
+            $path,
+            var_export($written, TRUE),
+            $length,
+            ($error === NULL) ? '' : ' (' . $error['message'] . ')'
+        ));
+
+        throw new \RuntimeException('Failed to write ' . $what);
+    }
+
+    /**
+     * json_encode() that throws rather than handing FALSE to a writer.
+     *
+     * json_encode() returns FALSE on malformed UTF-8 -- third-party Bible module text is
+     * the realistic source -- and every writer downstream treats FALSE as a zero-length
+     * string. The result is a 0-byte artifact that the Rendering bookkeeping then stamps
+     * as a finished render. Failing at the encode reports the actual cause instead.
+     *
+     * @param  mixed   $data
+     * @param  string  $what   Named in the exception message
+     * @param  int     $flags  Passed through to json_encode()
+     * @return string
+     * @throws \RuntimeException
+     */
+    protected static function jsonEncodeOrFail($data, $what = 'data', $flags = 0)
+    {
+        $json = json_encode($data, $flags);
+
+        if($json === FALSE) {
+            $reason = json_last_error_msg();
+
+            \Log::error('Failed to encode ' . $what . ' as JSON: ' . $reason);
+
+            throw new \RuntimeException('Failed to encode ' . $what . ' as JSON: ' . $reason);
+        }
+
+        return $json;
+    }
+
+    /**
+     * Format one CSV row exactly as fputcsv() would, without writing it anywhere.
+     *
+     * Writing a row straight to the destination gives nothing to check against: fputcsv()
+     * formats the row itself, so the caller never learns how long it should have been.
+     * Worse, fputcsv() does not report a refused write as FALSE -- it returns the byte
+     * count it managed, which is 0 when the stream accepts nothing and a partial count
+     * when the disk fills mid-row. A `=== FALSE` test therefore misses exactly the case
+     * that matters. Formatting through php://temp first yields the expected length, so
+     * the real write can be verified like any other.
+     *
+     * @param  array   $row
+     * @param  string  $escape
+     * @return string
+     */
+    protected static function csvRowToString(array $row, $escape)
+    {
+        $buffer = fopen('php://temp', 'r+');
+
+        fputcsv($buffer, $row, escape: $escape);
+        rewind($buffer);
+
+        $line = stream_get_contents($buffer);
+        fclose($buffer);
+
+        return $line;
+    }
+
+    /**
+     * Write one CSV row, throwing rather than silently dropping or truncating it.
+     *
+     * @param  resource  $handle
+     * @param  array     $row
+     * @param  string    $escape
+     * @param  string    $path    Named in the exception message
+     * @return void
+     * @throws \RuntimeException
+     */
+    protected static function putCsvRowOrFail($handle, array $row, $escape, $path = '')
+    {
+        $line = static::csvRowToString($row, $escape);
+        $length = strlen($line);
+
+        if($length === 0) {
+            return;
+        }
+
+        if(fwrite($handle, $line) !== $length) {
+            if($path !== '') {
+                \Log::error('Failed to write CSV row to "' . $path . '"');
+            }
+
+            throw new \RuntimeException('Failed to write CSV row');
+        }
+    }
+
+    /**
+     * fclose() that throws unless the final flush succeeded.
+     *
+     * Buffered bytes are written out by fclose(), so a disk that filled part way through
+     * can surface here rather than at any individual write.
+     *
+     * @param  resource  $handle
+     * @param  string    $path  Named in the exception message
+     * @return void
+     * @throws \RuntimeException
+     */
+    protected static function closeFileOrFail($handle, $path = '')
+    {
+        if(!fclose($handle)) {
+            if($path !== '') {
+                \Log::error('Failed to finish writing "' . $path . '"');
+            }
+
+            throw new \RuntimeException('Failed to finish writing file');
+        }
+    }
+}

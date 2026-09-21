@@ -1,5 +1,22 @@
 Bible SuperSearch API Changelog
 
+= 6.3.0
+* UPGRADE NOTE: REDIRECT_HTTPS now applies to every request, including the API,
+        rather than only to the documentation page.
+        The default is now OFF. It was previously ON, so a site that never set
+        REDIRECT_HTTPS no longer forces https on the documentation page.
+        Values such as 1, yes and on are now honoured. These were silently ignored
+        before, so a site configured with one of them will begin redirecting after
+        this upgrade, where previously nothing was redirected at all.
+        If TLS is terminated by a proxy or load balancer, set TRUSTED_PROXIES as
+        well. Until you do, a request forwarded with an https scheme is served
+        without the redirect and a warning naming TRUSTED_PROXIES is written to the
+        log, rather than redirecting in a loop and locking you out of the admin.
+* API callers still pointed at an http:// URL are redirected to https when
+        REDIRECT_HTTPS is enabled. Query strings and POST bodies are preserved.
+        Ordinary browser requests (including JSONP) follow the redirect on their own;
+        server side callers must be set to follow redirects, e.g. curl -L.
+
 = 6.2.2
 * Emergency bugfix: database / migration issues on fresh install
 

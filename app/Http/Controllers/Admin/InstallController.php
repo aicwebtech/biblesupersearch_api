@@ -91,12 +91,19 @@ class InstallController extends Controller
     /**
      * Renders the reason an install did not happen.
      *
+     * Retry is offered for everything except an application that is genuinely already
+     * installed: the other three describe conditions the operator can clear.
+     *
      * @param  string $result one of the Installer::INSTALL_* codes
      */
     protected function installError(string $result) 
     {
         $messages = [
             Installer::INSTALL_ALREADY_INSTALLED => 'This application is already installed.',
+            // Deliberately not the message above. Here the application is not installed and
+            // nothing else on the site works, so telling the operator it is already installed
+            // would send them looking for a working site that does not exist.
+            Installer::INSTALL_NOT_FRESH         => 'This database already contains user accounts, so it is not a fresh installation. If it is the right database, restore its app.installed configuration value; otherwise point the application at an empty database. See the application log for the details.',
             Installer::INSTALL_IN_PROGRESS       => 'An installation is already running. Wait for it to finish, then reload this page.',
             Installer::INSTALL_FAILED            => 'The installation could not be completed. See the application log for the details.',
         ];

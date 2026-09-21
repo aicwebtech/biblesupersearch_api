@@ -27,8 +27,11 @@ class VerseStandard extends VerseAbstract
      * '~l' and for Psalms), so no legitimate search needs a wider window than this. Without a
      * ceiling, a request such as proximity_limit=100000000 widens the BETWEEN range on every
      * arm of an N-way self join, which is an unauthenticated way to burn CPU and memory.
+     *
+     * Takes its value from PROXIMITY_LIMIT_MAX so the backstop applied here and the ceiling
+     * Engine advertises for the bss.proximity_limit_max setting cannot drift apart.
      */
-    protected static $proximity_limit_max = 500;
+    protected static $proximity_limit_max = self::PROXIMITY_LIMIT_MAX;
 
     /**
      * Processes and executes the Bible search query
@@ -527,6 +530,17 @@ class VerseStandard extends VerseAbstract
         return count($results);
     }
 
+    /**
+     * Hard ceiling on proximity distance, and the default for the tunable
+     * bss.proximity_limit_max.
+     *
+     * Deliberately a constant rather than a config lookup: _buildSpecialSearchJoin()
+     * is exercised by unit tests as a plain static, where no application is booted
+     * and config() would throw. It is the backstop, not the knob, and it is what
+     * $proximity_limit_max (clamped against in that method) is initialised from.
+     */
+    const PROXIMITY_LIMIT_MAX = 100;
+
     protected static function _buildSpecialSearchJoin($table, $alias, $operator, $alias2, $parameters, $on_clause) 
     {
         $join  = 'INNER JOIN ' . $table . ' AS ' . $alias . ' ON ';
@@ -543,12 +557,16 @@ class VerseStandard extends VerseAbstract
             $lppos = strpos($operator, '(');
 
             if($lppos !== FALSE) {
-                $limit = intval(substr($operator, $lppos + 1));
+                $limit = (int) substr($operator, $lppos + 1);
             }
             else {
                 $limit = (empty($parameters['proximity_limit'])) ? 5 : (int) $parameters['proximity_limit'];
             }
 
+            // $limit is interpolated into the join below, not bound, so clamp it here as
+            // well as at input validation: an unbounded range turns the self-join into an
+            // arbitrarily expensive query.
+            //
             // Floored at zero rather than one: PROX(0) is a legitimate search for two
             // keywords in the same verse, and only the ceiling guards against resource
             // exhaustion. A negative proximity_limit would invert the BETWEEN range.

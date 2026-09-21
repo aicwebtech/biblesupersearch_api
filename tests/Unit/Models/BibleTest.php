@@ -314,4 +314,41 @@ class BibleTest extends TestCase
     {
         $this->assertFalse($this->makeBible(['restrict' => 0, 'copyright_id' => null])->isDownloadable());
     }
+
+    /**
+     * validateModule() is called straight on request input, and module[]=kjv arrives as
+     * an array. empty() does not reject a non-empty array, so preg_match() raised a
+     * TypeError and the request 500'd instead of being answered as an invalid module.
+     *
+     * @param  mixed  $module
+     */
+    #[\PHPUnit\Framework\Attributes\DataProvider('nonStringModuleProvider')]
+    public function testNonStringModuleIsInvalidRatherThanFatal($module): void
+    {
+        $this->assertFalse(\App\Models\Bible::validateModule($module));
+    }
+
+    public static function nonStringModuleProvider(): array
+    {
+        return [
+            'array'        => [['kjv']],
+            'empty array'  => [[]],
+            'nested array' => [[['kjv']]],
+            'object'       => [new \stdClass],
+            'int'          => [123],
+            'float'        => [1.5],
+            'true'         => [true],
+            'false'        => [false],
+            'null'         => [null],
+        ];
+    }
+
+    /**
+     * The guard must not reject a legitimate module name.
+     */
+    public function testOrdinaryModuleStillValidates(): void
+    {
+        $this->assertTrue(\App\Models\Bible::validateModule('kjv'));
+        $this->assertTrue(\App\Models\Bible::validateModule('kjv_strongs'));
+    }
 }

@@ -41,7 +41,7 @@ class Evening extends ImporterAbstract
 
         // Script settings
         // $dir    = dirname(__FILE__) . '/../../bibles/evening/'; // directory of Bible files
-        $dir = $this->getImportDir();
+        $dir = $this->getImportFileDir();
         $file   = $this->file;   // File name, minus extension
         $module = $this->module; // Module and db name
 

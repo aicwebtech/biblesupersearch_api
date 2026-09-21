@@ -43,9 +43,7 @@ class ExcelFromCsv extends RenderAbstract
         // // var_dump($Cache instanceof \Psr\SimpleCache\CacheInterface); // true
         // \PhpOffice\PhpSpreadsheet\Settings::setCache($Cache);
         
-        if(is_file($filepath)) {
-            unlink($filepath);
-        }
+        static::removeStaleFile($filepath);
 
         $this->Csv = new Csv($this->Bible);
         $this->Csv->renderIfNeeded();

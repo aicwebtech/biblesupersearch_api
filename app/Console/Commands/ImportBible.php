@@ -322,6 +322,13 @@ abstract class ImportBible extends Command
                     continue;
                 }
 
+                // Subdirectories are not importable files. The importer directory holds the
+                // 'uploads' subdirectory the HTTP uploads go into, and an importer with no
+                // $file_extension would otherwise offer it as a Bible to import.
+                if(!is_file(rtrim($dir, '/') . '/' . $item)) {
+                    continue;
+                }
+
                 if($this->file_extension && !preg_match('/\.(' . $this->file_extension . ')$/i', $item)) {
                     continue;
                 }

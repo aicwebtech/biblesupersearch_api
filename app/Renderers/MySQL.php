@@ -69,7 +69,7 @@ CREATE TABLE `{$this->mysql_table}` (
 
 EOT;
 
-        fwrite($this->handle, $header);
+        $this->_write($header);
         return TRUE;
     }
 
@@ -83,7 +83,7 @@ EOT;
         $text = DB::connection()->getPdo()->quote($verse->text);
         $sql  = "INSERT INTO `{$this->mysql_table}` VALUES ('{$i}', '{$b}', '{$c}', '{$v}', {$text});\n";
 
-        fwrite($this->handle, $sql);
+        $this->_write($sql);
 
         $this->current_book    = $verse->book;
         $this->current_chapter = $verse->chapter;
@@ -91,7 +91,7 @@ EOT;
 
     protected function _renderFinish() 
     {
-        fwrite($this->handle, "\n\n");
+        $this->_write("\n\n");
         $this->_closeFile();
         return TRUE;
     }

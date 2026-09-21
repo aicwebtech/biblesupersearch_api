@@ -8,7 +8,6 @@ use Illuminate\Foundation\Auth\SendsPasswordResetEmails;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Password;
-use App\Http\Controllers\Auth\Message;
 
 class PasswordController extends Controller
 {
@@ -47,19 +46,10 @@ class PasswordController extends Controller
      * @param  \Illuminate\Http\Request  $request
      * @param  string|null  $token
      * @return \Illuminate\Contracts\View\Factory|\Illuminate\View\View
-     *
-     * OVERRIDING THIS BECAUSE SOMETHING WRONG W ROUTE, NOT GETTING TOKEN
      */
     public function showResetForm(Request $request, $token = null) {
-        $data = $request->toArray();
-
-        if(!$token && count($data) == 1) {
-            $keys  = array_keys($data);
-            $token = array_shift($keys);
-        }
-
         return view('auth.passwords.reset')->with(
-            ['token' => $token, 'email' => $request->email]
+            ['token' => $token, 'email' => $request->query('email')]
         );
     }
 
@@ -113,45 +103,27 @@ class PasswordController extends Controller
     {
         $this->validateEmail($request);
 
-        // We will send the password reset link to this user. Once we have attempted
-        // to send the link, we will examine the response then see the message we
-        // need to show to the user. Finally, we'll send out a proper response.
+        // Send the link, but deliberately ignore the broker's return value:
+        // distinguishing RESET_LINK_SENT from INVALID_USER would tell an
+        // anonymous requester whether an address has an account here.
+        $this->broker()->sendResetLink($request->only('email'));
 
-        $broker = $this->broker();
-
-//         $response = $broker->sendResetLink($request->only('email'), function (Message $message) {
-//             $message->subject($this->getEmailSubject());
-//                 $message->from('baconman@example.com', 'You can be a big pig too');
-// //            $message->from(env('MAIL_FROM'), env('APP_NAME'));
-//                 throw new Exception('farquad was here');
-//         });
-        
-        $response = $broker->sendResetLink($request->only('email'));
-
-//        $response = $this->broker()->sendResetLink(
-//            $request->only('email'),
-//            function(Message $message) {
-//                $message->subject($this->getEmailSubject());
-////                $message->from(config('mail.from.address'), config('mail.from.name'));
-//                $message->from('baconman@example.com', 'You can be a big pig too');
-//                $message->from('baconman@example.com', 'You can be a big pig too');
-//                die('dead');
-//            }
-//        );
-
-        return $response == Password::RESET_LINK_SENT
-                    ? $this->sendResetLinkResponse($request, $response)
-                    : $this->sendResetLinkFailedResponse($request, $response);
+        return $this->sendResetLinkResponse($request, Password::RESET_LINK_SENT);
     }
 
-    protected function resetEmailBuilder()
+    /**
+     * Never surface a broker failure to the requester.
+     *
+     * Overridden so that a failure inside the framework's own flow cannot
+     * reintroduce the enumeration difference.
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @param  string  $response
+     * @return \Illuminate\Http\RedirectResponse
+     */
+    protected function sendResetLinkFailedResponse(Request $request, $response)
     {
-        return function (Message $message) {
-            $message->subject($this->getEmailSubject());
-            $message->from('baconman@bacon.com', 'You can be a big pig too');
-            throw new Exception('farquad was here');
-//            $message->from('you@email.com', 'you');
-        };
+        return $this->sendResetLinkResponse($request, Password::RESET_LINK_SENT);
     }
 
     /**

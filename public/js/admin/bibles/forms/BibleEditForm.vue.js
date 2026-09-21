@@ -44,7 +44,9 @@ const template = `
                     hint='Module name is used to identify the Bible in the system. It must be unique.'
                     :rules='[
                         v=> !!v || "Module is required", 
-                        v => /^[a-z]{2}([a-zA-Z0-9_]+)?$/.test(v) || "Module can contain only lowercase letters, numbers, and underscores. The first two characters must be letters",
+                        v => /^[a-z]{2}/.test(v) || "Module name must start with at least two letters",
+                        v => /^[a-z0-9_]*$/.test(v) || "Module name contains invalid characters. Only lowercase letters, numbers and underscores are allowed",
+                        v => !isReservedModule(v) || "Module name is a reserved word",
                         v => errorShow("module")
                     ]'
                     @keydown='errorClear("module")'
@@ -480,6 +482,24 @@ export default {
         } 
     },
     methods: {
+        /**
+         * Mirrors the reserved word check in Bible::validateModule().
+         *
+         * A module name is studly-cased into a generated PHP class, so a
+         * reserved word such as 'for' would produce a fatal parse error. The
+         * word list comes from the server (bootstrap.php_reserved_words) so
+         * this cannot drift from the backend.
+         */
+        isReservedModule(value) {
+            if(!value) {
+                return false;
+            }
+
+            const words = (typeof bootstrap !== 'undefined' && bootstrap.php_reserved_words) || [];
+
+            return words.includes(String(value).toLowerCase());
+        },
+
         languageItemProps(item) {
             return item && item.code ? {
                 ...this.defaultProps.items,

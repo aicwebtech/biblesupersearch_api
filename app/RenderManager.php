@@ -10,6 +10,8 @@ use Illuminate\Support\Facades\Gate;
 
 class RenderManager 
 {
+    use \App\Traits\RemovesStaleFiles;
+
     use Traits\Error;
 
     static public $format_kinds = [
@@ -397,6 +399,13 @@ class RenderManager
             try {
                 $Zip = new \ZipArchive;
 
+                // ZipArchive::CREATE opens an existing path for writing, and follows a link
+                // there like every other writer - see App\Traits\RemovesStaleFiles. The
+                // timestamped name makes a planted link a long shot, but the guard costs
+                // nothing and the archive is written into the same shared rendered/ tree
+                // everything else here is guarded against.
+                static::removeStaleFile($zip_path);
+
                 if(!$Zip->open($zip_path, \ZipArchive::CREATE)) {
                     return $this->addError('Unable to create ZIP file <tmppath>/' . $zip_filename);
                 }
@@ -441,7 +450,13 @@ class RenderManager
                         $Renderer = new $CLASS($Bible);
                         $filepath = $Renderer->getDownloadFilePath();
 
-                        if(!$filepath || !file_exists($filepath)) {
+                        // isRealFile() rather than file_exists(): the latter answers about a
+                        // symlink's target, and ZipArchive::addFile() reads through the link --
+                        // so a link planted at a Bible's render path used to be packaged into
+                        // the archive under that Bible's name, with whatever it pointed at
+                        // inside. A link is not a finished render (isRenderNeeded() says as
+                        // much), so it is skipped here exactly like a missing file.
+                        if(!$filepath || !static::isRealFile($filepath)) {
                             continue;
                         }
 
@@ -529,8 +544,10 @@ class RenderManager
                         foreach($file_list as $file) {
                             // The paths come from the extras renderer, so a missing one is a
                             // failed render reported as a file list - checked here rather than
-                            // left to warn its way through ZipArchive::addFile()
-                            if(!is_file($file) || !$Zip->addFile($file, 'extras/' . basename($file)) ) {
+                            // left to warn its way through ZipArchive::addFile(). is_file()
+                            // followed a link like the check above it, and addFile() would
+                            // then have read through to the target.
+                            if(!static::isRealFile($file) || !$Zip->addFile($file, 'extras/' . basename($file)) ) {
                                 return $this->addError('Unable to add file to ZIP file: ' . $file);
                             }
                         }
@@ -568,7 +585,10 @@ class RenderManager
             // Send file to browser as download
         }
 
-        if(!$make_file_only && file_exists($download_file_path)) {
+        // Defence in depth at the point of no return: readfile() follows a symlink and
+        // would send whatever it points at. isRenderNeeded() already refuses to treat a
+        // link as a finished render, but this is the line that actually serves bytes.
+        if(!$make_file_only && static::isRealFile($download_file_path)) {
             header('Content-Description: File Transfer');
             header('Content-Type: application/octet-stream');
             header('Content-Disposition: attachment; filename=' . $download_file_name);
@@ -633,7 +653,9 @@ class RenderManager
         foreach($this->Bibles as $Bible) {
             $Renderer = new $CLASS($Bible);
 
-            if(file_exists($Renderer->getRenderFilePath())) {
+            // A link is not a render - isRenderNeeded() will rebuild over it - so counting
+            // it as an existing file would under-estimate the space this batch needs.
+            if(static::isRealFile($Renderer->getRenderFilePath())) {
                 $modules_has_file[] = $Bible->module;
             }
             else {

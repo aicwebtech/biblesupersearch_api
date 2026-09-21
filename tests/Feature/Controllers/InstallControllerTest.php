@@ -97,6 +97,33 @@ class InstallControllerTest extends TestCase
     }
 
     /**
+     * The count guard and a finished installation used to share one message. They are opposite
+     * states: here app.installed is missing, so nothing on the site works and InstallRedirect
+     * has every other URL pinned to /install. Being told the application is already installed
+     * sends the operator looking for a working site that is not there.
+     *
+     * No setAccessible() call: reflection has ignored visibility since PHP 8.1 and the method is
+     * deprecated in 8.5, which CI runs.
+     */
+    public function testADatabaseThatIsNotFreshIsNotReportedAsAlreadyInstalled(): void
+    {
+        $method = new \ReflectionMethod(InstallController::class, 'installError');
+
+        $response = $method->invoke(new InstallController(), InstallManager::INSTALL_NOT_FRESH);
+
+        $this->assertSame(409, $response->status());
+
+        $content = $response->getContent();
+
+        $this->assertStringContainsString('not a fresh installation', $content);
+        $this->assertStringNotContainsString('already installed', $content);
+
+        // The operator can clear this one - restore the config value, or point the application
+        // at an empty database - so the way back to the installer has to be offered.
+        $this->assertStringContainsString('Back to the installer', $content);
+    }
+
+    /**
      * The claim is what makes the installer one-time. With it held, a second request has to be
      * refused before key:generate or migrate can run.
      */
@@ -147,12 +174,17 @@ class InstallControllerTest extends TestCase
     /**
      * The installer endpoints carry no authentication, so a throttle is the only thing bounding
      * repeated attempts at a multi-minute migration.
+     *
+     * It has to be the install-specific throttle rather than the stock one: these routes run
+     * before migrate, so the default cache store may not be usable yet -- see
+     * Tests\Feature\Middleware\ThrottleInstallRequestsTest.
      */
     public function testTheInstallerRoutesAreThrottled(): void
     {
         $route = app('router')->getRoutes()->getByName('admin.install.config.process');
 
         $this->assertNotNull($route);
-        $this->assertContains('throttle:20,1', $route->gatherMiddleware());
+        $this->assertContains('throttle.install:20,1', $route->gatherMiddleware());
+        $this->assertNotContains('throttle:20,1', $route->gatherMiddleware());
     }
 }

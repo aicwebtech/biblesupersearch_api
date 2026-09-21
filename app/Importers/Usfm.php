@@ -104,7 +104,7 @@ class Usfm extends ImporterAbstract
     {
         ini_set("memory_limit", "500M");
 
-        $dir    = $this->getImportDir();
+        $dir    = $this->getImportFileDir();
         $file   = $this->file;   // File name, minus extension
         $module = $this->module; // Module and db name
 

@@ -58,7 +58,7 @@ class Unbound extends ImporterAbstract
         }
 
         // Script settings
-        $dir    = $this->getImportDir();
+        $dir    = $this->getImportFileDir();
         $file   = $this->file;   // File name, minus extension
         $module = $this->module; // Module and db name
 

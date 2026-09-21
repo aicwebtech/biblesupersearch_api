@@ -343,4 +343,36 @@ class InstallManagerChecklistTest extends TestCase
         $this->assertContains('bibles/modules', $checklist['writable'], 'imports write here');
         $this->assertContains('bibles/rendered', $checklist['writable'], 'downloads are rendered here');
     }
+
+    /**
+     * An upload is stored in the importer's own uploads subdirectory. Those ship in the
+     * repository, so a pull can leave them owned by the deploying user rather than the
+     * web server -- importing from the Bible manager then fails with nothing else on the
+     * checklist catching it.
+     *
+     * Driven off the importers that are actually reachable over HTTP, so an importer
+     * added to the type map cannot quietly miss the list.
+     *
+     * The path is asked of the importer rather than assembled here. An importer whose
+     * upload is not transient opts out of the subdirectory with an empty
+     * $upload_dir_short and stores into its own directory instead -- assuming
+     * path_short . '/uploads' put bibles/unofficial/uploads, a directory nothing
+     * creates or writes to, on the checklist and failed every fresh install.
+     */
+    public function testTheWritableChecklistCoversTheImportUploadDirectories(): void
+    {
+        $checklist = InstallManager::getChecklist();
+        $type_map  = (new \ReflectionClass(\App\ImportManager::class))->getStaticPropertyValue('type_map');
+
+        foreach(\App\ImportManager::getImportersList() as $importer) {
+            $class = $type_map[$importer['type']]['class'];
+            $path  = 'bibles/' . (new $class())->getUploadStoragePath();
+
+            $this->assertContains(
+                $path,
+                $checklist['writable'],
+                $importer['type'] . ' uploads into ' . $path . ', which must be writable'
+            );
+        }
+    }
 }

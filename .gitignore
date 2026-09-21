@@ -22,8 +22,16 @@ vendor.zip
 /bibles/mysword/*
 /bibles/usfm/*
 /bibles/misc/*
+/bibles/mybible/*
 /bibles/rendered/*
 /bibles/audio/*
+
+# Import uploads. The directories themselves are tracked (each holds a .gitkeep) so
+# that a fresh checkout has somewhere to put an upload and bibles:prune-imports has
+# somewhere to look; what lands in them never is.
+!/bibles/*/uploads/
+/bibles/*/uploads/*
+!/bibles/*/uploads/.gitkeep
 /app/Premium
 
 #temp
