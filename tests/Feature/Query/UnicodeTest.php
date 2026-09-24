@@ -576,7 +576,10 @@ class UnicodeTest extends TestCase
             'search'        => $search_2,
             'search_type'   => 'phrase',
             'highlight'     => true,
-            'highlight_tag' => 'high',
+            // 'em' rather than the default 'b': it is on the highlight-tag whitelist
+            // (Helpers::HIGHLIGHT_TAG_WHITELIST) and cannot collide with markup already in
+            // the verse text, so the assertions below stay unambiguous.
+            'highlight_tag' => 'em',
         ];
 
         $results = $Engine->actionQuery($query);
@@ -586,10 +589,10 @@ class UnicodeTest extends TestCase
         $this->assertCount(1, $results['synodal']);
         $this->assertCount(1, $results['bishops']);
 
-        $this->assertStringContainsString('<high>', $results['synodal'][0]->text);
-        $this->assertStringContainsString('</high>', $results['synodal'][0]->text);
-        $this->assertStringNotContainsString('<high>', $results['bishops'][0]->text);
-        $this->assertStringNotContainsString('</high>', $results['bishops'][0]->text);
+        $this->assertStringContainsString('<em>', $results['synodal'][0]->text);
+        $this->assertStringContainsString('</em>', $results['synodal'][0]->text);
+        $this->assertStringNotContainsString('<em>', $results['bishops'][0]->text);
+        $this->assertStringNotContainsString('</em>', $results['bishops'][0]->text);
     }
 
     public function testFrenchLookup() 

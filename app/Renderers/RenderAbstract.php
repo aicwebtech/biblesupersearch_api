@@ -465,6 +465,24 @@ abstract class RenderAbstract
         return $meta_string;
     }
 
+    /**
+     * The Bible's copyright statement, with the configured derivative and link notices.
+     *
+     * Bible::getCopyrightStatement() purifies against the strict editor allowlist, so what
+     * arrives here is already safe HTML - and HTML is what this needs: PdfAbstract passes the
+     * result to TCPDF->writeHTMLCell() with $plain_text FALSE, so it must never be the
+     * Markdown the v3 engine produces. A rendered file is built straight from the model and
+     * never goes through an engine, so no engine hook applies here.
+     *
+     * Strict is deliberate for renders as well as for the API listing: it drops 'img', so a
+     * publisher badge carried in an imported statement does not reach a downloaded file. A
+     * rendering must not depend on a third-party fetch, and TCPDF would try to make that
+     * fetch while building the PDF. Do not reach past it to a laxer allowlist here.
+     *
+     * @param bool $plain_text
+     * @param string|null $line_break_replacement
+     * @return string
+     */
     protected function _getCopyrightStatement($plain_text = FALSE, $line_break_replacement = NULL) 
     {
         $cr_statement = $this->Bible->getCopyrightStatement();
@@ -505,8 +523,12 @@ abstract class RenderAbstract
         $text = str_replace(["\r\n", "\n", "\r"], '', $text);
         $text = str_replace(['<br />', '<br>'], $line_break_replacement, $text);
         $text = str_replace(['</p>'], $line_break_replacement_double, $text);
-        $text = str_replace('&nbsp;', ' ', $text);
         $text = html_entity_decode($text, ENT_QUOTES | ENT_HTML5);
+        // After the decode, and on the character rather than the entity: the purifier
+        // Bible::getCopyrightStatement() runs the statement through decodes '&nbsp;' to U+00A0
+        // before it ever reaches here, and html_entity_decode() turns '&nbsp;', '&#160;' and
+        // '&#xa0;' into that same character - so one replacement here covers every spelling.
+        $text = str_replace("\xc2\xa0", ' ', $text);
         $text = strip_tags($text);
         return $text;
     }

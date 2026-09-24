@@ -5,6 +5,7 @@ namespace App\Http\Middleware;
 use Closure;
 use Illuminate\Cache\RateLimiter;
 use Illuminate\Contracts\Cache\Factory as CacheFactory;
+use Illuminate\Http\Exceptions\ThrottleRequestsException;
 use Illuminate\Routing\Middleware\ThrottleRequests;
 use Log;
 
@@ -28,7 +29,8 @@ use Log;
  * 2. If even that store cannot be used, the request is let through with a warning instead
  *    of failing. An installer nobody can reach is a worse outcome than an unthrottled one,
  *    and the install claim - a file, not a cache entry - still serialises the expensive
- *    endpoint.
+ *    endpoint. That applies to the limiter's own work as well as to the probe: a store can
+ *    be usable for one key and not for the next - see handle().
  */
 class ThrottleInstallRequests extends ThrottleRequests
 {
@@ -66,7 +68,41 @@ class ThrottleInstallRequests extends ThrottleRequests
             return $next($request);
         }
 
-        return parent::handle($request, $next, $maxAttempts, $decayMinutes, $prefix);
+        // The probe in bootLimiter() proves one cache key works, not every one. A file store
+        // hashes each key into its own directory and creates it on demand, so a cache
+        // directory whose existing subdirectories belong to another user - the web server,
+        // on a site being reinstalled - answers the probe from a directory it just created
+        // and then fails on the limiter's own key. The fallback has to cover that too, or
+        // the 500 it exists to prevent simply moves from the probe to RateLimiter::hit().
+        //
+        // $next is wrapped rather than called through directly: parent::handle() invokes it
+        // in the middle of its own work, and a failure from the application behind this
+        // middleware must not be mistaken for a limiter failure and answered by running the
+        // whole request a second time.
+        $dispatched = FALSE;
+
+        $dispatch = function($request) use ($next, &$dispatched) {
+            $dispatched = TRUE;
+
+            return $next($request);
+        };
+
+        try {
+            return parent::handle($request, $dispatch, $maxAttempts, $decayMinutes, $prefix);
+        }
+        catch(ThrottleRequestsException $e) {
+            // The limit itself, working as intended - this is the 429 the class is for.
+            throw $e;
+        }
+        catch(\Throwable $e) {
+            if($dispatched) {
+                throw $e;
+            }
+
+            Log::warning('Install rate limiting failed, proceeding without it: ' . $e->getMessage());
+
+            return $next($request);
+        }
     }
 
     /**

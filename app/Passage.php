@@ -648,8 +648,10 @@ class Passage {
 
         $highlight_tag = $highlight_tag ?: config('bss.defaults.highlight_tag');
 
-        $pre_tag  = '<'  . $highlight_tag . '>';
-        $post_tag = '</' . $highlight_tag . '>';
+        // An HTML tag name is wrapped; a Markdown marker ('**') is symmetrical and used as-is.
+        // The install's own default is passed through, so an operator who configures an element
+        // the whitelist does not name still gets it - see Helpers::highlightElementWhitelist().
+        list($pre_tag, $post_tag) = Helpers::buildHighlightTags($highlight_tag, config('bss.defaults.highlight_tag'));
 
         $parsed = $this->chapter_verse_parsed;
         $b = $this->Book->id;

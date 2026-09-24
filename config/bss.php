@@ -3,24 +3,32 @@
 /* Bible SuperSearch configs */
 return [
     'defaults' => [
-        'language'       => env('DEFAULT_LANGUAGE', 'English'),
-        'language_short' => env('DEFAULT_LANGUAGE_SHORT', 'en'),
-        'bible'          => env('DEFAULT_BIBLE', 'kjv'),
-        'highlight_tag'  => env('DEFAULT_HIGHLIGHT_TAG', 'b'),
+        'language'         => env('DEFAULT_LANGUAGE', 'English'),
+        'language_short'   => env('DEFAULT_LANGUAGE_SHORT', 'en'),
+        'bible'            => env('DEFAULT_BIBLE', 'kjv'),
+        'highlight_tag'    => env('DEFAULT_HIGHLIGHT_TAG', 'b'),
+        'highlight_tag_v3' => env('DEFAULT_HIGHLIGHT_TAG_V3', '**'),
     ],
     
     // API actions that do NOT count against hit limits
-    'free_actions' => ['statics_changed', 'version', 'readcache'],
+    'free_actions' => ['statics_changed', 'version', 'readcache', 'access'],
 
     // Cacheable response headers for public, idempotent (GET) read endpoints.
     // See App\Http\Middleware\SetCacheHeaders.
     'cache_headers' => [
         'enable'     => env('API_CACHE_HEADERS', true),
         'visibility' => env('API_CACHE_HEADERS_VISIBILITY', 'public'),           // 'public' | 'private'
-        'actions'    => [                   // action => max-age (seconds); unlisted actions are not cached
+        // action => max-age (seconds), or action => ['max_age' => .., 'visibility' => ..]
+        // for an action that needs to narrow the visibility above. Unlisted actions
+        // are not cached.
+        'actions'    => [
             'books'           => 86400,
             'bibles'          => 86400,
-            'statics'         => 3600,
+            // Private: actionStatics() embeds the caller's own access/quota state, which
+            // ApiAccessManager buckets by IP and Origin/Referer - neither of which is in
+            // the URL a shared cache keys on. A CDN would otherwise store one caller's
+            // quota state under the statics URL and serve it to the next caller.
+            'statics'         => ['max_age' => 3600, 'visibility' => 'private'],
             'statics_changed' => 60,             // short TTL: clients poll this to detect data changes
             'query'           => 3600,
         ],

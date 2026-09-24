@@ -8,4 +8,5 @@ return [
     'chapter_n'         => 'Hoofdstuk :n', // hoofdstuk met nummer, bijv. 'Hoofdstuk 5'
     'psalm_n'           => 'Psalm :n',     // Psalm met nummer, bijv. 'Psalm 119'
     'table_of_contents' => 'Inhoudsopgave',
+    'copyright'         => 'Auteursrecht',
 ];

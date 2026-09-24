@@ -183,6 +183,145 @@ class EngineActionsTest extends TestCase
     }
 
     // -----------------------------------------------------------------------
+    // Bible listing - language_float
+    // -----------------------------------------------------------------------
+
+    /**
+     * The listing under an ordering that keeps language_float live.
+     *
+     * Explicitly 'lang_name', not the default: 'lang_native_name|rank' falls through to the
+     * 'rank' case in actionBibles()'s switch, which nulls the float - see
+     * testTheDefaultOrderingIgnoresTheLanguageFloat().
+     *
+     * @param array $input
+     * @return array The listing, keyed by module
+     */
+    private function bibleListing(array $input = []): array
+    {
+        return $this->engine()->actionBibles($input + ['bible_order_by' => 'lang_name']);
+    }
+
+    /**
+     * The most-installed language code, so floating it has something to move and something to
+     * move it past.
+     *
+     * Derived from the listing rather than named, because which Bibles an install carries is
+     * not the suite's to assume.
+     *
+     * @param array $listing
+     * @return string
+     */
+    private function floatableLanguage(array $listing): string
+    {
+        $counts = array_count_values(array_column($listing, 'lang_short'));
+
+        if(count($counts) < 2) {
+            $this->markTestSkipped('language_float needs at least two installed languages');
+        }
+
+        arsort($counts);
+
+        return (string) array_key_first($counts);
+    }
+
+    /**
+     * BSS-290: the float used to lose every Bible it matched.
+     *
+     * actionBibles() moved each matching Bible into $bibles_floated and unset() it out of
+     * $bibles, then returned $bibles - so the floated language was not moved to the front, it
+     * was deleted from the response. Five of this install's sixteen Bibles vanished from
+     * /api/bibles for any caller who asked for 'en' first.
+     *
+     * Nothing caught it because no test had ever passed a language_float, and under the default
+     * ordering the float is nulled before it is read.
+     */
+    public function testTheLanguageFloatKeepsEveryBibleInTheListing(): void
+    {
+        $plain    = $this->bibleListing();
+        $language = $this->floatableLanguage($plain);
+        $floated  = $this->bibleListing(['language_float' => $language]);
+
+        $this->assertCount(count($plain), $floated);
+        $this->assertEqualsCanonicalizing(array_keys($plain), array_keys($floated));
+    }
+
+    /** And the Bibles it matched are the ones at the front of it. */
+    public function testTheLanguageFloatMovesItsLanguageToTheFront(): void
+    {
+        $plain    = $this->bibleListing();
+        $language = $this->floatableLanguage($plain);
+        $floated  = $this->bibleListing(['language_float' => $language]);
+
+        $languages = array_column($floated, 'lang_short');
+        $expected  = count(array_keys($languages, $language, TRUE));
+
+        $this->assertGreaterThan(0, $expected, 'nothing to float');
+
+        // Contiguous, and at the head: the block is the first $expected entries and the
+        // language appears nowhere after them.
+        $this->assertSame(array_fill(0, $expected, $language), array_slice($languages, 0, $expected));
+        $this->assertNotContains($language, array_slice($languages, $expected));
+    }
+
+    /**
+     * The float reorders the listing, it does not re-sort it - the ordering the query applied
+     * still holds inside the floated block and inside what follows it.
+     */
+    public function testTheLanguageFloatPreservesTheOrderWithinEachGroup(): void
+    {
+        $plain    = $this->bibleListing();
+        $language = $this->floatableLanguage($plain);
+        $floated  = $this->bibleListing(['language_float' => $language]);
+
+        $matched = array_keys(array_filter($plain, fn (array $bible): bool => $bible['lang_short'] === $language));
+        $rest    = array_keys(array_filter($plain, fn (array $bible): bool => $bible['lang_short'] !== $language));
+
+        $this->assertSame(array_merge($matched, $rest), array_keys($floated));
+    }
+
+    /** A code no installed Bible carries floats nothing and loses nothing. */
+    public function testAnUnmatchedLanguageFloatLeavesTheListingAlone(): void
+    {
+        $plain   = $this->bibleListing();
+        $floated = $this->bibleListing(['language_float' => 'not-a-language-code']);
+
+        $this->assertSame(array_keys($plain), array_keys($floated));
+    }
+
+    /**
+     * Three of the orderings null the float on their way through the switch - a listing sorted
+     * by rank or by name is not one a language block can be lifted out of without contradicting
+     * the sort the caller asked for.
+     */
+    public function testTheOrderingsThatDiscardTheLanguageFloatReturnTheSameListing(): void
+    {
+        $language = $this->floatableLanguage($this->bibleListing());
+
+        foreach(['rank', 'name', 'shortname'] as $order_by) {
+            $plain   = $this->engine()->actionBibles(['bible_order_by' => $order_by]);
+            $floated = $this->engine()->actionBibles(['bible_order_by' => $order_by, 'language_float' => $language]);
+
+            $this->assertSame(array_keys($plain), array_keys($floated), $order_by);
+        }
+    }
+
+    /**
+     * Including the default ordering, which ends in 'rank' - so a caller who sends a
+     * language_float and no bible_order_by is answered as though they had not sent one.
+     *
+     * Pinning what the code does today, not endorsing it: the float is undocumented and its
+     * being silently dropped under the default ordering is the reason the bug above survived.
+     */
+    public function testTheDefaultOrderingIgnoresTheLanguageFloat(): void
+    {
+        $plain    = $this->engine()->actionBibles([]);
+        $language = $this->floatableLanguage($plain);
+        $floated  = $this->engine()->actionBibles(['language_float' => $language]);
+
+        $this->assertSame(array_keys($plain), array_keys($floated));
+    }
+
+    // -----------------------------------------------------------------------
     // Cache read
     // -----------------------------------------------------------------------
 

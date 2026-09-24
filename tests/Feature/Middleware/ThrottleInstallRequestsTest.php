@@ -158,6 +158,68 @@ class ThrottleInstallRequestsTest extends TestCase
     }
 
     /**
+     * The probe proves one key works, not every one - so the fail-open path has to cover the
+     * limiter's own work too, not just the probe.
+     *
+     * This is the case that turned up as a 500 on the install pages: a file store hashes
+     * each key into its own subdirectory and creates it on demand, so a cache directory
+     * whose existing subdirectories belong to the web server user answers the probe from a
+     * directory it just created, then fails on the limiter's own key. Mocked by letting the
+     * probe's key through and refusing the next one, which is the shape of that failure
+     * without depending on the filesystem's ownership.
+     */
+    public function testAStoreThatFailsAfterTheProbeStillLetsTheInstallerThrough(): void
+    {
+        $repository = \Mockery::mock(\Illuminate\Contracts\Cache\Repository::class);
+        $repository->shouldReceive('get')->andReturn(null);
+        $repository->shouldReceive('forget')->andReturn(true);
+
+        $repository->shouldReceive('add')->once()->andReturn(true);
+        $repository->shouldReceive('add')->andThrow(
+            new \ErrorException('fopen(...): Failed to open stream: No such file or directory')
+        );
+
+        $cache = \Mockery::mock(\Illuminate\Contracts\Cache\Factory::class);
+        $cache->shouldReceive('store')->andReturn($repository);
+
+        $middleware = new ThrottleInstallRequests($cache);
+
+        $response = $middleware->handle($this->request('/install/check'), fn($request) => new Response('ok'), 20, 1);
+
+        $this->assertSame('ok', $response->getContent());
+    }
+
+    /**
+     * The request must be dispatched once, not twice. parent::handle() calls $next in the
+     * middle of its own work, so a failure raised from the application behind this
+     * middleware cannot be treated as a limiter failure and answered by retrying - the
+     * install endpoints run migrations.
+     */
+    public function testAFailureFromTheApplicationIsNotRetried(): void
+    {
+        $middleware = app(ThrottleInstallRequests::class);
+
+        $calls = 0;
+
+        $next = function($request) use (&$calls) {
+            $calls++;
+
+            throw new \RuntimeException('the application failed');
+        };
+
+        try {
+            $middleware->handle($this->request('/install/check'), $next, 20, 1);
+
+            $this->fail('the application failure must not be swallowed');
+        }
+        catch(\RuntimeException $e) {
+            $this->assertSame('the application failed', $e->getMessage());
+        }
+
+        $this->assertSame(1, $calls, 'the request must be dispatched exactly once');
+    }
+
+    /**
      * The probe must not spend one of the attempts it is checking for.
      */
     public function testTheProbeDoesNotCountAgainstTheLimit(): void

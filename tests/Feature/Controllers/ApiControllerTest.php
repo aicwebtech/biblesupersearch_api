@@ -249,6 +249,58 @@ class ApiControllerTest extends TestCase
     }    
 
     /**
+     * A highlight_tag the version does not accept is reported over HTTP.
+     *
+     * The results are still there and still highlighted - with the default tag - but the
+     * response now carries the substitution in 'errors', where a client can see it. The 400
+     * is what this API answers with whenever 'errors' is non-empty, non-fatal included.
+     *
+     * @return void
+     */
+    public function testARejectedHighlightTagIsReportedOverHttp()
+    {
+        $response = $this->getJson('/api/query?request=faith&bible=kjv&highlight=1&highlight_tag=my-tag');
+
+        if($response->status() == 429) {
+            $this->markTestSkipped('429 Skipping due to rate limiting');
+        }
+
+        $response->assertStatus(400);
+        $this->assertEquals(3, $response['error_level']);
+        $this->assertCount(1, $response['errors']);
+        $this->assertStringContainsString("'my-tag'", $response['errors'][0]);
+        $this->assertEquals(338, $response['paging']['total']);
+
+        // An accepted tag is unchanged: 200, no errors.
+        $response = $this->getJson('/api/query?request=faith&bible=kjv&highlight=1&highlight_tag=em');
+        $response->assertStatus(200);
+        $this->assertEquals(0, $response['error_level']);
+    }
+
+    /**
+     * v3 narrows the whitelist to the Markdown markers, so an element name a v2 client has
+     * always sent is refused there - and says so, rather than quietly answering in bold.
+     *
+     * @return void
+     */
+    public function testAnElementNameIsReportedOnV3AndNotOnV2()
+    {
+        $v2 = $this->getJson('/api/v2/query?request=faith&bible=kjv&highlight=1&highlight_tag=em');
+
+        if($v2->status() == 429) {
+            $this->markTestSkipped('429 Skipping due to rate limiting');
+        }
+
+        $v2->assertStatus(200);
+        $this->assertEquals(0, $v2['error_level']);
+
+        $v3 = $this->getJson('/api/v3/query?request=faith&bible=kjv&highlight=1&highlight_tag=em');
+        $v3->assertStatus(400);
+        $this->assertEquals(3, $v3['error_level']);
+        $this->assertStringContainsString("'em'", $v3['errors'][0]);
+    }
+
+    /**
      * Tests of the 'version' action
      *
      * @return void
@@ -311,6 +363,126 @@ class ApiControllerTest extends TestCase
     }    
 
     /**
+     * Tests of the 'access' action
+     *
+     * The caller's own quota state, split out of 'statics' so a client has somewhere to read
+     * it from that is not the large, otherwise-cacheable boot payload.
+     *
+     * @return void
+     */
+    public function testActionAccess()
+    {
+        $uris = ['/api/access', '/api/v2/access', '/api/v3/access'];
+
+        foreach($uris as $uri) {
+            // GET
+            $response = $this->withoutMiddleware(ThrottleRequests::class)->getJson($uri);
+
+            if($response->status() == 429) {
+                $this->markTestSkipped('429 Skipping due to rate limiting');
+            }
+
+            $response->assertStatus(200);
+            $this->assertEquals(0, $response['error_level'], $uri);
+            $this->assertIsBool($response['results']['allowed'], $uri);
+            $this->assertIsInt($response['results']['limit'], $uri);
+            $this->assertIsBool($response['results']['limit_reached'], $uri);
+            $this->assertIsInt($response['results']['hits'], $uri);
+
+            // POST
+            $response = $this->withoutMiddleware(ThrottleRequests::class)->postJson($uri);
+
+            $response->assertStatus(200);
+            $this->assertEquals(0, $response['error_level'], $uri);
+            $this->assertIsBool($response['results']['allowed'], $uri);
+        }
+    }
+
+    /**
+     * The action answers with exactly the object 'statics' carries as its 'access' key, so a
+     * client migrating off 'statics' swaps one for the other without reshaping anything.
+     *
+     * @return void
+     */
+    public function testTheAccessActionMatchesTheStaticsAccessBlock()
+    {
+        $access  = $this->withoutMiddleware(ThrottleRequests::class)->getJson('/api/access');
+        $statics = $this->withoutMiddleware(ThrottleRequests::class)->getJson('/api/statics');
+
+        if($access->status() == 429 || $statics->status() == 429) {
+            $this->markTestSkipped('429 Skipping due to rate limiting');
+        }
+
+        $access->assertStatus(200);
+        $statics->assertStatus(200);
+
+        $this->assertSame(array_keys($statics['results']['access']), array_keys($access['results']));
+    }
+
+    /**
+     * 'statics' keeps carrying the access block for now.
+     *
+     * The action above is the replacement, but removing the block would break every client at
+     * once, so both are published until the migration is done. This guards against the removal
+     * happening by accident rather than deliberately.
+     *
+     * @return void
+     */
+    public function testStaticsStillCarriesTheAccessBlock()
+    {
+        $response = $this->withoutMiddleware(ThrottleRequests::class)->getJson('/api/statics');
+
+        if($response->status() == 429) {
+            $this->markTestSkipped('429 Skipping due to rate limiting');
+        }
+
+        $response->assertStatus(200);
+
+        foreach(['allowed', 'limit', 'limit_reached', 'hits'] as $key) {
+            $this->assertArrayHasKey($key, $response['results']['access'], $key);
+        }
+    }
+
+    /**
+     * The response is the caller's own state, so it must never be stored by any cache - it is
+     * deliberately absent from bss.cache_headers.actions, and unlisted actions get no
+     * Cache-Control at all.
+     *
+     * @return void
+     */
+    public function testTheAccessActionIsNotCached()
+    {
+        foreach(['/api/access', '/api/v2/access', '/api/v3/access'] as $uri) {
+            $response = $this->withoutMiddleware(ThrottleRequests::class)->getJson($uri);
+
+            if($response->status() == 429) {
+                $this->markTestSkipped('429 Skipping due to rate limiting');
+            }
+
+            $response->assertStatus(200);
+
+            $cacheControl = (string) $response->headers->get('Cache-Control');
+
+            $this->assertStringNotContainsString('public', $cacheControl, $uri);
+            $this->assertStringNotContainsString('private, max-age', $cacheControl, $uri);
+        }
+    }
+
+    /**
+     * Asking how much quota is left must not spend any of it.
+     *
+     * Asserted on the configuration rather than by calling the endpoint twice and comparing
+     * 'hits': the daily counter is a shared row and the suite runs under paratest, so a
+     * behavioral assertion here would be flaky.
+     *
+     * @return void
+     */
+    public function testTheAccessActionIsFree()
+    {
+        $this->assertContains('access', config('bss.free_actions'));
+    }
+
+    /**
      * Cacheable read endpoints (GET) should send public Cache-Control + ETag
      * and must NOT set session/CSRF cookies (BSS-272).
      *
@@ -320,7 +492,6 @@ class ApiControllerTest extends TestCase
     {
         $cases = [
             '/api/books?language=es'            => 86400,
-            '/api/statics?language=es'          => 3600,
             '/api/query?request=faith&bible=kjv' => 3600,
         ];
 
@@ -339,6 +510,152 @@ class ApiControllerTest extends TestCase
             $this->assertStringContainsString('max-age=' . $maxAge, $cacheControl, "max-age missing for {$uri}");
             $this->assertNotEmpty($response->headers->get('ETag'), "ETag missing for {$uri}");
             $this->assertEmpty($response->headers->get('Set-Cookie'), "Set-Cookie present for {$uri}");
+        }
+    }
+
+    /**
+     * The versioned routes are cached on the same terms as the unversioned ones.
+     *
+     * SetCacheHeaders parsed the path itself and recognized only the literal 'v2', so a
+     * '/api/v3/bibles' request resolved to the action 'v3', matched nothing in
+     * bss.cache_headers.actions and went out with no Cache-Control at all. Both middlewares
+     * read the action through Helpers::resolveApiAction() now.
+     *
+     * @return void
+     */
+    public function testCacheHeadersOnVersionedReadEndpoints()
+    {
+        $cases = [
+            '/api/v2/books?language=es'   => 86400,
+            '/api/v3/books?language=es'   => 86400,
+            '/api/v2/bibles?language=es'  => 86400,
+            '/api/v3/bibles?language=es'  => 86400,
+        ];
+
+        foreach($cases as $uri => $maxAge) {
+            $response = $this->getJson($uri);
+
+            if($response->status() == 429) {
+                $this->markTestSkipped('429 Skipping due to rate limiting');
+            }
+
+            $response->assertStatus(200);
+
+            $cacheControl = (string) $response->headers->get('Cache-Control');
+
+            $this->assertStringContainsString('public', $cacheControl, "Cache-Control public missing for {$uri}");
+            $this->assertStringContainsString('max-age=' . $maxAge, $cacheControl, "max-age missing for {$uri}");
+            $this->assertNotEmpty($response->headers->get('ETag'), "ETag missing for {$uri}");
+            $this->assertEmpty($response->headers->get('Set-Cookie'), "Set-Cookie present for {$uri}");
+        }
+    }
+
+    /**
+     * 'statics' is cached, but only by the caller's own browser.
+     *
+     * Its response embeds the caller's own access/quota state (Engine::actionStatics()),
+     * which ApiAccessManager buckets by API key or, keyless, by IP and Origin/Referer. The
+     * key is a query parameter and so part of a cache key; the IP is not, and no header
+     * carries it. A shared cache keying on the URL would therefore store one caller's quota
+     * state and serve it to the next caller for the whole max-age.
+     *
+     * @return void
+     */
+    public function testStaticsIsPrivatelyCached()
+    {
+        $uris = [
+            '/api/statics?language=es',
+            '/api/v2/statics?language=es',
+            '/api/v3/statics?language=es',
+        ];
+
+        foreach($uris as $uri) {
+            $response = $this->getJson($uri);
+
+            if($response->status() == 429) {
+                $this->markTestSkipped('429 Skipping due to rate limiting');
+            }
+
+            $response->assertStatus(200);
+
+            $cacheControl = (string) $response->headers->get('Cache-Control');
+
+            $this->assertStringContainsString('private', $cacheControl, "Cache-Control private missing for {$uri}");
+            $this->assertStringNotContainsString('public', $cacheControl, "Cache-Control public present for {$uri}");
+            $this->assertStringContainsString('max-age=3600', $cacheControl, "max-age missing for {$uri}");
+            $this->assertNotEmpty($response->headers->get('ETag'), "ETag missing for {$uri}");
+            $this->assertEmpty($response->headers->get('Set-Cookie'), "Set-Cookie present for {$uri}");
+        }
+    }
+
+    /**
+     * A per-action visibility may narrow the configured default, never widen it.
+     *
+     * API_CACHE_HEADERS_VISIBILITY=private is an operator kill switch: every cached action
+     * must honor it, whether it carries a visibility of its own or inherits the default.
+     *
+     * @return void
+     */
+    public function testAPerActionVisibilityCannotWidenTheGlobalDefault()
+    {
+        config(['bss.cache_headers.visibility' => 'private']);
+        config(['bss.cache_headers.actions.books' => ['max_age' => 86400, 'visibility' => 'public']]);
+
+        foreach(['/api/books?language=es', '/api/statics?language=es'] as $uri) {
+            $response = $this->getJson($uri);
+
+            if($response->status() == 429) {
+                $this->markTestSkipped('429 Skipping due to rate limiting');
+            }
+
+            $response->assertStatus(200);
+
+            $cacheControl = (string) $response->headers->get('Cache-Control');
+
+            $this->assertStringContainsString('private', $cacheControl, "Cache-Control private missing for {$uri}");
+            $this->assertStringNotContainsString('public', $cacheControl, "Cache-Control public present for {$uri}");
+        }
+    }
+
+    /**
+     * A versioned request with no action is the 'query' action, and is cached as one - the
+     * route defaults it, and the resolver has to default it the same way.
+     *
+     * @return void
+     */
+    public function testCacheHeadersOnAVersionedRouteWithNoAction()
+    {
+        $response = $this->getJson('/api/v3?request=faith&bible=kjv');
+
+        if($response->status() == 429) {
+            $this->markTestSkipped('429 Skipping due to rate limiting');
+        }
+
+        $response->assertStatus(200);
+
+        $cacheControl = (string) $response->headers->get('Cache-Control');
+
+        $this->assertStringContainsString('public', $cacheControl);
+        $this->assertStringContainsString('max-age=3600', $cacheControl);
+    }
+
+    /**
+     * An action with no configured max-age is not cached, on a versioned route either - the
+     * version segment must not be mistaken for the action and vice versa.
+     *
+     * @return void
+     */
+    public function testAnUncachedActionIsNotCachedOnAVersionedRoute()
+    {
+        foreach(['/api/version', '/api/v2/version', '/api/v3/version'] as $uri) {
+            $response = $this->getJson($uri);
+
+            if($response->status() == 429) {
+                $this->markTestSkipped('429 Skipping due to rate limiting');
+            }
+
+            $response->assertStatus(200);
+            $this->assertStringNotContainsString('public', (string) $response->headers->get('Cache-Control'), $uri);
         }
     }
 

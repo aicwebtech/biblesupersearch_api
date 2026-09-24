@@ -112,7 +112,13 @@ return array(
     ),
     'download' => array(
         'name' => 'Bible Download',
-        'description' => 'Returns the given Bible module(s) as a file download, rendered into the selected format',
+        'description' => 'Returns the given Bible module(s) as a file download, rendered into the selected format. <br /><br />'
+        . 'NOTE: From API v3 on, this action accepts <b>POST</b> only, and a GET is answered with '
+        . '405 \'Action requires POST method\'. &nbsp;'
+        . 'Every action that hands back a file is under the same rule: '
+        . implode(', ', \App\Http\Controllers\ApiController::POST_ONLY_ACTIONS) . '. <br />'
+        . 'API v2 and earlier still accept either method, so a client moving to v3 by changing the '
+        . 'URL prefix alone must also change the request method.',
         'params' => array(
             'bible' => array(
                 'type' => 'String - multiple',
@@ -149,7 +155,19 @@ return array(
         . '<li>The API name</li>'
         . '<li>The API version</li>'
         . '<li>The API environment (production/beta/development)</li>'
-        . '</ul>',
+        . '</ul>'
+        . 'The access information is also available on its own, from the Access action.',
+    ),
+    'access' => array(
+        'name' => 'Access',
+        'description' => 'Retrieves the calling application\'s own API access and usage. <br/><br />'
+        . 'This includes: <ul>'
+        . '<li>Whether access is allowed</li>'
+        . '<li>The daily hit limit (0 for unlimited)</li>'
+        . '<li>Whether that limit has been reached</li>'
+        . '<li>The number of hits used so far today</li>'
+        . '</ul>'
+        . 'This action does not count against the hit limit, so the hit count it reports does not include the request that asked for it.',
     ),
     'version' => array(
         'name' => 'Version',

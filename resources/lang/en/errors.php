@@ -56,6 +56,7 @@ return array(
         'bible_format_not_ava' => 'Bible ":name" is not currently available in the ":format" format.',
     ],
     'common_words' => 'You cannot search for these common words: :wordlist',
+    'unsupported_highlight_tag' => 'Highlight tag \':value\' is not supported by this version of the API and was ignored. The default highlight tag was used instead.',
     'action' => [
         'not_found' => 'Action Not Found',
         'not_allowed' => 'Action Not Allowed',

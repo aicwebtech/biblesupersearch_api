@@ -8,4 +8,5 @@ return [
     'chapter_n'         => 'باب :n', // chapter with number, ie 'Chapter 5'
     'psalm_n'           => 'زەبۇر :n',   // Psalm with number, ie 'Psalm 119'
     'table_of_contents' => 'مەزمۇن جەدۋىلى',
+    'copyright'         => 'نەشر ھوقۇقى',
 ];

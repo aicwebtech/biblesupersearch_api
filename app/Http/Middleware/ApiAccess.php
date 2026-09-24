@@ -6,6 +6,7 @@ use Closure;
 use App\Models\IpAccess;
 use App\Models\ApiKey;
 use App\ApiAccessManager;
+use App\Helpers;
 use Illuminate\Http\Response;
 
 /*
@@ -28,9 +29,13 @@ class ApiAccess
         $code = NULL;
         // $key = $request->input('key') ?: null;
         // $dom = ApiAccessManager::trustedDomain(); // never trust a client-supplied domain - see ApiAccessManager
-        $uri = $request->path();
-        $parts = explode('/', $uri);
-        $action = isset($parts[1]) ? $parts[1] : 'query';
+        // Versioned or not, the action is what decides the rate limit and the access-level
+        // check. SetCacheHeaders resolves the same thing for its own decision, so the parsing
+        // lives in one place - see Helpers::resolveApiAction().
+        $action = Helpers::resolveApiAction($request->path()) ?? Helpers::DEFAULT_API_ACTION;
+
+        $billable = static::isBillableRequest($request->path());
+
         $Access = null;
         $key_id = null;
 
@@ -46,7 +51,7 @@ class ApiAccess
                 // Key not found - no access granted
                 $err  = 'errors.access_revoked';
                 $code = 403;
-            } else if(!in_array($action, config('bss.free_actions')) && !$Access->incrementDailyHits()) {
+            } else if($billable && !$Access->incrementDailyHits()) {
                 $err  = 'errors.hit_limit_reached';
                 $code = 429;
             }
@@ -101,5 +106,33 @@ class ApiAccess
         }
 
         return $next($request);
+    }
+
+    /**
+     * Whether a request spends one of the caller's daily hits.
+     *
+     * Two things make a request free. The actions in bss.free_actions are free by
+     * configuration - asking how much quota is left must not spend any of it. A version this
+     * application does not serve is free because it is never answered: the route accepts any
+     * digits, but ApiController::versionedAction() replies 404 or 410 and no engine runs.
+     * Charging for that would let a client hardcoded to a retired prefix spend its whole
+     * allowance on errors and then be rate limited out of its real traffic.
+     *
+     * A path naming no version at all is the legacy unversioned route, which is served, so it
+     * stays billable exactly as it was before the versioned route existed.
+     *
+     * @param string|null $path Request path, as Request::path() returns it - no leading slash
+     */
+    public static function isBillableRequest(?string $path): bool
+    {
+        $version = Helpers::resolveApiVersion($path);
+
+        if($version !== NULL && !in_array($version, config('app.api_version_list'))) {
+            return FALSE;
+        }
+
+        $action = Helpers::resolveApiAction($path) ?? Helpers::DEFAULT_API_ACTION;
+
+        return !in_array($action, config('bss.free_actions'));
     }
 }
