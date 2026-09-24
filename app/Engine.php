@@ -37,8 +37,9 @@ class Engine implements ErrorInterface
      * The tag reaches verse text after _processBibleText() has stripped every other tag out
      * of it, and nothing escapes it on the way to the response, so an unwhitelisted name is
      * the one thing a caller could inject with. _sanitizeInput() drops anything not named
-     * here and the request falls back to the configured default, and
-     * Helpers::buildHighlightTags() checks again when it resolves the pair.
+     * here and the request falls back to the configured default - raising a level 3 error so
+     * the caller can tell the substitution happened - and Helpers::buildHighlightTags() checks
+     * again when it resolves the pair.
      */
     public const HIGHLIGHT_TAG_WHITELIST = [
         ...Helpers::HIGHLIGHT_TAG_WHITELIST,
@@ -51,6 +52,19 @@ class Engine implements ErrorInterface
      * 'none' is first because it is the default a rejected value falls back to.
      */
     public const MARKUP_MODE_WHITELIST = ['none', 'safe', 'raw'];
+
+    /**
+     * Whitelist rejections _sanitizeInput() found, waiting on _raiseInputNotices().
+     *
+     * Deferred rather than raised where they are found: every action bails out on hasErrors()
+     * before it runs, and a rejected value that falls back to its default is a substitution
+     * the caller should be told about, not a request to refuse. actionQuery() also resets its
+     * errors partway through, on the results_list_cache_id path, which would swallow one
+     * raised before that point.
+     *
+     * @var array<string, array{trans: string, props: array}>
+     */
+    protected $input_notices = [];
 
     protected $Bibles = array(); // Array of Bible objects
     protected $Bible_Primary = NULL; // Primary Bible version
@@ -308,6 +322,11 @@ class Engine implements ErrorInterface
                 // stripped of markup and is never escaped. static:: and not self:: - v3
                 // narrows this to the Markdown markers, see EngineV3.
                 'whitelist' => static::HIGHLIGHT_TAG_WHITELIST,
+                // Reported rather than dropped in silence: the tag the caller asked to be
+                // highlighted with is visible in the results they get back, so a rejected
+                // value that answered 200 with a different tag was indistinguishable from
+                // one that had been honoured.
+                'whitelist_error' => 'errors.unsupported_highlight_tag',
             ],
             'search_type' => [
                 'type' => 'string',
@@ -436,6 +455,10 @@ class Engine implements ErrorInterface
         if($this->hasErrors()) {
             return false;
         }
+
+        // Past the bail-out, so a rejected highlight_tag is reported without costing the
+        // caller the results they asked for.
+        $this->_raiseInputNotices();
 
         list($keywords, $references, $this->metadata->disambiguation, $disamb_book) = Passage::mapRequest($input, $languages, $this->Bibles);
         $input['search']    = $keywords ?: NULL;
@@ -1306,7 +1329,7 @@ class Engine implements ErrorInterface
         $response->api_version_list         = config('app.api_version_list');
         $response->api_version_current      = config('app.api_version');
         $response->environment              = config('app.env');
-        $response->research_desc            = config('bss.research_description');
+        $response->research_desc            = $this->_sanitizeHtml( config('bss.research_description') );
         $response->parallel_lang_search     = config('bss.parallel_search_different_languages');
         return $this->staticsAppend($response, $input);
     }
@@ -1980,6 +2003,7 @@ class Engine implements ErrorInterface
     protected function _sanitizeInput($input, $parsing) 
     {
         $clean = array();
+        $this->input_notices = [];
 
         foreach($parsing as $index => $s) {
             $value = NULL;
@@ -2023,7 +2047,16 @@ class Engine implements ErrorInterface
                 }
 
                 if($value !== NULL && array_key_exists('whitelist', $s)) {
-                    $value = self::_applyWhitelist($value, $s['whitelist']);
+                    $whitelisted = self::_applyWhitelist($value, $s['whitelist']);
+
+                    if($whitelisted === NULL && array_key_exists('whitelist_error', $s)) {
+                        $this->input_notices[$index] = [
+                            'trans' => $s['whitelist_error'],
+                            'props' => ['value' => $value],
+                        ];
+                    }
+
+                    $value = $whitelisted;
                 }
             }
 
@@ -2039,11 +2072,29 @@ class Engine implements ErrorInterface
     }
 
     /**
+     * Raises the whitelist rejections _sanitizeInput() set aside, as non-fatal errors.
+     *
+     * Call it once the action is past its own hasErrors() bail-out: a substitution is not a
+     * reason to refuse the request, and raising it any earlier would abandon the query the
+     * caller did make.
+     */
+    protected function _raiseInputNotices(): void
+    {
+        foreach($this->input_notices as $notice) {
+            $this->addTransError($notice['trans'], $notice['props'], 3);
+        }
+
+        $this->input_notices = [];
+    }
+
+    /**
      * Answers $value when the whitelist names it, and NULL when it does not.
      *
      * NULL rather than the whitelist's own spelling, so a rejected value is simply absent and
      * the field falls back to its default exactly as it would have if the caller had not sent
-     * it at all.
+     * it at all. Whether the caller is told about that is the spec's business, not this
+     * method's: a field carrying 'whitelist_error' has _sanitizeInput() raise it as a
+     * non-fatal error, one without it falls back in silence.
      *
      * The comparison is case-insensitive and the caller's own casing is kept: 'EM' is the 'em'
      * element and has always been answered as '<EM>'. The Markdown markers have no case.

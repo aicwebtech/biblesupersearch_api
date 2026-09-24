@@ -249,6 +249,58 @@ class ApiControllerTest extends TestCase
     }    
 
     /**
+     * A highlight_tag the version does not accept is reported over HTTP.
+     *
+     * The results are still there and still highlighted - with the default tag - but the
+     * response now carries the substitution in 'errors', where a client can see it. The 400
+     * is what this API answers with whenever 'errors' is non-empty, non-fatal included.
+     *
+     * @return void
+     */
+    public function testARejectedHighlightTagIsReportedOverHttp()
+    {
+        $response = $this->getJson('/api/query?request=faith&bible=kjv&highlight=1&highlight_tag=my-tag');
+
+        if($response->status() == 429) {
+            $this->markTestSkipped('429 Skipping due to rate limiting');
+        }
+
+        $response->assertStatus(400);
+        $this->assertEquals(3, $response['error_level']);
+        $this->assertCount(1, $response['errors']);
+        $this->assertStringContainsString("'my-tag'", $response['errors'][0]);
+        $this->assertEquals(338, $response['paging']['total']);
+
+        // An accepted tag is unchanged: 200, no errors.
+        $response = $this->getJson('/api/query?request=faith&bible=kjv&highlight=1&highlight_tag=em');
+        $response->assertStatus(200);
+        $this->assertEquals(0, $response['error_level']);
+    }
+
+    /**
+     * v3 narrows the whitelist to the Markdown markers, so an element name a v2 client has
+     * always sent is refused there - and says so, rather than quietly answering in bold.
+     *
+     * @return void
+     */
+    public function testAnElementNameIsReportedOnV3AndNotOnV2()
+    {
+        $v2 = $this->getJson('/api/v2/query?request=faith&bible=kjv&highlight=1&highlight_tag=em');
+
+        if($v2->status() == 429) {
+            $this->markTestSkipped('429 Skipping due to rate limiting');
+        }
+
+        $v2->assertStatus(200);
+        $this->assertEquals(0, $v2['error_level']);
+
+        $v3 = $this->getJson('/api/v3/query?request=faith&bible=kjv&highlight=1&highlight_tag=em');
+        $v3->assertStatus(400);
+        $this->assertEquals(3, $v3['error_level']);
+        $this->assertStringContainsString("'em'", $v3['errors'][0]);
+    }
+
+    /**
      * Tests of the 'version' action
      *
      * @return void

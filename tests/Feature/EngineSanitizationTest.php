@@ -471,7 +471,7 @@ class EngineSanitizationTest extends TestCase
                 'data_format'   => 'raw',
             ]);
 
-            $this->assertFalse($Engine->hasErrors(), $tag);
+            $this->assertSame(3, $Engine->getErrorLevel(), $tag); // reported, not refused
 
             $text = $results['kjv'][0]->text;
 
@@ -496,7 +496,7 @@ class EngineSanitizationTest extends TestCase
             'data_format'   => 'raw',
         ]);
 
-        $this->assertFalse($Engine->hasErrors());
+        $this->assertSame(3, $Engine->getErrorLevel()); // reported, not refused
         $this->assertStringNotContainsString('<<', $results['kjv'][0]->text);
         $this->assertStringNotContainsString('</<', $results['kjv'][0]->text);
         $this->assertStringContainsString('<b>faith', $results['kjv'][0]->text);
@@ -564,7 +564,7 @@ class EngineSanitizationTest extends TestCase
             'data_format'   => 'raw',
         ]);
 
-        $this->assertFalse($Engine->hasErrors());
+        $this->assertSame(3, $Engine->getErrorLevel()); // reported, not refused
         $this->assertStringContainsString('**faith**', $results['kjv'][0]->text);
         $this->assertStringNotContainsString('<em>', $results['kjv'][0]->text);
     }
@@ -585,7 +585,7 @@ class EngineSanitizationTest extends TestCase
             'data_format'   => 'raw',
         ]);
 
-        $this->assertFalse($Engine->hasErrors());
+        $this->assertSame(3, $Engine->getErrorLevel()); // reported, not refused
 
         $text = $results['kjv'][0]->text;
 
@@ -605,7 +605,7 @@ class EngineSanitizationTest extends TestCase
             'data_format'   => 'raw',
         ]);
 
-        $this->assertFalse($Engine->hasErrors());
+        $this->assertSame(3, $Engine->getErrorLevel()); // reported, not refused
 
         $text = $results['kjv'][0]->text;
 
@@ -632,7 +632,7 @@ class EngineSanitizationTest extends TestCase
                 'data_format'   => 'raw',
             ]);
 
-            $this->assertFalse($Engine->hasErrors(), $tag);
+            $this->assertSame(3, $Engine->getErrorLevel(), $tag); // reported, not refused
 
             $text = $results['kjv'][0]->text;
 
@@ -667,7 +667,7 @@ class EngineSanitizationTest extends TestCase
                 'data_format'   => 'raw',
             ]);
 
-            $this->assertFalse($Engine->hasErrors(), $tag);
+            $this->assertSame(3, $Engine->getErrorLevel(), $tag); // reported, not refused
 
             $text = $results['kjv'][0]->text;
 
@@ -727,6 +727,9 @@ class EngineSanitizationTest extends TestCase
      * A tag off the whitelist is dropped at validation and the configured default answers
      * instead - v2 wraps with its element, v3 with Markdown bold.
      *
+     * The substitution is reported, not silent: see
+     * testAnUnwhitelistedHighlightTagIsReportedAsANonFatalError().
+     *
      * @param string $tag
      * @param string|null $forbidden What must not appear in the text, when the tag itself is
      *                               not already part of the fallback's own markup
@@ -740,7 +743,6 @@ class EngineSanitizationTest extends TestCase
             'highlight_tag' => $tag, 'data_format' => 'raw',
         ]);
 
-        $this->assertFalse($v2->hasErrors(), $tag);
         $this->assertStringContainsString('<b>faith</b>', $r2['kjv'][0]->text, 'v2 / ' . $tag);
 
         if($forbidden !== NULL) {
@@ -753,8 +755,105 @@ class EngineSanitizationTest extends TestCase
             'highlight_tag' => $tag, 'data_format' => 'raw',
         ]);
 
-        $this->assertFalse($v3->hasErrors(), $tag);
         $this->assertStringContainsString('**faith**', $r3['kjv'][0]->text, 'v3 / ' . $tag);
+    }
+
+    /**
+     * The fallback is reported rather than silent.
+     *
+     * A rejected tag used to leave the response indistinguishable from one where the tag had
+     * been honoured - same 200, same empty errors array, different markup - so an integrator
+     * whose tag stopped being accepted had nothing to detect the change by.
+     *
+     * Level 3 (non-fatal): the results are still there and still highlighted, only with the
+     * default tag.
+     *
+     * @param string $tag
+     */
+    #[DataProvider('unwhitelistedTagDataProvider')]
+    public function testAnUnwhitelistedHighlightTagIsReportedAsANonFatalError(string $tag, ?string $forbidden): void
+    {
+        $Engine  = new EngineV2();
+        $results = $Engine->actionQuery([
+            'bible' => 'kjv', 'search' => 'faith', 'highlight' => 1,
+            'highlight_tag' => $tag, 'data_format' => 'raw',
+        ]);
+
+        $this->assertTrue($Engine->hasErrors(), $tag);
+        $this->assertSame(3, $Engine->getErrorLevel(), $tag);
+        $this->assertNotEmpty($results['kjv'], 'results are still returned: ' . $tag);
+
+        $errors = $Engine->getErrors();
+        $this->assertCount(1, $errors, $tag);
+        $this->assertStringContainsString('Highlight tag', $errors[0], $tag);
+    }
+
+    /**
+     * The tag the caller sent is named in the message, so the integrator can see which value
+     * was refused without having to diff the markup.
+     */
+    public function testTheRejectedHighlightTagIsNamedInTheError(): void
+    {
+        $Engine = new EngineV2();
+        $Engine->actionQuery([
+            'bible' => 'kjv', 'search' => 'faith', 'highlight' => 1,
+            'highlight_tag' => 'my-tag', 'data_format' => 'raw',
+        ]);
+
+        $this->assertStringContainsString("'my-tag'", $Engine->getErrors()[0]);
+    }
+
+    /**
+     * The error is raised once per request, not once per rejected-value check.
+     */
+    public function testTheRejectedHighlightTagErrorIsNotRepeated(): void
+    {
+        $Engine = new EngineV2();
+        $Engine->actionQuery([
+            'bible' => 'kjv', 'search' => 'faith AND hope', 'highlight' => 1,
+            'highlight_tag' => 'my-tag', 'data_format' => 'raw',
+        ]);
+
+        $this->assertCount(1, $Engine->getErrors());
+    }
+
+    /**
+     * A tag on the whitelist, and an absent tag, are both answered without an error - the
+     * report is for the substitution, not for asking to highlight at all.
+     */
+    public function testAnAcceptedOrAbsentHighlightTagRaisesNoError(): void
+    {
+        $accepted = new EngineV2();
+        $accepted->actionQuery([
+            'bible' => 'kjv', 'search' => 'faith', 'highlight' => 1,
+            'highlight_tag' => 'em', 'data_format' => 'raw',
+        ]);
+
+        $this->assertFalse($accepted->hasErrors());
+
+        $absent = new EngineV2();
+        $absent->actionQuery([
+            'bible' => 'kjv', 'search' => 'faith', 'highlight' => 1,
+            'data_format' => 'raw',
+        ]);
+
+        $this->assertFalse($absent->hasErrors());
+    }
+
+    /**
+     * highlight_tag is the only field the report is wired to. 'markup' is whitelisted for the
+     * same reason but falls back deliberately in silence - an unrecognised mode resolves to
+     * the least permissive one, which is not a substitution the caller needs to act on.
+     */
+    public function testAnUnwhitelistedMarkupModeStillFallsBackInSilence(): void
+    {
+        $Engine = new EngineV2();
+        $Engine->actionQuery([
+            'bible' => 'kjv', 'search' => 'faith', 'markup' => 'not-a-mode',
+            'data_format' => 'raw',
+        ]);
+
+        $this->assertFalse($Engine->hasErrors());
     }
 
     public static function unwhitelistedTagDataProvider(): array
@@ -794,6 +893,12 @@ class EngineSanitizationTest extends TestCase
         $this->assertStringContainsString('<em>faith</em>', $r2['kjv'][0]->text);
         $this->assertStringNotContainsString('<em>', $r3['kjv'][0]->text);
         $this->assertStringContainsString('**faith**', $r3['kjv'][0]->text);
+
+        // And the version that refuses it says so, so a v2 client moving to v3 is not left
+        // reading the markup to find out.
+        $this->assertFalse($v2->hasErrors());
+        $this->assertTrue($v3->hasErrors());
+        $this->assertSame(3, $v3->getErrorLevel());
     }
 
     /** The whitelist is case-insensitive and the caller's own casing is kept. */
@@ -853,7 +958,7 @@ class EngineSanitizationTest extends TestCase
         $results = $Engine->actionQuery(['bible' => 'kjv', 'search' => 'faith', 'highlight' => 1,
                                          'highlight_tag' => 'script', 'data_format' => 'raw']);
 
-        $this->assertFalse($Engine->hasErrors());
+        $this->assertSame(3, $Engine->getErrorLevel()); // reported, not refused
         $this->assertStringContainsString('<high>faith</high>', $results['kjv'][0]->text);
         $this->assertStringNotContainsString('script', $results['kjv'][0]->text);
     }
@@ -943,6 +1048,46 @@ class EngineSanitizationTest extends TestCase
         $this->assertStringStartsWith('**', $verse->text);
         $this->assertStringEndsWith('**', $verse->text);
         $this->assertStringNotContainsString('<b>', $verse->text);
+    }
+
+    // -----------------------------------------------------------------------
+    // actionStatics - research_desc
+    // -----------------------------------------------------------------------
+
+    /**
+     * 'research_desc' is operator-editable soft config, so it is HTML the same way an
+     * imported description is, and goes through the same hook: whitelisted HTML on v2,
+     * Markdown on v3.
+     *
+     * config() is set on the test's own copy, so nothing installed is touched.
+     */
+    public function testTheResearchDescriptionIsSanitizedPerVersion(): void
+    {
+        config(['bss.research_description' => 'Research only. <a href="https://example.com">details</a>']);
+
+        $v2 = (new EngineV2())->actionStatics([]);
+        $v3 = (new EngineV3())->actionStatics([]);
+
+        $this->assertStringContainsString('<a href="https://example.com">details</a>', $v2->research_desc);
+
+        $this->assertContainsNoHtmlTags($v3->research_desc, 'v3 statics carried HTML');
+        $this->assertStringContainsString('[details](https://example.com)', $v3->research_desc);
+    }
+
+    /**
+     * And what the purifier refuses is gone on both, rather than reaching the response as
+     * markup the operator did not intend to publish.
+     */
+    public function testTheResearchDescriptionCannotCarryAScript(): void
+    {
+        config(['bss.research_description' => 'Research only.<script>alert(1)</script>']);
+
+        foreach([new EngineV2(), new EngineV3()] as $Engine) {
+            $desc = (string) $Engine->actionStatics([])->research_desc;
+
+            $this->assertStringNotContainsStringIgnoringCase('<script', $desc, get_class($Engine));
+            $this->assertStringNotContainsStringIgnoringCase('alert(1)', $desc, get_class($Engine));
+        }
     }
 
     // -----------------------------------------------------------------------

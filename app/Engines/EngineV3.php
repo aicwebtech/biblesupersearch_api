@@ -21,9 +21,9 @@ class EngineV3 extends BaseEngine
      * v3 answers in Markdown, so an HTML element name is not something it can highlight with -
      * '<b>' in a Markdown response is markup the client never asked for. The markers alone.
      *
-     * A caller who asks for 'em' is not refused the request: _sanitizeInput() drops the value,
-     * the field falls back to the configured default, and _highlightResults() answers with
-     * Markdown bold.
+     * A caller who asks for 'em' is not refused the request: _sanitizeInput() drops the value
+     * and raises a level 3 error, the field falls back to the configured default, and
+     * _highlightResults() answers with Markdown bold.
      */
     public const HIGHLIGHT_TAG_WHITELIST = Helpers::HIGHLIGHT_PLAIN_TEXT_MARKERS;
 

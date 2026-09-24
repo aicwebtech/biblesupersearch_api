@@ -100,7 +100,7 @@ return array(
             . 'For HTML, just set to the name of the tag, omitting &lt;&gt;. <br />'
             . 'Inline formatting elements only: ' . implode(', ', \App\Helpers::highlightElementWhitelist(config('bss.defaults.highlight_tag'))) . '. <br />'
             . 'Markdown markers: ' . implode(', ', \App\Helpers::HIGHLIGHT_PLAIN_TEXT_MARKERS) . '. <br />'
-            . 'Any other tag is ignored and the default is used instead.'
+            . 'Any other tag is ignored and the default is used instead; the response reports the substitution as a non-fatal error (error_level 3).'
             . ' (API v3 and newer never return HTML - there only the Markdown markers are accepted, and an'
             . ' element name is ignored in favor of the v3 default.)'
         ),
