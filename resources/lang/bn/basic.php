@@ -10,4 +10,5 @@ return [
     // 'chapter_n'         => ':n', // chapter with number, ie 'Chapter 5'
     // 'psalm_n'           => ':n',   // Psalm with number, ie 'Psalm 119'
     'table_of_contents' => 'সূচিপত্র',
+    'copyright'         => 'কপিরাইট',
 ];

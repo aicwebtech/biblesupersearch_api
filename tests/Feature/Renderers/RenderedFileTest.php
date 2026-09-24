@@ -208,6 +208,26 @@ class RenderedFileTest extends TestCase
         }
     }
 
+    /**
+     * The plain-text copyright statement carries ordinary spaces, not non-breaking ones.
+     *
+     * Bible::getCopyrightStatement() purifies the statement, and HTMLPurifier decodes named
+     * entities - so the '&nbsp;' Copyright::getProcessedCopyrightStatement() writes arrives at
+     * RenderAbstract::_htmlToPlainText() as U+00A0 and no longer matches an entity-spelled
+     * replacement. Every plain-text render (Csv, PlainText, MySQL, SQLite3, Excel, Json
+     * metadata) would embed the character where it used to emit a space.
+     *
+     * @return void
+     */
+    public function testThePlainTextCopyrightStatementHasNoNonBreakingSpaces()
+    {
+        $Renderer = new \App\Renderers\Csv('kjv');
+        $cr = $this->_copyrightStatement($Renderer);
+
+        $this->assertNotEmpty($cr, $this->kjvcm);
+        $this->assertSame(0, substr_count($cr, "\xc2\xa0"), $this->kjvcm);
+    }
+
     public function testRenderedJson() 
     {
         $Renderer = new \App\Renderers\Json('kjv');

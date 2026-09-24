@@ -15,18 +15,20 @@ $api_middleware = in_array(env('APP_ENV', 'production'), ['local','testing']) ? 
 
 // 'api_testing' middleware has higher access rate allowance, for testing purposes
 
-/* Routes for the Webservice API  */
+/* Routes for the Public Webservice API  */
+/* In all cases, action defaults to 'query' if not specified.  */
 
-// "Versioned API" route is experimental ... current version is v2 (legacy software (release version < 4.0) is API v1)
-// API versioning is not yet implemented, but the routes are in place
-// Webservice API is versioned, but internal API is not 
-Route::get('/api/v2/{action?}' , 'ApiController@genericAction')->middleware($api_middleware); // 'Action' defaults to 'query'
-Route::post('/api/v2/{action?}', 'ApiController@genericAction')->middleware($api_middleware); // 'Action' defaults to 'query'
+// Modern, versioned API routes, recommended for all new development
+// The version is constrained to digits so that this route only claims what is actually a
+// version. Unconstrained, it matched any first segment beginning with 'v' - '/api/verses'
+// bound version 'erses' and answered 'API version not found' instead of falling through to
+// the generic route below, and every future action named 'v...' would have done the same.
+Route::get('/api/v{version}/{action?}' , 'ApiController@versionedAction')->middleware($api_middleware)->where('version', '[0-9]+');
+Route::post('/api/v{version}/{action?}', 'ApiController@versionedAction')->middleware($api_middleware)->where('version', '[0-9]+');
 
-// Default webservice API routes
-Route::get('/api/{action?}' , 'ApiController@genericAction')->middleware($api_middleware); // 'Action' defaults to 'query'
-Route::post('/api/{action?}', 'ApiController@genericAction')->middleware($api_middleware); // 'Action' defaults to 'query'
-
+// Original webservice API routes (V2), retained for backward compatibility, but not recommended for new development
+Route::get('/api/{action?}' , 'ApiController@genericAction')->middleware($api_middleware);
+Route::post('/api/{action?}', 'ApiController@genericAction')->middleware($api_middleware);
 
 /* Route for Documentation UI */
 Route::get('/', 'DocumentationController')->name('docs');

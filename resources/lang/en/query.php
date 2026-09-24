@@ -95,8 +95,14 @@ return array(
         'highlight_tag' => array(
             'type' => 'String',
             'name' => 'Highlight Tag',
-            'default' => 'b',
-            'description' => 'HTML tag to use for wrapping highlighted keywords. Just set to the name of the tag, omitting &lt;&gt;'
+            'default' => config('bss.defaults.highlight_tag') . ' <br />(v3: ' . config('bss.defaults.highlight_tag_v3') . ')',
+            'description' => 'HTML tag or Markdown marker to use for wrapping highlighted keywords. <br />'
+            . 'For HTML, just set to the name of the tag, omitting &lt;&gt;. <br />'
+            . 'Inline formatting elements only: ' . implode(', ', \App\Helpers::highlightElementWhitelist(config('bss.defaults.highlight_tag'))) . '. <br />'
+            . 'Markdown markers: ' . implode(', ', \App\Helpers::HIGHLIGHT_PLAIN_TEXT_MARKERS) . '. <br />'
+            . 'Any other tag is ignored and the default is used instead.'
+            . ' (API v3 and newer never return HTML - there only the Markdown markers are accepted, and an'
+            . ' element name is ignored in favor of the v3 default.)'
         ),
         'page_all' => array(
             'type' => 'Boolean',
@@ -157,8 +163,12 @@ return array(
             'type' => 'String',
             'name' => 'Markup Format',
             'default' => 'none',
-            'description' => 'Format of markup for Bibles having Strongs numbers or red letter.<br/ >\'none\' returns no markup. <br />\'raw\' returns the '
-            . 'markup as stored in the database:  {} indicates Strongs numbers, [] indicates added words, and ‹› (not <>) indicates red letter.',
+            'description' => 'Format of markup for Bibles having Strongs numbers or red letter.<br />'
+            . '\'none\' returns no markup. '
+            . '<br />\'safe\' returns the markup with added words, Strongs numbers and red letter, but removes any HTML tags.'
+            . '<br />\'raw\' returns the exact markup as stored in the database, including any HTML tags.'
+            . ' (Not supported in API v3 and newer, which never return HTML - there \'raw\' behaves as \'safe\'.)'
+            . '<br />markup as stored in the database:  {} indicates Strongs numbers, [] indicates added words, and ‹› (not <>) indicates red letter.',
         ),
         'keyword_limit' => array(
             'type' => 'Integer',

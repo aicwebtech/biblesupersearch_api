@@ -46,7 +46,7 @@ class SystematicTest extends TestCase
         // 'search_phrase' => '',
         'context' => 'BOOL',
         'context_range' => 10,
-        'markup' => ['none', 'raw'],
+        'markup' => ['none', 'safe', 'raw'],
     ];
 
     public function testTest()

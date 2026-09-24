@@ -5,6 +5,7 @@ namespace App\Http\Middleware;
 use Closure;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
+use App\Helpers;
 
 /*
  * Sends cacheable response headers (Cache-Control + ETag) on the public,
@@ -27,28 +28,28 @@ class SetCacheHeaders
     {
         $response = $next($request);
 
-        $action = $this->resolveAction($request);
+        $action = Helpers::resolveApiAction($request->path());
 
         if($action === null || !$this->shouldCache($request, $response)) {
             return $response;
         }
 
-        $maxAge = $this->maxAgeForAction($action);
+        $policy = $this->cachePolicyForAction($action);
 
-        if($maxAge === null) {
+        if($policy === null) {
             return $response;
         }
 
         $this->stripCookies($response);
 
-        if(config('bss.cache_headers.visibility') === 'private') {
+        if($policy['visibility'] === 'private') {
             $response->setPrivate();
         }
         else {
             $response->setPublic();
         }
 
-        $response->setMaxAge($maxAge);
+        $response->setMaxAge($policy['max_age']);
         $response->setEtag(md5((string) $response->getContent()));
         $response->isNotModified($request);
 
@@ -88,42 +89,45 @@ class SetCacheHeaders
     }
 
     /**
-     * Resolve the API action for the request, or null when this is not an
-     * /api/ read request. Mirrors the routes: /api/{action?} and
-     * /api/v2/{action?}, both defaulting to 'query'.
+     * Return the caching policy for the given action, or null when the action is not
+     * configured to be cached.
      *
-     * @param  \Illuminate\Http\Request  $request
-     * @return string|null
-     */
-    protected function resolveAction(Request $request): ?string
-    {
-        $segments = explode('/', $request->path());
-
-        if(array_shift($segments) !== 'api') {
-            return null; // not an API request
-        }
-
-        if(($segments[0] ?? null) === 'v2') {
-            array_shift($segments); // remove version segment
-        }
-
-        $action = $segments[0] ?? '';
-
-        return ($action === '') ? 'query' : $action;
-    }
-
-    /**
-     * Return the configured max-age (seconds) for the given action, or null
-     * when the action is not configured to be cached.
+     * An action is configured either as a bare max-age or as an array carrying a
+     * visibility of its own. A per-action visibility may only narrow the configured
+     * default, never widen it: API_CACHE_HEADERS_VISIBILITY=private is an operator kill
+     * switch, and a per-action 'public' must not reopen what it closed.
+     *
+     * 'statics' is the action that needs this. Its response embeds the caller's own
+     * access/quota state, bucketed by IP and Origin/Referer, so a shared cache keying on
+     * the URL alone would serve one caller's quota state to another.
      *
      * @param  string  $action
-     * @return int|null
+     * @return array{max_age: int, visibility: string}|null
      */
-    protected function maxAgeForAction(string $action): ?int
+    protected function cachePolicyForAction(string $action): ?array
     {
         $actions = config('bss.cache_headers.actions', []);
 
-        return array_key_exists($action, $actions) ? (int) $actions[$action] : null;
+        if(!array_key_exists($action, $actions)) {
+            return null;
+        }
+
+        $config  = $actions[$action];
+        $default = config('bss.cache_headers.visibility');
+
+        if(is_array($config)) {
+            $maxAge     = (int) ($config['max_age'] ?? 0);
+            $visibility = $config['visibility'] ?? $default;
+        }
+        else {
+            $maxAge     = (int) $config;
+            $visibility = $default;
+        }
+
+        return [
+            'max_age'    => $maxAge,
+            'visibility' => ($default === 'private' || $visibility === 'private') ? 'private' : 'public',
+        ];
     }
 
     /**

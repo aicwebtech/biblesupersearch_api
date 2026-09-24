@@ -8,4 +8,5 @@ return [
     'chapter_n'         => 'Capitolo :n', // capitolo con numero, es 'Capitolo 5'
     'psalm_n'           => 'Salmo :n',    // Salmo con numero, es 'Salmo 119'
     'table_of_contents' => 'Indice',
+    'copyright'         => 'Diritto d\'autore',
 ];

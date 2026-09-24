@@ -299,6 +299,8 @@ class RenderAbstractTest extends TestCase
             'br self-close converted'   => ['line one<br />line two',          "line one{$eol}line two"],
             'closing p converted'       => ['<p>para one</p><p>para two</p>',  "para one{$eol}{$eol}para two{$eol}{$eol}"],
             'nbsp decoded'              => ['word&nbsp;word',                  'word word'],
+            'nbsp character converted'  => ["word\xc2\xa0word",                 'word word'],
+            'numeric nbsp converted'    => ['word&#160;word',                  'word word'],
             'html entities decoded'     => ['faith &amp; hope',               'faith & hope'],
             'tags stripped'             => ['<b>bold</b> text',                'bold text'],
             'windows newlines removed'  => ["line\r\nbreak",                   'linebreak'],

@@ -8,4 +8,5 @@ return [
     'chapter_n'         => 'Chương :n', // chapter with number, ie 'Chapter 5'
     'psalm_n'           => 'Thánh Vịnh :n',   // Psalm with number, ie 'Psalm 119'
     'table_of_contents' => 'Mục lục',
+    'copyright'         => 'Bản quyền',
 ];

@@ -5,7 +5,8 @@ namespace App;
 /**
  * Class for searching SQL database given a string of keywords
  */
-class SqlSearch {
+class SqlSearch 
+{
     use Traits\Error;
     use Traits\Input;
 
@@ -16,13 +17,13 @@ class SqlSearch {
     protected $languages = [];
     protected $search_type = 'and';
 
-    protected $options_default = array(
+    protected $options_default = [
         'search_type'   => 'and',
         'whole_words'   => FALSE,
         'whole_words_debug'   => FALSE,
         'exact_case'    => FALSE,
         'keyword_limit' => 2,
-    );
+    ];
 
     //protected $use_unnamed_bindings = FALSE;
     protected $use_named_bindings = FALSE;
@@ -104,7 +105,8 @@ class SqlSearch {
      * @param array $options
      * @return App\Search|boolean
      */
-    static public function parseSearch($search = NULL, $options = [], $languages = []) {
+    static public function parseSearch($search = NULL, $options = [], $languages = []) 
+    {
         if (empty($search)) {
             $has_search = FALSE;
 
@@ -127,14 +129,16 @@ class SqlSearch {
      * Sets the search query with minimal processing
      * @param string $search
      */
-    public function setSearch($search) {
+    public function setSearch($search) 
+    {
         $this->search = $search ? trim(preg_replace('/\s+/', ' ', $search)) : '';
     }
 
     /**
      * Sanitize the search term(s)
      */
-    public function sanitize() {
+    public function sanitize() 
+    {
         $this->search = $this->_sanitizeHelper($this->search, $this->search_type);
 
         foreach(static::$search_inputs as $input => $settings) {
@@ -145,7 +149,8 @@ class SqlSearch {
         }
     }
 
-    protected function _sanitizeHelper($search, $search_type) {
+    protected function _sanitizeHelper($search, $search_type) 
+    {
         switch ($search_type) {
             case 'boolean':
             case 'regexp':
@@ -223,7 +228,8 @@ class SqlSearch {
     /**
      * Validates the search term(s)
      */
-    public function validate() {
+    public function validate() 
+    {
         $valid = $this->_validateHelper($this->search, $this->search_type);
 
         foreach(static::$search_inputs as $input => $settings) {
@@ -239,7 +245,8 @@ class SqlSearch {
         return $valid;
     }
 
-    protected function _validateHelper($search, $search_type) {
+    protected function _validateHelper($search, $search_type) 
+    {
         switch ($search_type) {
             case 'boolean':
             case 'all_words':
@@ -255,7 +262,8 @@ class SqlSearch {
      * Validates a Boolean search
      * @param type $search
      */
-    protected function _validateBoolean($search) {
+    protected function _validateBoolean($search) 
+    {
         $valid = TRUE;
         $skip_paren_check = (func_num_args() > 1) ? func_get_arg(1) : FALSE;
         
@@ -297,13 +305,15 @@ class SqlSearch {
      * @param array $options
      * @param bool $overwrite
      */
-    public function setOptions($options, $overwrite = FALSE) {
+    public function setOptions($options, $overwrite = FALSE) 
+    {
         $current = ($overwrite) ? $this->options_default : $this->options;
         $this->options = array_replace_recursive($current, $options);
         $this->search_type = (isset($this->options['search_type'])) ? $this->options['search_type'] : 'and';
     }
 
-    public function isBooleanSearch() {
+    public function isBooleanSearch() 
+    {
         return ($this->search_type == 'boolean');
     }
 
@@ -311,7 +321,8 @@ class SqlSearch {
      * Generates the WHERE clause portion from the search query
      * @return array|bool
      */
-    public function generateQuery($binddata = [], $table_alias = '') {
+    public function generateQuery($binddata = [], $table_alias = '') 
+    {
         $search_type = (!empty($this->search_type)) ? $this->search_type : 'and';
         $search = $this->search;
         return $this->_generateQueryHelper($search, $search_type, $table_alias, TRUE, $binddata);
@@ -320,7 +331,8 @@ class SqlSearch {
     protected function _generateQueryHelper(
         $search, $search_type, $table_alias = '', $include_extra_fields = FALSE, 
         $binddata = [], $fields = ''
-    ) {
+    ) 
+    {
         $searches = [];
 
         if($search) {
@@ -394,7 +406,8 @@ class SqlSearch {
         return array($sql, $binddata);
     }
 
-    protected function _termSql($term, &$binddata = [], $fields = '', $table_alias = '') {
+    protected function _termSql($term, &$binddata = [], $fields = '', $table_alias = '') 
+    {
         $exact_case  = $this->options['exact_case'];
         $whole_words = $this->options['whole_words'];
         $exact_phrase = ($this->options['search_type'] == 'phrase');
@@ -449,7 +462,8 @@ class SqlSearch {
         return array($sql, $bind_index);
     }
 
-    protected function _termFields($term, $fields = '', $table_alias = '') {
+    protected function _termFields($term, $fields = '', $table_alias = '') 
+    {
         $fields = ($fields) ? $fields : $this->search_fields;
         $fields = explode(',', $fields);
 
@@ -464,7 +478,8 @@ class SqlSearch {
         return $fields;
     }
 
-    protected function _termOperator($term, $exact_phrase = FALSE, $whole_words = FALSE, $primary_only = TRUE) {
+    protected function _termOperator($term, $exact_phrase = FALSE, $whole_words = FALSE, $primary_only = TRUE) 
+    {
         $is_regexp  = $this->_isRegexpSearch($term);
         $is_strongs = $this->_isStrongsSearch($term);
 
@@ -503,7 +518,8 @@ class SqlSearch {
         return preg_replace('/[.^$*+?()\[\]{}|\\\\]/', '\\\\$0', $term);
     }
 
-    protected function _termFormat($term, $exact_phrase = FALSE, $whole_words = FALSE, $primary_only = TRUE, $escape_literal = FALSE) {
+    protected function _termFormat($term, $exact_phrase = FALSE, $whole_words = FALSE, $primary_only = TRUE, $escape_literal = FALSE) 
+    {
         $is_phrase = $is_regexp = $is_strongs = $uses_regexp = FALSE;
         // Escape regex metacharacters in literal terms for the SQL REGEXP path
         // only, so input like "fa(ith" cannot produce an invalid pattern / SQL
@@ -1032,7 +1048,8 @@ class SqlSearch {
      * @param string $query
      * @return string
      */
-    public static function standardizeBoolean($query) {
+    public static function standardizeBoolean($query) 
+    {
         // Standardise operators and replace them with a placeholder
         // Handles operator aliases    
         $and = [' AND ', '&&', '&'];
@@ -1090,14 +1107,14 @@ class SqlSearch {
         $unicode_safe_base2 = '\p{L}\p{M}';
         $unicode_safe_base3 = '\p{P}';
 
-            // Other punctuation: 
-    // \p{P}: any kind of punctuation character.
-    // \p{Pd}: any kind of hyphen or dash.
-    // \p{Ps}: any kind of opening bracket.
-    // \p{Pe}: any kind of closing bracket.
-    // \p{Pi}: any kind of opening quote.
-    // \p{Pf}: any kind of closing quote.
-    // \p{Po}: Other:  any kind of punctuation character that is not a dash, bracket, quote
+        // Other punctuation: 
+        // \p{P}: any kind of punctuation character.
+        // \p{Pd}: any kind of hyphen or dash.
+        // \p{Ps}: any kind of opening bracket.
+        // \p{Pe}: any kind of closing bracket.
+        // \p{Pi}: any kind of opening quote.
+        // \p{Pf}: any kind of closing quote.
+        // \p{Po}: Other:  any kind of punctuation character that is not a dash, bracket, quote
 
         $patterns = array(
             '/\) [' . $unicode_safe_base . '\'%"]/u',                               // ") word"
@@ -1163,8 +1180,12 @@ class SqlSearch {
         $terms_fmt = [];
         $pre = '&&';    // Regex safe, reused search alias
         $post = '%';    // Regex safe, reused search wildcard
-        $pre_tag  = '<'  . $highlight_tag . '>';
-        $post_tag = '</' . $highlight_tag . '>';
+
+        // An HTML tag name is wrapped; a Markdown marker ('**') is symmetrical and used as-is.
+        // The install's own default is passed through, so an operator who configures an element
+        // the whitelist does not name still gets it - see Helpers::highlightElementWhitelist().
+        list($pre_tag, $post_tag) = Helpers::buildHighlightTags($highlight_tag, config('bss.defaults.highlight_tag'));
+
         // $pre_pattern  = '/' . $pre . '([^' . $pre . ' ]*)' . $pre .  '/'; // alt pattern
         // $post_pattern = '/' . $post . '([^' . $post . ' ]*)' .  $post .  '/';    // alt pattern    
         $pre_pattern  = '/' . $pre . '([^' . $pre . $post . ']*)' . $pre .  '/';

@@ -25,6 +25,33 @@ class Engine implements ErrorInterface
     use Traits\Input;
     use Traits\Singleton;
 
+    protected static $api_version = 2;
+
+    /**
+     * The highlight tags this version of the API accepts.
+     *
+     * HTML element names and Markdown markers both: a v2 response carries HTML, so '<b>' and
+     * '**' are each a reasonable thing for a caller to ask to be highlighted with. v3 answers
+     * in Markdown and narrows this to the markers alone - see EngineV3.
+     *
+     * The tag reaches verse text after _processBibleText() has stripped every other tag out
+     * of it, and nothing escapes it on the way to the response, so an unwhitelisted name is
+     * the one thing a caller could inject with. _sanitizeInput() drops anything not named
+     * here and the request falls back to the configured default, and
+     * Helpers::buildHighlightTags() checks again when it resolves the pair.
+     */
+    public const HIGHLIGHT_TAG_WHITELIST = [
+        ...Helpers::HIGHLIGHT_TAG_WHITELIST,
+        ...Helpers::HIGHLIGHT_PLAIN_TEXT_MARKERS,
+    ];
+
+    /**
+     * The markup modes the 'markup' parameter accepts - see _processMarkup().
+     *
+     * 'none' is first because it is the default a rejected value falls back to.
+     */
+    public const MARKUP_MODE_WHITELIST = ['none', 'safe', 'raw'];
+
     protected $Bibles = array(); // Array of Bible objects
     protected $Bible_Primary = NULL; // Primary Bible version
     protected $languages = array();
@@ -277,6 +304,10 @@ class Engine implements ErrorInterface
             'highlight_tag' => [
                 'type' => 'string',
                 //'default' => null,
+                // Whitelisted, because the tag is emitted into verse text after it has been
+                // stripped of markup and is never escaped. static:: and not self:: - v3
+                // narrows this to the Markdown markers, see EngineV3.
+                'whitelist' => static::HIGHLIGHT_TAG_WHITELIST,
             ],
             'search_type' => [
                 'type' => 'string',
@@ -325,6 +356,11 @@ class Engine implements ErrorInterface
             'markup' => [
                 'type' => 'string',
                 'default' => 'none',
+                // Whitelisted so an unrecognised value falls back to 'none' rather than to
+                // whichever branch of _processMarkup() happens to catch it - the three modes
+                // differ in what reaches the response, and a typo must not be the permissive
+                // one.
+                'whitelist' => static::MARKUP_MODE_WHITELIST,
             ],
             'parallel_search_error_suppress' => [
                 'type' => 'bool',
@@ -809,7 +845,6 @@ class Engine implements ErrorInterface
     {
         $language_float = isset($input['language_float']) ? $input['language_float'] : null;
 
-        $include_desc = FALSE;
         $Bibles = Bible::select('bibles.name','shortname','module','year','owner', 'description',
             'languages.name AS lang','lang_short','copyright','italics','strongs','red_letter',
             'paragraph','rank','research','bibles.restrict','copyright_id','copyright_statement',
@@ -822,10 +857,6 @@ class Engine implements ErrorInterface
 
         $order_by_default = 'lang_native_name|rank';
         $order_by = array_key_exists('bible_order_by', $input) ? $input['bible_order_by'] : $order_by_default;
-
-        if($include_desc) {
-            $Bibles -> addSelect('description');
-        }
 
         // Legacy order by flag - still supported for now
         if(array_key_exists('order_by_lang_name', $input) && !empty($input['order_by_lang_name'])) {
@@ -863,14 +894,17 @@ class Engine implements ErrorInterface
         }
 
         foreach($Bibles as $Bible) {
-            $bibles[$Bible->module] = $Bible->getAttributes();
+            $attr = $Bible->getAttributes();
+            $bibles[$Bible->module] = $attr;
             $bibles[$Bible->module]['audio_enable'] = \App\AudioManager::audioEnabled($Bible);
             $bibles[$Bible->module]['tts_enable'] = \App\AudioManager::ttsEnabled($Bible);
             $bibles[$Bible->module]['tts_ai'] = \App\AudioManager::isTtsAI($Bible);
             $bibles[$Bible->module]['audio_structure'] = $Bible->audio_structure ?: 'chapter';
             $bibles[$Bible->module]['downloadable'] = $Bible->isDownloadable();
-            $bibles[$Bible->module]['copyright_statement'] = $Bible->getCopyrightStatement();
+            $bibles[$Bible->module]['copyright_statement'] = $this->_processHtml($Bible->getCopyrightStatement());
             $bibles[$Bible->module]['book_list'] = $Bible->getBookList();
+            $bibles[$Bible->module]['description'] = $this->_sanitizeEditorHtml($attr['description']);
+
             // Remove attributes that aren't needed in the API response
             unset($bibles[$Bible->module]['id']);
             unset($bibles[$Bible->module]['installed']);
@@ -890,6 +924,8 @@ class Engine implements ErrorInterface
             foreach($bibles as $key => $bible) {
                 $bibles_floated[$key] = $bible;
             }
+
+            return $bibles_floated;
         }
 
         return $bibles;
@@ -1249,7 +1285,6 @@ class Engine implements ErrorInterface
     public function actionStatics($input) 
     {
         $domain = isset($input['domain']) ? $input['domain'] : null;
-        $Access = ApiAccessManager::lookUpByInput($input);
 
         RenderManager::cleanUpTempZipFiles();
 
@@ -1267,16 +1302,53 @@ class Engine implements ErrorInterface
         $response->name                     = config('app.name');
         $response->hash                     = $this->_getNameHash();
         $response->version                  = config('app.version');
-        $response->api_version              = config('app.api_version');
+        $response->api_version              = 'v' . static::$api_version;
         $response->api_version_list         = config('app.api_version_list');
+        $response->api_version_current      = config('app.api_version');
         $response->environment              = config('app.env');
         $response->research_desc            = config('bss.research_description');
         $response->parallel_lang_search     = config('bss.parallel_search_different_languages');
-        $response->access                   = new \stdClass;
-        $response->access->allowed          = $Access ? !$Access->isAccessRevoked() : FALSE;
-        $response->access->limit            = $Access ? $Access->getAccessLimit() : 0;
-        $response->access->limit_reached    = $Access ? $Access->isLimitReached() : TRUE;
-        $response->access->hits             = $Access ? $Access->getDailyHits() : 0;
+        return $this->staticsAppend($response, $input);
+    }
+    
+    /**
+     * Appends additional data to the statics response.
+     *
+     * @param \stdClass $response response object to append to
+     * @param array $input input parameters from the request
+     * @return \stdClass
+     */
+    protected function staticsAppend(\stdClass $response, array $input): \stdClass
+    {
+        // Todo: looks like the user access data is NOT actually used in the UI ... 
+        // Need to verify that, if that is the case, we can remove this from the statics 
+        // response to allow it to be cached publicly.
+        $response->access  = $this->actionAccess($input);
+        return $response;
+    }
+
+    /**
+     * The caller's own API access and quota state.
+     *
+     * The same object 'statics' carries as its 'access' key - that block is built by this
+     * method, so the two cannot drift while both are published. Split out because it is the
+     * one part of 'statics' that varies per caller: ApiAccessManager buckets by API key or,
+     * keyless, by IP and Origin/Referer, none of which a shared cache can key on, so its
+     * presence is what forces 'statics' to be privately cached.
+     *
+     * On bss.free_actions, so polling your remaining quota does not consume it - 'hits' is
+     * therefore the count before this request.
+     */
+    public function actionAccess($input)
+    {
+        $Access = ApiAccessManager::lookUpByInput($input);
+
+        $response = new \stdClass;
+        $response->allowed       = $Access ? !$Access->isAccessRevoked() : FALSE;
+        $response->limit         = $Access ? $Access->getAccessLimit() : 0;
+        $response->limit_reached = $Access ? $Access->isLimitReached() : TRUE;
+        $response->hits          = $Access ? $Access->getDailyHits() : 0;
+
         return $response;
     }
 
@@ -1419,12 +1491,13 @@ class Engine implements ErrorInterface
     public function actionVersion($input) 
     {
         $response = new \stdClass;
-        $response->name             = config('app.name');
-        $response->hash             = $this->_getNameHash();
-        $response->version          = config('app.version');
-        $response->api_version      = config('app.api_version');
-        $response->api_version_list = config('app.api_version_list');
-        $response->environment      = config('app.env');
+        $response->name                 = config('app.name');
+        $response->hash                 = $this->_getNameHash();
+        $response->version              = config('app.version');
+        $response->api_version          = 'v' . static::$api_version;
+        $response->api_version_list     = config('app.api_version_list');
+        $response->api_version_current  = config('app.api_version');
+        $response->environment          = config('app.env');
 
         // pher - unpublished property 'php version' checks against current required PHP version
         if(array_key_exists('pher', $input) && $input['pher']) {
@@ -1472,9 +1545,30 @@ class Engine implements ErrorInterface
         return $response;
     }
 
+    /**
+     * Shapes one Strong's definition for the response.
+     *
+     * $attr must come from StrongsDefinition::toArray(), which is what both call sites pass.
+     * That is not a detail: toArray() runs the model's Attribute accessors, so 'entry' and
+     * 'root_word' have already been through Helpers::sanitizeHtml() by the time they arrive
+     * and only the version's own _processHtml() is left to apply. Hand this a raw array -
+     * a hand-built row, a query that bypasses the model - and those two fields reach the
+     * response unpurified, because nothing here purifies them a second time.
+     *
+     * 'tvm' is the exception and is sanitized here. It has no accessor: the
+     * '<b>Count:</b> n ...<br>' prefix has to come off the raw column first, which is the
+     * line above.
+     *
+     * @param array $attr One definition, as StrongsDefinition::toArray() returns it
+     * @return array
+     */
     protected function _formatStrongs($attr) 
     {
         $attr['tvm'] = $attr['tvm'] ? preg_replace('/<b>Count:<\/b> [0-9]+.*?<br>/', '', $attr['tvm']) : null; // Remove 'count' from TVM
+        $attr['tvm'] = $this->_sanitizeHtml($attr['tvm']);
+        $attr['entry'] = $this->_processHtml($attr['entry']);
+        $attr['root_word'] = $this->_processHtml($attr['root_word']);
+        
         unset($attr['created_at']);
         unset($attr['updated_at']);
         return $attr;
@@ -1611,24 +1705,128 @@ class Engine implements ErrorInterface
         return $results;
     }
 
-    protected function _processMarkup($results, $mode) {
+    /**
+     * Applies the requested markup mode to the verse text.
+     *
+     * Three modes, in decreasing order of what survives:
+     * - 'raw' returns the text exactly as stored. A module imported with --rawtext keeps its
+     *   source markup, so this is the only mode that can hand it back; nothing is stripped,
+     *   which is the whole point of asking for it. v3 answers in Markdown and so cannot - see
+     *   EngineV3::_processMarkup().
+     * - 'safe' keeps the Bible SuperSearch markers - {} Strong's, [] added words, <> red
+     *   letter - and strips HTML out from around them.
+     * - 'none' removes the markers as well, and is the default, and is what anything not on
+     *   MARKUP_MODE_WHITELIST resolves to.
+     *
+     * @param array $results
+     * @param string $mode One of MARKUP_MODE_WHITELIST
+     * @return array
+     */
+    protected function _processMarkup($results, $mode)
+    {
+        // Lowercased because _applyWhitelist() compares with strcasecmp() and hands back the
+        // caller's own spelling, so 'RAW' reaches here having been accepted as a mode. Unlike
+        // highlight_tag, where the casing is the caller's and is kept, a mode has no casing
+        // of its own - matching it case-sensitively made 'RAW' fall through to 'safe'.
+        $mode = strtolower((string) $mode);
+
+        // Anything not on the whitelist becomes 'none' rather than falling through to the
+        // 'safe' branch at the bottom - NULL, '' and a typo included. static:: and not self::
+        // so a version that narrows the whitelist narrows this too.
+        if(!in_array($mode, static::MARKUP_MODE_WHITELIST, TRUE)) {
+            $mode = 'none';
+        }
+
         if($mode == 'raw') {
             return $results;
         }
-
+        
         $find = ['‹','›', '[', ']', '} {'];
         $pattern = '/\{[^\}]+}/';
 
         foreach($results as $bible => &$bible_results) {
             foreach($bible_results as &$verse) {
-                $verse->text = str_replace($find, '', $verse->text);
-                $verse->text = preg_replace($pattern, '', $verse->text);
+                if($mode == 'none') {
+                    $verse->text = str_replace($find, '', $verse->text);
+                    $verse->text = preg_replace($pattern, '', $verse->text);
+                }
+
+                $verse->text = $this->_processBibleText($verse->text);
             }
             unset($verse);
         }
         unset($bible_results);
 
         return $results;
+    }
+
+    /**
+     * Hook for processing Bible text for the API output.
+     * 
+     * Bible text is not HTML, so we do not use the HTML sanitizer.
+     * 
+     * Special characters embedded in Bible text:
+     * [] - italics
+     * {} - Strong's numbers (superscript - not supported in markdown)
+     * ‹› - Red letter text (not supported in markdown)
+     *
+     *
+     * @param string $text
+     * @return string
+     */
+    protected function _processBibleText(string $text): string
+    {
+        return strip_tags($text);
+    }
+                
+    /**
+     * Sanitizes HTML for safe output in the API. This is a hook for subclasses to override.
+     *
+     * An absent column stays absent: 14,248 of the Strong's definitions have no 'tvm' and six
+     * of the installed Bibles have no description, and the legacy '/api/{action}' route is
+     * kept for backward compatibility, so a client testing '=== null' must keep working.
+     *
+     * @param string|null $html
+     * @return string|null
+     */
+    protected function _sanitizeHtml(?string $html): ?string
+    {
+        if($html === NULL) {
+            return NULL;
+        }
+
+        return $this->_processHtml(Helpers::sanitizeHtml($html));
+    }
+
+    /**
+     * Sanitizes WYSIWYG HTML for safe output in the API. This is a hook for subclasses to override.
+     * 
+     * @param string|null $html
+     * @return string|null
+     */
+    protected function _sanitizeEditorHtml(?string $html): ?string
+    {
+        if($html === NULL) {
+            return NULL;
+        }
+
+        return $this->_processHtml(Helpers::sanitizeEditorHtmlStrict($html));
+    }
+    
+    /** 
+     * Assumes the HTML has already been sanitized (iE by accessor on model) and 
+     * performs any additional processing needed for the API output. This is a hook for subclasses to override.
+     *
+     * NULL is accepted and answered with NULL - see _sanitizeHtml(). It reaches here from the
+     * nullable columns and from Bible::getCopyrightStatement(), which has no return type of
+     * its own.
+     *
+     * @param string|null $html
+     * @return string|null
+    */
+    protected function _processHtml(?string $html): ?string
+    {
+        return $html;
     }
 
     protected function _parallelUnmatchedVerses($results, $Search) 
@@ -1823,6 +2021,10 @@ class Engine implements ErrorInterface
                             $value = $input[$index];
                         }
                 }
+
+                if($value !== NULL && array_key_exists('whitelist', $s)) {
+                    $value = self::_applyWhitelist($value, $s['whitelist']);
+                }
             }
 
             if(!$value && array_key_exists('default', $s)) {
@@ -1834,6 +2036,35 @@ class Engine implements ErrorInterface
         }
 
         return $clean;
+    }
+
+    /**
+     * Answers $value when the whitelist names it, and NULL when it does not.
+     *
+     * NULL rather than the whitelist's own spelling, so a rejected value is simply absent and
+     * the field falls back to its default exactly as it would have if the caller had not sent
+     * it at all.
+     *
+     * The comparison is case-insensitive and the caller's own casing is kept: 'EM' is the 'em'
+     * element and has always been answered as '<EM>'. The Markdown markers have no case.
+     *
+     * @param mixed $value
+     * @param array $whitelist
+     * @return mixed|null
+     */
+    protected static function _applyWhitelist($value, array $whitelist)
+    {
+        if(!is_string($value)) {
+            return in_array($value, $whitelist, TRUE) ? $value : NULL;
+        }
+
+        foreach($whitelist as $allowed) {
+            if(is_string($allowed) && strcasecmp($value, $allowed) === 0) {
+                return $value;
+            }
+        }
+
+        return NULL;
     }
 
     public static function sanitizeString($str)

@@ -3,7 +3,7 @@
 namespace Tests\Unit\Models;
 
 use PHPUnit\Framework\TestCase;
-use App\Models\Bible;
+use PHPUnit\Framework\Attributes\DataProvider;
 use App\Models\Copyright;
 
 /**
@@ -63,10 +63,14 @@ class CopyrightTest extends TestCase
     }
 
     /**
-     * Creative Commons statements are generated rather than stored, and carry a copyright
-     * line. With no Bible to read a year and owner from, the placeholders remain.
+     * The Creative Commons statement is generated rather than stored, from the licence's own
+     * name and URL.
+     *
+     * The real copyright year and owner live on the Bible, not on the licence, so
+     * Bible::getCopyrightStatement() is what fills them in - see
+     * tests/Feature/Models/BibleCopyrightStatementTest.php.
      */
-    public function testCreativeCommonsWithoutABibleKeepsThePlaceholders(): void
+    public function testCreativeCommonsIsBuiltFromTheLicenceNameAndUrl(): void
     {
         $copyright = $this->copyright([
             'type' => 'creative_commons',
@@ -76,64 +80,119 @@ class CopyrightTest extends TestCase
 
         $statement = $copyright->getProcessedCopyrightStatement();
 
-        $this->assertStringContainsString('Copyright &copy; [year] [owner]', $statement);
+        $this->assertStringContainsString('This text is made available', $statement);
         $this->assertStringContainsString('CC BY-SA 4.0', $statement);
         $this->assertStringContainsString('https://example.test/cc', $statement);
     }
 
-    public function testCreativeCommonsUsesTheBibleYearAndOwner(): void
+    /**
+     * With no Bible to read a year and owner from, the sanitized statement carries the
+     * placeholder - this is the admin preview of a licence, where there is no one text to
+     * name.
+     *
+     * The placeholder used to be assembled into a variable the next line overwrote, so it
+     * never reached the output at all.
+     */
+    public function testCreativeCommonsCarriesTheYearAndOwnerPlaceholder(): void
     {
         $copyright = $this->copyright([
             'type' => 'creative_commons',
-            'name' => 'CC BY 4.0',
+            'name' => 'CC BY-SA 4.0',
             'url'  => 'https://example.test/cc',
         ]);
 
-        $bible        = new Bible();
-        $bible->year  = 1611;
-        $bible->owner = 'Example Society';
+        $statement = $copyright->getProcessedCopyrightStatement();
 
-        $statement = $copyright->getProcessedCopyrightStatement($bible);
-
-        $this->assertStringContainsString('Copyright &copy; 1611 Example Society', $statement);
+        $this->assertStringContainsString('[year]', $statement);
+        $this->assertStringContainsString('[owner]', $statement);
+        $this->assertStringContainsString('This text is made available', $statement);
     }
 
-    public function testCreativeCommonsWithOnlyAYear(): void
+    /** And it leads, the way Bible::getCopyrightStatement() leads with the real values. */
+    public function testThePlaceholderPrecedesTheLicenceText(): void
     {
-        $copyright = $this->copyright(['type' => 'creative_commons', 'name' => 'CC', 'url' => 'u']);
+        $copyright = $this->copyright([
+            'type' => 'creative_commons',
+            'name' => 'CC BY-SA 4.0',
+            'url'  => 'https://example.test/cc',
+        ]);
 
-        $bible        = new Bible();
-        $bible->year  = 1769;
-        $bible->owner = null;
+        $statement = $copyright->getProcessedCopyrightStatement();
 
-        $this->assertStringContainsString('Copyright &copy; 1769<br />', $copyright->getProcessedCopyrightStatement($bible));
-    }
-
-    public function testCreativeCommonsWithOnlyAnOwner(): void
-    {
-        $copyright = $this->copyright(['type' => 'creative_commons', 'name' => 'CC', 'url' => 'u']);
-
-        $bible        = new Bible();
-        $bible->year  = null;
-        $bible->owner = 'Example Society';
-
-        $this->assertStringContainsString('Copyright &copy; Example Society', $copyright->getProcessedCopyrightStatement($bible));
+        $this->assertLessThan(
+            strpos($statement, 'This text is made available'),
+            strpos($statement, '[year]'),
+            'The placeholder should lead the licence text'
+        );
     }
 
     /**
-     * A Bible with neither year nor owner must not emit a bare "Copyright ©" line.
+     * Raw is Bible::getCopyrightStatement() asking, and it has the Bible's real year and
+     * owner to put there - a placeholder would end up in the response beside them.
      */
-    public function testCreativeCommonsOmitsTheCopyrightLineWhenTheBibleHasNeither(): void
+    public function testRawCarriesNoPlaceholder(): void
     {
-        $copyright = $this->copyright(['type' => 'creative_commons', 'name' => 'CC', 'url' => 'u']);
+        $copyright = $this->copyright([
+            'type' => 'creative_commons',
+            'name' => 'CC BY-SA 4.0',
+            'url'  => 'https://example.test/cc',
+        ]);
 
-        $bible        = new Bible();
-        $bible->year  = null;
-        $bible->owner = null;
+        $statement = $copyright->getProcessedCopyrightStatement(NULL, TRUE);
 
-        $statement = $copyright->getProcessedCopyrightStatement($bible);
-
-        $this->assertStringNotContainsString('Copyright &copy;', $statement);
-        $this->assertStringContainsString('This Bible is made available', $statement);
+        $this->assertStringNotContainsString('[year]', $statement);
+        $this->assertStringNotContainsString('[owner]', $statement);
+        $this->assertStringNotContainsStringIgnoringCase('copyright &copy;', $statement);
     }
+
+    /** Only the Creative Commons branch generates a statement of its own to lead. */
+    public function testANonCreativeCommonsLicenceCarriesNoPlaceholder(): void
+    {
+        $copyright = $this->copyright([
+            'type'                        => 'public_domain',
+            'url'                         => NULL,
+            'default_copyright_statement' => 'Public domain.',
+        ]);
+
+        $this->assertSame('Public domain.', $copyright->getProcessedCopyrightStatement());
+    }
+
+    /**
+     * The Bible comes first and $raw second. Pinned because both orderings type-check for a
+     * caller passing only the second argument positionally: getProcessedCopyrightStatement(TRUE)
+     * was the raw statement under the old signature and is a TypeError under this one.
+     */
+    public function testItTakesTheBibleFirstAndRawSecond(): void
+    {
+        $Parameters = (new \ReflectionMethod(Copyright::class, 'getProcessedCopyrightStatement'))->getParameters();
+
+        $this->assertCount(2, $Parameters);
+
+        $this->assertSame('Bible', $Parameters[0]->getName());
+        $this->assertSame('?App\\Models\\Bible', (string) $Parameters[0]->getType());
+        $this->assertTrue($Parameters[0]->isOptional());
+
+        $this->assertSame('raw', $Parameters[1]->getName());
+        $this->assertSame('bool', (string) $Parameters[1]->getType());
+        $this->assertTrue($Parameters[1]->isOptional());
+    }
+
+    /**
+     * A Bible in hand means the statement is that Bible's, so the whole question goes back to
+     * it - the licence record has no year or owner of its own to put in one.
+     */
+    public function testABibleIsAnsweredWithItsOwnStatement(): void
+    {
+        $copyright = $this->copyright([
+            'type'                        => 'public_domain',
+            'url'                         => NULL,
+            'default_copyright_statement' => 'Public domain.',
+        ]);
+
+        $Bible = new \App\Models\Bible();
+        $Bible->setRawAttributes(['copyright_statement' => 'Used by permission.']);
+
+        $this->assertSame('Used by permission.', $copyright->getProcessedCopyrightStatement($Bible));
+    }
+
 }

@@ -8,4 +8,5 @@ return [
     'chapter_n'         => 'அத்தியாயம் :n', // chapter with number, ie 'Chapter 5'
     'psalm_n'           => 'சங்கீதம் :n',   // Psalm with number, ie 'Psalm 119'
     'table_of_contents' => 'உள்ளடக்க அட்டவணை',
+    'copyright'         => 'பதிப்புரிமை',
 ];

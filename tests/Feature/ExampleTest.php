@@ -3,12 +3,14 @@
 namespace Tests\Feature;
 
 use Tests\TestCase;
+use PHPUnit\Framework\Attributes\RunInSeparateProcess;
 
 class ExampleTest extends TestCase
 {
     /**
      * A basic test example.
      */
+    #[RunInSeparateProcess]
     public function testTheApplicationReturnsASuccessfulResponse(): void
     {
         $response = $this->get('/');

@@ -8,4 +8,5 @@ return [
     'chapter_n'         => 'Kapitola :n', // kapitola s číslem, např. 'Kapitola 5'
     'psalm_n'           => 'Žalm :n',     // žalm s číslem, např. 'Žalm 119'
     'table_of_contents' => 'Obsah',
+    'copyright'         => 'Autorská práva',
 ];
