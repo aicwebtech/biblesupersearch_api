@@ -117,6 +117,16 @@ Route::post('/admin/features/enable/{id}', 'Admin\FeatureController@enable');
 Route::post('/admin/features/disable/{id}', 'Admin\FeatureController@disable');
 Route::resource('/admin/features', 'Admin\FeatureController', ['as' => 'admin']);
 
+// Volume manager routes
+Route::get('/admin/volumes/grid', 'Admin\VolumeController@grid');
+Route::get('/admin/volumes/languages', 'Admin\VolumeController@languages');
+Route::post('/admin/volumes/install/{id}', 'Admin\VolumeController@install');
+Route::post('/admin/volumes/uninstall/{id}', 'Admin\VolumeController@uninstall');
+Route::post('/admin/volumes/enable/{id}', 'Admin\VolumeController@enable');
+Route::post('/admin/volumes/disable/{id}', 'Admin\VolumeController@disable');
+Route::post('/admin/volumes/delete/{id}', 'Admin\VolumeController@destroy');
+Route::resource('/admin/volumes', 'Admin\VolumeController', ['as' => 'admin']);
+
 // Audio Bible manager routes
 Route::get('/admin/bibles/audio/grid/{id}', 'Admin\AudioBibleController@grid');
 Route::post('/admin/bibles/audio/upload', 'Admin\AudioBibleController@upload');

@@ -22,6 +22,19 @@ class AdminControllerTest extends TestCase
         $response->assertStatus(200);
     }    
 
+    public function testVolumes()
+    {
+        $response = $this->get('/admin/volumes');
+        $response->assertStatus(302); // Because unauth user will be redirected to login page
+
+        $User = User::find(1);
+
+        $response = $this->actingAs($User)
+                            ->get('/admin/volumes');
+
+        $response->assertStatus(200);
+    }
+
     public function testDebug()
     {
         $response = $this->get('/admin/debug');
