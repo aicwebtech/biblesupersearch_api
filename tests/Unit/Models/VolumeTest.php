@@ -60,7 +60,7 @@ class VolumeTest extends TestCase
         $Content = $Volume->content();
 
         $this->assertInstanceOf(Volume::getContentClassName('strongs'), $Content);
-        $this->assertSame('content_strongs_strongs_ru', $Content->getTable());
+        $this->assertSame('stro_strongs_ru', $Content->getTable());
         $this->assertSame($Content, $Volume->content(), 'content() should reuse its instance');
     }
 

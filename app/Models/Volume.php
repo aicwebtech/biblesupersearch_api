@@ -192,7 +192,6 @@ class Volume extends Model
         }
 
         if (!$this->Content || $force) {
-            $attributes = $this->getAttributes();
             $class_name = self::getContentClassName($this->type);
 
             if(!$class_name) {

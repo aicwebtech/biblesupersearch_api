@@ -13,6 +13,11 @@ abstract class ContentBase extends Model implements ContentInterface
     protected $Volume = null;
     protected $table = null;
 
+    protected static $table_prefix = null;
+
+    protected $type = null;
+    protected $module = null;
+
     protected $zip_meta_file = 'info.json';
     protected $zip_content_file = 'content.txt';
     protected $zip_content_fields = []; // ie for a Bible: ["book","chapter","verse","text"];
@@ -26,24 +31,42 @@ abstract class ContentBase extends Model implements ContentInterface
      */
     public static function getContentTableName(string $type, string $module)
     {
-        return 'content_' . $type . '_' . $module;;
+        $prefix = static::$table_prefix ?? $type . '_';
+        return $prefix . $module;
     }
 
     public function setVolume(Volume $volume): void
     {
         $this->Volume = $volume;
-        $this->table = self::getContentTableName($volume->type, $volume->module);
+        $this->type = $volume->type;
+        $this->module = $volume->module;
+        $this->generateTableName();
     }
 
     public function setModule(string $module): void
     {
-        if ($this->Volume) {
-            $this->Volume->module = $module;
-        }
+        $this->module = $module;
+        $this->generateTableName();
     }
+
+    protected function generateTableName(): void
+    {
+        if ($this->type === null || $this->module === null) {
+            \Log::warning('Cannot generate table name: type or module is null', [
+                'type' => $this->type,
+                'module' => $this->module,
+            ]);
+            
+            return;
+        }
+
+        $this->table = static::getContentTableName($this->type, $this->module);
+    } 
 
     public function install($structure_only = FALSE): bool
     {
+        return true; // :todo - phase 5: implement content installation and exportation  
+
         $in_console = (strpos(php_sapi_name(), 'cli') !== FALSE);
 
         if (Schema::hasTable($this->table)) {
@@ -63,6 +86,7 @@ abstract class ContentBase extends Model implements ContentInterface
             return TRUE;
         }
 
+        // :todo - phase 5: bulk insert the content data from the module's zip file
         $Zip = $this->Volume->openModuleFile();
 
         if(!$Zip) {
@@ -74,8 +98,8 @@ abstract class ContentBase extends Model implements ContentInterface
         $Zip->close();
 
         $info   = json_decode($info, TRUE);
-        $del    = ($info['delimiter']) ? $info['delimiter'] : '|';
-        $fields = ($info['fields']) ? $info['fields'] : $this->zip_content_fields;
+        $del    = $info['delimiter'] ?? '|';
+        $fields = $info['fields'] ?? $this->zip_content_fields;
         $rows   = preg_split("/\\r\\n|\\r|\\n/", $rows);
         $table  = $this->getTable();
         $insertable = [];

@@ -10,6 +10,8 @@ use Illuminate\Database\Schema\Blueprint;
  */
 class StrongsContent extends ContentBase
 {
+    protected static $table_prefix = 'stro_';
+
     /**
      * :todo - phase 3: Strong's schema (number, root_word, pronunciation, transliteration,
      * definition_html, definition_md, short_definition, is_special, timestamps)

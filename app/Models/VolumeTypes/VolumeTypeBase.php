@@ -62,9 +62,4 @@ abstract class VolumeTypeBase extends Volume
     {
         return static::getTypes()[static::$type]['label'] ?? '';
     }
-
-    public static function getContentTableName(): string
-    {
-        throw new \Exception('getContentTableName() must be implemented in the subclass');
-    }
 }
