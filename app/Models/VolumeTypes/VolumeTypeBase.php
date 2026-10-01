@@ -2,7 +2,7 @@
 
 namespace App\Models\VolumeTypes;
 
-use App\Volume;
+use App\Models\Volume;
 
 abstract class VolumeTypeBase extends Volume
 {
@@ -50,7 +50,10 @@ abstract class VolumeTypeBase extends Volume
         return $query->first();
     }
 
-    public static function getType(): string
+    /**
+     * Not getType(): that would override Volume::getType(string $type), which returns a type's settings.
+     */
+    public static function getTypeName(): string
     {
         return static::$type;
     }

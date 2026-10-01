@@ -5,6 +5,7 @@ namespace Tests\Unit\Models;
 use PHPUnit\Framework\TestCase;
 use PHPUnit\Framework\Attributes\DataProvider;
 use App\Models\Volume;
+use App\Models\VolumeContent\ContentInterface;
 
 class VolumeTest extends TestCase
 {
@@ -34,6 +35,42 @@ class VolumeTest extends TestCase
             $this->assertIsString($settings['label'] ?? NULL, $type . ' has no label');
             $this->assertNotSame('', $settings['label'], $type . ' has an empty label');
         }
+    }
+
+    /**
+     * Loading each registered class is what catches signature clashes with Volume and
+     * ContentInterface: PHP reports those as fatal errors at class load time.
+     */
+    public function testEveryTypeClassLoads(): void
+    {
+        foreach(Volume::getTypes() as $type => $settings) {
+            $this->assertTrue(is_subclass_of($settings['volume_class'], Volume::class), $type . ' volume_class must extend Volume');
+            $this->assertTrue(is_subclass_of($settings['content_class'], ContentInterface::class), $type . ' content_class must implement ContentInterface');
+            $this->assertSame($type, $settings['volume_class']::getTypeName());
+            $this->assertSame($type, (new $settings['volume_class']())->type);
+        }
+    }
+
+    public function testContentResolvesTheTypesContentClassAndTable(): void
+    {
+        $Volume = new Volume();
+        $Volume->type = 'strongs';
+        $Volume->module = 'strongs_ru';
+
+        $Content = $Volume->content();
+
+        $this->assertInstanceOf(Volume::getContentClassName('strongs'), $Content);
+        $this->assertSame('content_strongs_strongs_ru', $Content->getTable());
+        $this->assertSame($Content, $Volume->content(), 'content() should reuse its instance');
+    }
+
+    public function testContentRequiresTypeAndModule(): void
+    {
+        $Volume = new Volume();
+        $Volume->type = 'strongs';
+
+        $this->expectException(\Exception::class);
+        $Volume->content();
     }
 
     public function testUnknownTypeHasNoSettings(): void

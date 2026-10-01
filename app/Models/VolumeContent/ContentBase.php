@@ -42,7 +42,7 @@ abstract class ContentBase extends Model implements ContentInterface
         }
     }
 
-    public function install($structure_only = FALSE) 
+    public function install($structure_only = FALSE): bool
     {
         $in_console = (strpos(php_sapi_name(), 'cli') !== FALSE);
 
@@ -124,7 +124,7 @@ abstract class ContentBase extends Model implements ContentInterface
         return $row;
     }
 
-    public function uninstall() 
+    public function uninstall(): bool
     {
         if (Schema::hasTable($this->table)) {
             Schema::drop($this->table);

@@ -70,7 +70,7 @@ class VolumeTest extends TestCase
 
         try {
             $Volume = $this->makeVolumeFixture();
-            $Volume->install(TRUE);
+            $Volume->install(FALSE, TRUE);
             $Volume->refresh();
 
             $this->assertSame(1, (int) $Volume->enabled);
@@ -108,8 +108,8 @@ class VolumeTest extends TestCase
         try {
             $Volume = $this->makeVolumeFixture();
 
-            $this->assertSame($Volume->id, Volume::findByModule('strongs', $Volume->module)?->id);
-            $this->assertNull(Volume::findByModule('commentary', $Volume->module));
+            $this->assertSame($Volume->id, Volume::findByTypeAndModule('strongs', $Volume->module)?->id);
+            $this->assertNull(Volume::findByTypeAndModule('commentary', $Volume->module));
         }
         finally {
             $this->removeVolumeFixture($Volume);
