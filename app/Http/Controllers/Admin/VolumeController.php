@@ -282,7 +282,7 @@ class VolumeController extends Controller
     public function install(Request $request, $id)
     {
         $Volume = Volume::findOrFail($id);
-        $Volume->install((bool) $request->input('enable', FALSE));
+        $Volume->install(false, (bool) $request->input('enable', FALSE));
 
         return $this->actionResponse($Volume);
     }
