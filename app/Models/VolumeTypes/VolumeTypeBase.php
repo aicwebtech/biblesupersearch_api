@@ -3,6 +3,7 @@
 namespace App\Models\VolumeTypes;
 
 use App\Models\Volume;
+use Illuminate\Database\Eloquent\Builder;
 
 abstract class VolumeTypeBase extends Volume
 {
@@ -28,20 +29,30 @@ abstract class VolumeTypeBase extends Volume
     }
 
     /**
-     * Find a volume by its module name and type.
+     * Every query on a type subclass is limited to that type, so Strongs::all(),
+     * Strongs::where(...) and the like never return volumes of another type.
+     * Use Volume (or withoutGlobalScope('volume_type')) to query across types.
+     */
+    protected static function booted(): void
+    {
+        $type = static::$type;
+
+        static::addGlobalScope('volume_type', function (Builder $query) use ($type) {
+            $query->where($query->qualifyColumn('type'), $type);
+        });
+    }
+
+    /**
+     * Find a volume of this type by its module name.
      *
      * @param string $module The module name to search for.
      * @param bool $fail Whether to throw an exception if not found (default: false).
      * @return static|null The found volume instance or null if not found and $fail is false.
-     * @throws \Exception If the subclass does not define a type or if $fail is true and no volume is found.
+     * @throws \Illuminate\Database\Eloquent\ModelNotFoundException If $fail is true and no volume is found.
      */
     public static function findByModule(string $module, bool $fail = false): ?static
     {
-        if(static::$type === null) {
-            throw new \Exception('Volume type must be defined in the subclass');
-        }
-
-        $query = static::where('type', static::$type)->where('module', $module);
+        $query = static::where('module', $module);
 
         if ($fail) {
             return $query->firstOrFail();

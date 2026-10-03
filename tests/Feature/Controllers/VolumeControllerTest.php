@@ -6,6 +6,7 @@ use Tests\TestCase;
 use App\User;
 use App\Models\Volume;
 use App\Models\Copyright;
+use Illuminate\Support\Facades\Schema;
 
 class VolumeControllerTest extends TestCase
 {
@@ -58,14 +59,27 @@ class VolumeControllerTest extends TestCase
         return $Volume;
     }
 
+    /**
+     * Drops the content table as well as the row: installing now creates one.
+     */
     protected function removeVolumeFixture(?Volume $Volume): void
     {
-        $Volume && $Volume->forceDelete();
+        if(!$Volume) {
+            return;
+        }
+
+        if(Volume::getContentClassName($Volume->type)) {
+            $Volume->content()->uninstall();
+        }
+
+        $Volume->forceDelete();
     }
 
     protected function removeByModule(string $module): void
     {
-        Volume::where('module', $module)->delete();
+        foreach(Volume::where('module', $module)->get() as $Volume) {
+            $this->removeVolumeFixture($Volume);
+        }
     }
 
     public function testGuestIsRedirected(): void
@@ -227,10 +241,14 @@ class VolumeControllerTest extends TestCase
             $this->admin()->postJson($url . 'enable/' . $Volume->id)->assertJson(['success' => TRUE]);
             $this->assertSame(1, (int) $Volume->refresh()->enabled);
 
+            $table = $Volume->content()->getTable();
+            $this->assertTrue(Schema::hasTable($table));
+
             $this->admin()->postJson($url . 'uninstall/' . $Volume->id)->assertJson(['success' => TRUE]);
             $Volume->refresh();
             $this->assertSame(0, (int) $Volume->installed);
             $this->assertSame(0, (int) $Volume->enabled);
+            $this->assertFalse(Schema::hasTable($table));
         }
         finally {
             $this->removeVolumeFixture($Volume);
@@ -311,12 +329,15 @@ class VolumeControllerTest extends TestCase
             $this->assertNotNull(Volume::find($Official->id));
 
             $Volume->install();
+            $table = $Volume->content()->getTable();
+            $this->assertTrue(Schema::hasTable($table));
 
             $this->admin()->deleteJson('/admin/volumes/' . $Volume->id)
                 ->assertStatus(200)
                 ->assertJson(['success' => TRUE]);
 
             $this->assertNull(Volume::find($Volume->id));
+            $this->assertFalse(Schema::hasTable($table), 'Deleting an installed volume must drop its content table');
             $Volume = NULL;
         }
         finally {

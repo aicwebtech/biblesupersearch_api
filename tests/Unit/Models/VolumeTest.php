@@ -5,7 +5,10 @@ namespace Tests\Unit\Models;
 use PHPUnit\Framework\TestCase;
 use PHPUnit\Framework\Attributes\DataProvider;
 use App\Models\Volume;
+use App\Models\VolumeContent\ContentBase;
 use App\Models\VolumeContent\ContentInterface;
+use Illuminate\Database\Schema\Blueprint;
+use App\Models\VolumeContent\StrongsContent;
 
 class VolumeTest extends TestCase
 {
@@ -60,7 +63,7 @@ class VolumeTest extends TestCase
         $Content = $Volume->content();
 
         $this->assertInstanceOf(Volume::getContentClassName('strongs'), $Content);
-        $this->assertSame('stro_strongs_ru', $Content->getTable());
+        $this->assertSame(ContentBase::CONTENT_TABLE_PREFIX . StrongsContent::TYPE_TABLE_PREFIX . 'strongs_ru', $Content->getTable());
         $this->assertSame($Content, $Volume->content(), 'content() should reuse its instance');
     }
 
@@ -71,6 +74,62 @@ class VolumeTest extends TestCase
 
         $this->expectException(\Exception::class);
         $Volume->content();
+    }
+
+    public function testContentTableNameNeedsAType(): void
+    {
+        $this->expectException(\LogicException::class);
+        (new StrongsContent())->setModule('strongs_ru');
+    }
+
+    public function testContentTableNameLengthIncludesTheDbPrefix(): void
+    {
+        $module = str_repeat('a', 50); // the module max length
+        $length = strlen(StrongsContent::getContentTableName('strongs', $module));
+        $fits   = str_repeat('p', Volume::MAX_TABLE_NAME_LENGTH - $length);
+
+        $this->assertFalse(Volume::contentTableNameTooLong('strongs', $module, $fits));
+        $this->assertTrue(Volume::contentTableNameTooLong('strongs', $module, $fits . 'p'));
+        $this->assertFalse(Volume::contentTableNameTooLong('not_a_type', $module, $fits . 'p'));
+    }
+
+    public function testEveryContentTableNameStartsWithTheContentPrefix(): void
+    {
+        foreach(array_keys(Volume::getTypes()) as $type) {
+            $table = Volume::getContentClassName($type)::getContentTableName($type, 'mod');
+
+            $this->assertStringStartsWith(ContentBase::CONTENT_TABLE_PREFIX, $table, $type);
+            $this->assertStringEndsWith('_mod', $table, $type);
+        }
+    }
+
+    public function testStrongsHasItsOwnShortTypePrefix(): void
+    {
+        $this->assertSame('stro_', StrongsContent::TYPE_TABLE_PREFIX);
+        $this->assertNull(ContentBase::TYPE_TABLE_PREFIX);
+    }
+
+    public function testContentTableNameDefaultsToTheTypeWithoutATypePrefix(): void
+    {
+        $Content = new class extends ContentBase {
+            protected function createSchema(Blueprint $table): void {}
+        };
+
+        $this->assertSame(ContentBase::CONTENT_TABLE_PREFIX . 'commentary_mod', $Content::getContentTableName('commentary', 'mod'));
+    }
+
+    /**
+     * A new type without a short table prefix of its own would fail this, so it is caught when
+     * the type is registered rather than when someone picks a long module name.
+     */
+    public function testEveryTypeFitsAMaxLengthModuleUnderTheDefaultDbPrefix(): void
+    {
+        foreach(array_keys(Volume::getTypes()) as $type) {
+            $this->assertFalse(
+                Volume::contentTableNameTooLong($type, str_repeat('a', 50), 'bss_'),
+                $type . ': content table name exceeds ' . Volume::MAX_TABLE_NAME_LENGTH . ' characters for a 50 character module'
+            );
+        }
     }
 
     public function testUnknownTypeHasNoSettings(): void

@@ -13,7 +13,13 @@ abstract class ContentBase extends Model implements ContentInterface
     protected $Volume = null;
     protected $table = null;
 
-    protected static $table_prefix = null;
+    public const CONTENT_TABLE_PREFIX = 'cn_';
+
+    /**
+     * Per-type table prefix, after CONTENT_TABLE_PREFIX.  NULL falls back to '<type>_'.
+     * Keep it short: the full table name must fit Volume::MAX_TABLE_NAME_LENGTH.
+     */
+    public const TYPE_TABLE_PREFIX = null;
 
     protected $type = null;
     protected $module = null;
@@ -31,8 +37,8 @@ abstract class ContentBase extends Model implements ContentInterface
      */
     public static function getContentTableName(string $type, string $module)
     {
-        $prefix = static::$table_prefix ?? $type . '_';
-        return $prefix . $module;
+        $prefix = static::TYPE_TABLE_PREFIX ?? $type . '_';
+        return static::CONTENT_TABLE_PREFIX . $prefix . $module;
     }
 
     public function setVolume(Volume $volume): void
@@ -49,24 +55,33 @@ abstract class ContentBase extends Model implements ContentInterface
         $this->generateTableName();
     }
 
-    protected function generateTableName(): void
+    /**
+     * 
+     * Generate the table name for the content based on the type and module.
+     * If either the type or module is null, it will throw a LogicException unless $
+     * silent is true, in which case it will return false.
+     *  
+     * @param bool $silent Whether to suppress exceptions and return false instead (default: false).
+     * @return bool True if the table name was generated successfully, false if silent and type or module is null.
+     * @throws \LogicException If type or module is null and silent is false.
+     */
+    protected function generateTableName(bool $silent = false): bool
     {
         if ($this->type === null || $this->module === null) {
-            \Log::warning('Cannot generate table name: type or module is null', [
-                'type' => $this->type,
-                'module' => $this->module,
-            ]);
             
-            return;
+            if($silent) {
+                return false;
+            }
+
+            throw new \LogicException('Cannot generate table name: type or module is null');            
         }
 
         $this->table = static::getContentTableName($this->type, $this->module);
+        return true;
     } 
 
     public function install($structure_only = FALSE): bool
     {
-        return true; // :todo - phase 5: implement content installation and exportation  
-
         $in_console = (strpos(php_sapi_name(), 'cli') !== FALSE);
 
         if (Schema::hasTable($this->table)) {
@@ -75,9 +90,22 @@ abstract class ContentBase extends Model implements ContentInterface
 
         $tbl = $this->table;
 
-        Schema::create($this->table, function (Blueprint $table) {
-            $this->createSchema($table);
-        });
+        // MySQL and SQLite both create the table and then its indexes in separate statements, so
+        // a failure part way leaves a table behind.  A later install would see that table and
+        // report success, so drop it here.
+        try {
+            Schema::create($this->table, function (Blueprint $table) {
+                $this->createSchema($table);
+            });
+        }
+        catch(\Throwable $e) {
+            Schema::dropIfExists($this->table);
+            report($e);
+            return FALSE;
+        }
+
+        return true; // :todo - phase 5: implement content installation and exportation  
+
 
         // Note: creating these indexes after the bulk insert instead was measured and rejected.
         // It is faster on SQLite (~7.5s vs ~11s for a 31k-verse Bible) but markedly slower on
@@ -158,7 +186,25 @@ abstract class ContentBase extends Model implements ContentInterface
     }
 
     /**
-     * Create the schema for the content table. 
+     * Name for an index on a content table.
+     *
+     * Laravel's default, <table>_<columns>_<type>, can exceed MySQL's 64 character limit for a
+     * long module name.  A fixed name such as 'ux_number' would be short enough, and MySQL only
+     * needs index names unique per table, but SQLite needs them unique across the whole
+     * database, so a short hash of the table name keeps each one distinct.
+     *
+     * @param Blueprint $table
+     * @param string $column Column(s) the index covers, as used in the name
+     * @param string $type 'ux' for unique, 'ix' for a plain index
+     * @return string
+     */
+    protected static function indexName(Blueprint $table, string $column, string $type = 'ux'): string
+    {
+        return $type . '_' . substr(md5($table->getTable()), 0, 12) . '_' . $column;
+    }
+
+    /**
+     * Create the schema for the content table.
      * This method must be implemented by subclasses to define the specific
      * schema for their content type.
      *

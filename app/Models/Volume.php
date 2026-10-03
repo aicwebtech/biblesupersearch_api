@@ -40,6 +40,11 @@ class Volume extends Model
      */
     public const IMMUTABLE_FIELDS = ['type', 'module'];
 
+    /**
+     * MySQL's maximum identifier length, which content table names must fit within
+     */
+    public const MAX_TABLE_NAME_LENGTH = 64;
+
     static protected $module_invalid_reason = null;
 
     protected $fillable = [
@@ -126,9 +131,16 @@ class Volume extends Model
                 'required',
                 'max:50',
                 $unique(),
-                function($attribute, $value, $fail) {
+                function($attribute, $value, $fail) use ($type) {
                     if(!static::validateModule($value)) {
                         $fail('Module name is invalid: ' . static::$module_invalid_reason);
+                        return;
+                    }
+
+                    $db_prefix = (new static())->getConnection()->getTablePrefix();
+
+                    if($type && static::contentTableNameTooLong($type, $value, $db_prefix)) {
+                        $fail('Module name is too long for this volume type');
                     }
                 },
             ],
@@ -220,6 +232,29 @@ class Volume extends Model
         return static::where('type', $type)->where('module', $module)->first();
     }
 
+    /**
+     * Whether the content table name for this type and module would exceed MySQL's identifier
+     * limit, once the connection's table prefix is added.
+     *
+     * The module max:50 rule alone cannot guarantee this: the content table name also carries
+     * the DB prefix and a per-type prefix, both of which vary.
+     *
+     * @param string $type
+     * @param string $module
+     * @param string $db_prefix The connection's table prefix
+     * @return bool FALSE for an unregistered type; the type rule reports that
+     */
+    public static function contentTableNameTooLong(string $type, string $module, string $db_prefix = ''): bool
+    {
+        $class_name = static::getContentClassName($type);
+
+        if(!$class_name) {
+            return FALSE;
+        }
+
+        return strlen($db_prefix . $class_name::getContentTableName($type, $module)) > static::MAX_TABLE_NAME_LENGTH;
+    }
+
     public static function getContentClassName(string $type): ?string
     {
         return static::TYPES[$type]['content_class'] ?? NULL;
@@ -251,12 +286,12 @@ class Volume extends Model
         }
 
         // :todo - phase 2: create the content table, if it doesn't exist
-        // $success = $this->content()->install($structure_only);
+        $success = $this->content()->install($structure_only);
 
-        // if(!$success) {
-        //     $this->addError('Could not install Bible table', 4);
-        //     return false;
-        // }
+        if(!$success) {
+            $this->addError('Could not install content table', 4);
+            return false;
+        }
 
         $this->installed = 1;
         $this->installed_at = date('Y-m-d H:i:s');
@@ -290,7 +325,7 @@ class Volume extends Model
         $this->module_updated_at = NULL;
         $this->save();
         // :todo - phase 2: drop the content table
-        // $this->content()->uninstall();
+        $this->content()->uninstall();
         return TRUE;
     }
 
