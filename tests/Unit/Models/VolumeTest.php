@@ -155,7 +155,7 @@ class VolumeTest extends TestCase
     {
         $fillable = (new Volume())->getFillable();
 
-        foreach(['installed', 'enabled', 'installed_at', 'id'] as $field) {
+        foreach(['installed', 'enabled', 'installed_at', 'id', 'is_default'] as $field) {
             $this->assertNotContains($field, $fillable);
         }
     }

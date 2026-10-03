@@ -694,4 +694,88 @@ class EngineVersionTest extends TestCase
         $this->assertArrayNotHasKey('created_at', $formatted);
         $this->assertArrayNotHasKey('updated_at', $formatted);
     }
+
+    // -----------------------------------------------------------------------
+    // Strong's - 'version' default and _formatStrongsModern
+    // -----------------------------------------------------------------------
+
+    /** v2 answers Strong's from the legacy table unless asked otherwise; v3 from the volumes. */
+    public function testStrongsVersionDefaultsPerApiVersion(): void
+    {
+        $this->assertSame('legacy', EngineV2::STRONGS_VERSION_DEFAULT);
+        $this->assertSame('modern', EngineV3::STRONGS_VERSION_DEFAULT);
+        $this->assertSame(['legacy', 'modern'], Engine::STRONGS_VERSIONS);
+    }
+
+    #[DataProvider('strongsVersionProvider')]
+    public function testResolveStrongsVersion(string $class, array $input, string $expected, bool $notice): void
+    {
+        $Engine = $this->engine($class);
+
+        $this->assertSame($expected, $this->call($Engine, '_resolveStrongsVersion', [$input]));
+        $this->assertSame($notice, $Engine->hasErrors());
+
+        if($notice) {
+            $this->assertSame(3, $Engine->getErrorLevel());
+        }
+    }
+
+    public static function strongsVersionProvider(): array
+    {
+        return [
+            'v2 default'          => [EngineV2::class, [], 'legacy', FALSE],
+            'v3 default'          => [EngineV3::class, [], 'modern', FALSE],
+            'v2 empty'            => [EngineV2::class, ['version' => ''], 'legacy', FALSE],
+            'v2 modern'           => [EngineV2::class, ['version' => 'modern'], 'modern', FALSE],
+            'v3 legacy'           => [EngineV3::class, ['version' => 'legacy'], 'legacy', FALSE],
+            'case insensitive'    => [EngineV2::class, ['version' => 'MODERN'], 'modern', FALSE],
+            // An unsupported value raises a translated notice, which needs the application:
+            // see StrongsApiTest::testUnsupportedVersionFallsBackWithANotice()
+        ];
+    }
+
+    /**
+     * Content table rows have no model accessors, so every text field is sanitized here: the
+     * script does not survive, and the italics do.
+     */
+    public function testFormatStrongsModernSanitizesEveryTextField(): void
+    {
+        $formatted = $this->call($this->engine(EngineV2::class), '_formatStrongsModern', [[
+            'id'               => '1234',
+            'number'           => 'H1234',
+            'root_word'        => "\u{05D1}\u{05BC}\u{05E7}\u{05E2}<script>alert(1)</script>",
+            'transliteration'  => 'ba\u{0302}qa\u{0303}',
+            'pronunciation'    => 'baw-kah\'<img src=x onerror=alert(1)>',
+            'definition'       => 'to <i>cleave</i><script>alert(1)</script>',
+            'short_definition' => NULL,
+            'is_special'       => '0',
+            'created_at'       => '2020-01-01 00:00:00',
+            'updated_at'       => '2020-01-01 00:00:00',
+        ], 'en_orig']);
+
+        $this->assertSame("\u{05D1}\u{05BC}\u{05E7}\u{05E2}", $formatted['root_word']);
+        $this->assertSame('ba\u{0302}qa\u{0303}', $formatted['transliteration']);
+        $this->assertStringNotContainsString('<img', $formatted['pronunciation']);
+        $this->assertSame('to <i>cleave</i>', $formatted['definition']);
+        $this->assertNull($formatted['short_definition']);
+        $this->assertSame(1234, $formatted['id']);
+        $this->assertSame(0, $formatted['is_special']);
+        $this->assertSame('en_orig', $formatted['dictionary']);
+        $this->assertArrayNotHasKey('created_at', $formatted);
+        $this->assertArrayNotHasKey('updated_at', $formatted);
+    }
+
+    public function testFormatStrongsModernReturnsMarkdownOnTheV3Engine(): void
+    {
+        $formatted = $this->call($this->engine(EngineV3::class), '_formatStrongsModern', [[
+            'root_word'  => NULL,
+            'definition' => '<b>Stem:</b> Aphel <br>',
+            'is_special' => 1,
+        ], 'en_orig']);
+
+        $this->assertStringContainsString('**Stem:**', $formatted['definition']);
+        $this->assertStringNotContainsString('<', $formatted['definition']);
+        $this->assertNull($formatted['root_word']);
+        $this->assertSame(1, $formatted['is_special']);
+    }
 }

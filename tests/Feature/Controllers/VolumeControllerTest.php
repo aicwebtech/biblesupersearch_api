@@ -6,6 +6,8 @@ use Tests\TestCase;
 use App\User;
 use App\Models\Volume;
 use App\Models\Copyright;
+use App\Models\Language;
+use App\Models\VolumeTypes\Strongs;
 use Illuminate\Support\Facades\Schema;
 
 class VolumeControllerTest extends TestCase
@@ -343,6 +345,95 @@ class VolumeControllerTest extends TestCase
         finally {
             $this->removeVolumeFixture($Official);
             $this->removeVolumeFixture($Volume);
+        }
+    }
+
+    /**
+     * An installed, enabled volume of an unregistered type: see VolumeTest::makeUsableDefaultFixture()
+     * for why the default tests stay off the Strong's type.
+     */
+    protected function makeDefaultFixture(): Volume
+    {
+        $Volume = $this->makeVolumeFixture(['type' => 'default_fixture']);
+        $Volume->installed = 1;
+        $Volume->enabled = 1;
+        $Volume->save();
+
+        return $Volume;
+    }
+
+    public function testMakeDefault(): void
+    {
+        $Volume = $Uninstalled = NULL;
+
+        try {
+            $Volume      = $this->makeDefaultFixture();
+            $Uninstalled = $this->makeVolumeFixture(['type' => 'default_fixture']);
+
+            $this->admin()->postJson('/admin/volumes/default/' . $Uninstalled->id)
+                ->assertStatus(200)
+                ->assertJson(['success' => FALSE]);
+
+            $this->admin()->postJson('/admin/volumes/default/' . $Volume->id)
+                ->assertStatus(200)
+                ->assertJson(['success' => TRUE]);
+
+            $this->assertSame(1, (int) $Volume->refresh()->is_default);
+
+            $rows = $this->admin()->getJson('/admin/volumes/grid?' . http_build_query(['type' => 'default_fixture', 'is_default' => 1]))['rows'];
+            $this->assertSame([$Volume->id], array_column($rows, 'id'));
+        }
+        finally {
+            $this->removeVolumeFixture($Uninstalled);
+            $this->removeVolumeFixture($Volume);
+        }
+    }
+
+    public function testTheDefaultCannotBeDisabledUninstalledOrDeleted(): void
+    {
+        $Volume = NULL;
+
+        try {
+            $Volume = $this->makeDefaultFixture();
+            $Volume->makeDefault();
+
+            foreach(['disable', 'uninstall', 'delete'] as $action) {
+                $this->admin()->postJson('/admin/volumes/' . $action . '/' . $Volume->id)
+                    ->assertStatus(422)
+                    ->assertJson(['success' => FALSE]);
+            }
+
+            $this->admin()->deleteJson('/admin/volumes/' . $Volume->id)->assertStatus(422);
+
+            $Volume->refresh();
+            $this->assertSame(1, (int) $Volume->installed);
+            $this->assertSame(1, (int) $Volume->enabled);
+            $this->assertSame(1, (int) $Volume->is_default);
+        }
+        finally {
+            if($Volume) {
+                $Volume->forceDelete(); // unregistered type: no content table to drop
+            }
+        }
+    }
+
+    public function testDeletingAStrongsDictionaryClearsLanguageDefaults(): void
+    {
+        $Volume = NULL;
+
+        try {
+            $Volume   = $this->makeVolumeFixture();
+            $Language = $this->createLanguageFixture('qqv', 'Volume Controller Fixture Language');
+            $Language->setAttr(Strongs::LANGUAGE_ATTR, $Volume->module);
+
+            $this->admin()->postJson('/admin/volumes/delete/' . $Volume->id)->assertStatus(200);
+            $Volume = NULL;
+
+            $this->assertNull(Language::getLanguageAttr('qqv', Strongs::LANGUAGE_ATTR));
+        }
+        finally {
+            $this->removeVolumeFixture($Volume);
+            $this->removeLanguageFixture('qqv');
         }
     }
 

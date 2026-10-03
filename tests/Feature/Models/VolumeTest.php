@@ -327,6 +327,78 @@ class VolumeTest extends TestCase
         }
     }
 
+    /**
+     * A usable volume of an unregistered type: the default flag is generic, and using a type of
+     * its own keeps these tests away from the Strong's default that StrongsApiTest relies on
+     * when the suite runs in parallel.
+     */
+    protected function makeUsableDefaultFixture(): Volume
+    {
+        $Volume = $this->makeVolumeFixture(self::DEFAULT_FIXTURE_TYPE);
+        $Volume->installed = 1;
+        $Volume->enabled = 1;
+        $Volume->save();
+
+        return $Volume;
+    }
+
+    private const DEFAULT_FIXTURE_TYPE = 'default_fixture';
+
+    public function testMakeDefaultNeedsAnInstalledEnabledVolume(): void
+    {
+        $Volume = NULL;
+
+        try {
+            $Volume = $this->makeVolumeFixture(self::DEFAULT_FIXTURE_TYPE);
+
+            $this->assertFalse($Volume->makeDefault());
+            $this->assertNotEmpty($Volume->getErrors());
+            $this->assertSame(0, (int) $Volume->refresh()->is_default);
+        }
+        finally {
+            $this->removeVolumeFixture($Volume);
+        }
+    }
+
+    public function testOnlyOneDefaultPerType(): void
+    {
+        $First = $Second = $Other = NULL;
+
+        try {
+            $First  = $this->makeUsableDefaultFixture();
+            $Second = $this->makeUsableDefaultFixture();
+
+            $this->assertTrue($First->makeDefault());
+            $this->assertTrue($First->isDefault());
+            $this->assertSame($First->id, Volume::getDefault(self::DEFAULT_FIXTURE_TYPE)?->id);
+
+            $this->assertTrue($Second->makeDefault());
+            $this->assertSame(0, (int) $First->refresh()->is_default);
+            $this->assertSame($Second->id, Volume::getDefault(self::DEFAULT_FIXTURE_TYPE)?->id);
+            $this->assertSame(1, Volume::where('type', self::DEFAULT_FIXTURE_TYPE)->where('is_default', 1)->count());
+        }
+        finally {
+            $this->removeVolumeFixture($Second);
+            $this->removeVolumeFixture($First);
+        }
+    }
+
+    public function testGetDefaultIgnoresADisabledDefault(): void
+    {
+        $Volume = NULL;
+
+        try {
+            $Volume = $this->makeUsableDefaultFixture();
+            $Volume->makeDefault();
+            $Volume->disable();
+
+            $this->assertNull(Volume::getDefault(self::DEFAULT_FIXTURE_TYPE));
+        }
+        finally {
+            $this->removeVolumeFixture($Volume);
+        }
+    }
+
     public function testModuleIsUniquePerType(): void
     {
         $Volume = $Duplicate = NULL;

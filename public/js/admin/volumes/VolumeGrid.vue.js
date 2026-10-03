@@ -23,7 +23,7 @@ const template = `<v-sheet>
                     With Selections:
                 </span>
 
-                <span v-for='action in bulkActions' class='float-left'>
+                <span v-for='action in bulkActionsMulti' class='float-left'>
                     <v-btn
                         size='small'
                         class='ml-2'
@@ -110,6 +110,14 @@ const template = `<v-sheet>
                     />
                 </template>
 
+                <template v-slot:item.is_default={item}>
+                    <ChipBool
+                        :value="item.is_default == '1'"
+                        v-bind='chipProps'
+                        @click-false="handleSingleAction('default', item)"
+                    />
+                </template>                   
+
                 <template v-slot:item.official={item}>
                     <ChipBoolAlt
                         :value="item.official == '1'"
@@ -172,6 +180,16 @@ const template = `<v-sheet>
                                 <v-list-item-title>Disable</v-list-item-title>
                             </v-list-item>
 
+                            <v-list-item 
+                                v-if='item.installed == "1" && item.enabled == "1" && item.is_default != "1"' 
+                                @click="handleSingleAction('default', item)"
+                            >
+                                <template v-slot:prepend>
+                                    <v-icon icon="mdi-star"></v-icon>
+                                </template>
+                                <v-list-item-title>Make Default</v-list-item-title>
+                            </v-list-item>
+
                             <v-list-item v-if='item.official == "0"' @click="handleSingleAction('delete', item)">
                                 <template v-slot:prepend>
                                     <v-icon icon="mdi-trash-can"></v-icon>
@@ -210,6 +228,16 @@ const template = `<v-sheet>
         </v-sheet>`;
 
 const bulkActions = [
+    {
+        // Only ever one default per type, so this is a row action, never a bulk one
+        action: 'default',
+        label: 'Make Default',
+        dialogTitle: 'Make Default Volume',
+        confirmText: 'Make this the default volume of its type?  It replaces the current default.',
+        actioning: 'Setting default',
+        icon: 'mdi-star',
+        single: true,
+    },
     {
         action: 'install',
         label: 'Install',
@@ -270,11 +298,13 @@ export default {
                 installed: null,
                 enabled: null,
                 official: null,
+                is_default: null,
             },
 
             // Grid searchable fields (will be added to gridData as strings if don't exist)
             searchFields: [
                 'name', 'shortname', 'module', 'type', 'lang', 'copyright_id', 'year', 'installed', 'enabled', 'official',
+                'is_default',
             ],
         }, props);
 
@@ -321,6 +351,7 @@ export default {
             cols.push({title: 'Year', key: 'year', width: 150});
             cols.push({title: 'Installed', key: 'installed', width: 50, searchComponent: 'YesNoSel', searchLabel: false, align: 'center'});
             cols.push({title: 'Enabled', key: 'enabled', width: 50, searchComponent: 'YesNoSel', searchLabel: false, align: 'center'});
+            cols.push({title: 'Default', key: 'is_default', width: 50, searchComponent: 'YesNoSel', searchLabel: false, align: 'center'});
 
             if(extraCols.value) {
                 cols.push({title: 'Official', key: 'official', width: 50, searchComponent: 'YesNoSel', searchLabel: false, align: 'center'});
@@ -401,6 +432,7 @@ export default {
             ...grid,
             bootstrap,
             bulkActions,
+            bulkActionsMulti: bulkActions.filter(action => !action.single),
             chipProps,
             extraCols,
             editingId,

@@ -93,8 +93,22 @@ const template = `
 
         <v-row v-bind='defaultProps.vrows'>
             <v-col>
-                <v-textarea 
-                    label='Common Words - One word per line' 
+                <v-select
+                    :items='strongsDictionaryList'
+                    label="Default Strong's Dictionary"
+                    v-model='record.strongs_dictionary'
+                    v-bind='defaultProps.selects'
+                    :item-props='defaultProps.itemPropsFunction'
+                    hint="Used by the API when this language is requested and no dictionary is given."
+                    persistent-hint
+                ></v-select>
+            </v-col>
+        </v-row>
+
+        <v-row v-bind='defaultProps.vrows'>
+            <v-col>
+                <v-textarea
+                    label='Common Words - One word per line'
                     v-model='record.common_words'
                     v-bind='defaultProps.textareas'
                     hint='Add words to this list to prevent them from being used as search keywords.  One word per line.'
@@ -147,6 +161,15 @@ export default {
 
             for(var api of this.bootstrap.tts_apis) {
                 list.push({value: api.key, title: api.name});
+            }
+
+            return list;
+        },
+        strongsDictionaryList() {
+            var list = [{value: null, title: 'Use global default'}];
+
+            for(var dict of (this.bootstrap.strongs_dictionaries || [])) {
+                list.push({value: dict.module, title: dict.name + ' (' + dict.language + ')'});
             }
 
             return list;

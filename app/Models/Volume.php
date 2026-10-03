@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Validation\Rule;
+use Illuminate\Support\Facades\DB;
 use App\Traits\Error;
 use App\Helpers;
 use App\Models\VolumeContent\ContentInterface;
@@ -339,6 +340,52 @@ class Volume extends Model
     {
         $this->enabled = 0;
         $this->save();
+    }
+
+    /**
+     * The default volume of a type, if it is usable (installed and enabled)
+     *
+     * @param string $type
+     * @return static|null
+     */
+    public static function getDefault(string $type): ?static
+    {
+        return static::where('type', $type)
+            ->where('is_default', 1)
+            ->where('installed', 1)
+            ->where('enabled', 1)
+            ->first();
+    }
+
+    public function isDefault(): bool
+    {
+        return (bool) $this->is_default;
+    }
+
+    /**
+     * Makes this the default volume of its type, clearing any other default of that type.
+     *
+     * is_default is not fillable; this is the only way to set it.
+     *
+     * @return bool
+     */
+    public function makeDefault(): bool
+    {
+        if(!$this->installed || !$this->enabled) {
+            return $this->addError('Only an installed, enabled volume can be the default', 4, 422);
+        }
+
+        DB::transaction(function () {
+            static::where('type', $this->type)
+                ->where('id', '!=', $this->id)
+                ->where('is_default', 1)
+                ->update(['is_default' => 0]);
+
+            $this->is_default = 1;
+            $this->save();
+        });
+
+        return TRUE;
     }
 
     /**

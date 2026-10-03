@@ -6,6 +6,7 @@ use App\User;
 use App\Models\Bible;
 use App\Models\Feature;
 use App\Models\Language;
+use App\Models\VolumeTypes\Strongs;
 use App\Passage;
 use App\Search;
 use App\CacheManager;
@@ -52,6 +53,18 @@ class Engine implements ErrorInterface
      * 'none' is first because it is the default a rejected value falls back to.
      */
     public const MARKUP_MODE_WHITELIST = ['none', 'safe', 'raw'];
+
+    /**
+     * Strong's definition sources the strongs action's 'version' parameter accepts:
+     * 'legacy' is the strongs_definitions table, 'modern' the Strong's dictionary volumes.
+     */
+    public const STRONGS_VERSIONS = ['legacy', 'modern'];
+
+    /**
+     * Strong's source when 'version' is not given.  v2 answers from the legacy table, so its
+     * responses are unchanged; EngineV3 overrides this.
+     */
+    public const STRONGS_VERSION_DEFAULT = 'legacy';
 
     /**
      * Whitelist rejections _sanitizeInput() found, waiting on _raiseInputNotices().
@@ -1547,6 +1560,10 @@ class Engine implements ErrorInterface
 
         $strongs = strip_tags(trim($input['strongs']));
 
+        if($this->_resolveStrongsVersion($input) == 'modern') {
+            return $this->_actionStrongsModern($strongs, $input);
+        }
+
         if(preg_match_all('/[GHgh][0-9]+/', $strongs, $matches)) {
             foreach($matches[0] as $raw) {
                 // Remove padding zeros
@@ -1566,6 +1583,115 @@ class Engine implements ErrorInterface
         }
 
         return $response;
+    }
+
+    /**
+     * The Strong's source for this request: the 'version' parameter if it is one we support,
+     * otherwise this API version's default, with a level 3 notice when a value was ignored.
+     *
+     * @param array $input
+     * @return string 'legacy' or 'modern'
+     */
+    protected function _resolveStrongsVersion(array $input): string
+    {
+        $version = $input['version'] ?? NULL;
+
+        if($version === NULL || $version === '') {
+            return static::STRONGS_VERSION_DEFAULT;
+        }
+
+        if(is_string($version) && in_array(strtolower($version), static::STRONGS_VERSIONS, TRUE)) {
+            return strtolower($version);
+        }
+
+        $this->addError(__('errors.strongs_version_invalid', [
+            'value'   => is_scalar($version) ? (string) $version : gettype($version),
+            'default' => static::STRONGS_VERSION_DEFAULT,
+        ]), 3);
+
+        return static::STRONGS_VERSION_DEFAULT;
+    }
+
+    /**
+     * Strong's definitions from a dictionary volume.
+     *
+     * The dictionary is the 'dictionary' parameter if given, otherwise the 'language' default,
+     * otherwise the global default.  There is no fallback to the legacy table: a 'dictionary'
+     * that is not installed and enabled, or no usable dictionary at all, is a fatal error.
+     *
+     * @param string $strongs Requested numbers, tags already stripped
+     * @param array $input
+     * @return array|bool
+     */
+    protected function _actionStrongsModern(string $strongs, array $input): array|bool
+    {
+        $dictionary = $input['dictionary'] ?? NULL;
+        $language   = $input['language'] ?? NULL;
+
+        if($dictionary !== NULL && $dictionary !== '') {
+            $Volume = is_string($dictionary) ? Strongs::findAvailable($dictionary) : NULL;
+
+            if(!$Volume) {
+                $name = is_scalar($dictionary) ? (string) $dictionary : gettype($dictionary);
+                return $this->addError(__('errors.strongs_dictionary_unavailable', ['dictionary' => $name]), 4);
+            }
+        }
+        else {
+            $language = (is_string($language) && Language::validateLanguage($language)) ? $language : NULL;
+            $Volume   = Strongs::resolveDefault($language);
+
+            if(!$Volume) {
+                return $this->addError(__('errors.strongs_no_dictionary'), 4);
+            }
+        }
+
+        $Content  = $Volume->content();
+        $response = [];
+
+        if(preg_match_all('/[GHgh][0-9]+/', $strongs, $matches)) {
+            foreach($matches[0] as $raw) {
+                // Upper case letter: SQLite compares case sensitively, where MySQL does not.
+                // Padding zeros removed, as for the legacy table.
+                $clean = strtoupper($raw[0]) . (string)(int) substr($raw, 1);
+
+                $Row = $Content->newQuery()->where('number', $clean)->first();
+
+                if(!$Row) {
+                    $this->addError( __('errors.strongs_not_found') . ': ' . $clean);
+                }
+                else {
+                    $response[] = $this->_formatStrongsModern($Row->getAttributes(), $Volume->module);
+                }
+            }
+        }
+
+        return $response;
+    }
+
+    /**
+     * Shapes one Strong's definition from a dictionary volume for the response.
+     *
+     * Unlike _formatStrongs(), nothing has purified these values yet: content tables have no
+     * model accessors.  Every text field goes through _sanitizeHtml() here, which also gives
+     * v3 its Markdown.
+     *
+     * @param array $attr One content table row
+     * @param string $module The dictionary it came from
+     * @return array
+     */
+    protected function _formatStrongsModern(array $attr, string $module): array
+    {
+        foreach(['root_word', 'transliteration', 'pronunciation', 'definition', 'short_definition'] as $field) {
+            $attr[$field] = $this->_sanitizeHtml($attr[$field] ?? NULL);
+        }
+
+        $attr['id']         = isset($attr['id']) ? (int) $attr['id'] : NULL;
+        $attr['is_special'] = (int) ($attr['is_special'] ?? 0);
+        $attr['dictionary'] = $module;
+
+        unset($attr['created_at']);
+        unset($attr['updated_at']);
+        return $attr;
     }
 
     /**

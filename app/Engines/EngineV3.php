@@ -28,6 +28,12 @@ class EngineV3 extends BaseEngine
     public const HIGHLIGHT_TAG_WHITELIST = Helpers::HIGHLIGHT_PLAIN_TEXT_MARKERS;
 
     /**
+     * v3 answers Strong's from the dictionary volumes unless 'version=legacy' is asked for.
+     * There is no fallback to legacy: with no usable dictionary the request errors.
+     */
+    public const STRONGS_VERSION_DEFAULT = 'modern';
+
+    /**
      * Sanitize HTML for API responses by converting it to Markdown
      *
      * Everything reaching this hook has already been through the purifier - either via
