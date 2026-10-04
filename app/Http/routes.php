@@ -125,6 +125,10 @@ Route::post('/admin/volumes/uninstall/{id}', 'Admin\VolumeController@uninstall')
 Route::post('/admin/volumes/enable/{id}', 'Admin\VolumeController@enable');
 Route::post('/admin/volumes/disable/{id}', 'Admin\VolumeController@disable');
 Route::post('/admin/volumes/default/{id}', 'Admin\VolumeController@makeDefault');
+Route::post('/admin/volumes/export/{id}', 'Admin\VolumeController@export');
+Route::post('/admin/volumes/meta/{id}', 'Admin\VolumeController@meta');
+Route::post('/admin/volumes/revert/{id}', 'Admin\VolumeController@revert');
+Route::post('/admin/volumes/update/{id}', 'Admin\VolumeController@updateModule');
 Route::post('/admin/volumes/delete/{id}', 'Admin\VolumeController@destroy');
 Route::resource('/admin/volumes', 'Admin\VolumeController', ['as' => 'admin']);
 

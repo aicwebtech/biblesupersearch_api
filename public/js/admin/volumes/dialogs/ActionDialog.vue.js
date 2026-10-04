@@ -24,6 +24,12 @@ const tpl = `
                             label='Enable'
                             color='primary'
                         />
+                        <v-switch
+                            v-if='action == "export"'
+                            v-model='overwrite'
+                            label='Overwrite'
+                            color='primary'
+                        />
                     </v-sheet>
                     <v-sheet v-else-if='queueProcessing'>
                         {{actioningLabel}} {{queueItemCurrent.name}}
@@ -88,6 +94,7 @@ export default {
         const confirmed = Vue.ref(false);
         const showing = Vue.ref(false);
         const enable = Vue.ref(false);
+        const overwrite = Vue.ref(false);
         const queueItemsTotal = Vue.ref(0);
         const queueItemsProcessed = Vue.ref(0);
         const queueItemCurrent = Vue.ref(null);
@@ -132,6 +139,7 @@ export default {
         function clearForm() {
             confirmed.value = false;
             enable.value = false;
+            overwrite.value = false;
         }
 
         function closeDialog() {
@@ -190,6 +198,10 @@ export default {
                 params.enable = enable.value ? 1 : 0;
             }
 
+            if(props.action == 'export') {
+                params.overwrite = overwrite.value ? 1 : 0;
+            }
+
             axios.request({
                 url: '/admin/volumes/' + props.action + '/' + queueItemCurrent.value.id,
                 method: 'POST',
@@ -242,6 +254,7 @@ export default {
             confirmed,
             showing,
             enable,
+            overwrite,
             queueItemCurrent,
             queueProcessing,
             queueErrors,

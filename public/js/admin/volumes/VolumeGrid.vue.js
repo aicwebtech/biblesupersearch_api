@@ -4,6 +4,7 @@ import TruncateTooltip from '../../bin/custom_vue/components/Truncate.vue.js';
 import YesNoSel from '../../bin/custom_vue/components/YesNoSelector.vue.js';
 import ChipBool from '../../bin/custom_vue/components/ChipBool.vue.js';
 import ChipBoolAlt from '../../bin/custom_vue/components/ChipBoolAlt.vue.js';
+import ChipAlert from '../../bin/custom_vue/components/ChipAlert.vue.js';
 import ActionDialog from './dialogs/ActionDialog.vue.js';
 import { gridTemplateProps, useGrid } from '../../bin/custom_vue/composables/grid/Grid.vue.js';
 
@@ -27,10 +28,17 @@ const template = `<v-sheet>
                     <v-btn
                         size='small'
                         class='ml-2'
+                        v-if="bootstrap.devToolsEnabled || !action.requireDevTools"
                         @click="handleBulkAction(action.action)"
                         :prepend-icon='action.icon'
                     >
                         {{action.label}}
+
+                        <template v-slot:append v-if='action.requireDevTools'>
+                            <v-icon icon="mdi-flask-empty" color='warning'>
+                                <v-tooltip text='Volume Development Tool' activator='parent'></v-tooltip>
+                            </v-icon>
+                        </template>
                     </v-btn>
                 </span>
                 <span class='clear-both'></span>
@@ -129,8 +137,29 @@ const template = `<v-sheet>
                     {{ formatDateTime(item.updated_at) }}
                 </template>
 
+                <template v-slot:item.has_module_file={item}>
+                    <ChipBool
+                        :value="item.has_module_file == '1'"
+                        v-bind='chipProps'
+                        @click-false="bootstrap.devToolsEnabled && item.installed == '1' && handleSingleAction('export', item)"
+                    />
+                </template>
+
                 <template v-slot:item.actions={item}>
-                    <v-chip v-bind='chipProps'
+                    <!-- One action shown directly, as on the Bibles grid; the rest are in the menu -->
+                    <ChipAlert
+                        v-if="bootstrap.devToolsEnabled && item.installed == '1' && item.has_module_file == '0'"
+                        @click="handleSingleAction('export', item)"
+                        v-bind='chipProps'
+                        text='Export'
+                    />
+                    <ChipAlert
+                        v-else-if="item.needs_update == '1'"
+                        @click="handleSingleAction('update', item)"
+                        v-bind='chipProps'
+                        text='Update'
+                    />
+                    <v-chip v-else v-bind='chipProps'
                         text='Edit'
                         @click='clickEdit(item)'
                     />
@@ -188,6 +217,34 @@ const template = `<v-sheet>
                                     <v-icon icon="mdi-star"></v-icon>
                                 </template>
                                 <v-list-item-title>Make Default</v-list-item-title>
+                            </v-list-item>
+
+                            <v-list-item v-if='item.has_module_file == "1"' @click="handleSingleAction('update', item)">
+                                <template v-slot:prepend>
+                                    <v-icon icon="mdi-update"></v-icon>
+                                </template>
+                                <v-list-item-title>Update</v-list-item-title>
+                            </v-list-item>
+
+                            <v-list-item v-if='item.has_module_file == "1"' @click="handleSingleAction('revert', item)">
+                                <template v-slot:prepend>
+                                    <v-icon icon="mdi-undo-variant"></v-icon>
+                                </template>
+                                <v-list-item-title>Revert Changes</v-list-item-title>
+                            </v-list-item>
+
+                            <v-list-item v-if='bootstrap.devToolsEnabled && item.installed == "1"' @click="handleSingleAction('export', item)">
+                                <template v-slot:prepend>
+                                    <v-icon icon="mdi-export"></v-icon>
+                                </template>
+                                <v-list-item-title>Export Module</v-list-item-title>
+                            </v-list-item>
+
+                            <v-list-item v-if='bootstrap.devToolsEnabled && item.has_module_file == "1"' @click="handleSingleAction('meta', item)">
+                                <template v-slot:prepend>
+                                    <v-icon icon="mdi-export"></v-icon>
+                                </template>
+                                <v-list-item-title>Export Meta</v-list-item-title>
                             </v-list-item>
 
                             <v-list-item v-if='item.official == "0"' @click="handleSingleAction('delete', item)">
@@ -263,10 +320,46 @@ const bulkActions = [
         icon: 'mdi-lock',
     },
     {
+        action: 'update',
+        label: 'Update',
+        dialogTitle: 'Update Volume',
+        confirmText: 'Are you sure that you want to update the selected volumes?' +
+            '  This will reinstall each from its module file, overwriting any local changes to its contents and settings.',
+        actioning: 'Updating',
+        icon: 'mdi-update',
+    },
+    {
+        action: 'revert',
+        label: 'Revert Changes',
+        dialogTitle: 'Revert Volume Changes',
+        confirmText: 'Are you sure that you want to revert all settings changes to the following volumes?',
+        actioning: 'Reverting',
+        icon: 'mdi-undo-variant',
+    },
+    {
         action: 'delete',
         label: 'Delete',
         actioning: 'Deleting',
         icon: 'mdi-trash-can',
+    },
+    {
+        action: 'export',
+        label: 'Export Module',
+        dialogTitle: 'Export Module File',
+        actioning: 'Exporting',
+        requireDevTools: true,
+        icon: 'mdi-export',
+    },
+    {
+        action: 'meta',
+        label: 'Export Meta',
+        dialogTitle: 'Export Module Settings / Metadata',
+        confirmText: 'Are you sure that you want to export volume settings changes (metadata) to these module files? ' +
+            'This will NOT trigger the update mechanism; it will only apply to new installs of the module files. ' +
+            'If you want to update the module files, use the "Export Module" action instead.',
+        actioning: 'Updating Module Settings',
+        requireDevTools: true,
+        icon: 'mdi-export',
     },
 ];
 
@@ -280,6 +373,7 @@ export default {
         YesNoSel,
         ChipBool,
         ChipBoolAlt,
+        ChipAlert,
         EditForm
     },
     template: template,
@@ -299,12 +393,13 @@ export default {
                 enabled: null,
                 official: null,
                 is_default: null,
+                has_module_file: null,
             },
 
             // Grid searchable fields (will be added to gridData as strings if don't exist)
             searchFields: [
                 'name', 'shortname', 'module', 'type', 'lang', 'copyright_id', 'year', 'installed', 'enabled', 'official',
-                'is_default',
+                'is_default', 'has_module_file',
             ],
         }, props);
 
@@ -354,6 +449,7 @@ export default {
             cols.push({title: 'Default', key: 'is_default', width: 50, searchComponent: 'YesNoSel', searchLabel: false, align: 'center'});
 
             if(extraCols.value) {
+                cols.push({title: 'Has File', key: 'has_module_file', width: 50, sortable: false, searchComponent: 'YesNoSel', searchLabel: false, align: 'center'});
                 cols.push({title: 'Official', key: 'official', width: 50, searchComponent: 'YesNoSel', searchLabel: false, align: 'center'});
                 cols.push({title: 'Updated', key: 'updated_at', width: 150, searchable: false, align: 'center'});
             }

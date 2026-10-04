@@ -9,6 +9,7 @@ use App\Models\Copyright;
 use App\Models\Language;
 use App\Models\VolumeTypes\Strongs;
 use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\Facades\DB;
 
 class VolumeControllerTest extends TestCase
 {
@@ -434,6 +435,91 @@ class VolumeControllerTest extends TestCase
         finally {
             $this->removeVolumeFixture($Volume);
             $this->removeLanguageFixture('qqv');
+        }
+    }
+
+    /**
+     * An installed Strong's volume holding one row, whose module file is removed afterwards
+     * by removeModuleFixture()
+     */
+    protected function makeModuleFixture(): Volume
+    {
+        $Volume = $this->makeVolumeFixture();
+        $Volume->install(FALSE, TRUE);
+        DB::table($Volume->content()->getTable())->insert(['number' => 'H1', 'definition' => 'father', 'is_special' => 0]);
+
+        return $Volume;
+    }
+
+    protected function removeModuleFixture(?Volume $Volume): void
+    {
+        if($Volume) {
+            $file = $Volume->getModuleFilePath();
+            is_file($file) && unlink($file);
+        }
+
+        $this->removeVolumeFixture($Volume);
+    }
+
+    public function testExportAndMetaNeedDevTools(): void
+    {
+        $Volume = NULL;
+
+        try {
+            $Volume = $this->makeModuleFixture();
+            config(['bss.dev_tools' => FALSE]);
+
+            foreach(['export', 'meta'] as $action) {
+                $this->admin()->postJson('/admin/volumes/' . $action . '/' . $Volume->id)->assertStatus(503);
+            }
+
+            $this->assertFalse($Volume->hasModuleFile());
+        }
+        finally {
+            $this->removeModuleFixture($Volume);
+        }
+    }
+
+    public function testModuleFileActions(): void
+    {
+        $Volume = NULL;
+
+        try {
+            $Volume = $this->makeModuleFixture();
+            config(['bss.dev_tools' => TRUE]);
+            $url = '/admin/volumes/';
+
+            $this->admin()->postJson($url . 'export/' . $Volume->id)->assertStatus(200)->assertJson(['success' => TRUE]);
+            $this->assertTrue($Volume->hasModuleFile());
+
+            // Exists: refused without overwrite
+            $this->admin()->postJson($url . 'export/' . $Volume->id)->assertJson(['success' => FALSE]);
+            $this->admin()->postJson($url . 'export/' . $Volume->id . '?overwrite=1')->assertJson(['success' => TRUE]);
+
+            $this->admin()->getJson($url . $Volume->id)->assertJsonPath('Volume.has_module_file', 1);
+
+            $grid = fn(int $has) => array_column($this->admin()->getJson($url . 'grid?' . http_build_query([
+                'module' => $Volume->module, 'has_module_file' => $has,
+            ]))['rows'], 'id');
+
+            $this->assertSame([$Volume->id], $grid(1));
+            $this->assertSame([], $grid(0));
+
+            // Revert undoes a local edit
+            $name = $Volume->name;
+            $Volume->name = $name . ' Edited';
+            $Volume->save();
+
+            $this->admin()->postJson($url . 'revert/' . $Volume->id)->assertJson(['success' => TRUE]);
+            $this->assertSame($name, $Volume->refresh()->name);
+
+            $this->admin()->postJson($url . 'meta/' . $Volume->id)->assertJson(['success' => TRUE]);
+
+            // Nothing newer in the file
+            $this->admin()->postJson($url . 'update/' . $Volume->id)->assertJson(['success' => FALSE]);
+        }
+        finally {
+            $this->removeModuleFixture($Volume);
         }
     }
 

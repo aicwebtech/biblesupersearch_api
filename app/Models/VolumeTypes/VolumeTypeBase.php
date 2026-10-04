@@ -17,6 +17,18 @@ abstract class VolumeTypeBase extends Volume
      */
     protected static $type = null;
 
+    /**
+     * volumes columns written to a module's info.json.  Set per type: most volumes columns
+     * (italics, audio, Hebrew / Greek text ids ...) only mean something for some types.
+     *
+     * Never list local state (id, timestamps, installed, enabled, is_default, needs_update,
+     * rank, importer, import_file): it belongs to the install, not the module.
+     */
+    public const INFO_FIELDS = [
+        'type', 'module', 'official', 'name', 'shortname', 'language', 'year', 'publisher', 'owner',
+        'url', 'copyright', 'copyright_id', 'copyright_statement', 'description', 'module_version',
+    ];
+
     public function __construct(array $attributes = [])
     {
         parent::__construct($attributes);

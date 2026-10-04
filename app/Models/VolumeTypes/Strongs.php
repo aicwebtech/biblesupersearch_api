@@ -15,6 +15,14 @@ class Strongs extends VolumeTypeBase
     public const LANGUAGE_ATTR = 'strongs_dictionary';
 
     /**
+     * info.json columns for a Strong's dictionary - see VolumeTypeBase::INFO_FIELDS
+     */
+    public const INFO_FIELDS = [
+        'type', 'module', 'official', 'name', 'shortname', 'language', 'year', 'publisher', 'owner',
+        'url', 'copyright', 'copyright_id', 'copyright_statement', 'description', 'module_version',
+    ];
+
+    /**
      * Strong's dictionaries that can be used: installed and enabled
      *
      * @return Collection<int, static>

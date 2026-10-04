@@ -14,6 +14,14 @@ class StrongsContent extends ContentBase
     public const TYPE_TABLE_PREFIX = 'stro_';
 
     /**
+     * contents.txt columns.  Only ever add to the end - see ContentBase::EXPORT_FIELDS.
+     * No id or timestamps: ids are generated on install.
+     */
+    public const EXPORT_FIELDS = [
+        'number', 'root_word', 'transliteration', 'pronunciation', 'definition', 'short_definition', 'is_special',
+    ];
+
+    /**
      * The legacy, single-dictionary table this content type replaces
      */
     public const LEGACY_TABLE = 'strongs_definitions';
@@ -103,6 +111,15 @@ class StrongsContent extends ContentBase
         });
 
         return $count;
+    }
+
+    /**
+     * is_special is NOT NULL: an empty field, or one an older module file lacks, is 0
+     */
+    protected function processInsertRow(array $row): array
+    {
+        $row['is_special'] = (int) ($row['is_special'] ?? 0);
+        return $row;
     }
 
     protected function createSchema(Blueprint $table): void

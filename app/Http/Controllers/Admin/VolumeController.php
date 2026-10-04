@@ -18,6 +18,7 @@ class VolumeController extends Controller
         $this->middleware('install');
         $this->middleware('auth:100');
         $this->middleware('migrate')->only('index');
+        $this->middleware('dev_tools')->only('export', 'meta');
     }
 
     /**
@@ -25,6 +26,9 @@ class VolumeController extends Controller
      */
     public function index()
     {
+        Volume::populateVolumesTable();
+        Volume::updateNeedsUpdate();
+
         $bootstrap = $this->getAdminBootstrap();
         $bootstrap->volume_types = Volume::getTypes();
         $bootstrap = $this->encodeBootstrap($bootstrap);
@@ -122,12 +126,36 @@ class VolumeController extends Controller
             }
         }
 
-        $Volumes = $Query->paginate($rows_per_page);
+        // has_module_file is not a column, so it is filtered here, after the query, and the page cut by hand
+        $file_filter = (isset($data['has_module_file']) && in_array((string) $data['has_module_file'], ['0', '1'], TRUE))
+            ? (int) $data['has_module_file'] : NULL;
+
+        $Volumes = ($file_filter === NULL) ? $Query->paginate($rows_per_page) : $Query->get();
 
         foreach($Volumes as $Volume) {
             $row = $Volume->getAttributes();
             unset($row['description']);
+            $row['has_module_file'] = $Volume->hasModuleFile() ? 1 : 0;
+            $row['needs_update']    = $Volume->needsUpdate() ? 1 : 0;
+
+            if($file_filter !== NULL && $row['has_module_file'] !== $file_filter) {
+                continue;
+            }
+
             $rows[] = $row;
+        }
+
+        if($file_filter !== NULL) {
+            $page  = max((int) ($data['page'] ?? 1), 1);
+            $count = count($rows);
+
+            return response([
+                'total'     => (int) ceil($count / $rows_per_page),
+                'page'      => $page,
+                'rows'      => array_slice($rows, $rows_per_page * ($page - 1), $rows_per_page),
+                'records'   => $count,
+                'post'      => TRUE,
+            ], 200);
         }
 
         return response([
@@ -167,6 +195,7 @@ class VolumeController extends Controller
         $resp = new \stdClass();
         $resp->success = TRUE;
         $resp->Volume  = $Volume->attributesToArray();
+        $resp->Volume['has_module_file'] = $Volume->hasModuleFile() ? 1 : 0;
 
         return new Response($resp, 200);
     }
@@ -314,6 +343,51 @@ class VolumeController extends Controller
         }
 
         $Volume->uninstall();
+
+        return $this->actionResponse($Volume);
+    }
+
+    /**
+     * Export Module: writes the module file (dev tools only)
+     */
+    public function export(Request $request, $id)
+    {
+        $Volume = Volume::findOrFail($id);
+        $Volume->export((bool) $request->input('overwrite', FALSE));
+
+        return $this->actionResponse($Volume);
+    }
+
+    /**
+     * Export Meta: rewrites the module file's info.json (dev tools only)
+     */
+    public function meta(Request $request, $id)
+    {
+        $Volume = Volume::findOrFail($id);
+        $Volume->updateMetaInfo((bool) $request->input('create_new', FALSE));
+
+        return $this->actionResponse($Volume);
+    }
+
+    /**
+     * Revert: reloads the volume's settings from its module file
+     */
+    public function revert(Request $request, $id)
+    {
+        $Volume = Volume::findOrFail($id);
+        $Volume->revertMetaInfo();
+
+        return $this->actionResponse($Volume);
+    }
+
+    /**
+     * Update: reinstalls the volume from a newer module file.  No default guard: the volume is
+     * installed again straight away and stays the default.
+     */
+    public function updateModule(Request $request, $id)
+    {
+        $Volume = Volume::findOrFail($id);
+        $Volume->updateModule();
 
         return $this->actionResponse($Volume);
     }

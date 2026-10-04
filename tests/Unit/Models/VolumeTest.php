@@ -109,6 +109,72 @@ class VolumeTest extends TestCase
         $this->assertNull(ContentBase::TYPE_TABLE_PREFIX);
     }
 
+    public function testModuleFileNameAndPaths(): void
+    {
+        $Volume = new Volume();
+        $Volume->type = 'strongs';
+        $Volume->module = 'en_orig';
+
+        $this->assertSame('strongs_en_orig.zip', $Volume->getModuleFileName());
+        $this->assertSame('content/strongs/', Volume::getModulePath('strongs', TRUE));
+        $this->assertSame('content/strongs/unofficial/', Volume::getUnofficialModulePath('strongs', TRUE));
+        $this->assertSame('content/strongs/unofficial/strongs_en_orig.zip', $Volume->getModuleFilePath(TRUE));
+
+        $Volume->official = 1;
+        $this->assertSame('content/strongs/strongs_en_orig.zip', $Volume->getModuleFilePath(TRUE));
+        $this->assertSame(dirname(__DIR__, 3) . '/content/strongs/strongs_en_orig.zip', $Volume->getModuleFilePath());
+    }
+
+    public function testModulePathRefusesAnUnsafeType(): void
+    {
+        $this->expectException(\InvalidArgumentException::class);
+        Volume::getModulePath('../strongs');
+    }
+
+    /**
+     * info.json describes the module; anything that is the install's own state must stay out
+     */
+    public function testInfoFieldsCarryNoLocalState(): void
+    {
+        $local = ['id', 'created_at', 'updated_at', 'installed', 'enabled', 'installed_at', 'is_default',
+            'needs_update', 'module_updated_at', 'rank', 'importer', 'import_file'];
+
+        foreach(array_keys(Volume::getTypes()) as $type) {
+            $this->assertNotEmpty(Volume::getInfoFields($type));
+            $this->assertSame([], array_values(array_intersect(Volume::getInfoFields($type), $local)), $type);
+        }
+    }
+
+    /** Strong's dictionaries carry none of the Bible-only columns */
+    public function testStrongsInfoFieldsAreItsOwn(): void
+    {
+        $fields = Volume::getInfoFields('strongs');
+
+        foreach(['italics', 'strongs', 'red_letter', 'paragraph', 'audio_enable', 'tts_api', 'hebrew_text_id', 'citation_limit', 'book_list'] as $column) {
+            $this->assertNotContains($column, $fields);
+        }
+
+        $this->assertContains('name', $fields);
+        $this->assertContains('copyright_statement', $fields);
+    }
+
+    /** Settings are what a file may change on the record: never its identity or version */
+    public function testSettingsFieldsLeaveOutProvenance(): void
+    {
+        $fillable = (new Volume())->getFillable();
+
+        foreach(array_keys(Volume::getTypes()) as $type) {
+            $settings = Volume::getSettingsFields($type);
+
+            foreach(['type', 'module', 'official', 'module_version'] as $field) {
+                $this->assertNotContains($field, $settings, $type);
+            }
+
+            // They are applied with fill()
+            $this->assertSame([], array_values(array_diff($settings, $fillable)), $type . ': settings field not fillable');
+        }
+    }
+
     public function testContentTableNameDefaultsToTheTypeWithoutATypePrefix(): void
     {
         $Content = new class extends ContentBase {

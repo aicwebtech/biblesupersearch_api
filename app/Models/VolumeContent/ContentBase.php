@@ -24,9 +24,17 @@ abstract class ContentBase extends Model implements ContentInterface
     protected $type = null;
     protected $module = null;
 
-    protected $zip_meta_file = 'info.json';
-    protected $zip_content_file = 'content.txt';
-    protected $zip_content_fields = []; // ie for a Bible: ["book","chapter","verse","text"];
+    public const ZIP_META_FILE = 'info.json';
+    public const ZIP_CONTENT_FILE = 'contents.txt';
+    public const DELIMITER = '|';
+
+    /**
+     * Content table columns written to the module's contents.txt, in order.  Set per type.
+     *
+     * Only ever add to the end: module files record their own field list, but a reordering
+     * would still read an older file into the wrong columns if that list were ever missing.
+     */
+    public const EXPORT_FIELDS = [];
 
     /**
      * Get the name of the content table associated with this content type.
@@ -80,23 +88,31 @@ abstract class ContentBase extends Model implements ContentInterface
         return true;
     } 
 
+    /**
+     * Creates the content table and, unless $structure_only, fills it from the volume's module
+     * file if it has one.  Without a module file the table is left empty (structure only).
+     *
+     * Any failure drops the table again: MySQL and SQLite both create the table and then its
+     * indexes in separate statements, so a failure part way would leave a table behind that a
+     * later install would take as already installed.
+     *
+     * @param bool $structure_only
+     * @return bool
+     */
     public function install($structure_only = FALSE): bool
     {
-        $in_console = (strpos(php_sapi_name(), 'cli') !== FALSE);
-
         if (Schema::hasTable($this->table)) {
             return TRUE;
         }
 
-        $tbl = $this->table;
-
-        // MySQL and SQLite both create the table and then its indexes in separate statements, so
-        // a failure part way leaves a table behind.  A later install would see that table and
-        // report success, so drop it here.
         try {
             Schema::create($this->table, function (Blueprint $table) {
                 $this->createSchema($table);
             });
+
+            if(!$structure_only && $this->Volume && $this->Volume->hasModuleFile()) {
+                $this->importModuleFile();
+            }
         }
         catch(\Throwable $e) {
             Schema::dropIfExists($this->table);
@@ -104,64 +120,159 @@ abstract class ContentBase extends Model implements ContentInterface
             return FALSE;
         }
 
-        return true; // :todo - phase 5: implement content installation and exportation  
+        return TRUE;
+    }
 
-
-        // Note: creating these indexes after the bulk insert instead was measured and rejected.
-        // It is faster on SQLite (~7.5s vs ~11s for a 31k-verse Bible) but markedly slower on
-        // MySQL (~42s vs ~30s), and MySQL is the production target.
-        if($structure_only) {
-            return TRUE;
-        }
-
-        // :todo - phase 5: bulk insert the content data from the module's zip file
+    /**
+     * Fills the content table from the volume's module file (contents.txt).
+     *
+     * Values are mapped by the file's own field list, falling back to EXPORT_FIELDS.  Columns
+     * the table does not know are ignored, missing ones are NULL, and an empty field is NULL.
+     *
+     * @return int Rows inserted
+     * @throws \RuntimeException If the module file cannot be read
+     */
+    protected function importModuleFile(): int
+    {
         $Zip = $this->Volume->openModuleFile();
 
         if(!$Zip) {
-            return FALSE;
+            throw new \RuntimeException('Could not open module file: ' . $this->Volume->getModuleFilePath(TRUE));
         }
 
-        $info = $Zip->getFromName($this->zip_meta_file);
-        $rows = $Zip->getFromName($this->zip_content_file);
+        $info = json_decode((string) $Zip->getFromName(static::ZIP_META_FILE), TRUE);
+        $data = $Zip->getFromName(static::ZIP_CONTENT_FILE);
         $Zip->close();
 
-        $info   = json_decode($info, TRUE);
-        $del    = $info['delimiter'] ?? '|';
-        $fields = $info['fields'] ?? $this->zip_content_fields;
-        $rows   = preg_split("/\\r\\n|\\r|\\n/", $rows);
-        $table  = $this->getTable();
-        $insertable = [];
-        $ins_count = 0;
+        if($data === FALSE) {
+            throw new \RuntimeException('Module file has no ' . static::ZIP_CONTENT_FILE . ': ' . $this->Volume->getModuleFilePath(TRUE));
+        }
 
-        // Each verse binds one placeholder per mapped field plus chapter_verse, so the batch
-        // has to fit the connection's bound-variable ceiling - 65535 on MySQL, but only 999 on
-        // SQLite builds older than 3.32.
-        $batch_size = \App\Helpers::getInsertChunkSize(count($fields) + 1, $this->getConnectionName());
+        $fields  = (is_array($info) && !empty($info['fields']) && is_array($info['fields'])) ? array_values($info['fields']) : static::EXPORT_FIELDS;
+        $columns = array_values(array_intersect($fields, static::EXPORT_FIELDS));
+        $batch   = \App\Helpers::getInsertChunkSize(max(count($columns), 1), $this->getConnectionName());
+        $table   = $this->getTable();
+        $rows    = [];
+        $count   = 0;
 
-        foreach($rows as $row) {
-            if(empty($row) || $row[0] == '#') {
+        foreach(preg_split("/\r\n|\r|\n/", $data) as $line) {
+            if($line === '' || $line[0] == '#') {
                 continue;
             }
 
-            $row = explode($del, $row);
-            $map = [];
+            $values = static::decodeRow($line);
+            $row    = [];
 
             foreach($fields as $index => $field) {
-                $map[$field] = $row[$index];
+                if(in_array($field, $columns, TRUE)) {
+                    $value = $values[$index] ?? NULL;
+                    $row[$field] = ($value === NULL || $value === '') ? NULL : $value;
+                }
             }
 
-            $insertable[] = $this->processInsertRow($map);
-            $ins_count ++;
+            foreach($columns as $column) {
+                $row[$column] = $row[$column] ?? NULL;
+            }
 
-            if($ins_count >= $batch_size) {
-                DB::table($table)->insert($insertable);
-                $insertable = [];
-                $ins_count = 0;
+            $rows[] = $this->processInsertRow($row);
+            $count++;
+
+            if(count($rows) >= $batch) {
+                DB::table($table)->insert($rows);
+                $rows = [];
             }
         }
 
-        DB::table($table)->insert($insertable); // Finish inserting data
-        return TRUE;
+        if($rows) {
+            DB::table($table)->insert($rows);
+        }
+
+        return $count;
+    }
+
+    /**
+     * The content as encoded contents.txt rows, one per content row, in id order.
+     *
+     * A generator over chunked reads, so a large table is never held in memory at once.
+     *
+     * @return \Generator<int, string>
+     */
+    public function exportRows(): \Generator
+    {
+        foreach($this->newQuery()->lazyById(1000) as $Row) {
+            $attr = $Row->getAttributes();
+            yield static::encodeRow(array_map(fn($field) => $attr[$field] ?? NULL, static::EXPORT_FIELDS));
+        }
+    }
+
+    /**
+     * Encodes one value for contents.txt: trimmed, then backslash-escaped so a row stays on one
+     * line and the delimiter is never ambiguous.  NULL is the empty field; 0 stays '0'.
+     *
+     * @param mixed $value
+     * @return string
+     */
+    public static function encodeField(mixed $value): string
+    {
+        if($value === NULL) {
+            return '';
+        }
+
+        return str_replace(
+            ['\\', "\n", "\r", static::DELIMITER],
+            ['\\\\', '\\n', '\\r', '\\' . static::DELIMITER],
+            trim((string) $value)
+        );
+    }
+
+    /**
+     * @param array $values
+     * @return string One contents.txt line
+     */
+    public static function encodeRow(array $values): string
+    {
+        return implode(static::DELIMITER, array_map([static::class, 'encodeField'], $values));
+    }
+
+    /**
+     * Decodes one contents.txt line: splits on unescaped delimiters and unescapes, in one pass.
+     *
+     * An unknown escape keeps its backslash, as does a trailing lone backslash.
+     *
+     * @param string $line
+     * @return array<int, string>
+     */
+    public static function decodeRow(string $line): array
+    {
+        $fields  = [];
+        $current = '';
+        $length  = strlen($line);
+
+        for($i = 0; $i < $length; $i++) {
+            $char = $line[$i];
+
+            if($char === '\\' && $i + 1 < $length) {
+                $next = $line[++$i];
+
+                $current .= match($next) {
+                    'n'     => "\n",
+                    'r'     => "\r",
+                    '\\'    => '\\',
+                    static::DELIMITER => static::DELIMITER,
+                    default => '\\' . $next,
+                };
+            }
+            elseif($char === static::DELIMITER) {
+                $fields[] = $current;
+                $current  = '';
+            }
+            else {
+                $current .= $char;
+            }
+        }
+
+        $fields[] = $current;
+        return $fields;
     }
 
     /**

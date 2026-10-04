@@ -9,6 +9,12 @@ use Illuminate\Support\Facades\DB;
 use App\Traits\Error;
 use App\Helpers;
 use App\Models\VolumeContent\ContentInterface;
+use App\Models\VolumeContent\ContentBase;
+use App\Models\VolumeTypes\VolumeTypeBase;
+use Illuminate\Support\Arr;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Database\QueryException;
+use ZipArchive;
 
 /**
  * A volume of extra-Biblical content, such as a Strong's dictionary.
@@ -45,6 +51,13 @@ class Volume extends Model
      * MySQL's maximum identifier length, which content table names must fit within
      */
     public const MAX_TABLE_NAME_LENGTH = 64;
+
+    /**
+     * info.json fields that identify where a module came from rather than describe it.  Never
+     * taken from a file: type and module come from the file name, official from its directory,
+     * and module_version is handled on its own (see export() and updateModule()).
+     */
+    public const PROVENANCE_FIELDS = ['type', 'module', 'official', 'module_version'];
 
     static protected $module_invalid_reason = null;
 
@@ -259,6 +272,538 @@ class Volume extends Model
     public static function getContentClassName(string $type): ?string
     {
         return static::TYPES[$type]['content_class'] ?? NULL;
+    }
+
+    // -----------------------------------------------------------------------
+    // Module files
+    // -----------------------------------------------------------------------
+
+    /**
+     * volumes columns a module of this type carries in its info.json
+     *
+     * @param string $type
+     * @return array<int, string>
+     */
+    public static function getInfoFields(string $type): array
+    {
+        $class = static::TYPES[$type]['volume_class'] ?? NULL;
+
+        return ($class && defined($class . '::INFO_FIELDS')) ? $class::INFO_FIELDS : VolumeTypeBase::INFO_FIELDS;
+    }
+
+    /**
+     * The settings a module file carries: what Export Meta writes and Revert, Update and creating
+     * a volume from a file apply.  INFO_FIELDS less the provenance fields.
+     *
+     * @param string $type
+     * @return array<int, string>
+     */
+    public static function getSettingsFields(string $type): array
+    {
+        return array_values(array_diff(static::getInfoFields($type), static::PROVENANCE_FIELDS));
+    }
+
+    /**
+     * Directory of official modules of a type: content/<type>/
+     *
+     * Built from this file's location, not base_path(), so it works without the application.
+     *
+     * @param string $type
+     * @param bool $short Relative to the project root, for messages
+     * @return string
+     */
+    public static function getModulePath(string $type, bool $short = FALSE): string
+    {
+        if(!preg_match('/^[a-z][a-z_]*$/', $type)) {
+            throw new \InvalidArgumentException('Invalid volume type: ' . $type);
+        }
+
+        return ($short ? 'content/' : dirname(__DIR__, 2) . '/content/') . $type . '/';
+    }
+
+    /**
+     * Directory of unofficial modules of a type: content/<type>/unofficial/
+     */
+    public static function getUnofficialModulePath(string $type, bool $short = FALSE): string
+    {
+        return static::getModulePath($type, $short) . 'unofficial/';
+    }
+
+    public static function moduleFileName(string $type, string $module): string
+    {
+        return $type . '_' . $module . '.zip';
+    }
+
+    public function getModuleFileName(): string
+    {
+        return static::moduleFileName($this->type, $this->module);
+    }
+
+    /**
+     * Path of this volume's module file: the official directory for an official volume
+     *
+     * @param bool $short Relative to the project root, for messages
+     * @return string
+     */
+    public function getModuleFilePath(bool $short = FALSE): string
+    {
+        $dir = $this->official ? static::getModulePath($this->type, $short) : static::getUnofficialModulePath($this->type, $short);
+
+        return $dir . $this->getModuleFileName();
+    }
+
+    public function hasModuleFile(): bool
+    {
+        return is_file($this->getModuleFilePath());
+    }
+
+    public static function moduleFileIsOfficial(string $type, string $module): bool
+    {
+        return is_file(static::getModulePath($type) . static::moduleFileName($type, $module));
+    }
+
+    public function openModuleFile(): ?ZipArchive
+    {
+        if(!$this->hasModuleFile()) {
+            return NULL;
+        }
+
+        $Zip = new ZipArchive();
+
+        return ($Zip->open($this->getModuleFilePath()) === TRUE) ? $Zip : NULL;
+    }
+
+    /**
+     * The module file's info.json, or NULL if there is no readable one
+     *
+     * @return array|null
+     */
+    public function readModuleInfo(): ?array
+    {
+        $Zip = $this->openModuleFile();
+
+        if(!$Zip) {
+            return NULL;
+        }
+
+        $info = json_decode((string) $Zip->getFromName(ContentBase::ZIP_META_FILE), TRUE);
+        $Zip->close();
+
+        return is_array($info) ? $info : NULL;
+    }
+
+    /**
+     * info.json for this volume
+     *
+     * @param array|null $format delimiter / fields / escaped to keep, from an existing file
+     * @return array
+     */
+    protected function buildModuleInfo(?array $format = NULL): array
+    {
+        $fields = static::getInfoFields($this->type);
+        $attr   = $this->getAttributes();
+
+        // A model saved without them has not loaded the columns' database defaults (copyright = 0 ...)
+        $missing = array_values(array_diff($fields, array_keys($attr)));
+
+        if($missing && $this->exists) {
+            $attr += (array) (static::query()->withoutGlobalScopes()->whereKey($this->getKey())->first($missing)?->getAttributes() ?? []);
+        }
+
+        $info = [];
+
+        foreach($fields as $field) {
+            $info[$field] = $attr[$field] ?? NULL;
+        }
+
+        $content_class = static::getContentClassName($this->type);
+
+        $info['delimiter'] = $format['delimiter'] ?? ContentBase::DELIMITER;
+        $info['fields']    = $format['fields'] ?? ($content_class ? $content_class::EXPORT_FIELDS : []);
+        $info['escaped']   = $format['escaped'] ?? TRUE;
+
+        return $info;
+    }
+
+    protected static function encodeModuleInfo(array $info): string
+    {
+        return json_encode($info, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR);
+    }
+
+    /**
+     * Creates the directory, if missing, and reports whether it can be written to
+     */
+    protected static function prepareModuleDirectory(string $dir): bool
+    {
+        if(!is_dir($dir)) {
+            @mkdir($dir, 0775, TRUE);
+        }
+
+        return is_dir($dir) && is_writable($dir);
+    }
+
+    protected static function currentUser(): string
+    {
+        if(function_exists('posix_geteuid') && function_exists('posix_getpwuid')) {
+            return posix_getpwuid(posix_geteuid())['name'] ?? (string) posix_geteuid();
+        }
+
+        return get_current_user();
+    }
+
+    /**
+     * Writes this volume's module file: info.json and contents.txt, zipped.
+     *
+     * The ZIP is built under a temporary name and renamed into place, and the record is only
+     * stamped (module_version, needs_update) once that has worked, so a failed export changes
+     * nothing.
+     *
+     * @param bool $overwrite Replace an existing module file
+     * @return bool
+     */
+    public function export(bool $overwrite = FALSE): bool
+    {
+        $path  = $this->getModuleFilePath();
+        $short = $this->getModuleFilePath(TRUE);
+
+        if(!$this->installed) {
+            return $this->addError('Cannot export, volume is not installed', 4);
+        }
+
+        if(is_file($path) && !$overwrite) {
+            return $this->addError('Cannot export, file already exists: ' . $short, 4);
+        }
+
+        if(!static::prepareModuleDirectory(dirname($path)) || (is_file($path) && !is_writable($path))) {
+            return $this->addError('Cannot write file: ' . $short . ' as user ' . static::currentUser(), 4);
+        }
+
+        $version  = config('app.version');
+        $contents = $path . '.contents.tmp';
+        $zip      = $path . '.tmp';
+
+        try {
+            $Content = $this->content();
+            $info    = $this->buildModuleInfo();
+            $info['module_version'] = $version;
+
+            $handle = fopen($contents, 'w');
+
+            if(!$handle) {
+                throw new \RuntimeException('Cannot write temporary file for ' . $short);
+            }
+
+            $header = [
+                'Bible SuperSearch Volume Module: ' . $this->name,
+                'Type: ' . $this->type . ', Module: ' . $this->module,
+                'For use with Bible SuperSearch >= ' . $version,
+                'Separator: ' . ContentBase::DELIMITER . '  (escaped as \\' . ContentBase::DELIMITER . ')',
+                'Escapes: \\\\ \\n \\r',
+                'Columns: ' . implode(ContentBase::DELIMITER, $info['fields']),
+            ];
+
+            foreach($header as $line) {
+                fwrite($handle, '# ' . str_replace(["\r", "\n"], ' ', $line) . "\n");
+            }
+
+            foreach($Content->exportRows() as $row) {
+                if(fwrite($handle, $row . "\n") === FALSE) {
+                    throw new \RuntimeException('Cannot write temporary file for ' . $short);
+                }
+            }
+
+            fclose($handle);
+
+            $Zip = new ZipArchive();
+
+            if($Zip->open($zip, ZipArchive::CREATE | ZipArchive::OVERWRITE) !== TRUE) {
+                throw new \RuntimeException('Could not create ZIP file ' . $short);
+            }
+
+            $Zip->addFile($contents, ContentBase::ZIP_CONTENT_FILE);
+            $Zip->addFromString(ContentBase::ZIP_META_FILE, static::encodeModuleInfo($info));
+
+            if(!$Zip->close() || !rename($zip, $path)) {
+                throw new \RuntimeException('Could not write ZIP file ' . $short);
+            }
+        }
+        catch(\Throwable $e) {
+            report($e);
+            return $this->addError('Export failed: ' . $e->getMessage(), 4);
+        }
+        finally {
+            is_file($contents) && @unlink($contents);
+            is_file($zip) && @unlink($zip);
+            clearstatcache(TRUE, $path);
+        }
+
+        $this->module_version = $version;
+        $this->needs_update   = 0;
+        $this->save();
+
+        return TRUE;
+    }
+
+    /**
+     * Export Meta: rewrites the module file's info.json from this volume's settings, leaving
+     * contents.txt alone.  The file's own delimiter / fields / escaped are kept, as they describe
+     * the contents.txt already in it.
+     *
+     * Nothing to change is not an error.
+     *
+     * @param bool $create_if_needed Export the whole module if there is no file yet
+     * @return bool
+     */
+    public function updateMetaInfo(bool $create_if_needed = FALSE): bool
+    {
+        $short = $this->getModuleFilePath(TRUE);
+
+        if(!$this->hasModuleFile()) {
+            return $create_if_needed ? $this->export() : $this->addError('Cannot update info, file does not exist: ' . $short, 4);
+        }
+
+        if(!is_writable($this->getModuleFilePath())) {
+            return $this->addError('Cannot write file: ' . $short . ' as user ' . static::currentUser(), 4);
+        }
+
+        $Zip = $this->openModuleFile();
+
+        if(!$Zip) {
+            return $this->addError('Cannot open file: ' . $short, 4);
+        }
+
+        $old_json = (string) $Zip->getFromName(ContentBase::ZIP_META_FILE);
+        $old      = json_decode($old_json, TRUE);
+        $new_json = static::encodeModuleInfo($this->buildModuleInfo(is_array($old) ? $old : NULL));
+
+        if($old_json !== $new_json) {
+            $Zip->addFromString(ContentBase::ZIP_META_FILE, $new_json);
+        }
+
+        if(!$Zip->close()) {
+            return $this->addError('Could not write ZIP file ' . $short, 4);
+        }
+
+        clearstatcache(TRUE, $this->getModuleFilePath());
+
+        // The file is now newer than the install; keep needsUpdate() from mistaking that for an update
+        $this->installed_at = date('Y-m-d H:i:s');
+        $this->needs_update = 0;
+        $this->save();
+
+        return TRUE;
+    }
+
+    /**
+     * Revert: reloads this volume's settings from its module file.  Only the type's settings
+     * fields are taken - never type, module or official.
+     *
+     * @return bool
+     */
+    public function revertMetaInfo(): bool
+    {
+        $short = $this->getModuleFilePath(TRUE);
+
+        if(!$this->hasModuleFile()) {
+            return $this->addError('Cannot revert info, file does not exist: ' . $short, 4);
+        }
+
+        $info = $this->readModuleInfo();
+
+        if($info === NULL) {
+            return $this->addError('Cannot read file: ' . $short, 4);
+        }
+
+        try {
+            $this->fill(Arr::only($info, static::getSettingsFields($this->type)));
+            $this->save();
+        }
+        catch(QueryException $e) {
+            report($e);
+            return $this->addError('Cannot revert info: the settings in ' . $short . ' clash with another volume', 4);
+        }
+
+        return TRUE;
+    }
+
+    /**
+     * Whether the module file holds a newer module_version than the one installed.  Same logic
+     * as Bible::needsUpdate(): the file's mtime saves opening the ZIP when it predates the install,
+     * and an unreadable info.json keeps the stored flag.
+     *
+     * @return bool
+     */
+    public function needsUpdate(): bool
+    {
+        if(!$this->installed || !$this->hasModuleFile()) {
+            return FALSE;
+        }
+
+        $install_ts = $this->installed_at ? strtotime($this->installed_at) : FALSE;
+        $file_ts    = filemtime($this->getModuleFilePath());
+
+        if($install_ts && $file_ts && $file_ts < $install_ts) {
+            return (bool) $this->needs_update;
+        }
+
+        $info = $this->readModuleInfo();
+
+        if($info === NULL) {
+            return (bool) $this->needs_update;
+        }
+
+        $file_version = $info['module_version'] ?? '0';
+
+        if($file_version == '0' && $this->needs_update == 1) {
+            return TRUE;
+        }
+
+        $needs = ($file_version && version_compare($this->module_version ?? '0', $file_version) < 0);
+
+        if((int) $this->needs_update !== (int) $needs) {
+            $this->needs_update = $needs ? 1 : 0;
+            $this->save();
+        }
+
+        return $needs;
+    }
+
+    public static function updateNeedsUpdate(): void
+    {
+        foreach(static::where('installed', 1)->get() as $Volume) {
+            $Volume->needsUpdate();
+        }
+    }
+
+    /**
+     * Update: reinstalls the volume from its newer module file and takes the file's settings.
+     * enabled and is_default are kept.
+     *
+     * @return bool
+     */
+    public function updateModule(): bool
+    {
+        if(!$this->needsUpdate()) {
+            return $this->addError('No update needed.', 4, 422);
+        }
+
+        $info    = $this->readModuleInfo();
+        $enabled = (bool) $this->enabled;
+
+        if($this->installed) {
+            $this->uninstall();
+
+            if(!$this->install(FALSE, $enabled)) {
+                return FALSE;
+            }
+        }
+
+        if(!$this->revertMetaInfo()) {
+            return FALSE;
+        }
+
+        $this->module_version    = $info['module_version'] ?? $this->module_version;
+        $this->module_updated_at = date('Y-m-d H:i:s');
+        $this->needs_update      = 0;
+        $this->save();
+
+        return TRUE;
+    }
+
+    /**
+     * Module files of a type on disk: module name => official
+     *
+     * @param string $type
+     * @return array<string, bool>
+     */
+    public static function getListOfModuleFiles(string $type): array
+    {
+        $files = [];
+
+        // Unofficial first, so an official file of the same module wins
+        foreach([FALSE => static::getUnofficialModulePath($type), TRUE => static::getModulePath($type)] as $official => $dir) {
+            foreach(glob($dir . '*') ?: [] as $file) {
+                $name = basename($file);
+
+                if(is_file($file) && preg_match('/^' . preg_quote($type, '/') . '_(.+)\.zip$/i', $name, $matches)) {
+                    $files[$matches[1]] = (bool) $official;
+                }
+            }
+        }
+
+        return $files;
+    }
+
+    /**
+     * Creates an uninstalled volume record from a module file, if there is no record for it yet.
+     *
+     * type and module come from the file name and official from its directory; only the type's
+     * settings fields (and module_version) are taken from info.json.  A file that cannot be read,
+     * lacks a name / shortname / language, or clashes with an existing volume is skipped and
+     * logged.
+     *
+     * @param string $type
+     * @param string $module
+     * @return static|null The new volume, or NULL if none was created
+     */
+    public static function createFromModuleFile(string $type, string $module): ?Volume
+    {
+        if(!isset(static::TYPES[$type]) || !static::validateModule($module) || static::findByTypeAndModule($type, $module)) {
+            return NULL;
+        }
+
+        $class  = static::TYPES[$type]['volume_class'];
+        $Volume = new $class();
+        $Volume->type     = $type;
+        $Volume->module   = $module;
+        $Volume->official = static::moduleFileIsOfficial($type, $module) ? 1 : 0;
+
+        $info = $Volume->readModuleInfo();
+
+        if($info === NULL) {
+            Log::warning('Volume module file skipped, info.json unreadable: ' . $Volume->getModuleFilePath(TRUE));
+            return NULL;
+        }
+
+        // NULLs are left out, so a column's default applies rather than a NOT NULL failing
+        $Volume->fill(array_filter(Arr::only($info, static::getSettingsFields($type)), fn($value) => $value !== NULL));
+        $Volume->module_version = $info['module_version'] ?? config('app.version');
+
+        foreach(['name', 'shortname', 'language'] as $required) {
+            if(!is_string($Volume->$required) || $Volume->$required === '') {
+                Log::warning('Volume module file skipped, no ' . $required . ': ' . $Volume->getModuleFilePath(TRUE));
+                return NULL;
+            }
+        }
+
+        try {
+            $Volume->save();
+        }
+        catch(QueryException $e) {
+            Log::warning('Volume module file skipped, could not be saved (it may clash with an existing volume): '
+                . $Volume->getModuleFilePath(TRUE) . ': ' . $e->getMessage());
+            return NULL;
+        }
+
+        return $Volume;
+    }
+
+    /**
+     * Creates volume records for module files that have none.  Never changes an existing record.
+     *
+     * @return int Volumes created
+     */
+    public static function populateVolumesTable(): int
+    {
+        $created = 0;
+
+        foreach(array_keys(static::TYPES) as $type) {
+            foreach(array_keys(static::getListOfModuleFiles($type)) as $module) {
+                $created += static::createFromModuleFile($type, (string) $module) ? 1 : 0;
+            }
+        }
+
+        return $created;
     }
 
     public function language()
