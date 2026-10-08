@@ -191,7 +191,8 @@ abstract class ContentBase extends Model implements ContentInterface
     }
 
     /**
-     * The content as encoded contents.txt rows, one per content row, in id order.
+     * The content as encoded contents.txt rows, one per content row, in id order, for 
+     * export to a module file.  The rows are encoded with encodeRow() and the fields are in EXPORT_FIELDS order.
      *
      * A generator over chunked reads, so a large table is never held in memory at once.
      *
@@ -261,12 +262,10 @@ abstract class ContentBase extends Model implements ContentInterface
                     static::DELIMITER => static::DELIMITER,
                     default => '\\' . $next,
                 };
-            }
-            elseif($char === static::DELIMITER) {
+            } elseif($char === static::DELIMITER) {
                 $fields[] = $current;
                 $current  = '';
-            }
-            else {
+            } else {
                 $current .= $char;
             }
         }
