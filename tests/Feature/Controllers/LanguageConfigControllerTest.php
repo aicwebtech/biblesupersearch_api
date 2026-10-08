@@ -143,6 +143,54 @@ class LanguageConfigControllerTest extends TestCase
         }
     }
 
+    /**
+     * The edit form sends the stored dictionary back with every save.  Once that dictionary is
+     * disabled, refusing it would block any change to the language.
+     */
+    public function testSavingKeepsADictionaryThatIsNoLongerAvailable(): void
+    {
+        $Volume = $Other = NULL;
+
+        try {
+            $Volume   = $this->makeDictionary();
+            $Other    = $this->makeDictionary(FALSE);
+            $Language = $this->createLanguageFixture(self::LANGUAGE, 'Language Config Fixture');
+            $Language->setAttr(Strongs::LANGUAGE_ATTR, $Volume->module);
+            $Volume->disable();
+
+            $this->admin()->putJson('/admin/languages/' . $Language->id, $this->input($Language, [
+                'strongs_dictionary' => $Volume->module,
+                'common_words'       => "a\nthe",
+            ]))->assertStatus(200);
+
+            $this->assertSame("a\nthe", $Language->refresh()->common_words);
+            $this->assertSame($Volume->module, Language::getLanguageAttr(self::LANGUAGE, Strongs::LANGUAGE_ATTR));
+
+            // Changing to another unavailable dictionary is still refused
+            $this->admin()->putJson('/admin/languages/' . $Language->id, $this->input($Language, ['strongs_dictionary' => $Other->module]))
+                ->assertStatus(422);
+        }
+        finally {
+            $this->removeDictionary($Other);
+            $this->removeDictionary($Volume);
+            $this->removeLanguageFixture(self::LANGUAGE);
+        }
+    }
+
+    public function testANonStringDictionaryIsAValidationError(): void
+    {
+        try {
+            $Language = $this->createLanguageFixture(self::LANGUAGE, 'Language Config Fixture');
+
+            $this->admin()->putJson('/admin/languages/' . $Language->id, $this->input($Language, ['strongs_dictionary' => ['x']]))
+                ->assertStatus(422)
+                ->assertJsonStructure(['errors' => ['strongs_dictionary']]);
+        }
+        finally {
+            $this->removeLanguageFixture(self::LANGUAGE);
+        }
+    }
+
     public function testIndexProvidesTheAvailableDictionaries(): void
     {
         $Volume = NULL;

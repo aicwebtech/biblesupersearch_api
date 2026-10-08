@@ -329,12 +329,22 @@ class LanguageConfigController extends Controller
         $has_strongs = $request->has('strongs_dictionary');
         $strongs     = $request->input('strongs_dictionary');
 
+        // The value already stored is accepted even if that dictionary has since been disabled or
+        // uninstalled: the edit form sends it back with every save, and refusing it would block
+        // any change to the language.  The API skips an unusable language default anyway.
+        $stored = $isNew ? NULL : Language::getLanguageAttr($Language->code, Strongs::LANGUAGE_ATTR);
+
         $v = Validator::make(
             $data + ['strongs_dictionary' => $strongs],
             $rules + ['strongs_dictionary' => [
+                'bail',
                 'nullable',
                 'string',
-                function($attribute, $value, $fail) {
+                function($attribute, $value, $fail) use ($stored) {
+                    if(!is_string($value) || $value === $stored) {
+                        return;
+                    }
+
                     if(!Strongs::findAvailable($value)) {
                         $fail('The selected Strong\'s dictionary is not installed and enabled.');
                     }

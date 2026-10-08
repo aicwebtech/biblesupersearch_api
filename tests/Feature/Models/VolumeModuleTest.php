@@ -326,6 +326,64 @@ class VolumeModuleTest extends TestCase
         $this->assertNull(Strongs::findByModule($module));
     }
 
+    /**
+     * A newer module file that would not install is refused before the volume is uninstalled:
+     * the old content stays in place.
+     */
+    public function testUpdateModuleRefusesAFileThatWouldNotInstall(): void
+    {
+        $Volume = $this->makeVolume();
+        $this->assertTrue($Volume->export());
+
+        $path  = $Volume->getModuleFilePath();
+        $table = $Volume->content()->getTable();
+
+        $breakages = [
+            'no contents.txt' => function(ZipArchive $Zip) {
+                $Zip->deleteName('contents.txt');
+            },
+            'unreadable info.json' => function(ZipArchive $Zip) {
+                $Zip->addFromString('info.json', '{not json');
+            },
+        ];
+
+        foreach($breakages as $label => $break) {
+            $this->assertTrue($Volume->export(TRUE));
+
+            $Zip = new ZipArchive();
+            $Zip->open($path);
+            $break($Zip);
+            $Zip->close();
+            clearstatcache(TRUE, $path);
+
+            // Make it look newer than the install
+            $Volume->module_version = '0.0.1';
+            $Volume->installed_at   = '2000-01-01 00:00:00';
+            $Volume->needs_update   = 1;
+            $Volume->save();
+            $Volume->resetErrors();
+
+            $this->assertFalse($Volume->updateModule(), $label);
+            $this->assertNotEmpty($Volume->getErrors(), $label);
+
+            $Volume->refresh();
+            $this->assertSame(1, (int) $Volume->installed, $label . ': volume was uninstalled');
+            $this->assertSame(1, (int) $Volume->enabled, $label);
+            $this->assertSame(count(self::ROWS), DB::table($table)->count(), $label . ': content lost');
+        }
+    }
+
+    public function testModuleFileIsInstallable(): void
+    {
+        $Volume = $this->makeVolume();
+
+        $this->assertFalse($Volume->moduleFileIsInstallable(), 'No file yet');
+
+        $Volume->resetErrors();
+        $this->assertTrue($Volume->export());
+        $this->assertTrue($Volume->moduleFileIsInstallable());
+    }
+
     public function testNeedsUpdateAndUpdateModule(): void
     {
         $Volume = $this->makeVolume();

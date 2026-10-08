@@ -681,10 +681,48 @@ class Volume extends Model
      *
      * @return bool
      */
+    /**
+     * Whether the module file looks installable: it opens, its info.json is readable, and it
+     * has a non-empty contents.txt.  Adds an error and answers FALSE when not.
+     *
+     * Not a guarantee - a row could still fail to insert - but it catches the files that would.
+     *
+     * @return bool
+     */
+    public function moduleFileIsInstallable(): bool
+    {
+        $short = $this->getModuleFilePath(TRUE);
+        $Zip   = $this->openModuleFile();
+
+        if(!$Zip) {
+            return $this->addError('Cannot open module file: ' . $short, 4);
+        }
+
+        $info     = json_decode((string) $Zip->getFromName(ContentBase::ZIP_META_FILE), TRUE);
+        $contents = $Zip->statName(ContentBase::ZIP_CONTENT_FILE);
+        $Zip->close();
+
+        if(!is_array($info)) {
+            return $this->addError('Module file has no readable ' . ContentBase::ZIP_META_FILE . ': ' . $short, 4);
+        }
+
+        if(!$contents || empty($contents['size'])) {
+            return $this->addError('Module file has no ' . ContentBase::ZIP_CONTENT_FILE . ': ' . $short, 4);
+        }
+
+        return TRUE;
+    }
+
     public function updateModule(): bool
     {
         if(!$this->needsUpdate()) {
             return $this->addError('No update needed.', 4, 422);
+        }
+
+        // Checked before uninstalling: a reinstall that then failed would leave the volume
+        // uninstalled - and, for the default dictionary, the API with no dictionary at all
+        if(!$this->moduleFileIsInstallable()) {
+            return FALSE;
         }
 
         $info    = $this->readModuleInfo();
