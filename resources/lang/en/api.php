@@ -103,11 +103,36 @@ return array(
                 'description' => 'Retrieve Strong\'s definitions for the given Strong\'s numbers. Can be a single string, a comma-separated string or a '
                 . 'JSON-encoded array',
             ),
+            'version' => array(
+                'type' => 'String',
+                'name' => 'Definitions Version',
+                'default' => 'v2: legacy<br />v3: modern',
+                'description' => '\'legacy\' returns the original Strong\'s definitions, in the original format. <br />'
+                . '\'modern\' returns definitions from a Strong\'s dictionary, in the modern format (see below). <br />'
+                . 'Modern does not fall back to legacy: if no Strong\'s dictionary is available, an error is returned.',
+            ),
+            'language' => array(
+                'type' => 'String',
+                'name' => 'Language',
+                'default' => '(none)',
+                'description' => 'Modern only. Language code of the user interface. Selects that language\'s default Strong\'s dictionary, if one is set. '
+                . 'Ignored if \'dictionary\' is given.',
+            ),
+            'dictionary' => array(
+                'type' => 'String',
+                'name' => 'Dictionary',
+                'default' => '(none)',
+                'description' => 'Modern only. Module of the Strong\'s dictionary to use. If omitted, the language\'s default dictionary is used, '
+                . 'or else the global default.  An error is returned if this dictionary is not available.',
+            ),
         ),
         'results' => [
             'tvm_note' => 'Note: Some Strong\'s numbers will return TVM (Tense / Voice / Mood) records.  Your app will need to be able to handle both.',
             'tvm' => 'TVM record, "tvm" will be populated, and other items will be empty.',
-            'def' => 'Definition record, "tvm" will be empty.'
+            'def' => 'Definition record, "tvm" will be empty.',
+            'legacy' => 'Legacy version',
+            'modern' => 'Modern version',
+            'modern_note' => 'TVM (Tense / Voice / Mood) records have "is_special" set to 1, and their text in "definition".',
         ]
     ),
     'download' => array(

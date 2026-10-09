@@ -8,6 +8,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Post;
 use App\Models\Language;
 use App\Models\Bible;
+use App\Models\VolumeTypes\Strongs;
 use App\Models\Shortcuts\ShortcutAbstract;
 use Illuminate\Support\Facades\DB;
 use Validator;
@@ -44,6 +45,7 @@ class LanguageConfigController extends Controller
         }
 
         $bootstrap = $this->getAdminBootstrap();
+        $bootstrap->strongs_dictionaries = Strongs::availableDictionaries();
 
         return view('admin.languages', [
             'bootstrap' => $this->encodeBootstrap($bootstrap),
@@ -236,6 +238,7 @@ class LanguageConfigController extends Controller
         $resp->Language = $Language->attributesToArray();
 
         $resp->Language['tts_api_voices'] = \App\TextToSpeech\TtsAbstract::getAllApiVoicesByLanguage($Language->code, $Language->tts_api);
+        $resp->Language['strongs_dictionary'] = Language::getLanguageAttr($Language->code, Strongs::LANGUAGE_ATTR);
 
         return new Response($resp, 200);
     }    
@@ -321,7 +324,33 @@ class LanguageConfigController extends Controller
             $data['native_name'] = $data['name'];
         }
 
-        $v = Validator::make($data, $rules);
+        // The default Strong's dictionary is a language attribute, not a languages column, so it
+        // is validated alongside but kept out of fill().  Left alone when the request omits it.
+        $has_strongs = $request->has('strongs_dictionary');
+        $strongs     = $request->input('strongs_dictionary');
+
+        // The value already stored is accepted even if that dictionary has since been disabled or
+        // uninstalled: the edit form sends it back with every save, and refusing it would block
+        // any change to the language.  The API skips an unusable language default anyway.
+        $stored = $isNew ? NULL : Language::getLanguageAttr($Language->code, Strongs::LANGUAGE_ATTR);
+
+        $v = Validator::make(
+            $data + ['strongs_dictionary' => $strongs],
+            $rules + ['strongs_dictionary' => [
+                'bail',
+                'nullable',
+                'string',
+                function($attribute, $value, $fail) use ($stored) {
+                    if(!is_string($value) || $value === $stored) {
+                        return;
+                    }
+
+                    if(!Strongs::findAvailable($value)) {
+                        $fail('The selected Strong\'s dictionary is not installed and enabled.');
+                    }
+                },
+            ]]
+        );
 
         if($v->fails()) {
             $resp->success = FALSE;
@@ -332,8 +361,15 @@ class LanguageConfigController extends Controller
         $Language->fill($data);
         $Language->save();
 
+        if($has_strongs) {
+            ($strongs === NULL || $strongs === '') 
+                ? $Language->unsetAttr(Strongs::LANGUAGE_ATTR) 
+                : $Language->setAttr(Strongs::LANGUAGE_ATTR, $strongs);
+        }
+
         $resp->success  = true;
         $resp->Language = $Language->attributesToArray();
+        $resp->Language['strongs_dictionary'] = Language::getLanguageAttr($Language->code, Strongs::LANGUAGE_ATTR);
 
         return new Response($resp, 200);
     }

@@ -50,6 +50,9 @@ return array(
     'result_limit_reached' => 'Your search was limited to :maximum results.  Please refine your search if necessary.',
     'strongs_input_required' => 'Strong\'s Number required',
     'strongs_not_found' => 'Strong\'s Number not found',
+    'strongs_dictionary_unavailable' => 'Strong\'s dictionary not found or not enabled: :dictionary',
+    'strongs_no_dictionary' => 'No Strong\'s dictionary is available',
+    'strongs_version_invalid' => 'Strong\'s version \':value\' is not supported and was ignored. \':default\' was used instead.',
     'to_many_download' => 'Too many Bibles requested for download.  You can request a maximum of :maximum Bibles at once.',
     'bible_no_download' => 'Download of Bible not allowed: :module',
     'download' => [
