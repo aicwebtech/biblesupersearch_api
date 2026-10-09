@@ -50,10 +50,17 @@ class BiblesDiskPermissionsTest extends TestCase
         $this->assertSame(0775, $this->mode(), sprintf('Existing directory changed to %o', $this->mode()));
     }
 
+    /**
+     * A new directory is created with mkdir(0775), which the process umask then masks: 0775
+     * under umask 002, 0755 under the more common 022 (CI).  Either is readable by the web
+     * server; what must not happen is the private 0700.
+     */
     public function testNewDirectoriesAreGroupAccessible(): void
     {
         Storage::disk('bibles')->makeDirectory($this->relative);
 
-        $this->assertSame(0775, $this->mode() & 0775, sprintf('New directory created as %o', $this->mode()));
+        $expected = 0775 & ~umask();
+
+        $this->assertSame($expected, $this->mode(), sprintf('New directory created as %o, expected %o', $this->mode(), $expected));
     }
 }
