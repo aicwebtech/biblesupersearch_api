@@ -47,4 +47,6 @@ jobs:
       env:
         DB_CONNECTION: sqlite
         DB_DATABASE: database/database.sqlite
+        APP_TEST_HTTP: true
+        APP_EXPERIMENTAL: true
       run: php artisan test --compact --display-skipped
