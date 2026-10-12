@@ -749,6 +749,28 @@ class Volume extends Model
     }
 
     /**
+     * Returns the content class for a type, or NULL if the type is not registered
+     *
+     * @param string $type
+     * @return string|null
+     */
+    public static function getVolumeContentClass(string $type): ?string
+    {
+        return static::TYPES[$type]['content_class'] ?? NULL;
+    }
+
+    /**
+     * Returns the volume class for a type, or NULL if the type is not registered
+     *
+     * @param string $type
+     * @return string|null
+     */
+    public static function getVolumeTypeClass(string $type): ?string
+    {
+        return static::TYPES[$type]['volume_class'] ?? NULL;
+    }
+
+    /**
      * Module files of a type on disk: module name => official
      *
      * @param string $type

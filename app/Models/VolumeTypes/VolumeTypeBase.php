@@ -18,6 +18,15 @@ abstract class VolumeTypeBase extends Volume
     protected static $type = null;
 
     /**
+     * The import classes for each import source.
+     * Sources without a class are not importable for this type
+     * Individual import classes are only “loosely” tied to a content type
+     * If multiple contents types share the same mapping, they can reuse/share an import class.
+     * @var array<string, string>
+     */
+    public const IMPORT_CLASSES = [];
+
+    /**
      * volumes columns written to a module's info.json.  Set per type: most volumes columns
      * (italics, audio, Hebrew / Greek text ids ...) only mean something for some types.
      *

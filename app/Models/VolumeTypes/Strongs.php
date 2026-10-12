@@ -10,6 +10,17 @@ class Strongs extends VolumeTypeBase
     protected static $type = 'strongs';
 
     /**
+     * The import classes for each import source.
+     * Sources without a class are not importable for this type
+     *
+     * @var array<string, string>
+     */
+    public const IMPORT_CLASSES = [
+        // 'csv' => \App\ContentImporters\Csv\CsvStrongs::class,
+        // 'excel' => \App\ContentImporters\Excel\ExcelStrongs::class,
+    ];
+
+    /**
      * language_attr attribute holding a language's default Strong's dictionary (a module name)
      */
     public const LANGUAGE_ATTR = 'strongs_dictionary';
