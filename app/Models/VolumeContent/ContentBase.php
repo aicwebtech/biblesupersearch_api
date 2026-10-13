@@ -29,6 +29,24 @@ abstract class ContentBase extends Model implements ContentInterface
     public const DELIMITER = '|';
 
     /**
+     * The human-readable labels for each field.  Leave empty to generate from the field names.
+     * @var array<string, string>
+     */
+    public const FIELD_LABELS = [];
+
+    /**
+     * The fields on each content table that are importable.
+     * @var array<string>
+     */
+    public const IMPORT_FIELDS = [];
+
+    /**
+     * Extra fields that don't exist in the table but can be mapped in. 
+     * @var array<string, string>
+     */
+    public const IMPORT_FIELDS_EXTRA = [];
+
+    /**
      * Content table columns written to the module's contents.txt, in order.  Set per type.
      *
      * Only ever add to the end: module files record their own field list, but a reordering
@@ -47,6 +65,23 @@ abstract class ContentBase extends Model implements ContentInterface
     {
         $prefix = static::TYPE_TABLE_PREFIX ?? $type . '_';
         return static::CONTENT_TABLE_PREFIX . $prefix . $module;
+    }
+
+    public static function getImportFields($include_extra = false): array
+    {
+        $fields = [];
+
+        foreach(static::IMPORT_FIELDS as $field) {
+            $fields[$field] = static::FIELD_LABELS[$field] ?? ucfirst(str_replace('_', ' ', $field));
+        }
+    
+        if($include_extra) {
+            foreach(static::IMPORT_FIELDS_EXTRA as $field => $label) {
+                $fields[$field] = $label;
+            }
+        }
+
+        return $fields;
     }
 
     public function setVolume(Volume $volume): void

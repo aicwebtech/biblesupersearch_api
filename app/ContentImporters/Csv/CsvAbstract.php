@@ -11,18 +11,6 @@ namespace App\ContentImporters\Csv;
 
 abstract class CsvAbstract extends \App\ContentImporters\SpreadsheetAbstract
 {
-    /**
-     * The import source type (e.g., 'csv', etc.)
-     *
-     * @var string
-     */
-    protected $import_source;
 
-    /**
-     * The import class name for the specified import source
-     *
-     * @var string|null
-     */
-    protected $import_class;
 
 }

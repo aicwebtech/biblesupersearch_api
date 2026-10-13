@@ -12,8 +12,8 @@ class ContentImportManager
 
     public $test_mode = FALSE;
 
-    public $content_type = null;
-    public $import_source = null;
+    public $content_type = null; // Volume type,ie 'strongs', 'bibles', etc.
+    public $import_source = null; // ie 'csv', 'excel', etc.
     public $parsed_attributes = [];
     public $sanitized_filename = NULL;
 
@@ -36,14 +36,14 @@ class ContentImportManager
     ];
 
     protected static $import_rules = [
-        '_importer' => 'required',
-        '_content_type' => 'required',
-        '_file'     => 'required',
-        '_settings' => 'nullable',
+        '_importer'         => 'required', // source, ie 'csv', 'excel', etc.
+        '_content_type'     => 'required', // ie volume type
+        '_file'             => 'required',
+        '_settings'         => 'nullable',
         '_force_use_module' => 'nullable',
     ];
 
-    public static function getImportersList() 
+    public static function getImporterSourcesList() 
     {
         $importers = [];
 
@@ -72,7 +72,7 @@ class ContentImportManager
         return $rules;
     }
 
-    public function setImportSource($type) 
+    public function setImportSource(string $type) : bool
     {
         $type = trim($type);
 
@@ -89,6 +89,23 @@ class ContentImportManager
         return TRUE;
     }
 
+    public function setContentType(string $type) : bool
+    {
+        $type = trim($type);
+
+        if(!$type) {
+            $this->content_type = NULL;
+            return TRUE;
+        }
+
+        if(!\App\Models\Volume::isValidVolumeType($type)) {
+            return $this->addError('Content type does not exist: ' . $type);
+        }
+
+        $this->content_type = $type;
+        return TRUE;
+    }
+
     public function checkImportFile($data) 
     {
         ini_set('memory_limit', '256M');
@@ -97,9 +114,15 @@ class ContentImportManager
             return $this->addError('Importer is missing or invalid');
         }
 
+        if(!isset($data['content_type']) || !$this->setContentType($data['content_type'])) {
+            return $this->addError('Content type is missing or invalid');
+        }
+
+        $this->import_class = static::getImportClass($this->import_source, $this->content_type);
+
         $Importer = new $this->import_class();
         $Importer->test_mode = (bool) $this->test_mode;
-        $type_info = static::$import_source_map[$this->type];
+        $type_info = static::$import_source_map[$this->import_source];
         
         if(!$Importer->setSettings($data)) {
             $this->addErrors($Importer->getErrors(), $Importer->getErrorLevel());
@@ -148,9 +171,9 @@ class ContentImportManager
         }
         unset($value);
 
-        if(isset($data['bible_id'])) {
-            $Bible = Bible::find($data['bible_id']);
-            $this->parsed_attributes = array_replace($this->parsed_attributes, $Bible->attributesToArray());
+        if(isset($data['volume_id']) && $data['volume_id']) {
+            $Volume = \App\Models\Volume::find($data['volume_id']);
+            $this->parsed_attributes = array_replace($this->parsed_attributes, $Volume->attributesToArray());
         }
 
         return $this->hasErrors() ? FALSE : TRUE;

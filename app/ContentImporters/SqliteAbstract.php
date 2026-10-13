@@ -13,18 +13,5 @@ namespace App\ContentImporters;
 
 class SqliteAbstract extends ContentImportAbstract
 {
-    /**
-     * The import source type (e.g., 'sqlite', etc.)
-     *
-     * @var string
-     */
-    protected $import_source;
-
-    /**
-     * The import class name for the specified import source
-     *
-     * @var string|null
-     */
-    protected $import_class;
 
 }

@@ -14,6 +14,21 @@ class StrongsContent extends ContentBase
     public const TYPE_TABLE_PREFIX = 'stro_';
 
     /**
+     * The fields on each content table that are importable.
+     * @var array<string>
+     */
+    public const IMPORT_FIELDS = ['number', 'root_word', 'transliteration', 'pronunciation', 'definition', 'short_definition'];
+
+    /**
+     * Extra fields that don't exist in the table but can be mapped in. 
+     * @var array<string, string>
+     */
+    public const IMPORT_FIELDS_EXTRA = [
+        'number_int' => 'Strong\'s number - integer portion only (no leading zeros, no H/G prefix)',
+        'number_hg' => 'Strong\'s number - H/G prefix only (no leading zeros, no integer portion)',
+    ];
+
+    /**
      * contents.txt columns.  Only ever add to the end - see ContentBase::EXPORT_FIELDS.
      * No id or timestamps: ids are generated on install.
      */
