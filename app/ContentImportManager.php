@@ -110,15 +110,9 @@ class ContentImportManager
     {
         ini_set('memory_limit', '256M');
 
-        if(!isset($data['importer']) || !$this->setImportSource($data['importer'])) {
-            return $this->addError('Importer is missing or invalid');
+        if(!$this->validateImporterSelection($data)) {
+            return FALSE;
         }
-
-        if(!isset($data['content_type']) || !$this->setContentType($data['content_type'])) {
-            return $this->addError('Content type is missing or invalid');
-        }
-
-        $this->import_class = static::getImportClass($this->import_source, $this->content_type);
 
         $Importer = new $this->import_class();
         $Importer->test_mode = (bool) $this->test_mode;
@@ -144,8 +138,7 @@ class ContentImportManager
                 if(!$matches_ext) {
                     if(count($type_info['ext']) > 1) {
                         $msg = 'Extension must be one of the following: .' . implode(', .', $type_info['ext']);
-                    }
-                    else {
+                    } else {
                         $msg = 'This importer requires an extension of .' . $type_info['ext'][0];
                     }
 
@@ -180,33 +173,35 @@ class ContentImportManager
     }
 
     /**
-      * Imports a Bible for a given file and importer 
+      * Imports a Volume for a given file and importer
       * 
       */
-    public function importFile($data, ?Bible $Bible = null) 
+    public function importFile($data, ?\App\Models\Volume $Volume = null) 
     {
         ini_set('memory_limit', '256M');
 
+        if(!$this->validateImporterSelection($data)) {
+            return FALSE;
+        }
+
         $importer = $data['_importer'];
+        $type     = $data['_content_type'];
         $file     = $data['_file'];
         $use_mod  = (array_key_exists('_force_use_module', $data) && $data['_force_use_module']);
         $settings = json_decode($data['_settings'], TRUE);
 
         unset($data['_importer']);
+        unset($data['_content_type']);
         unset($data['_file']);
         unset($data['_settings']);
-
-        if(!$this->setType($importer)) {
-            return FALSE;
-        }
 
         if(!$use_mod && !$this->_checkModule($data['module'])) {
             return FALSE;
         }
 
-        if(!$Bible) {            
-            $BibleClass = \App\Helpers::find('\App\Models\Bible');
-            $Bible      = new $BibleClass();
+        if(!$Volume) {            
+            $VolumeClass = \App\Helpers::find('\App\Models\Volume');
+            $Volume      = new $VolumeClass();
         }
         
         $Importer   = new $this->import_class();
@@ -219,20 +214,39 @@ class ContentImportManager
             return $this->addError('Import file is missing or invalid.  Please upload the file again.');
         }
 
-        $Bible->fill($data);
-        $Bible->save();
+        $Volume->fill($data);
+        $Volume->save();
 
-        $Importer->module       = $Bible->module;
+        $Importer->module       = $Volume->module;
         $Importer->file         = $safe_file;
         $Importer->overwrite    = FALSE;
         $Importer->insert_into_bible_table = FALSE; // We just saved the Bible above
         
         if(!$Importer->setSettings($settings) || !$Importer->import()) {
-            $Bible->delete();
+            $Volume->delete();
             return $this->addErrors($Importer->getErrors(), $Importer->getErrorLevel());
         }
 
-        $this->parsed_attributes = $Bible->getAttributes();
+        $this->parsed_attributes = $Volume->getAttributes();
+        return TRUE;
+    }
+
+    protected function validateImporterSelection(array $data) : bool
+    {
+        if(!isset($data['_importer']) || !$this->setImportSource($data['_importer'])) {
+            return $this->addError('Importer is missing or invalid');
+        }
+
+        if(!isset($data['_content_type']) || !$this->setContentType($data['_content_type'])) {
+            return $this->addError('Content type is missing or invalid');
+        }
+
+        $this->import_class = static::getImportClass($this->import_source, $this->content_type);
+
+        if(!$this->import_class) {
+            return $this->addError('No import class exists for this importer and content type');
+        }
+
         return TRUE;
     }
 
