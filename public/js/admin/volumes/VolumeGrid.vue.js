@@ -6,6 +6,7 @@ import ChipBool from '../../bin/custom_vue/components/ChipBool.vue.js';
 import ChipBoolAlt from '../../bin/custom_vue/components/ChipBoolAlt.vue.js';
 import ChipAlert from '../../bin/custom_vue/components/ChipAlert.vue.js';
 import ActionDialog from './dialogs/ActionDialog.vue.js';
+import ImportDialog from './dialogs/ImportDialog.vue.js';
 import { gridTemplateProps, useGrid } from '../../bin/custom_vue/composables/grid/Grid.vue.js';
 
 const template = `<v-sheet>
@@ -46,6 +47,10 @@ const template = `<v-sheet>
             <v-sheet v-else class='mt-3 mb-12'>
                 <v-btn size='small' prepend-icon='mdi-plus' class='float-right' @click='clickEdit()'>
                     Add Volume
+                </v-btn>
+                <span class='float-right'>&nbsp;</span>
+                <v-btn size='small' prepend-icon='mdi-file-import' class='float-right' @click='openImport()'>
+                    Import Volume
                 </v-btn>
                 <span class='float-right'>&nbsp;</span>
                 <span class='clear-both'></span>
@@ -247,6 +252,13 @@ const template = `<v-sheet>
                                 <v-list-item-title>Export Meta</v-list-item-title>
                             </v-list-item>
 
+                            <v-list-item v-if='item.official == "0" && item.is_default != "1"' @click="openImport(item)">
+                                <template v-slot:prepend>
+                                    <v-icon icon="mdi-file-replace"></v-icon>
+                                </template>
+                                <v-list-item-title>Replace Content</v-list-item-title>
+                            </v-list-item>
+
                             <v-list-item v-if='item.official == "0"' @click="handleSingleAction('delete', item)">
                                 <template v-slot:prepend>
                                     <v-icon icon="mdi-trash-can"></v-icon>
@@ -265,6 +277,13 @@ const template = `<v-sheet>
                 :queue='actionQueue'
                 @onClose='handleCloseActions'
                 @onSuccess='handleSuccessActions'
+            />
+
+            <ImportDialog
+                :showing='importShowing'
+                :replace='importReplace'
+                @onClose='closeImport'
+                @onSave='refreshGrid'
             />
 
             <EditDialog
@@ -369,6 +388,7 @@ export default {
     components: {
         EditDialog,
         ActionDialog,
+        ImportDialog,
         TruncateTooltip,
         YesNoSel,
         ChipBool,
@@ -410,6 +430,8 @@ export default {
 
         const extraCols = Vue.ref(false);
         const editingId = Vue.ref(null);
+        const importShowing = Vue.ref(false);
+        const importReplace = Vue.ref(null);
         const selectedAction = Vue.ref(null);
         const actionQueue = Vue.ref(null);
         const rowSelections = Vue.ref([]);
@@ -486,6 +508,19 @@ export default {
             editingId.value = null;
         }
 
+        /**
+         * @param {Object|undefined} item Volume to replace the content of; none for a new volume
+         */
+        function openImport(item) {
+            importReplace.value = item ? {id: item.id, type: item.type} : null;
+            importShowing.value = true;
+        }
+
+        function closeImport() {
+            importShowing.value = false;
+            importReplace.value = null;
+        }
+
         function handleBulkAction(action) {
             const s = rowSelections.value;
             actionHelper(action, grid.gridRows.value.filter(item => s.includes(item.id)));
@@ -532,6 +567,8 @@ export default {
             chipProps,
             extraCols,
             editingId,
+            importShowing,
+            importReplace,
             selectedAction,
             actionQueue,
             rowSelections,
@@ -541,6 +578,8 @@ export default {
             refreshGrid,
             clickEdit,
             closeEdit,
+            openImport,
+            closeImport,
             handleBulkAction,
             handleSingleAction,
             handleCloseActions,

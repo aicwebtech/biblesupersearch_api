@@ -33,6 +33,9 @@ vendor.zip
 !/bibles/*/uploads/
 /bibles/*/uploads/*
 !/bibles/*/uploads/.gitkeep
+!/content/*/uploads/
+/content/*/uploads/*
+!/content/*/uploads/.gitkeep
 /app/Premium
 
 #temp

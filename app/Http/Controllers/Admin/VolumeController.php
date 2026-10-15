@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use Illuminate\Http\Request;
 use App\Http\Responses\Response;
 use App\Http\Controllers\Controller;
+use App\ContentImportManager;
 use App\Models\Volume;
 use App\Models\LanguageAttr;
 use App\Models\VolumeTypes\Strongs;
@@ -30,7 +31,7 @@ class VolumeController extends Controller
         Volume::updateNeedsUpdate();
 
         $bootstrap = $this->getAdminBootstrap();
-        $bootstrap->volume_types = Volume::getTypes();
+        $bootstrap->volume_types = $this->getVolumeTypesBootstrap();
         $bootstrap = $this->encodeBootstrap($bootstrap);
 
         return view('admin.volumes', ['bootstrap' => $bootstrap]);
@@ -411,6 +412,107 @@ class VolumeController extends Controller
      * @param string $action Verb for the error message
      * @return Response|null 422 response if the action is refused
      */
+    /**
+     * Checks an uploaded content import file; see ContentImportManager::checkImportFile()
+     */
+    public function importCheck(Request $request): Response
+    {
+        $resp = new \stdClass();
+        $resp->success = TRUE;
+        $resp->errors  = [];
+
+        $Manager = new ContentImportManager();
+
+        if($Manager->checkImportFile($request->all())) {
+            $resp->volume = $Manager->parsed_attributes ?: [];
+            $resp->file   = $Manager->sanitized_filename;
+        }
+        else {
+            $resp->success = FALSE;
+            $resp->errors  = $Manager->getErrors();
+        }
+
+        return new Response($resp, $Manager->getHttpStatus());
+    }
+
+    /**
+     * Imports a checked file into a new volume, or replaces the content of an unofficial one (id)
+     */
+    public function import(Request $request): Response
+    {
+        $resp = new \stdClass();
+        $resp->success = TRUE;
+
+        $Manager   = new ContentImportManager();
+        $volume_id = $request->input('id') ? (int) $request->input('id') : NULL;
+        $type      = $request->input('_content_type');
+        $Volume    = NULL;
+
+        if($volume_id) {
+            $Volume = Volume::findOrFail($volume_id);
+
+            if($Volume->official) {
+                $resp->success = FALSE;
+                $resp->errors  = ['Cannot overwrite official volumes'];
+                return new Response($resp, 422);
+            }
+
+            if($Guard = $this->defaultGuard($Volume, 'replace')) {
+                return $Guard;
+            }
+
+            // Validate against the stored values, not whatever the client sent (or omitted)
+            $request->merge(['module' => $Volume->module]);
+            $type = $Volume->type;
+        }
+
+        $request->merge(['type' => is_string($type) ? $type : NULL, '_content_type' => $type]);
+
+        $rules = ContentImportManager::getImportRules($volume_id, is_string($type) ? $type : NULL);
+        $data  = $request->only(array_keys($rules));
+
+        $v = Validator::make($data, $rules, [], (new Volume())->attributes());
+
+        if($v->fails()) {
+            $resp->success = FALSE;
+            $resp->errors  = $v->errors();
+            return new Response($resp, 422);
+        }
+
+        if($Manager->importFile($data, $Volume)) {
+            $resp->volume = $Manager->parsed_attributes ?: [];
+            $resp->rows   = $Manager->rows_imported;
+        }
+        else {
+            $resp->success = FALSE;
+            $resp->errors  = $Manager->getErrors();
+        }
+
+        return new Response($resp, $Manager->getHttpStatus());
+    }
+
+    /**
+     * Volume types for the UI, each with its import sources and mappable import fields
+     *
+     * @return array<string, array<string, mixed>>
+     */
+    protected function getVolumeTypesBootstrap(): array
+    {
+        $types = [];
+
+        foreach(Volume::getTypes() as $type => $settings) {
+            $content_class = Volume::getContentClassName($type);
+
+            $types[$type] = [
+                'label'         => $settings['label'],
+                'importers'     => ContentImportManager::getImportersList($type),
+                'import_fields' => $content_class ? $content_class::getImportFieldList() : [],
+            ];
+        }
+
+        return $types;
+    }
+
     protected function defaultGuard(Volume $Volume, string $action): ?Response
     {
         if(!$Volume->isDefault()) {

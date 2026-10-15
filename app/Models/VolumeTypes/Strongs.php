@@ -16,8 +16,8 @@ class Strongs extends VolumeTypeBase
      * @var array<string, string>
      */
     public const IMPORT_CLASSES = [
-        // 'csv' => \App\ContentImporters\Csv\CsvStrongs::class,
-        // 'excel' => \App\ContentImporters\Excel\ExcelStrongs::class,
+        'csv'   => \App\ContentImporters\Csv\CsvStrongs::class,
+        'excel' => \App\ContentImporters\Excel\ExcelStrongs::class,
     ];
 
     /**

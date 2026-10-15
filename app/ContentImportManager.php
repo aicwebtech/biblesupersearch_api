@@ -2,22 +2,50 @@
 
 namespace App;
 
-use Illuminate\Http\Request;
-use \App\Models\Bible;
-use App\Helpers;
+use App\ContentImporters\ContentImportAbstract;
+use App\Models\Volume;
+use Illuminate\Database\QueryException;
+use Illuminate\Http\UploadedFile;
 
-class ContentImportManager 
+/**
+ * Imports volume content (a Strong's dictionary ...) from third party files.
+ *
+ * The volume counterpart of ImportManager.  Two-dimensional: an import source (csv, excel ...)
+ * is registered here, and each volume type lists the sources it supports, with the class that
+ * imports them, in its IMPORT_CLASSES.  Adding a source is an entry here plus an import class
+ * for each type that supports it; nothing else switches on the source.
+ *
+ * Checking a file (checkImportFile) takes request keys importer, content_type, file and
+ * volume_id, with the importer's settings alongside them.  Importing (importFile) takes the
+ * volume attributes plus _importer, _content_type, _file and _settings (JSON).
+ */
+class ContentImportManager
 {
     use Traits\Error;
 
     public $test_mode = FALSE;
 
-    public $content_type = null; // Volume type,ie 'strongs', 'bibles', etc.
-    public $import_source = null; // ie 'csv', 'excel', etc.
-    public $parsed_attributes = [];
-    public $sanitized_filename = NULL;
+    public ?string $content_type = NULL; // Volume type, ie 'strongs'
+    public ?string $import_source = NULL; // ie 'csv', 'excel'
+    public ?string $import_class = NULL;
+    public array $parsed_attributes = [];
+    public ?string $sanitized_filename = NULL;
 
-    // Registry / map of import sources that are accessible via HTTP request
+    /**
+     * Content rows imported by the last importFile()
+     *
+     * @var int
+     */
+    public int $rows_imported = 0;
+
+    /**
+     * Registry of import sources accessible via HTTP request
+     *
+     * kind - the UI component holding the source's settings form; a kind with no component
+     *        has no settings
+     *
+     * @var array<string, array{name: string, desc: string|array, url: string|null, ext: array<int, string>, kind: string}>
+     */
     protected static $import_source_map = [
         'csv' => [
             'name'  => 'CSV',
@@ -25,270 +53,354 @@ class ContentImportManager
             'url'   => NULL,
             'ext'   => ['csv'],
             'kind'  => 'Spreadsheet',
-        ],          
+        ],
         'excel' => [
             'name'  => 'Excel',
             'desc'  => 'Imports from an Excel spreadsheet.',
             'url'   => NULL,
             'ext'   => ['xls', 'xlsx'],
             'kind'  => 'Spreadsheet',
-        ],             
+        ],
     ];
 
     protected static $import_rules = [
-        '_importer'         => 'required', // source, ie 'csv', 'excel', etc.
-        '_content_type'     => 'required', // ie volume type
-        '_file'             => 'required',
-        '_settings'         => 'nullable',
-        '_force_use_module' => 'nullable',
+        '_importer'     => 'required|string',
+        '_content_type' => 'required|string',
+        '_file'         => 'required|string',
+        '_settings'     => 'nullable|string',
     ];
 
-    public static function getImporterSourcesList() 
-    {
-        $importers = [];
+    /**
+     * Request keys of the check step that are not importer settings
+     */
+    protected const CHECK_KEYS = ['importer', 'content_type', 'file', 'volume_id', '_token'];
 
-        foreach(static::$import_source_map as $type => $info) {
+    /**
+     * Every registered import source
+     *
+     * @return array<int, array<string, mixed>>
+     */
+    public static function getImportSources(): array
+    {
+        $sources = [];
+
+        foreach(static::$import_source_map as $key => $info) {
             if(is_array($info['desc'])) {
-                $info['desc'] = implode(PHP_EOL , $info['desc']);
+                $info['desc'] = implode(PHP_EOL, $info['desc']);
             }
 
-            $info['type'] = $type;
-            $importers[]  = $info;
+            $info['type'] = $key;
+            $sources[] = $info;
         }
 
-        return $importers;
+        return $sources;
     }
 
-    public static function getImportRules($bible_id = null) 
+    /**
+     * Import sources available for a volume type: those it has an import class for
+     *
+     * @param string $content_type
+     * @return array<int, array<string, mixed>>
+     */
+    public static function getImportersList(string $content_type): array
     {
-        $BibleClass = Helpers::find('\App\Models\Bible');
-
-        $rules = $BibleClass::getUpdateRules($bible_id);
-
-        foreach(static::$import_rules as $key => $rule) {
-            $rules[$key] = $rule;
-        }
-
-        return $rules;
+        return array_values(array_filter(
+            static::getImportSources(),
+            fn($source) => static::getImportClass($source['type'], $content_type) !== NULL
+        ));
     }
 
-    public function setImportSource(string $type) : bool
+    /**
+     * Validation rules for the import step
+     *
+     * @param int|null $volume_id Volume being replaced, if any
+     * @param string|null $content_type
+     * @return array<string, mixed>
+     */
+    public static function getImportRules(?int $volume_id, ?string $content_type): array
     {
-        $type = trim($type);
+        return array_replace(Volume::getUpdateRules($volume_id, $content_type), static::$import_rules);
+    }
 
-        if(!$type) {
-            $this->import_source = NULL;
-            return TRUE;
+    /**
+     * Import classes of a volume type: source => class
+     *
+     * @param string $content_type
+     * @return array<string, string>
+     */
+    protected static function getTypeImportClasses(string $content_type): array
+    {
+        $VolumeTypeClass = Volume::getVolumeTypeClass($content_type);
+
+        return $VolumeTypeClass ? $VolumeTypeClass::IMPORT_CLASSES : [];
+    }
+
+    /**
+     * The import class for a source and volume type, or NULL if there is none
+     *
+     * @param string $import_source
+     * @param string $content_type
+     * @return string|null
+     */
+    public static function getImportClass(string $import_source, string $content_type): ?string
+    {
+        if(!array_key_exists($import_source, static::$import_source_map)) {
+            return NULL;
         }
 
-        if(!array_key_exists($type, static::$import_source_map)) {
-            return $this->addError('Import type does not exist: ' . $type);
+        $class_name = static::getTypeImportClasses($content_type)[$import_source] ?? NULL;
+
+        if(!$class_name || !class_exists($class_name) || !is_subclass_of($class_name, ContentImportAbstract::class)) {
+            return NULL;
         }
 
-        $this->import_source = $type;
+        return $class_name;
+    }
+
+    public function setImportSource(string $source): bool
+    {
+        $source = trim($source);
+
+        if(!array_key_exists($source, static::$import_source_map)) {
+            return $this->addError('Importer does not exist: ' . $source, 4);
+        }
+
+        $this->import_source = $source;
         return TRUE;
     }
 
-    public function setContentType(string $type) : bool
+    public function setContentType(string $type): bool
     {
         $type = trim($type);
 
-        if(!$type) {
-            $this->content_type = NULL;
-            return TRUE;
-        }
-
-        if(!\App\Models\Volume::isValidVolumeType($type)) {
-            return $this->addError('Content type does not exist: ' . $type);
+        if(!Volume::getType($type)) {
+            return $this->addError('Volume type does not exist: ' . $type, 4);
         }
 
         $this->content_type = $type;
         return TRUE;
     }
 
-    public function checkImportFile($data) 
-    {
-        ini_set('memory_limit', '256M');
-
-        if(!$this->validateImporterSelection($data)) {
-            return FALSE;
-        }
-
-        $Importer = new $this->import_class();
-        $Importer->test_mode = (bool) $this->test_mode;
-        $type_info = static::$import_source_map[$this->import_source];
-        
-        if(!$Importer->setSettings($data)) {
-            $this->addErrors($Importer->getErrors(), $Importer->getErrorLevel());
-        }
-
-        if(isset($data['file']) && $data['file']->isValid()) {
-            $fileinfo = pathinfo( trim($data['file']->getClientOriginalName()) );
-
-            if(is_array($type_info['ext']) && !empty($type_info['ext'])) {
-                $matches_ext = FALSE;
-
-                foreach($type_info['ext'] as $e) {
-                    if(str_ends_with($fileinfo['basename'], $e)) {
-                        $matches_ext = TRUE;
-                        break;
-                    }
-                }
-
-                if(!$matches_ext) {
-                    if(count($type_info['ext']) > 1) {
-                        $msg = 'Extension must be one of the following: .' . implode(', .', $type_info['ext']);
-                    } else {
-                        $msg = 'This importer requires an extension of .' . $type_info['ext'][0];
-                    }
-
-                    return $this->addError($msg, 4);
-                }
-            }
-
-            if(!$Importer->acceptUploadedFile($data['file'])) {
-                $this->addErrors($Importer->getErrors(), $Importer->getErrorLevel());
-            }
-        }
-        else {
-            $this->addError('File missing or invalid.  Please note, the maximum upload filesize is ' . Helpers::maxUploadSize());
-        }
-
-        $this->sanitized_filename = $Importer->file;
-        $this->parsed_attributes  = $Importer->getBibleAttributes();
-
-        foreach($this->parsed_attributes as $key => &$value) {
-            if(is_string($value)) {
-                $value = iconv("UTF-8","UTF-8//IGNORE", $value);
-            }
-        }
-        unset($value);
-
-        if(isset($data['volume_id']) && $data['volume_id']) {
-            $Volume = \App\Models\Volume::find($data['volume_id']);
-            $this->parsed_attributes = array_replace($this->parsed_attributes, $Volume->attributesToArray());
-        }
-
-        return $this->hasErrors() ? FALSE : TRUE;
-    }
-
     /**
-      * Imports a Volume for a given file and importer
-      * 
-      */
-    public function importFile($data, ?\App\Models\Volume $Volume = null) 
+     * The importer for a source and volume type, with errors added if there is none
+     *
+     * @param mixed $import_source
+     * @param mixed $content_type
+     * @return ContentImportAbstract|null
+     */
+    public function makeImporter(mixed $import_source, mixed $content_type): ?ContentImportAbstract
     {
-        ini_set('memory_limit', '256M');
-
-        if(!$this->validateImporterSelection($data)) {
-            return FALSE;
+        if(!is_string($import_source) || $import_source === '') {
+            $this->addError('Importer is required', 4);
+            return NULL;
         }
 
-        $importer = $data['_importer'];
-        $type     = $data['_content_type'];
-        $file     = $data['_file'];
-        $use_mod  = (array_key_exists('_force_use_module', $data) && $data['_force_use_module']);
-        $settings = json_decode($data['_settings'], TRUE);
-
-        unset($data['_importer']);
-        unset($data['_content_type']);
-        unset($data['_file']);
-        unset($data['_settings']);
-
-        if(!$use_mod && !$this->_checkModule($data['module'])) {
-            return FALSE;
+        if(!is_string($content_type) || $content_type === '') {
+            $this->addError('Volume type is required', 4);
+            return NULL;
         }
 
-        if(!$Volume) {            
-            $VolumeClass = \App\Helpers::find('\App\Models\Volume');
-            $Volume      = new $VolumeClass();
-        }
-        
-        $Importer   = new $this->import_class();
-
-        // `_file` is echoed back by the client and is not trusted. Validate it
-        // before creating the Bible row so a rejected import leaves nothing behind.
-        $safe_file = $Importer->safeImportFileName($file);
-
-        if($safe_file === NULL) {
-            return $this->addError('Import file is missing or invalid.  Please upload the file again.');
-        }
-
-        $Volume->fill($data);
-        $Volume->save();
-
-        $Importer->module       = $Volume->module;
-        $Importer->file         = $safe_file;
-        $Importer->overwrite    = FALSE;
-        $Importer->insert_into_bible_table = FALSE; // We just saved the Bible above
-        
-        if(!$Importer->setSettings($settings) || !$Importer->import()) {
-            $Volume->delete();
-            return $this->addErrors($Importer->getErrors(), $Importer->getErrorLevel());
-        }
-
-        $this->parsed_attributes = $Volume->getAttributes();
-        return TRUE;
-    }
-
-    protected function validateImporterSelection(array $data) : bool
-    {
-        if(!isset($data['_importer']) || !$this->setImportSource($data['_importer'])) {
-            return $this->addError('Importer is missing or invalid');
-        }
-
-        if(!isset($data['_content_type']) || !$this->setContentType($data['_content_type'])) {
-            return $this->addError('Content type is missing or invalid');
+        if(!$this->setImportSource($import_source) || !$this->setContentType($content_type)) {
+            return NULL;
         }
 
         $this->import_class = static::getImportClass($this->import_source, $this->content_type);
 
         if(!$this->import_class) {
-            return $this->addError('No import class exists for this importer and content type');
+            $this->addError('This importer cannot import this volume type', 4);
+            return NULL;
         }
 
-        return TRUE;
-    }
+        $Importer = new $this->import_class($this->content_type);
+        $Importer->test_mode = (bool) $this->test_mode;
 
-    protected function _checkModule($module) 
-    {
-        $res = config('modules_reserved.' . $module);
-
-        if(empty($res)) {
-            return TRUE;
-        }
-
-        $this->addError('Module \'' . $module . '\' is reserved for \'' . $res['name'] . '\'');
-        $this->errors['module_reserved'] = 'Module Reserved';
-        $this->errors['module_info']     = $res;
-
-        return FALSE;
+        return $Importer;
     }
 
     /**
-     * Returns the import class for a given input source and content type, or NULL if none exists
+     * Checks an uploaded file with the selected importer and settings, and stores it for import.
      *
-     * @param string $input_source
-     * @param string $content_type
-     * @return string|null
+     * @param array $data Request data; see the class description
+     * @return bool
      */
-    public static function getImportClass(string $input_source, string $content_type): ?string
+    public function checkImportFile(array $data): bool
     {
-        if(!array_key_exists($input_source, static::$import_source_map)) {
-            return NULL;
+        ini_set('memory_limit', '256M');
+
+        $Importer = $this->makeImporter($data['importer'] ?? NULL, $data['content_type'] ?? NULL);
+
+        if(!$Importer) {
+            return FALSE;
         }
 
-        // Get VolumeContent class for this content type, then get the import class for that volume type
-        $VolumeTypeClass = \App\Models\Volume::getVolumeTypeClass($content_type);
-
-        // Get the import class for this volume type, if it exists
-        $ClassName = $VolumeTypeClass::IMPORT_CLASSES[$input_source] ?? NULL;
-
-        if(!$ClassName || !class_exists($ClassName)) {
-            return NULL;
+        if(!$Importer->setSettings(array_diff_key($data, array_flip(static::CHECK_KEYS)))) {
+            return $this->addErrors($Importer->getErrors(), $Importer->getErrorLevel());
         }
 
-        return $ClassName;
+        $File = $data['file'] ?? NULL;
+
+        if(!$File instanceof UploadedFile || !$File->isValid()) {
+            return $this->addError('File missing or invalid.  Please note, the maximum upload filesize is ' . Helpers::maxUploadSize(), 4);
+        }
+
+        if(!$this->fileMatchesExtension($File->getClientOriginalName())) {
+            return FALSE;
+        }
+
+        if(!$Importer->acceptUploadedFile($File)) {
+            return $this->addErrors($Importer->getErrors(), $Importer->getErrorLevel());
+        }
+
+        $this->sanitized_filename = $Importer->getFile();
+        $this->parsed_attributes  = $this->cleanAttributes($Importer->getVolumeAttributes());
+
+        if(!empty($data['volume_id'])) {
+            $Volume = Volume::find((int) $data['volume_id']);
+
+            if($Volume) {
+                $this->parsed_attributes = array_replace($this->parsed_attributes, $Volume->attributesToArray());
+            }
+        }
+
+        $this->parsed_attributes['type'] = $this->content_type;
+
+        return !$this->hasErrors();
+    }
+
+    /**
+     * Imports a checked file into a new volume, or into $Volume, replacing its content.
+     *
+     * A new volume is deleted again if the import fails.  A replaced volume is left
+     * uninstalled: its old content is dropped before the new is read.
+     *
+     * @param array $data Validated request data; see the class description
+     * @param Volume|null $Volume Unofficial volume to replace the content of
+     * @return bool
+     */
+    public function importFile(array $data, ?Volume $Volume = NULL): bool
+    {
+        ini_set('memory_limit', '256M');
+
+        $Importer = $this->makeImporter($data['_importer'] ?? NULL, $data['_content_type'] ?? NULL);
+
+        if(!$Importer) {
+            return FALSE;
+        }
+
+        $settings = json_decode((string) ($data['_settings'] ?? ''), TRUE);
+
+        // `_file` is echoed back by the client and is not trusted.  Validate it before
+        // creating the volume so a rejected import leaves nothing behind.
+        $safe_file = $Importer->safeImportFileName($data['_file'] ?? NULL);
+
+        if($safe_file === NULL) {
+            return $this->addError('Import file is missing or invalid.  Please upload the file again.', 4);
+        }
+
+        if(!$Importer->setSettings(is_array($settings) ? $settings : [])) {
+            return $this->addErrors($Importer->getErrors(), $Importer->getErrorLevel());
+        }
+
+        $attributes = array_diff_key($data, array_flip(array_merge(array_keys(static::$import_rules), ['type', 'official'])));
+        $created = !$Volume;
+
+        if($Volume) {
+            if($Volume->type !== $this->content_type) {
+                return $this->addError('Volume type does not match', 4);
+            }
+
+            if($Volume->official) {
+                return $this->addError('Cannot overwrite official volumes', 4);
+            }
+
+            foreach(Volume::IMMUTABLE_FIELDS as $field) {
+                unset($attributes[$field]);
+            }
+        }
+        else {
+            $VolumeClass = Volume::getVolumeTypeClass($this->content_type);
+            $Volume = new $VolumeClass();
+        }
+
+        try {
+            $Volume->fill($attributes);
+            $Volume->type        = $this->content_type;
+            $Volume->official    = 0;
+            $Volume->importer    = $this->import_source;
+            $Volume->import_file = $safe_file;
+            $Volume->save();
+        }
+        catch(QueryException $e) {
+            report($e);
+            return $this->addError('Could not save the volume: ' . $e->getMessage(), 4);
+        }
+
+        if($Volume->installed) {
+            $Volume->uninstall();
+        }
+
+        $Importer->setVolume($Volume);
+        $Importer->setFile($safe_file);
+
+        if(!$Importer->import()) {
+            if($created) {
+                $Volume->delete();
+            }
+
+            return $this->addErrors($Importer->getErrors(), $Importer->getErrorLevel());
+        }
+
+        $this->rows_imported = $Importer->getRowsImported();
+        $this->parsed_attributes = $Volume->fresh()->attributesToArray();
+        return TRUE;
+    }
+
+    /**
+     * Whether a file name has one of the selected source's extensions, adding an error if not
+     *
+     * @param string $file_name
+     * @return bool
+     */
+    protected function fileMatchesExtension(string $file_name): bool
+    {
+        $extensions = static::$import_source_map[$this->import_source]['ext'] ?? [];
+
+        if(!$extensions) {
+            return TRUE;
+        }
+
+        $file_name = strtolower(trim($file_name));
+
+        foreach($extensions as $extension) {
+            if(str_ends_with($file_name, '.' . strtolower($extension))) {
+                return TRUE;
+            }
+        }
+
+        if(count($extensions) > 1) {
+            return $this->addError('Extension must be one of the following: .' . implode(', .', $extensions), 4);
+        }
+
+        return $this->addError('This importer requires an extension of .' . $extensions[0], 4);
+    }
+
+    /**
+     * Volume attributes read from a file: only the type's settings fields, as valid UTF-8
+     *
+     * @param array $attributes
+     * @return array
+     */
+    protected function cleanAttributes(array $attributes): array
+    {
+        $attributes = array_intersect_key($attributes, array_flip(Volume::getSettingsFields($this->content_type)));
+
+        foreach($attributes as &$value) {
+            if(is_string($value)) {
+                $value = iconv('UTF-8', 'UTF-8//IGNORE', $value);
+            }
+        }
+
+        unset($value);
+        return $attributes;
     }
 }
-

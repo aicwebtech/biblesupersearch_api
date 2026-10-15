@@ -527,4 +527,117 @@ class VolumeControllerTest extends TestCase
     {
         $this->admin()->getJson('/admin/volumes/999999999')->assertStatus(404);
     }
+
+    // -----------------------------------------------------------------------
+    // Content import
+    // -----------------------------------------------------------------------
+
+    /**
+     * @return array<string, mixed>
+     */
+    protected function importMapping(): array
+    {
+        return ['first_row_data' => 2, 'col_A' => 'number', 'col_B' => 'definition'];
+    }
+
+    protected function makeImportCsv(): \Illuminate\Http\UploadedFile
+    {
+        $name = 'vol_ctrl_' . bin2hex(random_bytes(4)) . '.csv';
+        $path = sys_get_temp_dir() . '/' . $name;
+        file_put_contents($path, "Number,Definition\nH1,One\nG2,Two\n");
+
+        return new \Illuminate\Http\UploadedFile($path, $name, 'text/csv', NULL, TRUE);
+    }
+
+    protected function removeImportUpload(?string $file): void
+    {
+        $path = Volume::getModulePath('strongs') . 'uploads/' . $file;
+
+        if($file && is_file($path)) {
+            unlink($path);
+        }
+    }
+
+    public function testImportEndpointsRequireAnAdmin(): void
+    {
+        $this->postJson('/admin/volumes/importcheck', [])->assertStatus(401);
+        $this->postJson('/admin/volumes/import', [])->assertStatus(401);
+    }
+
+    public function testIndexBootstrapsImportersAndFields(): void
+    {
+        $response = $this->admin()->get('/admin/volumes');
+
+        $response->assertStatus(200);
+        $response->assertSee('import_fields', FALSE);
+        $response->assertSee('number_hg', FALSE);
+    }
+
+    public function testCheckThenImportOverHttp(): void
+    {
+        $input = $this->volumeInput();
+        $File  = $this->makeImportCsv();
+        $file  = NULL;
+
+        try {
+            $check = $this->admin()->post('/admin/volumes/importcheck', array_merge($this->importMapping(), [
+                'importer'     => 'csv',
+                'content_type' => 'strongs',
+                'file'         => $File,
+            ]));
+
+            $check->assertStatus(200)->assertJson(['success' => TRUE, 'volume' => ['type' => 'strongs']]);
+            $file = $check->json('file');
+
+            $data = $input;
+            unset($data['type']);
+
+            $import = $this->admin()->postJson('/admin/volumes/import', array_merge($data, [
+                '_importer'     => 'csv',
+                '_content_type' => 'strongs',
+                '_file'         => $file,
+                '_settings'     => json_encode($this->importMapping()),
+            ]));
+
+            $import->assertStatus(200)->assertJson(['success' => TRUE, 'rows' => 2]);
+
+            $Volume = Volume::findByTypeAndModule('strongs', $input['module']);
+            $this->assertSame(['H1', 'G2'], $Volume->content()->newQuery()->orderBy('id')->pluck('number')->all());
+        }
+        finally {
+            $this->removeByModule($input['module']);
+            $this->removeImportUpload($file);
+            @unlink($File->getPathname());
+        }
+    }
+
+    public function testImportValidatesTheVolumeRecord(): void
+    {
+        $response = $this->admin()->postJson('/admin/volumes/import', [
+            '_importer'     => 'csv',
+            '_content_type' => 'strongs',
+            '_file'         => 'whatever.csv',
+        ]);
+
+        $response->assertStatus(422)->assertJsonPath('success', FALSE);
+        $this->assertArrayHasKey('name', $response->json('errors'));
+        $this->assertArrayHasKey('module', $response->json('errors'));
+    }
+
+    public function testImportRefusesToReplaceAnOfficialVolume(): void
+    {
+        $Volume = $this->makeVolumeFixture(['official' => 1]);
+
+        try {
+            $this->admin()->postJson('/admin/volumes/import', [
+                'id'            => $Volume->id,
+                '_importer'     => 'csv',
+                '_content_type' => 'strongs',
+                '_file'         => 'whatever.csv',
+            ])->assertStatus(422)->assertJsonPath('errors.0', 'Cannot overwrite official volumes');
+        }
+        finally {
+            $this->removeVolumeFixture($Volume);
+        }
+    }
 }

@@ -28,6 +28,28 @@ class StrongsContent extends ContentBase
         'number_hg' => 'Strong\'s number - H/G prefix only (no leading zeros, no integer portion)',
     ];
 
+    public const IMPORT_REQUIRED_FIELDS = ['number', 'definition'];
+
+    /**
+     * number can come from its prefix and integer in separate columns; StrongsFormatter joins them
+     */
+    public const IMPORT_FIELD_ALTERNATIVES = [
+        'number' => [['number_hg', 'number_int']],
+    ];
+
+    public const IMPORT_UNIQUE_FIELDS = ['number'];
+
+    /**
+     * A Strong's number as stored: H or G, then the number without leading zeros, with an
+     * optional lower case letter for a variant (H1234a)
+     */
+    public const NUMBER_PATTERN = '/^[HG][1-9][0-9]{0,4}[a-z]?$/';
+
+    /**
+     * Columns limited to 255 characters
+     */
+    protected const IMPORT_SHORT_FIELDS = ['root_word', 'transliteration', 'pronunciation', 'short_definition'];
+
     /**
      * contents.txt columns.  Only ever add to the end - see ContentBase::EXPORT_FIELDS.
      * No id or timestamps: ids are generated on install.
@@ -126,6 +148,39 @@ class StrongsContent extends ContentBase
         });
 
         return $count;
+    }
+
+    /**
+     * @param array<string, mixed> $row
+     * @return array<int, string>
+     */
+    public static function validateImportRow(array $row): array
+    {
+        $errors = parent::validateImportRow($row);
+        $labels = static::getImportFields();
+        $number = $row['number'] ?? NULL;
+
+        if($number !== NULL && $number !== '' && !preg_match(static::NUMBER_PATTERN, (string) $number)) {
+            $errors[] = 'Strong\'s number is invalid: \'' . $number . '\'.  Expected H or G followed by a number, such as H1 or G25';
+        }
+
+        foreach(static::IMPORT_SHORT_FIELDS as $field) {
+            if(isset($row[$field]) && mb_strlen((string) $row[$field]) > 255) {
+                $errors[] = ($labels[$field] ?? $field) . ' may not be longer than 255 characters';
+            }
+        }
+
+        return $errors;
+    }
+
+    /**
+     * Imported rows are never special (tense / voice / mood) entries
+     */
+    public static function prepareImportRow(array $row): array
+    {
+        $row = parent::prepareImportRow($row);
+        $row['is_special'] = 0;
+        return $row;
     }
 
     /**

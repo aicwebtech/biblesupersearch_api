@@ -1,12 +1,18 @@
 import Base from './Base.vue.js';
 import Roles from '../../../../bin/custom_vue/components/SpreadsheetColumnRoles.vue.js';
+import Presets from '../../../../bin/custom_vue/components/ImportPresets.vue.js';
+import { columnsInSettings } from '../../../../bin/custom_vue/components/SpreadsheetColumnCount.js';
 
 var tpl = `
-    <Roles
-        :roles='columnRoles'
-        :formData='settings'
-        :initColumns='6'
-    ></Roles>
+    <div>
+        <Presets type='bible' :settings='settings'></Presets>
+
+        <Roles
+            :roles='columnRoles'
+            :formData='settings'
+            :initColumns='initColumns'
+        ></Roles>
+    </div>
 `;
 
 export default {
@@ -14,7 +20,14 @@ export default {
     extends: Base,
 
     components: {
-        Roles
+        Roles,
+        Presets
+    },
+
+    computed: {
+        initColumns() {
+            return Math.max(6, columnsInSettings(this.settings));
+        }
     },
 
     data() {

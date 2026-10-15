@@ -2,178 +2,463 @@
 
 namespace App\ContentImporters;
 
-use Illuminate\Http\UploadedFile;
+use App\Helpers;
 use App\Models\Volume;
-use App\Models\Language;
-use \DB;
+use App\Models\VolumeContent\ContentBase;
+use App\Traits\Error;
+use App\Traits\ImportFileHandling;
+use Illuminate\Http\UploadedFile;
 
+/**
+ * Base class for importing volume content (a Strong's dictionary ...) from a third party file.
+ *
+ * Owns the lifecycle; a subclass supplies only the file I/O (openFile, readBatches, closeFile)
+ * and the mapping of a raw row to content fields (mapRow).  Each content type's formatter
+ * trait supplies formatRow().
+ *
+ * Checking a file:  openFile → readMeta → first batch: mapRow → formatRow → validate → closeFile
+ * Importing a file: install structure → openFile → readMeta → each batch: mapRow → formatRow →
+ *                   validate → insert → closeFile → enable
+ *
+ * Nothing here assumes a spreadsheet: column mapping lives in SpreadsheetAbstract, and an
+ * importer with no user settings keeps the no-op setSettingsHelper().
+ *
+ * Importing creates the content table, which MySQL commits implicitly, so a transaction cannot
+ * undo a failed import.  A failure uninstalls the volume instead, dropping the table again.
+ */
 abstract class ContentImportAbstract
 {
-    public $test_mode = false;
+    use Error;
+    use ImportFileHandling;
 
     /**
-     * The import source type (e.g., 'csv', 'excel', etc.)
-     *
-     * @var string
+     * Rows checked by check()
      */
-    protected $import_source;
+    public const CHECK_ROW_LIMIT = 200;
 
     /**
-     * The content type (e.g., 'strongs', 'bibles', etc.)
+     * Rows read per batch when importing
+     */
+    public const BATCH_SIZE = 500;
+
+    /**
+     * Seconds check() and import() may run for.  A web request's default (30s) is far too
+     * short to import a full dictionary: reading a 14k row .xlsx alone takes about 25s.
+     */
+    public const TIME_LIMIT = 300;
+
+    public $test_mode = FALSE;
+
+    /**
+     * Volume type key, ie 'strongs'
      *
      * @var string
      */
     protected $content_type;
 
     /**
-     * The import class name for the specified import source
+     * The volume being imported into
      *
-     * @var string|null
+     * @var Volume|null
      */
-    protected $import_class;
+    protected $Volume = NULL;
 
-    protected $overwrite = false;
-    protected $insert_into_volume_table = true;
-    protected $module = null;
+    /**
+     * Whether to enable the volume once imported
+     *
+     * @var bool
+     */
+    protected $enable = TRUE;
+
+    /**
+     * User-selectable settings, specific to each importer
+     *
+     * @var array<string, mixed>
+     */
     protected $settings = [];
 
+    /**
+     * Volume attributes read from the file by readMeta(), to pre-populate the volume record
+     *
+     * @var array<string, mixed>
+     */
     protected $volume_attributes = [];
-    protected $default_dir;
-    protected $debug = false;
+
+    /**
+     * Content rows imported by the last import()
+     *
+     * @var int
+     */
+    protected $rows_imported = 0;
+
     protected $file; // File name (no dir)
-    protected $enable = TRUE; // Whether to enable the Bible for use after it has been imported
-    protected $_table = NULL;
-    protected $has_cli = TRUE; // Whether there is a command-line interface access to this importer
-    protected $has_gui = FALSE; // Whether there is a user interface access (via the Bible manager) to this importer
-    
-    // todo - preserve files or no? If no, just import from tmp files and delete them. If yes, then import from a dedicated directory and leave the files there.  This is a per-importer setting.
-    protected $path_short = 'misc';  // Path (inside /bibles) to where import files are located
-    protected $upload_dir_short = 'uploads'; // Subdirectory of $path_short holding HTTP uploads, and nothing else.  Empty means uploads go into $path_short itself
-    protected $has_dedicated_dir = NULL; // Whether or not $path_short is dedicated to this specific importer.  Defaults to TRUE if $path_short is 'misc' and FALSE otherwise
-
-    protected $_existing = null; // true if the volume already exists, false if not, null if unknown
+    protected $path_short = NULL; // Directory inside content/; the content type
+    protected $upload_dir_short = 'uploads'; // Subdirectory of $path_short holding HTTP uploads
+    protected $upload_disk = 'content'; // Filesystem disk uploads are stored on; see ImportFileHandling
 
     /**
-     *   Checks the uploaded file to make sure it works with the specific importer.
-     *   Also, must parse any and all Bible metadata from the file and map them to Bible model attributes 
-     *   @param Illuminate\Http\UploadedFile $File - the file to import
-     *   @return bool $success
+     * Values seen so far for each of the content type's unique fields: field => value => row
+     *
+     * @var array<string, array<string, int|string>>
      */
-    abstract public function checkUploadedFile(UploadedFile $File): bool;
+    protected $_unique_seen = [];
 
     /**
-     *   Imports the Volume based on the current set of settings
-     *   @return bool $success
+     * @param string $content_type Volume type key
+     * @throws \InvalidArgumentException For an unregistered type
      */
-    public function import() : bool
+    public function __construct(string $content_type)
     {
-        try {
-            // Init transaction
-
-            DB::beginTransaction();
-
-            $Volume = $this->_getVolume($this->module, $this->content_type);
-
-            if(!$this->overwrite && $this->_existing && $this->insert_into_volume_table) {
-                return $this->addError('Module already exists: \'' . $this->module . '\' Use --overwrite to overwrite it.', 4);
-            }
-
-            // 1 Open the file
-            $this->openFile($this->file);
-
-            if(is_callable($this->beforeImportVolume)) {
-                call_user_func($this->beforeImportVolume, $Volume);
-            }
-
-            // 2 Read the file into memory (batched)
-            // 3 Map the file's data to the Volume's attributes and insert into the volume's content table
-            if(!$this->_importHelper($Volume)) {
-                return FALSE;
-            }
-
-            // 4 Insert the Volume into the volumes table (if $this->insert_into_volume_table)
-            if($this->insert_into_volume_table) {
-                $Volume->save();
-            }
-
-            if(is_callable($this->afterImportVolume)) {
-                call_user_func($this->afterImportVolume, $Volume);
-            }
-
-            // 5 Close the file
-            $this->closeFile();
-
-            if($this->enable) {
-                $Volume->enable();
-            }
-
-            $Language = Language::findByCode($Volume->language_id, true);
-            $Language->initLanguage();
-
-            // Commit transaction
-            DB::commit();
-
-        } catch (\Exception $e) {
-            DB::rollBack();
-            return $this->addError('Import failed: ' . $e->getMessage(), 4);
+        if(!Volume::getType($content_type) || !Volume::getContentClassName($content_type)) {
+            throw new \InvalidArgumentException('Unknown volume type: ' . $content_type);
         }
 
-        return TRUE;
-    }
-
-    protected function openFile(UploadedFile $File): bool
-    {
-        if(!is_readable($File->getRealPath())) {
-            return $this->addError('Uploaded file is not readable: ' . $File->getRealPath());
-        }
-
-        return TRUE;
-    }
-
-    protected function closeFile(): bool
-    {
-        return TRUE;
+        $this->content_type = $content_type;
+        $this->path_short   = $content_type;
     }
 
     /**
-     * Sets the user specified settings.  These are specific to each importer and some won't use this.
-     * 
-     * @param array $settings
-     * @return bool TRUE if successful, FALSE if not
+     * Opens the file for reading
+     *
+     * @param string $path Full path
+     * @return bool
      */
-    public function setSettings(array $settings) : bool
+    abstract protected function openFile(string $path): bool;
+
+    /**
+     * Reads the content rows, in batches
+     *
+     * Each batch is keyed by the row's position in the file, for messages.
+     *
+     * @param int $size Rows per batch
+     * @return \Generator<int, array<int|string, array>>
+     */
+    abstract protected function readBatches(int $size): \Generator;
+
+    abstract protected function closeFile(): void;
+
+    /**
+     * Maps one raw row from the file to content fields
+     *
+     * @param array $raw
+     * @param int|string $row Row position, for messages
+     * @return array<string, mixed>
+     */
+    abstract protected function mapRow(array $raw, int|string $row): array;
+
+    /**
+     * Volume attributes held in the file itself, if the format has any
+     *
+     * @return array<string, mixed>
+     */
+    protected function readMeta(): array
     {
-        $this->settings = $settings;
+        return [];
+    }
+
+    /**
+     * Cleans up a mapped row.  Supplied by the content type's formatter trait.
+     *
+     * @param array<string, mixed> $row
+     * @return array<string, mixed>
+     */
+    protected function formatRow(array $row): array
+    {
+        return $row;
+    }
+
+    public function getImportDir(): string
+    {
+        return Volume::getModulePath($this->content_type);
+    }
+
+    /**
+     * @return class-string<ContentBase>
+     */
+    public function getContentClass(): string
+    {
+        return Volume::getContentClassName($this->content_type);
+    }
+
+    public function getContentType(): string
+    {
+        return $this->content_type;
+    }
+
+    public function setVolume(Volume $Volume): void
+    {
+        $this->Volume = $Volume;
+    }
+
+    public function setFile(?string $file): void
+    {
+        $this->file = $file;
+    }
+
+    public function getFile(): ?string
+    {
+        return $this->file;
+    }
+
+    public function setEnable(bool $enable): void
+    {
+        $this->enable = $enable;
+    }
+
+    public function getVolumeAttributes(): array
+    {
+        return $this->volume_attributes;
+    }
+
+    public function getRowsImported(): int
+    {
+        return $this->rows_imported;
+    }
+
+    /**
+     * Sets the user-specified settings.  These are specific to each importer and some won't use them.
+     *
+     * @param array|null $settings
+     * @return bool TRUE if valid
+     */
+    public function setSettings(?array $settings): bool
+    {
+        $this->settings = $settings ?? [];
 
         return $this->setSettingsHelper();
     }
 
-    /** 
+    /**
      * Hook for post-processing and validating custom settings
-     * 
-     * @return bool TRUE if valid, FALSE if not
+     *
+     * @return bool TRUE if valid
      */
-    protected function setSettingsHelper() : bool
+    protected function setSettingsHelper(): bool
     {
         return TRUE;
     }
 
-    protected function _getVolume(string $module, string $content_type)
+    /**
+     * Checks an uploaded file; see check()
+     */
+    public function checkUploadedFile(UploadedFile $File): bool
     {
-        $Volume = Volume::findByTypeAndModule($content_type, $module);
-        
-        if($this->_existing === null) {
-            $this->_existing = (bool) $Volume;
+        return $this->check($File->getPathname());
+    }
+
+    /**
+     * Raises the execution time limit to TIME_LIMIT.  Never lowers it: an unlimited (0) or
+     * longer limit, as on the CLI, is left alone.
+     *
+     * @return void
+     */
+    protected static function extendTimeLimit(): void
+    {
+        $current = (int) ini_get('max_execution_time');
+
+        if($current > 0 && $current < static::TIME_LIMIT) {
+            set_time_limit(static::TIME_LIMIT);
+        }
+    }
+
+    /**
+     * Checks that the file can be imported with the current settings, from its first rows,
+     * and reads any volume metadata it holds.
+     *
+     * @param string $path
+     * @return bool
+     */
+    public function check(string $path): bool
+    {
+        static::extendTimeLimit();
+        $this->_unique_seen = [];
+        $this->volume_attributes = [];
+
+        if(!$this->openFile($path)) {
+            return FALSE;
         }
 
-        if(!$Volume) {
-            $Volume = new Volume;
-            $Volume->module = $module;
-            $Volume->type = $content_type;
+        $rows = 0;
+
+        try {
+            $this->volume_attributes = $this->readMeta();
+
+            foreach($this->readBatches(static::CHECK_ROW_LIMIT) as $batch) {
+                foreach($batch as $position => $raw) {
+                    $rows += $this->processRow($raw, $position) === NULL ? 0 : 1;
+
+                    if($this->hasErrors()) {
+                        break 2;
+                    }
+                }
+
+                break; // One batch is enough to check
+            }
+        }
+        catch(\Throwable $e) {
+            return $this->addError('Could not read file: ' . $e->getMessage(), 4);
+        }
+        finally {
+            $this->closeFile();
         }
 
-        $Verses = $Volume->verses();
-        $this->_table = $Verses->getTable();
-        return $Volume;
+        if(!$this->hasErrors() && $rows == 0) {
+            $this->addError('No content found in this file with the given settings', 4);
+        }
+
+        return !$this->hasErrors();
+    }
+
+    /**
+     * Imports the file into the volume set with setVolume().
+     *
+     * The volume must be saved and not installed.  Its content table is created here and
+     * dropped again (the volume uninstalled) if the import fails.
+     *
+     * @return bool
+     */
+    public function import(): bool
+    {
+        static::extendTimeLimit();
+        $this->_unique_seen  = [];
+        $this->rows_imported = 0;
+
+        if(!$this->Volume || !$this->Volume->exists) {
+            return $this->addError('No volume to import into', 4);
+        }
+
+        if($this->Volume->type !== $this->content_type) {
+            return $this->addError('Volume type does not match this importer', 4);
+        }
+
+        if($this->Volume->installed) {
+            return $this->addError('Volume is already installed; uninstall it before importing', 4);
+        }
+
+        $path = $this->resolveImportFile($this->file);
+
+        if($path === NULL) {
+            return $this->addError('Import file is missing or invalid.  Please upload the file again.', 4);
+        }
+
+        if(!$this->Volume->install(TRUE)) {
+            return $this->addErrors($this->Volume->getErrors(), 4);
+        }
+
+        try {
+            $this->rows_imported = $this->importFromPath($path);
+        }
+        catch(\Throwable $e) {
+            report($e);
+            $this->addError('Import failed: ' . $e->getMessage(), 4);
+        }
+
+        if($this->hasErrors()) {
+            $this->Volume->uninstall();
+            return FALSE;
+        }
+
+        if($this->enable) {
+            $this->Volume->enable();
+        }
+
+        return TRUE;
+    }
+
+    /**
+     * @param string $path
+     * @return int Rows inserted; 0 with an error added on failure
+     */
+    protected function importFromPath(string $path): int
+    {
+        if(!$this->openFile($path)) {
+            return 0;
+        }
+
+        $content_class = $this->getContentClass();
+        $Content = $this->Volume->content();
+        $Table   = $Content->getConnection()->table($Content->getTable());
+        $chunk   = Helpers::getInsertChunkSize(count($content_class::prepareImportRow([])), $Content->getConnectionName());
+        $count   = 0;
+
+        try {
+            $this->volume_attributes = $this->readMeta();
+
+            foreach($this->readBatches(static::BATCH_SIZE) as $batch) {
+                $insertable = [];
+
+                foreach($batch as $position => $raw) {
+                    $row = $this->processRow($raw, $position);
+
+                    if($this->hasErrors()) {
+                        return 0;
+                    }
+
+                    if($row !== NULL) {
+                        $insertable[] = $content_class::prepareImportRow($row);
+                    }
+                }
+
+                foreach(array_chunk($insertable, $chunk) as $rows) {
+                    $Table->insert($rows);
+                }
+
+                $count += count($insertable);
+            }
+        }
+        finally {
+            $this->closeFile();
+        }
+
+        if($count == 0) {
+            $this->addError('No content found in this file with the given settings', 4);
+        }
+
+        return $count;
+    }
+
+    /**
+     * Maps, formats and validates one raw row
+     *
+     * @param array $raw
+     * @param int|string $position
+     * @return array<string, mixed>|null The row, or NULL for a blank row or an invalid one (with errors added)
+     */
+    protected function processRow(array $raw, int|string $position): ?array
+    {
+        $mapped = $this->mapRow($raw, $position);
+
+        if($this->hasErrors()) {
+            return NULL;
+        }
+
+        if(!array_filter($mapped, fn($value) => $value !== NULL && $value !== '')) {
+            return NULL;
+        }
+
+        $row = $this->formatRow($mapped);
+        $content_class = $this->getContentClass();
+        $errors = $content_class::validateImportRow($row);
+
+        foreach($content_class::IMPORT_UNIQUE_FIELDS as $field) {
+            $value = $row[$field] ?? NULL;
+
+            if($value === NULL || $value === '') {
+                continue;
+            }
+
+            if(isset($this->_unique_seen[$field][$value])) {
+                $errors[] = 'Duplicate ' . $field . ' \'' . $value . '\', also on row ' . $this->_unique_seen[$field][$value];
+            }
+            else {
+                $this->_unique_seen[$field][$value] = $position;
+            }
+        }
+
+        foreach($errors as $error) {
+            $this->addError('Row ' . $position . ': ' . $error, 4);
+        }
+
+        return $errors ? NULL : $row;
     }
 }

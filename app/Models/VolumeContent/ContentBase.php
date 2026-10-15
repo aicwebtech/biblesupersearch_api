@@ -47,6 +47,27 @@ abstract class ContentBase extends Model implements ContentInterface
     public const IMPORT_FIELDS_EXTRA = [];
 
     /**
+     * Fields an imported row must have once mapped and formatted.  A field listed in
+     * IMPORT_FIELD_ALTERNATIVES can be mapped through one of its alternatives instead.
+     * @var array<string>
+     */
+    public const IMPORT_REQUIRED_FIELDS = [];
+
+    /**
+     * Other ways of supplying a required field: field => list of field sets, each of which
+     * supplies it when every field in the set is mapped.  The type's import formatter builds
+     * the field from the set.
+     * @var array<string, array<int, array<int, string>>>
+     */
+    public const IMPORT_FIELD_ALTERNATIVES = [];
+
+    /**
+     * Fields that must be unique across an import, as the content table enforces
+     * @var array<string>
+     */
+    public const IMPORT_UNIQUE_FIELDS = [];
+
+    /**
      * Content table columns written to the module's contents.txt, in order.  Set per type.
      *
      * Only ever add to the end: module files record their own field list, but a reordering
@@ -82,6 +103,89 @@ abstract class ContentBase extends Model implements ContentInterface
         }
 
         return $fields;
+    }
+
+    /**
+     * The mappable import fields, for the import UI
+     *
+     * @return array<int, array{value: string, title: string, required: bool}>
+     */
+    public static function getImportFieldList(): array
+    {
+        $list = [];
+
+        foreach(static::getImportFields(TRUE) as $field => $label) {
+            $list[] = [
+                'value'    => $field,
+                'title'    => $label,
+                'required' => in_array($field, static::IMPORT_REQUIRED_FIELDS, TRUE),
+            ];
+        }
+
+        return $list;
+    }
+
+    /**
+     * Whether a mapping supplies a required field, directly or through one of its alternatives
+     *
+     * @param string $field Required field
+     * @param array<int, string> $mapped Fields the mapping supplies
+     * @return bool
+     */
+    public static function importFieldIsMapped(string $field, array $mapped): bool
+    {
+        if(in_array($field, $mapped, TRUE)) {
+            return TRUE;
+        }
+
+        foreach(static::IMPORT_FIELD_ALTERNATIVES[$field] ?? [] as $set) {
+            if(!array_diff($set, $mapped)) {
+                return TRUE;
+            }
+        }
+
+        return FALSE;
+    }
+
+    /**
+     * Validates one mapped and formatted import row.  Pure PHP, no database.
+     *
+     * Checks the required fields; types add their own checks.
+     *
+     * @param array<string, mixed> $row
+     * @return array<int, string> Error messages, empty if the row is valid
+     */
+    public static function validateImportRow(array $row): array
+    {
+        $errors = [];
+        $labels = static::getImportFields(TRUE);
+
+        foreach(static::IMPORT_REQUIRED_FIELDS as $field) {
+            if(!isset($row[$field]) || $row[$field] === '') {
+                $errors[] = ($labels[$field] ?? $field) . ' is required';
+            }
+        }
+
+        return $errors;
+    }
+
+    /**
+     * Shapes a validated import row for insertion: only the importable columns, every one
+     * present, and an empty value is NULL.
+     *
+     * @param array<string, mixed> $row
+     * @return array<string, mixed>
+     */
+    public static function prepareImportRow(array $row): array
+    {
+        $prepared = [];
+
+        foreach(static::IMPORT_FIELDS as $field) {
+            $value = $row[$field] ?? NULL;
+            $prepared[$field] = ($value === NULL || $value === '') ? NULL : $value;
+        }
+
+        return $prepared;
     }
 
     public function setVolume(Volume $volume): void

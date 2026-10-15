@@ -64,6 +64,21 @@ return [
             ],
         ],
 
+        'content' => [
+            'driver' => 'local',
+            'root'   => base_path('content'),
+
+            // Volume content import uploads (content/<type>/uploads).  Same directory
+            // visibility as the 'bibles' disk, for the same reason.
+            'directory_visibility' => 'public',
+            'permissions' => [
+                'dir' => [
+                    'public'  => 0775,
+                    'private' => 0700,
+                ],
+            ],
+        ],
+
         'ftp' => [
             'driver'   => 'ftp',
             'host'     => 'ftp.example.com',

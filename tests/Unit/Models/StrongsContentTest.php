@@ -150,4 +150,58 @@ class StrongsContentTest extends TestCase
         $this->assertNull(StrongsContent::stripTvmCount(NULL));
         $this->assertNull(StrongsContent::stripTvmCount(''));
     }
+
+    public function testValidateImportRowRequiresNumberAndDefinition(): void
+    {
+        $errors = StrongsContent::validateImportRow([]);
+
+        $this->assertContains('Number is required', $errors);
+        $this->assertContains('Definition is required', $errors);
+        $this->assertSame([], StrongsContent::validateImportRow(['number' => 'H1', 'definition' => 'One']));
+    }
+
+    public function testValidateImportRowChecksTheNumberAndLengths(): void
+    {
+        foreach(['H0001', 'X1', 'h1', 'H0', 'G123456'] as $number) {
+            $this->assertNotSame([], StrongsContent::validateImportRow(['number' => $number, 'definition' => 'x']), $number);
+        }
+
+        $this->assertSame([], StrongsContent::validateImportRow(['number' => 'H1234a', 'definition' => 'x']));
+
+        $errors = StrongsContent::validateImportRow(['number' => 'H1', 'definition' => 'x', 'root_word' => str_repeat('a', 256)]);
+        $this->assertSame(['Root word may not be longer than 255 characters'], $errors);
+    }
+
+    public function testPrepareImportRowKeepsOnlyImportableColumns(): void
+    {
+        $row = StrongsContent::prepareImportRow(['number' => 'H1', 'definition' => 'One', 'root_word' => '', 'number_hg' => 'H', 'id' => 9]);
+
+        $this->assertSame([
+            'number'           => 'H1',
+            'root_word'        => NULL,
+            'transliteration'  => NULL,
+            'pronunciation'    => NULL,
+            'definition'       => 'One',
+            'short_definition' => NULL,
+            'is_special'       => 0,
+        ], $row);
+    }
+
+    public function testImportFieldIsMappedHonoursAlternatives(): void
+    {
+        $this->assertTrue(StrongsContent::importFieldIsMapped('number', ['number']));
+        $this->assertTrue(StrongsContent::importFieldIsMapped('number', ['number_int', 'number_hg']));
+        $this->assertFalse(StrongsContent::importFieldIsMapped('number', ['number_int']));
+        $this->assertFalse(StrongsContent::importFieldIsMapped('definition', ['short_definition']));
+    }
+
+    public function testImportFieldListFlagsRequiredFields(): void
+    {
+        $list = array_column(StrongsContent::getImportFieldList(), 'required', 'value');
+
+        $this->assertTrue($list['number']);
+        $this->assertTrue($list['definition']);
+        $this->assertFalse($list['number_hg']);
+        $this->assertFalse($list['root_word']);
+    }
 }

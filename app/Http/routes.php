@@ -119,6 +119,8 @@ Route::resource('/admin/features', 'Admin\FeatureController', ['as' => 'admin'])
 
 // Volume manager routes
 Route::get('/admin/volumes/grid', 'Admin\VolumeController@grid');
+Route::post('/admin/volumes/importcheck', 'Admin\VolumeController@importCheck');
+Route::post('/admin/volumes/import', 'Admin\VolumeController@import');
 Route::get('/admin/volumes/languages', 'Admin\VolumeController@languages');
 Route::post('/admin/volumes/install/{id}', 'Admin\VolumeController@install');
 Route::post('/admin/volumes/uninstall/{id}', 'Admin\VolumeController@uninstall');
@@ -131,6 +133,7 @@ Route::post('/admin/volumes/revert/{id}', 'Admin\VolumeController@revert');
 Route::post('/admin/volumes/update/{id}', 'Admin\VolumeController@updateModule');
 Route::post('/admin/volumes/delete/{id}', 'Admin\VolumeController@destroy');
 Route::resource('/admin/volumes', 'Admin\VolumeController', ['as' => 'admin']);
+Route::resource('/admin/import-presets', 'Admin\ImportPresetController', ['as' => 'admin'])->only(['index', 'store', 'update', 'destroy']);
 
 // Audio Bible manager routes
 Route::get('/admin/bibles/audio/grid/{id}', 'Admin\AudioBibleController@grid');
