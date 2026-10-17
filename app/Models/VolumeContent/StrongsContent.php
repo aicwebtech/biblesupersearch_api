@@ -24,8 +24,8 @@ class StrongsContent extends ContentBase
      * @var array<string, string>
      */
     public const IMPORT_FIELDS_EXTRA = [
-        'number_int' => 'Strong\'s number - integer portion only (no leading zeros, no H/G prefix)',
-        'number_hg' => 'Strong\'s number - H/G prefix only (no leading zeros, no integer portion)',
+        'number_int' => 'Strong\'s number - integer portion only (no H/G prefix; leading zeros are removed)',
+        'number_hg' => 'Strong\'s number - H/G prefix only',
     ];
 
     public const IMPORT_REQUIRED_FIELDS = ['number', 'definition'];

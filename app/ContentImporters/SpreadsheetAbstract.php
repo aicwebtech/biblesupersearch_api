@@ -122,8 +122,9 @@ abstract class SpreadsheetAbstract extends ContentImportAbstract
     }
 
     /**
-     * The first non-empty value mapped to a field wins.  A formula is refused: the readers
-     * return it as text, not its value.
+     * The first non-empty value mapped to a field wins.  A formula is refused: a reader only
+     * gets here with one when the file holds no saved result for it (see
+     * ExcelAbstract::useSavedFormulaResults()), and its text is not content.
      */
     protected function mapRow(array $raw, int|string $row): array
     {
@@ -140,7 +141,8 @@ abstract class SpreadsheetAbstract extends ContentImportAbstract
             $value = trim((string) $value);
 
             if($value !== '' && $value[0] == '=') {
-                $this->addError('Row ' . $row . ', column ' . static::numberToColumn($index + 1) . ' contains a formula and cannot be imported.', 4);
+                $this->addError('Row ' . $row . ', column ' . static::numberToColumn($index + 1) . ' contains a formula with no saved result.  '
+                    . 'Open the file in Excel or LibreOffice and save it again, or replace the formulas with their values.', 4);
                 continue;
             }
 

@@ -5,7 +5,7 @@ import { columnsInSettings } from '../../../../bin/custom_vue/components/Spreads
 
 var tpl = `
     <div>
-        <Presets type='bible' :settings='settings'></Presets>
+        <Presets type='bible' :importer='importer' :settings='settings'></Presets>
 
         <Roles
             :roles='columnRoles'

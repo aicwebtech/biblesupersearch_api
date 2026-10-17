@@ -216,18 +216,52 @@ class ImportStrongsTest extends TestCase
         $this->assertStringContainsString('No content found', implode(' ', $Manager->getErrors()));
     }
 
-    public function testCheckRejectsAFormulaInExcel(): void
+    /**
+     * A formula is imported as the result saved with the file, as Excel and LibreOffice do
+     */
+    public function testExcelFormulasImportTheirSavedResult(): void
+    {
+        $module = 'zz_import_' . bin2hex(random_bytes(3));
+        $File   = $this->makeUpload('xlsx', [
+            static::HEADER,
+            ['=CONCAT("H","0001")', '', '', '', '=CONCAT("Fa","ther")', '=LOWER("FATHER")'],
+            ['G25', '', '', '', 'To love', '=FALSE()'],
+        ]);
+
+        try {
+            $Manager = new ContentImportManager();
+            $this->assertTrue($Manager->checkImportFile($this->checkData('excel', $File)), implode(PHP_EOL, (array) $Manager->getErrors()));
+
+            $Manager = $this->runImport('excel', $Manager->sanitized_filename, $module);
+            $this->assertFalse($Manager->hasErrors(), implode(PHP_EOL, (array) $Manager->getErrors()));
+
+            $rows = Volume::findByTypeAndModule('strongs', $module)->content()->newQuery()->get()->keyBy('number');
+
+            $this->assertSame(['H1', 'G25'], $rows->keys()->all());
+            $this->assertSame('Father', $rows['H1']->definition);
+            $this->assertSame('father', $rows['H1']->short_definition);
+            $this->assertSame('0', $rows['G25']->short_definition);
+        }
+        finally {
+            $this->removeVolume($module);
+        }
+    }
+
+    /**
+     * A file written without calculating its formulas has no result to import
+     */
+    public function testCheckRejectsAnExcelFormulaWithNoSavedResult(): void
     {
         $File = $this->makeUpload('xlsx', [
             static::HEADER,
             ['H1', '', '', '', '=CONCAT("a","b")', ''],
-        ]);
+        ], FALSE);
 
         $Manager = new ContentImportManager();
         $Manager->test_mode = TRUE;
 
         $this->assertFalse($Manager->checkImportFile($this->checkData('excel', $File)));
-        $this->assertStringContainsString('Row 2, column E contains a formula', implode(' ', $Manager->getErrors()));
+        $this->assertStringContainsString('Row 2, column E contains a formula with no saved result', implode(' ', $Manager->getErrors()));
     }
 
     /**
@@ -287,9 +321,10 @@ class ImportStrongsTest extends TestCase
      *
      * @param string $extension csv or xlsx
      * @param array<int, array<int, string>> $rows
+     * @param bool $calculate_formulas FALSE writes formulas without their result, as a script might
      * @return UploadedFile
      */
-    protected function makeUpload(string $extension, array $rows): UploadedFile
+    protected function makeUpload(string $extension, array $rows, bool $calculate_formulas = TRUE): UploadedFile
     {
         $name = 'strongs_' . bin2hex(random_bytes(4)) . '.' . $extension;
         $path = $this->dir . '/' . $name;
@@ -313,7 +348,9 @@ class ImportStrongsTest extends TestCase
                 }
             }
 
-            (new Xlsx($Spreadsheet))->save($path);
+            $Writer = new Xlsx($Spreadsheet);
+            $Writer->setPreCalculateFormulas($calculate_formulas);
+            $Writer->save($path);
             $Spreadsheet->disconnectWorksheets();
         }
 

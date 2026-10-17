@@ -4,8 +4,10 @@ namespace App\ContentImporters\Excel;
 
 use App\ContentImporters\SpreadsheetAbstract;
 use App\Importers\RowLimitReadFilter;
+use PhpOffice\PhpSpreadsheet\Cell\DataType;
 use PhpOffice\PhpSpreadsheet\IOFactory;
 use PhpOffice\PhpSpreadsheet\Reader\IReader;
+use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
 
 /**
  * Class ExcelAbstract
@@ -15,6 +17,9 @@ use PhpOffice\PhpSpreadsheet\Reader\IReader;
  *
  * Reads the first worksheet in chunks of rows: load() builds a Cell object for every cell it
  * reads, so loading a large sheet in one go would exhaust memory.
+ *
+ * Formula cells are read as the result Excel / LibreOffice saved with the file; they are not
+ * recalculated.  See useSavedFormulaResults().
  */
 abstract class ExcelAbstract extends SpreadsheetAbstract
 {
@@ -67,7 +72,9 @@ abstract class ExcelAbstract extends SpreadsheetAbstract
             $this->Reader->setReadFilter(new RowLimitReadFilter($end, $start));
             $Spreadsheet = $this->Reader->load($this->path);
 
-            $data = $Spreadsheet->getSheet(0)->rangeToArray('A' . $start . ':' . $last_column . $end, NULL, FALSE, FALSE);
+            $Sheet = $Spreadsheet->getSheet(0);
+            $data  = $Sheet->rangeToArray('A' . $start . ':' . $last_column . $end, NULL, FALSE, FALSE);
+            $data  = $this->useSavedFormulaResults($Sheet, array_values($data), $start);
             $Spreadsheet->disconnectWorksheets();
             unset($Spreadsheet);
 
@@ -83,6 +90,45 @@ abstract class ExcelAbstract extends SpreadsheetAbstract
                 yield $batch;
             }
         }
+    }
+
+    /**
+     * Replaces each formula with the result saved in the file.
+     *
+     * Excel and LibreOffice save a formula's last result alongside it, so nothing is
+     * recalculated: recalculating would need the whole workbook in memory (a formula can
+     * reference any row, or another sheet), not one chunk of rows.  A formula without a
+     * saved result (a file written by a script that never calculated it) is left as is, for
+     * mapRow() to refuse.
+     *
+     * @param Worksheet $Sheet
+     * @param array<int, array<int, mixed>> $data Rows from rangeToArray(), from row $start
+     * @param int $start Spreadsheet row of $data[0]
+     * @return array<int, array<int, mixed>>
+     */
+    protected function useSavedFormulaResults(Worksheet $Sheet, array $data, int $start): array
+    {
+        foreach($data as $offset => $row) {
+            foreach($row as $index => $value) {
+                if(!is_string($value) || !str_starts_with($value, '=')) {
+                    continue;
+                }
+
+                $Cell = $Sheet->getCell(static::numberToColumn($index + 1) . ($start + $offset));
+
+                if($Cell->getDataType() !== DataType::TYPE_FORMULA) {
+                    continue;
+                }
+
+                $saved = $Cell->getOldCalculatedValue();
+
+                if($saved !== NULL) {
+                    $data[$offset][$index] = is_bool($saved) ? (int) $saved : $saved;
+                }
+            }
+        }
+
+        return $data;
     }
 
     protected function closeFile(): void

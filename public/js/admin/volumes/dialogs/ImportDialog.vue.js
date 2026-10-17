@@ -74,6 +74,7 @@ const template = `
                         :is='importerForm'
                         :settings='settings'
                         :contentType='contentType'
+                        :importer='importer'
                     ></component>
 
                     <Confirm ref='ConfirmDialog'></Confirm>

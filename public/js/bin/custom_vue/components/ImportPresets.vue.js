@@ -1,8 +1,12 @@
+import Confirm from '../dialogs/ConfirmDialog.vue.js';
+import Prompt from '../dialogs/PromptDialog.vue.js';
+
 /**
  * Saved import settings (spreadsheet column mappings ...) for an import dialog.
  *
  * Choosing a preset copies its settings into `settings`; Save As / Update store the current
- * settings.  Presets are per type: 'bible', or a volume type key.
+ * settings.  Presets are per type: 'bible', or a volume type key.  Changing the type or the
+ * importer deselects the preset.
  */
 const template = `
     <v-sheet class='mb-4'>
@@ -31,15 +35,26 @@ const template = `
         <v-alert v-if='message' :type='messageType' density='compact' class='mt-2' closable @click:close='message = null'>
             {{message}}
         </v-alert>
+
+        <Confirm ref='ConfirmDialog' title='Saved Settings'></Confirm>
+        <Prompt ref='PromptDialog' title='Save Settings As'></Prompt>
     </v-sheet>
 `;
 
 export default {
     template: template,
+    components: {
+        Confirm,
+        Prompt,
+    },
     props: {
         type: {
             type: String,
             required: true,
+        },
+        importer: {
+            type: String,
+            default: null,
         },
         settings: {
             type: Object,
@@ -48,6 +63,8 @@ export default {
     },
     emits: ['applied'],
     setup(props, { emit }) {
+        const ConfirmDialog = Vue.ref(null);
+        const PromptDialog = Vue.ref(null);
         const presets = Vue.ref([]);
         const selectedId = Vue.ref(null);
         const loading = Vue.ref(false);
@@ -123,25 +140,34 @@ export default {
         }
 
         function saveAs() {
-            const name = window.prompt('Name for these settings:');
-
-            if(name && name.trim()) {
-                save('POST', '/admin/import-presets', name.trim());
-            }
+            PromptDialog.value.prompt('Name for these settings', '', name => {
+                save('POST', '/admin/import-presets', name);
+            });
         }
 
         function update() {
-            if(selected.value && window.confirm('Overwrite \'' + selected.value.name + '\' with the current settings?')) {
-                save('PUT', '/admin/import-presets/' + selected.value.id, selected.value.name);
-            }
-        }
+            const preset = selected.value;
 
-        function remove() {
-            if(!selected.value || !window.confirm('Delete the saved settings \'' + selected.value.name + '\'?')) {
+            if(!preset) {
                 return;
             }
 
+            ConfirmDialog.value.confirm('Overwrite \'' + preset.name + '\' with the current settings?', () => {
+                save('PUT', '/admin/import-presets/' + preset.id, preset.name);
+            });
+        }
+
+        function remove() {
             const preset = selected.value;
+
+            if(!preset) {
+                return;
+            }
+
+            ConfirmDialog.value.confirm('Delete the saved settings \'' + preset.name + '\'?', () => destroy(preset));
+        }
+
+        function destroy(preset) {
             loading.value = true;
 
             axios.delete('/admin/import-presets/' + preset.id, {data: {_token: laravelCsrfToken}})
@@ -159,9 +185,18 @@ export default {
             load();
         });
 
+        // Presets are not per importer, but a preset applied to one importer's settings no
+        // longer describes them once the importer changes.
+        Vue.watch(() => props.importer, () => {
+            selectedId.value = null;
+            message.value = null;
+        });
+
         Vue.onMounted(load);
 
         return {
+            ConfirmDialog,
+            PromptDialog,
             presets,
             selectedId,
             loading,

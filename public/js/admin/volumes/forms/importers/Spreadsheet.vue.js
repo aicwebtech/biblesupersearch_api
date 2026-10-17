@@ -8,7 +8,7 @@ import { columnsInSettings } from '../../../../bin/custom_vue/components/Spreads
  */
 const template = `
     <div>
-        <Presets :type='contentType' :settings='settings'></Presets>
+        <Presets :type='contentType' :importer='importer' :settings='settings'></Presets>
 
         <Roles
             :roles='columnRoles'
@@ -30,6 +30,10 @@ export default {
             default: () => ({}),
         },
         contentType: {
+            type: String,
+            default: null,
+        },
+        importer: {
             type: String,
             default: null,
         },
