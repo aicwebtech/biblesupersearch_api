@@ -2,6 +2,7 @@
 
 namespace Tests\Unit\Models;
 
+use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 use App\Models\VolumeContent\StrongsContent;
 
@@ -155,7 +156,7 @@ class StrongsContentTest extends TestCase
     {
         $errors = StrongsContent::validateImportRow([]);
 
-        $this->assertContains('Number is required', $errors);
+        $this->assertContains(StrongsContent::getImportFields()['number'] . ' is required', $errors);
         $this->assertContains('Definition is required', $errors);
         $this->assertSame([], StrongsContent::validateImportRow(['number' => 'H1', 'definition' => 'One']));
     }
@@ -203,5 +204,35 @@ class StrongsContentTest extends TestCase
         $this->assertTrue($list['definition']);
         $this->assertFalse($list['number_hg']);
         $this->assertFalse($list['root_word']);
+    }
+
+    public function testNumberFieldsAreOfferedTogether(): void
+    {
+        $this->assertSame(
+            ['number', 'number_hg', 'number_int', 'root_word', 'transliteration', 'pronunciation', 'definition', 'short_definition'],
+            array_column(StrongsContent::getImportFieldList(), 'value')
+        );
+    }
+
+    /**
+     * Listed fields lead in the given order and the rest keep theirs.  An unknown key is
+     * ignored, and an extra field stays out unless extras are asked for.
+     */
+    #[DataProvider('importFieldOrderProvider')]
+    public function testImportFieldOrderPositionsAnyField(bool $include_extra, array $expected): void
+    {
+        $Content = new class extends StrongsContent {
+            public const IMPORT_FIELD_ORDER = ['definition', 'bacon', 'number_int', 'number'];
+        };
+
+        $this->assertSame($expected, array_keys($Content::getImportFields($include_extra)));
+    }
+
+    public static function importFieldOrderProvider(): array
+    {
+        return [
+            'with extras' => [TRUE, ['definition', 'number_int', 'number', 'root_word', 'transliteration', 'pronunciation', 'short_definition', 'number_hg']],
+            'without'     => [FALSE, ['definition', 'number', 'root_word', 'transliteration', 'pronunciation', 'short_definition']],
+        ];
     }
 }

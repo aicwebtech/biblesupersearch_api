@@ -155,7 +155,7 @@ class ImportStrongsTest extends TestCase
         $Manager->test_mode = TRUE;
 
         $this->assertFalse($Manager->checkImportFile($this->checkData('csv', $File, $mapping)));
-        $this->assertStringContainsString('Please specify a column for Number', implode(' ', $Manager->getErrors()));
+        $this->assertStringContainsString('Please specify a column for ' . StrongsContent::getImportFields()['number'], implode(' ', $Manager->getErrors()));
     }
 
     public function testCheckRejectsTheWrongExtension(): void

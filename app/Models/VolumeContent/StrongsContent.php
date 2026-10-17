@@ -24,11 +24,20 @@ class StrongsContent extends ContentBase
      * @var array<string, string>
      */
     public const IMPORT_FIELDS_EXTRA = [
-        'number_int' => 'Strong\'s number - integer portion only (no H/G prefix; leading zeros are removed)',
+        'number_int' => 'Strong\'s number - integer portion only (no H/G prefix)',
         'number_hg' => 'Strong\'s number - H/G prefix only',
     ];
 
+    /**
+     * The three ways of mapping the number are offered together
+     */
+    public const IMPORT_FIELD_ORDER = ['number', 'number_hg', 'number_int'];
+
     public const IMPORT_REQUIRED_FIELDS = ['number', 'definition'];
+
+    public const FIELD_LABELS = [
+        'number' => 'Strong\'s number - entire (ie H1, G25, H1234)',
+    ];
 
     /**
      * number can come from its prefix and integer in separate columns; StrongsFormatter joins them

@@ -3,6 +3,7 @@
 namespace Tests\Unit\ContentImporters;
 
 use App\ContentImporters\SpreadsheetAbstract;
+use App\Models\VolumeContent\StrongsContent;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 
@@ -57,7 +58,7 @@ class SpreadsheetAbstractTest extends TestCase
         $this->assertFalse($Importer->setSettings(['first_row_data' => 1, 'col_A' => 'root_word']));
 
         $errors = implode(' ', $Importer->getErrors());
-        $this->assertStringContainsString('Please specify a column for Number', $errors);
+        $this->assertStringContainsString('Please specify a column for ' . StrongsContent::getImportFields()['number'], $errors);
         $this->assertStringContainsString('Please specify a column for Definition', $errors);
     }
 

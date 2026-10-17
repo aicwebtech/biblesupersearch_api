@@ -47,6 +47,14 @@ abstract class ContentBase extends Model implements ContentInterface
     public const IMPORT_FIELDS_EXTRA = [];
 
     /**
+     * Order the import fields are offered in, by key: any of IMPORT_FIELDS and
+     * IMPORT_FIELDS_EXTRA.  Fields not listed follow, in their default order (IMPORT_FIELDS,
+     * then IMPORT_FIELDS_EXTRA); keys that are not import fields are ignored.
+     * @var array<int, string>
+     */
+    public const IMPORT_FIELD_ORDER = [];
+
+    /**
      * Fields an imported row must have once mapped and formatted.  A field listed in
      * IMPORT_FIELD_ALTERNATIVES can be mapped through one of its alternatives instead.
      * @var array<string>
@@ -88,7 +96,13 @@ abstract class ContentBase extends Model implements ContentInterface
         return static::CONTENT_TABLE_PREFIX . $prefix . $module;
     }
 
-    public static function getImportFields($include_extra = false): array
+    /**
+     * Import fields and their labels, ordered by IMPORT_FIELD_ORDER
+     *
+     * @param bool $include_extra Include IMPORT_FIELDS_EXTRA
+     * @return array<string, string> field => label
+     */
+    public static function getImportFields(bool $include_extra = FALSE): array
     {
         $fields = [];
 
@@ -102,7 +116,9 @@ abstract class ContentBase extends Model implements ContentInterface
             }
         }
 
-        return $fields;
+        $ordered = array_intersect_key(array_flip(static::IMPORT_FIELD_ORDER), $fields);
+
+        return array_replace($ordered, $fields);
     }
 
     /**
