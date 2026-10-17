@@ -469,4 +469,94 @@ class BibleTest extends TestCase
         $this->assertSame('entire', $fresh->getBookList());
     }
 
+    /**
+     * Every NOT NULL column on `bibles` without a default is set; see OfficialFlagWorkflowTest.
+     */
+    protected function makeRaceFixture(): Bible
+    {
+        $suffix = bin2hex(random_bytes(3));
+
+        $Bible = new Bible();
+        $Bible->module     = 'race_' . $suffix;
+        $Bible->name       = 'Uninstall Race Fixture ' . $suffix;
+        $Bible->shortname  = 'Race ' . $suffix;
+        $Bible->year       = '2000';
+        $Bible->lang_short = 'en';
+        $Bible->save();
+
+        return $Bible;
+    }
+
+    protected function removeRaceFixture(?Bible $Bible): void
+    {
+        if(!$Bible) {
+            return;
+        }
+
+        $table = $Bible->verses()->getTable();
+
+        if(Schema::hasTable($table)) {
+            Schema::drop($table);
+        }
+
+        $Bible->forceDelete();
+    }
+
+    /**
+     * A concurrent request decides which verses tables to query from the enabled / installed
+     * flags, so they must already be cleared in the database when the table is dropped.
+     */
+    public function testUninstallClearsFlagsBeforeDroppingTable(): void
+    {
+        $Bible = NULL;
+
+        try {
+            $Bible = $this->makeRaceFixture();
+            $Bible->install(TRUE, TRUE); // structure only - an empty table is enough here
+            $Bible->refresh();
+            $this->assertSame(1, (int) $Bible->enabled);
+
+            $table = $Bible->verses()->getTable();
+            $flagsAtDrop = NULL;
+
+            DB::listen(function($query) use ($Bible, $table, &$flagsAtDrop) {
+                if($flagsAtDrop === NULL && stripos($query->sql, 'drop table') !== FALSE && str_contains($query->sql, $table)) {
+                    $flagsAtDrop = (array) DB::table('bibles')->where('id', $Bible->id)->first(['installed', 'enabled']);
+                }
+            });
+
+            $Bible->uninstall();
+
+            $this->assertNotNull($flagsAtDrop, 'Verses table was never dropped');
+            $this->assertSame(0, (int) $flagsAtDrop['installed'], 'Bible still marked installed when its table was dropped');
+            $this->assertSame(0, (int) $flagsAtDrop['enabled'], 'Bible still marked enabled when its table was dropped');
+            $this->assertFalse(Schema::hasTable($table));
+        }
+        finally {
+            $this->removeRaceFixture($Bible);
+        }
+    }
+
+    /**
+     * A model loaded just before a concurrent uninstall still says installed; the book list must
+     * not fail the request, nor cache the empty answer.
+     */
+    public function testGetBookListWhenVersesTableIsMissing(): void
+    {
+        $Bible = NULL;
+
+        try {
+            $Bible = $this->makeRaceFixture();
+            $Bible->installed = 1;
+            $Bible->save();
+
+            $this->assertFalse(Schema::hasTable($Bible->verses()->getTable()));
+            $this->assertSame('', $Bible->getBookList());
+            $this->assertNull(Bible::find($Bible->id)->book_list, 'Empty book list must not be persisted');
+        }
+        finally {
+            $this->removeRaceFixture($Bible);
+        }
+    }
+
 }

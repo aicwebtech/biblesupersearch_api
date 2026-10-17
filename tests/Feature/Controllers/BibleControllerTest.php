@@ -59,6 +59,24 @@ class BibleControllerTest extends TestCase
         return ['User' => $User];
     }
 
+    /**
+     * Export Module and Export Meta answer 503 without dev tools, before reaching the Bible -
+     * so the tests that use them turn dev tools on for themselves.
+     */
+    public function testDevToolsActionsNeedDevTools(): void
+    {
+        config(['bss.dev_tools' => FALSE]);
+
+        $User = User::find(1);
+
+        foreach(['export', 'meta'] as $action) {
+            $this->actingAs($User)
+                ->withSession(['banned' => FALSE])
+                ->postJson('/admin/bibles/' . $action . '/1')
+                ->assertStatus(503);
+        }
+    }
+
     // :todo move import tests to a separate class under tests/Feature/Import??
     #[Depends('testInit')]
     public function testImportCheck(array $shared) 
@@ -258,6 +276,9 @@ class BibleControllerTest extends TestCase
     #[Depends('testUnresearch')]
     public function testExport(array $shared) 
     {
+        // A dev tool: on for this request whatever ENABLE_DEV_TOOLS is - see testDevToolsActionsNeedDevTools()
+        config(['bss.dev_tools' => TRUE]);
+
         $response = $this->actingAs($shared['User'])
                     ->withSession(['banned' => FALSE])
                     ->postJson('/admin/bibles/export/' . $shared['bible_id']);
@@ -375,6 +396,8 @@ class BibleControllerTest extends TestCase
     #[Depends('testUpdate')]
     public function testUpdateModule(array $shared) 
     {
+        // Export Meta is a dev tool - see testExport()
+        config(['bss.dev_tools' => TRUE]);
 
         $response = $this->actingAs($shared['User'])
                     ->withSession(['banned' => FALSE])

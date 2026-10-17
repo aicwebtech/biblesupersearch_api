@@ -193,13 +193,32 @@ class EngineActionsTest extends TestCase
      * 'rank' case in actionBibles()'s switch, which nulls the float - see
      * testTheDefaultOrderingIgnoresTheLanguageFloat().
      *
+     * Bibles other tests create and enable for a moment are left out: in a parallel run one can
+     * appear or vanish between the two listings a test compares.  See FIXTURE_BIBLE_PREFIXES.
+     *
      * @param array $input
      * @return array The listing, keyed by module
      */
     private function bibleListing(array $input = []): array
     {
-        return $this->engine()->actionBibles($input + ['bible_order_by' => 'lang_name']);
+        $listing = $this->engine()->actionBibles($input + ['bible_order_by' => 'lang_name']);
+
+        return array_filter($listing, function($module) {
+            foreach(self::FIXTURE_BIBLE_PREFIXES as $prefix) {
+                if(str_starts_with($module, $prefix)) {
+                    return FALSE;
+                }
+            }
+
+            return TRUE;
+        }, ARRAY_FILTER_USE_KEY);
     }
+
+    /**
+     * Module prefixes of the throwaway Bibles other tests enable: test_bible_ (BibleControllerTest
+     * and the import tests) and race_ (BibleTest::testUninstallClearsFlagsBeforeDroppingTable).
+     */
+    private const FIXTURE_BIBLE_PREFIXES = ['test_bible_', 'race_'];
 
     /**
      * The most-installed language code, so floating it has something to move and something to
