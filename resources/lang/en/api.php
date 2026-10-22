@@ -109,7 +109,9 @@ return array(
                 'default' => 'v2: legacy<br />v3: modern',
                 'description' => '\'legacy\' returns the original Strong\'s definitions, in the original format. <br />'
                 . '\'modern\' returns definitions from a Strong\'s dictionary, in the modern format (see below). <br />'
-                . 'Modern does not fall back to legacy: if no Strong\'s dictionary is available, an error is returned.',
+                . 'Requesting the version that is not the default for your API version (\'modern\' on v2, \'legacy\' on v3) falls back to the default '
+                . 'if the requested version is not available, so your app must handle both formats. '
+                . 'There is no fallback otherwise: if v3 (or v2 requesting \'modern\') has no Strong\'s dictionary available, an error is returned.',
             ),
             'language' => array(
                 'type' => 'String',

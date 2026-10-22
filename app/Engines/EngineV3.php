@@ -28,8 +28,10 @@ class EngineV3 extends BaseEngine
     public const HIGHLIGHT_TAG_WHITELIST = Helpers::HIGHLIGHT_PLAIN_TEXT_MARKERS;
 
     /**
-     * v3 answers Strong's from the dictionary volumes unless 'version=legacy' is asked for.
-     * There is no fallback to legacy: with no usable dictionary the request errors.
+     * v3 answers Strong's from the dictionary volumes unless legacy is asked for ('version' on
+     * the strongs action, 'strongs_version' on query).  There is no fallback to legacy: with
+     * no usable dictionary the request errors.  Asking for legacy when it is not installed
+     * falls back to modern - see Engine::_resolveStrongsSource().
      */
     public const STRONGS_VERSION_DEFAULT = 'modern';
 

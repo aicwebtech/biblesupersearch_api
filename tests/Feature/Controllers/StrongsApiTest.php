@@ -3,6 +3,8 @@
 namespace Tests\Feature\Controllers;
 
 use Tests\TestCase;
+use Tests\Support\StrongsDictionaryFixtures;
+use App\Engines\EngineV3;
 use App\Models\VolumeTypes\Strongs;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Testing\TestResponse;
@@ -11,14 +13,18 @@ use Illuminate\Testing\TestResponse;
  * /api/strongs: the 'version', 'language' and 'dictionary' parameters (BSS-152 phase 3).
  *
  * Legacy is the strongs_definitions table, modern the Strong's dictionary volumes.  v2 defaults
- * to legacy, so its responses are unchanged; v3 defaults to modern.  Modern never falls back to
- * legacy.
+ * to legacy, so its responses are unchanged; v3 defaults to modern.  Asking for the version that
+ * is not the default falls back to the default when the requested one cannot be resolved;
+ * there is no other fallback.
  *
  * Only testGlobalDefaultAndNoDictionary() reads or changes the global Strong's default; see
- * StrongsResolveTest for why.
+ * StrongsResolveTest for why.  That includes the query action's global default cases, which
+ * is why they are tested there rather than in QueryStrongsApiTest.
  */
 class StrongsApiTest extends TestCase
 {
+    use StrongsDictionaryFixtures;
+
     private const LANGUAGE = 'qqs';
 
     private const MODERN_FIELDS = [
@@ -28,61 +34,12 @@ class StrongsApiTest extends TestCase
 
     private const LEGACY_FIELDS = ['id', 'number', 'root_word', 'transliteration', 'pronunciation', 'tvm', 'entry'];
 
-    /** @var Strongs[] */
-    private array $dictionaries = [];
-
-    /**
-     * An installed dictionary holding H1234 and G5719.  Which dictionary answered shows in the
-     * response's 'dictionary' field.
-     */
-    protected function makeDictionary(bool $enabled = TRUE): Strongs
-    {
-        $suffix = bin2hex(random_bytes(3));
-
-        $Volume = new Strongs();
-        $Volume->module    = 'vol_api_' . $suffix;
-        $Volume->name      = 'Strongs API Fixture ' . $suffix;
-        $Volume->shortname = 'StrApi ' . $suffix;
-        $Volume->language  = 'en';
-        $Volume->save();
-        $Volume->install(FALSE, $enabled);
-
-        DB::table($Volume->content()->getTable())->insert([
-            [
-                'number' => 'H1234', 'root_word' => "\u{05D1}\u{05BC}\u{05E7}\u{05E2}", 'transliteration' => 'ba\u{0302}qa\u{0303}',
-                'pronunciation' => 'baw-kah\'', 'definition' => 'to <i>cleave</i>', 'is_special' => 0,
-            ],
-            [
-                'number' => 'G5719', 'root_word' => NULL, 'transliteration' => NULL,
-                'pronunciation' => NULL, 'definition' => '<b>Tense:</b> Present <br>', 'is_special' => 1,
-            ],
-        ]);
-
-        return $this->dictionaries[] = $Volume;
-    }
-
     public function tearDown(): void
     {
-        foreach($this->dictionaries as $Volume) {
-            $Volume->content()->uninstall();
-            $Volume->forceDelete();
-        }
-
-        $this->dictionaries = [];
+        $this->removeStrongsDictionaries();
         $this->removeLanguageFixture(self::LANGUAGE);
 
         parent::tearDown();
-    }
-
-    protected function api(string $path, array $query): TestResponse
-    {
-        $response = $this->getJson($path . '?' . http_build_query($query));
-
-        if($response->status() == 429) {
-            $this->markTestSkipped('429 Skipping due to rate limiting');
-        }
-
-        return $response;
     }
 
     protected function assertModern(TestResponse $response, ?string $module = null): void
@@ -108,6 +65,75 @@ class StrongsApiTest extends TestCase
     {
         $this->assertSame(4, $response['error_level']);
         $this->assertStringContainsString($message, implode(' ', $response['errors']));
+    }
+
+    /**
+     * A query response's error level, and which dictionary its Strong's definitions came from.
+     * With no $module and a non-zero level, no definitions are expected.
+     */
+    protected function assertQueryStrongs(TestResponse $response, int $error_level, ?string $module = null): TestResponse
+    {
+        // Any error, fatal or not, answers 400
+        $response->assertStatus($error_level ? 400 : 200);
+        $this->assertSame($error_level, $response['error_level'], implode(' ', $response['errors']));
+
+        if($module !== null) {
+            $this->assertSame($module, $response['strongs'][0]['dictionary']);
+        }
+        elseif($error_level) {
+            $this->assertSame([], $response['strongs']);
+        }
+
+        return $response;
+    }
+
+    /**
+     * An Engine whose legacy table reports itself missing.  strongs_definitions is content data,
+     * so the table itself is never touched.
+     */
+    protected function engineWithoutLegacy(): EngineV3
+    {
+        return new class extends EngineV3 {
+            protected function _legacyStrongsAvailable(): bool
+            {
+                return FALSE;
+            }
+        };
+    }
+
+    /** v3 asking for legacy, with legacy missing, falls back to modern, silently. */
+    public function testV3LegacyFallsBackToModern(): void
+    {
+        $Volume = $this->makeDictionary();
+        $Engine = $this->engineWithoutLegacy();
+
+        $results = $Engine->actionStrongs(['strongs' => 'H1234', 'version' => 'legacy', 'dictionary' => $Volume->module]);
+
+        $this->assertFalse($Engine->hasErrors());
+        $this->assertSame($Volume->module, $results[0]['dictionary']);
+
+        $Engine->actionQuery([
+            'bible' => 'kjv_strongs', 'search' => 'H1234', 'page_limit' => 1,
+            'strongs_version' => 'legacy', 'strongs_dictionary' => $Volume->module,
+        ]);
+
+        $this->assertFalse($Engine->hasErrors());
+        $this->assertSame($Volume->module, $Engine->getMetadata()->strongs[0]['dictionary']);
+    }
+
+    /** After falling back, modern's own errors still apply: there is no falling back again. */
+    public function testV3LegacyFallbackRaisesModernErrors(): void
+    {
+        $Engine = $this->engineWithoutLegacy();
+
+        $this->assertFalse($Engine->actionStrongs(['strongs' => 'H1234', 'version' => 'legacy', 'dictionary' => 'no_such_dictionary']));
+        $this->assertSame(4, $Engine->getErrorLevel());
+    }
+
+    /** With legacy present, v3 asking for legacy gets legacy, whatever dictionary is named. */
+    public function testV3LegacyWithLegacyPresentIgnoresDictionary(): void
+    {
+        $this->assertLegacy($this->api('/api/v3/strongs', ['strongs' => 'H1234', 'version' => 'legacy', 'dictionary' => 'no_such_dictionary']));
     }
 
     public function testV2IsLegacyAndUnchanged(): void
@@ -299,12 +325,30 @@ class StrongsApiTest extends TestCase
             $this->assertModern($this->api('/api/v3/strongs', ['strongs' => 'H1234', 'language' => self::LANGUAGE]), $Default->module);
             $this->assertSame($Default->id, Strongs::resolveDefault(self::LANGUAGE)?->id);
 
-            // No default at all: modern is an error, never legacy
-            DB::table('volumes')->where('type', 'strongs')->update(['is_default' => 0]);
+            // The query action resolves the same way
+            $query = ['bible' => 'kjv_strongs', 'search' => 'H1234', 'page_limit' => 1];
+            $this->assertQueryStrongs($this->api('/api/v3', $query), 0, $Default->module);
+            $this->assertQueryStrongs($this->api('/api', $query + ['strongs_version' => 'modern']), 0, $Default->module);
+            $this->assertQueryStrongs($this->api('/api/v3', $query + ['language' => self::LANGUAGE]), 0, $Default->module);
 
+            // No default at all
+            DB::table('volumes')->where('type', 'strongs')->update(['is_default' => 0]);
             $this->assertNull(Strongs::resolveDefault(NULL));
+
+            // Modern as the default (v3) is an error, never legacy
             $this->assertFatal($this->api('/api/v3/strongs', ['strongs' => 'H1234']), __('errors.strongs_no_dictionary'));
-            $this->assertFatal($this->api('/api/strongs', ['strongs' => 'H1234', 'version' => 'modern']), __('errors.strongs_no_dictionary'));
+
+            // Modern asked for on v2 falls back to legacy, silently
+            $this->assertLegacy($this->api('/api/strongs', ['strongs' => 'H1234', 'version' => 'modern']));
+
+            // Query: a non-fatal error, search results still returned, no definitions
+            $response = $this->assertQueryStrongs($this->api('/api/v3', $query), 3);
+            $this->assertStringContainsString(__('errors.strongs_no_dictionary'), implode(' ', $response['errors']));
+            $this->assertNotEmpty($response['results']);
+
+            $response = $this->assertQueryStrongs($this->api('/api', $query + ['strongs_version' => 'modern']), 0);
+            $this->assertSame('H1234', $response['strongs'][0]['number']);
+            $this->assertArrayHasKey('entry', $response['strongs'][0]);
 
             // Legacy is unaffected
             $this->assertLegacy($this->api('/api/v3/strongs', ['strongs' => 'H1234', 'version' => 'legacy']));

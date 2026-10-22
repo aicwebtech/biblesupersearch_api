@@ -712,7 +712,7 @@ class EngineVersionTest extends TestCase
     {
         $Engine = $this->engine($class);
 
-        $this->assertSame($expected, $this->call($Engine, '_resolveStrongsVersion', [$input]));
+        $this->assertSame($expected, $this->call($Engine, '_resolveStrongsVersion', [$input['version'] ?? NULL]));
         $this->assertSame($notice, $Engine->hasErrors());
 
         if($notice) {

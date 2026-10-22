@@ -252,6 +252,30 @@ class ErrorTest extends TestCase
         $this->assertTrue($Engine->hasErrors());
         $errors = $Engine->getErrors();
         $this->assertEquals("Bible text not found: 'aaaa_9876'", $errors[0]);
+        $this->assertEquals(4, $Engine->getErrorLevel());
+    }
+
+    /** An unavailable Bible fails the query, even alongside one that is available. */
+    public function testFalseBibleQueryIsFatal(): void
+    {
+        foreach(['aaaa_9876', ['kjv', 'aaaa_9876']] as $bible) {
+            $Engine = new Engine();
+            $results = $Engine->actionQuery(['bible' => $bible, 'reference' => 'John 3:16']);
+
+            $this->assertFalse($results);
+            $this->assertEquals(4, $Engine->getErrorLevel());
+            $this->assertContains("Bible text not found: 'aaaa_9876'", $Engine->getErrors());
+        }
+    }
+
+    /** The constructor's default Bible never leaves a fatal error on a fresh Engine. */
+    public function testFalseDefaultBibleIsNotFatalOnConstruct(): void
+    {
+        config(['bss.defaults.bible' => 'aaaa_9876']);
+
+        $Engine = new Engine();
+
+        $this->assertEquals(1, $Engine->getErrorLevel());
     }
 
     public function testPassageInvalidReference() 
