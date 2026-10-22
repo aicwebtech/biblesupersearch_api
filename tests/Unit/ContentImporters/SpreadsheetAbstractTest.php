@@ -104,13 +104,38 @@ class SpreadsheetAbstractTest extends TestCase
         $this->assertSame(['number' => 'H2'], $Importer->callMapRow(['H2'], 3), 'A short row maps what it has');
     }
 
-    public function testMapRowRefusesAFormula(): void
+    /** Plain text (a CSV cell) that starts with '=' is content, not a formula. */
+    public function testMapRowKeepsTextStartingWithEquals(): void
     {
         $Importer = $this->makeImporter();
         $Importer->setSettings(['first_row_data' => 1, 'col_A' => 'number', 'col_B' => 'definition']);
 
-        $Importer->callMapRow(['H1', '=A1&"x"'], 7);
+        $this->assertSame(['number' => 'H1', 'definition' => '= see G25'], $Importer->callMapRow(['H1', '= see G25'], 7));
+        $this->assertFalse($Importer->hasErrors());
+    }
 
+    /** A cell the reader refuses (an Excel formula with no saved result) is a fatal error. */
+    public function testMapRowRefusesACellTheReaderRejects(): void
+    {
+        $Importer = new class('strongs') extends SpreadsheetAbstract {
+            public function callMapRow(array $raw, int $row): array
+            {
+                return $this->mapRow($raw, $row);
+            }
+
+            protected function cellError(int $index, int|string $row): ?string
+            {
+                return ($row == 7 && $index == 1) ? 'contains a formula with no saved result.' : NULL;
+            }
+
+            protected function openFile(string $path): bool { return TRUE; }
+            protected function readBatches(int $size): \Generator { yield []; }
+            protected function closeFile(): void { }
+        };
+
+        $Importer->setSettings(['first_row_data' => 1, 'col_A' => 'number', 'col_B' => 'definition']);
+
+        $this->assertSame(['number' => 'H1'], $Importer->callMapRow(['H1', '=A1&"x"'], 7));
         $this->assertStringContainsString('Row 7, column B contains a formula', implode(' ', $Importer->getErrors()));
     }
 

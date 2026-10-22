@@ -2,7 +2,9 @@
 
 namespace App\Http\Controllers\Admin;
 
+use Illuminate\Contracts\View\View;
 use Illuminate\Http\Request;
+use Illuminate\Http\Response as HttpResponse;
 use App\Http\Responses\Response;
 use App\Http\Controllers\Controller;
 use App\ContentImportManager;
@@ -25,7 +27,7 @@ class VolumeController extends Controller
     /**
      * Display the Volumes manager page
      */
-    public function index()
+    public function index(): View
     {
         Volume::populateVolumesTable();
         Volume::updateNeedsUpdate();
@@ -37,7 +39,7 @@ class VolumeController extends Controller
         return view('admin.volumes', ['bootstrap' => $bootstrap]);
     }
 
-    public function grid(Request $request)
+    public function grid(Request $request): HttpResponse
     {
         $data = $request->toArray();
         $rows = [];
@@ -168,7 +170,7 @@ class VolumeController extends Controller
         ], 200);
     }
 
-    public function languages(Request $request)
+    public function languages(Request $request): HttpResponse
     {
         $Languages = Volume::select('languages.code', 'languages.name')
             ->join('languages', 'volumes.language', 'languages.code')
@@ -179,17 +181,17 @@ class VolumeController extends Controller
         return response(['languages' => $Languages], 200);
     }
 
-    public function create()
+    public function create(): HttpResponse
     {
         return response('Not Implemented', 501);
     }
 
-    public function store(Request $request)
+    public function store(Request $request): Response
     {
         return $this->_save($request, NULL);
     }
 
-    public function show($id)
+    public function show(string $id): Response
     {
         $Volume = Volume::findOrFail($id);
 
@@ -201,7 +203,7 @@ class VolumeController extends Controller
         return new Response($resp, 200);
     }
 
-    public function edit($id)
+    public function edit(string $id): HttpResponse
     {
         return response('Not Implemented', 501);
     }
@@ -209,7 +211,7 @@ class VolumeController extends Controller
     /**
      * Use PUT verb
      */
-    public function update(Request $request, $id)
+    public function update(Request $request, string $id): Response
     {
         return $this->_save($request, $id);
     }
@@ -217,7 +219,7 @@ class VolumeController extends Controller
     /**
      * Use DELETE verb (or POST to /admin/volumes/delete/{id})
      */
-    public function destroy($id)
+    public function destroy(string $id): Response
     {
         $Volume = Volume::findOrFail($id);
 
@@ -248,7 +250,7 @@ class VolumeController extends Controller
         return new Response($resp, 200);
     }
 
-    protected function _save(Request $request, $id = NULL)
+    protected function _save(Request $request, ?string $id = NULL): Response
     {
         $resp = new \stdClass();
         $Volume = $id ? Volume::findOrFail($id) : new Volume();
@@ -296,7 +298,7 @@ class VolumeController extends Controller
         return new Response($resp, 200);
     }
 
-    public function enable(Request $request, $id)
+    public function enable(Request $request, string $id): Response
     {
         $Volume = Volume::findOrFail($id);
         $Volume->enable();
@@ -311,7 +313,7 @@ class VolumeController extends Controller
         return new Response($resp, 200);
     }
 
-    public function disable(Request $request, $id)
+    public function disable(Request $request, string $id): Response
     {
         $Volume = Volume::findOrFail($id);
 
@@ -327,7 +329,7 @@ class VolumeController extends Controller
         return new Response($resp, 200);
     }
 
-    public function install(Request $request, $id)
+    public function install(Request $request, string $id): Response
     {
         $Volume = Volume::findOrFail($id);
         $Volume->install(false, (bool) $request->input('enable', FALSE));
@@ -335,7 +337,7 @@ class VolumeController extends Controller
         return $this->actionResponse($Volume);
     }
 
-    public function uninstall(Request $request, $id)
+    public function uninstall(Request $request, string $id): Response
     {
         $Volume = Volume::findOrFail($id);
 
@@ -351,7 +353,7 @@ class VolumeController extends Controller
     /**
      * Export Module: writes the module file (dev tools only)
      */
-    public function export(Request $request, $id)
+    public function export(Request $request, string $id): Response
     {
         $Volume = Volume::findOrFail($id);
         $Volume->export((bool) $request->input('overwrite', FALSE));
@@ -362,7 +364,7 @@ class VolumeController extends Controller
     /**
      * Export Meta: rewrites the module file's info.json (dev tools only)
      */
-    public function meta(Request $request, $id)
+    public function meta(Request $request, string $id): Response
     {
         $Volume = Volume::findOrFail($id);
         $Volume->updateMetaInfo((bool) $request->input('create_new', FALSE));
@@ -373,7 +375,7 @@ class VolumeController extends Controller
     /**
      * Revert: reloads the volume's settings from its module file
      */
-    public function revert(Request $request, $id)
+    public function revert(Request $request, string $id): Response
     {
         $Volume = Volume::findOrFail($id);
         $Volume->revertMetaInfo();
@@ -385,7 +387,7 @@ class VolumeController extends Controller
      * Update: reinstalls the volume from a newer module file.  No default guard: the volume is
      * installed again straight away and stays the default.
      */
-    public function updateModule(Request $request, $id)
+    public function updateModule(Request $request, string $id): Response
     {
         $Volume = Volume::findOrFail($id);
         $Volume->updateModule();
@@ -396,7 +398,7 @@ class VolumeController extends Controller
     /**
      * Makes the volume the default of its type
      */
-    public function makeDefault(Request $request, $id)
+    public function makeDefault(Request $request, string $id): Response
     {
         $Volume = Volume::findOrFail($id);
         $Volume->makeDefault();
@@ -404,14 +406,6 @@ class VolumeController extends Controller
         return $this->actionResponse($Volume);
     }
 
-    /**
-     * The default volume of a type must stay usable, as the default Bible must: another volume
-     * has to be made the default first.
-     *
-     * @param Volume $Volume
-     * @param string $action Verb for the error message
-     * @return Response|null 422 response if the action is refused
-     */
     /**
      * Checks an uploaded content import file; see ContentImportManager::checkImportFile()
      */
@@ -513,6 +507,14 @@ class VolumeController extends Controller
         return $types;
     }
 
+    /**
+     * The default volume of a type must stay usable, as the default Bible must: another volume
+     * has to be made the default first.
+     *
+     * @param Volume $Volume
+     * @param string $action Verb for the error message
+     * @return Response|null 422 response if the action is refused
+     */
     protected function defaultGuard(Volume $Volume, string $action): ?Response
     {
         if(!$Volume->isDefault()) {

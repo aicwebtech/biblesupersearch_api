@@ -110,6 +110,33 @@ class VolumeTest extends TestCase
     }
 
     /**
+     * A table left behind (a failed drop, a deleted volume with the same module) is not taken
+     * as installed content: install rebuilds it empty.
+     */
+    public function testInstallReplacesALeftoverTable(): void
+    {
+        $Volume = NULL;
+
+        try {
+            $Volume = $this->makeVolumeFixture();
+            $table  = $Volume->content()->getTable();
+
+            $this->assertTrue($Volume->install());
+            DB::table($table)->insert(['number' => 'H1', 'definition' => 'Stale']);
+
+            // Uninstalled in the volumes table, but the content table survives
+            $Volume->installed = 0;
+            $Volume->save();
+
+            $this->assertTrue($Volume->install());
+            $this->assertSame(0, DB::table($table)->count());
+        }
+        finally {
+            $this->removeVolumeFixture($Volume);
+        }
+    }
+
+    /**
      * The longest module validation allows must still produce a usable table, index names included.
      */
     public function testInstallWithMaxLengthModule(): void

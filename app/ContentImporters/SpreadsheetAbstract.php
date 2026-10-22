@@ -122,9 +122,8 @@ abstract class SpreadsheetAbstract extends ContentImportAbstract
     }
 
     /**
-     * The first non-empty value mapped to a field wins.  A formula is refused: a reader only
-     * gets here with one when the file holds no saved result for it (see
-     * ExcelAbstract::useSavedFormulaResults()), and its text is not content.
+     * The first non-empty value mapped to a field wins.  A cell cellError() refuses adds a
+     * fatal error and is skipped.
      */
     protected function mapRow(array $raw, int|string $row): array
     {
@@ -140,9 +139,10 @@ abstract class SpreadsheetAbstract extends ContentImportAbstract
 
             $value = trim((string) $value);
 
-            if($value !== '' && $value[0] == '=') {
-                $this->addError('Row ' . $row . ', column ' . static::numberToColumn($index + 1) . ' contains a formula with no saved result.  '
-                    . 'Open the file in Excel or LibreOffice and save it again, or replace the formulas with their values.', 4);
+            $error = $this->cellError($index, $row);
+
+            if($error !== NULL) {
+                $this->addError('Row ' . $row . ', column ' . static::numberToColumn($index + 1) . ' ' . $error, 4);
                 continue;
             }
 
@@ -152,6 +152,19 @@ abstract class SpreadsheetAbstract extends ContentImportAbstract
         }
 
         return $mapped;
+    }
+
+    /**
+     * Why a cell cannot be imported, or NULL when it can.  Every cell can by default: a CSV
+     * holds plain text, so even one starting with '=' is content.
+     *
+     * @param int $index 0-based column
+     * @param int|string $row Row as passed to mapRow()
+     * @return string|null Reason, completing "Row n, column X ..."
+     */
+    protected function cellError(int $index, int|string $row): ?string
+    {
+        return NULL;
     }
 
     /**

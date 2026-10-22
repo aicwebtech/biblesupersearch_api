@@ -90,7 +90,7 @@ abstract class ContentBase extends Model implements ContentInterface
      * @param string $module The module name associated with the volume.
      * @return string The name of the content table.
      */
-    public static function getContentTableName(string $type, string $module)
+    public static function getContentTableName(string $type, string $module): string
     {
         $prefix = static::TYPE_TABLE_PREFIX ?? $type . '_';
         return static::CONTENT_TABLE_PREFIX . $prefix . $module;
@@ -247,20 +247,21 @@ abstract class ContentBase extends Model implements ContentInterface
      * Creates the content table and, unless $structure_only, fills it from the volume's module
      * file if it has one.  Without a module file the table is left empty (structure only).
      *
+     * A table that already exists is dropped first.  Only an uninstalled volume is installed,
+     * so whatever it holds is left over (from a failed drop, or a deleted volume with the same
+     * module) and must not be taken as this install's content.
+     *
      * Any failure drops the table again: MySQL and SQLite both create the table and then its
-     * indexes in separate statements, so a failure part way would leave a table behind that a
-     * later install would take as already installed.
+     * indexes in separate statements, so a failure part way would leave a table behind.
      *
      * @param bool $structure_only
      * @return bool
      */
-    public function install($structure_only = FALSE): bool
+    public function install(bool $structure_only = FALSE): bool
     {
-        if (Schema::hasTable($this->table)) {
-            return TRUE;
-        }
-
         try {
+            Schema::dropIfExists($this->table);
+
             Schema::create($this->table, function (Blueprint $table) {
                 $this->createSchema($table);
             });
@@ -448,6 +449,73 @@ abstract class ContentBase extends Model implements ContentInterface
         }
 
         return TRUE;
+    }
+
+    /**
+     * Copies the content table's rows to a backup table, so content that is about to be
+     * replaced can be put back if the replacement fails.  See restoreFromBackup().
+     *
+     * The copy has no indexes: SQLite needs index names unique across the whole database, so a
+     * renamed table would keep the names the replacement table is about to create.
+     *
+     * @return string|null The backup table, or NULL when there is no content table to back up
+     */
+    public function backup(): ?string
+    {
+        if(!Schema::hasTable($this->table)) {
+            return NULL;
+        }
+
+        $backup  = static::backupTableName($this->table);
+        $Grammar = $this->getConnection()->getQueryGrammar();
+
+        Schema::dropIfExists($backup);
+        $this->getConnection()->statement('CREATE TABLE ' . $Grammar->wrapTable($backup) . ' AS SELECT * FROM ' . $Grammar->wrapTable($this->table));
+
+        return $backup;
+    }
+
+    /**
+     * Rebuilds the content table from a backup() table, then drops the backup.  The backup is
+     * kept if anything fails.
+     *
+     * @param string $backup Table backup() returned
+     * @return bool
+     */
+    public function restoreFromBackup(string $backup): bool
+    {
+        if(!Schema::hasTable($backup) || !$this->install(TRUE)) {
+            return FALSE;
+        }
+
+        $Grammar = $this->getConnection()->getQueryGrammar();
+        $columns = array_intersect(Schema::getColumnListing($this->table), Schema::getColumnListing($backup));
+        $columns = implode(', ', array_map([$Grammar, 'wrap'], $columns));
+
+        try {
+            $this->getConnection()->statement(
+                'INSERT INTO ' . $Grammar->wrapTable($this->table) . ' (' . $columns . ') SELECT ' . $columns . ' FROM ' . $Grammar->wrapTable($backup)
+            );
+        }
+        catch(\Throwable $e) {
+            report($e);
+            return FALSE;
+        }
+
+        Schema::drop($backup);
+        return TRUE;
+    }
+
+    /**
+     * Backup table name for a content table: short enough for Volume::MAX_TABLE_NAME_LENGTH
+     * whatever the module, and distinct per content table.
+     *
+     * @param string $table Content table
+     * @return string
+     */
+    public static function backupTableName(string $table): string
+    {
+        return static::CONTENT_TABLE_PREFIX . 'bak_' . substr(md5($table), 0, 16);
     }
 
     /**

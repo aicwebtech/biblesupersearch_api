@@ -137,7 +137,7 @@ class VolumeTest extends TestCase
     public function testInfoFieldsCarryNoLocalState(): void
     {
         $local = ['id', 'created_at', 'updated_at', 'installed', 'enabled', 'installed_at', 'is_default',
-            'needs_update', 'module_updated_at', 'rank', 'importer', 'import_file'];
+            'needs_update', 'module_updated_at', 'module_checked_at', 'rank', 'importer', 'import_file'];
 
         foreach(array_keys(Volume::getTypes()) as $type) {
             $this->assertNotEmpty(Volume::getInfoFields($type));

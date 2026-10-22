@@ -94,6 +94,24 @@ class ContentImportManagerTest extends TestCase
         $this->assertFalse($Importer->check('unused'));
         $this->assertStringContainsString('No content found', implode(' ', $Importer->getErrors()));
     }
+
+    /** The memory limit is raised to 256M, never lowered. */
+    public function testMemoryLimitIsRaisedButNeverLowered(): void
+    {
+        $original = ini_get('memory_limit');
+        $raise = new \ReflectionMethod(ContentImportManager::class, 'raiseMemoryLimit');
+
+        try {
+            foreach(['128M' => '256M', '1G' => '1G', '-1' => '-1', '512M' => '512M'] as $before => $after) {
+                ini_set('memory_limit', $before);
+                $raise->invoke(NULL);
+                $this->assertSame($after, ini_get('memory_limit'), 'Starting from ' . $before);
+            }
+        }
+        finally {
+            ini_set('memory_limit', $original);
+        }
+    }
 }
 
 /**

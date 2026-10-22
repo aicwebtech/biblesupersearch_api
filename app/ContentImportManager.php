@@ -6,6 +6,7 @@ use App\ContentImporters\ContentImportAbstract;
 use App\Models\Volume;
 use Illuminate\Database\QueryException;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Schema;
 
 /**
  * Imports volume content (a Strong's dictionary ...) from third party files.
@@ -74,6 +75,11 @@ class ContentImportManager
      * Request keys of the check step that are not importer settings
      */
     protected const CHECK_KEYS = ['importer', 'content_type', 'file', 'volume_id', '_token'];
+
+    /**
+     * Memory limit for checking and importing a file.  See raiseMemoryLimit().
+     */
+    protected const MEMORY_LIMIT = '256M';
 
     /**
      * Every registered import source
@@ -225,7 +231,7 @@ class ContentImportManager
      */
     public function checkImportFile(array $data): bool
     {
-        ini_set('memory_limit', '256M');
+        static::raiseMemoryLimit();
 
         $Importer = $this->makeImporter($data['importer'] ?? NULL, $data['content_type'] ?? NULL);
 
@@ -270,8 +276,9 @@ class ContentImportManager
     /**
      * Imports a checked file into a new volume, or into $Volume, replacing its content.
      *
-     * A new volume is deleted again if the import fails.  A replaced volume is left
-     * uninstalled: its old content is dropped before the new is read.
+     * A new volume is deleted again if the import fails.  A replaced volume is put back as it
+     * was: its content is copied to a backup table first, and its attributes kept, so a failed
+     * import loses nothing.
      *
      * @param array $data Validated request data; see the class description
      * @param Volume|null $Volume Unofficial volume to replace the content of
@@ -279,7 +286,7 @@ class ContentImportManager
      */
     public function importFile(array $data, ?Volume $Volume = NULL): bool
     {
-        ini_set('memory_limit', '256M');
+        static::raiseMemoryLimit();
 
         $Importer = $this->makeImporter($data['_importer'] ?? NULL, $data['_content_type'] ?? NULL);
 
@@ -303,6 +310,8 @@ class ContentImportManager
 
         $attributes = array_diff_key($data, array_flip(array_merge(array_keys(static::$import_rules), ['type', 'official'])));
         $created = !$Volume;
+        $original = NULL;
+        $backup = NULL;
 
         if($Volume) {
             if($Volume->type !== $this->content_type) {
@@ -315,6 +324,18 @@ class ContentImportManager
 
             foreach(Volume::IMMUTABLE_FIELDS as $field) {
                 unset($attributes[$field]);
+            }
+
+            $original = $Volume->getAttributes();
+
+            if($Volume->installed) {
+                try {
+                    $backup = $Volume->content()->backup();
+                }
+                catch(\Throwable $e) {
+                    report($e);
+                    return $this->addError('Could not back up the current content, so it was left in place: ' . $e->getMessage(), 4);
+                }
             }
         }
         else {
@@ -332,6 +353,11 @@ class ContentImportManager
         }
         catch(QueryException $e) {
             report($e);
+
+            if($backup !== NULL) {
+                Schema::dropIfExists($backup);
+            }
+
             return $this->addError('Could not save the volume: ' . $e->getMessage(), 4);
         }
 
@@ -343,16 +369,71 @@ class ContentImportManager
         $Importer->setFile($safe_file);
 
         if(!$Importer->import()) {
+            $this->addErrors($Importer->getErrors(), $Importer->getErrorLevel());
+
             if($created) {
                 $Volume->delete();
             }
+            else {
+                $this->restoreReplacedVolume($Volume, $original, $backup);
+            }
 
-            return $this->addErrors($Importer->getErrors(), $Importer->getErrorLevel());
+            return FALSE;
+        }
+
+        if($backup !== NULL) {
+            Schema::dropIfExists($backup);
         }
 
         $this->rows_imported = $Importer->getRowsImported();
         $this->parsed_attributes = $Volume->fresh()->attributesToArray();
         return TRUE;
+    }
+
+    /**
+     * Puts a volume whose content replacement failed back as it was: its attributes, and its
+     * content from the backup table, if it had any.  Adds an error if that fails, naming the
+     * backup table, which is then kept.
+     *
+     * @param Volume $Volume
+     * @param array<string, mixed> $original Attributes from before the replacement
+     * @param string|null $backup Table from ContentBase::backup(), NULL if it had no content
+     * @return void
+     */
+    protected function restoreReplacedVolume(Volume $Volume, array $original, ?string $backup): void
+    {
+        try {
+            if($backup !== NULL && !$Volume->content()->restoreFromBackup($backup)) {
+                $this->addError('The previous content could not be restored.  It is kept in table ' . $backup . '.', 4);
+                $original = array_merge($original, ['installed' => 0, 'enabled' => 0, 'installed_at' => NULL]);
+            }
+
+            $Volume->setRawAttributes($original);
+            $Volume->save();
+        }
+        catch(\Throwable $e) {
+            report($e);
+            $this->addError('The previous volume could not be restored: ' . $e->getMessage(), 4);
+        }
+    }
+
+    /**
+     * Raises the memory limit to MEMORY_LIMIT.  Never lowers it: an unlimited (-1) or higher
+     * limit is left alone.
+     *
+     * @return void
+     */
+    protected static function raiseMemoryLimit(): void
+    {
+        $current = ini_get('memory_limit');
+
+        if($current === FALSE || $current === '' || (int) $current < 0) {
+            return;
+        }
+
+        if(ini_parse_quantity($current) < ini_parse_quantity(static::MEMORY_LIMIT)) {
+            ini_set('memory_limit', static::MEMORY_LIMIT);
+        }
     }
 
     /**

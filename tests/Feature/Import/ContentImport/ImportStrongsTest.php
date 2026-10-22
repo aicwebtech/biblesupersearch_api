@@ -317,6 +317,58 @@ class ImportStrongsTest extends TestCase
     }
 
     /**
+     * Replacing a volume's content with a file that fails part way puts the volume back as it
+     * was: its name, its install and enabled flags, and its content.  No backup table is left.
+     */
+    public function testAFailedReplaceKeepsTheExistingVolume(): void
+    {
+        $module = 'zz_import_' . bin2hex(random_bytes(3));
+        $rows   = [static::HEADER];
+
+        for($i = 1; $i <= 600; $i++) {
+            $rows[] = ['H' . $i, '', '', '', 'Entry ' . $i, ''];
+        }
+
+        $rows[] = ['H5', '', '', '', 'Duplicate', ''];
+
+        try {
+            $Manager = new ContentImportManager();
+            $this->assertTrue($Manager->checkImportFile($this->checkData('csv', $this->makeUpload('csv', array_merge([static::HEADER], static::ROWS)))));
+            $Manager = $this->runImport('csv', $Manager->sanitized_filename, $module);
+            $this->assertFalse($Manager->hasErrors(), implode(PHP_EOL, (array) $Manager->getErrors()));
+
+            $Volume = Volume::findByTypeAndModule('strongs', $module);
+            $table  = $Volume->content()->getTable();
+
+            $Manager = new ContentImportManager();
+            $this->assertTrue($Manager->checkImportFile($this->checkData('csv', $this->makeUpload('csv', $rows))));
+
+            $this->assertFalse($Manager->importFile([
+                'name'          => 'Replacement Name',
+                'shortname'     => 'Replaced',
+                '_importer'     => 'csv',
+                '_content_type' => 'strongs',
+                '_file'         => $Manager->sanitized_filename,
+                '_settings'     => json_encode(static::MAPPING),
+            ], $Volume));
+
+            $this->assertStringContainsString('Duplicate number \'H5\'', implode(' ', $Manager->getErrors()));
+
+            $Volume = $Volume->fresh();
+            $this->assertSame('Import Test ' . $module, $Volume->name);
+            $this->assertSame(1, (int) $Volume->installed);
+            $this->assertSame(1, (int) $Volume->enabled);
+            $this->assertNotNull($Volume->installed_at);
+            $this->assertSame(['G25', 'H1', 'H2'], $Volume->content()->newQuery()->orderBy('number')->pluck('number')->all());
+            $this->assertNotEmpty(Schema::getIndexes($table), 'The restored table has lost its indexes');
+            $this->assertFalse(Schema::hasTable(StrongsContent::backupTableName($table)));
+        }
+        finally {
+            $this->removeVolume($module);
+        }
+    }
+
+    /**
      * Source file as an UploadedFile, as an HTTP upload would arrive
      *
      * @param string $extension csv or xlsx
@@ -394,6 +446,8 @@ class ImportStrongsTest extends TestCase
             $Volume->forceDelete();
         }
 
-        Schema::dropIfExists(StrongsContent::getContentTableName('strongs', $module));
+        $table = StrongsContent::getContentTableName('strongs', $module);
+        Schema::dropIfExists($table);
+        Schema::dropIfExists(StrongsContent::backupTableName($table));
     }
 }

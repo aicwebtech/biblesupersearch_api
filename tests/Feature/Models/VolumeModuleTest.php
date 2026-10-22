@@ -390,9 +390,10 @@ class VolumeModuleTest extends TestCase
         $this->assertTrue($Volume->export());
         $this->assertFalse($Volume->needsUpdate());
 
-        // An older install of the same module
-        $Volume->module_version = '0.0.1';
-        $Volume->installed_at   = '2000-01-01 00:00:00';
+        // An older install of the same module, never checked since
+        $Volume->module_version    = '0.0.1';
+        $Volume->installed_at      = '2000-01-01 00:00:00';
+        $Volume->module_checked_at = NULL;
         $Volume->name           = $Volume->name . ' Local';
         $Volume->save();
         DB::table($Volume->content()->getTable())->where('number', 'H1')->delete();
@@ -412,5 +413,34 @@ class VolumeModuleTest extends TestCase
 
         $this->assertFalse($Volume->updateModule());
         $this->assertStringContainsString('No update needed', implode(' ', $Volume->getErrors()));
+    }
+
+    /**
+     * Once the module file has been read, its answer is stored: the ZIP is not opened again
+     * until the file changes.
+     */
+    public function testNeedsUpdateReadsTheModuleFileOnlyOnceItChanges(): void
+    {
+        $Volume = $this->makeVolume();
+        $this->assertTrue($Volume->export());
+
+        $Volume->installed_at = '2000-01-01 00:00:00';
+        $Volume->save();
+
+        $this->assertFalse($Volume->needsUpdate());
+        $this->assertNotNull($Volume->fresh()->module_checked_at, 'The read was not recorded');
+
+        // Checked after the file was written: the stored flag is answered, wrong as it is here,
+        // which shows the file was not read
+        $Volume->needs_update      = 1;
+        $Volume->module_checked_at = date('Y-m-d H:i:s', time() + 60);
+        $Volume->save();
+        $this->assertTrue($Volume->fresh()->needsUpdate());
+
+        // The file changes after the last check: it is read again
+        touch($Volume->getModuleFilePath(), time() + 120);
+        clearstatcache();
+        $this->assertFalse($Volume->fresh()->needsUpdate());
+        $this->assertSame(0, (int) $Volume->fresh()->needs_update);
     }
 }

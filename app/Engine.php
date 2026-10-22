@@ -568,7 +568,9 @@ class Engine implements ErrorInterface
                 sort($strongs);
 
                 if(!empty($strongs)) {
-                    // A search with no usable dictionary still answers, just without definitions
+                    // No dictionary at all (level 3) still answers, just without definitions.  An
+                    // explicit strongs_dictionary that cannot be used is fatal, as an unavailable
+                    // Bible is.
                     $source = $this->_resolveStrongsSource(
                         $input['strongs_version'],
                         $input['strongs_dictionary'],
@@ -1729,18 +1731,28 @@ class Engine implements ErrorInterface
     {
         $Volume   = $source['Volume'];
         $Content  = ($source['version'] == 'modern') ? $Volume->content() : NULL;
+        $numbers  = array_map(fn($raw) => $this->_normalizeStrongsNumber($raw), $numbers);
         $response = [];
 
-        foreach($numbers as $raw) {
-            $clean = $this->_normalizeStrongsNumber($raw);
+        if(!$numbers) {
+            return $response;
+        }
 
-            if($Content) {
-                $Row = $Content->newQuery()->where('number', $clean)->first();
-                $def = $Row ? $this->_formatStrongsModern($Row->getAttributes(), $Volume->module) : NULL;
+        // One query for every number.  Keyed in upper case: MySQL matches case insensitively.
+        $Query = $Content ? $Content->newQuery() : \App\Models\StrongsDefinition::query();
+        $rows  = $Query->whereIn('number', array_unique($numbers))->get()->keyBy(fn($Row) => strtoupper($Row->number));
+
+        foreach($numbers as $clean) {
+            $Row = $rows[$clean] ?? NULL;
+
+            if(!$Row) {
+                $def = NULL;
+            }
+            elseif($Content) {
+                $def = $this->_formatStrongsModern($Row->getAttributes(), $Volume->module);
             }
             else {
-                $Def = \App\Models\StrongsDefinition::where('number', $clean)->first();
-                $def = $Def ? $this->_formatStrongs($Def->toArray()) : NULL;
+                $def = $this->_formatStrongs($Row->toArray());
             }
 
             if($def) {

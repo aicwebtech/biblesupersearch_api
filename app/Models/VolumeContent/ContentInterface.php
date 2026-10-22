@@ -19,7 +19,7 @@ interface ContentInterface
      * @param bool $structure_only Whether to install only the database structure and not the data (default: false).
      * @return bool Whether the install succeeded
      */
-    public function install($structure_only = false): bool;
+    public function install(bool $structure_only = FALSE): bool;
 
     /**
      * Uninstall the contents from the database.

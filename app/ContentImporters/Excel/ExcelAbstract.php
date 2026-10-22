@@ -34,6 +34,14 @@ abstract class ExcelAbstract extends SpreadsheetAbstract
     protected ?string $path = NULL;
     protected int $total_rows = 0;
 
+    /**
+     * Formula cells in the current batch with no saved result: spreadsheet row => 0-based
+     * column indexes.  Only these are refused; a text cell that starts with '=' is content.
+     *
+     * @var array<int, array<int, bool>>
+     */
+    protected array $unsaved_formulas = [];
+
     protected function openFile(string $path): bool
     {
         try {
@@ -98,8 +106,8 @@ abstract class ExcelAbstract extends SpreadsheetAbstract
      * Excel and LibreOffice save a formula's last result alongside it, so nothing is
      * recalculated: recalculating would need the whole workbook in memory (a formula can
      * reference any row, or another sheet), not one chunk of rows.  A formula without a
-     * saved result (a file written by a script that never calculated it) is left as is, for
-     * mapRow() to refuse.
+     * saved result (a file written by a script that never calculated it) is left as is and
+     * recorded in $unsaved_formulas, for cellError() to refuse.
      *
      * @param Worksheet $Sheet
      * @param array<int, array<int, mixed>> $data Rows from rangeToArray(), from row $start
@@ -108,6 +116,8 @@ abstract class ExcelAbstract extends SpreadsheetAbstract
      */
     protected function useSavedFormulaResults(Worksheet $Sheet, array $data, int $start): array
     {
+        $this->unsaved_formulas = [];
+
         foreach($data as $offset => $row) {
             foreach($row as $index => $value) {
                 if(!is_string($value) || !str_starts_with($value, '=')) {
@@ -125,15 +135,29 @@ abstract class ExcelAbstract extends SpreadsheetAbstract
                 if($saved !== NULL) {
                     $data[$offset][$index] = is_bool($saved) ? (int) $saved : $saved;
                 }
+                else {
+                    $this->unsaved_formulas[$start + $offset][$index] = TRUE;
+                }
             }
         }
 
         return $data;
     }
 
+    protected function cellError(int $index, int|string $row): ?string
+    {
+        if(empty($this->unsaved_formulas[$row][$index])) {
+            return NULL;
+        }
+
+        return 'contains a formula with no saved result.  '
+            . 'Open the file in Excel or LibreOffice and save it again, or replace the formulas with their values.';
+    }
+
     protected function closeFile(): void
     {
         $this->Reader = NULL;
+        $this->unsaved_formulas = [];
         $this->path   = NULL;
         $this->total_rows = 0;
     }

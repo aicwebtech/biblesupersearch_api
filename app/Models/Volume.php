@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Validation\Rule;
 use Illuminate\Support\Facades\DB;
@@ -207,7 +208,7 @@ class Volume extends Model
      * Each volume record points to an entire DB table
      * Future note: When implementing for Bible, this will just call verses()
      */
-    public function content($force = FALSE): ContentInterface
+    public function content(bool $force = FALSE): ContentInterface
     {
         if (!$this->module) {
             throw new \Exception('Module required on model to access contents model');
@@ -628,8 +629,10 @@ class Volume extends Model
 
     /**
      * Whether the module file holds a newer module_version than the one installed.  Same logic
-     * as Bible::needsUpdate(): the file's mtime saves opening the ZIP when it predates the install,
-     * and an unreadable info.json keeps the stored flag.
+     * as Bible::needsUpdate(), with one more gate: the answer is stored in needs_update, and
+     * module_checked_at records when the ZIP was last read.  The ZIP is only opened when the
+     * file has changed since both the install and that last read, so listing volumes does not
+     * open every module file each time.  An unreadable info.json keeps the stored flag.
      *
      * @return bool
      */
@@ -639,11 +642,14 @@ class Volume extends Model
             return FALSE;
         }
 
-        $install_ts = $this->installed_at ? strtotime($this->installed_at) : FALSE;
-        $file_ts    = filemtime($this->getModuleFilePath());
+        $file_ts = filemtime($this->getModuleFilePath());
 
-        if($install_ts && $file_ts && $file_ts < $install_ts) {
-            return (bool) $this->needs_update;
+        foreach([$this->installed_at, $this->module_checked_at] as $date) {
+            $ts = $date ? strtotime($date) : FALSE;
+
+            if($ts && $file_ts && $file_ts < $ts) {
+                return (bool) $this->needs_update;
+            }
         }
 
         $info = $this->readModuleInfo();
@@ -653,17 +659,12 @@ class Volume extends Model
         }
 
         $file_version = $info['module_version'] ?? '0';
+        $needs = ($file_version == '0' && $this->needs_update == 1)
+            || ($file_version && version_compare($this->module_version ?? '0', $file_version) < 0);
 
-        if($file_version == '0' && $this->needs_update == 1) {
-            return TRUE;
-        }
-
-        $needs = ($file_version && version_compare($this->module_version ?? '0', $file_version) < 0);
-
-        if((int) $this->needs_update !== (int) $needs) {
-            $this->needs_update = $needs ? 1 : 0;
-            $this->save();
-        }
+        $this->needs_update      = $needs ? 1 : 0;
+        $this->module_checked_at = date('Y-m-d H:i:s');
+        $this->save();
 
         return $needs;
     }
@@ -675,12 +676,6 @@ class Volume extends Model
         }
     }
 
-    /**
-     * Update: reinstalls the volume from its newer module file and takes the file's settings.
-     * enabled and is_default are kept.
-     *
-     * @return bool
-     */
     /**
      * Whether the module file looks installable: it opens, its info.json is readable, and it
      * has a non-empty contents.txt.  Adds an error and answers FALSE when not.
@@ -713,6 +708,12 @@ class Volume extends Model
         return TRUE;
     }
 
+    /**
+     * Update: reinstalls the volume from its newer module file and takes the file's settings.
+     * enabled and is_default are kept.
+     *
+     * @return bool
+     */
     public function updateModule(): bool
     {
         if(!$this->needsUpdate()) {
@@ -866,12 +867,12 @@ class Volume extends Model
         return $created;
     }
 
-    public function language()
+    public function language(): HasOne
     {
         return $this->hasOne(Language::class, 'code', 'language');
     }
 
-    public function copyrightInfo()
+    public function copyrightInfo(): HasOne
     {
         return $this->hasOne(Copyright::class, 'id', 'copyright_id');
     }
