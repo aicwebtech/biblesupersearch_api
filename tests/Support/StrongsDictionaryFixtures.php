@@ -29,6 +29,9 @@ trait StrongsDictionaryFixtures
     {
         $suffix = bin2hex(random_bytes(3));
 
+        // Registered first: it removes whatever save() and install() managed, should either throw
+        $this->deferCleanup(fn() => $this->removeVolumeModuleFixture('strongs', 'vol_api_' . $suffix));
+
         $Volume = new Strongs();
         $Volume->module    = 'vol_api_' . $suffix;
         $Volume->name      = 'Strongs API Fixture ' . $suffix;

@@ -37,6 +37,10 @@ class VolumeControllerTest extends TestCase
     {
         $suffix = bin2hex(random_bytes(3));
 
+        // Whatever gets created from this input - including by a request that should have been
+        // refused - is removed in tearDown
+        $this->deferCleanup(fn() => $this->removeVolumeModuleFixture('strongs', 'vol_ctrl_' . $suffix));
+
         return array_merge([
             'type'          => 'strongs',
             'name'          => 'Volume Controller Fixture ' . $suffix,
@@ -424,17 +428,17 @@ class VolumeControllerTest extends TestCase
 
         try {
             $Volume   = $this->makeVolumeFixture();
-            $Language = $this->createLanguageFixture('qqv', 'Volume Controller Fixture Language');
+            $Language = $this->createLanguageFixture('qqc', 'Volume Controller Fixture Language');
             $Language->setAttr(Strongs::LANGUAGE_ATTR, $Volume->module);
 
             $this->admin()->postJson('/admin/volumes/delete/' . $Volume->id)->assertStatus(200);
             $Volume = NULL;
 
-            $this->assertNull(Language::getLanguageAttr('qqv', Strongs::LANGUAGE_ATTR));
+            $this->assertNull(Language::getLanguageAttr('qqc', Strongs::LANGUAGE_ATTR));
         }
         finally {
             $this->removeVolumeFixture($Volume);
-            $this->removeLanguageFixture('qqv');
+            $this->removeLanguageFixture('qqc');
         }
     }
 
@@ -586,8 +590,8 @@ class VolumeControllerTest extends TestCase
                 'file'         => $File,
             ]));
 
-            $check->assertStatus(200)->assertJson(['success' => TRUE, 'volume' => ['type' => 'strongs']]);
             $file = $check->json('file');
+            $check->assertStatus(200)->assertJson(['success' => TRUE, 'volume' => ['type' => 'strongs']]);
 
             $data = $input;
             unset($data['type']);

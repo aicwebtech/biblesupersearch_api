@@ -59,10 +59,9 @@ class BibleTest extends TestCase
      */
     public function testModuleVersionRoundTripsFromModuleFile()
     {
-        $module = 'bss279rt';
+        $module = $this->fixtureModule('bss279rt_');
         $path   = Bible::getModulePath() . $module . '.zip';
-
-        Bible::where('module', $module)->delete();
+        $this->deferCleanup(fn() => $this->removeBibleModuleFixture($module, TRUE));
         $this->writeTestModuleZip($path, '6.1.0', $module);
 
         try {
@@ -83,10 +82,9 @@ class BibleTest extends TestCase
      */
     public function testNeedsUpdateDetection()
     {
-        $module = 'bss279det';
+        $module = $this->fixtureModule('bss279det_');
         $path   = Bible::getModulePath() . $module . '.zip';
-
-        Bible::where('module', $module)->delete();
+        $this->deferCleanup(fn() => $this->removeBibleModuleFixture($module, TRUE));
         $this->writeTestModuleZip($path, '6.0.0', $module);
 
         $Bible = Bible::createFromModuleFile($module);
@@ -134,10 +132,9 @@ class BibleTest extends TestCase
      */
     public function testModuleVersionDefaultsToAppVersionWhenMissing()
     {
-        $module = 'bss279def';
+        $module = $this->fixtureModule('bss279def_');
         $path   = Bible::getModulePath() . $module . '.zip';
-
-        Bible::where('module', $module)->delete();
+        $this->deferCleanup(fn() => $this->removeBibleModuleFixture($module, TRUE));
         $this->writeTestModuleZip($path, NULL, $module);
 
         try {
@@ -158,10 +155,9 @@ class BibleTest extends TestCase
      */
     public function testUpdateMetaInfoClearsStaleNeedsUpdate()
     {
-        $module = 'bss279meta';
+        $module = $this->fixtureModule('bss279meta_');
         $path   = Bible::getModulePath() . $module . '.zip';
-
-        Bible::where('module', $module)->delete();
+        $this->deferCleanup(fn() => $this->removeBibleModuleFixture($module, TRUE));
         $this->writeTestModuleZip($path, '6.0.0', $module);
 
         $Bible = Bible::createFromModuleFile($module);
@@ -187,10 +183,9 @@ class BibleTest extends TestCase
      */
     public function testNeedsUpdatePreservesFlagWhenInfoJsonUnreadable()
     {
-        $module = 'bss279bad';
+        $module = $this->fixtureModule('bss279bad_');
         $path   = Bible::getModulePath() . $module . '.zip';
-
-        Bible::where('module', $module)->delete();
+        $this->deferCleanup(fn() => $this->removeBibleModuleFixture($module, TRUE));
         $this->writeTestModuleZip($path, '6.0.0', $module);
 
         $Bible = Bible::createFromModuleFile($module);
@@ -301,13 +296,8 @@ class BibleTest extends TestCase
 
     public function testAddBible() 
     {
-        $module = 'bobs_test_bible';
-        $Bible = Bible::findByModule($module);
-
-        if($Bible) {
-            $Bible->uninstall();
-            $Bible->forceDelete();
-        }
+        $module = $this->fixtureModule('bobs_test_bible_');
+        $this->deferCleanup(fn() => $this->removeBibleModuleFixture($module));
 
         Bible::create([
             'module' => $module,
@@ -336,7 +326,7 @@ class BibleTest extends TestCase
         $this->assertEquals(1, $Bible->enabled);
 
         $class_name = $Bible->getVerseClassName();
-        $this->assertEquals('App\Models\Verses\BobsTestBible', $class_name);
+        $this->assertEquals('App\Models\Verses\\' . studly_case($module), $class_name);
 
         $this->assertTrue(Schema::hasTable('verses_' . $module));
 
@@ -395,6 +385,20 @@ class BibleTest extends TestCase
         $of_path = Bible::getModulePath() . $kjv->getModuleFileName();
         $un_path = Bible::getUnofficialModulePath() . $kjv->getModuleFileName();
 
+        // This moves the real KJV module file and flips its official flag: both are put back
+        // however the test ends
+        $this->restoreColumnsLater($kjv, ['official']);
+        $un_existed = is_file($un_path);
+
+        $this->deferCleanup(function() use ($of_path, $un_path, $un_existed) {
+            if(!is_file($of_path) && is_file($un_path)) {
+                rename($un_path, $of_path);
+            }
+            elseif(!$un_existed && is_file($un_path) && is_file($of_path)) {
+                unlink($un_path);
+            }
+        });
+
         // Attempt to migrate, it won't need it.
         $kjv->migrateModuleFile();
         $this->assertEquals($kjv->migrate_code, 0);
@@ -404,7 +408,7 @@ class BibleTest extends TestCase
 
         // Temporarily make KJV unofficial and migrate it
         $kjv->official = 0;
-        $kjv->save;
+        $kjv->save();
         $this->assertEquals($kjv->getModuleFilePath(), $un_path);
         $kjv->migrateModuleFile();
         $this->assertEquals($kjv->migrate_code, 2);
@@ -412,7 +416,7 @@ class BibleTest extends TestCase
 
         // Make KJV official and migrate it back
         $kjv->official = 1;
-        $kjv->save;
+        $kjv->save();
         $this->assertEquals($kjv->getModuleFilePath(), $of_path);
         $kjv->migrateModuleFile();
         $this->assertEquals($kjv->migrate_code, 2);

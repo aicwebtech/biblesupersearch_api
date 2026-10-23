@@ -46,6 +46,14 @@ class VolumeModuleTest extends TestCase
         $Volume->shortname = 'ModFix ' . $suffix;
         $Volume->language  = 'en';
         $Volume->year      = '1890';
+
+        // Registered before save(): tearDown's own lists only hold volumes that got this far
+        $module_file = $Volume->getModuleFilePath();
+        $this->deferCleanup(function() use ($Volume, $module_file) {
+            $this->removeVolumeModuleFixture('strongs', $Volume->module);
+            is_file($module_file) && unlink($module_file);
+        });
+
         $Volume->save();
         $Volume->install(FALSE, TRUE);
 

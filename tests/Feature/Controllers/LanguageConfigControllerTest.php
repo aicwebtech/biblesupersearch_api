@@ -35,6 +35,9 @@ class LanguageConfigControllerTest extends TestCase
     {
         $suffix = bin2hex(random_bytes(3));
 
+        // Registered first: it removes whatever save() and install() managed, should either throw
+        $this->deferCleanup(fn() => $this->removeVolumeModuleFixture('strongs', 'vol_langcfg_' . $suffix));
+
         $Volume = new Strongs();
         $Volume->module    = 'vol_langcfg_' . $suffix;
         $Volume->name      = 'Language Config Fixture ' . $suffix;
