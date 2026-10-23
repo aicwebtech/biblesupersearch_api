@@ -24,6 +24,7 @@ return [
         'actions'    => [
             'books'           => 86400,
             'bibles'          => 86400,
+            'volumes'         => 86400,
             // Private: actionStatics() embeds the caller's own access/quota state, which
             // ApiAccessManager buckets by IP and Origin/Referer - neither of which is in
             // the URL a shared cache keys on. A CDN would otherwise store one caller's

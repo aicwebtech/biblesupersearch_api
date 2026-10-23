@@ -213,9 +213,18 @@ export default {
 
         const showDefaultCopyright = Vue.computed(() => !props.record.copyright_statement);
 
+        // The stored statements are written for Bibles; name the volume's type instead, as
+        // Copyright::replaceSubject() does for the API
         const defaultCopyrightStatement = Vue.computed(() => {
             const cr = bootstrap.copyrights.find(element => element.id == props.record.copyright_id);
-            return cr ? cr.copyright_statement_processed : '';
+            const type = (bootstrap.volume_types || {})[props.record.type];
+
+            if(!cr) {
+                return '';
+            }
+
+            const subject = type ? type.label.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;') : 'volume';
+            return cr.copyright_statement_processed.replace(/\bThis Bible\b/g, () => 'This ' + subject);
         });
 
         function initRecord() {

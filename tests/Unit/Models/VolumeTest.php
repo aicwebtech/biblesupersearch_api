@@ -293,4 +293,14 @@ class VolumeTest extends TestCase
             'one leading letter'=> ['s1', 'Module name must start with at least two letters'],
         ];
     }
+
+    public function testCopyrightSubjectIsTheTypeLabel(): void
+    {
+        $this->assertSame('Strong\'s Dictionary', (new \App\Models\VolumeTypes\Strongs())->getCopyrightSubject());
+
+        $Volume = new Volume();
+        $Volume->type = 'no_such_type';
+        $this->assertSame('volume', $Volume->getCopyrightSubject());
+    }
+
 }

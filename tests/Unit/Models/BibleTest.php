@@ -351,4 +351,10 @@ class BibleTest extends TestCase
         $this->assertTrue(\App\Models\Bible::validateModule('kjv'));
         $this->assertTrue(\App\Models\Bible::validateModule('kjv_strongs'));
     }
+
+    public function testCopyrightSubject(): void
+    {
+        $this->assertSame('Bible', (new Bible())->getCopyrightSubject());
+    }
+
 }

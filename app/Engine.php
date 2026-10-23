@@ -6,6 +6,7 @@ use App\User;
 use App\Models\Bible;
 use App\Models\Feature;
 use App\Models\Language;
+use App\Models\Volume;
 use App\Models\VolumeTypes\Strongs;
 use App\Passage;
 use App\Search;
@@ -66,6 +67,11 @@ class Engine implements ErrorInterface
      * responses are unchanged; EngineV3 overrides this.
      */
     public const STRONGS_VERSION_DEFAULT = 'legacy';
+
+    /**
+     * Default 'bible_order_by', for the Bible and volume lists
+     */
+    public const BIBLE_ORDER_BY_DEFAULT = 'lang_native_name|rank';
 
     /**
      * Whitelist rejections _sanitizeInput() found, waiting on _raiseInputNotices().
@@ -921,8 +927,7 @@ class Engine implements ErrorInterface
         $Bibles->leftJoin('languages', 'bibles.lang_short', 'languages.code');
         $bibles = []; // Array of associative arrays
 
-        $order_by_default = 'lang_native_name|rank';
-        $order_by = array_key_exists('bible_order_by', $input) ? $input['bible_order_by'] : $order_by_default;
+        $order_by = array_key_exists('bible_order_by', $input) ? $input['bible_order_by'] : self::BIBLE_ORDER_BY_DEFAULT;
 
         // Legacy order by flag - still supported for now
         if(array_key_exists('order_by_lang_name', $input) && !empty($input['order_by_lang_name'])) {
@@ -995,6 +1000,81 @@ class Engine implements ErrorInterface
         }
 
         return $bibles;
+    }
+
+    /**
+     * API action for getting the enabled volumes (Strong's dictionaries, etc), grouped by type
+     *
+     * Every registered type has a group, keyed by type, even when it has no enabled volumes; each
+     * group is indexed by module, as module names are only unique within a type.
+     *
+     * Input:
+     *  bible_order_by - the Bible list's ordering, applied to the volumes within each group:
+     *      pipe-separated list of rank, name, shortname, lang_short, lang_name, lang_name_english.
+     *      Same default as the Bible list.  Unknown values are ignored; ties go by name.
+     *  order_by_lang_name - legacy flag, as for the Bible list: English language name, then name.
+     *  language_float - language code whose volumes are listed first within each group, keeping
+     *      the requested order otherwise.  Applies to every ordering.
+     *
+     * @param array<string, mixed> $input
+     * @return array<string, array<string, array<string, mixed>>|\stdClass>
+     */
+    public function actionVolumes(array $input): array
+    {
+        $order_by = $input['bible_order_by'] ?? self::BIBLE_ORDER_BY_DEFAULT;
+
+        if(!empty($input['order_by_lang_name'])) {
+            $order_by = 'lang_name_english|name';
+        }
+        $language_float = $input['language_float'] ?? NULL;
+
+        $Volumes = Volume::select('volumes.type', 'volumes.name', 'shortname', 'module', 'year', 'owner', 'publisher',
+            'description', 'url', 'languages.name AS lang', 'volumes.language AS lang_short',
+            'languages.native_name AS lang_native', 'languages.rtl', 'copyright', 'copyright_id',
+            'copyright_statement', 'rank', 'research', 'volumes.restrict', 'citation_limit', 'is_default')
+            ->leftJoin('languages', 'volumes.language', 'languages.code')
+            ->whereIn('volumes.type', array_keys(Volume::getTypes()))
+            ->where('installed', 1)
+            ->where('enabled', 1);
+
+        $columns = [
+            'rank'              => 'volumes.rank',
+            'name'              => 'volumes.name',
+            'shortname'         => 'shortname',
+            'lang_short'        => 'volumes.language',
+            'lang_name'         => 'lang_native',
+            'lang_name_english' => 'lang',
+        ];
+
+        foreach(explode('|', is_string($order_by) ? $order_by : '') as $ob) {
+            if(isset($columns[$ob])) {
+                $Volumes->orderBy($columns[$ob], 'ASC');
+            }
+        }
+
+        $Volumes->orderBy('volumes.name', 'ASC'); // a stable order for ties
+
+        $groups = array_fill_keys(array_keys(Volume::getTypes()), []);
+
+        foreach($Volumes->with('copyrightInfo')->get() as $Volume) {
+            $volume = $Volume->getAttributes();
+            $volume['description']         = $this->_sanitizeEditorHtml($volume['description']);
+            $volume['copyright_statement'] = $this->_processHtml($Volume->getCopyrightStatement());
+            $volume['is_default']          = (bool) $volume['is_default'];
+            $groups[$Volume->type][$Volume->module] = $volume;
+        }
+
+        foreach($groups as $type => $volumes) {
+            if(is_string($language_float) && $language_float !== '') {
+                $floated = array_filter($volumes, fn(array $volume) => $volume['lang_short'] === $language_float);
+                $volumes = $floated + $volumes;
+            }
+
+            // An empty group is still an object in the JSON, as a populated one is
+            $groups[$type] = $volumes ?: new \stdClass;
+        }
+
+        return $groups;
     }
 
     /**
@@ -1356,6 +1436,7 @@ class Engine implements ErrorInterface
 
         $response = new \stdClass;
         $response->bibles                   = $this->actionBibles($input);
+        $response->volumes                  = $this->actionVolumes($input);
         $response->books                    = $this->actionBooks($input);
         //$response->books_count_diffs        = $this->getChapterVerseCounts(true);
         $response->audio_enabled            = config('audio.enable');
@@ -1527,6 +1608,7 @@ class Engine implements ErrorInterface
         $response->dates = new \stdClass;
 
         $response->dates->bible     = strtotime(Bible::max('updated_at'));                  // Most recent Bible change
+        $response->dates->volume    = (int) strtotime((string) Volume::max('updated_at'));  // Most recent volume change
         $response->dates->shortcuts = strtotime(Models\Shortcuts\En::max('updated_at'));    // Most recent shortcut change
         $response->dates->configs   = (int) config('app.configs_updated_at');               // most recent config change, including most recent update
 
@@ -2065,8 +2147,7 @@ class Engine implements ErrorInterface
      * performs any additional processing needed for the API output. This is a hook for subclasses to override.
      *
      * NULL is accepted and answered with NULL - see _sanitizeHtml(). It reaches here from the
-     * nullable columns and from Bible::getCopyrightStatement(), which has no return type of
-     * its own.
+     * nullable columns.
      *
      * @param string|null $html
      * @return string|null

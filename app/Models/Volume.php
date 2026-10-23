@@ -26,6 +26,7 @@ use ZipArchive;
 class Volume extends Model
 {
     use Error;
+    use \App\Traits\CopyrightStatement;
 
     /**
      * Registered volume types, as type => settings
@@ -870,6 +871,14 @@ class Volume extends Model
     public function language(): HasOne
     {
         return $this->hasOne(Language::class, 'code', 'language');
+    }
+
+    /**
+     * The type's label, such as 'Strong\'s Dictionary'
+     */
+    public function getCopyrightSubject(): string
+    {
+        return static::getType((string) $this->type)['label'] ?? 'volume';
     }
 
     public function copyrightInfo(): HasOne

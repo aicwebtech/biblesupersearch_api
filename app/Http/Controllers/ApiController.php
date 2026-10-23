@@ -57,7 +57,7 @@ class ApiController extends Controller
 
     public function genericAction(Request $Request, $action = 'query', $version = 2)
     {
-        $allowed_actions = ['query', 'bibles', 'books', 'statics', 'statics_changed', 'access', 'version', 'readcache', 'strongs', 'requirements'];
+        $allowed_actions = ['query', 'bibles', 'volumes', 'books', 'statics', 'statics_changed', 'access', 'version', 'readcache', 'strongs', 'requirements'];
 
         if(config('download.enable')) {
             $allowed_actions[] = 'render';

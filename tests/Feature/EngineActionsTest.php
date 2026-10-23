@@ -100,6 +100,7 @@ class EngineActionsTest extends TestCase
 
         $this->assertTrue($response->success);
         $this->assertObjectHasProperty('bible', $response->dates);
+        $this->assertObjectHasProperty('volume', $response->dates);
         $this->assertObjectHasProperty('shortcuts', $response->dates);
         $this->assertObjectHasProperty('configs', $response->dates);
     }

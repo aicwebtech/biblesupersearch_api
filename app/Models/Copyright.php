@@ -65,6 +65,26 @@ class Copyright extends Model
         return $cr;
     }
 
+    /**
+     * Names the right kind of text in a statement written for Bibles.
+     *
+     * The stored statements all say 'This Bible ...'.  A volume (a Strong's dictionary ...)
+     * shares the same copyright rows, so its statement says 'This Strong's Dictionary ...'
+     * instead.  VolumeEditForm.vue.js does the same to its default statement preview.
+     *
+     * @param string $statement HTML
+     * @param string $subject Plain text, such as 'Strong\'s Dictionary'
+     * @return string
+     */
+    public static function replaceSubject(string $statement, string $subject): string
+    {
+        if($subject === 'Bible') {
+            return $statement;
+        }
+
+        return preg_replace('/\bThis Bible\b/', 'This ' . htmlspecialchars($subject, ENT_NOQUOTES), $statement) ?? $statement;
+    }
+
     public static function migrateFromCsv() 
     {
         \App\Importers\Database::importSqlFile('copyrights.sql', NULL, 'copyrights');

@@ -88,6 +88,30 @@ return array(
         'description' => 'Retrieves the list of Bibles avaliable via the API',
         'indexed_by_module' => 'Indexed by \'module\'',
     ),
+    'volumes' => array(
+        'name' => 'Volumes',
+        'description' => 'Retrieves the list of volumes (such as Strong\'s dictionaries) avaliable via the API, grouped by volume type. <br />'
+        . 'Every volume type has a group, even when it has no volumes.',
+        'grouped_by_type' => 'Grouped by volume \'type\'',
+        'indexed_by_module' => 'Indexed by \'module\', which is unique within a type',
+        'is_default_desc' => 'Whether this is the default volume of its type',
+        'params' => array(
+            'bible_order_by' => array(
+                'type' => 'String',
+                'name' => 'Order By',
+                'default' => 'lang_native_name|rank',
+                'description' => 'The same ordering as the Bible list, applied to the volumes within each type.  A pipe-separated list of any of: '
+                . 'rank, name, shortname, lang_short (language code), lang_name (native language name), lang_name_english (English language name). '
+                . 'Volumes that tie are ordered by name.',
+            ),
+            'language_float' => array(
+                'type' => 'String',
+                'name' => 'Language Float',
+                'default' => '(none)',
+                'description' => 'Language code.  Volumes in this language are listed first within each type, otherwise keeping the order above.',
+            ),
+        ),
+    ),
     'books' => array(
         'name' => 'Books',
         'description' => 'Retrieves a list of Bible Books in the specified language',
@@ -175,6 +199,7 @@ return array(
         'description' => 'Single API action to retrieve basic information needed to use the API. <br/><br />'
         . 'This includes: <ul>'
         . '<li>A list of all avaliable Bibles</li>'
+        . '<li>A list of all avaliable volumes, such as Strong\'s dictionaries</li>'
         . '<li>A list of Bible books in the specified language</li>'
         . '<li>A list of shortcuts in the specified language</li>'
         . '<li>A list of search types</li>'
