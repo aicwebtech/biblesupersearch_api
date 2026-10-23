@@ -98,7 +98,7 @@ class LanguageTest extends TestCase
      */
     public function testBiblesRelationIsEmptyForALanguageWithNoBibles(): void
     {
-        $code = 'qqz';
+        $code = 'qqb';
 
         try {
             $Language = $this->createLanguageFixture($code, 'Bibles Relation Test');

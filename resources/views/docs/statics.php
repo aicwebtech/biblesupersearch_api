@@ -16,6 +16,7 @@
     "error_level": 0,
     "results": {
         "bibles": { ... }, // <?php echo trans('api.see') . ' ' . trans('api.bibles.name') . ' ' . trans('api.action'). PHP_EOL ?>
+        "volumes": { ... }, // <?php echo trans('api.see') . ' ' . trans('api.volumes.name') . ' ' . trans('api.action'). PHP_EOL ?>
         "books": [ ... ],  // <?php echo trans('api.see') . ' ' . trans('api.books.name')  . ' ' . trans('api.action'). PHP_EOL ?>
         "search_types": [ ... ],
         "shortcuts": [ ... ],

@@ -412,7 +412,7 @@ class CommonWordTest extends TestCase
     public function testSave() 
     {
         $Language = Language::findByCode('mh');
-        $cache = $Language->common_words;
+        $this->restoreColumnsLater($Language, ['common_words']);
 
         $words = ['come', 'at', 'me', 'bro'];
         $newlines = ["\n", "\r", "\r\n"];
@@ -426,9 +426,6 @@ class CommonWordTest extends TestCase
             $this->assertNotEmpty($arr);
             $this->assertEquals($words, $Language->getCommonWordsAsArray());
         }
-
-        $Language->common_words = $cache;
-        $Language->save();
     }
 
     #[DataProvider('queryGlobalProvider')]

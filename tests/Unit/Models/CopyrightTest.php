@@ -195,4 +195,36 @@ class CopyrightTest extends TestCase
         $this->assertSame('Used by permission.', $copyright->getProcessedCopyrightStatement($Bible));
     }
 
+    /**
+     * The stored statements are written for Bibles; a volume's names its type instead.
+     */
+    public function testReplaceSubjectNamesTheVolumeType(): void
+    {
+        $this->assertSame(
+            'This Strong\'s Dictionary is in the Public Domain.',
+            Copyright::replaceSubject('This Bible is in the Public Domain.', 'Strong\'s Dictionary')
+        );
+    }
+
+    public function testReplaceSubjectLeavesBiblesAlone(): void
+    {
+        $this->assertSame('This Bible is copyrighted.', Copyright::replaceSubject('This Bible is copyrighted.', 'Bible'));
+    }
+
+    /**
+     * Only the phrase naming the text: 'Bible SuperSearch' and the like stay as they are.
+     */
+    public function testReplaceSubjectOnlyReplacesThisBible(): void
+    {
+        $this->assertSame(
+            'This Volume is used by Bible SuperSearch; these Bibles are not.',
+            Copyright::replaceSubject('This Bible is used by Bible SuperSearch; these Bibles are not.', 'Volume')
+        );
+    }
+
+    public function testReplaceSubjectEscapesTheSubject(): void
+    {
+        $this->assertSame('This &lt;b&gt; is free.', Copyright::replaceSubject('This Bible is free.', '<b>'));
+    }
+
 }

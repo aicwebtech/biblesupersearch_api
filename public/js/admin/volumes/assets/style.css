@@ -1,0 +1,12 @@
+
+.default-copyright-statement {
+    height: 100%;
+    padding: 10px;
+    background-color: rgb(235, 235, 228);
+    color: rgb(45, 45, 45);
+    overflow-y: auto;
+    position: relative;
+    bottom: 0px;
+    text-align: justify;
+    font-size: smaller;
+}

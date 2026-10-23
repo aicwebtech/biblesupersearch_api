@@ -36,6 +36,8 @@ class ApiControllerTest extends TestCase
         if($this->config_changed) {
             config(['bss.public_access' => $this->config_cache]);
         }
+
+        parent::tearDown();
     }
 
     /**

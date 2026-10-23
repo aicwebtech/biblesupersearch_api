@@ -80,6 +80,24 @@ Where the absence might read as an oversight, say so rather than let someone rei
  */
 ```
 
+### Argument and return types
+Declare a type on every parameter and a return type on every method in new code, including
+abstract methods and methods on traits:
+
+```php
+public function safeImportFileName(mixed $file_name): ?string   // not safeImportFileName($file_name)
+abstract public function getImportDir(): string;
+```
+
+* Use `mixed` for genuinely untrusted input (request values that may not be strings) and
+  check it inside, rather than leaving the parameter untyped.
+* Keep the `@param` / `@return` docblock when it adds detail the signature can't express
+  (array shapes, `class-string<...>`).
+* Much older code is untyped. When moving or extracting it (into a trait, a base class ...),
+  add the types as part of the move: moved code counts as new code. Typing a method on a
+  trait or parent class also means typing every override of it, because an untyped
+  override of a typed method is a fatal error; grep for overrides, including test doubles.
+
 ## Tests
 
 ### All tests

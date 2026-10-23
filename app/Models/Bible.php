@@ -18,6 +18,7 @@ use App\Helpers;
 class Bible extends Model 
 {
     use \App\Traits\WritesFilesSafely;
+    use \App\Traits\CopyrightStatement;
 
     use Error;
 
@@ -281,15 +282,23 @@ class Bible extends Model
         }
     }
 
-    public function uninstall() 
+    /**
+     * Uninstall the Bible, dropping its verses table.
+     *
+     * The flags are cleared and saved BEFORE the table is dropped.  Requests read the enabled
+     * and installed flags to decide which verses tables to query, so dropping first leaves a
+     * window where a concurrent request sees an enabled, installed Bible with no table and
+     * fails with a 500.
+     */
+    public function uninstall()
     {
         if ($this->installed) {
-            $this->verses()->uninstall();
             $this->installed = 0;
             $this->enabled = 0;
             $this->installed_at = NULL;
             $this->module_updated_at = NULL;
             $this->save();
+            $this->verses()->uninstall();
         }
         else {
             $this->addError('Already uninstalled', 1);
@@ -413,55 +422,9 @@ class Bible extends Model
         return TRUE;
     }
 
-    /**
-     * Generate the copyright statement for this Bible, sanitized.
-     *
-     * The year and owner belong to the text rather than to the licence, so they are prepended
-     * here rather than by Copyright::getProcessedCopyrightStatement() - but only under a
-     * Creative Commons licence, which is the type that requires the holder to be named and
-     * the one whose statement is generated rather than stored. A public domain text has no
-     * copyright holder, and leading its statement with 'Copyright (c) 1901' would contradict
-     * the 'This Bible is in the Public Domain' that follows it.
-     *
-     * @return string
-     */
-    public function getCopyrightStatement() 
+    public function getCopyrightSubject(): string
     {
-        // Read from the attribute array, not $this->copyright_statement: the accessor would
-        // purify the column a second time
-        $attributes = $this->getAttributes();
-
-        if(!empty($attributes['copyright_statement'])) {
-            return Helpers::sanitizeEditorHtmlStrict($attributes['copyright_statement']) ?? '';
-        }
-
-        if($this->copyright_id && $this->copyrightInfo) {
-            $html = $this->copyrightInfo->getProcessedCopyrightStatement(null, true);
-
-            if($this->copyrightInfo->type == 'creative_commons') {
-                $yp_text = null;
-
-                $yr = $this->year;
-                $ow = $this->owner;
-
-                if(!$yr && !$ow) {
-                    $yp_text = null;
-                } else {
-                    $yp_text = __('basic.copyright') . ' &copy;';
-                    $yp_text .= ($yr) ? ' ' . $yr : '';
-                    $yp_text .= ($ow) ? ' ' . $ow : '';
-                }
-                
-                if($yp_text) {
-                    $html =  $yp_text . '<br />' . $html;
-                }
-            }
-
-            // Default CR statement doesn't need editor sanitization 
-            return Helpers::sanitizeHtml($html) ?? '';
-        }
-
-        return Helpers::sanitizeEditorHtmlStrict($attributes['description'] ?? NULL) ?? '';
+        return 'Bible';
     }
 
     public function copyrightInfo() 
@@ -1252,6 +1215,12 @@ class Bible extends Model
 
         if(!$this->installed || !$this->id) {
             return ''; // Not saved or installed, so no verses, so empty book list
+        }
+
+        // This model may have been loaded just before a concurrent uninstall dropped the table.
+        // Answer empty, and do not cache it, rather than fail the whole request.
+        if(!\Illuminate\Support\Facades\Schema::hasTable($this->verses()->getTable())) {
+            return '';
         }
 
         $books = $this->verses()->getDistinctBooks();

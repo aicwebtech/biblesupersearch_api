@@ -88,6 +88,30 @@ return array(
         'description' => 'Retrieves the list of Bibles avaliable via the API',
         'indexed_by_module' => 'Indexed by \'module\'',
     ),
+    'volumes' => array(
+        'name' => 'Volumes',
+        'description' => 'Retrieves the list of volumes (such as Strong\'s dictionaries) avaliable via the API, grouped by volume type. <br />'
+        . 'Every volume type has a group, even when it has no volumes.',
+        'grouped_by_type' => 'Grouped by volume \'type\'',
+        'indexed_by_module' => 'Indexed by \'module\', which is unique within a type',
+        'is_default_desc' => 'Whether this is the default volume of its type',
+        'params' => array(
+            'bible_order_by' => array(
+                'type' => 'String',
+                'name' => 'Order By',
+                'default' => 'lang_native_name|rank',
+                'description' => 'The same ordering as the Bible list, applied to the volumes within each type.  A pipe-separated list of any of: '
+                . 'rank, name, shortname, lang_short (language code), lang_name (native language name), lang_name_english (English language name). '
+                . 'Volumes that tie are ordered by name.',
+            ),
+            'language_float' => array(
+                'type' => 'String',
+                'name' => 'Language Float',
+                'default' => '(none)',
+                'description' => 'Language code.  Volumes in this language are listed first within each type, otherwise keeping the order above.',
+            ),
+        ),
+    ),
     'books' => array(
         'name' => 'Books',
         'description' => 'Retrieves a list of Bible Books in the specified language',
@@ -103,11 +127,38 @@ return array(
                 'description' => 'Retrieve Strong\'s definitions for the given Strong\'s numbers. Can be a single string, a comma-separated string or a '
                 . 'JSON-encoded array',
             ),
+            'version' => array(
+                'type' => 'String',
+                'name' => 'Definitions Version',
+                'default' => 'v2: legacy<br />v3: modern',
+                'description' => '\'legacy\' returns the original Strong\'s definitions, in the original format. <br />'
+                . '\'modern\' returns definitions from a Strong\'s dictionary, in the modern format (see below). <br />'
+                . 'Requesting the version that is not the default for your API version (\'modern\' on v2, \'legacy\' on v3) falls back to the default '
+                . 'if the requested version is not available, so your app must handle both formats. '
+                . 'There is no fallback otherwise: if v3 (or v2 requesting \'modern\') has no Strong\'s dictionary available, an error is returned.',
+            ),
+            'language' => array(
+                'type' => 'String',
+                'name' => 'Language',
+                'default' => '(none)',
+                'description' => 'Modern only. Language code of the user interface. Selects that language\'s default Strong\'s dictionary, if one is set. '
+                . 'Ignored if \'dictionary\' is given.',
+            ),
+            'dictionary' => array(
+                'type' => 'String',
+                'name' => 'Dictionary',
+                'default' => '(none)',
+                'description' => 'Modern only. Module of the Strong\'s dictionary to use. If omitted, the language\'s default dictionary is used, '
+                . 'or else the global default.  An error is returned if this dictionary is not available.',
+            ),
         ),
         'results' => [
             'tvm_note' => 'Note: Some Strong\'s numbers will return TVM (Tense / Voice / Mood) records.  Your app will need to be able to handle both.',
             'tvm' => 'TVM record, "tvm" will be populated, and other items will be empty.',
-            'def' => 'Definition record, "tvm" will be empty.'
+            'def' => 'Definition record, "tvm" will be empty.',
+            'legacy' => 'Legacy version',
+            'modern' => 'Modern version',
+            'modern_note' => 'TVM (Tense / Voice / Mood) records have "is_special" set to 1, and their text in "definition".',
         ]
     ),
     'download' => array(
@@ -148,6 +199,7 @@ return array(
         'description' => 'Single API action to retrieve basic information needed to use the API. <br/><br />'
         . 'This includes: <ul>'
         . '<li>A list of all avaliable Bibles</li>'
+        . '<li>A list of all avaliable volumes, such as Strong\'s dictionaries</li>'
         . '<li>A list of Bible books in the specified language</li>'
         . '<li>A list of shortcuts in the specified language</li>'
         . '<li>A list of search types</li>'
