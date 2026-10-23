@@ -83,4 +83,40 @@ class StrongsFormatterTest extends TestCase
             'definition' => 'To love',
         ], $row);
     }
+
+    /** An empty definition takes the tvm entry, Count segment removed, flagged is_special */
+    public function testFormatRowFillsAnEmptyDefinitionFromTvm(): void
+    {
+        $Formatter = $this->makeFormatter();
+        $tvm = '<b>Count:</b> 2 <i>x</i><br>Present Active Indicative';
+
+        foreach([NULL, '', '  ', '<p></p>'] as $definition) {
+            $row = $Formatter->formatRow(['number' => 'G5719', 'definition' => $definition, 'tvm' => $tvm]);
+
+            $this->assertSame('Present Active Indicative', $row['definition']);
+            $this->assertSame(1, $row['is_special']);
+            $this->assertArrayNotHasKey('tvm', $row);
+        }
+
+        // No definition key at all
+        $row = $Formatter->formatRow(['number' => 'G5719', 'tvm' => 'Aorist']);
+        $this->assertSame('Aorist', $row['definition']);
+        $this->assertSame(1, $row['is_special']);
+    }
+
+    public function testFormatRowKeepsAPresentDefinitionOverTvm(): void
+    {
+        $row = $this->makeFormatter()->formatRow(['number' => 'H1', 'definition' => 'Father', 'tvm' => 'Aorist']);
+
+        $this->assertSame(['number' => 'H1', 'definition' => 'Father'], $row);
+    }
+
+    public function testFormatRowWithNeitherLeavesTheDefinitionEmpty(): void
+    {
+        $row = $this->makeFormatter()->formatRow(['number' => 'H1', 'definition' => '', 'tvm' => ' ']);
+
+        $this->assertNull($row['definition']);
+        $this->assertArrayNotHasKey('is_special', $row);
+        $this->assertArrayNotHasKey('tvm', $row);
+    }
 }

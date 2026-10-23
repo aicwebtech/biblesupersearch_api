@@ -317,6 +317,39 @@ class ImportStrongsTest extends TestCase
     }
 
     /**
+     * A row with no definition takes its tvm entry, as the legacy migration does: Count segment
+     * removed, flagged is_special.  A row with a definition keeps it.
+     */
+    public function testTvmFillsAnEmptyDefinition(): void
+    {
+        $module  = 'zz_import_' . bin2hex(random_bytes(3));
+        $mapping = ['first_row_data' => 2, 'col_A' => 'number', 'col_B' => 'definition', 'col_C' => 'tvm'];
+        $File    = $this->makeUpload('csv', [
+            ['Number', 'Definition', 'TVM'],
+            ['G25', 'To love', 'ignored'],
+            ['G5719', '', '<b>Count:</b> 1 <i>x</i><br>Present Active Indicative'],
+        ]);
+
+        try {
+            $Manager = new ContentImportManager();
+            $this->assertTrue($Manager->checkImportFile($this->checkData('csv', $File, $mapping)), implode(PHP_EOL, (array) $Manager->getErrors()));
+
+            $Manager = $this->runImport('csv', $Manager->sanitized_filename, $module, $mapping);
+            $this->assertFalse($Manager->hasErrors(), implode(PHP_EOL, (array) $Manager->getErrors()));
+
+            $rows = Volume::findByTypeAndModule('strongs', $module)->content()->newQuery()->get()->keyBy('number');
+
+            $this->assertSame('To love', $rows['G25']->definition);
+            $this->assertSame(0, (int) $rows['G25']->is_special);
+            $this->assertSame('Present Active Indicative', $rows['G5719']->definition);
+            $this->assertSame(1, (int) $rows['G5719']->is_special);
+        }
+        finally {
+            $this->removeVolume($module);
+        }
+    }
+
+    /**
      * Replacing a volume's content with a file that fails part way puts the volume back as it
      * was: its name, its install and enabled flags, and its content.  No backup table is left.
      */

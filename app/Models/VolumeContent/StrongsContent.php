@@ -26,6 +26,7 @@ class StrongsContent extends ContentBase
     public const IMPORT_FIELDS_EXTRA = [
         'number_int' => 'Strong\'s number - integer portion only (no H/G prefix)',
         'number_hg' => 'Strong\'s number - H/G prefix only',
+        'tvm' => 'Tense/Voice/Mood (TVM) entry (mapped to definition if it\'s empty)',
     ];
 
     /**
@@ -183,12 +184,14 @@ class StrongsContent extends ContentBase
     }
 
     /**
-     * Imported rows are never special (tense / voice / mood) entries
+     * is_special comes from the formatted row: 1 when its definition was taken from a tense /
+     * voice / mood entry (see StrongsFormatter::applyTvm()), otherwise 0.
      */
     public static function prepareImportRow(array $row): array
     {
+        $is_special = (int) ($row['is_special'] ?? 0);
         $row = parent::prepareImportRow($row);
-        $row['is_special'] = 0;
+        $row['is_special'] = $is_special;
         return $row;
     }
 

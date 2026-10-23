@@ -3,6 +3,7 @@
 namespace App\Traits\ContentFormatters;
 
 use App\Helpers;
+use App\Models\VolumeContent\StrongsContent;
 
 /**
  * Cleans up a mapped Strong's dictionary row before it is validated and stored.
@@ -45,6 +46,36 @@ trait StrongsFormatter
             if(array_key_exists($field, $row)) {
                 $row[$field] = $this->formatDefinition($row[$field]);
             }
+        }
+
+        $row = $this->applyTvm($row);
+        unset($row['tvm']);
+
+        return $row;
+    }
+
+    /**
+     * A row with no definition takes its tense / voice / mood (tvm) entry instead, as the legacy
+     * migration does (StrongsContent::mapLegacyRow()): the '<b>Count:</b> ...' segment removed,
+     * and the row flagged is_special.  A definition with any text wins, and tvm is ignored; one
+     * that is only markup (an empty paragraph) counts as empty.
+     *
+     * @param array<string, mixed> $row Row with its definition already formatted
+     * @return array<string, mixed>
+     */
+    protected function applyTvm(array $row): array
+    {
+        $definition = (string) ($row['definition'] ?? '');
+
+        if(trim(html_entity_decode(strip_tags($definition), ENT_QUOTES | ENT_HTML5, 'UTF-8')) !== '') {
+            return $row;
+        }
+
+        $tvm = $this->formatDefinition(StrongsContent::stripTvmCount(trim((string) ($row['tvm'] ?? ''))));
+
+        if($tvm !== NULL) {
+            $row['definition'] = $tvm;
+            $row['is_special'] = 1;
         }
 
         return $row;

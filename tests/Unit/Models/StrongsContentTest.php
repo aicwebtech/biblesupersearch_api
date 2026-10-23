@@ -188,6 +188,12 @@ class StrongsContentTest extends TestCase
         ], $row);
     }
 
+    public function testPrepareImportRowKeepsIsSpecial(): void
+    {
+        $this->assertSame(1, StrongsContent::prepareImportRow(['number' => 'H1', 'definition' => 'x', 'is_special' => 1])['is_special']);
+        $this->assertSame(0, StrongsContent::prepareImportRow(['number' => 'H1', 'definition' => 'x'])['is_special']);
+    }
+
     public function testImportFieldIsMappedHonoursAlternatives(): void
     {
         $this->assertTrue(StrongsContent::importFieldIsMapped('number', ['number']));
@@ -209,7 +215,7 @@ class StrongsContentTest extends TestCase
     public function testNumberFieldsAreOfferedTogether(): void
     {
         $this->assertSame(
-            ['number', 'number_hg', 'number_int', 'root_word', 'transliteration', 'pronunciation', 'definition', 'short_definition'],
+            ['number', 'number_hg', 'number_int', 'root_word', 'transliteration', 'pronunciation', 'definition', 'short_definition', 'tvm'],
             array_column(StrongsContent::getImportFieldList(), 'value')
         );
     }
@@ -231,7 +237,7 @@ class StrongsContentTest extends TestCase
     public static function importFieldOrderProvider(): array
     {
         return [
-            'with extras' => [TRUE, ['definition', 'number_int', 'number', 'root_word', 'transliteration', 'pronunciation', 'short_definition', 'number_hg']],
+            'with extras' => [TRUE, ['definition', 'number_int', 'number', 'root_word', 'transliteration', 'pronunciation', 'short_definition', 'number_hg', 'tvm']],
             'without'     => [FALSE, ['definition', 'number', 'root_word', 'transliteration', 'pronunciation', 'short_definition']],
         ];
     }
