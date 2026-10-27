@@ -6,15 +6,28 @@ on:
   pull_request:
     branches: [ "master", "beta","develop", "release/*" ]
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   unit-and-feature-tests:
+    name: PHP ${{ matrix.php }}
 
     runs-on: ubuntu-latest
+
+    timeout-minutes: 20
+
+    strategy:
+      fail-fast: false
+      matrix:
+        php: [ '8.2', '8.3', '8.4', '8.5' ]
 
     steps:
     - uses: shivammathur/setup-php@15c43e89cdef867065b0213be354c2841860869e
       with:
-        php-version: '8.5'
+        php-version: ${{ matrix.php }}
+        coverage: none
     - uses: actions/checkout@v4
       with:
         persist-credentials: false
@@ -22,7 +35,7 @@ jobs:
       run: php -r "file_exists('.env') || copy('.env.example', '.env');"
     - name: Install Dependencies
       run: composer install -q --no-ansi --no-interaction --no-scripts --no-progress --prefer-dist
-    - name: Lint PHP
+    - name: "Test: Lint PHP"
       run: ./vendor/bin/parallel-lint --exclude .git  --exclude vendor .
     - name: Generate key
       run: php artisan key:generate --force
@@ -43,8 +56,8 @@ jobs:
         php artisan app:install-testing
         php artisan config:clear
 
-    - name: Execute tests via PHPUnit
+    - name: "Test: PHPUnit (Unit and Feature tests)"
       env:
         DB_CONNECTION: sqlite
         DB_DATABASE: database/database.sqlite
-      run: php artisan test --compact
+      run: php artisan test --compact --fail-on-deprecation
