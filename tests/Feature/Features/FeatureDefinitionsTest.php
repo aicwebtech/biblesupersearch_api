@@ -47,7 +47,7 @@ class FeatureDefinitionsTest extends TestCase
 
         $this->assertNotNull($definition);
         $this->assertEquals('strongs', $definition['identifier']);
-        $this->assertEquals("Strong's Definitions", $definition['name']);
+        $this->assertEquals("Strong's Dictionaries", $definition['name']);
     }
 
     public function testFindReturnsNullForUnknown()
@@ -81,39 +81,65 @@ class FeatureDefinitionsTest extends TestCase
         }
     }
 
-    public function testInstallAndUninstallCallbacksMatchContractWithoutExecution()
+    /**
+     * Checked by reflection, never run: the legacy callbacks would truncate installed data.
+     *
+     * install takes (?string $language, bool $enable); uninstall, enable and disable take
+     * (?string $language); all return bool.  derived takes (?string $language) and returns array.
+     */
+    public function testCallbacksMatchContractWithoutExecution()
     {
-        $definitions = FeatureDefinitions::all();
-    
-        foreach ($definitions as $definition) {
-            foreach (['install', 'uninstall'] as $callbackKey) {
-                $callback = $definition[$callbackKey];
-    
-                $this->assertIsCallable($callback);
-    
-                $reflection = new \ReflectionFunction(\Closure::fromCallable($callback));
-    
-                $this->assertSame(
-                    1,
-                    $reflection->getNumberOfParameters(),
-                    "{$definition['identifier']} {$callbackKey} callback must accept exactly one parameter"
-                );
-    
-                $parameter = $reflection->getParameters()[0];
-                $this->assertTrue(
-                    $parameter->allowsNull(),
-                    "{$definition['identifier']} {$callbackKey} callback parameter must allow null"
-                );
-    
-                $parameterType = $parameter->getType();
-                $this->assertInstanceOf(\ReflectionNamedType::class, $parameterType);
-                $this->assertSame('string', $parameterType->getName());
-    
-                $returnType = $reflection->getReturnType();
-                $this->assertInstanceOf(\ReflectionNamedType::class, $returnType);
-                $this->assertSame('bool', $returnType->getName());
+        $contracts = ['install' => 2, 'uninstall' => 1, 'enable' => 1, 'disable' => 1, 'derived' => 1];
+
+        foreach (FeatureDefinitions::all() as $definition) {
+            foreach ($contracts as $callbackKey => $count) {
+                if (!array_key_exists($callbackKey, $definition)) {
+                    $this->assertContains($callbackKey, ['enable', 'disable', 'derived'], "{$definition['identifier']} has no {$callbackKey} callback");
+                    continue;
+                }
+
+                $label = "{$definition['identifier']} {$callbackKey} callback";
+                $this->assertIsCallable($definition[$callbackKey]);
+
+                $reflection = new \ReflectionFunction(\Closure::fromCallable($definition[$callbackKey]));
+                $this->assertSame($count, $reflection->getNumberOfParameters(), "{$label} must accept {$count} parameter(s)");
+
+                $language = $reflection->getParameters()[0];
+                $this->assertTrue($language->allowsNull(), "{$label} language parameter must allow null");
+                $this->assertSame('string', $language->getType()->getName(), "{$label} language parameter must be a string");
+
+                if ($callbackKey === 'install') {
+                    $enable = $reflection->getParameters()[1];
+                    $this->assertSame('bool', $enable->getType()->getName(), "{$label} enable parameter must be a bool");
+                    $this->assertTrue($enable->isOptional(), "{$label} enable parameter must be optional");
+                }
+
+                $this->assertSame($callbackKey === 'derived' ? 'array' : 'bool', $reflection->getReturnType()->getName(), "{$label} return type");
             }
         }
+    }
+
+    public function testStrongsLanguagesAreThePresetLanguages()
+    {
+        $this->assertSame(array_keys(FeatureDefinitions::STRONGS_PRESETS), FeatureDefinitions::find('strongs')['languages']);
+    }
+
+    public function testStrongsIsOfferedInChineseFrenchAndPortuguese(): void
+    {
+        foreach(['zh' => 'cn_cbols', 'fr' => 'strong_fr', 'pt' => 'str_pt'] as $language => $module) {
+            $this->assertContains($language, FeatureDefinitions::find('strongs')['languages']);
+            $this->assertContains($module, FeatureDefinitions::STRONGS_PRESETS[$language]);
+            $this->assertFileExists(base_path('content/strongs/strongs_' . $module . '.zip'), $module . ' has no module file');
+        }
+    }
+
+    public function testLegacyStrongsIsASingleLanguageFeature()
+    {
+        $definition = FeatureDefinitions::find('strongs_legacy');
+
+        $this->assertNotNull($definition);
+        $this->assertSame(FeatureDefinitions::LANGUAGE_MODE_SINGLE, FeatureDefinitions::getLanguageMode($definition));
+        $this->assertSame('strongs_legacy', \App\Models\Feature::buildCode('strongs_legacy', 'en', FeatureDefinitions::LANGUAGE_MODE_SINGLE));
     }
 
     public function testLanguagesModeNoneForNullOrEmptyValues()

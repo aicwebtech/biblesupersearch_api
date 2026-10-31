@@ -28,6 +28,14 @@ class EngineV3 extends BaseEngine
     public const HIGHLIGHT_TAG_WHITELIST = Helpers::HIGHLIGHT_PLAIN_TEXT_MARKERS;
 
     /**
+     * v3 answers Strong's from the dictionary volumes, in the modern format, unless legacy is
+     * asked for ('version' on the strongs action, 'strongs_version' on query).  There is no
+     * fallback to the legacy table: with no usable dictionary the request errors.  See
+     * Engine::_resolveStrongsSource().
+     */
+    public const STRONGS_VERSION_DEFAULT = 'modern';
+
+    /**
      * Sanitize HTML for API responses by converting it to Markdown
      *
      * Everything reaching this hook has already been through the purifier - either via
@@ -107,6 +115,39 @@ class EngineV3 extends BaseEngine
         }
 
         return parent::_processMarkup($results, $mode);
+    }
+
+    /**
+     * v3 lists the Bibles as a group of the volumes, ahead of the other types
+     *
+     * 'bibles' is actionBibles(): FALSE, with an error raised, when no Bible is enabled.
+     *
+     * @param array<string, mixed> $input
+     * @return array<string, mixed>
+     */
+    public function actionVolumes(array $input): array
+    {
+        return ['bibles' => $this->actionBibles($input)] + parent::actionVolumes($input);
+    }
+
+    /**
+     * Only 'volumes': the Bibles are one of its groups
+     *
+     * @param \stdClass $response
+     * @param array<string, mixed> $input
+     */
+    protected function staticsLists(\stdClass $response, array $input): void
+    {
+        $response->volumes = $this->actionVolumes($input);
+    }
+
+    /**
+     * None: v3 has the 'features' block only
+     *
+     * @param \stdClass $response
+     */
+    protected function staticsLegacyFeatureFlags(\stdClass $response): void
+    {
     }
 
     /**

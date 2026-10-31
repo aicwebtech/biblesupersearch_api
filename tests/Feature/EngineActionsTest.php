@@ -100,6 +100,7 @@ class EngineActionsTest extends TestCase
 
         $this->assertTrue($response->success);
         $this->assertObjectHasProperty('bible', $response->dates);
+        $this->assertObjectHasProperty('volume', $response->dates);
         $this->assertObjectHasProperty('shortcuts', $response->dates);
         $this->assertObjectHasProperty('configs', $response->dates);
     }
@@ -109,6 +110,29 @@ class EngineActionsTest extends TestCase
         $response = $this->engine()->actionStaticsChanged([]);
 
         $this->assertSame(max((array) $response->dates), $response->updated);
+    }
+
+    /**
+     * A deleted volume takes its updated_at with it: the deletion is recorded, so the volume
+     * date does not go back and clients still learn that the list changed
+     */
+    public function testStaticsChangedReportsAVolumeDeletion(): void
+    {
+        $module = $this->fixtureModule('vol_api_');
+        $this->deferCleanup(fn() => $this->removeVolumeModuleFixture('strongs', $module));
+
+        $Volume = new \App\Models\VolumeTypes\Strongs();
+        $Volume->module    = $module;
+        $Volume->name      = 'Statics Fixture ' . $module;
+        $Volume->shortname = 'Stat ' . $module;
+        $Volume->language  = 'en';
+        $Volume->save();
+
+        $before = time();
+        $Volume->delete();
+
+        $this->assertGreaterThanOrEqual($before, \App\Models\Volume::lastDeletedAt());
+        $this->assertGreaterThanOrEqual($before, $this->engine()->actionStaticsChanged([])->dates->volume);
     }
 
     // -----------------------------------------------------------------------
@@ -193,13 +217,32 @@ class EngineActionsTest extends TestCase
      * 'rank' case in actionBibles()'s switch, which nulls the float - see
      * testTheDefaultOrderingIgnoresTheLanguageFloat().
      *
+     * Bibles other tests create and enable for a moment are left out: in a parallel run one can
+     * appear or vanish between the two listings a test compares.  See FIXTURE_BIBLE_PREFIXES.
+     *
      * @param array $input
      * @return array The listing, keyed by module
      */
     private function bibleListing(array $input = []): array
     {
-        return $this->engine()->actionBibles($input + ['bible_order_by' => 'lang_name']);
+        $listing = $this->engine()->actionBibles($input + ['bible_order_by' => 'lang_name']);
+
+        return array_filter($listing, function($module) {
+            foreach(self::FIXTURE_BIBLE_PREFIXES as $prefix) {
+                if(str_starts_with($module, $prefix)) {
+                    return FALSE;
+                }
+            }
+
+            return TRUE;
+        }, ARRAY_FILTER_USE_KEY);
     }
+
+    /**
+     * Module prefixes of the throwaway Bibles other tests enable: test_bible_ (BibleControllerTest
+     * and the import tests) and race_ (BibleTest::testUninstallClearsFlagsBeforeDroppingTable).
+     */
+    private const FIXTURE_BIBLE_PREFIXES = ['test_bible_', 'race_'];
 
     /**
      * The most-installed language code, so floating it has something to move and something to

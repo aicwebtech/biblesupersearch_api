@@ -25,6 +25,8 @@ class FeatureController extends Controller
      */
     public function index()
     {
+        // Also refreshes the derived features' flags (Strong's dictionaries ...), which change
+        // on the Volumes page.  The grid refreshes them again on every request.
         Feature::syncFeatures();
 
         $bootstrap = $this->getAdminBootstrap();
@@ -41,6 +43,10 @@ class FeatureController extends Controller
      */
     public function grid(Request $request)
     {
+        // Derived flags change on the Volumes page, so a grid refresh must pick them up.  Cheap:
+        // a couple of queries per derived row.
+        Feature::refreshDerived();
+
         $data = $request->toArray();
         $rows = [];
         $rows_per_page = (int) ($data['rows'] ?? 25);
@@ -149,7 +155,7 @@ class FeatureController extends Controller
 
         if (!$Feature->install($enable)) {
             $resp->success = FALSE;
-            $resp->errors = ['Failed to install feature.'];
+            $resp->errors = $Feature->getErrors() ?: ['Failed to install feature.'];
             return new Response($resp, 422);
         }
 
@@ -164,7 +170,7 @@ class FeatureController extends Controller
 
         if (!$Feature->enable()) {
             $resp->success = FALSE;
-            $resp->errors = ['Feature must be installed before it can be enabled.'];
+            $resp->errors = $Feature->getErrors() ?: ['Feature must be installed before it can be enabled.'];
             return new Response($resp, 422);
         }
 
@@ -179,7 +185,7 @@ class FeatureController extends Controller
 
         if (!$Feature->disable()) {
             $resp->success = FALSE;
-            $resp->errors = ['Failed to disable feature.'];
+            $resp->errors = $Feature->getErrors() ?: ['Failed to disable feature.'];
             return new Response($resp, 422);
         }
 
@@ -200,7 +206,7 @@ class FeatureController extends Controller
 
         if (!$Feature->uninstall()) {
             $resp->success = FALSE;
-            $resp->errors = ['Failed to uninstall feature.'];
+            $resp->errors = $Feature->getErrors() ?: ['Failed to uninstall feature.'];
             return new Response($resp, 422);
         }
 

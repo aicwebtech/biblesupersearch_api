@@ -4,9 +4,6 @@ namespace Tests\Feature\Models;
 
 use Tests\TestCase;
 
-use Illuminate\Foundation\Testing\WithoutMiddleware;
-use Illuminate\Foundation\Testing\DatabaseMigrations;
-use Illuminate\Foundation\Testing\DatabaseTransactions;
 use App\Models\ApiKey;
 use App\Models\ApiAccessLevel;
 use App\Models\ApiKeyAccessLog;
@@ -155,6 +152,8 @@ class KeyAccessTest extends TestCase
 
         // Generate a fake IP
         $ip = $this->_fakeIp();
+        $remote_addr = $_SERVER['REMOTE_ADDR'] ?? NULL;
+        $this->deferCleanup(fn() => $this->restoreRequestHost(['REMOTE_ADDR' => $remote_addr]));
         $_SERVER['REMOTE_ADDR'] = $ip;
         $IP = IpAccess::findOrCreateByIpOrDomain($ip);
 
@@ -315,28 +314,49 @@ class KeyAccessTest extends TestCase
         }
     }
 
-    protected function _fakeKey($access_level_id = null)
+    /**
+     * user_id of every key these tests create: no real user has it, so test:cleanup can find a
+     * key whose test died before its own cleanup ran
+     */
+    public const TEST_KEY_USER_ID = -1;
+
+    /**
+     * Creates a throwaway key, removed again in tearDown - with its logs, and for good, as a
+     * plain delete() is only a soft delete - however the test ends.
+     */
+    protected function _fakeKey($access_level_id = null): string
     {
         $key_hash = ApiKey::generateKeyHash();
+
+        $this->deferCleanup(function() use ($key_hash) {
+            foreach(ApiKey::withTrashed()->where('key', $key_hash)->get() as $Key) {
+                ApiIpKeyCount::where('key_id', $Key->id)->delete();
+                ApiKeyAccessLog::where('key_id', $Key->id)->delete();
+                $Key->forceDelete();
+            }
+        });
 
         $Key = new ApiKey;
         $Key->key = $key_hash;
         $Key->access_level_id = $access_level_id ?: ApiAccessLevel::BASIC;
 
-        // api_keys.user_id is NOT NULL with no default. MySQL in a non-strict mode fills it
-        // with 0 silently - which is what every existing row holds - but SQLite rejects the
-        // insert, so these tests only ever ran on MySQL. Set it explicitly to keep the same
-        // stored value on both.
-        $Key->user_id = 0;
+        // api_keys.user_id is NOT NULL with no default, and SQLite rejects an insert without
+        // it.  TEST_KEY_USER_ID marks the key as a test fixture.
+        $Key->user_id = static::TEST_KEY_USER_ID;
 
         $Key->save();
 
         return $key_hash;
     }
 
-    protected function _fakeIp() 
+    /**
+     * An intentionally invalid IP address, removed again in tearDown however the test ends
+     */
+    protected function _fakeIp(): string
     {
-        // Ip addresses intentionally invalid
-        return rand(256,999) . '.' . rand(1,255) . '.' . rand(1,255) . '.' . rand(1,255);
+        $ip = rand(256,999) . '.' . rand(1,255) . '.' . rand(1,255) . '.' . rand(1,255);
+        $this->deferCleanup(fn() => $this->removeIpAccessFixture($ip));
+
+        return $ip;
     }
 }

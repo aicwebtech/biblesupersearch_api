@@ -4,6 +4,7 @@
  * Common code for importing from Excel, OpenDocument and CSV files
  */
 namespace App\Importers;
+use App\ContentImporters\SpreadsheetAbstract as ContentSpreadsheet;
 use App\Models\Bible;
 use App\Models\Books\En as BookEn;
 use App\Rules\NonNumericString;
@@ -305,13 +306,19 @@ abstract class SpreadsheetAbstract extends ImporterAbstract
 
         $found = array_fill_keys(array_keys($required), FALSE);
 
-        // Extract spreadsheet collumn settings and place them in the map
+        // Extract spreadsheet column settings and place them in the map, by column number: ksort()
+        // puts col_aa between col_a and col_b
         foreach($set as $key => $value) {
-            if(substr($key, 0, 3) == 'col') {
+            if(is_string($key) && preg_match('/^col_([a-z]+)$/i', $key, $matches)) {
                 $value = ($value && $value != 'null') ? $value : NULL;
-                $this->column_map[] = $value ? trim($value) : NULL;
+                $this->column_map[ContentSpreadsheet::columnToNumber($matches[1]) - 1] = $value ? trim($value) : NULL;
                 $col_map_count += ($value) ? 1 : 0;
             }
+        }
+
+        // Columns the settings leave out are not mapped
+        if($this->column_map) {
+            $this->column_map = array_replace(array_fill(0, max(array_keys($this->column_map)) + 1, NULL), $this->column_map);
         }
 
         foreach($this->column_map as $map) {
@@ -373,14 +380,8 @@ abstract class SpreadsheetAbstract extends ImporterAbstract
         return $this->hasErrors() ? FALSE : TRUE;
     }
 
-    protected function _numberToColumn($num) 
+    protected function _numberToColumn(int $num): ?string
     {
-        $num = (int) $num;
-
-        if($num < 1 || $num > 26) {
-            return NULL;
-        }
-
-        return chr($num + 64);
+        return ContentSpreadsheet::numberToColumn($num);
     }
 }

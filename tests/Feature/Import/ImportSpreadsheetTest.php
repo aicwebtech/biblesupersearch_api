@@ -426,6 +426,33 @@ class ImportSpreadsheetTest extends TestCase
 
     /* End Quick Tests */
 
+    /**
+     * Columns past Z: the map is by column number, not by sorted key (which puts col_aa
+     * between col_a and col_b), and columns the settings leave out are unmapped
+     */
+    public function testColumnsPastZAreMappedByColumnNumber(): void
+    {
+        $Importer = new \App\Importers\Csv();
+
+        $Importer->setSettings([
+            'first_row_data' => 2,
+            'col_aa' => 't',
+            'col_b'  => 'bn c:v',
+            'col_a'  => NULL,
+        ]);
+
+        $this->assertFalse($Importer->hasErrors(), implode(PHP_EOL, (array) $Importer->getErrors()));
+
+        $map = (new \ReflectionProperty($Importer, 'column_map'))->getValue($Importer);
+
+        $this->assertCount(27, $map);
+        $this->assertSame('bn c:v', $map[1]);
+        $this->assertSame('t', $map[26]);
+        $this->assertNull($map[2]);
+
+        $this->assertSame('AA', (new \ReflectionMethod($Importer, '_numberToColumn'))->invoke($Importer, 27));
+    }
+
     protected function _makeFakeImportTest($file_name, $data) 
     {
         $data['file'] = $this->_generateUploadedFile($file_name);
