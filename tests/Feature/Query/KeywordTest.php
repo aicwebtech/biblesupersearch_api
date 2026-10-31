@@ -4,9 +4,6 @@ namespace Tests\Feature\Query;
 
 use Tests\TestCase;
 
-use Illuminate\Foundation\Testing\WithoutMiddleware;
-use Illuminate\Foundation\Testing\DatabaseMigrations;
-use Illuminate\Foundation\Testing\DatabaseTransactions;
 use PHPUnit\Framework\Attributes\DataProvider;
 
 use App\Engine;

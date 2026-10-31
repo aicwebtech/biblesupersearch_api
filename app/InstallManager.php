@@ -6,6 +6,8 @@ use App\Models\Bible;
 use App\Models\Language;
 use App\Models\LanguageAttr;
 use App\Models\Feature;
+use App\Models\Volume;
+use App\Models\VolumeTypes\Strongs;
 use Artisan;
 use App\ConfigManager;
 
@@ -117,6 +119,18 @@ class InstallManager
      * already installed in that state sends them looking for a working site that is not there.
      */
     const INSTALL_NOT_FRESH         = 'not_fresh';
+
+    /**
+     * The Strong's dictionary a new installation gets, as the Strong's default
+     */
+    const DEFAULT_STRONGS_MODULE = 'en_orig';
+
+    /**
+     * Seconds of the post-migration steps after which the default Strong's dictionary is left
+     * for the admin to install from the Features page, so it cannot push the install past its
+     * time limit
+     */
+    const DEFAULT_STRONGS_TIME_BUDGET = 120;
     
     static function getChecklist() 
     {
@@ -416,6 +430,7 @@ class InstallManager
             }
 
             set_time_limit(300); // 5 minute time limit for post-migration processes (like populating the Bible table)
+            $post_migration_started = microtime(TRUE);
 
             // Both guards above ran against a database that may not have been readable at all,
             // where isInstalledInDatabase() answers FALSE and existingUserCount() answers 0 by
@@ -471,6 +486,9 @@ class InstallManager
             $EN->common_words = "a\nan\nand\nare\nas\nat\nbe\nby\nfor\nhe\nhis\nin\nis\nit\nof\non\nor\nthat\nthe\nthey\nto\nwas\nwith\nyou";
             $EN->save();
 
+            // Optional: never fails the install
+            static::installDefaultStrongs($post_migration_started);
+
             // Last, and together. Written any earlier, a failure below would leave the flag TRUE
             // on a site with no Bible and no book lists: InstalledRedirect would send the retry
             // offered by install.error to the docs page, and the install could never be
@@ -510,6 +528,56 @@ class InstallManager
             // Once the flag is written it is the durable guard; until then the claim has to come
             // off so a failed attempt can be retried.
             static::releaseInstallLock();
+        }
+    }
+
+    /**
+     * Installs and enables the default Strong's dictionary and makes it the Strong's default,
+     * unless the install has already used DEFAULT_STRONGS_TIME_BUDGET of its post-migration
+     * time.  Never fails the install: a skip or a failure is logged, and the dictionary can be
+     * installed from the Features page.
+     *
+     * @param float $started microtime(TRUE) when the post-migration steps began
+     * @param float|null $now Defaults to the current time
+     * @return bool TRUE when the dictionary is installed and the default
+     */
+    public static function installDefaultStrongs(float $started, ?float $now = NULL): bool
+    {
+        $elapsed = ($now ?? microtime(TRUE)) - $started;
+
+        if($elapsed > static::DEFAULT_STRONGS_TIME_BUDGET) {
+            \Log::info('Install: the default Strong\'s dictionary was skipped, as the install has taken ' . (int) $elapsed
+                . ' seconds.  Install it from the Features page.');
+
+            return FALSE;
+        }
+
+        try {
+            $Volume = Strongs::findByModule(static::DEFAULT_STRONGS_MODULE)
+                ?? Volume::createFromModuleFile('strongs', static::DEFAULT_STRONGS_MODULE);
+
+            if(!$Volume) {
+                \Log::warning('Install: the default Strong\'s dictionary \'' . static::DEFAULT_STRONGS_MODULE . '\' has no module file.');
+                return FALSE;
+            }
+
+            if(!$Volume->installed && !$Volume->install(FALSE, TRUE)) {
+                \Log::warning('Install: the default Strong\'s dictionary could not be installed: ' . implode('; ', $Volume->getErrors()));
+                return FALSE;
+            }
+
+            $Volume->enabled || $Volume->enable();
+
+            if(!Volume::getDefault('strongs') && !$Volume->makeDefault()) {
+                \Log::warning('Install: the default Strong\'s dictionary could not be made the default: ' . implode('; ', $Volume->getErrors()));
+                return FALSE;
+            }
+
+            return TRUE;
+        }
+        catch(\Throwable $e) {
+            \Log::warning('Install: the default Strong\'s dictionary failed: ' . $e->getMessage(), ['exception' => $e]);
+            return FALSE;
         }
     }
 

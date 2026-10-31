@@ -12,7 +12,8 @@ use Tests\TestCase;
 
 /**
  * The exception handler translates three cases before delegating to Laravel: a missing model
- * becomes a 404, an expired CSRF token becomes a redirect carrying a csrf_error message, and
+ * becomes a 404, an expired CSRF token becomes a redirect carrying a csrf_error message (a 419
+ * JSON body for an XHR request), and
  * an unauthenticated API request becomes a 401 JSON body.
  */
 class HandlerTest extends TestCase
@@ -42,6 +43,25 @@ class HandlerTest extends TestCase
 
         $this->assertTrue($response->isRedirect());
         $this->assertSame('Your session timed out. Please try again.', $this->app['session.store']->get('csrf_error'));
+    }
+
+    /**
+     * An XHR request gets the error itself: it would follow a redirect as a GET to the same
+     * URL, such as /admin/volumes/importcheck reaching the volumes resource's show()
+     */
+    public function testTokenMismatchOnAnXhrRequestIsA419JsonBody(): void
+    {
+        $request = Request::create('http://localhost/admin/volumes/importcheck', 'POST');
+        $request->headers->set('X-Requested-With', 'XMLHttpRequest');
+        $request->headers->set('Accept', 'application/json, text/plain, */*');
+        $request->setLaravelSession($this->app['session.store']);
+
+        $response = $this->handler()->render($request, new TokenMismatchException());
+
+        $this->assertSame(419, $response->getStatusCode());
+        $body = json_decode($response->getContent(), TRUE);
+        $this->assertFalse($body['success']);
+        $this->assertStringContainsString('reload the page', $body['errors'][0]);
     }
 
     public function testUnauthenticatedApiRequestGetsA401JsonBody(): void

@@ -5,8 +5,8 @@ return array(
     'description' => 'Used for all queries against the Bibles in our database, including keyword searchs and passage retrieval. <br />'
     . 'When running a query, the only requirement is that either \'reference\' or \'search\' are required.',
     'advanced' => 'These advanced search fields can be used in addition to the standard ones above to build a powerful search interface',
-    'strongs' => 'If the search included any Strong\'s numbers, this array will contain the Strong\'s definition for each. '
-    . 'See the "Strong\'s Definition" tab for details.',
+    'strongs' => 'If the search included any Strong\'s numbers, this array will contain the Strong\'s definition for each, '
+    . 'in either the legacy or the modern format (see \'strongs_version\'). See the "Strong\'s Definition" tab for details.',
     'examples' => array(
         'lookup1' => 'Look up Romans 4:1 - 10',
         'lookup2' => 'Look up Rom 1:1-2; Matt 5:6-8; John 3:16',
@@ -237,6 +237,28 @@ return array(
             'description' => 'When true, the query response includes a top-level <code>cross_references</code> array in metadata. '
             . 'Entries are grouped by each returned source verse and include a <code>cross_references</code> child list of destination references. '
             . 'This list is global and is not tied to any specific Bible version.'
+        ],
+        'language' => [
+            'type'   => 'String',
+            'name'   => 'Language',
+            'default' => '(none)',
+            'description' => 'Language code of the user interface. Also selects that language\'s default Strong\'s dictionary for Strong\'s definitions, '
+            . 'unless \'strongs_dictionary\' is given.'
+        ],
+        'strongs_version' => [
+            'type'   => 'String',
+            'name'   => 'Strong\'s Definitions Version',
+            'default' => 'v2: legacy<br />v3: modern',
+            'description' => 'Version of the Strong\'s definitions returned in <code>strongs</code> when the search includes Strong\'s numbers. '
+            . 'Works the same as \'version\' on the Strong\'s Definitions action.'
+        ],
+        'strongs_dictionary' => [
+            'type'   => 'String',
+            'name'   => 'Strong\'s Dictionary',
+            'default' => '(none)',
+            'description' => 'Module of the Strong\'s dictionary to use, for either version. If omitted, the language\'s default dictionary is used, '
+            . 'or else the global default. An error is returned if this dictionary is not available. '
+            . 'If no dictionary is available at all, a non-fatal error is returned and <code>strongs</code> is empty.'
         ],
     )
 );

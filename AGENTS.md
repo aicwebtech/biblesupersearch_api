@@ -80,6 +80,24 @@ Where the absence might read as an oversight, say so rather than let someone rei
  */
 ```
 
+### Argument and return types
+Declare a type on every parameter and a return type on every method in new code, including
+abstract methods and methods on traits:
+
+```php
+public function safeImportFileName(mixed $file_name): ?string   // not safeImportFileName($file_name)
+abstract public function getImportDir(): string;
+```
+
+* Use `mixed` for genuinely untrusted input (request values that may not be strings) and
+  check it inside, rather than leaving the parameter untyped.
+* Keep the `@param` / `@return` docblock when it adds detail the signature can't express
+  (array shapes, `class-string<...>`).
+* Much older code is untyped. When moving or extracting it (into a trait, a base class ...),
+  add the types as part of the move: moved code counts as new code. Typing a method on a
+  trait or parent class also means typing every override of it, because an untyped
+  override of a typed method is a fatal error; grep for overrides, including test doubles.
+
 ## Tests
 
 ### All tests
@@ -106,6 +124,13 @@ Where the absence might read as an oversight, say so rather than let someone rei
 * The database contents are generally static — Bible texts, Bible book lists, cross-reference data, etc.
 * Do NOT INSERT, UPDATE, or DELETE this content data in feature tests without explicit instruction and authorization. Read and assert against it only.
 * Purpose-built test fixtures are allowed — a throwaway row, table, or file the test creates and removes again. Create it inside the test, remove it in a `finally` so an assertion failure still cleans up, and never build one on top of installed content data (see `createLanguageFixture()` / `removeLanguageFixture()` in `tests/TestCase.php`).
+* Do NOT use Laravel's database test traits (`DatabaseTransactions`, `RefreshDatabase`,
+  `DatabaseMigrations`, `DatabaseTruncation`) unless the user specifically asks for one. Under
+  `php artisan test --parallel` any of them makes Laravel build and migrate a separate,
+  content-less database per worker (`<database>_test_<n>`), and `RefreshDatabase` /
+  `DatabaseMigrations` wipe the database they run on. Clean up throwaway rows with
+  `deferCleanup()` or a `finally` instead, and give them unique, prefixed identifiers listed in
+  `TestCleanup` (e.g. `USER_PREFIXES`) so a killed run's leftovers are swept.
 - Classes located in **tests/Feature**
 - Classes extend from **Tests\TestCase**
 

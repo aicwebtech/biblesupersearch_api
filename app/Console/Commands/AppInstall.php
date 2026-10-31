@@ -78,6 +78,8 @@ class AppInstall extends Command
         // Populate the Features table
         Feature::syncFeatures();
 
+        $post_migration_started = microtime(TRUE);
+
         // Install default Bible (usally KJV)
         $Bible = Bible::findByModule(config('bss.defaults.bible'));
         
@@ -95,6 +97,11 @@ class AppInstall extends Command
         // :todo this should be part of the language CSV. 
         $EN->common_words = "a\nan\nand\nare\nas\nat\nbe\nby\nfor\nhe\nhis\nin\nis\nit\nof\non\nor\nthat\nthe\nthey\nto\nwas\nwith\nyou";
         $EN->save();
+
+        // Optional: a skip or failure is logged, and it can be installed from the Features page
+        if(!\App\InstallManager::installDefaultStrongs($post_migration_started)) {
+            $this->warn('The default Strong\'s dictionary was not installed; see the log.  Install it from the Features page.');
+        }
 
         if(!config('app.installed')) {
             $this->error('Installation failed. Please check the logs for details.');

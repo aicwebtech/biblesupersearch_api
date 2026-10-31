@@ -7,6 +7,21 @@ use Tests\TestCase;
 
 class CacheTest extends TestCase
 {
+    /**
+     * A throwaway cache row's hash pair, removed again in tearDown however the test ends.
+     * Real hashes are hex, so the 'test_' prefix never matches one; test:cleanup sweeps it.
+     *
+     * @return array{0: string, 1: string} hash, hash_long
+     */
+    protected function fakeHashes(): array
+    {
+        $hash      = 'test_' . bin2hex(random_bytes(4));
+        $hash_long = 'test_' . bin2hex(random_bytes(8));
+
+        $this->deferCleanup(fn() => Cache::where('hash', $hash)->orWhere('hash_long', $hash_long)->delete());
+
+        return [$hash, $hash_long];
+    }
 
     public function testTableName()
     {
@@ -16,9 +31,11 @@ class CacheTest extends TestCase
     
     public function testCreate()
     {
+        [$hash, $hash_long] = $this->fakeHashes();
+
         $data = [
-            'hash' => 'abc1234',
-            'hash_long' => 'abc123def456',
+            'hash' => $hash,
+            'hash_long' => $hash_long,
             'form_data' => json_encode(['foo' => 'bar']),
             'preserve' => true,
         ];
@@ -26,20 +43,20 @@ class CacheTest extends TestCase
         $cache = Cache::create($data);
 
         $this->assertDatabaseHas('cache', [
-            'hash' => 'abc1234',
-            'hash_long' => 'abc123def456',
+            'hash' => $hash,
+            'hash_long' => $hash_long,
             'form_data' => json_encode(['foo' => 'bar']),
             'preserve' => true,
         ]);
-
-        $cache->delete();
     }
 
     public function testUpdate()
     {
+        [$hash, $hash_long] = $this->fakeHashes();
+
         $cache = Cache::create([
-            'hash' => 'xyz7890',
-            'hash_long' => 'xyz789ghi012',
+            'hash' => $hash,
+            'hash_long' => $hash_long,
             'form_data' => json_encode(['baz' => 'qux']),
             'preserve' => false,
         ]);
@@ -47,18 +64,18 @@ class CacheTest extends TestCase
         $cache->update(['preserve' => true]);
 
         $this->assertDatabaseHas('cache', [
-            'hash' => 'xyz7890',
+            'hash' => $hash,
             'preserve' => true,
         ]);
-
-        $cache->delete();
     }
 
     public function testDelete()
     {
+        [$hash, $hash_long] = $this->fakeHashes();
+
         $cache = Cache::create([
-            'hash' => 'del12345',
-            'hash_long' => 'del12345long',
+            'hash' => $hash,
+            'hash_long' => $hash_long,
             'form_data' => json_encode(['delete' => 'me']),
             'preserve' => false,
         ]);
@@ -66,7 +83,7 @@ class CacheTest extends TestCase
         $cache->delete();
 
         $this->assertDatabaseMissing('cache', [
-            'hash' => 'del12345',
+            'hash' => $hash,
         ]);
     }
 

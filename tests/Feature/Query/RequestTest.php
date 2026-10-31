@@ -7,9 +7,6 @@ use App\Engine;
 use App\Passage;
 use App\Models\Bible;
 use App\Models\Feature;
-use Illuminate\Foundation\Testing\WithoutMiddleware;
-use Illuminate\Foundation\Testing\DatabaseMigrations;
-use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Schema;
 
 class RequestTest extends TestCase 

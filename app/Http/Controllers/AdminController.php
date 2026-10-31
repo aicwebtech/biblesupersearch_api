@@ -26,7 +26,7 @@ class AdminController extends Controller
      */
     public function getMain()
     {
-        return Redirect::route('admin.bibles.index');
+        return Redirect::route('admin.features.index');
         // return view('admin.main');
     }
 

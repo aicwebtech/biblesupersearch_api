@@ -36,7 +36,7 @@ const tpl = `
                     </v-sheet>
                     <v-sheet v-if='confirmed && queueErrors.length > 0' background-color='warn' class='mt-10'>
                         <h3>Errors:</h3> 
-                        <v-list :items='queueErrors' hide-details> 
+                        <v-list :items='queueErrors' hide-details class='action-errors'> 
                             <v-list-item v-for='e in queueErrors'
                                 :title='e.title'
                                 :subtitle='e.subtitle'

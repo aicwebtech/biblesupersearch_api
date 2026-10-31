@@ -6,6 +6,9 @@ use App\User;
 use App\Models\Bible;
 use App\Models\Feature;
 use App\Models\Language;
+use App\Models\Volume;
+use App\Models\VolumeTypes\Strongs;
+use App\Models\VolumeContent\StrongsContent;
 use App\Passage;
 use App\Search;
 use App\CacheManager;
@@ -54,6 +57,25 @@ class Engine implements ErrorInterface
     public const MARKUP_MODE_WHITELIST = ['none', 'safe', 'raw'];
 
     /**
+     * Strong's definition sources the strongs action's 'version' and the query action's
+     * 'strongs_version' parameters accept:
+     * 'legacy' is the strongs_definitions table, 'modern' the Strong's dictionary volumes.
+     */
+    public const STRONGS_VERSIONS = ['legacy', 'modern'];
+
+    /**
+     * Strong's version when none is given.  v2 answers in the legacy format, so its response
+     * shape is unchanged - but from a Strong's dictionary when one is usable, falling back to
+     * the legacy table (see _resolveStrongsSource()).  EngineV3 overrides this.
+     */
+    public const STRONGS_VERSION_DEFAULT = 'legacy';
+
+    /**
+     * Default 'bible_order_by', for the Bible and volume lists
+     */
+    public const BIBLE_ORDER_BY_DEFAULT = 'lang_native_name|rank';
+
+    /**
      * Whitelist rejections _sanitizeInput() found, waiting on _raiseInputNotices().
      *
      * Deferred rather than raised where they are found: every action bails out on hasErrors()
@@ -83,8 +105,12 @@ class Engine implements ErrorInterface
     {
         // Set the default Bible
         $default_bible = config('bss.defaults.bible');
-        $this->addBible($default_bible);
-        $this->setPrimaryBible($default_bible);
+        // Level 1: a misconfigured default must not leave a fatal error on a fresh Engine
+        // before any action has run.
+        if($this->addBible($default_bible, 1)) {
+            $this->setPrimaryBible($default_bible);
+        }
+
         $this->metadata = new \stdClass();
     }
 
@@ -173,7 +199,16 @@ class Engine implements ErrorInterface
         return $langs;
     }
 
-    public function addBible($module) 
+    /**
+     * Adds a Bible to this request's set.
+     *
+     * An unavailable Bible is fatal by default, the same as an unavailable Strong's dictionary.
+     *
+     * @param mixed $module Bible module
+     * @param int $error_level Level of the error raised when the Bible is not available
+     * @return bool
+     */
+    public function addBible(mixed $module, int $error_level = 4): bool
     {
         $Bible = Bible::findByModule($module);
 
@@ -194,7 +229,7 @@ class Engine implements ErrorInterface
             }
         }
         else {
-            $this->addError( trans('errors.bible_no_exist', ['module' => $module]) );
+            $this->addError( trans('errors.bible_no_exist', ['module' => $module]), $error_level );
             return FALSE;
         }
 
@@ -389,6 +424,14 @@ class Engine implements ErrorInterface
                 'type' => 'bool',
                 'default' => false,
             ],
+            'strongs_version' => [
+                'type' => 'string',
+                'default' => null,
+            ],
+            'strongs_dictionary' => [
+                'type' => 'string',
+                'default' => null,
+            ],
         ];
 
         $this->resetErrors();
@@ -528,15 +571,22 @@ class Engine implements ErrorInterface
             if($search_valid) {
                 $Search->sanitize();
                 
-                $strongs = Search::parseStrongs($keywords);
+                $strongs = array_unique($this->_normalizeStrongsNumbers(Search::parseStrongs($keywords)));
+                sort($strongs);
 
                 if(!empty($strongs)) {
-                    $Strongs = \App\Models\StrongsDefinition::whereIn('number', $strongs)
-                        ->orderBy('number', 'asc')
-                        ->get();
+                    // No dictionary at all (level 3) still answers, just without definitions.  An
+                    // explicit strongs_dictionary that cannot be used is fatal, as an unavailable
+                    // Bible is.
+                    $source = $this->_resolveStrongsSource(
+                        $input['strongs_version'],
+                        $input['strongs_dictionary'],
+                        $input['language'],
+                        3
+                    );
 
-                    foreach($Strongs as $Str) {
-                        $this->metadata->strongs[] = $this->_formatStrongs($Str->toArray());
+                    if($source) {
+                        $this->metadata->strongs = $this->_lookupStrongs($strongs, $source, FALSE);
                     }
                 }
             }
@@ -866,8 +916,6 @@ class Engine implements ErrorInterface
      */
     public function actionBibles($input) 
     {
-        $language_float = isset($input['language_float']) ? $input['language_float'] : null;
-
         $Bibles = Bible::select('bibles.name','shortname','module','year','owner', 'description',
             'languages.name AS lang','lang_short','copyright','italics','strongs','red_letter',
             'paragraph','rank','research','bibles.restrict','copyright_id','copyright_statement',
@@ -878,34 +926,14 @@ class Engine implements ErrorInterface
         $Bibles->leftJoin('languages', 'bibles.lang_short', 'languages.code');
         $bibles = []; // Array of associative arrays
 
-        $order_by_default = 'lang_native_name|rank';
-        $order_by = array_key_exists('bible_order_by', $input) ? $input['bible_order_by'] : $order_by_default;
-
-        // Legacy order by flag - still supported for now
-        if(array_key_exists('order_by_lang_name', $input) && !empty($input['order_by_lang_name'])) {
-            $Bibles -> orderBy('lang', 'ASC') -> orderBy('bibles.name', 'ASC');
-        } else {
-            foreach(explode('|', $order_by) as $ob) {
-                switch($ob) {
-                    case 'lang_name':
-                        $Bibles -> orderBy('lang_native', 'ASC');      
-                        break;
-
-                    case 'lang_name_english':
-                        $Bibles -> orderBy('lang', 'ASC');
-                        break;         
-
-                    case 'rank':
-                    case 'name':
-                    case 'shortname':
-                        $language_float = null; // language float ignored in these cases
-                    case 'lang_short':
-                        $col = ($ob === 'name') ? 'bibles.name' : $ob;
-                        $Bibles -> orderBy($col, 'ASC');
-                        break;
-                }
-            }
-        }
+        $float = $this->_applyListOrder($Bibles, $input, [
+            'rank'              => 'rank',
+            'name'              => 'bibles.name',
+            'shortname'         => 'shortname',
+            'lang_short'        => 'lang_short',
+            'lang_name'         => 'lang_native',
+            'lang_name_english' => 'lang',
+        ]);
 
         // 'language' is eager loaded for the TTS gates below, which fall back to the language's
         // provider when the Bible does not name one of its own.
@@ -934,24 +962,122 @@ class Engine implements ErrorInterface
             unset($bibles[$Bible->module]['tts_api']); // selected only to resolve tts_ai above
         }
 
-        if($language_float) {
-            $bibles_floated = [];
+        return $float ? static::_floatLanguage($bibles, $input['language_float'] ?? NULL) : $bibles;
+    }
 
-            foreach($bibles as $key => $bible) {
-                if($bible['lang_short'] == $language_float) {
-                    $bibles_floated[$key] = $bible;
-                    unset($bibles[$key]);
-                }
-            }
-
-            foreach($bibles as $key => $bible) {
-                $bibles_floated[$key] = $bible;
-            }
-
-            return $bibles_floated;
+    /**
+     * Orders a Bible or volume list query by the list ordering inputs, the same way for both:
+     *
+     *  bible_order_by - pipe-separated list of rank, name, shortname, lang_short, lang_name
+     *      (native language name) and lang_name_english.  Unknown values are ignored.
+     *  order_by_lang_name - legacy flag, overriding bible_order_by: English language name, then
+     *      name.
+     *
+     * A list sorted by rank, name or shortname is not one a language block can be lifted out of
+     * without contradicting the sort asked for, so those orderings discard language_float.  The
+     * default ordering ends in rank, so it does too.
+     *
+     * @param \Illuminate\Database\Eloquent\Builder $Query
+     * @param array<string, mixed> $input
+     * @param array<string, string> $columns Column to order by for each bible_order_by value
+     * @return bool Whether language_float still applies
+     */
+    protected function _applyListOrder(\Illuminate\Database\Eloquent\Builder $Query, array $input, array $columns): bool
+    {
+        if(!empty($input['order_by_lang_name'])) {
+            $Query->orderBy($columns['lang_name_english'], 'ASC')->orderBy($columns['name'], 'ASC');
+            return TRUE;
         }
 
-        return $bibles;
+        $order_by = $input['bible_order_by'] ?? self::BIBLE_ORDER_BY_DEFAULT;
+        $float    = TRUE;
+
+        foreach(explode('|', is_string($order_by) ? $order_by : '') as $ob) {
+            if(!isset($columns[$ob])) {
+                continue;
+            }
+
+            $Query->orderBy($columns[$ob], 'ASC');
+
+            if(in_array($ob, ['rank', 'name', 'shortname'], TRUE)) {
+                $float = FALSE;
+            }
+        }
+
+        return $float;
+    }
+
+    /**
+     * Moves the items of a language to the front of a list, keeping the order otherwise
+     *
+     * @param array<string, array<string, mixed>> $items Keyed list, each item with a lang_short
+     * @param mixed $language Language code; anything other than a non-empty string floats nothing
+     * @return array<string, array<string, mixed>>
+     */
+    protected static function _floatLanguage(array $items, mixed $language): array
+    {
+        if(!is_string($language) || $language === '') {
+            return $items;
+        }
+
+        return array_filter($items, fn(array $item) => $item['lang_short'] === $language) + $items;
+    }
+
+    /**
+     * API action for getting the enabled volumes (Strong's dictionaries, etc), grouped by type
+     *
+     * Every registered type has a group, keyed by type, even when it has no enabled volumes; each
+     * group is indexed by module, as module names are only unique within a type.
+     *
+     * Input:
+     *  bible_order_by, order_by_lang_name, language_float - the Bible list's ordering, applied
+     *      the same way to the volumes within each group: see _applyListOrder().  Ties go by name.
+     *
+     * @param array<string, mixed> $input
+     * @return array<string, array<string, array<string, mixed>>|\stdClass>
+     */
+    public function actionVolumes(array $input): array
+    {
+        $Volumes = Volume::select('volumes.type', 'volumes.name', 'shortname', 'module', 'year', 'owner', 'publisher',
+            'description', 'url', 'languages.name AS lang', 'volumes.language AS lang_short',
+            'languages.native_name AS lang_native', 'languages.rtl', 'copyright', 'copyright_id',
+            'copyright_statement', 'rank', 'research', 'volumes.restrict', 'citation_limit', 'is_default')
+            ->leftJoin('languages', 'volumes.language', 'languages.code')
+            ->whereIn('volumes.type', array_keys(Volume::getTypes()))
+            ->where('installed', 1)
+            ->where('enabled', 1);
+
+        $float = $this->_applyListOrder($Volumes, $input, [
+            'rank'              => 'volumes.rank',
+            'name'              => 'volumes.name',
+            'shortname'         => 'shortname',
+            'lang_short'        => 'volumes.language',
+            'lang_name'         => 'lang_native',
+            'lang_name_english' => 'lang',
+        ]);
+
+        $Volumes->orderBy('volumes.name', 'ASC'); // a stable order for ties
+
+        $groups = array_fill_keys(array_keys(Volume::getTypes()), []);
+
+        foreach($Volumes->with('copyrightInfo')->get() as $Volume) {
+            $volume = $Volume->getAttributes();
+            $volume['description']         = $this->_sanitizeEditorHtml($volume['description']);
+            $volume['copyright_statement'] = $this->_processHtml($Volume->getCopyrightStatement());
+            $volume['is_default']          = (bool) $volume['is_default'];
+            $groups[$Volume->type][$Volume->module] = $volume;
+        }
+
+        foreach($groups as $type => $volumes) {
+            if($float) {
+                $volumes = static::_floatLanguage($volumes, $input['language_float'] ?? NULL);
+            }
+
+            // An empty group is still an object in the JSON, as a populated one is
+            $groups[$type] = $volumes ?: new \stdClass;
+        }
+
+        return $groups;
     }
 
     /**
@@ -1312,16 +1438,13 @@ class Engine implements ErrorInterface
         RenderManager::cleanUpTempZipFiles();
 
         $response = new \stdClass;
-        $response->bibles                   = $this->actionBibles($input);
+        $this->staticsLists($response, $input);
         $response->books                    = $this->actionBooks($input);
         //$response->books_count_diffs        = $this->getChapterVerseCounts(true);
-        $response->audio_enabled            = config('audio.enable');
         $response->shortcuts                = $this->actionShortcuts($input);
-        $response->download_enabled         = (bool) config('download.enable');
-        $response->download_limit           = config('download.enable') ? config('download.bible_limit') : FALSE;
-        $response->download_formats         = $response->download_enabled ? array_values(RenderManager::getGroupedRendererList()) : [];
+        $response->features                 = $this->getFeatures();
+        $this->staticsLegacyFeatureFlags($response);
         $response->search_types             = config('bss.search_types');
-        $response->features_enabled         = Feature::isEnabledAll();
         $response->name                     = config('app.name');
         $response->hash                     = $this->_getNameHash();
         $response->version                  = config('app.version');
@@ -1333,7 +1456,77 @@ class Engine implements ErrorInterface
         $response->parallel_lang_search     = config('bss.parallel_search_different_languages');
         return $this->staticsAppend($response, $input);
     }
-    
+
+    /**
+     * The module lists of the statics response: 'bibles' and 'volumes'
+     *
+     * @param \stdClass $response statics response to add them to
+     * @param array<string, mixed> $input
+     */
+    protected function staticsLists(\stdClass $response, array $input): void
+    {
+        $response->bibles  = $this->actionBibles($input);
+        $response->volumes = $this->actionVolumes($input);
+    }
+
+    /**
+     * The feature flags statics carried before 'features', kept for v2 clients.  Each one is
+     * also in getFeatures().
+     *
+     * @param \stdClass $response statics response to add them to
+     */
+    protected function staticsLegacyFeatureFlags(\stdClass $response): void
+    {
+        $download = $response->features['download'];
+
+        $response->audio_enabled    = config('audio.enable');
+        $response->download_enabled = $download['enabled'];
+        $response->download_limit   = $download['limit'];
+        $response->download_formats = $download['formats'];
+    }
+
+    /**
+     * Which optional features this API offers, as feature => ['enabled' => bool, ...settings]
+     *
+     * The statics 'features' block.
+     *
+     * @return array{
+     *     audio: array{enabled: bool},
+     *     download: array{enabled: bool, formats: array<int, mixed>, limit: mixed},
+     *     cross_references: array{enabled: bool},
+     *     strongs: array{enabled: bool, modern: array{enabled: bool}, legacy: array{enabled: bool}}
+     * }
+     */
+    public function getFeatures(): array
+    {
+        $download = (bool) config('download.enable');
+        $modern   = Strongs::hasAvailable();
+
+        // The legacy format can be answered from a modern dictionary as well as the legacy table
+        $legacy   = $modern || $this->_legacyStrongsAvailable();
+
+        return [
+            'audio' => [
+                'enabled' => (bool) config('audio.enable'),
+            ],
+            'download' => [
+                'enabled' => $download,
+                'formats' => $download ? array_values(RenderManager::getGroupedRendererList()) : [],
+                'limit'   => $download ? config('download.bible_limit') : FALSE,
+            ],
+            'cross_references' => [
+                'enabled' => Feature::isEnabled('cross_references'),
+            ],
+            'strongs' => [
+                // What a request that names no version gets: v3's modern never falls back to the
+                // legacy table, v2's legacy is answered by either source
+                'enabled' => (static::STRONGS_VERSION_DEFAULT == 'modern') ? $modern : $legacy,
+                'modern'  => ['enabled' => $modern],
+                'legacy'  => ['enabled' => $legacy],
+            ],
+        ];
+    }
+
     /**
      * Appends additional data to the statics response.
      *
@@ -1484,6 +1677,7 @@ class Engine implements ErrorInterface
         $response->dates = new \stdClass;
 
         $response->dates->bible     = strtotime(Bible::max('updated_at'));                  // Most recent Bible change
+        $response->dates->volume    = max((int) strtotime((string) Volume::max('updated_at')), Volume::lastDeletedAt()); // Most recent volume change, deletions included
         $response->dates->shortcuts = strtotime(Models\Shortcuts\En::max('updated_at'));    // Most recent shortcut change
         $response->dates->configs   = (int) config('app.configs_updated_at');               // most recent config change, including most recent update
 
@@ -1539,33 +1733,319 @@ class Engine implements ErrorInterface
 
     public function actionStrongs($input) 
     {
-        $response = [];
-        
         if(!array_key_exists('strongs', $input) || empty($input['strongs'])) {
             return $this->addError( __('errors.strongs_input_required'), 4);
         }
 
         $strongs = strip_tags(trim($input['strongs']));
 
-        if(preg_match_all('/[GHgh][0-9]+/', $strongs, $matches)) {
-            foreach($matches[0] as $raw) {
-                // Remove padding zeros
-                $t = $raw[0];
-                $n = (string)(int) substr($raw, 1);
-                $clean = $t . $n;
+        $source = $this->_resolveStrongsSource(
+            $input['version'] ?? NULL,
+            $input['dictionary'] ?? NULL,
+            $input['language'] ?? NULL,
+            4
+        );
 
-                $Def = \App\Models\StrongsDefinition::where('number', $clean)->first();
+        if(!$source) {
+            return FALSE;
+        }
 
-                if(!$Def) {
-                    $this->addError( __('errors.strongs_not_found') . ': ' . $clean);
+        $numbers = preg_match_all('/[GHgh][0-9]+/', $strongs, $matches) ? $matches[0] : [];
+
+        return $this->_lookupStrongs($this->_normalizeStrongsNumbers($numbers), $source, TRUE);
+    }
+
+    /**
+     * The Strong's version this request asked for: the value given if it is one we support,
+     * otherwise this API version's default, with a level 3 notice when a value was ignored.
+     *
+     * @param mixed $version The 'version' (strongs action) or 'strongs_version' (query) value
+     * @return string 'legacy' or 'modern'
+     */
+    protected function _resolveStrongsVersion(mixed $version): string
+    {
+        if($version === NULL || $version === '') {
+            return static::STRONGS_VERSION_DEFAULT;
+        }
+
+        if(is_string($version) && in_array(strtolower($version), static::STRONGS_VERSIONS, TRUE)) {
+            return strtolower($version);
+        }
+
+        $this->addError(__('errors.strongs_version_invalid', [
+            'value'   => is_scalar($version) ? (string) $version : gettype($version),
+            'default' => static::STRONGS_VERSION_DEFAULT,
+        ]), 3);
+
+        return static::STRONGS_VERSION_DEFAULT;
+    }
+
+    /**
+     * Where this request's Strong's definitions come from.  Shared by the strongs and query
+     * actions.
+     *
+     * Legacy is a response format as well as a source.  Asked for legacy (v2's default):
+     *  - With a usable modern dictionary, the definitions come from it, reshaped to the legacy
+     *    format.  The dictionary is chosen as for modern: the one given (fatal if it cannot be
+     *    used), otherwise the language default, otherwise the global default.  Numbers it does
+     *    not hold are looked up in the legacy table, when that is enabled.
+     *  - Otherwise they come from the legacy table, when that is enabled.
+     *  - Otherwise there is no Strong's source: an error at $no_dictionary_level.
+     *
+     * Asked for modern (v3's default), the dictionary is chosen the same way.  With none usable,
+     * asking for modern when it is not this API version's default (v2) falls back to the legacy
+     * table, silently, when that is enabled; otherwise it is an error at $no_dictionary_level.
+     *
+     * @param mixed $version Requested version
+     * @param mixed $dictionary Requested dictionary module
+     * @param mixed $language Language code of the user interface
+     * @param int $no_dictionary_level Error level when there is no Strong's source at all
+     * @return array{version: string, Volume: ?Strongs, fallback: bool, level: int}|null NULL once
+     *     an error has been raised.  fallback: look up numbers the Volume does not hold in the
+     *     legacy table.  level: $no_dictionary_level, for _lookupStrongs().
+     */
+    protected function _resolveStrongsSource(mixed $version, mixed $dictionary, mixed $language, int $no_dictionary_level): ?array
+    {
+        $version = $this->_resolveStrongsVersion($version);
+        $legacy  = $this->_legacyStrongsAvailable();
+        $Volume  = $this->_resolveStrongsDictionary($dictionary, $language);
+
+        if($Volume === FALSE) {
+            return NULL;
+        }
+
+        if($Volume) {
+            return ['version' => $version, 'Volume' => $Volume, 'fallback' => ($version == 'legacy' && $legacy), 'level' => $no_dictionary_level];
+        }
+
+        if($this->_mayUseLegacyTable($version)) {
+            return ['version' => 'legacy', 'Volume' => NULL, 'fallback' => FALSE, 'level' => $no_dictionary_level];
+        }
+
+        $this->addError(__('errors.strongs_no_dictionary'), $no_dictionary_level);
+        return NULL;
+    }
+
+    /**
+     * Whether the legacy table may answer when there is no dictionary: it is enabled, and the
+     * request is for legacy, or is v2's request for modern - never v3's own default, which has
+     * no fallback
+     */
+    protected function _mayUseLegacyTable(string $version): bool
+    {
+        return $this->_legacyStrongsAvailable() && ($version == 'legacy' || $version !== static::STRONGS_VERSION_DEFAULT);
+    }
+
+    /**
+     * The Strong's dictionary for this request: the one given, otherwise the language default,
+     * otherwise the global default
+     *
+     * @param mixed $dictionary Requested dictionary module
+     * @param mixed $language Language code of the user interface
+     * @return Strongs|false|null FALSE (with a fatal error) when a given dictionary cannot be
+     *     used, NULL when there is none to use
+     */
+    protected function _resolveStrongsDictionary(mixed $dictionary, mixed $language): Strongs|false|null
+    {
+        if($dictionary !== NULL && $dictionary !== '') {
+            $Volume = is_string($dictionary) ? Strongs::findAvailable($dictionary) : NULL;
+
+            if(!$Volume) {
+                $name = is_scalar($dictionary) ? (string) $dictionary : gettype($dictionary);
+                return $this->addError(__('errors.strongs_dictionary_unavailable', ['dictionary' => $name]), 4);
+            }
+
+            return $Volume;
+        }
+
+        $language = (is_string($language) && Language::validateLanguage($language)) ? $language : NULL;
+
+        return Strongs::resolveDefault($language);
+    }
+
+    /**
+     * Whether the legacy strongs_definitions table may be used: the strongs_legacy feature is
+     * enabled.  The internal flag - statics' strongs.legacy.enabled also counts modern, which can
+     * answer in the legacy format.
+     */
+    protected function _legacyStrongsAvailable(): bool
+    {
+        return once(fn() => Feature::isEnabled('strongs_legacy'));
+    }
+
+    /**
+     * One requested Strong's number in the form both sources store: upper case letter, padding
+     * zeros removed.  Upper case because SQLite compares case sensitively, where MySQL does not.
+     *
+     * @param string $raw A number as matched in the request, e.g. 'h01234'
+     * @return string e.g. 'H1234'
+     */
+    protected function _normalizeStrongsNumber(string $raw): string
+    {
+        return strtoupper($raw[0]) . (string)(int) substr($raw, 1);
+    }
+
+    /**
+     * _normalizeStrongsNumber() over a list, order and duplicates kept
+     *
+     * @param string[] $raw
+     * @return string[]
+     */
+    protected function _normalizeStrongsNumbers(array $raw): array
+    {
+        return array_values(array_map(fn(string $number) => $this->_normalizeStrongsNumber($number), $raw));
+    }
+
+    /**
+     * Looks up and formats the given Strong's numbers from a source _resolveStrongsSource()
+     * returned.
+     *
+     * @param string[] $numbers Requested numbers, normalized (_normalizeStrongsNumbers()); a
+     *     duplicate is answered once per occurrence
+     * @param array{version: string, Volume: ?Strongs, fallback?: bool} $source
+     * @param bool $report_missing Raise a non-fatal error for each number that is not found
+     * @return array
+     */
+    protected function _lookupStrongs(array $numbers, array $source, bool $report_missing): array
+    {
+        $Volume   = $source['Volume'];
+        $wanted   = array_values(array_unique($numbers));
+        $response = [];
+
+        if(!$numbers) {
+            return $response;
+        }
+
+        $found = [];
+
+        if($Volume) {
+            $modern = ($source['version'] == 'modern');
+            $rows   = $this->_fetchDictionaryStrongs($Volume, $wanted);
+
+            // The dictionary went away after it was chosen
+            if($rows === NULL) {
+                if(!$this->_mayUseLegacyTable($source['version'])) {
+                    $this->addError(__('errors.strongs_no_dictionary'), $source['level'] ?? 4);
+                    return $response;
                 }
-                else {
-                    $response[] = $this->_formatStrongs($Def->toArray());
+
+                $Volume = NULL;
+                $rows   = [];
+            }
+
+            foreach($rows as $clean => $Row) {
+                $found[$clean] = $modern
+                    ? $this->_formatStrongsModern($Row->getAttributes(), $Volume->module)
+                    : $this->_formatStrongs($this->_legacyAttributesFromModern($Row->getAttributes()));
+            }
+        }
+
+        // The legacy table: the source itself, or what the dictionary did not hold
+        if(!$Volume || !empty($source['fallback'])) {
+            $missing = array_values(array_diff($wanted, array_keys($found)));
+
+            if($missing) {
+                foreach($this->_fetchStrongs(\App\Models\StrongsDefinition::query(), $missing) as $clean => $Row) {
+                    $found[$clean] = $this->_formatStrongs($Row->toArray());
                 }
             }
         }
 
+        foreach($numbers as $clean) {
+            if(isset($found[$clean])) {
+                $response[] = $found[$clean];
+            }
+            elseif($report_missing) {
+                $this->addError( __('errors.strongs_not_found') . ': ' . $clean);
+            }
+        }
+
         return $response;
+    }
+
+    /**
+     * The rows of the given numbers, in one query, keyed by number in upper case: MySQL matches
+     * case insensitively
+     *
+     * @param \Illuminate\Database\Eloquent\Builder $Query
+     * @param string[] $numbers Normalized numbers
+     * @return \Illuminate\Support\Collection<string, \Illuminate\Database\Eloquent\Model>
+     */
+    protected function _fetchStrongs(\Illuminate\Database\Eloquent\Builder $Query, array $numbers): \Illuminate\Support\Collection
+    {
+        return $Query->whereIn('number', $numbers)->get()->keyBy(fn($Row) => strtoupper($Row->number));
+    }
+
+    /**
+     * _fetchStrongs() from a dictionary's content table, or NULL when that table is gone: the
+     * dictionary was chosen while installed, and an admin uninstalled or updated it before
+     * this lookup ran.  Any other query failure is thrown.
+     *
+     * @param string[] $numbers Normalized numbers
+     * @return \Illuminate\Support\Collection<string, \Illuminate\Database\Eloquent\Model>|null
+     */
+    protected function _fetchDictionaryStrongs(Strongs $Volume, array $numbers): ?\Illuminate\Support\Collection
+    {
+        $Content = $Volume->content();
+
+        try {
+            return $this->_fetchStrongs($Content->newQuery(), $numbers);
+        }
+        catch(\Illuminate\Database\QueryException $e) {
+            if(\Illuminate\Support\Facades\Schema::hasTable($Content->getTable())) {
+                throw $e;
+            }
+
+            return NULL;
+        }
+    }
+
+    /**
+     * One dictionary volume row in the legacy format, as StrongsDefinition::toArray() would give
+     * it: _formatStrongs() relies on the model's accessors having purified the entry and the
+     * root word, so that is done here - and to the other text fields, which the legacy table
+     * never needed
+     *
+     * @param array<string, mixed> $attr One content table row
+     * @return array<string, mixed>
+     */
+    protected function _legacyAttributesFromModern(array $attr): array
+    {
+        $legacy = \App\Models\VolumeContent\StrongsContent::mapToLegacyRow($attr);
+
+        // Every text field: the legacy table's data was trusted, a dictionary's (an imported
+        // module or spreadsheet) is not.  _formatStrongs() sanitizes tvm itself.
+        foreach(['root_word', 'transliteration', 'pronunciation', 'entry'] as $field) {
+            $legacy[$field] = Helpers::sanitizeHtml($legacy[$field]);
+        }
+
+        return $legacy;
+    }
+
+    /**
+     * Shapes one Strong's definition from a dictionary volume for the response.
+     *
+     * Unlike _formatStrongs(), nothing has purified these values yet: content tables have no
+     * model accessors.  Every text field goes through _sanitizeHtml() here, which also gives
+     * v3 its Markdown.
+     *
+     * @param array $attr One content table row
+     * @param string $module The dictionary it came from
+     * @return array
+     */
+    protected function _formatStrongsModern(array $attr, string $module): array
+    {
+        foreach(['root_word', 'transliteration', 'pronunciation', 'definition', 'short_definition'] as $field) {
+            $attr[$field] = $this->_sanitizeHtml($attr[$field] ?? NULL);
+        }
+
+        $attr['id']         = isset($attr['id']) ? (int) $attr['id'] : NULL;
+        $attr['is_special'] = (int) ($attr['is_special'] ?? 0);
+        $attr['dictionary'] = $module;
+
+        unset($attr['created_at']);
+        unset($attr['updated_at']);
+        return $attr;
     }
 
     /**
@@ -1579,15 +2059,15 @@ class Engine implements ErrorInterface
      * response unpurified, because nothing here purifies them a second time.
      *
      * 'tvm' is the exception and is sanitized here. It has no accessor: the
-     * '<b>Count:</b> n ...<br>' prefix has to come off the raw column first, which is the
-     * line above.
+     * '<b>Count:</b> n ...<br>' prefix has to come off the raw column first
+     * (StrongsContent::stripTvmCount(), the same step the importers apply).
      *
      * @param array $attr One definition, as StrongsDefinition::toArray() returns it
      * @return array
      */
     protected function _formatStrongs($attr) 
     {
-        $attr['tvm'] = $attr['tvm'] ? preg_replace('/<b>Count:<\/b> [0-9]+.*?<br>/', '', $attr['tvm']) : null; // Remove 'count' from TVM
+        $attr['tvm'] = StrongsContent::stripTvmCount($attr['tvm']);
         $attr['tvm'] = $this->_sanitizeHtml($attr['tvm']);
         $attr['entry'] = $this->_processHtml($attr['entry']);
         $attr['root_word'] = $this->_processHtml($attr['root_word']);
@@ -1841,8 +2321,7 @@ class Engine implements ErrorInterface
      * performs any additional processing needed for the API output. This is a hook for subclasses to override.
      *
      * NULL is accepted and answered with NULL - see _sanitizeHtml(). It reaches here from the
-     * nullable columns and from Bible::getCopyrightStatement(), which has no return type of
-     * its own.
+     * nullable columns.
      *
      * @param string|null $html
      * @return string|null
