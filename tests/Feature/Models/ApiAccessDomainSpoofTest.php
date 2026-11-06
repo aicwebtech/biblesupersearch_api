@@ -30,6 +30,12 @@ class ApiAccessDomainSpoofTest extends TestCase
         unset($_SERVER['HTTP_ORIGIN'], $_SERVER['HTTP_REFERER']);
         $_SERVER['HTTP_HOST'] = $_SERVER['SERVER_NAME'] = 'api.example.com';
         $_SERVER['REMOTE_ADDR'] = '198.51.100.7';
+
+        // The buckets lookUp() creates, removed however the test ends
+        $this->deferCleanup(function() {
+            $this->removeIpAccessFixture('198.51.100.7', 'api.example.com');
+            $this->removeIpAccessFixture(NULL, 'trusted-partner.com');
+        });
     }
 
     public function tearDown(): void
@@ -46,8 +52,6 @@ class ApiAccessDomainSpoofTest extends TestCase
 
         $this->assertNotSame(0, $Access->getAccessLimit(), 'Spoofed same-domain param must not yield unlimited access');
         $this->assertNull($Access->domain, 'Record must be keyed by IP, not the spoofed domain param');
-
-        $Access->delete();
     }
 
     /** Spoofing a whitelisted domain via the `domain` param must not grant unlimited access. */
@@ -58,8 +62,6 @@ class ApiAccessDomainSpoofTest extends TestCase
 
         $this->assertNotSame(0, $Access->getAccessLimit(), 'Spoofed whitelisted-domain param must not yield unlimited access');
         $this->assertNull($Access->domain, 'Record must be keyed by IP, not the spoofed domain param');
-
-        $Access->delete();
     }
 
     /**
@@ -74,8 +76,6 @@ class ApiAccessDomainSpoofTest extends TestCase
 
         $this->assertSame('trusted-partner.com', $Access->domain, 'Whitelisted Origin header must take precedence over the domain param');
         $this->assertSame(0, $Access->getAccessLimit(), 'Whitelisted domain must grant unlimited access');
-
-        $Access->delete();
     }
 
     /**
@@ -91,8 +91,6 @@ class ApiAccessDomainSpoofTest extends TestCase
 
         $this->assertNull($Access->domain, 'Untrusted domain must not be keyed by domain');
         $this->assertNotSame(0, $Access->getAccessLimit(), 'Untrusted domain must not yield unlimited access');
-
-        $Access->delete();
     }
 
     /** The same-host grant still works: an Origin matching the API host yields unlimited access. */
@@ -104,7 +102,5 @@ class ApiAccessDomainSpoofTest extends TestCase
 
         $this->assertSame('api.example.com', $Access->domain, 'Same-host Origin must be keyed by domain');
         $this->assertSame(0, $Access->getAccessLimit(), 'Same-host request must keep unlimited access');
-
-        $Access->delete();
     }
 }

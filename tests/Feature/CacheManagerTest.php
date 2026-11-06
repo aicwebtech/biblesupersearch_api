@@ -3,34 +3,52 @@
 namespace Tests\Feature;
 
 use Tests\TestCase;
-use Illuminate\Foundation\Testing\DatabaseTransactions;
 use App\CacheManager;
 use App\Models\Cache;
 
+/**
+ * The cache rows these tests write are committed to the shared database, so each test uses form
+ * data no real request sends (a uniqid) and removes its row again by hash_long in tearDown.
+ */
 class CacheManagerTest extends TestCase
 {
-    use DatabaseTransactions;
+    /**
+     * Form data unique to this test, with its cache row removed in tearDown
+     *
+     * @return array<string, mixed>
+     */
+    private function uniqueFormData(string $key): array
+    {
+        $form_data = [$key => uniqid('cache_manager_test_', true)];
+        $hash_long = md5(json_encode($form_data));
 
-    public function testCreateCache()
+        $this->deferCleanup(fn() => Cache::where('hash_long', $hash_long)->delete());
+
+        return $form_data;
+    }
+
+    public function testCreateCache(): void
     {
         $manager = new CacheManager();
-        $form_data = ['b' => 2, 'a' => 1];
+        $value   = uniqid('cache_manager_test_', true);
 
-        $cache = $manager->createCache($form_data);
+        $this->deferCleanup(fn() => Cache::where('hash_long', md5(json_encode(['a' => 1, 'b' => $value])))->delete());
+
+        $cache = $manager->createCache(['b' => $value, 'a' => 1]);
 
         $this->assertInstanceOf(Cache::class, $cache);
         $this->assertNotEmpty($cache->hash);
-        $this->assertEquals(md5(json_encode(['a' => 1, 'b' => 2])), $cache->hash_long);
+        $this->assertEquals(md5(json_encode(['a' => 1, 'b' => $value])), $cache->hash_long);
     }
 
     /**
      * The INSERT is deferred off the request's critical path: the row must not exist until the
      * application terminates (after the response is sent), then it is persisted exactly once.
      */
-    public function testCreateCacheDefersWrite()
+    public function testCreateCacheDefersWrite(): void
     {
         $manager = new CacheManager();
-        $form_data = ['deferred' => uniqid('', true)];
+        $form_data = $this->uniqueFormData('deferred');
 
         $cache = $manager->createCache($form_data);
         $hash = $cache->hash;
@@ -50,10 +68,10 @@ class CacheManagerTest extends TestCase
      * on the hash_long unique index would hand back a hash that never gets persisted. After the
      * writes fire, exactly one row exists and it resolves the hash both racers returned.
      */
-    public function testConcurrentIdenticalRequestsShareResolvableHash()
+    public function testConcurrentIdenticalRequestsShareResolvableHash(): void
     {
         $manager = new CacheManager();
-        $form_data = ['racy' => uniqid('', true)];
+        $form_data = $this->uniqueFormData('racy');
 
         // No terminate() between the two calls => both writes are still pending (the race).
         $first  = $manager->createCache($form_data);
@@ -70,10 +88,10 @@ class CacheManagerTest extends TestCase
     /**
      * Identical form data reuses the already-persisted cache row rather than writing a new one.
      */
-    public function testCreateCacheReusesExisting()
+    public function testCreateCacheReusesExisting(): void
     {
         $manager = new CacheManager();
-        $form_data = ['reused' => uniqid('', true)];
+        $form_data = $this->uniqueFormData('reused');
 
         $first = $manager->createCache($form_data);
         $this->app->terminate();

@@ -60,4 +60,6 @@ jobs:
       env:
         DB_CONNECTION: sqlite
         DB_DATABASE: database/database.sqlite
-      run: php artisan test --compact --fail-on-deprecation
+        APP_TEST_HTTP: true
+        APP_EXPERIMENTAL: true
+      run: php artisan test --compact --fail-on-deprecation --display-skipped

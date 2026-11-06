@@ -91,8 +91,7 @@ class Spreadsheet extends SpreadsheetAbstract
         }
 
         $Sheet  = $this->Spreadsheet->getActiveSheet();
-        $maxCol = count($this->column_map);
-        $maxCol = chr($maxCol + 64);
+        $maxCol = $this->_numberToColumn(count($this->column_map));
 
         $maxRow = $row_limit ?: $Sheet->getHighestRow();
         $minRow = $this->first_row_data + 1;

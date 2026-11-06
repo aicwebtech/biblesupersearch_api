@@ -50,17 +50,13 @@ class NarakeetTest extends TestCase
         $Lang = Language::findByCode('es');
         $this->assertNotNull($Lang, 'Language es not found in database.');
 
-        $cache = $Lang->tts_voice;
+        $this->restoreColumnsLater($Lang, ['tts_voice']);
 
         $Lang->tts_voice = 'custom_spanish_voice';
         $Lang->save();
     
         $voice = Narakeet::getVoiceByLanguage('es');
         $this->assertEquals('custom_spanish_voice', $voice, 'Voice override for Spanish did not work.');
-
-        // Restore original voice setting
-        $Lang->tts_voice = $cache;
-        $Lang->save();
     }
 
     public function testApiDefaultLanguage()

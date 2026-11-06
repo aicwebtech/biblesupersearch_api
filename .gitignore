@@ -16,6 +16,7 @@ vendor.zip
 
 /bibles/unbound/*.zip
 /bibles/unofficial/*.zip
+/content/*/unofficial/*.zip
 /app/Models/Misc
 /bibles/analyzer/*.bib
 /bibles/evening/*
@@ -32,6 +33,9 @@ vendor.zip
 !/bibles/*/uploads/
 /bibles/*/uploads/*
 !/bibles/*/uploads/.gitkeep
+!/content/*/uploads/
+/content/*/uploads/*
+!/content/*/uploads/.gitkeep
 /app/Premium
 
 #temp

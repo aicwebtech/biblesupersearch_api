@@ -291,8 +291,8 @@ class VerseStandard extends VerseAbstract
         $QueryVerses->select(
             'b.name AS book_name', 
             'tb.book','tb.chapter','tb.verse','a.id', 
-            DB::raw('"chapter" AS type'),
-            DB::raw('IF(' . $prefix . 'a.file_name IS NULL, 0, 1) AS has_audio')
+            DB::raw("'verse' AS type"),
+            DB::raw('CASE WHEN ' . $prefix . 'a.file_name IS NULL THEN 0 ELSE 1 END AS has_audio')
         );
         $QueryVerses->join($book_table . ' AS b', 'tb.book', '=', 'b.id');
         
@@ -302,8 +302,6 @@ class VerseStandard extends VerseAbstract
                 ->on('tb.verse', '=', 'a.verse')
                 ->on('a.module', '=', DB::raw("'" . $this->getModule() . "'"));
         });
-        
-        $QueryVerses->orderBy('book', 'ASC')->orderBy('chapter', 'ASC')->orderBy('verse', 'ASC');
 
         $QueryChapters = DB::table($table . ' AS tb');
         $QueryChapters->select(
@@ -311,8 +309,8 @@ class VerseStandard extends VerseAbstract
             'tb.book','tb.chapter',
             DB::raw('NULL AS verse'), 
             'a.id', 
-            DB::raw('"verse" AS type'),
-            DB::raw('IF(' . $prefix . 'a.file_name IS NULL, 0, 1) AS has_audio')
+            DB::raw("'chapter' AS type"),
+            DB::raw('CASE WHEN ' . $prefix . 'a.file_name IS NULL THEN 0 ELSE 1 END AS has_audio')
         );
 
         $QueryChapters->join($book_table . ' AS b', 'tb.book', '=', 'b.id');
@@ -325,13 +323,8 @@ class VerseStandard extends VerseAbstract
         });
 
         $QueryChapters->groupBy('tb.book','tb.chapter');
-        $QueryChapters->orderBy('book', 'ASC')->orderBy('chapter', 'ASC');
 
         $searchable = [
-            'type'  => [
-                'field' => 'verse',
-                'type'  => 'bool_null_having',
-            ],
             'book_name' => [
                 'field' => 'b.name',
                 'type'  => 'str_inside',
@@ -360,7 +353,9 @@ class VerseStandard extends VerseAbstract
                         $QueryVerses->where($field, 'LIKE', '%' . $parameters[$key] . '%');
                         break;                        
                     case 'int':
-                        $QueryChapters->where($field, (int)$parameters[$key]);
+                        // A chapter row has no verse: it matches no verse number, rather than
+                        // matching whenever its chapter has that verse
+                        ($key == 'verse') ? $QueryChapters->whereRaw('1 = 0') : $QueryChapters->where($field, (int)$parameters[$key]);
                         $QueryVerses->where($field, (int)$parameters[$key]);
                         break;           
                     case 'bool_null':
@@ -370,16 +365,6 @@ class VerseStandard extends VerseAbstract
                         } else {
                             $QueryChapters->whereNull($field);
                             $QueryVerses->whereNull($field);
-                        }
-                        break;
-
-                    case 'bool_null_having':
-                        if($parameters[$key] == 1) {
-                            $QueryChapters->havingNotNull($field);
-                            $QueryVerses->havingNotNull($field);
-                        } else {
-                            $QueryChapters->havingNull($field);
-                            $QueryVerses->havingNull($field);
                         }
                         break;
 
@@ -399,6 +384,16 @@ class VerseStandard extends VerseAbstract
             $Query = $QueryVerses;
         }
 
+        // Sorted as a subquery, by its result columns: ordered directly, SQLite finds 'book',
+        // 'chapter' and 'verse' ambiguous between the verse and audio tables
+        $Query = DB::query()->fromSub($Query, 'audio');
+
+        // type 1: verse rows, 0: chapter rows, whose verse is NULL.  Filtered on the result
+        // rather than with HAVING, which SQLite refuses without a GROUP BY.
+        if(isset($parameters['type']) && ($parameters['type'] || $parameters['type'] == 0)) {
+            ($parameters['type'] == 1) ? $Query->whereNotNull('verse') : $Query->whereNull('verse');
+        }
+
         if($sidx) {
             $Query->orderBy($sidx, $sord);
         } else {
@@ -407,7 +402,7 @@ class VerseStandard extends VerseAbstract
 
         // print($Query->toSql()); die();
 
-        $verses = $paginate ? $Query->paginate($rows_per_page) : $Query->get();
+        $verses = $paginate ? $Query->paginate($rows_per_page, ['*'], 'page', $page) : $Query->get();
 
         return (empty($verses)) ? FALSE : $verses;
     }

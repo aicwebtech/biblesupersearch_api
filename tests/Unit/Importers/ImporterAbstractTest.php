@@ -49,6 +49,7 @@ class ImporterAbstractTest extends TestCase
             'double dots collapsed'    => ['my..bible.zip',    'mybible.zip'],
             'allowed brackets'         => ['[kjv](en).zip',   '[kjv](en).zip'],
             'asterisks removed'        => ['kjv*.zip',        'kjv.zip'],
+            'invalid utf-8 is empty'   => ["kjv\xff.zip",     ''],
         ];
     }
 

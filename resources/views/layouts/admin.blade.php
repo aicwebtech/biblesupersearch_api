@@ -1,8 +1,11 @@
 @php
     $buttons = [
         // ['label' => 'Dashboard', 'route' => 'admin.main', 'new_tab' => FALSE, 'hash' => ''],
-        ['label' => 'Bibles', 'route' => 'admin.bibles.index', 'new_tab' => FALSE, 'hash' => ''],
         ['label' => 'Features', 'route' => 'admin.features.index', 'new_tab' => FALSE, 'hash' => ''],
+        ['label' => 'Bibles', 'route' => 'admin.bibles.index', 'new_tab' => FALSE, 'hash' => ''],
+        // Volumes will be removed after the next QA round, then restored once there are several volume types
+        ['label' => 'Volumes', 'route' => 'admin.volumes.index', 'new_tab' => FALSE, 'hash' => ''],
+        ['label' => \App\Models\Volume::TYPES['strongs']['label_plural'], 'route' => 'admin.volumes.type', 'params' => ['type' => 'strongs'], 'new_tab' => FALSE, 'hash' => ''],
         ['label' => 'Languages', 'route' => 'admin.languages.index', 'new_tab' => FALSE, 'hash' => ''],
         ['label' => 'Options', 'route' => 'admin.configs', 'new_tab' => FALSE, 'hash' => ''],
         ['label' => 'Terms of Service', 'route' => 'admin.tos', 'new_tab' => FALSE, 'hash' => ''],
@@ -83,8 +86,8 @@ $u = url('');
             @if(!$hide_menus)
                 <div id='top_menu'>
                     @foreach ($buttons as $button)
-                        <a href='{{ route($button['route']) }}{{$button['hash']}}'
-                           class='menu_item @if(Route::currentRouteName() == $button['route'])active @endif'
+                        <a href='{{ route($button['route'], $button['params'] ?? []) }}{{$button['hash']}}'
+                           class='menu_item @if(Route::currentRouteName() == $button['route'] && request()->route('type') == ($button['params']['type'] ?? NULL))active @endif'
                            @if($button['new_tab'])target='_NEW'@endif;
                            >
                            {{ $button['label'] }}

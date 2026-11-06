@@ -20,6 +20,10 @@ export default {
             type: Object,
             default: {},
         },        
+        importer: {
+            type: String,
+            default: null,
+        },
     },
     methods: {
         reset() {

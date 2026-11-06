@@ -4,9 +4,6 @@ namespace Tests\Feature\Models;
 
 use Tests\TestCase;
 
-use Illuminate\Foundation\Testing\WithoutMiddleware;
-use Illuminate\Foundation\Testing\DatabaseMigrations;
-use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Support\Facades\Schema;
 use PHPUnit\Framework\Attributes\DataProvider;
 
@@ -210,4 +207,82 @@ class VerseStandardTest extends TestCase
         ];
     }
 
+    /**
+     * The audio grid's rows for KJV Jude, by audio structure.  The Bible is changed in memory
+     * only; KJV has no audio rows, so every has_audio is 0.
+     *
+     * @param array<string, mixed> $parameters
+     * @return array<int, object>
+     */
+    protected function judeAudioRows(string $structure, array $parameters = []): array
+    {
+        $Bible = Bible::findByModule('kjv');
+        $Bible->audio_structure = $structure;
+
+        return $Bible->getAudioAll(['book_name' => 'Jude'] + $parameters)->all();
+    }
+
+    /**
+     * Runs on MySQL and SQLite (CI): has_audio and type were MySQL-only (IF(), and a
+     * double-quoted string that SQLite reads as the chapter column)
+     */
+    public function testGetAudioAllByChapter(): void
+    {
+        $rows = $this->judeAudioRows('chapters');
+
+        $this->assertCount(1, $rows);
+        $this->assertSame('chapter', $rows[0]->type);
+        $this->assertSame(1, (int) $rows[0]->chapter);
+        $this->assertNull($rows[0]->verse);
+        $this->assertSame(0, (int) $rows[0]->has_audio);
+    }
+
+    public function testGetAudioAllByVerse(): void
+    {
+        $rows = $this->judeAudioRows('verses');
+
+        $this->assertCount(25, $rows);
+        $this->assertSame(['verse'], array_values(array_unique(array_column($rows, 'type'))));
+        $this->assertSame(range(1, 25), array_map(fn($value) => (int) $value, array_column($rows, 'verse')));
+        $this->assertSame([0], array_values(array_unique(array_map(fn($value) => (int) $value, array_column($rows, 'has_audio')))));
+    }
+
+    public function testGetAudioAllBothAndFilters(): void
+    {
+        $this->assertCount(26, $this->judeAudioRows('both'));
+        $this->assertCount(26, $this->judeAudioRows('both', ['has_audio' => 0]));
+        $this->assertCount(0, $this->judeAudioRows('both', ['has_audio' => 1]));
+        $this->assertCount(25, $this->judeAudioRows('both', ['type' => 1]));
+        $this->assertCount(1, $this->judeAudioRows('both', ['type' => 0]));
+
+        // Paginated, as the admin audio grid asks: 26 rows, 10 a page
+        $this->assertCount(6, $this->judeAudioRows('both', ['rows_per_page' => 10, 'page' => 3]));
+
+        $rows = $this->judeAudioRows('both', ['sidx' => 'verse', 'sord' => 'DESC']);
+        $this->assertSame(25, (int) $rows[0]->verse);
+
+        // The type label agrees with the type filter: chapter rows have no verse
+        $this->assertSame(['chapter'], array_values(array_unique(array_column($this->judeAudioRows('both', ['type' => 0]), 'type'))));
+        $this->assertSame(['verse'], array_values(array_unique(array_column($this->judeAudioRows('both', ['type' => 1]), 'type'))));
+
+        // Sorted by type, the chapter row comes first
+        $rows = $this->judeAudioRows('both', ['sidx' => 'type', 'sord' => 'ASC']);
+        $this->assertNull($rows[0]->verse);
+    }
+
+    /**
+     * A verse filter matches verse rows only: a chapter row (whole chapter, no verse) matched
+     * whenever its chapter had that verse
+     */
+    public function testGetAudioAllVerseFilterLeavesOutChapterRows(): void
+    {
+        $rows = $this->judeAudioRows('both', ['verse' => 3]);
+
+        $this->assertCount(1, $rows);
+        $this->assertSame(3, (int) $rows[0]->verse);
+        $this->assertSame('verse', $rows[0]->type);
+
+        $this->assertCount(0, $this->judeAudioRows('chapters', ['verse' => 3]));
+        $this->assertCount(1, $this->judeAudioRows('verses', ['verse' => 3]));
+    }
 }

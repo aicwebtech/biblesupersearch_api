@@ -6,7 +6,8 @@ use Illuminate\Http\Request;
 use \App\Models\Bible;
 use App\Helpers;
 
-class ImportManager {
+class ImportManager 
+{
     use Traits\Error;
 
     public $test_mode = FALSE;
