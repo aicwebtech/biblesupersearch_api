@@ -21,6 +21,7 @@ class Kernel extends ConsoleKernel
         Commands\AppVersion::class,
         Commands\AppInstall::class,
         Commands\AppInstallTesting::class,
+        Commands\TestCleanup::class,
         Commands\BibleRender::class,
         Commands\RenderExtras::class,
         Commands\ImportBibleUnbound::class,

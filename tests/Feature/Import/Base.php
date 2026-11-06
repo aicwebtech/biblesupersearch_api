@@ -49,6 +49,8 @@ class Base extends TestCase
                             ->withSession(['banned' => FALSE])
                             ->postJson('/admin/bibles/importcheck', $data);
 
+        $this->deferCleanupUnlessPassed(fn() => $this->removeImportChainFixture(NULL, $response->json('file')));
+
         $response->assertStatus(200)
                     ->assertJson([
                         'success' => TRUE,
@@ -80,6 +82,8 @@ class Base extends TestCase
         $data['year'] = date('Y', $ts);
         $shared['module'] = $data['module'] = 'test_bible_' . date('YmdHis', $ts) . '_' . $us;
 
+        $this->deferCleanupUnlessPassed(fn() => $this->removeImportChainFixture($data['module'], $data['_file']));
+
         $response = $this->actingAs($shared['User'])
                             ->withSession(['banned' => FALSE])
                             ->postJson('/admin/bibles/import', $data);
@@ -99,6 +103,7 @@ class Base extends TestCase
     #[Depends('testImport')]
     public function testTest(array $shared) 
     {
+        $this->deferCleanupUnlessPassed(fn() => $this->removeImportChainFixture($shared['module'], NULL));
         $module = $shared['Bible']->module;
 
         $response = $this->actingAs($shared['User'])
@@ -130,6 +135,8 @@ class Base extends TestCase
     #[Depends('testTest')]
     public function testDelete(array $shared) 
     {
+        // The end of the chain: whatever the delete left behind goes, however this ends
+        $this->deferCleanup(fn() => $this->removeImportChainFixture($shared['module'], NULL));
 
         $response = $this->actingAs($shared['User'])
                     ->withSession(['banned' => FALSE])

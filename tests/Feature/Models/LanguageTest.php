@@ -4,9 +4,6 @@ namespace Tests\Feature\Models;
 
 use Tests\TestCase;
 
-use Illuminate\Foundation\Testing\WithoutMiddleware;
-use Illuminate\Foundation\Testing\DatabaseMigrations;
-use Illuminate\Foundation\Testing\DatabaseTransactions;
 use PHPUnit\Framework\Attributes\DataProvider;
 
 use App\Models\Language;
@@ -98,7 +95,7 @@ class LanguageTest extends TestCase
      */
     public function testBiblesRelationIsEmptyForALanguageWithNoBibles(): void
     {
-        $code = 'qqz';
+        $code = 'qqb';
 
         try {
             $Language = $this->createLanguageFixture($code, 'Bibles Relation Test');

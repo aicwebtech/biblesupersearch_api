@@ -7,6 +7,12 @@ use App\Models\Bible;
 
 class Copyright extends Model 
 {
+    /**
+     * 'This Bible' / 'the Bible' in a statement, for replaceSubject(): the determiner, the space
+     * after it, and the word Bible - unless it is the software's name, Bible SuperSearch
+     */
+    public const SUBJECT_PATTERN = '/\b(this|the)(\s+|&nbsp;|\x{00A0})Bible\b(?!(?:\s|&nbsp;|\x{00A0})*SuperSearch)/iu';
+
     protected $fillable = [
         'name', 'cr_name', 'type', 'url', 'desc', 'comments', 'default_copyright_statement', 'version', 'download', 
         'external', 'permission_required', 'attribution_required', 'share_alike', 'non_commercial',  'no_derivatives',  'rank'
@@ -63,6 +69,37 @@ class Copyright extends Model
         }
 
         return $cr;
+    }
+
+    /**
+     * Names the right kind of text in a statement written for Bibles.
+     *
+     * The stored statements all say 'This Bible ...'.  A volume (a Strong's dictionary ...)
+     * shares the same copyright rows, so its statement says 'This Strong's Dictionary ...'
+     * instead.  An admin may reword a statement, so 'this' or 'the', in any case and followed by
+     * a space or &nbsp;, all name the Bible; the determiner is kept as written.  'Bible
+     * SuperSearch' is the software, not the text, and is left alone.
+     *
+     * A statement in another language is not rewritten: give such a volume its own copyright
+     * statement instead.  VolumeEditForm.vue.js does the same to its default statement preview.
+     *
+     * @param string $statement HTML
+     * @param string $subject Plain text, such as 'Strong\'s Dictionary'
+     * @return string
+     */
+    public static function replaceSubject(string $statement, string $subject): string
+    {
+        if($subject === 'Bible') {
+            return $statement;
+        }
+
+        $subject = htmlspecialchars($subject, ENT_NOQUOTES);
+
+        return preg_replace_callback(
+            static::SUBJECT_PATTERN,
+            fn(array $m) => $m[1] . $m[2] . $subject,
+            $statement
+        ) ?? $statement;
     }
 
     public static function migrateFromCsv() 

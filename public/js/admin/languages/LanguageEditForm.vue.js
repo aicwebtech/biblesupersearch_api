@@ -93,8 +93,27 @@ const template = `
 
         <v-row v-bind='defaultProps.vrows'>
             <v-col>
-                <v-textarea 
-                    label='Common Words - One word per line' 
+                <v-select
+                    :items='strongsDictionaryList'
+                    label="Default Strong's Dictionary"
+                    v-model='record.strongs_dictionary'
+                    v-bind='defaultProps.selects'
+                    :item-props='defaultProps.itemPropsFunction'
+                    hint="Used by the API when this language is requested and no dictionary is given."
+                    persistent-hint
+                >
+                    <template v-slot:item='{ props, item }'>
+                        <v-list-subheader v-if='item.raw.header'>{{ item.raw.title }}</v-list-subheader>
+                        <v-list-item v-else v-bind='props'></v-list-item>
+                    </template>
+                </v-select>
+            </v-col>
+        </v-row>
+
+        <v-row v-bind='defaultProps.vrows'>
+            <v-col>
+                <v-textarea
+                    label='Common Words - One word per line'
                     v-model='record.common_words'
                     v-bind='defaultProps.textareas'
                     hint='Add words to this list to prevent them from being used as search keywords.  One word per line.'
@@ -147,6 +166,28 @@ export default {
 
             for(var api of this.bootstrap.tts_apis) {
                 list.push({value: api.key, title: api.name});
+            }
+
+            return list;
+        },
+        // Grouped by language, under a heading per language.  v-select (Vuetify 3.7) has no
+        // subheader items of its own, so the headings are items flagged 'header', drawn by the
+        // item slot as a non-selectable subheader.
+        strongsDictionaryList() {
+            var list = [{value: null, title: 'Use global default'}];
+            var groups = {};
+
+            for(var dict of (this.bootstrap.strongs_dictionaries || [])) {
+                var language = (this.bootstrap.languages || []).find(lang => lang.code === dict.language);
+                var name = language ? language.name : dict.language;
+
+                groups[name] = groups[name] || [];
+                groups[name].push({value: dict.module, title: dict.name});
+            }
+
+            for(var name of Object.keys(groups).sort((a, b) => a.localeCompare(b))) {
+                list.push({value: '__header__' + name, title: name, header: true, disabled: true});
+                list.push(...groups[name]);
             }
 
             return list;

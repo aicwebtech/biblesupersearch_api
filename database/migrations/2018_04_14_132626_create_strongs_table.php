@@ -3,8 +3,6 @@
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Database\Migrations\Migration;
-use App\Importers\Database as DatabaseImport;
-use App\Models\StrongsDefinition as Model;
 
 class CreateStrongsTable extends Migration
 {
@@ -24,9 +22,9 @@ class CreateStrongsTable extends Migration
             $table->unique('number', 'snum');
         });
 
+        // Left empty: the legacy definitions are the optional strongs_legacy feature, installed
+        // from the Features page.  Existing installations ran this before that change, and keep them.
         DB::table('strongs_definitions')->truncate();
-
-        Model::migrateFromCsv();
     }
 
     /**
