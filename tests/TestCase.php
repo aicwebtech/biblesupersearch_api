@@ -22,6 +22,13 @@ class TestCase extends BaseTestCase
      * @var bool
      */
     protected $lift_daily_access_limit = TRUE;
+
+    /**
+     * Cleanups registered with deferCleanup(), run last in, first out by tearDown()
+     *
+     * @var array<int, callable>
+     */
+    private array $deferred_cleanups = [];
     
     /**
      * Creates the application.
@@ -64,7 +71,92 @@ class TestCase extends BaseTestCase
             \DB::disconnect();
         });
 
-        parent::tearDown();
+        try {
+            $this->runDeferredCleanups();
+        }
+        finally {
+            parent::tearDown();
+        }
+    }
+
+    /**
+     * Registers a cleanup for tearDown(), which PHPUnit runs whether the test passed, failed or
+     * errored.  A try / finally in the test body only covers the code inside it; this also
+     * covers a fixture whose creation threw part way.
+     *
+     * Register the cleanup BEFORE creating the fixture, and make it idempotent - delete by
+     * module, code or key, whether or not the thing exists - so it is safe however far the
+     * creation got.  Cleanups run last in, first out, while the application is still up.
+     *
+     * @param callable $cleanup
+     */
+    protected function deferCleanup(callable $cleanup): void
+    {
+        $this->deferred_cleanups[] = $cleanup;
+    }
+
+    /**
+     * deferCleanup() for one link of a #[Depends] chain: the cleanup only runs if this test did
+     * not pass.  A failure skips the rest of the chain, so the fixture it shares is removed
+     * here; when every link passes, the last one removes it with a plain deferCleanup().
+     *
+     * @param callable $cleanup
+     */
+    protected function deferCleanupUnlessPassed(callable $cleanup): void
+    {
+        $this->deferCleanup(function() use ($cleanup) {
+            if(!$this->status()->isSuccess()) {
+                $cleanup();
+            }
+        });
+    }
+
+    /**
+     * Puts the given columns of a real (installed, not throwaway) record back as they are now,
+     * in tearDown, however the test ends.  Raw column values are written straight back, past
+     * any accessor or mutator, so the stored data is left exactly as it was.
+     *
+     * @param \Illuminate\Database\Eloquent\Model $Model
+     * @param array<int, string> $columns
+     */
+    protected function restoreColumnsLater(\Illuminate\Database\Eloquent\Model $Model, array $columns): void
+    {
+        $values = array_intersect_key($Model->getRawOriginal(), array_flip($columns));
+        $this->deferCleanup(fn() => $Model->newQuery()->whereKey($Model->getKey())->update($values));
+    }
+
+    /**
+     * Runs every deferred cleanup, newest first.  One that throws does not stop the rest; the
+     * first error is rethrown once all have run, so a broken cleanup still fails the test.
+     *
+     * @throws \Throwable
+     */
+    protected function runDeferredCleanups(): void
+    {
+        $error = NULL;
+
+        while($cleanup = array_pop($this->deferred_cleanups)) {
+            try {
+                $cleanup();
+            }
+            catch(\Throwable $e) {
+                $error = $error ?? $e;
+            }
+        }
+
+        if($error) {
+            throw $error;
+        }
+    }
+
+    /**
+     * Names a throwaway Bible or volume module for the calling test: $prefix plus a random
+     * suffix, so parallel workers and reruns never share one.  Prefixes the test:cleanup
+     * sweep knows are listed in TestCleanup.
+     */
+    protected function fixtureModule(string $prefix): string
+    {
+        return $prefix . bin2hex(random_bytes(4));
     }
 
     /**
@@ -123,6 +215,100 @@ class TestCase extends BaseTestCase
     protected function fixtureDomain(string $purpose): string
     {
         return $purpose . getmypid() . '.com';
+    }
+
+    /**
+     * Deletes a throwaway Bible: its row, its verses table and, with $module_files, its module
+     * file in either module directory.  Safe to call whether or not any of them exist, so it
+     * can be deferred before the Bible is created.  Never call it for an installed, real module.
+     *
+     * @param string $module
+     * @param bool $module_files Also delete bibles/modules|unofficial/<module>.zip
+     */
+    protected function removeBibleModuleFixture(string $module, bool $module_files = FALSE): void
+    {
+        \App\Models\Bible::where('module', $module)->delete();
+        \Illuminate\Support\Facades\Schema::dropIfExists('verses_' . $module);
+
+        if($module_files) {
+            foreach([\App\Models\Bible::getModulePath(), \App\Models\Bible::getUnofficialModulePath()] as $dir) {
+                if(is_file($dir . $module . '.zip')) {
+                    unlink($dir . $module . '.zip');
+                }
+            }
+        }
+    }
+
+    /**
+     * Deletes a throwaway volume: its row, its content table and any backup of that table.
+     * Safe to call whether or not they exist, so it can be deferred before the volume is
+     * created.  Never call it for a real module.
+     *
+     * @param string $type Volume type, e.g. 'strongs'
+     * @param string $module
+     */
+    protected function removeVolumeModuleFixture(string $type, string $module): void
+    {
+        $content_class = \App\Models\Volume::getContentClassName($type);
+
+        foreach(\App\Models\Volume::where('type', $type)->where('module', $module)->get() as $Volume) {
+            $Volume->forceDelete();
+        }
+
+        if($content_class) {
+            $table = $content_class::getContentTableName($type, $module);
+            \Illuminate\Support\Facades\Schema::dropIfExists($table);
+            \Illuminate\Support\Facades\Schema::dropIfExists($content_class::backupTableName($table));
+        }
+    }
+
+    /**
+     * Cleans up after a Bible import chain (importcheck → import → ... → delete): the imported
+     * Bible with its table and module files, and the upload importcheck staged.  Either may be
+     * NULL when the chain did not get that far.
+     *
+     * @param string|null $module Module the chain imported into
+     * @param string|null $upload File name importcheck answered with
+     */
+    protected function removeImportChainFixture(?string $module, ?string $upload): void
+    {
+        if($module !== NULL && $module !== '') {
+            $this->removeBibleModuleFixture($module, TRUE);
+        }
+
+        if($upload !== NULL && $upload !== '' && basename($upload) === $upload) {
+            foreach(glob(base_path('bibles') . '/*/uploads/' . $upload) ?: [] as $path) {
+                unlink($path);
+            }
+        }
+    }
+
+    /**
+     * Deletes the IpAccess buckets for a throwaway IP and / or domain, with their access logs,
+     * whether or not they exist.  Safe for deferCleanup().
+     *
+     * @param string|null $ip
+     * @param string|null $host Domain without scheme; its 'www.' form is removed too
+     */
+    protected function removeIpAccessFixture(?string $ip, ?string $host = NULL): void
+    {
+        $Query = \App\Models\IpAccess::query()->where(function($Query) use ($ip, $host) {
+            if($ip !== NULL) {
+                $Query->orWhere('ip_address', $ip);
+            }
+
+            if($host !== NULL) {
+                $Query->orWhereIn('domain', [$host, 'www.' . $host]);
+            }
+        });
+
+        if($ip === NULL && $host === NULL) {
+            return;
+        }
+
+        foreach($Query->get() as $Access) {
+            $Access->delete(); // Takes its access logs with it
+        }
     }
 
     /**

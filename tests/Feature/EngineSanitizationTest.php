@@ -1112,11 +1112,14 @@ class EngineSanitizationTest extends TestCase
     /**
      * Strong's definitions go through the engine's hook like every other imported field, so
      * v3 answers with Markdown rather than the italics v2 keeps.
+     *
+     * 'version' => 'legacy': v3 answers from the dictionary volumes by default; these cover the
+     * legacy table (StrongsApiTest covers the volumes).
      */
     public function testStrongsEntriesAreMarkdownOnV3(): void
     {
         $Engine = new EngineV3();
-        $results = $Engine->actionStrongs(['strongs' => 'H1234']);
+        $results = $Engine->actionStrongs(['strongs' => 'H1234', 'version' => 'legacy']);
 
         $this->assertFalse($Engine->hasErrors());
         $this->assertStringContainsString('*cleave*', $results[0]['entry']);
@@ -1144,7 +1147,7 @@ class EngineSanitizationTest extends TestCase
     public function testStrongsEntriesWithoutATvmAreReturnedOnV3(): void
     {
         $Engine  = new EngineV3();
-        $results = $Engine->actionStrongs(['strongs' => 'H1']);
+        $results = $Engine->actionStrongs(['strongs' => 'H1', 'version' => 'legacy']);
 
         $this->assertFalse($Engine->hasErrors());
         $this->assertNull($results[0]['tvm']);

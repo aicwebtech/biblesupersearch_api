@@ -50,6 +50,33 @@ return [
         'bibles' => [
             'driver' => 'local',
             'root'   => base_path('bibles'),
+
+            // Flysystem chmods a directory makeDirectory() is called on, even an existing one,
+            // to the default directory visibility - private (0700) unless set here.  The
+            // importers call makeDirectory('unofficial'), which locked the web server out of
+            // bibles/unofficial.  Group-writable, as the module directories are.
+            'directory_visibility' => 'public',
+            'permissions' => [
+                'dir' => [
+                    'public'  => 0775,
+                    'private' => 0700,
+                ],
+            ],
+        ],
+
+        'content' => [
+            'driver' => 'local',
+            'root'   => base_path('content'),
+
+            // Volume content import uploads (content/<type>/uploads).  Same directory
+            // visibility as the 'bibles' disk, for the same reason.
+            'directory_visibility' => 'public',
+            'permissions' => [
+                'dir' => [
+                    'public'  => 0775,
+                    'private' => 0700,
+                ],
+            ],
         ],
 
         'ftp' => [

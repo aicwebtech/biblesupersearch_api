@@ -12,3 +12,11 @@
 	visibility: hidden;
 	display: inline-block;
 }
+
+/* Error messages (subtitles) wrap rather than being clipped to one line */
+.action-errors .v-list-item-subtitle {
+	-webkit-line-clamp: unset;
+	line-clamp: unset;
+	white-space: normal;
+	overflow: visible;
+}

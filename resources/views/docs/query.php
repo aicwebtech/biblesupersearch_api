@@ -54,6 +54,9 @@
         'markup',
         'parallel_search_error_suppress',
         'cross_references',
+        'language',
+        'strongs_version',
+        'strongs_dictionary',
     );
 
     $advanced_params = array(

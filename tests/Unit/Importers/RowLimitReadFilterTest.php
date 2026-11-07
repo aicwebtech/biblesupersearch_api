@@ -23,4 +23,14 @@ class RowLimitReadFilterTest extends TestCase
         $this->assertFalse($Filter->readCell('A', 201));
         $this->assertFalse($Filter->readCell('A', 31102));
     }
+
+    public function testAStartRowLimitsTheReadToARange(): void
+    {
+        $Filter = new RowLimitReadFilter(400, 201);
+
+        $this->assertFalse($Filter->readCell('A', 200));
+        $this->assertTrue($Filter->readCell('A', 201));
+        $this->assertTrue($Filter->readCell('A', 400));
+        $this->assertFalse($Filter->readCell('A', 401));
+    }
 }

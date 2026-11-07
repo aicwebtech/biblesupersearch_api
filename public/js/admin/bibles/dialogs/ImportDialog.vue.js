@@ -54,7 +54,7 @@ const tpl = `
                             v-bind='defaultProps.fileInputs'
                         ></v-file-input>
 
-                        <component ref='ImportComponent' :is='importerComponent' :settings='settings'></component>
+                        <component ref='ImportComponent' :is='importerComponent' :settings='settings' :importer='importer'></component>
 
                         <Confirm ref='ConfirmDialog'></Confirm>    
                         

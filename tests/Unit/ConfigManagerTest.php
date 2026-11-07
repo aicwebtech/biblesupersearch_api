@@ -76,6 +76,7 @@ class ConfigManagerTest extends TestCase
                 ['mail__host' => 'smtp.example.com', 'mail__port' => 587],
                 ['mail__host' => 'smtp.example.com', 'mail__port' => 587],
             ],
+            'volume deletion time stripped' => [['app__volumes_deleted_at' => 0], []],
             'empty set'            => [[], []],
         ];
     }

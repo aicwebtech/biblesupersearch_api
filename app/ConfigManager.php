@@ -25,7 +25,7 @@ class ConfigManager
      *
      * @var array<int, string>
      */
-    protected static $http_immutable_keys = ['mail.sendmail'];
+    protected static $http_immutable_keys = ['mail.sendmail', 'app.volumes_deleted_at'];
 
     static function getGlobalConfigs() 
     {

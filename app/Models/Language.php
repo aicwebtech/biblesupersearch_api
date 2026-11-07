@@ -163,6 +163,19 @@ class Language extends Model
         return $raw === null ? $default : $raw;
     }
 
+    /**
+     * The base language of a language code, as the languages table keys it: lower case, without
+     * a region or script.  The interface languages include regional codes the table does not
+     * hold, such as zh_TW and zh_CN, which belong to zh.
+     *
+     * @param string $code e.g. 'zh_TW', 'pt-BR', 'EN'
+     * @return string e.g. 'zh', 'pt', 'en'
+     */
+    public static function baseLanguageCode(string $code): string
+    {
+        return strtolower(preg_split('/[_-]/', trim($code), 2)[0]);
+    }
+
     public static function validateLanguage($lang)
     {
         if(!$lang) {

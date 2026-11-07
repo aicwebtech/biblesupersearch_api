@@ -45,6 +45,10 @@ class RenderManagerTest extends TestCase
         $threshold = 300;
         $fake_ip = '275.999.123.456';
 
+        // deleteByIp() only soft deletes, so the rows are removed for good here, however the
+        // test ends.  test:cleanup also sweeps this IP.
+        $this->deferCleanup(fn() => RenderLog::withTrashed()->where('ip_address', $fake_ip)->forceDelete());
+
         $lts = [
             strtotime('-400 seconds'),
             strtotime('-200 seconds'),
@@ -174,14 +178,41 @@ class RenderManagerTest extends TestCase
         $this->assertFileExists($file_path);
 
         $Rendering = $TextRender->_getRenderingRecord();
+
+        // The chain below changes the real KJV rendering record; whatever it held is put back
+        // when a link fails, or after the last one
+        $original = $Rendering->only(static::RETAIN_FIELDS);
+        $shared   = compact('test_space', 'test_params', 'Rendering', 'file_path', 'original');
+        $this->deferCleanupUnlessPassed(fn() => $this->restoreRendering($shared));
+
         $Rendering->downloaded_at = date('Y-m-d H:i:s');
         $Rendering->save();
         $Rendering->refresh();
 
         $results = RenderManager::_testCleanUpFiles($test_space, FALSE, $test_params);
-        $freed_space_raw = $results['freed_space'];
+        $shared['freed_space_raw'] = $results['freed_space'];
+        $shared['Rendering'] = $Rendering;
 
-        return compact('test_space', 'test_params', 'freed_space_raw', 'Rendering', 'file_path');
+        return $shared;
+    }
+
+    /**
+     * Rendering fields the testRetain* chain changes
+     */
+    protected const RETAIN_FIELDS = ['file_size', 'downloaded_at', 'rendered_duration', 'hits'];
+
+    /**
+     * Puts the rendering record the testRetain* chain changed back as it was
+     *
+     * @param array $shared The chain's shared data, holding 'Rendering' and 'original'
+     */
+    protected function restoreRendering(array $shared): void
+    {
+        $Rendering = \App\Models\Rendering::find($shared['Rendering']->id);
+
+        if($Rendering) {
+            $Rendering->forceFill($shared['original'])->save();
+        }
     }
 
 
@@ -193,6 +224,7 @@ class RenderManagerTest extends TestCase
     #[Depends('testRetainConfigsInit')]
     public function testRetainMaxFilesize($shared) 
     {
+        $this->deferCleanupUnlessPassed(fn() => $this->restoreRendering($shared));
         extract($shared);
 
         $Rendering->file_size = 10;
@@ -227,6 +259,7 @@ class RenderManagerTest extends TestCase
     #[Depends('testRetainMaxFilesize')]
     public function testRetainDays($shared) 
     {
+        $this->deferCleanupUnlessPassed(fn() => $this->restoreRendering($shared));
         extract($shared);
         
         // Not yet
@@ -271,6 +304,7 @@ class RenderManagerTest extends TestCase
     #[Depends('testRetainDays')]
     public function testRetainMinimumRenderTime($shared) 
     {
+        $this->deferCleanupUnlessPassed(fn() => $this->restoreRendering($shared));
         extract($shared);
         $cached = $Rendering->rendered_duration;
 
@@ -326,6 +360,8 @@ class RenderManagerTest extends TestCase
     #[Depends('testRetainMinimumRenderTime')]
     public function testRetainMinimumHits($shared) 
     {
+        // The last link: restore however it ends
+        $this->deferCleanup(fn() => $this->restoreRendering($shared));
         extract($shared);
 
         $cached = $Rendering->hits; // this is prob 0 if non-production build
@@ -393,6 +429,16 @@ class RenderManagerTest extends TestCase
 
         $Rendering = $TextRender->_getRenderingRecord();
         $cache = $Rendering->attributesToArray();
+
+        // This changes the real KJV rendering record and moves its file: both put back however
+        // the test ends
+        $this->deferCleanup(function() use ($Rendering, $cache, $render_file_path, $render_file_path_alt) {
+            if(is_file($render_file_path_alt) && !is_file($render_file_path)) {
+                rename($render_file_path_alt, $render_file_path);
+            }
+
+            $Rendering->forceFill(['version' => $cache['version'], 'meta_hash' => $cache['meta_hash']])->save();
+        });
 
         $this->assertFalse($TextRender->isRenderNeeded(TRUE), 'Already rendered, shoudnt need it here either ' . __LINE__);
 

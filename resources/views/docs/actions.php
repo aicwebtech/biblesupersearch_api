@@ -3,6 +3,7 @@
         <li><a href='#tab_query'><?php echo trans('query.name') ?></a></li>
         <li><a href='#tab_statics'><?php echo trans('api.statics.name') ?></a></li>
         <li><a href='#tab_bibles'><?php echo trans('api.bibles.name') ?></a></li>
+        <li><a href='#tab_volumes'><?php echo trans('api.volumes.name') ?></a></li>
         <li><a href='#tab_books'><?php echo trans('api.books.name') ?></a></li>
         <li><a href='#tab_access'><?php echo trans('api.access.name') ?></a></li>
         <li><a href='#tab_version'><?php echo trans('api.version.name') ?></a></li>
@@ -21,6 +22,9 @@
     </div>
     <div id='tab_bibles'>
         <?php include(dirname(__FILE__) . '/bibles.php'); ?>
+    </div>
+    <div id='tab_volumes'>
+        <?php include(dirname(__FILE__) . '/volumes.php'); ?>
     </div>
     <div id='tab_books'>
         <?php include(dirname(__FILE__) . '/books.php'); ?>

@@ -51,6 +51,15 @@ class Handler extends ExceptionHandler
         }
 
         if ($e instanceof TokenMismatchException){
+            // An XHR client follows a redirect as a GET to the same URL, which reaches whatever
+            // GET route matches it (a resource's show(), a 404) and hides the real error
+            if($request->expectsJson()) {
+                return response()->json([
+                    'success' => FALSE,
+                    'errors'  => ['Your session timed out or the page is out of date.  Please reload the page and try again.'],
+                ], 419);
+            }
+
             if(!InstallManager::isInstalled()) {
                 return redirect(route('admin.install'))->with('csrf_error',"Your session timed out. Please try again.");
             }

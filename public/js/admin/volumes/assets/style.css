@@ -1,0 +1,20 @@
+
+.default-copyright-statement {
+    height: 100%;
+    padding: 10px;
+    background-color: rgb(235, 235, 228);
+    color: rgb(45, 45, 45);
+    overflow-y: auto;
+    position: relative;
+    bottom: 0px;
+    text-align: justify;
+    font-size: smaller;
+}
+
+/* Error messages (subtitles) wrap rather than being clipped to one line */
+.action-errors .v-list-item-subtitle {
+    -webkit-line-clamp: unset;
+    line-clamp: unset;
+    white-space: normal;
+    overflow: visible;
+}

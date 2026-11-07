@@ -61,6 +61,10 @@ const template = `<v-sheet>
                     ></v-chip>
                 </template>            
 
+                <template v-slot:item.strongs_dictionary={item}>
+                    {{ strongsDictionaryName(item.strongs_dictionary) }}
+                </template>
+
                 <template v-slot:item.actions={item}>
                     <v-chip
                         text='Edit'
@@ -129,7 +133,7 @@ export default {
             },
 
             // Grid searchable fields (will be added to gridData as strings if don't exist)
-            searchFields: ['code', 'name', 'native_name', 'family', 'bibles_min', 'bibles_max'],
+            searchFields: ['code', 'name', 'native_name', 'family', 'bibles_min', 'bibles_max', 'strongs_dictionary'],
         };
 
         return useGrid(data, props);
@@ -141,6 +145,7 @@ export default {
         YesNoSel
     },
     template: template, 
+    inject: ['bootstrap'],
     data() {
         return { 
             editing: false,
@@ -166,12 +171,33 @@ export default {
                 // todo
                 {title: '# Bibles', key: 'bibles', align: 'end', searchable: false},
                 {title: 'Book List', key: 'book_list', align: 'center', searchable: false, searchComponent: 'YesNoSel'},
-                // {title: 'Strong\s', key: 'strongs', searchComponent: 'YesNoSel'},
+                {title: 'Strong\'s Dictionary', key: 'strongs_dictionary', searchComponent: 'v-autocomplete', searchProps: {
+                    'items': this.strongsDictionaryFilterList,
+                }},
                 {title: 'Actions', key: 'actions', sortable: false, align: 'center', searchable: false},
             ];
         },
+        // '_none' is LanguageConfigController::NONE_FILTER: languages using the global default
+        strongsDictionaryFilterList() {
+            var list = [{value: '_none', title: '(None - uses global default)'}];
+
+            for(var dict of (this.bootstrap.strongs_dictionaries || [])) {
+                list.push({value: dict.module, title: dict.name});
+            }
+
+            return list;
+        },
     },
     methods: {        
+        // A dictionary that is no longer installed and enabled shows as its module
+        strongsDictionaryName(module) {
+            if(!module) {
+                return '—';
+            }
+
+            var dict = (this.bootstrap.strongs_dictionaries || []).find(dict => dict.module === module);
+            return dict ? dict.name : module;
+        },
         clickEdit(item) {
             if(item) {
                 this.editingId = item.id;

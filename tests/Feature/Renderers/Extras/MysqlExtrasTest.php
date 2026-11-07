@@ -195,7 +195,7 @@ class MysqlExtrasTest extends TestCase
      * quoted, so those shipped dumps were malformed on import.
      *
      * The installed book tables are content data and cannot be written to, so the awkward name
-     * goes into a throwaway language of its own. 'qqt' is not a real language code, matching the
+     * goes into a throwaway language of its own. 'qqa' is not a real language code, matching the
      * fixture convention in Tests\Feature\EngineTest.
      *
      * The code has to be one no other test uses: paratest workers share the one database, the
@@ -203,11 +203,13 @@ class MysqlExtrasTest extends TestCase
      * fixtureTableName() does, and createLanguageFixture() deletes the code's existing row before
      * inserting - so two tests naming one code delete each other's fixture mid-run. Taken:
      * qqu/qqw/qqz (EngineTest), qqv (ImportFailureStateTest), qqx (AudioGatesTest),
-     * qqy/qqz (LanguageTest).
+     * qqy/qqb (LanguageTest), qqc (VolumeControllerTest), qqq (QueryStrongsApiTest),
+     * qqr (StrongsResolveTest), qqs (StrongsApiTest), qqt (LanguageConfigControllerTest).  All qq? codes sit in ISO 639's
+     * local-use range, so test:cleanup sweeps them.
      */
     public function testBookListQuotesNamesThatCarryAnApostrophe(): void
     {
-        $code  = 'qqt';
+        $code  = 'qqa';
         $name  = "Mısır'dan Çıkış";
         $short = "Samuu'eel";
         $table = 'books_' . $code;

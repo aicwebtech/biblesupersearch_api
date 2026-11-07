@@ -59,6 +59,24 @@ class BibleControllerTest extends TestCase
         return ['User' => $User];
     }
 
+    /**
+     * Export Module and Export Meta answer 503 without dev tools, before reaching the Bible -
+     * so the tests that use them turn dev tools on for themselves.
+     */
+    public function testDevToolsActionsNeedDevTools(): void
+    {
+        config(['bss.dev_tools' => FALSE]);
+
+        $User = User::find(1);
+
+        foreach(['export', 'meta'] as $action) {
+            $this->actingAs($User)
+                ->withSession(['banned' => FALSE])
+                ->postJson('/admin/bibles/' . $action . '/1')
+                ->assertStatus(503);
+        }
+    }
+
     // :todo move import tests to a separate class under tests/Feature/Import??
     #[Depends('testInit')]
     public function testImportCheck(array $shared) 
@@ -82,6 +100,8 @@ class BibleControllerTest extends TestCase
         $response = $this->actingAs($shared['User'])
                             ->withSession(['banned' => FALSE])
                             ->postJson('/admin/bibles/importcheck', $data);
+
+        $this->deferCleanupUnlessPassed(fn() => $this->removeImportChainFixture(NULL, $response->json('file')));
 
         $response->assertStatus(200)
                     ->assertJson([
@@ -110,6 +130,8 @@ class BibleControllerTest extends TestCase
         $data['year'] = date('Y', $ts);
         $shared['module'] = $data['module'] = 'test_bible_' . date('YmdHis', $ts);
 
+        $this->deferCleanupUnlessPassed(fn() => $this->removeImportChainFixture($data['module'], $data['_file']));
+
         $response = $this->actingAs($shared['User'])
                             ->withSession(['banned' => FALSE])
                             ->postJson('/admin/bibles/import', $data);
@@ -129,6 +151,7 @@ class BibleControllerTest extends TestCase
     #[Depends('testImport')]
     public function testTest(array $shared) 
     {
+        $this->deferCleanupUnlessPassed(fn() => $this->removeImportChainFixture($shared['module'], NULL));
 
         $response = $this->actingAs($shared['User'])
                     ->withSession(['banned' => FALSE])
@@ -182,6 +205,7 @@ class BibleControllerTest extends TestCase
     #[Depends('testTest')]
     public function testDisable(array $shared) 
     {
+        $this->deferCleanupUnlessPassed(fn() => $this->removeImportChainFixture($shared['module'], NULL));
 
         $response = $this->actingAs($shared['User'])
                     ->withSession(['banned' => FALSE])
@@ -201,6 +225,7 @@ class BibleControllerTest extends TestCase
     #[Depends('testDisable')]
     public function testEnable(array $shared) 
     {
+        $this->deferCleanupUnlessPassed(fn() => $this->removeImportChainFixture($shared['module'], NULL));
 
         $response = $this->actingAs($shared['User'])
                     ->withSession(['banned' => FALSE])
@@ -220,6 +245,7 @@ class BibleControllerTest extends TestCase
     #[Depends('testEnable')]
     public function testResearch(array $shared) 
     {
+        $this->deferCleanupUnlessPassed(fn() => $this->removeImportChainFixture($shared['module'], NULL));
 
         $response = $this->actingAs($shared['User'])
                     ->withSession(['banned' => FALSE])
@@ -239,6 +265,7 @@ class BibleControllerTest extends TestCase
     #[Depends('testResearch')]
     public function testUnresearch(array $shared) 
     {
+        $this->deferCleanupUnlessPassed(fn() => $this->removeImportChainFixture($shared['module'], NULL));
 
         $response = $this->actingAs($shared['User'])
                     ->withSession(['banned' => FALSE])
@@ -258,6 +285,10 @@ class BibleControllerTest extends TestCase
     #[Depends('testUnresearch')]
     public function testExport(array $shared) 
     {
+        $this->deferCleanupUnlessPassed(fn() => $this->removeImportChainFixture($shared['module'], NULL));
+        // A dev tool: on for this request whatever ENABLE_DEV_TOOLS is - see testDevToolsActionsNeedDevTools()
+        config(['bss.dev_tools' => TRUE]);
+
         $response = $this->actingAs($shared['User'])
                     ->withSession(['banned' => FALSE])
                     ->postJson('/admin/bibles/export/' . $shared['bible_id']);
@@ -275,6 +306,7 @@ class BibleControllerTest extends TestCase
     #[Depends('testExport')]
     public function testUninstall(array $shared) 
     {
+        $this->deferCleanupUnlessPassed(fn() => $this->removeImportChainFixture($shared['module'], NULL));
 
         $response = $this->actingAs($shared['User'])
                     ->withSession(['banned' => FALSE])
@@ -295,6 +327,7 @@ class BibleControllerTest extends TestCase
     #[Depends('testUninstall')]
     public function testInstall(array $shared) 
     {
+        $this->deferCleanupUnlessPassed(fn() => $this->removeImportChainFixture($shared['module'], NULL));
 
         $response = $this->actingAs($shared['User'])
                     ->withSession(['banned' => FALSE])
@@ -315,6 +348,7 @@ class BibleControllerTest extends TestCase
     #[Depends('testInstall')]
     public function testEdit(array $shared) 
     {
+        $this->deferCleanupUnlessPassed(fn() => $this->removeImportChainFixture($shared['module'], NULL));
         // Attempt to READ the Bible data
         $get_resp = $this->actingAs($shared['User'])
                     ->withSession(['banned' => FALSE])
@@ -358,6 +392,7 @@ class BibleControllerTest extends TestCase
     #[Depends('testEdit')]
     public function testUpdate(array $shared) 
     {
+        $this->deferCleanupUnlessPassed(fn() => $this->removeImportChainFixture($shared['module'], NULL));
 
         $response = $this->actingAs($shared['User'])
                     ->withSession(['banned' => FALSE])
@@ -375,6 +410,9 @@ class BibleControllerTest extends TestCase
     #[Depends('testUpdate')]
     public function testUpdateModule(array $shared) 
     {
+        $this->deferCleanupUnlessPassed(fn() => $this->removeImportChainFixture($shared['module'], NULL));
+        // Export Meta is a dev tool - see testExport()
+        config(['bss.dev_tools' => TRUE]);
 
         $response = $this->actingAs($shared['User'])
                     ->withSession(['banned' => FALSE])
@@ -393,6 +431,7 @@ class BibleControllerTest extends TestCase
     #[Depends('testUpdateModule')]
     public function testRevert(array $shared) 
     {
+        $this->deferCleanupUnlessPassed(fn() => $this->removeImportChainFixture($shared['module'], NULL));
         $this->assertTrue(TRUE);
 
         // Since this is called after self::testUpdateModule, the metadata on the module file will match that on the Bible record
@@ -437,6 +476,8 @@ class BibleControllerTest extends TestCase
     #[Depends('testRevert')]
     public function testDelete(array $shared) 
     {
+        // The end of the chain: whatever the delete left behind goes, however this ends
+        $this->deferCleanup(fn() => $this->removeImportChainFixture($shared['module'], NULL));
 
         $response = $this->actingAs($shared['User'])
                     ->withSession(['banned' => FALSE])

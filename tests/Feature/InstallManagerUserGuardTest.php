@@ -36,6 +36,9 @@ class InstallManagerUserGuardTest extends TestCase
         for($i = 0; $i < $count; $i++) {
             $suffix = bin2hex(random_bytes(8));
 
+            // Registered before save(): a loop that throws part way still removes every user
+            $this->deferCleanup(fn() => User::where('username', 'install_guard_' . $suffix)->delete());
+
             $User = new User();
             $User->name     = 'Install Guard Fixture';
             $User->username = 'install_guard_' . $suffix;

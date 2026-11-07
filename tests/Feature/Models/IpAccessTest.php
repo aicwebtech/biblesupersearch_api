@@ -4,9 +4,6 @@ namespace Tests\Feature\Models;
 
 use Tests\TestCase;
 
-use Illuminate\Foundation\Testing\WithoutMiddleware;
-use Illuminate\Foundation\Testing\DatabaseMigrations;
-use Illuminate\Foundation\Testing\DatabaseTransactions;
 use App\Models\IpAccess;
 
 /* Use case: public API access is ENABLED */
@@ -40,6 +37,8 @@ class IpAccessTest extends TestCase
         if($this->config_changed) {
             config(['bss.public_access' => $this->config_cache]);
         }
+
+        parent::tearDown();
     }
 
     public function testDefaultLimit() 
@@ -134,7 +133,7 @@ class IpAccessTest extends TestCase
     public function testDomainCustomLimit() 
     {
         $ip = $this->_fakeIp();
-        $IP = IpAccess::findOrCreateByIpOrDomain($ip, $this->fixtureDomain('testdomaincustomlimit'));
+        $IP = IpAccess::findOrCreateByIpOrDomain($ip, $this->fakeDomain('testdomaincustomlimit'));
         $limit = 25;
         $IP->limit = $limit;
         $IP->save();
@@ -169,7 +168,7 @@ class IpAccessTest extends TestCase
         */
     public function testSameDomain() 
     {
-        $host   = $this->fixtureDomain('testsamedomain');
+        $host   = $this->fakeDomain('testsamedomain');
         $domain = 'http://www.' . $host;
 
         // ApiAccessManager::trustedDomain() reads these, so the host this test fakes would
@@ -201,9 +200,25 @@ class IpAccessTest extends TestCase
         );
     }
 
-    protected function _fakeIp() 
+    /**
+     * An intentionally invalid IP address, removed again in tearDown however the test ends
+     */
+    protected function _fakeIp(): string
     {
-        // Ip addresses intentionally invalid
-        return rand(256,999) . '.' . rand(1,255) . '.' . rand(1,255) . '.' . rand(1,255);
+        $ip = rand(256,999) . '.' . rand(1,255) . '.' . rand(1,255) . '.' . rand(1,255);
+        $this->deferCleanup(fn() => $this->removeIpAccessFixture($ip));
+
+        return $ip;
+    }
+
+    /**
+     * fixtureDomain(), removed again in tearDown however the test ends
+     */
+    protected function fakeDomain(string $purpose): string
+    {
+        $host = $this->fixtureDomain($purpose);
+        $this->deferCleanup(fn() => $this->removeIpAccessFixture(NULL, $host));
+
+        return $host;
     }
 }

@@ -105,6 +105,34 @@ class FeatureControllerTest extends TestCase
         $this->assertGreaterThanOrEqual(3, count($strongsRows));
     }
 
+    public function testGridRefreshesDerivedFlags(): void
+    {
+        Feature::syncFeatures();
+
+        $Feature = Feature::where('identifier', 'strongs')->where('language', 'en')->firstOrFail();
+        $live = \App\Features\VolumeFeature::status('strongs', 'en');
+
+        try {
+            // Make the stored flag stale, as a change on the Volumes page would
+            $Feature->installed = !$live['installed'];
+            $Feature->save();
+
+            $response = $this->actingAs($this->User)
+                ->withSession(['banned' => FALSE])
+                ->getJson('/admin/features/grid?' . http_build_query(['rows' => 100, 'page' => 1]));
+
+            $response->assertStatus(200);
+
+            $row = collect($response['rows'])->firstWhere('id', $Feature->id);
+
+            $this->assertNotNull($row);
+            $this->assertSame($live['installed'], (bool) $row['installed']);
+        }
+        finally {
+            Feature::refreshDerived();
+        }
+    }
+
     public function testSyncDoesNotDuplicateExistingRows()
     {
         Feature::syncFeatures();
@@ -132,7 +160,8 @@ class FeatureControllerTest extends TestCase
 
         $response->assertStatus(200);
 
-        $this->assertEquals(1, $response['records']);
-        $this->assertEquals('en', $response['rows'][0]['language']);
+        // Strong's Dictionaries (English) and the legacy Strong's definitions
+        $this->assertEquals(2, $response['records']);
+        $this->assertSame(['en'], array_values(array_unique(array_column($response['rows'], 'language'))));
     }
 }

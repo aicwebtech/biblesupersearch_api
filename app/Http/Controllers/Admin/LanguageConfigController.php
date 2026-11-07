@@ -8,6 +8,8 @@ use App\Http\Controllers\Controller;
 use App\Models\Post;
 use App\Models\Language;
 use App\Models\Bible;
+use App\Models\Volume;
+use App\Models\VolumeTypes\Strongs;
 use App\Models\Shortcuts\ShortcutAbstract;
 use Illuminate\Support\Facades\DB;
 use Validator;
@@ -16,6 +18,11 @@ use App\Models\Books\BookAbstract as Book;
 
 class LanguageConfigController extends Controller
 {
+    /**
+     * Grid filter value matching an empty column, ie no default Strong's dictionary of its own
+     */
+    public const NONE_FILTER = '_none';
+
     public function __construct() 
     {
         parent::__construct();
@@ -44,6 +51,7 @@ class LanguageConfigController extends Controller
         }
 
         $bootstrap = $this->getAdminBootstrap();
+        $bootstrap->strongs_dictionaries = Strongs::availableDictionaries();
 
         return view('admin.languages', [
             'bootstrap' => $this->encodeBootstrap($bootstrap),
@@ -62,14 +70,18 @@ class LanguageConfigController extends Controller
         $pf = DB::getTablePrefix();
 
         $Query = Language::select('languages.*', 'bibles.id AS has_bibles', 
-                                    DB::raw('IF(' . $pf . 'book_list.value = 1,1,0) AS book_list'),
-                                    DB::raw('COUNT(' . $pf . 'bibles.id) AS bibles')
-
+                                    DB::raw('CASE WHEN ' . $pf . 'book_list.value = 1 THEN 1 ELSE 0 END AS book_list'),
+                                    DB::raw('COUNT(' . $pf . 'bibles.id) AS bibles'),
+                                    'strongs.value AS strongs_dictionary'
                                 )
                     ->leftJoin('bibles', 'bibles.lang_short', 'languages.code')
                     ->leftJoin('language_attr AS book_list', function($join) {
                         $join -> on('book_list.code', 'languages.code')
                               -> where('book_list.attribute', 'book_list');
+                    })
+                    ->leftJoin('language_attr AS strongs', function($join) {
+                        $join -> on('strongs.code', 'languages.code')
+                              -> where('strongs.attribute', Strongs::LANGUAGE_ATTR);
                     })
                     ->groupBy('languages.id')
                     ->orderBy( $data['sidx'], $data['sord'] );
@@ -103,6 +115,10 @@ class LanguageConfigController extends Controller
                 'field' => 'bibles',
                 'type'  => 'int_max',
             ],
+            'strongs_dictionary' => [
+                'field' => 'strongs.value',
+                'type'  => 'str_exact',
+            ],
         ];
 
         foreach($searchable as $key => $f) {            
@@ -115,6 +131,12 @@ class LanguageConfigController extends Controller
                     case 'int_max':
                         $Query->having($f['field'], '<=', (int)$data[$key]);
                         break;                
+                    case 'str_exact':
+                        // NONE_FILTER: languages without one of their own, which use the global default
+                        ($data[$key] === self::NONE_FILTER)
+                            ? $Query->whereNull($f['field'])
+                            : $Query->where($f['field'], $data[$key]);
+                        break;
                     case 'str_inside':
                         $Query->where($f['field'], 'LIKE', '%' . $data[$key] . '%');
                         break;
@@ -236,6 +258,7 @@ class LanguageConfigController extends Controller
         $resp->Language = $Language->attributesToArray();
 
         $resp->Language['tts_api_voices'] = \App\TextToSpeech\TtsAbstract::getAllApiVoicesByLanguage($Language->code, $Language->tts_api);
+        $resp->Language['strongs_dictionary'] = Language::getLanguageAttr($Language->code, Strongs::LANGUAGE_ATTR);
 
         return new Response($resp, 200);
     }    
@@ -321,7 +344,33 @@ class LanguageConfigController extends Controller
             $data['native_name'] = $data['name'];
         }
 
-        $v = Validator::make($data, $rules);
+        // The default Strong's dictionary is a language attribute, not a languages column, so it
+        // is validated alongside but kept out of fill().  Left alone when the request omits it.
+        $has_strongs = $request->has('strongs_dictionary');
+        $strongs     = $request->input('strongs_dictionary');
+
+        // The value already stored is accepted even if that dictionary has since been disabled or
+        // uninstalled: the edit form sends it back with every save, and refusing it would block
+        // any change to the language.  The API skips an unusable language default anyway.
+        $stored = $isNew ? NULL : Language::getLanguageAttr($Language->code, Strongs::LANGUAGE_ATTR);
+
+        $v = Validator::make(
+            $data + ['strongs_dictionary' => $strongs],
+            $rules + ['strongs_dictionary' => [
+                'bail',
+                'nullable',
+                'string',
+                function($attribute, $value, $fail) use ($stored) {
+                    if(!is_string($value) || $value === $stored) {
+                        return;
+                    }
+
+                    if(!Strongs::findAvailable($value)) {
+                        $fail('The selected Strong\'s dictionary is not installed and enabled.');
+                    }
+                },
+            ]]
+        );
 
         if($v->fails()) {
             $resp->success = FALSE;
@@ -332,9 +381,38 @@ class LanguageConfigController extends Controller
         $Language->fill($data);
         $Language->save();
 
+        if($has_strongs) {
+            ($strongs === NULL || $strongs === '') 
+                ? $Language->unsetAttr(Strongs::LANGUAGE_ATTR) 
+                : $Language->setAttr(Strongs::LANGUAGE_ATTR, $strongs);
+
+            $this->touchChangedDictionaries($stored, ($strongs === '') ? NULL : $strongs);
+        }
+
         $resp->success  = true;
         $resp->Language = $Language->attributesToArray();
+        $resp->Language['strongs_dictionary'] = Language::getLanguageAttr($Language->code, Strongs::LANGUAGE_ATTR);
 
         return new Response($resp, 200);
+    }
+
+    /**
+     * language_attr has no timestamps, so a changed language default touches the dictionaries
+     * it moved between instead: statics_changed reports volumes.updated_at, and Strong's
+     * resolution has changed for API clients.
+     *
+     * @param string|null $old Default before the save
+     * @param string|null $new Default after it
+     * @return void
+     */
+    protected function touchChangedDictionaries(?string $old, ?string $new): void
+    {
+        if($old === $new) {
+            return;
+        }
+
+        Volume::where('type', 'strongs')
+            ->whereIn('module', array_filter([$old, $new], fn($module) => $module !== NULL))
+            ->update(['updated_at' => now()]);
     }
 }

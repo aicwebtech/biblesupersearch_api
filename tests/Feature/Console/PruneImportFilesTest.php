@@ -468,21 +468,101 @@ class PruneImportFilesTest extends TestCase
     }
 
     /**
+     * Volume content imports stage uploads in content/<type>/uploads.  Those are pruned;
+     * the module files beside them (content/<type>/*.zip, content/<type>/unofficial/) never are.
+     */
+    public function testPrunesContentUploadsButNotModuleFiles(): void
+    {
+        $root    = sys_get_temp_dir() . '/bss_prune_root_' . bin2hex(random_bytes(6));
+        $stale   = $root . '/content/strongs/uploads/abandoned.csv';
+        $recent  = $root . '/content/strongs/uploads/recent.csv';
+        $module  = $root . '/content/strongs/strongs_en_test.zip';
+        $unoff   = $root . '/content/strongs/unofficial/strongs_xx_test.zip';
+
+        mkdir($root . '/bibles/misc/uploads', 0775, TRUE);
+        mkdir(dirname($stale), 0775, TRUE);
+        mkdir(dirname($unoff), 0775, TRUE);
+
+        foreach([$stale, $recent, $module, $unoff] as $file) {
+            file_put_contents($file, 'x');
+        }
+
+        foreach([$stale, $module, $unoff] as $file) {
+            touch($file, time() - (30 * 86400));
+        }
+
+        try {
+            $result = $this->runWithBiblesPath($root . '/bibles', ['--days' => 7], $root . '/content');
+
+            $this->assertSame(0, $result['code']);
+            $this->assertFileDoesNotExist($stale, 'A stale content upload must be pruned');
+            $this->assertFileExists($recent, 'A recent content upload must be kept');
+            $this->assertFileExists($module, 'An official module file must never be pruned');
+            $this->assertFileExists($unoff, 'An unofficial module file must never be pruned');
+            $this->assertStringContainsString('content/strongs/uploads/abandoned.csv', $result['output']);
+        }
+        finally {
+            $this->removeTree($root);
+        }
+    }
+
+    /**
+     * content/ is optional: an install without it is not an error
+     */
+    public function testMissingContentRootIsNotAnError(): void
+    {
+        $root = sys_get_temp_dir() . '/bss_prune_root_' . bin2hex(random_bytes(6));
+        mkdir($root . '/bibles/misc/uploads', 0775, TRUE);
+
+        try {
+            $result = $this->runWithBiblesPath($root . '/bibles', ['--days' => 7], $root . '/missing');
+
+            $this->assertSame(0, $result['code']);
+            $this->assertStringNotContainsString('Could not resolve', $result['output']);
+        }
+        finally {
+            $this->removeTree($root);
+        }
+    }
+
+    /**
+     * Every volume type has a tracked upload directory, so a fresh checkout has
+     * somewhere to stage a content import and the prune command somewhere to look
+     */
+    public function testEveryVolumeTypeUploadDirectoryIsInTheRepository(): void
+    {
+        foreach(array_keys(\App\Models\Volume::getTypes()) as $type) {
+            $this->assertFileExists(
+                base_path('content/' . $type . '/uploads/.gitkeep'),
+                'content/' . $type . '/uploads must be tracked'
+            );
+        }
+    }
+
+    /**
      * Run the command against a scratch bibles root.
      *
      * @param  string  $path
      * @param  array  $options
      * @return array{code: int, output: string}
      */
-    protected function runWithBiblesPath(string $path, array $options = []): array
+    protected function runWithBiblesPath(string $path, array $options = [], ?string $content_path = NULL): array
     {
-        $command = new class($path) extends \App\Console\Commands\PruneImportFiles {
+        // A content root that does not exist unless given, so a scratch run never reaches
+        // the real content/ tree
+        $content_path = $content_path ?? $path . '/__no_content_root';
+
+        $command = new class($path, $content_path) extends \App\Console\Commands\PruneImportFiles {
             /** @var string */
             private $bibles_path;
 
-            public function __construct(string $bibles_path)
+            /** @var string */
+            private $content_path;
+
+            public function __construct(string $bibles_path, string $content_path)
             {
                 $this->bibles_path = $bibles_path;
+                $this->content_path = $content_path;
 
                 parent::__construct();
             }
@@ -490,6 +570,11 @@ class PruneImportFilesTest extends TestCase
             protected function getBiblesPath(): string
             {
                 return $this->bibles_path;
+            }
+
+            protected function getContentPath(): string
+            {
+                return $this->content_path;
             }
         };
 

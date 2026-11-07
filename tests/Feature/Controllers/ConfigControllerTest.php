@@ -26,11 +26,35 @@ class ConfigControllerTest extends TestCase
     }
 
 
+    /**
+     * Puts the given configs back as they are now, in tearDown, however the test ends
+     *
+     * @param array<int, string> $keys
+     * @return array<string, mixed> All configs as they are now
+     */
+    protected function restoreConfigsLater(array $keys): array
+    {
+        $cache = ConfigManager::getConfigs();
+        $this->deferCleanup(fn() => ConfigManager::setGlobalConfigs(array_intersect_key($cache, array_flip($keys))));
+
+        return $cache;
+    }
+
+    /**
+     * Puts a post's content back as it is now, in tearDown, however the test ends.  The raw
+     * column, not the sanitizing accessor's output, so the stored document is left untouched.
+     */
+    protected function restorePostLater(Post $Post): void
+    {
+        $content = $Post->getRawOriginal('content');
+        $this->deferCleanup(fn() => Post::where('id', $Post->id)->update(['content' => $content]));
+    }
+
     public function testSoftConfigs() 
     {
         $this->_init();
 
-        $cache = ConfigManager::getConfigs();
+        $cache = $this->restoreConfigsLater(['app.client_url', 'bss.daily_access_limit', 'bss.defaults.bible', 'app.phone_home']);
         $test_post = [];
         $User = User::find(1);
         $this->assertGreaterThanOrEqual(100, $User->access_level);
@@ -73,7 +97,7 @@ class ConfigControllerTest extends TestCase
         $this->_init();
 
         $Post = Post::where('key', 'tos')->firstOrFail();
-        $orig = $Post->content; // cache existing
+        $this->restorePostLater($Post);
         $User = User::find(1);
         $this->assertGreaterThanOrEqual(100, $User->access_level);
 
@@ -84,9 +108,6 @@ class ConfigControllerTest extends TestCase
         
         $Post->refresh();
         $this->assertEquals('Test TOS', $Post->content);
-
-        $Post->content = $orig;
-        $Post->save();
     }   
 
     public function testPrivacySave()
@@ -94,7 +115,7 @@ class ConfigControllerTest extends TestCase
         $this->_init();
 
         $Post = Post::where('key', 'privacy')->firstOrFail();
-        $orig = $Post->content; // cache existing
+        $this->restorePostLater($Post);
         $User = User::find(1);
         $this->assertGreaterThanOrEqual(100, $User->access_level);
 
@@ -105,9 +126,6 @@ class ConfigControllerTest extends TestCase
         
         $Post->refresh();
         $this->assertEquals('Test Privacy Stmn', $Post->content);
-
-        $Post->content = $orig;
-        $Post->save();
     }    
 
     /**
@@ -122,7 +140,7 @@ class ConfigControllerTest extends TestCase
         $User = User::find(1);
         $this->assertGreaterThanOrEqual(100, $User->access_level);
 
-        $original = ConfigManager::getConfigs()['mail.sendmail'];
+        $original = $this->restoreConfigsLater(['mail.sendmail'])['mail.sendmail'];
 
         $response = $this->actingAs($User)
                             ->post('/admin/config', ['mail__sendmail' => '/tmp/pwned -bs']);
@@ -142,18 +160,12 @@ class ConfigControllerTest extends TestCase
         $this->_init();
 
         $User = User::find(1);
-        $cache = ConfigManager::getConfigs();
+        $this->restoreConfigsLater(['mail.host']);
 
         $response = $this->actingAs($User)
                             ->post('/admin/config', ['mail__host' => 'smtp.testhost.com']);
 
         $response->assertStatus(302);
-
-        try {
-            $this->assertEquals('smtp.testhost.com', ConfigManager::getConfigs()['mail.host']);
-        }
-        finally {
-            ConfigManager::setGlobalConfigs(['mail.host' => $cache['mail.host']]); // revert
-        }
+        $this->assertEquals('smtp.testhost.com', ConfigManager::getConfigs()['mail.host']);
     }
 }

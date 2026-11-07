@@ -65,10 +65,17 @@ export default {
         reset() {
             this.showingColumns = this.initColumns;
         },
+        // 1-based column number to spreadsheet letters: 1 => a, 26 => z, 27 => aa
         intToLetter(int, upperCase) {
-            var charCode = int + 96,
-            letter = String.fromCharCode(charCode);
-            return upperCase ? letter.toUpperCase() : letter;
+            var letters = '';
+
+            while(int > 0) {
+                var mod = (int - 1) % 26;
+                letters = String.fromCharCode(97 + mod) + letters;
+                int = Math.floor((int - mod - 1) / 26);
+            }
+
+            return upperCase ? letters.toUpperCase() : letters;
         }
     },
     watch: {

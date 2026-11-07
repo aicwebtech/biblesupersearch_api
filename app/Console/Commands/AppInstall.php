@@ -34,6 +34,8 @@ class AppInstall extends Command
      */
     public function handle()
     {
+        echo(config('app.name') . ' v' . config('app.version') . ' installer' . PHP_EOL);
+    
         if(config('app.installed')) {
             $this->error('Application is already installed.');
             return;
@@ -78,6 +80,8 @@ class AppInstall extends Command
         // Populate the Features table
         Feature::syncFeatures();
 
+        $post_migration_started = microtime(TRUE);
+
         // Install default Bible (usally KJV)
         $Bible = Bible::findByModule(config('bss.defaults.bible'));
         
@@ -91,10 +95,16 @@ class AppInstall extends Command
         \App\Models\Books\BookAbstract::createTableAndMigrateFromCsv('en');
         $EN = Language::findByCode('en');
         $EN->setAttr('book_list', 1);   
+        
         // English common words. This is used for the common words feature, which helps to improve search results by identifying common words in each language that should be ignored or treated differently in searches.
         // :todo this should be part of the language CSV. 
         $EN->common_words = "a\nan\nand\nare\nas\nat\nbe\nby\nfor\nhe\nhis\nin\nis\nit\nof\non\nor\nthat\nthe\nthey\nto\nwas\nwith\nyou";
         $EN->save();
+
+        // Optional: a skip or failure is logged, and it can be installed from the Features page
+        if(!\App\InstallManager::installDefaultStrongs($post_migration_started)) {
+            $this->warn('The default Strong\'s dictionary was not installed; see the log.  Install it from the Features page.');
+        }
 
         if(!config('app.installed')) {
             $this->error('Installation failed. Please check the logs for details.');

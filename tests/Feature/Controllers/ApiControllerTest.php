@@ -36,6 +36,8 @@ class ApiControllerTest extends TestCase
         if($this->config_changed) {
             config(['bss.public_access' => $this->config_cache]);
         }
+
+        parent::tearDown();
     }
 
     /**
@@ -81,6 +83,16 @@ class ApiControllerTest extends TestCase
         $this->assertEquals('entire', $response['results']['bibles']['kjv']['book_list']);
         $this->assertEquals(config('app.version'), $response['results']['version']);
         $this->assertEquals(config('app.name'), $response['results']['name']);
+
+        // v3: the Bibles are a group of the volumes
+        $response = $this->getJson('/api/v3/statics?language=es');
+
+        $response->assertStatus(200);
+        $this->assertEquals(0, $response['error_level']);
+        $this->assertEquals('Romanos', $response['results']['books'][44]['name']);
+        $this->assertEquals('KJV', $response['results']['volumes']['bibles']['kjv']['shortname']);
+        $this->assertArrayNotHasKey('bibles', $response['results']);
+        $this->assertArrayHasKey('strongs', $response['results']['features']);
     }       
 
     /**

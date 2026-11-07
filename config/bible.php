@@ -20,6 +20,7 @@ return [
     // Bible modules needed installed and enabled for complete PHPUnit testing
     'testing' => [
         'kjv',
+        'kjv_strongs',
         'tyndale',
         'bishops',
         'luther',

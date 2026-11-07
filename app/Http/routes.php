@@ -42,7 +42,7 @@ Route::get('/documentation', 'DocumentationController');
 /* Routes for (administrative) backend */
 Route::get('/admin', function() {
     if(Auth::check()) {
-        return redirect('/admin/bibles');
+        return redirect('/admin/features');
         // return redirect('/admin/main'); // todo - make dashboard!
     }
 
@@ -116,6 +116,27 @@ Route::post('/admin/features/uninstall/{id}', 'Admin\FeatureController@uninstall
 Route::post('/admin/features/enable/{id}', 'Admin\FeatureController@enable');
 Route::post('/admin/features/disable/{id}', 'Admin\FeatureController@disable');
 Route::resource('/admin/features', 'Admin\FeatureController', ['as' => 'admin']);
+
+// Volume manager routes
+Route::get('/admin/volumes/grid', 'Admin\VolumeController@grid');
+Route::post('/admin/volumes/importcheck', 'Admin\VolumeController@importCheck');
+Route::post('/admin/volumes/import', 'Admin\VolumeController@import');
+Route::get('/admin/volumes/languages', 'Admin\VolumeController@languages');
+Route::post('/admin/volumes/install/{id}', 'Admin\VolumeController@install');
+Route::post('/admin/volumes/uninstall/{id}', 'Admin\VolumeController@uninstall');
+Route::post('/admin/volumes/enable/{id}', 'Admin\VolumeController@enable');
+Route::post('/admin/volumes/disable/{id}', 'Admin\VolumeController@disable');
+Route::post('/admin/volumes/default/{id}', 'Admin\VolumeController@makeDefault');
+Route::post('/admin/volumes/export/{id}', 'Admin\VolumeController@export');
+Route::post('/admin/volumes/meta/{id}', 'Admin\VolumeController@meta');
+Route::post('/admin/volumes/revert/{id}', 'Admin\VolumeController@revert');
+Route::post('/admin/volumes/update/{id}', 'Admin\VolumeController@updateModule');
+Route::post('/admin/volumes/delete/{id}', 'Admin\VolumeController@destroy');
+Route::get('/admin/volumes/{type}', 'Admin\VolumeController@index')
+    ->whereIn('type', array_keys(\App\Models\Volume::TYPES))
+    ->name('admin.volumes.type');
+Route::resource('/admin/volumes', 'Admin\VolumeController', ['as' => 'admin']);
+Route::resource('/admin/import-presets', 'Admin\ImportPresetController', ['as' => 'admin'])->only(['index', 'store', 'update', 'destroy']);
 
 // Audio Bible manager routes
 Route::get('/admin/bibles/audio/grid/{id}', 'Admin\AudioBibleController@grid');

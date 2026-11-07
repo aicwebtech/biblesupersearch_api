@@ -18,6 +18,10 @@
         <directory>tests/Feature</directory>
     </testsuite>
   </testsuites>
+  <extensions>
+    <!-- Sweeps leftovers of test runs that died before tearDown: see tests/Support/TestCleanupExtension.php -->
+    <bootstrap class="Tests\Support\TestCleanupExtension"/>
+  </extensions>
   <php>
     <env name="APP_ENV" value="testing"/>
     <env name="CACHE_DRIVER" value="array"/>

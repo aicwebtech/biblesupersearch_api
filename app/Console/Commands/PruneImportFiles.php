@@ -18,7 +18,7 @@ class PruneImportFiles extends Command
      *
      * @var string
      */
-    protected $description = 'Removes abandoned Bible import uploads left behind by import checks that were never completed.';
+    protected $description = 'Removes abandoned Bible and volume content import uploads left behind by import checks that were never completed.';
 
     /**
      * Subdirectory, inside each importer directory, that holds nothing but HTTP
@@ -63,16 +63,28 @@ class PruneImportFiles extends Command
 
         $dry_run = (bool) $this->option('dry-run');
         $cutoff = time() - ($days * 86400);
-        $base = realpath($this->getBiblesPath());
         $deleted = $bytes = 0;
+        $dirs = [];
 
-        if($base === FALSE) {
-            $this->error('Could not resolve the bibles directory');
+        foreach($this->getPruneRoots() as $label => $root) {
+            $base = realpath($root['path']);
 
-            return 1;
+            if($base === FALSE) {
+                if(!$root['required']) {
+                    continue;
+                }
+
+                $this->error('Could not resolve the ' . $label . ' directory');
+
+                return 1;
+            }
+
+            foreach($this->getUploadDirectories($base) as $short => $dir) {
+                $dirs[$root['prefix'] . $short] = $dir;
+            }
         }
 
-        foreach($this->getUploadDirectories($base) as $short => $dir) {
+        foreach($dirs as $short => $dir) {
             foreach(scandir($dir) as $entry) {
                 if($entry === '.' || $entry === '..') {
                     continue;
@@ -201,6 +213,36 @@ class PruneImportFiles extends Command
         }
 
         return $found;
+    }
+
+    /**
+     * Roots holding importer directories, each laid out as <root>/<importer>/uploads.
+     *
+     * bibles/ holds the Bible importers' directories; content/ holds one directory per
+     * volume type (content/strongs/uploads), which ContentImportAbstract stages into.
+     * The prefix keeps the two apart in output.  Only a missing bibles/ is an error, as it
+     * always was: content/ is newer, and an install without it has nothing there to prune.
+     *
+     * @return array<string, array{path: string, prefix: string, required: bool}>
+     */
+    protected function getPruneRoots(): array
+    {
+        return [
+            'bibles'  => ['path' => $this->getBiblesPath(),  'prefix' => '',         'required' => TRUE],
+            'content' => ['path' => $this->getContentPath(), 'prefix' => 'content/', 'required' => FALSE],
+        ];
+    }
+
+    /**
+     * Root directory holding the volume content importer directories (one per type).
+     *
+     * A seam for tests, as getBiblesPath() is.
+     *
+     * @return string
+     */
+    protected function getContentPath(): string
+    {
+        return base_path('content');
     }
 
     /**

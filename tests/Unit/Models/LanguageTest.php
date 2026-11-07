@@ -2,9 +2,6 @@
 
 namespace Tests\Unit\Models;
 
-use Illuminate\Foundation\Testing\WithoutMiddleware;
-use Illuminate\Foundation\Testing\DatabaseMigrations;
-use Illuminate\Foundation\Testing\DatabaseTransactions;
 
 use PHPUnit\Framework\TestCase;
 use PHPUnit\Framework\Attributes\DataProvider;
@@ -203,5 +200,23 @@ class LanguageTest extends TestCase
         $rules = Language::getUpdateRules();
 
         $this->assertSame('nullable|numeric|min:0.25|max:4.0', $rules['tts_speed']);
+    }
+
+    #[DataProvider('baseLanguageCodeProvider')]
+    public function testBaseLanguageCode(string $code, string $expected): void
+    {
+        $this->assertSame($expected, Language::baseLanguageCode($code));
+    }
+
+    public static function baseLanguageCodeProvider(): array
+    {
+        return [
+            'base'            => ['en', 'en'],
+            'upper case'      => ['EN', 'en'],
+            'underscore'      => ['zh_TW', 'zh'],
+            'hyphen'          => ['pt-BR', 'pt'],
+            'three letters'   => ['haw', 'haw'],
+            'padded'          => [' zh_CN ', 'zh'],
+        ];
     }
 }
