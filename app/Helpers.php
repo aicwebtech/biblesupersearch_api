@@ -12,6 +12,14 @@ class Helpers
      */
     protected static $max_bound_variables = [];
 
+    /**
+     * Memoized INSERT byte budgets, keyed by connection name ('' for the default). NULL where
+     * the connection has no packet limit to keep under.
+     *
+     * @var array<string, int|null>
+     */
+    protected static $max_insert_bytes = [];
+
     /*
      * Sorts an array of strings by string length
      */
@@ -513,11 +521,13 @@ class Helpers
     }
 
     /**
-     * Discards the memoized ceilings, so a reconfigured connection is probed afresh.
+     * Discards the memoized ceilings - bound variables and INSERT bytes - so a reconfigured
+     * connection is probed afresh.
      */
     public static function clearMaxBoundVariablesCache(): void
     {
         static::$max_bound_variables = [];
+        static::$max_insert_bytes = [];
     }
 
     /** The action an API request names when its path does not name one. */
@@ -1124,6 +1134,114 @@ class Helpers
         }
 
         return max(1, min($max_rows, (int) floor($max / $columns_per_row)));
+    }
+
+    /**
+     * Bytes one batched INSERT may hold on this connection, or NULL where there is no limit to
+     * keep under.
+     *
+     * MySQL and MariaDB refuse a statement larger than max_allowed_packet ("Got a packet bigger
+     * than 'max_allowed_packet' bytes", or "server has gone away"). Some servers still run the
+     * old 1 MB default, which 1000 rows of a large Strong's dictionary exceed. The budget is half
+     * the packet, leaving room for the SQL, escaping and protocol overhead that
+     * estimateInsertRowBytes() doesn't count.
+     *
+     * Memoized like getMaxBoundVariables(): the importers ask once per batch.
+     *
+     * @param string|null $connection Connection name, NULL for the default connection
+     * @return int|null
+     */
+    public static function getMaxInsertBytes(?string $connection = NULL): ?int
+    {
+        $key = $connection ?? '';
+
+        if(!array_key_exists($key, static::$max_insert_bytes)) {
+            static::$max_insert_bytes[$key] = static::_probeMaxInsertBytes($connection);
+        }
+
+        return static::$max_insert_bytes[$key];
+    }
+
+    /**
+     * Asks the connection for its packet limit. See getMaxInsertBytes().
+     *
+     * @param string|null $connection Connection name, NULL for the default connection
+     * @return int|null
+     */
+    protected static function _probeMaxInsertBytes(?string $connection = NULL): ?int
+    {
+        $Connection = \DB::connection($connection);
+
+        if(!in_array($Connection->getDriverName(), ['mysql', 'mariadb'], TRUE)) {
+            return NULL;
+        }
+
+        try {
+            $packet = (int) $Connection->selectOne('SELECT @@max_allowed_packet AS packet')->packet;
+        }
+        catch(\Throwable $e) {
+            return NULL;
+        }
+
+        return $packet > 0 ? intdiv($packet, 2) : NULL;
+    }
+
+    /**
+     * Rough size of one row in an INSERT: each value's length plus a few bytes for its quotes
+     * and separator. Escaping isn't counted; getMaxInsertBytes() leaves room for it.
+     *
+     * @param array<string, mixed> $row
+     * @return int
+     */
+    public static function estimateInsertRowBytes(array $row): int
+    {
+        $bytes = 0;
+
+        foreach($row as $value) {
+            $bytes += 4;
+
+            if(is_scalar($value) || $value instanceof \Stringable) {
+                $bytes += strlen((string) $value);
+            }
+        }
+
+        return $bytes;
+    }
+
+    /**
+     * Splits rows into INSERT batches of at most $max_rows rows and, when $max_bytes is given, at
+     * most $max_bytes bytes as estimateInsertRowBytes() counts them. A row larger than $max_bytes
+     * on its own still goes in, in a batch by itself.
+     *
+     * A generator, so a streamed import is never held in memory at once.
+     *
+     * @param iterable<int, array<string, mixed>> $rows
+     * @param int $max_rows Rows per batch, from getInsertChunkSize()
+     * @param int|null $max_bytes Bytes per batch, from getMaxInsertBytes(); NULL for no limit
+     * @return \Generator<int, array<int, array<string, mixed>>>
+     */
+    public static function batchInsertRows(iterable $rows, int $max_rows, ?int $max_bytes = NULL): \Generator
+    {
+        $max_rows = max(1, $max_rows);
+        $batch = [];
+        $bytes = 0;
+
+        foreach($rows as $row) {
+            $size = $max_bytes ? static::estimateInsertRowBytes($row) : 0;
+
+            if($batch && (count($batch) >= $max_rows || ($max_bytes && $bytes + $size > $max_bytes))) {
+                yield $batch;
+                $batch = [];
+                $bytes = 0;
+            }
+
+            $batch[] = $row;
+            $bytes += $size;
+        }
+
+        if($batch) {
+            yield $batch;
+        }
     }
 
 }

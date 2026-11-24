@@ -24,6 +24,9 @@ abstract class ContentBase extends Model implements ContentInterface
     protected $type = null;
     protected $module = null;
 
+    /** Why the last install() failed; see getInstallError() */
+    protected ?string $install_error = NULL;
+
     public const ZIP_META_FILE = 'info.json';
     public const ZIP_CONTENT_FILE = 'contents.txt';
     public const DELIMITER = '|';
@@ -259,6 +262,8 @@ abstract class ContentBase extends Model implements ContentInterface
      */
     public function install(bool $structure_only = FALSE): bool
     {
+        $this->install_error = NULL;
+
         try {
             Schema::dropIfExists($this->table);
 
@@ -273,10 +278,54 @@ abstract class ContentBase extends Model implements ContentInterface
         catch(\Throwable $e) {
             Schema::dropIfExists($this->table);
             report($e);
+            $this->install_error = static::describeInstallError($e);
             return FALSE;
         }
 
         return TRUE;
+    }
+
+    /**
+     * Why the last install() failed, safe to show; NULL if it didn't.  The full exception is
+     * in the log.
+     *
+     * @return string|null
+     */
+    public function getInstallError(): ?string
+    {
+        return $this->install_error;
+    }
+
+    /**
+     * A reason for an install failure that is safe to show.  The database's own message is
+     * never shown, as it can carry table names, content and server details; the full
+     * exception goes to the log (report() in install()).
+     *
+     * Also used by the CSV / Excel importers (ContentImportAbstract::import()), whose failures
+     * are the same inserts.
+     *
+     * @param \Throwable $e
+     * @param string $source What the rows came from, for the duplicate entries message
+     * @return string
+     */
+    public static function describeInstallError(\Throwable $e, string $source = 'module file'): string
+    {
+        if($e instanceof \Illuminate\Database\QueryException) {
+            $driver_code = (int) ($e->errorInfo[1] ?? 0);
+
+            // 1153: packet too large; 2006 / 2013: the server dropped the connection, which
+            // is how an oversized packet often shows
+            if(in_array($driver_code, [1153, 2006, 2013], TRUE) || stripos($e->getMessage(), 'max_allowed_packet') !== FALSE) {
+                return 'The database server refused the data as too large. Increasing its max_allowed_packet setting may help.';
+            }
+
+            // SQLSTATE 23000: integrity constraint violation, a duplicate key here
+            if((string) ($e->errorInfo[0] ?? $e->getCode()) === '23000') {
+                return 'The ' . $source . ' contains duplicate entries.';
+            }
+        }
+
+        return 'An unexpected error occurred. Details are in the error log.';
     }
 
     /**
@@ -327,12 +376,40 @@ abstract class ContentBase extends Model implements ContentInterface
             throw new \InvalidArgumentException('contents.txt stream is not open');
         }
 
+        $Rows = $this->streamInsertRows($stream, $info);
+
+        if(!$Rows->valid()) {
+            return 0;
+        }
+
+        // Sized from the row as inserted, not from the file's fields: processInsertRow() may
+        // add columns (Strong's adds definition, short_definition and is_special), and every
+        // one is a bound variable against the database's limit.  Capped by bytes too: 1000 rows
+        // of a large dictionary can exceed a small max_allowed_packet.
+        $batch = $this->insertBatchSize(count($Rows->current()));
+        $bytes = $this->insertBatchBytes();
+        $table = $this->getTable();
+        $count = 0;
+
+        foreach(\App\Helpers::batchInsertRows($Rows, $batch, $bytes) as $rows) {
+            DB::table($table)->insert($rows);
+            $count += count($rows);
+        }
+
+        return $count;
+    }
+
+    /**
+     * The rows of an open contents.txt stream, ready to insert.
+     *
+     * @param resource $stream mixed in the signature, as a resource has no type declaration
+     * @param mixed $info Decoded info.json
+     * @return \Generator<int, array<string, mixed>>
+     */
+    protected function streamInsertRows(mixed $stream, mixed $info): \Generator
+    {
         $fields  = (is_array($info) && !empty($info['fields']) && is_array($info['fields'])) ? array_values($info['fields']) : static::EXPORT_FIELDS;
         $columns = array_values(array_intersect($fields, static::EXPORT_FIELDS));
-        $batch   = NULL;
-        $table   = $this->getTable();
-        $rows    = [];
-        $count   = 0;
 
         foreach(static::streamLines($stream) as $line) {
             if($line === '' || $line[0] == '#') {
@@ -353,27 +430,18 @@ abstract class ContentBase extends Model implements ContentInterface
                 $row[$column] = $row[$column] ?? NULL;
             }
 
-            $row = $this->processInsertRow($row);
-
-            // Sized from the row as inserted, not from the file's fields: processInsertRow() may
-            // add columns (Strong's adds definition, short_definition and is_special), and every
-            // one is a bound variable against the database's limit
-            $batch ??= $this->insertBatchSize(count($row));
-
-            $rows[] = $row;
-            $count++;
-
-            if(count($rows) >= $batch) {
-                DB::table($table)->insert($rows);
-                $rows = [];
-            }
+            yield $this->processInsertRow($row);
         }
+    }
 
-        if($rows) {
-            DB::table($table)->insert($rows);
-        }
-
-        return $count;
+    /**
+     * Bytes per INSERT, within the connection's packet limit; NULL for no limit
+     *
+     * @return int|null
+     */
+    protected function insertBatchBytes(): ?int
+    {
+        return \App\Helpers::getMaxInsertBytes($this->getConnectionName());
     }
 
     /**

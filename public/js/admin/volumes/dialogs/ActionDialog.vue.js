@@ -36,6 +36,7 @@ const tpl = `
                     </v-sheet>
                     <v-sheet v-else-if='queueProcessing'>
                         {{actioningLabel}} {{queueItemCurrent.name}}
+                        ({{queueItemsProcessed + 1}} of {{queueItemsTotal}})
 
                         <v-progress-linear
                             v-model='queueItemsProcessedPercent'
@@ -62,7 +63,7 @@ const tpl = `
                         @click='handleOk()'
                     ></v-btn>
                     <v-btn
-                        text='Close'
+                        :text='queueProcessing ? "Stop" : "Close"'
                         @click='handleCancel()'
                     ></v-btn>
                 </v-card-actions>
@@ -186,6 +187,12 @@ export default {
         function queueProcessNext() {
             if(queueAbort) {
                 queueProcessing.value = false;
+
+                // Stopped part way: what was done before Stop still shows
+                if(queueItemsProcessed.value > 0) {
+                    emit('onSave');
+                }
+
                 closeDialog();
                 return;
             }
@@ -230,6 +237,9 @@ export default {
             queueProcessing.value = false;
 
             if(queueErrors.value.length > 0) {
+                // Refresh anyway: the items that didn't fail have changed.  Selections are kept,
+                // so the failed ones can be retried.
+                emit('onSave');
                 return;
             }
 
@@ -247,6 +257,8 @@ export default {
                 subtitle: subtitle
             });
 
+            // A failed item is still processed: the bar must advance, or the queue looks stalled
+            queueItemsProcessed.value ++;
             queueProcessNext();
         }
 
@@ -261,6 +273,8 @@ export default {
             enable,
             overwrite,
             queueItemCurrent,
+            queueItemsProcessed,
+            queueItemsTotal,
             queueProcessing,
             queueErrors,
             title,

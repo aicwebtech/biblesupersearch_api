@@ -169,6 +169,14 @@ return array(
                 'description' => 'Module of the Strong\'s dictionary to use, for either version. If omitted, the language\'s default dictionary is used, '
                 . 'or else the global default.  An error is returned if this dictionary is not available.',
             ),
+            'bible' => array(
+                'type' => 'String',
+                'name' => 'Bible',
+                'default' => '(none)',
+                'description' => 'Module of ONE Bible, used to select the dictionary when \'dictionary\' is not given.  In order, the first available of: '
+                . 'the Bible\'s default Strong\'s dictionary, the default dictionary for the Bible\'s language, the default dictionary for \'language\', '
+                . 'and the global default.  An error is returned if this Bible is not available, even when \'dictionary\' is given.',
+            ),
         ),
         'results' => [
             'tvm_note' => 'Note: Some Strong\'s numbers will return TVM (Tense / Voice / Mood) records.  Your app will need to be able to handle both.',

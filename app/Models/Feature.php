@@ -174,6 +174,76 @@ class Feature extends Model
     }
 
     /**
+     * Runs one of a feature's 'all' actions (FeatureDefinitions::ALL_ACTIONS) over every
+     * language at once, then refreshes the flags of its rows
+     *
+     * @param string $identifier Feature identifier
+     * @param string $action install, enable, disable or uninstall
+     * @param bool $enable Install action: enable too
+     * @return array<int, string> Errors; empty on success
+     */
+    public static function runAll(string $identifier, string $action, bool $enable = false): array
+    {
+        $definition = FeatureDefinitions::find($identifier);
+
+        if (!$definition) {
+            return ['This feature is not defined.'];
+        }
+
+        if (!in_array($action, FeatureDefinitions::ALL_ACTIONS, true) || !isset($definition['all'][$action])) {
+            return ['This feature does not support ' . $action . ' all.'];
+        }
+
+        return $action === 'install'
+            ? static::runAllCallback($definition['all'][$action], $enable)
+            : static::runAllCallback($definition['all'][$action]);
+    }
+
+    /**
+     * What one of a feature's 'all' actions would lose for good, such as volumes with no module
+     * file to install them again from, so the admin can be asked first
+     *
+     * @param string $identifier Feature identifier
+     * @param string $action install, enable, disable or uninstall
+     * @return array<int, string> Names of what would be lost; empty when nothing would be
+     */
+    public static function allLosses(string $identifier, string $action): array
+    {
+        $callback = FeatureDefinitions::find($identifier)['all_losses'][$action] ?? null;
+
+        return $callback ? $callback() : [];
+    }
+
+    /**
+     * Runs an 'all' callback for runAll().  Any failure becomes an error rather than a 500, and
+     * the rows' flags are refreshed whatever happened, so what got done before it shows.
+     *
+     * @return array<int, string> Errors; empty on success
+     */
+    protected static function runAllCallback(callable $callback, mixed ...$args): array
+    {
+        $errors = [];
+
+        try {
+            $callback(...$args);
+        }
+        catch (FeatureException $e) {
+            $errors[] = $e->getMessage();
+        }
+        catch (\Throwable $e) {
+            // Logged in full; the message itself may carry database details
+            report($e);
+            $errors[] = 'An unexpected error occurred. Details are in the error log.';
+        }
+        finally {
+            // Whatever got done before a failure must show on the grid
+            static::refreshDerived();
+        }
+
+        return $errors;
+    }
+
+    /**
      * Runs a definition callback for this feature's language.  A FeatureException becomes an
      * error on this feature; anything else propagates.
      */

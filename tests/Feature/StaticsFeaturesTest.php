@@ -133,7 +133,7 @@ class StaticsFeaturesTest extends TestCase
         $Volume->shortname = 'StatFeat ' . $module;
         $Volume->language  = 'en';
         $Volume->save();
-        $this->assertTrue($Volume->install(TRUE, TRUE));
+        $this->installVolumeFixture($Volume);
 
         $strongs = $this->statics(3)->features['strongs'];
 

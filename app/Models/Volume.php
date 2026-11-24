@@ -961,10 +961,18 @@ class Volume extends Model
     /**
      * Installs the volume
      *
-     * Phase 1: flags only.  Phase 2 adds creating the content table.
+     * A volume is only installed with content to answer from:
+     *  - With a module file, the content table is built from it.  A file that yields no rows
+     *    leaves the volume uninstalled.
+     *  - Without one, content already in the table (put there by hand, or left by an earlier
+     *    install) is kept and the volume is installed over it.  With no content there either,
+     *    there is nothing to install.
      *
-     * @param bool $structure_only
-     * @param bool $enable
+     * $structure_only builds an empty table, for an importer that fills and then enables it
+     * (ContentImportAbstract): the importer's own checks stand in for the content check.
+     *
+     * @param bool $structure_only Build the empty table only
+     * @param bool $enable Enable it too, when it has content
      * @return bool
      */
     public function install(bool $structure_only = FALSE, bool $enable = FALSE): bool
@@ -973,12 +981,25 @@ class Volume extends Model
             return $this->addError('Already installed', 1);
         }
 
-        // :todo - phase 2: create the content table, if it doesn't exist
-        $success = $this->content()->install($structure_only);
+        if(!$this->hasContentClass()) {
+            return $this->addError('Cannot install ' . $this->name . ': its type has no content.', 4);
+        }
 
-        if(!$success) {
-            $this->addError('Could not install content table', 4);
-            return false;
+        $Content = $this->content();
+
+        if($structure_only || $this->hasModuleFile()) {
+            if(!$Content->install($structure_only)) {
+                $reason = $Content->getInstallError();
+                return $this->addError('Could not install content table' . ($reason ? ': ' . $reason : ''), 4);
+            }
+
+            if(!$structure_only && !$Content->hasRows()) {
+                $Content->uninstall();
+                return $this->addError('Cannot install ' . $this->name . ': its module file has no content.', 4);
+            }
+        }
+        elseif(!$Content->hasRows()) {
+            return $this->addError('Cannot install ' . $this->name . ': there is no module file and no content in the database.', 4);
         }
 
         $this->installed = 1;
@@ -986,8 +1007,9 @@ class Volume extends Model
         $this->module_updated_at = NULL;
         $this->needs_update = 0;
 
-        if($enable) {
-            $this->enabled = 1;
+        // Raw: the content was checked above, so the mutator need not query it again
+        if($enable && !$structure_only) {
+            $this->attributes['enabled'] = 1;
         }
 
         $this->save();
@@ -1041,13 +1063,31 @@ class Volume extends Model
     }
 
     /**
-     * Enables the volume, if installed: an uninstalled one stays disabled (setEnabledAttribute())
+     * Enables the volume.  Only an installed volume whose content table holds rows can be
+     * enabled: the installed flag alone does not show there is anything to answer from.
+     *
+     * @return bool
      */
-    public function enable(): void
+    public function enable(): bool
     {
-        $this->enabled = 1;
+        if(!$this->installed) {
+            return $this->addError('Cannot enable ' . $this->name . ': it is not installed.', 4);
+        }
+
+        if(!$this->hasContentClass()) {
+            return $this->addError('Cannot enable ' . $this->name . ': its type has no content.', 4);
+        }
+
+        if(!$this->content()->hasRows()) {
+            return $this->addError('Cannot enable ' . $this->name . ': it has no content.', 4);
+        }
+
+        // Raw: both checks the mutator would repeat were just made
+        $this->attributes['enabled'] = 1;
         $this->save();
         $this->claimDefaultIfNone();
+
+        return TRUE;
     }
 
     /**
@@ -1056,16 +1096,15 @@ class Volume extends Model
      * installs - from the Volumes page, an import or the Features page - becomes the one a
      * request naming none is answered from, rather than leaving it to be set by hand.
      *
-     * Only a volume with content: one installed without a module file (created by hand, or its
-     * file gone) has an empty table, and as the default it would answer every request 'not
-     * found'.  An import installs the table empty and enables it once the rows are in, so it
-     * claims the default then.
+     * Only a volume with content, which both callers have just checked: install() and enable()
+     * never set enabled on an empty table, and an import enables (so claims) once the rows are
+     * in.  As the default an empty volume would answer every request 'not found'.
      *
      * @return void
      */
     protected function claimDefaultIfNone(): void
     {
-        if($this->installed && $this->enabled && !static::getDefault($this->type) && $this->content()->hasRows()) {
+        if($this->installed && $this->enabled && !static::getDefault($this->type)) {
             $this->makeDefault();
         }
     }
@@ -1078,7 +1117,37 @@ class Volume extends Model
 
     protected static function booted(): void
     {
-        static::deleted(fn() => static::recordDeletion());
+        static::deleted(function(Volume $Volume) {
+            static::recordDeletion();
+            $Volume->removeReferences();
+        });
+    }
+
+    /**
+     * Removes what points at this volume once it is deleted, however it is deleted: no language
+     * or Bible may keep a dictionary that no longer exists as its default, or a new dictionary
+     * given the same module later would silently take its place.
+     *
+     * @return void
+     */
+    protected function removeReferences(): void
+    {
+        if($this->type !== 'strongs' || !$this->module) {
+            return;
+        }
+
+        LanguageAttr::where('attribute', VolumeTypes\Strongs::LANGUAGE_ATTR)->where('value', $this->module)->delete();
+        VolumeAttr::unsetByValue(VolumeTypes\Strongs::BIBLE_ATTR, (string) $this->module);
+    }
+
+    /**
+     * Whether the volume's type has a content table: content() throws for one that hasn't
+     *
+     * @return bool
+     */
+    public function hasContentClass(): bool
+    {
+        return $this->Content || ($this->type && static::getContentClassName($this->type));
     }
 
     /**
@@ -1155,11 +1224,25 @@ class Volume extends Model
     }
 
     /**
-     * Enabled mutator - a volume cannot be enabled unless installed
+     * Enabled mutator - a volume cannot be enabled unless installed, with content in its table.
+     * A safety net for fill() and direct assignment; enable() reports why it refused, and sets
+     * the attribute itself rather than repeat the queries.
+     *
+     * The content is only queried when a disabled volume is being enabled: a fill() that sends
+     * back enabled = 1 for a volume already enabled changes nothing.
      */
     public function setEnabledAttribute(mixed $value): void
     {
-        $this->attributes['enabled'] = ($this->installed) ? $value : 0;
+        // Without a module and a type with content (part way through a fill, or a type with no
+        // content class) the table cannot be named, so only the installed flag is checked
+        $enabling = $value && empty($this->attributes['enabled']);
+        $named    = $enabling && $this->module && $this->hasContentClass();
+
+        if($value && (!$this->installed || ($named && !$this->content()->hasRows()))) {
+            $value = 0;
+        }
+
+        $this->attributes['enabled'] = $value;
     }
 
     /**

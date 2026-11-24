@@ -29,7 +29,7 @@ class StrongsResolveTest extends TestCase
         $Volume->shortname = 'Resolve ' . $suffix;
         $Volume->language  = 'en';
         $Volume->save();
-        $Volume->install(FALSE, $enabled);
+        $this->installVolumeFixture($Volume, $enabled);
 
         return $Volume;
     }

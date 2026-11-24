@@ -259,6 +259,17 @@ class VolumeControllerTest extends TestCase
                 ->assertStatus(422)
                 ->assertJson(['success' => FALSE]);
 
+            // No module file and no content: nothing to install
+            $this->admin()->postJson($url . 'install/' . $Volume->id . '?enable=1')
+                ->assertStatus(422)
+                ->assertJson(['success' => FALSE]);
+
+            $this->assertSame(0, (int) $Volume->refresh()->installed);
+
+            // Content already in the table is installed over
+            $this->assertTrue($Volume->content()->install(TRUE));
+            DB::table($Volume->content()->getTable())->insert(['number' => 'H1', 'definition' => 'father', 'is_special' => 0]);
+
             $this->admin()->postJson($url . 'install/' . $Volume->id . '?enable=1')
                 ->assertStatus(200)
                 ->assertJson(['success' => TRUE]);
@@ -283,6 +294,29 @@ class VolumeControllerTest extends TestCase
             $this->assertSame(0, (int) $Volume->installed);
             $this->assertSame(0, (int) $Volume->enabled);
             $this->assertFalse(Schema::hasTable($table));
+        }
+        finally {
+            $this->removeVolumeFixture($Volume);
+        }
+    }
+
+    /**
+     * The installed flag alone is not enough to enable: the content table must hold rows
+     */
+    public function testEnableRefusesAVolumeWithNoContent(): void
+    {
+        $Volume = NULL;
+
+        try {
+            $Volume = $this->makeVolumeFixture();
+            $this->installVolumeFixture($Volume, FALSE, []);
+
+            $response = $this->admin()->postJson('/admin/volumes/enable/' . $Volume->id)
+                ->assertStatus(422)
+                ->assertJson(['success' => FALSE]);
+
+            $this->assertStringContainsString('no content', implode(' ', $response->json('errors')));
+            $this->assertSame(0, (int) $Volume->refresh()->enabled);
         }
         finally {
             $this->removeVolumeFixture($Volume);
@@ -341,7 +375,7 @@ class VolumeControllerTest extends TestCase
 
         try {
             $Volume = $this->makeVolumeFixture();
-            $this->assertTrue($Volume->install(FALSE, TRUE));
+            $this->installVolumeFixture($Volume);
             $this->deferCleanup(fn() => is_file($Volume->getModuleFilePath()) && unlink($Volume->getModuleFilePath()));
             $this->assertTrue($Volume->export());
 
@@ -420,7 +454,7 @@ class VolumeControllerTest extends TestCase
 
             $this->assertNotNull(Volume::find($Official->id));
 
-            $Volume->install();
+            $Volume->install(TRUE);
             $table = $Volume->content()->getTable();
             $this->assertTrue(Schema::hasTable($table));
 
@@ -534,8 +568,7 @@ class VolumeControllerTest extends TestCase
     protected function makeModuleFixture(): Volume
     {
         $Volume = $this->makeVolumeFixture();
-        $Volume->install(FALSE, TRUE);
-        DB::table($Volume->content()->getTable())->insert(['number' => 'H1', 'definition' => 'father', 'is_special' => 0]);
+        $this->installVolumeFixture($Volume, TRUE, [['number' => 'H1', 'definition' => 'father', 'is_special' => 0]]);
 
         return $Volume;
     }

@@ -123,7 +123,7 @@ class InstallManager
     /**
      * The Strong's dictionary a new installation gets, as the Strong's default
      */
-    const DEFAULT_STRONGS_MODULE = 'en_orig';
+    const DEFAULT_STRONGS_MODULE = Strongs::DEFAULT_MODULE;
 
     /**
      * Seconds of the post-migration steps after which the default Strong's dictionary is left
@@ -539,9 +539,11 @@ class InstallManager
      *
      * @param float $started microtime(TRUE) when the post-migration steps began
      * @param float|null $now Defaults to the current time
+     * @param string $module The dictionary; another one only for tests, which must not write
+     *     to the real one
      * @return bool TRUE when the dictionary is installed and the default
      */
-    public static function installDefaultStrongs(float $started, ?float $now = NULL): bool
+    public static function installDefaultStrongs(float $started, ?float $now = NULL, string $module = self::DEFAULT_STRONGS_MODULE): bool
     {
         $elapsed = ($now ?? microtime(TRUE)) - $started;
 
@@ -553,11 +555,11 @@ class InstallManager
         }
 
         try {
-            $Volume = Strongs::findByModule(static::DEFAULT_STRONGS_MODULE)
-                ?? Volume::createFromModuleFile('strongs', static::DEFAULT_STRONGS_MODULE);
+            $Volume = Strongs::findByModule($module)
+                ?? Volume::createFromModuleFile('strongs', $module);
 
             if(!$Volume) {
-                \Log::warning('Install: the default Strong\'s dictionary \'' . static::DEFAULT_STRONGS_MODULE . '\' has no module file.');
+                \Log::warning('Install: the default Strong\'s dictionary \'' . $module . '\' has no module file.');
                 return FALSE;
             }
 
@@ -566,7 +568,10 @@ class InstallManager
                 return FALSE;
             }
 
-            $Volume->enabled || $Volume->enable();
+            if(!$Volume->enabled && !$Volume->enable()) {
+                \Log::warning('Install: the default Strong\'s dictionary could not be enabled: ' . implode('; ', $Volume->getErrors()));
+                return FALSE;
+            }
 
             if(!Volume::getDefault('strongs') && !$Volume->makeDefault()) {
                 \Log::warning('Install: the default Strong\'s dictionary could not be made the default: ' . implode('; ', $Volume->getErrors()));

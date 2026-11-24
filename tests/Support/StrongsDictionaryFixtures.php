@@ -3,7 +3,6 @@
 namespace Tests\Support;
 
 use App\Models\VolumeTypes\Strongs;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Testing\TestResponse;
 
 /**
@@ -38,9 +37,7 @@ trait StrongsDictionaryFixtures
         $Volume->shortname = 'StrApi ' . $suffix;
         $Volume->language  = 'en';
         $Volume->save();
-        $Volume->install(FALSE, $enabled);
-
-        DB::table($Volume->content()->getTable())->insert([
+        $this->installVolumeFixture($Volume, $enabled, [
             [
                 'number' => 'H1234', 'root_word' => "\u{05D1}\u{05BC}\u{05E7}\u{05E2}", 'transliteration' => 'ba\u{0302}qa\u{0303}',
                 'pronunciation' => 'baw-kah\'', 'definition' => 'to <i>cleave</i>', 'is_special' => 0,

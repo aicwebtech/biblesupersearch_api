@@ -58,7 +58,7 @@ class VolumeTest extends TestCase
         try {
             $Volume = $this->makeVolumeFixture();
 
-            $this->assertTrue($Volume->install());
+            $this->installVolumeFixture($Volume, FALSE);
             $Volume->refresh();
             $this->assertSame(1, (int) $Volume->installed);
             $this->assertSame(0, (int) $Volume->enabled);
@@ -93,7 +93,8 @@ class VolumeTest extends TestCase
             $this->assertSame(ContentBase::CONTENT_TABLE_PREFIX . StrongsContent::TYPE_TABLE_PREFIX . $Volume->module, $table);
             $this->assertFalse(Schema::hasTable($table));
 
-            $this->assertTrue($Volume->install());
+            // Structure only: with no module file and no content, a full install is refused
+            $this->assertTrue($Volume->install(TRUE));
             $this->assertTrue(Schema::hasTable($table));
             $this->assertTrue(Schema::hasColumns($table, [
                 'id', 'number', 'root_word', 'pronunciation', 'transliteration',
@@ -110,10 +111,10 @@ class VolumeTest extends TestCase
     }
 
     /**
-     * A table left behind (a failed drop, a deleted volume with the same module) is not taken
-     * as installed content: install rebuilds it empty.
+     * With no module file, content already in the table (put there by hand, or left behind) is
+     * what the volume is installed over: it is kept, not rebuilt empty.
      */
-    public function testInstallReplacesALeftoverTable(): void
+    public function testInstallWithoutModuleFileKeepsContentInTheTable(): void
     {
         $Volume = NULL;
 
@@ -121,15 +122,16 @@ class VolumeTest extends TestCase
             $Volume = $this->makeVolumeFixture();
             $table  = $Volume->content()->getTable();
 
-            $this->assertTrue($Volume->install());
-            DB::table($table)->insert(['number' => 'H1', 'definition' => 'Stale']);
+            $this->assertTrue($Volume->install(TRUE));
+            DB::table($table)->insert(['number' => 'H1', 'definition' => 'Kept']);
 
             // Uninstalled in the volumes table, but the content table survives
             $Volume->installed = 0;
             $Volume->save();
 
-            $this->assertTrue($Volume->install());
-            $this->assertSame(0, DB::table($table)->count());
+            $this->assertTrue($Volume->install(), implode('; ', $Volume->getErrors()));
+            $this->assertSame(1, DB::table($table)->count());
+            $this->assertSame(1, (int) $Volume->fresh()->installed);
         }
         finally {
             $this->removeVolumeFixture($Volume);
@@ -162,7 +164,7 @@ class VolumeTest extends TestCase
                 $this->assertTrue(Volume::contentTableNameTooLong('strongs', $Volume->module . 'x', $prefix));
             }
 
-            $this->assertTrue($Volume->install());
+            $this->assertTrue($Volume->install(TRUE));
             $this->assertTrue(Schema::hasTable($Volume->content()->getTable()));
         }
         finally {
@@ -182,8 +184,8 @@ class VolumeTest extends TestCase
             $Volume = $this->makeVolumeFixture();
             $Other  = $this->makeVolumeFixture();
 
-            $this->assertTrue($Volume->install());
-            $this->assertTrue($Other->install(), 'Second volume of the same type failed to install');
+            $this->assertTrue($Volume->install(TRUE));
+            $this->assertTrue($Other->install(TRUE), 'Second volume of the same type failed to install');
 
             $names = [];
 
@@ -249,7 +251,7 @@ class VolumeTest extends TestCase
 
         try {
             $Volume = $this->makeVolumeFixture();
-            $Volume->install(FALSE, TRUE);
+            $this->installVolumeFixture($Volume);
 
             $table = $Volume->content()->getTable();
             $flagsAtDrop = NULL;
@@ -281,7 +283,7 @@ class VolumeTest extends TestCase
 
         try {
             $Volume = $this->makeVolumeFixture();
-            $Volume->install(FALSE, TRUE);
+            $this->installVolumeFixture($Volume);
             $Volume->refresh();
             $installed_at = $Volume->installed_at;
             $table = $Volume->content()->getTable();
@@ -318,7 +320,12 @@ class VolumeTest extends TestCase
 
         try {
             $Volume = $this->makeVolumeFixture();
-            $Volume->install(FALSE, TRUE);
+
+            // Content already in the table, so there is something to install and enable
+            $this->assertTrue($Volume->content()->install(TRUE));
+            DB::table($Volume->content()->getTable())->insert(['number' => 'H1', 'definition' => 'Fixture']);
+
+            $this->assertTrue($Volume->install(FALSE, TRUE), implode('; ', $Volume->getErrors()));
             $Volume->refresh();
 
             $this->assertSame(1, (int) $Volume->enabled);
@@ -343,6 +350,70 @@ class VolumeTest extends TestCase
             $Volume->refresh();
 
             $this->assertSame(0, (int) $Volume->enabled);
+        }
+        finally {
+            $this->removeVolumeFixture($Volume);
+        }
+    }
+
+    /**
+     * The enabled mutator only checks the content table when a disabled volume is being enabled:
+     * a fill() that sends back enabled = 1 for a volume already enabled runs no query
+     */
+    public function testEnabledMutatorOnlyQueriesWhenEnabling(): void
+    {
+        $Volume = NULL;
+
+        try {
+            $Volume = $this->makeVolumeFixture();
+            $this->installVolumeFixture($Volume);
+            $Volume->refresh();
+
+            $queries = 0;
+            DB::listen(function() use (&$queries) {
+                $queries++;
+            });
+
+            $Volume->enabled = 1;
+            $this->assertSame(0, $queries, 'Already enabled');
+
+            $Volume->enabled = 0;
+            $Volume->enabled = 1;
+            $this->assertGreaterThan(0, $queries, 'Enabling checks the content');
+            $this->assertSame(1, (int) $Volume->enabled);
+
+            // Still refused when there is no content
+            DB::table($Volume->content()->getTable())->delete();
+            $Volume->enabled = 0;
+            $Volume->enabled = 1;
+            $this->assertSame(0, (int) $Volume->enabled);
+        }
+        finally {
+            $this->removeVolumeFixture($Volume);
+        }
+    }
+
+    /**
+     * A type with no content class has no table: install and enable report it rather than throw
+     * from content()
+     */
+    public function testInstallAndEnableRefuseATypeWithNoContent(): void
+    {
+        // Letters only: a volume type may not hold digits (Volume::getModulePath())
+        $type   = 'no_content_' . strtr(bin2hex(random_bytes(3)), '0123456789', 'ghijklmnop');
+        $Volume = NULL;
+
+        try {
+            $Volume = $this->makeVolumeFixture($type);
+            $this->assertFalse($Volume->hasContentClass());
+
+            $this->assertFalse($Volume->install());
+            $this->assertSame(['Cannot install ' . $Volume->name . ': its type has no content.'], $Volume->getErrors());
+
+            $Volume->setRawAttributes(array_merge($Volume->getAttributes(), ['installed' => 1]));
+            $this->assertFalse($Volume->enable());
+            $this->assertContains('Cannot enable ' . $Volume->name . ': its type has no content.', $Volume->getErrors());
+            $this->assertSame(0, (int) $Volume->refresh()->enabled);
         }
         finally {
             $this->removeVolumeFixture($Volume);
@@ -492,7 +563,8 @@ class VolumeTest extends TestCase
      */
     protected function claimFixtures(): array
     {
-        $type = 'claim_fixture_' . bin2hex(random_bytes(3));
+        // Letters only: a volume type may not hold digits (Volume::getModulePath())
+        $type = 'claim_fixture_' . strtr(bin2hex(random_bytes(3)), '0123456789', 'ghijklmnop');
 
         $make = function(bool $rows = TRUE) use ($type): Volume {
             $Volume = $this->makeVolumeFixture($type);
@@ -561,8 +633,9 @@ class VolumeTest extends TestCase
     }
 
     /**
-     * A volume with no content - installed without a module file - does not become the default:
-     * it would answer every request 'not found'.  Once it has rows, enabling it claims it.
+     * A volume with no content - no module file and nothing in its table - cannot be installed,
+     * so it never becomes the default: it would answer every request 'not found'.  Once it has
+     * rows, installing it with enable claims the default.
      */
     public function testAnEmptyVolumeDoesNotBecomeTheDefault(): void
     {
@@ -571,12 +644,13 @@ class VolumeTest extends TestCase
 
         try {
             $Empty = $make(FALSE);
-            $this->assertTrue($Empty->install(FALSE, TRUE));
+            $this->assertFalse($Empty->install(FALSE, TRUE));
+            $this->assertSame(0, (int) $Empty->refresh()->installed);
             $this->assertNull(Volume::getDefault($type));
 
-            $Empty->disable();
+            $Empty->resetErrors();
             $Empty->Content->rows = TRUE;
-            $Empty->enable();
+            $this->assertTrue($Empty->install(FALSE, TRUE), implode('; ', $Empty->getErrors()));
 
             $this->assertSame($Empty->id, Volume::getDefault($type)?->id);
         }
@@ -600,7 +674,7 @@ class VolumeTest extends TestCase
 
         try {
             $Volume = $this->makeVolumeFixture();
-            $this->assertTrue($Volume->install(FALSE, TRUE));
+            $this->installVolumeFixture($Volume);
 
             $this->assertSame(0, (int) $Volume->refresh()->is_default);
             $this->assertSame($Default->id, Volume::getDefault('strongs')?->id);

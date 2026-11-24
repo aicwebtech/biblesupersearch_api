@@ -9,8 +9,6 @@ use App\Http\Responses\Response;
 use App\Http\Controllers\Controller;
 use App\ContentImportManager;
 use App\Models\Volume;
-use App\Models\LanguageAttr;
-use App\Models\VolumeTypes\Strongs;
 use Validator;
 
 class VolumeController extends Controller
@@ -250,11 +248,7 @@ class VolumeController extends Controller
             return $this->actionResponse($Volume);
         }
 
-        // No language may keep pointing at a dictionary that no longer exists
-        if($Volume->type == 'strongs') {
-            LanguageAttr::where('attribute', Strongs::LANGUAGE_ATTR)->where('value', $Volume->module)->delete();
-        }
-
+        // Languages and Bibles pointing at it are cleared by the model: Volume::removeReferences()
         $Volume->delete();
 
         return new Response($resp, 200);
@@ -313,14 +307,7 @@ class VolumeController extends Controller
         $Volume = Volume::findOrFail($id);
         $Volume->enable();
 
-        $resp = new \stdClass();
-        $resp->success = (bool) $Volume->enabled;
-
-        if(!$Volume->enabled) {
-            $resp->errors = ['Cannot enable, volume is not installed.'];
-        }
-
-        return new Response($resp, $resp->success ? 200 : 422);
+        return $this->actionResponse($Volume);
     }
 
     public function disable(Request $request, string $id): Response

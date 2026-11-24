@@ -13,6 +13,7 @@ use App\Models\Language;
 use App\Models\LanguageAttr;
 use App\Models\RenderLog;
 use App\Models\Volume;
+use App\Models\VolumeAttr;
 use App\User;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
@@ -248,6 +249,7 @@ class TestCleanup extends Command
     protected function removeBible(string $module): void
     {
         Bible::where('module', $module)->delete();
+        VolumeAttr::unsetAll(VolumeAttr::TYPE_BIBLE, $module);
         Schema::dropIfExists('verses_' . $module);
 
         foreach([Bible::getModulePath(), Bible::getUnofficialModulePath()] as $dir) {
@@ -343,6 +345,7 @@ class TestCleanup extends Command
             }
         }
 
+        // References to it go with it: Volume::removeReferences()
         $Volume->forceDelete();
     }
 

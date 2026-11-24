@@ -404,8 +404,15 @@ abstract class ContentImportAbstract
             $this->rows_imported = $this->importFromPath($path);
         }
         catch(\Throwable $e) {
+            // Logged in full; the message itself may carry database details or server paths
             report($e);
-            $this->addError('Import failed: ' . $e->getMessage(), 4);
+            $this->addError('Import failed: ' . ContentBase::describeInstallError($e, 'import file'), 4);
+        }
+
+        // An import that left no rows (every row skipped, or an empty file) must not leave an
+        // installed volume with nothing to answer from
+        if(!$this->hasErrors() && !$this->Volume->content()->hasRows()) {
+            $this->addError('Import failed: the file has no content to import.', 4);
         }
 
         if($this->hasErrors()) {
@@ -413,6 +420,7 @@ abstract class ContentImportAbstract
             return FALSE;
         }
 
+        // Can't fail here: the volume is installed and its rows were checked just above
         if($this->enable) {
             $this->Volume->enable();
         }
@@ -434,6 +442,7 @@ abstract class ContentImportAbstract
         $Content = $this->Volume->content();
         $Table   = $Content->getConnection()->table($Content->getTable());
         $chunk   = Helpers::getInsertChunkSize(count($content_class::prepareImportRow([])), $Content->getConnectionName());
+        $bytes   = Helpers::getMaxInsertBytes($Content->getConnectionName());
         $count   = 0;
 
         try {
@@ -454,7 +463,7 @@ abstract class ContentImportAbstract
                     }
                 }
 
-                foreach(array_chunk($insertable, $chunk) as $rows) {
+                foreach(Helpers::batchInsertRows($insertable, $chunk, $bytes) as $rows) {
                     $Table->insert($rows);
                 }
 

@@ -41,7 +41,7 @@ class EngineVolumesTest extends TestCase
         $Volume->save();
 
         if($install) {
-            $this->assertTrue($Volume->install(TRUE, $enable));
+            $this->installVolumeFixture($Volume, $enable);
         }
 
         return $Volume;

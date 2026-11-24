@@ -203,4 +203,49 @@ class HelpersTest extends TestCase
             ['  ;  ',        ''],
         ];
     }
+
+    public function testEstimateInsertRowBytesCountsEachValue(): void
+    {
+        $this->assertSame(0, Helpers::estimateInsertRowBytes([]));
+        $this->assertSame(4 + 3 + 4 + 4 + 1, Helpers::estimateInsertRowBytes(['a' => 'abc', 'b' => NULL, 'c' => 7]));
+        $this->assertSame(4 + 4, Helpers::estimateInsertRowBytes(['a' => "\u{05D0}\u{05D1}"]), 'Bytes, not characters');
+    }
+
+    public function testBatchInsertRowsWithoutAByteLimitSplitsByRows(): void
+    {
+        $rows    = array_map(fn(int $i): array => ['n' => $i], range(1, 7));
+        $batches = iterator_to_array(Helpers::batchInsertRows($rows, 3), FALSE);
+
+        $this->assertSame([3, 3, 1], array_map('count', $batches));
+        $this->assertSame($rows, array_merge(...$batches));
+    }
+
+    public function testBatchInsertRowsSplitsByBytes(): void
+    {
+        // 14 bytes a row as estimated: 4 + 10
+        $rows    = array_fill(0, 5, ['text' => str_repeat('x', 10)]);
+        $batches = iterator_to_array(Helpers::batchInsertRows($rows, 1000, 30), FALSE);
+
+        $this->assertSame([2, 2, 1], array_map('count', $batches));
+    }
+
+    public function testBatchInsertRowsPutsAnOversizedRowInABatchOfItsOwn(): void
+    {
+        $rows = [['t' => 'a'], ['t' => str_repeat('x', 100)], ['t' => 'b'], ['t' => 'c']];
+        $batches = iterator_to_array(Helpers::batchInsertRows($rows, 1000, 20), FALSE);
+
+        $this->assertSame([[$rows[0]], [$rows[1]], [$rows[2], $rows[3]]], $batches);
+    }
+
+    public function testBatchInsertRowsTakesAGenerator(): void
+    {
+        $rows = (function(): \Generator {
+            for($i = 0; $i < 4; $i++) {
+                yield ['n' => $i];
+            }
+        })();
+
+        $this->assertSame([2, 2], array_map('count', iterator_to_array(Helpers::batchInsertRows($rows, 2), FALSE)));
+        $this->assertSame([], iterator_to_array(Helpers::batchInsertRows([], 2, 10), FALSE));
+    }
 }

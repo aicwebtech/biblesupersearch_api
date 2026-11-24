@@ -5,6 +5,8 @@ namespace Tests\Feature\Controllers;
 use Tests\TestCase;
 use Tests\Support\StrongsDictionaryFixtures;
 use App\Engines\EngineV3;
+use App\Models\Bible;
+use App\Models\VolumeAttr;
 use App\Models\VolumeTypes\Strongs;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Testing\TestResponse;
@@ -28,6 +30,11 @@ class StrongsApiTest extends TestCase
 
     private const LANGUAGE = 'qqs';
 
+    /**
+     * A second fixture language, for the interface language when a Bible's is LANGUAGE
+     */
+    private const UI_LANGUAGE = 'qqe';
+
     private const MODERN_FIELDS = [
         'id', 'number', 'root_word', 'pronunciation', 'transliteration',
         'definition', 'short_definition', 'is_special', 'dictionary',
@@ -39,6 +46,7 @@ class StrongsApiTest extends TestCase
     {
         $this->removeStrongsDictionaries();
         $this->removeLanguageFixture(self::LANGUAGE);
+        $this->removeLanguageFixture(self::UI_LANGUAGE);
 
         parent::tearDown();
     }
@@ -111,7 +119,7 @@ class StrongsApiTest extends TestCase
         $Engine = new class extends EngineV3 {
             public bool $installed = TRUE;
 
-            protected function _resolveStrongsDictionary(mixed $dictionary, mixed $language): \App\Models\VolumeTypes\Strongs|false|null
+            protected function _resolveStrongsDictionary(mixed $dictionary, mixed $language, ?\App\Models\Bible $Bible = NULL): \App\Models\VolumeTypes\Strongs|false|null
             {
                 return NULL;
             }
@@ -183,7 +191,7 @@ class StrongsApiTest extends TestCase
     public function testV2ModernFallbackStaysLegacy(): void
     {
         $Engine = new class extends \App\Engines\EngineV2 {
-            protected function _resolveStrongsDictionary(mixed $dictionary, mixed $language): \App\Models\VolumeTypes\Strongs|false|null
+            protected function _resolveStrongsDictionary(mixed $dictionary, mixed $language, ?\App\Models\Bible $Bible = NULL): \App\Models\VolumeTypes\Strongs|false|null
             {
                 return NULL;
             }
@@ -212,7 +220,7 @@ class StrongsApiTest extends TestCase
     public function testV3WithNoDictionaryAndNoLegacyIsAnError(): void
     {
         $Engine = new class extends EngineV3 {
-            protected function _resolveStrongsDictionary(mixed $dictionary, mixed $language): \App\Models\VolumeTypes\Strongs|false|null
+            protected function _resolveStrongsDictionary(mixed $dictionary, mixed $language, ?\App\Models\Bible $Bible = NULL): \App\Models\VolumeTypes\Strongs|false|null
             {
                 return NULL;
             }
@@ -446,6 +454,170 @@ class StrongsApiTest extends TestCase
         }
     }
 
+    /**
+     * A throwaway Bible: only its row, as the strongs action reads nothing else of it.  Its
+     * default dictionary, if given, is set in volumes_attr.
+     */
+    protected function makeBibleFixture(string $language, ?string $dictionary = NULL, bool $enabled = TRUE): Bible
+    {
+        $module = 'test_bible_strongs_' . bin2hex(random_bytes(3));
+
+        $this->deferCleanup(function() use ($module) {
+            Bible::where('module', $module)->delete();
+            VolumeAttr::unsetAll(VolumeAttr::TYPE_BIBLE, $module);
+        });
+
+        $Bible = new Bible();
+        $Bible->module     = $module;
+        $Bible->name       = 'Strongs Bible Fixture ' . $module;
+        $Bible->shortname  = 'StrBib ' . $module;
+        $Bible->year       = '2000';
+        $Bible->lang_short = $language;
+        $Bible->installed  = 1;
+        $Bible->enabled    = $enabled ? 1 : 0;
+        $Bible->save();
+
+        if($dictionary !== NULL) {
+            VolumeAttr::setAttr(VolumeAttr::TYPE_BIBLE, $module, Strongs::BIBLE_ATTR, $dictionary);
+        }
+
+        return $Bible;
+    }
+
+    /**
+     * 'bible': the Bible's default dictionary, then its language's, then the interface
+     * language's.  An explicit dictionary beats them all.
+     */
+    public function testBibleDefault(): void
+    {
+        $BibleDict     = $this->makeDictionary();
+        $BibleLangDict = $this->makeDictionary();
+        $UiDict        = $this->makeDictionary();
+        $Explicit      = $this->makeDictionary();
+
+        $this->createLanguageFixture(self::LANGUAGE, 'Strongs API Fixture Language')
+            ->setAttr(Strongs::LANGUAGE_ATTR, $BibleLangDict->module);
+        $this->createLanguageFixture(self::UI_LANGUAGE, 'Strongs API Fixture UI Language')
+            ->setAttr(Strongs::LANGUAGE_ATTR, $UiDict->module);
+
+        $Bible = $this->makeBibleFixture(self::LANGUAGE, $BibleDict->module);
+        $query = ['strongs' => 'H1234', 'language' => self::UI_LANGUAGE];
+
+        $this->assertModern($this->api('/api/v3/strongs', $query + ['bible' => $Bible->module]), $BibleDict->module);
+        $this->assertModern($this->api('/api/strongs', $query + ['bible' => $Bible->module, 'version' => 'modern']), $BibleDict->module);
+
+        // Without 'bible' the interface language / global default decides, as before
+        $this->assertModern($this->api('/api/v3/strongs', $query), $UiDict->module);
+
+        // Use explicit dictionary, even when the Bible is specified and has a default
+        $this->assertModern(
+            $this->api('/api/v3/strongs', $query + ['bible' => $Bible->module, 'dictionary' => $Explicit->module]),
+            $Explicit->module
+        );
+
+        // No Bible default: the Bible's language's
+        VolumeAttr::unsetAttr(VolumeAttr::TYPE_BIBLE, $Bible->module, Strongs::BIBLE_ATTR); // Remove default dictionary from the Bible
+        $this->assertModern($this->api('/api/v3/strongs', $query + ['bible' => $Bible->module]), $BibleLangDict->module);
+    }
+
+    /**
+     * A Bible whose language has no default, or whose own default cannot be used, falls to the
+     * interface language's default
+     */
+    public function testBibleWithoutUsableDefaultFallsToTheInterfaceLanguage(): void
+    {
+        $Disabled = $this->makeDictionary(FALSE);
+        $UiDict   = $this->makeDictionary();
+
+        $this->createLanguageFixture(self::UI_LANGUAGE, 'Strongs API Fixture UI Language')
+            ->setAttr(Strongs::LANGUAGE_ATTR, $UiDict->module);
+
+        $Bible = $this->makeBibleFixture(self::LANGUAGE, $Disabled->module);
+
+        $this->assertModern(
+            $this->api('/api/v3/strongs', ['strongs' => 'H1234', 'language' => self::UI_LANGUAGE, 'bible' => $Bible->module]),
+            $UiDict->module
+        );
+
+        $this->assertSame($UiDict->id, Strongs::resolveDefault(self::UI_LANGUAGE, $Bible)?->id);
+    }
+
+    /** A 'bible' that is not available is fatal, even with a dictionary given. */
+    public function testUnavailableBibleIsAnError(): void
+    {
+        $Dictionary = $this->makeDictionary();
+        $Disabled   = $this->makeBibleFixture(self::LANGUAGE, NULL, FALSE);
+
+        foreach([$Disabled->module, 'no_such_bible'] as $module) {
+            foreach([[], ['dictionary' => $Dictionary->module]] as $extra) {
+                $response = $this->api('/api/v3/strongs', ['strongs' => 'H1234', 'bible' => $module] + $extra);
+
+                $this->assertFatal($response, __('errors.bible_no_exist', ['module' => $module]));
+                $this->assertEmpty($response['results'] ?? []);
+            }
+        }
+
+    }
+
+    /**
+     * One rule for every action: a Bible is usable only when enabled, and so installed.  One
+     * flagged enabled without being installed (set directly: the model refuses it) is refused by
+     * strongs and by query alike.
+     */
+    public function testEnabledButNotInstalledBibleIsAnError(): void
+    {
+        $Bible = $this->makeBibleFixture(self::LANGUAGE);
+        DB::table('bibles')->where('id', $Bible->id)->update(['installed' => 0, 'enabled' => 1]);
+
+        $this->assertFatal(
+            $this->api('/api/v3/strongs', ['strongs' => 'H1234', 'bible' => $Bible->module]),
+            __('errors.bible_no_exist', ['module' => $Bible->module])
+        );
+
+        $this->assertFatal(
+            $this->api('/api/v3/query', ['bible' => $Bible->module, 'reference' => 'Gen 1:1']),
+            __('errors.bible_no_exist', ['module' => $Bible->module])
+        );
+    }
+
+    /**
+     * A list of Bibles, as query takes, is accepted: the first decides.  An unusable first Bible
+     * is an error, naming it, even when a later one is usable.
+     */
+    public function testBibleListUsesTheFirst(): void
+    {
+        $BibleDict = $this->makeDictionary();
+        $Bible     = $this->makeBibleFixture(self::LANGUAGE, $BibleDict->module);
+
+        foreach([[$Bible->module, 'kjv'], json_encode([$Bible->module, 'kjv'])] as $list) {
+            $this->assertModern($this->api('/api/v3/strongs', ['strongs' => 'H1234', 'bible' => $list]), $BibleDict->module);
+        }
+
+        $this->assertFatal(
+            $this->api('/api/v3/strongs', ['strongs' => 'H1234', 'bible' => ['no_such_bible', $Bible->module]]),
+            __('errors.bible_no_exist', ['module' => 'no_such_bible'])
+        );
+    }
+
+    /**
+     * An empty Bible list - a client sending its selection with nothing selected - names no
+     * Bible: it is ignored rather than an error
+     */
+    public function testAnEmptyBibleListIsIgnored(): void
+    {
+        $UiDict = $this->makeDictionary();
+
+        $this->createLanguageFixture(self::UI_LANGUAGE, 'Strongs API Fixture UI Language')
+            ->setAttr(Strongs::LANGUAGE_ATTR, $UiDict->module);
+
+        foreach(['', [], '[]', 'null', '[""]', json_encode([NULL])] as $list) {
+            $this->assertModern(
+                $this->api('/api/v3/strongs', ['strongs' => 'H1234', 'language' => self::UI_LANGUAGE, 'bible' => $list]),
+                $UiDict->module
+            );
+        }
+    }
+
     /** An explicit dictionary that cannot be used is an error, whatever defaults exist. */
     public function testUnavailableDictionaryIsAnError(): void
     {
@@ -494,6 +666,9 @@ class StrongsApiTest extends TestCase
         $Default  = $this->makeDictionary();
         $Disabled = $this->makeDictionary(FALSE);
 
+        // No language fixture for UI_LANGUAGE: the Bible's language has no default
+        $Bible = $this->makeBibleFixture(self::UI_LANGUAGE, $Disabled->module);
+
         // A language whose dictionary cannot be used falls to the global default
         $this->createLanguageFixture(self::LANGUAGE, 'Strongs API Fixture Language')
             ->setAttr(Strongs::LANGUAGE_ATTR, $Disabled->module);
@@ -512,6 +687,10 @@ class StrongsApiTest extends TestCase
 
             $this->assertModern($this->api('/api/v3/strongs', ['strongs' => 'H1234', 'language' => self::LANGUAGE]), $Default->module);
             $this->assertSame($Default->id, Strongs::resolveDefault(self::LANGUAGE)?->id);
+
+            // A Bible with no usable default, in a language with none, ends at the global default
+            $this->assertModern($this->api('/api/v3/strongs', ['strongs' => 'H1234', 'bible' => $Bible->module]), $Default->module);
+            $this->assertSame($Default->id, Strongs::resolveDefault(NULL, $Bible)?->id);
 
             // The query action resolves the same way
             $query = ['bible' => 'kjv_strongs', 'search' => 'H1234', 'page_limit' => 1];

@@ -91,6 +91,11 @@ export default {
         }
     },
     template: template,
+    // The page's shared alert (each admin App.vue.js): one inside this dialog would not exist
+    // until the dialog opens, so could not report a record that failed to load
+    inject: {
+        alertDialog: {default: () => (message => console.error(message))}
+    },
     data() {
         return { 
             recordInternal: {},
@@ -125,11 +130,7 @@ export default {
                         t.loading = false;
                         t.showing = true;
                     }).catch(function(error) {
-                        if(error.response.data.message) {
-                            alert(error.response.data.message);
-                        } else {
-                            alert('An unknown error has occurred');
-                        }
+                        t.alertDialog(error?.response?.data?.message || 'An unknown error has occurred');
                     });
                 } else {
                     // do something?
@@ -169,11 +170,7 @@ export default {
                 t.$emit('onSave');
                 t.closeDialog();
             }).catch(function(error) {
-                if(error.response.data.message) {
-                    alert(error.response.data.message);
-                } else {
-                    alert('An unknown error has occurred');
-                }
+                t.alertDialog(error?.response?.data?.message || 'An unknown error has occurred');
             });
 
             this.handleCancel();

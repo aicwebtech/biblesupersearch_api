@@ -139,18 +139,26 @@ class Engine implements ErrorInterface
         $default_language = $this->default_language ?: config('bss.defaults.language_short');
 
         $modules = $this->_parseInputArray($modules);
-        $primary = NULL;
+        $first   = NULL;
+
+        // Reset, so a reused Engine (it is a singleton) never keeps the previous request's
+        // primary Bible when none of this request's could be added
+        $this->Bible_Primary = NULL;
 
         foreach($modules as $module) {
             if(empty($module)) {
                 continue;
             }
 
-            $added = $this->addBible($module);
-            $primary = ($added && !$primary) ? $module : $primary;
+            $first = $first ?? $module;
+            $this->addBible($module);
         }
 
-        $this->setPrimaryBible($primary);
+        // The primary Bible is the first one requested (query's strongs_use_bible reads it),
+        // not the first that could be added: when that one is unusable there is none
+        if($first !== NULL && is_scalar($first) && isset($this->Bibles[$first])) {
+            $this->setPrimaryBible($first);
+        }
 
         if(!$this->primary_language) {
             $this->primary_language = $default_language;
@@ -227,7 +235,7 @@ class Engine implements ErrorInterface
     {
         $Bible = Bible::findByModule($module);
 
-        if($Bible && ($Bible->enabled || $this->allow_disabled_bibles)) {
+        if($this->_isBibleUsable($Bible)) {
             $this->Bibles[$module] = $Bible;
 
             if(!in_array($Bible->lang_short, $this->languages)) {
@@ -249,6 +257,16 @@ class Engine implements ErrorInterface
         }
 
         return TRUE;
+    }
+
+    /**
+     * Whether a Bible may be read by this request: enabled, and so installed.  The one rule for
+     * every action that takes a Bible.  allow_disabled_bibles (admin tools) lets a disabled
+     * Bible through, but never an uninstalled one: it has no verses table to read.
+     */
+    protected function _isBibleUsable(?Bible $Bible): bool
+    {
+        return $Bible && $Bible->installed && ($Bible->enabled || $this->allow_disabled_bibles);
     }
 
     public function getBibles() 
@@ -447,6 +465,12 @@ class Engine implements ErrorInterface
                 'type' => 'string',
                 'default' => null,
             ],
+            // Resolve the dictionary from the primary Bible's default, then its language's,
+            // before the interface language's (see Strongs::resolveDefault())
+            'strongs_use_bible' => [
+                'type' => 'bool',
+                'default' => false,
+            ],
         ];
 
         $this->resetErrors();
@@ -597,7 +621,8 @@ class Engine implements ErrorInterface
                         $input['strongs_version'],
                         $input['strongs_dictionary'],
                         $input['language'],
-                        3
+                        3,
+                        $input['strongs_use_bible'] ? $this->Bible_Primary : NULL
                     );
 
                     if($source) {
@@ -911,14 +936,8 @@ class Engine implements ErrorInterface
 
         $Bible = Bible::findByModule($input['bible']);
 
-        if(!$Bible) {
-            return $this->addError(trans('errors.bible_no_exist', ['module' => $input['bible']]));
-        }
-
-        // Audio previously only checked that the module existed, skipping the
-        // installed/enabled gate that addBible() applies to every other Bible
-        // selection. Reuse the existing helper rather than duplicating it.
-        if(!static::isBibleEnabled($input['bible']) && !$this->allow_disabled_bibles) {
+        // The same gate as addBible(): a missing, uninstalled or disabled Bible is not usable
+        if(!$this->_isBibleUsable($Bible)) {
             return $this->addError(trans('errors.bible_no_exist', ['module' => $input['bible']]));
         }
 
@@ -1757,12 +1776,28 @@ class Engine implements ErrorInterface
         }
 
         $strongs = strip_tags(trim($input['strongs']));
+        $Bible   = NULL;
+
+        // A Bible whose (or whose language's) default dictionary to use.  Validated even when
+        // a dictionary is given, which takes precedence: a bad Bible is fatal, as in query.
+        // A list of Bibles, as query takes, is accepted: the first one is used.
+        // An empty one - '', [], or a JSON '[]' or 'null' - names no Bible and is ignored.
+        $module = $this->_firstListedModule($input['bible'] ?? NULL);
+
+        if($module !== NULL) {
+            $Bible = $this->_findStrongsBible($module);
+
+            if(!$Bible) {
+                return FALSE;
+            }
+        }
 
         $source = $this->_resolveStrongsSource(
             $input['version'] ?? NULL,
             $input['dictionary'] ?? NULL,
             $input['language'] ?? NULL,
-            4
+            4,
+            $Bible
         );
 
         if(!$source) {
@@ -1772,6 +1807,47 @@ class Engine implements ErrorInterface
         $numbers = preg_match_all('/[GHgh][0-9]+/', $strongs, $matches) ? $matches[0] : [];
 
         return $this->_lookupStrongs($this->_normalizeStrongsNumbers($numbers), $source, TRUE);
+    }
+
+    /**
+     * The first module of a 'bible' parameter.  A list - a JSON array or an array, as query's
+     * 'bible' takes - is accepted, and its first entry is used: a client may send its current
+     * Bible selection as it is, including an empty one.
+     *
+     * @param mixed $input Bible module, or a list of them
+     * @return mixed The first entry that is not NULL or ''; NULL when there is none
+     */
+    protected function _firstListedModule(mixed $input): mixed
+    {
+        foreach($this->_parseInputArray($input) as $module) {
+            if($module !== NULL && $module !== '') {
+                return $module;
+            }
+        }
+
+        return NULL;
+    }
+
+    /**
+     * The Bible named by the strongs action's 'bible' parameter, if it is usable
+     * (_isBibleUsable(), as addBible()).  Unlike addBible() it is not added to this request's
+     * Bibles: it only chooses the dictionary.
+     *
+     * @param mixed $module Bible module, from _firstListedModule()
+     * @return Bible|null NULL, with a fatal error, when the Bible is not usable
+     */
+    protected function _findStrongsBible(mixed $module): ?Bible
+    {
+        $Bible = is_string($module) ? Bible::findByModule($module) : NULL;
+
+        if($this->_isBibleUsable($Bible)) {
+            return $Bible;
+        }
+
+        $name = is_scalar($module) ? (string) $module : gettype($module);
+        $this->addError(trans('errors.bible_no_exist', ['module' => $name]), 4);
+
+        return NULL;
     }
 
     /**
@@ -1822,15 +1898,16 @@ class Engine implements ErrorInterface
      * @param mixed $dictionary Requested dictionary module
      * @param mixed $language Language code of the user interface
      * @param int $no_dictionary_level Error level when there is no Strong's source at all
+     * @param Bible|null $Bible Bible whose default dictionary is tried first, when none is given
      * @return array{version: string, Volume: ?Strongs, fallback: bool, level: int}|null NULL once
      *     an error has been raised.  fallback: look up numbers the Volume does not hold in the
      *     legacy table.  level: $no_dictionary_level, for _lookupStrongs().
      */
-    protected function _resolveStrongsSource(mixed $version, mixed $dictionary, mixed $language, int $no_dictionary_level): ?array
+    protected function _resolveStrongsSource(mixed $version, mixed $dictionary, mixed $language, int $no_dictionary_level, ?Bible $Bible = NULL): ?array
     {
         $version = $this->_resolveStrongsVersion($version);
         $legacy  = $this->_legacyStrongsAvailable();
-        $Volume  = $this->_resolveStrongsDictionary($dictionary, $language);
+        $Volume  = $this->_resolveStrongsDictionary($dictionary, $language, $Bible);
 
         if($Volume === FALSE) {
             return NULL;
@@ -1890,15 +1967,17 @@ class Engine implements ErrorInterface
     }
 
     /**
-     * The Strong's dictionary for this request: the one given, otherwise the language default,
-     * otherwise the global default
+     * The Strong's dictionary for this request: the one given, otherwise the default chosen by
+     * Strongs::resolveDefault() - the Bible's, its language's, the interface language's, then
+     * the global default
      *
      * @param mixed $dictionary Requested dictionary module
      * @param mixed $language Language code of the user interface
+     * @param Bible|null $Bible Bible whose default dictionary is tried first
      * @return Strongs|false|null FALSE (with a fatal error) when a given dictionary cannot be
      *     used, NULL when there is none to use
      */
-    protected function _resolveStrongsDictionary(mixed $dictionary, mixed $language): Strongs|false|null
+    protected function _resolveStrongsDictionary(mixed $dictionary, mixed $language, ?Bible $Bible = NULL): Strongs|false|null
     {
         if($dictionary !== NULL && $dictionary !== '') {
             $Volume = is_string($dictionary) ? Strongs::findAvailable($dictionary) : NULL;
@@ -1915,7 +1994,7 @@ class Engine implements ErrorInterface
         $language = is_string($language) ? Language::baseLanguageCode($language) : NULL;
         $language = ($language !== NULL && Language::validateLanguage($language)) ? $language : NULL;
 
-        return Strongs::resolveDefault($language);
+        return Strongs::resolveDefault($language, $Bible);
     }
 
     /**

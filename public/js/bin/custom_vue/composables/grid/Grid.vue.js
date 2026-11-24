@@ -40,6 +40,10 @@ export function useGrid(data, props) {
 
     gridData.rows = gridData.rows_per_page; // legacy, depricated
 
+    // The page's shared alert dialog, provided by each admin App.vue.js: a composable has no
+    // template to hold a <Confirm> of its own
+    const alertDialog = Vue.inject('alertDialog', message => console.error(message));
+
     let grid = {
         // Settings (with defaults)
 
@@ -90,11 +94,7 @@ export function useGrid(data, props) {
                 grid.loading.value = false;
             }.bind(grid))   
             .catch(function(error) {
-                if(error.response.data.message) {
-                    alert(error.response.data.message);
-                } else {
-                    alert('An unknown error has occurred');
-                }
+                alertDialog(error?.response?.data?.message || 'An unknown error has occurred');
                 
                 grid.gridRows.value = [];
                 grid.totalRows.value = 0;

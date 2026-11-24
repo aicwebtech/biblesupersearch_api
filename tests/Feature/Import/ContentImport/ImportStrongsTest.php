@@ -6,6 +6,7 @@ use App\ContentImportManager;
 use App\Models\Copyright;
 use App\Models\Volume;
 use App\Models\VolumeContent\StrongsContent;
+use App\Models\VolumeTypes\Strongs;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Schema;
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
@@ -459,6 +460,53 @@ class ImportStrongsTest extends TestCase
             $this->assertNull(Volume::findByTypeAndModule('strongs', $module));
             $this->assertFalse($deleted, 'The rollback fired the deleted event, recording a deletion');
             $this->assertFalse(Schema::hasTable(StrongsContent::getContentTableName('strongs', $module)));
+        }
+        finally {
+            $this->removeVolume($module);
+        }
+    }
+
+    /**
+     * An import that fails in the database shows a reason that is safe to show, as a module
+     * install does (ContentBase::describeInstallError()), never the database's own message
+     */
+    public function testAFailedImportNeverShowsTheDatabaseMessage(): void
+    {
+        $module = 'zz_import_' . bin2hex(random_bytes(3));
+        $File   = $this->makeUpload('csv', [static::HEADER, ['H1', '', '', '', 'Entry', '']]);
+
+        try {
+            $Manager = new ContentImportManager();
+            $this->assertTrue($Manager->checkImportFile($this->checkData('csv', $File)), implode(PHP_EOL, (array) $Manager->getErrors()));
+
+            $Volume = new Strongs();
+            $Volume->module       = $module;
+            $Volume->name         = 'Import Test ' . $module;
+            $Volume->shortname    = 'IT ' . $module;
+            $Volume->language     = 'en';
+            $Volume->copyright_id = Copyright::first()->id;
+            $Volume->save();
+
+            $Importer = new class('strongs') extends \App\ContentImporters\Csv\CsvStrongs {
+                protected function importFromPath(string $path): int
+                {
+                    $Pdo = new \PDOException("SQLSTATE[08S01]: Got a packet bigger than 'max_allowed_packet' bytes secret_table");
+                    $Pdo->errorInfo = ['08S01', 1153, "Got a packet bigger than 'max_allowed_packet' bytes"];
+
+                    throw new \Illuminate\Database\QueryException('mysql', 'insert into secret_table', [], $Pdo);
+                }
+            };
+
+            $Importer->setVolume($Volume);
+            $Importer->setFile($Manager->sanitized_filename);
+            $Importer->setSettings(static::MAPPING);
+
+            $this->assertFalse($Importer->import());
+
+            $errors = implode(' ', $Importer->getErrors());
+            $this->assertStringContainsString('Import failed: The database server refused the data as too large', $errors);
+            $this->assertStringNotContainsString('secret', $errors);
+            $this->assertSame(0, (int) $Volume->refresh()->installed);
         }
         finally {
             $this->removeVolume($module);

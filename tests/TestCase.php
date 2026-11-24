@@ -263,6 +263,38 @@ class TestCase extends BaseTestCase
     }
 
     /**
+     * Installs a throwaway volume (one with no module file) with content, as an import does:
+     * the empty table, then its rows, then enabled if asked.  A volume cannot be installed or
+     * enabled with no content (Volume::install(), Volume::enable()), so a fixture that needs
+     * an installed volume comes through here.
+     *
+     * Enabled through the attribute, which checks the content as enable() does, but without
+     * enable()'s claim on the default: with no usable Strong's default, a fixture would become
+     * the global one (and clear a disabled default's flag), and parallel tests resolving it
+     * would pick a throwaway dictionary.  A test of claiming the default calls enable() itself.
+     *
+     * @param \App\Models\Volume $Volume Saved volume of type 'strongs' (the only type so far)
+     * @param bool $enable Enable it too
+     * @param array<int, array<string, mixed>>|null $rows Content rows; NULL for one placeholder row
+     */
+    protected function installVolumeFixture(\App\Models\Volume $Volume, bool $enable = TRUE, ?array $rows = NULL): void
+    {
+        $this->assertTrue($Volume->install(TRUE), implode('; ', $Volume->getErrors()));
+
+        $rows ??= [['number' => 'H99999', 'definition' => 'Volume fixture placeholder', 'is_special' => 0]];
+
+        if($rows) {
+            \Illuminate\Support\Facades\DB::table($Volume->content()->getTable())->insert($rows);
+        }
+
+        if($enable) {
+            $Volume->enabled = 1;
+            $this->assertSame(1, (int) $Volume->enabled, 'The fixture could not be enabled');
+            $Volume->save();
+        }
+    }
+
+    /**
      * Cleans up after a Bible import chain (importcheck → import → ... → delete): the imported
      * Bible with its table and module files, and the upload importcheck staged.  Either may be
      * NULL when the chain did not get that far.

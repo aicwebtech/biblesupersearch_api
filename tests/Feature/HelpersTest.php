@@ -234,4 +234,38 @@ class HelpersTest extends TestCase
             Helpers::clearMaxBoundVariablesCache();
         }
     }
+
+    /**
+     * On MySQL the INSERT budget is half of max_allowed_packet, probed once per connection;
+     * SQLite has no packet limit.
+     */
+    public function testGetMaxInsertBytes(): void
+    {
+        $this->_defineSqliteProbeConnection();
+        Helpers::clearMaxBoundVariablesCache();
+
+        try {
+            $this->assertNull(Helpers::getMaxInsertBytes('bound_variable_probe'));
+
+            $Connection = \DB::connection();
+
+            if(!in_array($Connection->getDriverName(), ['mysql', 'mariadb'], TRUE)) {
+                $this->assertNull(Helpers::getMaxInsertBytes());
+                return;
+            }
+
+            $packet = (int) $Connection->selectOne('SELECT @@max_allowed_packet AS packet')->packet;
+            $Connection->flushQueryLog();
+            $Connection->enableQueryLog();
+
+            $this->assertSame(intdiv($packet, 2), Helpers::getMaxInsertBytes());
+            $this->assertSame(intdiv($packet, 2), Helpers::getMaxInsertBytes());
+            $this->assertCount(1, $Connection->getQueryLog(), 'Not memoized');
+        }
+        finally {
+            \DB::connection()->disableQueryLog();
+            \DB::connection()->flushQueryLog();
+            Helpers::clearMaxBoundVariablesCache();
+        }
+    }
 }
