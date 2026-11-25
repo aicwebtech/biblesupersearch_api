@@ -1,5 +1,6 @@
 import '../../../../js/bin/ckeditor5/build/ckeditor.js';
 import { volumeLabels } from '../labels.js';
+import Confirm from '../../../bin/custom_vue/dialogs/ConfirmDialog.vue.js';
 
 const template = `
     <div>
@@ -180,11 +181,16 @@ const template = `
         <br />
 
         <textarea ref='descriptionEl'></textarea>
+
+        <Confirm ref='ConfirmDialog' title='Copyright' okOption='Yes, this is correct' cancelOption='No' persistent></Confirm>
     </div>
 `;
 
 export default {
     template: template,
+    components: {
+        Confirm
+    },
     props: {
         record: {
             type: Object,
@@ -201,6 +207,7 @@ export default {
 
         const descriptionEl = Vue.ref(null);
         const copyrightStatementEl = Vue.ref(null);
+        const ConfirmDialog = Vue.ref(null);
 
         let descriptionEditor = null;
         let copyrightEditor = null;
@@ -223,7 +230,8 @@ export default {
             const cr = bootstrap.copyrights.find(element => element.id == props.record.copyright_id);
             const type = (bootstrap.volume_types || {})[props.record.type];
 
-            if(!cr) {
+            // A copyright with no default statement (proprietary ones) has none to show
+            if(!cr || !cr.copyright_statement_processed) {
                 return '';
             }
 
@@ -287,11 +295,13 @@ export default {
             msg += cr.name;
             msg += '\n\nWarning: Selecting the wrong copyright may put you at risk of civil or criminal penalties!';
 
-            if(window.confirm(msg)) {
-                prevCopyrightId = value;
-            } else {
-                props.record.copyright_id = prevCopyrightId;
-            }
+            ConfirmDialog.value.confirmSingle(msg, confirmed => {
+                if(confirmed) {
+                    prevCopyrightId = value;
+                } else {
+                    props.record.copyright_id = prevCopyrightId;
+                }
+            });
         }
 
         function errorShow(field) {
@@ -329,6 +339,7 @@ export default {
             defaultProps,
             descriptionEl,
             copyrightStatementEl,
+            ConfirmDialog,
             typeList,
             labels,
             isExisting,

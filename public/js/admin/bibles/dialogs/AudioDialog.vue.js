@@ -3,6 +3,7 @@ import ChipBool from '../../../bin/custom_vue/components/ChipBool.vue.js';
 import YesNoSel from '../../../bin/custom_vue/components/YesNoSelector.vue.js';
 import AudioUploadDialog from './AudioUploadDialog.vue.js';
 import AudioScanDialog from './AudioScanDialog.vue.js';
+import Confirm from '../../../bin/custom_vue/dialogs/ConfirmDialog.vue.js';
 
 const tpl = `
     <v-dialog 
@@ -24,6 +25,8 @@ const tpl = `
                         :bible="record"
                         @scan-success='gridRefresh()'
                     />
+
+                    <Confirm ref='ConfirmDialog' title='Delete Audio' okOption='Delete'></Confirm>
 
                     <v-sheet v-if='rowSelections.length > 0' class='mt-3 mb-12'>
                         <v-btn 
@@ -139,7 +142,8 @@ export default {
         ChipBool,
         YesNoSel,
         AudioUploadDialog,
-        AudioScanDialog
+        AudioScanDialog,
+        Confirm
     },
     setup(props) {
         let data = {
@@ -221,14 +225,17 @@ export default {
         },
         deleteSelectedRows() {
             if(this.rowSelections.length === 0) {
-                alert('No audio files selected for deletion.');
+                this.$refs.ConfirmDialog.alert('No audio files selected for deletion.');
                 return;
             }
 
-            if(!confirm('Are you sure you want to delete the selected audio files? This action cannot be undone.')) {
-                return;
-            }
-
+            this.$refs.ConfirmDialog.confirmSingle('Are you sure you want to delete the selected audio files? This action cannot be undone.', function(confirmed) {
+                if(confirmed) {
+                    this.deleteRows();
+                }
+            }.bind(this));
+        },
+        deleteRows() {
             var idsToDelete = this.rowSelections.filter(ids => typeof ids === 'number');
 
             axios.post('/admin/bibles/audio/delete', {

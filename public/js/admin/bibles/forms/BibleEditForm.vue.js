@@ -1,4 +1,6 @@
 import '../../../../js/bin/ckeditor5/build/ckeditor.js';
+import { strongsDictionaryOptions } from '../../volumes/strongsOptions.js';
+import Confirm from '../../../bin/custom_vue/dialogs/ConfirmDialog.vue.js';
 
 const template = `
     <div 
@@ -90,9 +92,29 @@ const template = `
                     hint='ISO-639-1 code if exists, otherwise ISO 639-2 code'
                     @update:modelValue='langCodeChanged'
                     :rules='[v => !v || /^[a-z]{2,3}$/.test(v) || "Must be 2 or 3 lowercase letters", v => errorShow("lang_short")]'
-                ></v-text-field>  
+                ></v-text-field>
             </v-col>
-        </v-row>    
+        </v-row>
+        <v-row v-bind='defaultProps.vrows'>
+            <v-col>
+                <v-select
+                    :items='strongsDictionaryList'
+                    label="Default Strong's Dictionary"
+                    v-model='record.strongs_dictionary'
+                    v-bind='defaultProps.selects'
+                    :item-props='defaultProps.itemPropsFunction'
+                    hint="Used by the API when this Bible selects the dictionary and none is given."
+                    persistent-hint
+                    :rules='[v => errorShow("strongs_dictionary")]'
+                    @update:modelValue='errorClear("strongs_dictionary")'
+                >
+                    <template v-slot:item='{ props, item }'>
+                        <v-list-subheader v-if='item.raw.header'>{{ item.raw.title }}</v-list-subheader>
+                        <v-list-item v-else v-bind='props'></v-list-item>
+                    </template>
+                </v-select>
+            </v-col>
+        </v-row>
 
         <v-divider v-bind='defaultProps.dividers'></v-divider>
 
@@ -327,6 +349,7 @@ const template = `
             hide-details='auto'
         ></textarea>
 
+        <Confirm ref='ConfirmDialog' title='Copyright' okOption='Yes, this is correct' cancelOption='No' persistent></Confirm>
     </div>
 `;
 
@@ -335,7 +358,7 @@ export default {
     inject: ['bootstrap', 'defaultProps'],
 
     components: {
-        // Ckeditor
+        Confirm
     },
 
     props: {
@@ -403,6 +426,10 @@ export default {
             } );
     },
     computed: {
+        // Grouped by language, under a heading per language (see strongsOptions.js)
+        strongsDictionaryList() {
+            return strongsDictionaryOptions(this.bootstrap, 'Use language default');
+        },
         showDefaultCopyright() {
             var cs = this.record.copyright_statement;
             return !cs || cs == ''; 
@@ -522,10 +549,12 @@ export default {
 
             msg += '\n\nWarning: Selecting the wrong copyright may put you at risk of civil or criminal penalties!';
 
-            if(!window.confirm(msg)) {
-                this.record.copyright_id = prev;
-                this.prevCopyrightId = prev;
-            }
+            this.$refs.ConfirmDialog.confirmSingle(msg, function(confirmed) {
+                if(!confirmed) {
+                    this.record.copyright_id = prev;
+                    this.prevCopyrightId = prev;
+                }
+            }.bind(this));
         },
         errorShow(field) {
             if(!this.errors || !this.errors[field]) {

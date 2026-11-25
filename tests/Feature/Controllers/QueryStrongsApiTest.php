@@ -4,6 +4,9 @@ namespace Tests\Feature\Controllers;
 
 use Tests\TestCase;
 use Tests\Support\StrongsDictionaryFixtures;
+use App\Models\Bible;
+use App\Models\Copyright;
+use App\Models\VolumeAttr;
 use App\Models\VolumeTypes\Strongs;
 use Illuminate\Testing\TestResponse;
 
@@ -28,6 +31,47 @@ class QueryStrongsApiTest extends TestCase
         $this->removeLanguageFixture(self::LANGUAGE);
 
         parent::tearDown();
+    }
+
+    /**
+     * A throwaway Bible holding one verse that tags H1234, as kjv_strongs does: a test that
+     * gives it a default dictionary leaves the installed Bibles' settings alone.
+     *
+     * Deleted with a query, which skips the model's deleted hook, so its settings are removed
+     * here too.
+     */
+    protected function makeQueryBibleFixture(): Bible
+    {
+        $module = $this->fixtureModule('test_bible_query_strongs_');
+
+        $this->deferCleanup(function() use ($module) {
+            $this->removeBibleModuleFixture($module);
+            VolumeAttr::unsetAll(VolumeAttr::TYPE_BIBLE, $module);
+        });
+
+        $Bible = new Bible();
+        $Bible->module       = $module;
+        $Bible->name         = 'Query Strongs Fixture ' . $module;
+        $Bible->shortname    = 'QryStr ' . $module;
+        $Bible->year         = '2000';
+        $Bible->lang_short   = 'en';
+        $Bible->copyright_id = (int) Copyright::value('id');
+        $Bible->save();
+
+        // Returns nothing: the flag and the errors tell
+        $Bible->install(TRUE);
+        $this->assertFalse($Bible->hasErrors(), implode('; ', $Bible->getErrors()));
+        $this->assertSame(1, (int) $Bible->installed);
+
+        \DB::table('verses_' . $module)->insert([
+            'book' => 1, 'chapter' => 7, 'verse' => 11, 'chapter_verse' => 7011,
+            'text' => 'the fountains{H4599} of the great{H7227} deep{H8415} broken up{H1234}',
+        ]);
+
+        $Bible->enabled = 1;
+        $Bible->save();
+
+        return $Bible;
     }
 
     /**
@@ -112,6 +156,70 @@ class QueryStrongsApiTest extends TestCase
             $this->api('/api/v3', self::QUERY + ['language' => self::LANGUAGE, 'strongs_dictionary' => $Explicit->module]),
             $Explicit->module
         );
+    }
+
+    /**
+     * strongs_use_bible: the primary Bible's default dictionary comes before the interface
+     * language's.  Off (the default), the Bible's is ignored; an explicit dictionary still wins.
+     */
+    public function testStrongsUseBible(): void
+    {
+        $Fixture  = $this->makeQueryBibleFixture();
+        $Bible    = $this->makeDictionary();
+        $Language = $this->makeDictionary();
+        $Explicit = $this->makeDictionary();
+
+        $this->createLanguageFixture(self::LANGUAGE, 'Query Strongs Fixture Language')
+            ->setAttr(Strongs::LANGUAGE_ATTR, $Language->module);
+
+        VolumeAttr::setAttr(VolumeAttr::TYPE_BIBLE, $Fixture->module, Strongs::BIBLE_ATTR, $Bible->module);
+
+        $query = ['bible' => $Fixture->module] + self::QUERY + ['language' => self::LANGUAGE];
+
+        $this->assertModernStrongs($this->api('/api/v3', $query + ['strongs_use_bible' => 1]), $Bible->module);
+        $this->assertModernStrongs($this->api('/api/v3', $query), $Language->module);
+        $this->assertModernStrongs($this->api('/api/v3', $query + ['strongs_use_bible' => 0]), $Language->module);
+
+        $this->assertModernStrongs(
+            $this->api('/api/v3', $query + ['strongs_use_bible' => 1, 'strongs_dictionary' => $Explicit->module]),
+            $Explicit->module
+        );
+    }
+
+    /**
+     * With several Bibles, strongs_use_bible reads the first one requested, whichever order
+     * they come in
+     */
+    public function testStrongsUseBibleReadsTheFirstBibleRequested(): void
+    {
+        $First       = $this->makeQueryBibleFixture();
+        $Second      = $this->makeQueryBibleFixture();
+        $FirstDict   = $this->makeDictionary();
+        $SecondDict  = $this->makeDictionary();
+
+        VolumeAttr::setAttr(VolumeAttr::TYPE_BIBLE, $First->module, Strongs::BIBLE_ATTR, $FirstDict->module);
+        VolumeAttr::setAttr(VolumeAttr::TYPE_BIBLE, $Second->module, Strongs::BIBLE_ATTR, $SecondDict->module);
+
+        $query = ['strongs_use_bible' => 1] + self::QUERY;
+
+        $this->assertModernStrongs($this->api('/api/v3', ['bible' => [$First->module, $Second->module]] + $query), $FirstDict->module);
+        $this->assertModernStrongs($this->api('/api/v3', ['bible' => json_encode([$Second->module, $First->module])] + $query), $SecondDict->module);
+    }
+
+    /**
+     * The Engine is a singleton: a request whose Bibles all fail must not keep the previous
+     * request's primary Bible
+     */
+    public function testAFailedBibleListClearsThePrimaryBible(): void
+    {
+        $Engine  = new \App\Engine();
+        $primary = new \ReflectionProperty(\App\Engine::class, 'Bible_Primary');
+
+        $Engine->setBibles(['kjv_strongs']);
+        $this->assertSame('kjv_strongs', $primary->getValue($Engine)?->module);
+
+        $Engine->setBibles(['no_such_bible']);
+        $this->assertNull($primary->getValue($Engine));
     }
 
     /** An explicit dictionary that cannot be used fails the query, whatever defaults exist. */

@@ -8,8 +8,11 @@ use App\Http\Responses\Response;
 use App\Http\Controllers\Controller;
 use App\Models\Bible;
 use App\Models\Language;
+use App\Models\VolumeAttr;
+use App\Models\VolumeTypes\Strongs;
 use App\Helpers;
 use Validator;
+use Illuminate\Support\Facades\DB;
 
 class BibleController extends Controller
 {
@@ -34,6 +37,7 @@ class BibleController extends Controller
         Bible::populateBibleTable();
         
         $bootstrap = $this->getAdminBootstrap();
+        $bootstrap->strongs_dictionaries = Strongs::availableDictionaries();
         $bootstrap = $this->encodeBootstrap($bootstrap);
 
         return view('admin.bibles', ['bootstrap' => $bootstrap]);
@@ -274,6 +278,7 @@ class BibleController extends Controller
         $resp->Bible['audio_structure'] = $Bible->audio_structure ?: 'chapters';
         $resp->Bible['has_module_file'] = $Bible->hasModuleFile() ? 1 : 0;
         $resp->Bible['tts_api_voices'] = \App\TextToSpeech\TtsAbstract::getAllApiVoicesByLanguage($Language->code, $Language->tts_api);
+        $resp->Bible['strongs_dictionary'] = $this->getStrongsDictionary($Bible);
 
         return new Response($resp, 200);
     }
@@ -401,7 +406,17 @@ class BibleController extends Controller
 
         // $request->validate($rules); // This breaks, even though docs say it will return 422 with JSON data for an AJAX request
 
-        $v = Validator::make($data, $rules);
+        // The default Strong's dictionary is a volumes_attr row, not a bibles column, so it is
+        // validated alongside but kept out of fill().  Left alone when the request omits it.
+        $has_strongs = $request->has('strongs_dictionary');
+        $strongs     = $request->input('strongs_dictionary');
+        $old_module  = $isNew ? NULL : (string) $Bible->module;
+        $stored      = $isNew ? NULL : $this->getStrongsDictionary($Bible);
+
+        $v = Validator::make(
+            $data + ['strongs_dictionary' => $strongs],
+            $rules + ['strongs_dictionary' => Strongs::selectionRules($stored)]
+        );
 
         if($v->fails()) {
             $resp->success = FALSE;
@@ -409,11 +424,27 @@ class BibleController extends Controller
             return new Response($resp, 422);
         }
 
-        $Bible->fill($data);
-        $Bible->save();
+        // One transaction: a Bible renamed without its dictionary setting would lose it
+        DB::transaction(function() use ($Bible, $data, $old_module, $has_strongs, $strongs, $stored) {
+            $Bible->fill($data);
+            $Bible->save();
+
+            if($old_module !== NULL) {
+                VolumeAttr::renameModule(VolumeAttr::TYPE_BIBLE, $old_module, (string) $Bible->module);
+            }
+
+            if($has_strongs) {
+                ($strongs === NULL || $strongs === '')
+                    ? VolumeAttr::unsetAttr(VolumeAttr::TYPE_BIBLE, (string) $Bible->module, Strongs::BIBLE_ATTR)
+                    : VolumeAttr::setAttr(VolumeAttr::TYPE_BIBLE, (string) $Bible->module, Strongs::BIBLE_ATTR, $strongs);
+
+                Strongs::touchModules($stored, ($strongs === '') ? NULL : $strongs);
+            }
+        });
 
         $resp->success = TRUE;
         $resp->Bible   = $Bible->attributesToArray();
+        $resp->Bible['strongs_dictionary'] = $this->getStrongsDictionary($Bible);
 
         return new Response($resp, 200);
     }
@@ -797,5 +828,13 @@ class BibleController extends Controller
         }
 
         return new Response($resp, $Manager->getHttpStatus());
+    }
+
+    /**
+     * The Bible's default Strong's dictionary (a module), if one is set
+     */
+    protected function getStrongsDictionary(Bible $Bible): ?string
+    {
+        return VolumeAttr::getAttr(VolumeAttr::TYPE_BIBLE, (string) $Bible->module, Strongs::BIBLE_ATTR);
     }
 }

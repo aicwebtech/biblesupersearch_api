@@ -34,6 +34,7 @@ const tpl = `
                     </v-sheet>
                     <v-sheet v-else-if='queueProcessing'>
                         {{actioningLabel}} {{queueItemCurrent.name}}
+                        ({{queueItemsProcessed + 1}} of {{queueItemsTotal}})
 
                         <v-progress-linear 
                             v-model='queueItemsProcessedPercent'
@@ -61,7 +62,7 @@ const tpl = `
                         @click='handleOk()'
                     ></v-btn>                         
                     <v-btn
-                        text='Close'
+                        :text='queueProcessing ? "Stop" : "Close"'
                         @click='handleCancel()'
                     ></v-btn>                    
                 </v-card-actions>
@@ -207,6 +208,11 @@ export default {
         },
         queueProcessNext() {
             if(this.queueAbort) {
+                // Stopped part way: what was done before Stop still shows
+                if(this.queueItemsProcessed > 0 && this.action != 'test') {
+                    this.$emit('onSave');
+                }
+
                 this.closeDialog();
                 return;
             }
@@ -261,6 +267,12 @@ export default {
             this.queueFinished = true;
 
             if(this.queueErrors.length > 0) {
+                // Refresh anyway: the items that didn't fail have changed.  Selections are kept,
+                // so the failed ones can be retried.  'test' changes nothing.
+                if(this.action != 'test') {
+                    this.$emit('onSave');
+                }
+
                 return;
             }
 
@@ -274,14 +286,17 @@ export default {
             this.closeDialog();
         },
         queueHandleError(response) {
-            const subtitle = Array.isArray(response.data.errors) 
-                ? response.data.errors.join('; ') : 'An unknown error occurred';
-            
+            // A failed request with no response (network error, timeout) has no data
+            const errors = response && response.data ? response.data.errors : null;
+            const subtitle = Array.isArray(errors) ? errors.join('; ') : 'An unknown error occurred';
+
             this.queueErrors.push({
                 title: this.queueItemCurrent.name,
                 subtitle: subtitle
             });
 
+            // A failed item is still processed: the bar must advance, or the queue looks stalled
+            this.queueItemsProcessed ++;
             this.queueProcessNext();
         },
         closeDialog() {

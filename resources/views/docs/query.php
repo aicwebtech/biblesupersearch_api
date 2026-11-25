@@ -57,6 +57,7 @@
         'language',
         'strongs_version',
         'strongs_dictionary',
+        'strongs_use_bible',
     );
 
     $advanced_params = array(

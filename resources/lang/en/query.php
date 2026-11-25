@@ -262,5 +262,13 @@ return array(
             . 'When there are no definitions to use at all, a non-fatal error is returned, the search results are still returned, '
             . 'and <code>strongs</code> is empty.'
         ],
+        'strongs_use_bible' => [
+            'type'   => 'Boolean',
+            'name'   => 'Strong\'s Dictionary from Bible',
+            'default' => 'false',
+            'description' => 'When true and \'strongs_dictionary\' is not given, the Strong\'s dictionary is selected from the first Bible requested: '
+            . 'the Bible\'s default Strong\'s dictionary, otherwise the default dictionary for the Bible\'s language, '
+            . 'and only then the default for \'language\' and the global default.  Works the same as \'bible\' on the Strong\'s Definitions action.'
+        ],
     )
 );

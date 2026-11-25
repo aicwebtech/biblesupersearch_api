@@ -42,4 +42,33 @@ class InstallManagerDefaultStrongsTest extends TestCase
         $this->assertTrue(InstallManager::installDefaultStrongs(1000.0, 1000.0));
         $this->assertEquals($before, $Volume->refresh()->updated_at);
     }
+
+    /**
+     * A dictionary that cannot be enabled - installed with an empty table - fails the step
+     * with the reason enable() gave, not a misleading one from makeDefault().  A fixture, so
+     * the real dictionary is never written to.
+     */
+    public function testADictionaryThatCannotBeEnabledLogsWhy(): void
+    {
+        $module = $this->fixtureModule('vol_fixture_');
+        $this->deferCleanup(fn() => $this->removeVolumeModuleFixture('strongs', $module));
+
+        $Volume = new Strongs();
+        $Volume->module    = $module;
+        $Volume->name      = 'Install Default Fixture ' . $module;
+        $Volume->shortname = 'InstDef ' . $module;
+        $Volume->language  = 'qqf';
+        $Volume->save();
+
+        $this->assertTrue($Volume->content()->install(TRUE));
+        \DB::table('volumes')->where('id', $Volume->id)->update(['installed' => 1, 'enabled' => 0]);
+
+        Log::spy();
+
+        $this->assertFalse(InstallManager::installDefaultStrongs(1000.0, 1000.0, $module));
+
+        Log::shouldHaveReceived('warning')->withArgs(fn($message) => str_contains($message, 'could not be enabled') && str_contains($message, 'no content'))->once();
+        Log::shouldNotHaveReceived('warning', [\Mockery::on(fn($message) => str_contains($message, 'made the default'))]);
+        $this->assertSame(0, (int) $Volume->refresh()->enabled);
+    }
 }

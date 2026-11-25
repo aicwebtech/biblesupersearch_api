@@ -4,12 +4,13 @@ const template = `
     <v-dialog 
         v-model='showing'
         max-width='600' 
+        :persistent='persistent'
     >
         <template v-slot:default="{ isActive }">
             <v-card>
                 <v-card-title :text='title' v-if='title'>{{title}}</v-card-title>
 
-                <v-card-text class='vue_editdialog_body'>
+                <v-card-text class='vue_editdialog_body' style='white-space: pre-line'>
                     {{message}}
                 </v-card-text>
 
@@ -46,6 +47,12 @@ export default {
         cancelOption: {
             type: String,
             default: 'Cancel'
+        },
+        // Only OK or Cancel close it: for a question that must be answered, such as one
+        // confirming a change already made, which Cancel reverts
+        persistent: {
+            type: Boolean,
+            default: false
         },
     },
     template: template,

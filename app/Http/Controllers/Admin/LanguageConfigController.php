@@ -8,7 +8,6 @@ use App\Http\Controllers\Controller;
 use App\Models\Post;
 use App\Models\Language;
 use App\Models\Bible;
-use App\Models\Volume;
 use App\Models\VolumeTypes\Strongs;
 use App\Models\Shortcuts\ShortcutAbstract;
 use Illuminate\Support\Facades\DB;
@@ -356,20 +355,7 @@ class LanguageConfigController extends Controller
 
         $v = Validator::make(
             $data + ['strongs_dictionary' => $strongs],
-            $rules + ['strongs_dictionary' => [
-                'bail',
-                'nullable',
-                'string',
-                function($attribute, $value, $fail) use ($stored) {
-                    if(!is_string($value) || $value === $stored) {
-                        return;
-                    }
-
-                    if(!Strongs::findAvailable($value)) {
-                        $fail('The selected Strong\'s dictionary is not installed and enabled.');
-                    }
-                },
-            ]]
+            $rules + ['strongs_dictionary' => Strongs::selectionRules($stored)]
         );
 
         if($v->fails()) {
@@ -386,7 +372,7 @@ class LanguageConfigController extends Controller
                 ? $Language->unsetAttr(Strongs::LANGUAGE_ATTR) 
                 : $Language->setAttr(Strongs::LANGUAGE_ATTR, $strongs);
 
-            $this->touchChangedDictionaries($stored, ($strongs === '') ? NULL : $strongs);
+            Strongs::touchModules($stored, ($strongs === '') ? NULL : $strongs);
         }
 
         $resp->success  = true;
@@ -394,25 +380,5 @@ class LanguageConfigController extends Controller
         $resp->Language['strongs_dictionary'] = Language::getLanguageAttr($Language->code, Strongs::LANGUAGE_ATTR);
 
         return new Response($resp, 200);
-    }
-
-    /**
-     * language_attr has no timestamps, so a changed language default touches the dictionaries
-     * it moved between instead: statics_changed reports volumes.updated_at, and Strong's
-     * resolution has changed for API clients.
-     *
-     * @param string|null $old Default before the save
-     * @param string|null $new Default after it
-     * @return void
-     */
-    protected function touchChangedDictionaries(?string $old, ?string $new): void
-    {
-        if($old === $new) {
-            return;
-        }
-
-        Volume::where('type', 'strongs')
-            ->whereIn('module', array_filter([$old, $new], fn($module) => $module !== NULL))
-            ->update(['updated_at' => now()]);
     }
 }

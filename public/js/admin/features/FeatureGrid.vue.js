@@ -2,12 +2,39 @@ import TruncateTooltip from '../../bin/custom_vue/components/Truncate.vue.js';
 import YesNoSel from '../../bin/custom_vue/components/YesNoSelector.vue.js';
 import ChipBool from '../../bin/custom_vue/components/ChipBool.vue.js';
 import ActionDialogFeatures from './dialogs/ActionDialog.vue.js';
+import Confirm from '../../bin/custom_vue/dialogs/ConfirmDialog.vue.js';
 import { gridTemplateProps, useGrid } from '../../bin/custom_vue/composables/grid/Grid.vue.js';
 
  const template = `<v-sheet class='feature-grid-container'>
             <h2 class='app'>
                 Features
             </h2>
+
+            <v-sheet v-for='(feature, identifier) in allFeatures' :key='identifier' class='feature-all-row mt-3'>
+                <span class='mr-2'>{{feature.name}}:</span>
+                <v-btn
+                    v-for='action in feature.actions'
+                    :key='action'
+                    size='small'
+                    class='mr-2'
+                    :prepend-icon='allActionSettings[action].icon'
+                    :loading='allActionRunning === identifier + action'
+                    :disabled='!!allActionRunning'
+                    @click='handleAllAction(identifier, feature, action)'
+                >
+                    {{allActionSettings[action].label}}
+                </v-btn>
+            </v-sheet>
+
+            <v-alert
+                v-if='allActionErrors.length'
+                type='error'
+                class='mt-3'
+                closable
+                @click:close='allActionErrors = []'
+            >
+                <div v-for='error in allActionErrors'>{{error}}</div>
+            </v-alert>
 
             <v-sheet class='feature-bulk-row mt-3 mb-6'>
                 <template v-if='hasRowSelections'>
@@ -149,6 +176,21 @@ import { gridTemplateProps, useGrid } from '../../bin/custom_vue/composables/gri
                 @afterLeave='handleCloseActions'
             />   
 
+            <Confirm ref='ConfirmAll' :title='allActionConfirmTitle'></Confirm>
+            <Confirm ref='ConfirmEnable' title='Enable' okOption='Yes' cancelOption='No' persistent></Confirm>
+            <Confirm ref='ConfirmLosses' :title='allActionConfirmTitle' okOption='Uninstall anyway' cancelOption='Cancel' persistent></Confirm>
+
+            <v-overlay
+                :model-value='!!allActionRunning'
+                persistent
+                class='align-center justify-center'
+            >
+                <v-card class='pa-6 text-center' min-width='300'>
+                    <v-progress-circular indeterminate size='48' class='mb-4'></v-progress-circular>
+                    <div>{{allActionRunningText}}</div>
+                </v-card>
+            </v-overlay>
+
         </v-sheet>`;
 
 export default {
@@ -178,7 +220,8 @@ export default {
         ActionDialogFeatures,
         TruncateTooltip,
         ChipBool,
-        YesNoSel
+        YesNoSel,
+        Confirm
     },
     template: template, 
     data() {
@@ -189,6 +232,16 @@ export default {
             },
             selectedAction: null,
             actionQueue: null,
+            allActionRunning: null,
+            allActionRunningText: null,
+            allActionConfirmTitle: null,
+            allActionErrors: [],
+            allActionSettings: {
+                install: {label: 'Install All', actioning: 'Installing', icon: 'mdi-plus-box', confirm: 'Install every {name} preset, in every language?', askEnable: true},
+                enable: {label: 'Enable All', actioning: 'Enabling', icon: 'mdi-lock-open', confirm: 'Enable every installed {name} volume, in every language?'},
+                disable: {label: 'Disable All', actioning: 'Disabling', icon: 'mdi-lock', confirm: 'Disable every enabled {name} volume, in every language, including the default?\n\nThis drops the current default. When enabled again, the standard default dictionary becomes the default if it is among them, otherwise the first volume enabled. The volumes can be enabled again later.', checkLosses: false},
+                uninstall: {label: 'Uninstall All', actioning: 'Uninstalling', icon: 'mdi-minus-box', confirm: 'Uninstall every {name} volume, in every language, including the default?\n\nThis drops the current default. When installed and enabled again, the standard default dictionary becomes the default if it is among them, otherwise the first volume enabled. Volumes with a module file can be installed again later.', checkLosses: true},
+            },
             rowSelections: [],
             bulkActions: [
                 {
@@ -234,6 +287,10 @@ export default {
         },
         hasRowSelections() {
             return this.rowSelections.length > 0;
+        },
+        // Features with actions over every language at once (FeatureDefinitions::allActions())
+        allFeatures() {
+            return this.bootstrap.feature_all_actions || {};
         }
     },
     methods: {        
@@ -261,10 +318,88 @@ export default {
             this.selectedAction = null;
         },
         handleSaveActions() {
-            this.refreshGridClearSelections();
+            // Selections are cleared by handleSuccessActions(), only when every item succeeded
+            this.refreshGrid();
         },
         handleSuccessActions() {
             this.rowSelections = [];
+        },
+        handleAllAction(identifier, feature, action) {
+            var settings = this.allActionSettings[action];
+
+            this.allActionConfirmTitle = settings.label + ': ' + feature.name;
+
+            this.$refs.ConfirmAll.confirmSingle(settings.confirm.replace('{name}', feature.name), function(confirmed) {
+                if(!confirmed) {
+                    return;
+                }
+
+                if(settings.checkLosses) {
+                    this.confirmAllLosses(identifier, feature, action);
+                    return;
+                }
+
+                if(!settings.askEnable) {
+                    this.runAllAction(identifier, feature, action, {});
+                    return;
+                }
+
+                // A dialog of its own: ConfirmDialog closes itself after running the callback,
+                // so reopening the same one from here would shut it again at once
+                this.$refs.ConfirmEnable.confirmSingle('Enable them too?', function(enable) {
+                    this.runAllAction(identifier, feature, action, {enable: enable ? 1 : 0});
+                }.bind(this));
+            }.bind(this));
+        },
+        // A second question when the action would lose volumes for good: those with no module
+        // file to install them again from (imported from a CSV or Excel file ...)
+        confirmAllLosses(identifier, feature, action) {
+            axios.get('/admin/features/all/' + action + '/' + identifier + '/losses')
+            .then(function(response) {
+                var losses = (response.data && response.data.losses) || [];
+
+                if(!losses.length) {
+                    this.runAllAction(identifier, feature, action, {});
+                    return;
+                }
+
+                var message = 'These volumes have no module file, so uninstalling them deletes their content for good. They cannot be installed again:\n\n'
+                    + losses.map(name => '• ' + name).join('\n')
+                    + '\n\nUninstall them anyway?';
+
+                this.$refs.ConfirmLosses.confirmSingle(message, function(confirmed) {
+                    if(confirmed) {
+                        this.runAllAction(identifier, feature, action, {});
+                    }
+                }.bind(this));
+            }.bind(this))
+            .catch(function() {
+                this.allActionErrors = ['Could not check which volumes would be lost. Nothing was uninstalled.'];
+            }.bind(this));
+        },
+        runAllAction(identifier, feature, action, params) {
+            this.allActionRunningText = this.allActionSettings[action].actioning + ' all ' + feature.name + ' ...';
+            this.allActionErrors = [];
+            this.allActionRunning = identifier + action;
+
+            axios.request({
+                url: '/admin/features/all/' + action + '/' + identifier,
+                method: 'POST',
+                params: params,
+            })
+            .then(function(response) {
+                if(response.data.success == false) {
+                    this.allActionErrors = response.data.errors || ['An unknown error occurred'];
+                }
+            }.bind(this))
+            .catch(function(error) {
+                var data = (error.response && error.response.data) || {};
+                this.allActionErrors = Array.isArray(data.errors) ? data.errors : ['An unknown error occurred'];
+            }.bind(this))
+            .finally(function() {
+                this.allActionRunning = null;
+                this.refreshGridClearSelections();
+            }.bind(this));
         },
     }
 }

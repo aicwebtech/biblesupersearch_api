@@ -277,6 +277,7 @@ const template = `<v-sheet>
                 :actions='bulkActions'
                 :queue='actionQueue'
                 @onClose='handleCloseActions'
+                @onSave='refreshGrid'
                 @onSuccess='handleSuccessActions'
             />
 
@@ -548,9 +549,8 @@ export default {
         }
 
         function handleCloseActions() {
-            // Refresh even on error: some of the queue may have succeeded
+            // The dialog asks for the refresh itself (onSave), errors or not
             selectedAction.value = null;
-            refreshGrid();
         }
 
         function handleSuccessActions() {

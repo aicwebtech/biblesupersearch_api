@@ -1,3 +1,5 @@
+import { strongsDictionaryOptions } from '../volumes/strongsOptions.js';
+
 const template = `
     <div 
         max-width='600' 
@@ -170,27 +172,9 @@ export default {
 
             return list;
         },
-        // Grouped by language, under a heading per language.  v-select (Vuetify 3.7) has no
-        // subheader items of its own, so the headings are items flagged 'header', drawn by the
-        // item slot as a non-selectable subheader.
+        // Grouped by language, under a heading per language (see strongsOptions.js)
         strongsDictionaryList() {
-            var list = [{value: null, title: 'Use global default'}];
-            var groups = {};
-
-            for(var dict of (this.bootstrap.strongs_dictionaries || [])) {
-                var language = (this.bootstrap.languages || []).find(lang => lang.code === dict.language);
-                var name = language ? language.name : dict.language;
-
-                groups[name] = groups[name] || [];
-                groups[name].push({value: dict.module, title: dict.name});
-            }
-
-            for(var name of Object.keys(groups).sort((a, b) => a.localeCompare(b))) {
-                list.push({value: '__header__' + name, title: name, header: true, disabled: true});
-                list.push(...groups[name]);
-            }
-
-            return list;
+            return strongsDictionaryOptions(this.bootstrap, 'Use global default');
         }
     }
 }

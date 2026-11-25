@@ -46,7 +46,7 @@ class LanguageConfigControllerTest extends TestCase
         $Volume->shortname = 'LangCfg ' . $suffix;
         $Volume->language  = 'en';
         $Volume->save();
-        $Volume->install(FALSE, $enabled);
+        $this->installVolumeFixture($Volume, $enabled);
 
         return $Volume;
     }

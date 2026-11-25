@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Validation\Rule;
 use App\Models\Verses\VerseStandard As StandardVerses;
 use App\Models\Language;
+use App\Models\VolumeAttr;
 use App\Passage;
 use App\Search;
 use Illuminate\Support\Arr;
@@ -579,6 +580,17 @@ class Bible extends Model
         if(is_file($file_path_un)) {
             unlink($file_path_un);
         }
+    }
+
+    /**
+     * Settings kept for this Bible in volumes_attr (its default Strong's dictionary) go with
+     * it, however it is deleted - the admin page, the uninstall command, an import - so a new
+     * Bible later given the same module does not inherit them.  A query builder delete fires
+     * no model event: such callers clean up for themselves (TestCleanup::removeBible()).
+     */
+    protected static function booted(): void
+    {
+        static::deleted(fn(Bible $Bible) => VolumeAttr::unsetAll(VolumeAttr::TYPE_BIBLE, (string) $Bible->module));
     }
 
     public function deleteRenderedFiles() 

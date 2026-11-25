@@ -98,9 +98,41 @@ abstract public function getImportDir(): string;
   trait or parent class also means typing every override of it, because an untyped
   override of a typed method is a fatal error; grep for overrides, including test doubles.
 
-## Tests
+## JavaScript Conventions (admin UI)
 
-### All tests
+### Confirm and alert dialogs
+NEVER use the browser's own dialogs (`window.confirm()`, `window.alert()`, `prompt()`) in the
+admin UI. Use the custom `ConfirmDialog` component
+(`public/js/bin/custom_vue/dialogs/ConfirmDialog.vue.js`):
+
+```js
+import Confirm from '../../bin/custom_vue/dialogs/ConfirmDialog.vue.js';
+
+// template:  <Confirm ref='ConfirmDialog' title='Uninstall' okOption='Yes' cancelOption='No'></Confirm>
+
+this.$refs.ConfirmDialog.confirmSingle('Are you sure?', function(confirmed) {
+    if(confirmed) { /* ... */ }
+}.bind(this));
+
+this.$refs.ConfirmDialog.alert('Done!');
+```
+
+* `confirmSingle(message, callback)` calls `callback(true|false)`; `confirm(message, ok, cancel)`
+  takes separate callbacks; `alert(message)` shows an OK button only.
+* The dialog closes itself *after* running the callback, so a second question asked from
+  inside a callback needs its own `<Confirm>` instance (see `FeatureGrid.vue.js`).
+* Clicking outside the dialog closes it without calling any callback. Add `persistent` when
+  the question must be answered, e.g. confirming a change already made that Cancel reverts
+  (the copyright check in `BibleEditForm.vue.js` / `VolumeEditForm.vue.js`).
+* `\n` in the message is shown as a line break.
+* Code with no template of its own (a composable such as `useGrid()`) can't hold a
+  `<Confirm>`: it calls `Vue.inject('alertDialog')(message)` instead, which each admin
+  `App.vue.js` provides from a single shared `<Confirm>`. A new admin app must provide it too.
+* A `<Confirm>` placed inside a `v-dialog` only exists while that dialog is open. A message
+  that can fire before it opens (e.g. a record that failed to load, see `EditDialog.vue.js`)
+  must use the injected `alertDialog` instead.
+
+
 - Create both unit tests and feature tests as applicable for a given class.
 - Do NOT create an empty test file when no tests are applicable.
 - Do NOT create tests for database migration classes.

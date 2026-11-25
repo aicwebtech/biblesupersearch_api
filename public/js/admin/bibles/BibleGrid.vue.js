@@ -652,7 +652,8 @@ export default {
             this.selectedAction = null;
         },
         handleSaveActions() {
-            this.refreshGridClearSelections();
+            // Selections are cleared by handleSuccessActions(), only when every item succeeded
+            this.refreshGridRefreshWithExtras();
         },
         handleSuccessActions() {
 

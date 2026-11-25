@@ -55,11 +55,9 @@ class VolumeModuleTest extends TestCase
         });
 
         $Volume->save();
-        $Volume->install(FALSE, TRUE);
 
-        if($rows) {
-            DB::table($Volume->content()->getTable())->insert(self::ROWS);
-        }
+        // Without rows it stays disabled: an empty volume cannot be enabled
+        $this->installVolumeFixture($Volume, $rows, $rows ? self::ROWS : []);
 
         $this->files[] = $Volume->getModuleFilePath();
 
@@ -546,6 +544,109 @@ class VolumeModuleTest extends TestCase
         $this->assertSame(count(self::ROWS), DB::table($Volume->Content->getTable())->count());
 
         $Volume->Content = NULL;
+    }
+
+    /**
+     * Batches are capped by bytes as well as rows, so a large dictionary stays inside a small
+     * max_allowed_packet: 1000 rows of ru_leksikon are about 1.8 MB, more than the old 1 MB
+     * default.  A budget smaller than any one row inserts a row per statement.
+     */
+    public function testInsertBatchIsCappedByBytes(): void
+    {
+        $Volume = $this->makeVolume();
+        $this->assertTrue($Volume->export());
+        $Volume->uninstall();
+
+        $Volume->Content = new class extends StrongsContent {
+            protected function insertBatchBytes(): ?int
+            {
+                return 1;
+            }
+        };
+        $Volume->Content->setVolume($Volume);
+        $table   = $Volume->Content->getTable();
+        $inserts = 0;
+
+        DB::listen(function($Query) use ($table, &$inserts) {
+            if(stripos($Query->sql, 'insert into') === 0 && str_contains($Query->sql, $table)) {
+                $inserts++;
+            }
+        });
+
+        $this->assertTrue($Volume->install(), implode('; ', $Volume->getErrors()));
+        $this->assertSame(count(self::ROWS), $inserts, 'Each row was not inserted on its own');
+        $this->assertSame(count(self::ROWS), DB::table($table)->count());
+
+        $Volume->Content = NULL;
+    }
+
+    /**
+     * A failed install names a known reason in its own words, never the database's message,
+     * which can carry table names, content and server details.  The next install that
+     * succeeds clears it.
+     */
+    public function testFailedInstallNamesTheReason(): void
+    {
+        $Volume = $this->makeVolume();
+        $this->assertTrue($Volume->export());
+
+        $path = $Volume->getModuleFilePath();
+        [, $contents] = $this->readZip($path);
+        $lines = explode("\n", rtrim($contents, "\n"));
+
+        // A duplicate number breaks the unique index
+        $Zip = new ZipArchive();
+        $Zip->open($path);
+        $Zip->addFromString('contents.txt', $contents . end($lines) . "\n");
+        $Zip->close();
+
+        $Volume->uninstall();
+        $this->assertFalse($Volume->install());
+
+        $error = implode('; ', $Volume->getErrors());
+        $this->assertSame('Could not install content table: The module file contains duplicate entries.', $error);
+        $this->assertStringNotContainsString($Volume->content()->getTable(), $error);
+
+        $Zip = new ZipArchive();
+        $Zip->open($path);
+        $Zip->addFromString('contents.txt', $contents);
+        $Zip->close();
+
+        $this->assertTrue($Volume->content()->install(), (string) $Volume->content()->getInstallError());
+        $this->assertNull($Volume->content()->getInstallError());
+    }
+
+    /**
+     * The reasons shown for an install failure: an oversized packet is named, and anything
+     * else unknown gets a generic message, never the exception's own.
+     */
+    public function testInstallErrorReasonsAreSafeToShow(): void
+    {
+        $secret = 'cn_strongs_secret_table at db.internal.example';
+
+        $query = function(int $driver_code, string $state, string $message) use ($secret): \Illuminate\Database\QueryException {
+            $Pdo = new \PDOException('SQLSTATE[' . $state . ']: ' . $message . ' ' . $secret);
+            $Pdo->errorInfo = [$state, $driver_code, $message];
+
+            return new \Illuminate\Database\QueryException('mysql', 'insert into ' . $secret, [], $Pdo);
+        };
+
+        $dupe   = fn(string $source): string => ContentBase::describeInstallError($query(1062, '23000', 'Duplicate entry'), $source);
+        $packet = ContentBase::describeInstallError($query(1153, '08S01', "Got a packet bigger than 'max_allowed_packet' bytes"));
+        $gone   = ContentBase::describeInstallError($query(2006, 'HY000', 'MySQL server has gone away'));
+        $other  = ContentBase::describeInstallError($query(1146, '42S02', 'Table does not exist'));
+        $plain  = ContentBase::describeInstallError(new \RuntimeException('Could not open ' . $secret));
+
+        $this->assertStringContainsString('max_allowed_packet', $packet);
+        $this->assertSame($packet, $gone);
+        $this->assertSame('An unexpected error occurred. Details are in the error log.', $other);
+        $this->assertSame($other, $plain);
+        $this->assertSame('The module file contains duplicate entries.', ContentBase::describeInstallError($query(1062, '23000', 'Duplicate entry')));
+        $this->assertSame('The import file contains duplicate entries.', $dupe('import file'));
+
+        foreach([$packet, $gone, $other, $plain, $dupe('import file')] as $reason) {
+            $this->assertStringNotContainsString('secret', $reason);
+        }
     }
 
     /**

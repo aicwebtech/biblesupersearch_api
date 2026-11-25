@@ -38,6 +38,16 @@ abstract class VolumeTypeBase extends Volume
         'url', 'copyright', 'copyright_id', 'copyright_statement', 'description', 'module_version',
     ];
 
+    /**
+     * The module of the type's hard default: the volume made the default when the type has none
+     * flagged and it is installed and enabled (see VolumeFeature::preferringHardDefault()).
+     * NULL when the type has no such volume.
+     */
+    public static function hardDefaultModule(): ?string
+    {
+        return NULL;
+    }
+
     public function __construct(array $attributes = [])
     {
         parent::__construct($attributes);

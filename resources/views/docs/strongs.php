@@ -2,7 +2,7 @@
     $context = 'api.strongs';
     $url = '/strongs';
 
-    $params = ['strongs', 'version', 'language', 'dictionary'];
+    $params = ['strongs', 'version', 'language', 'dictionary', 'bible'];
 
     renderActionHeader($context, $url);
     renderParameterHeader();

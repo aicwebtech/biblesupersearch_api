@@ -111,6 +111,8 @@ Route::resource('/admin/bibles', 'Admin\BibleController', ['as' => 'admin']);
 
 // Features manager routes
 Route::get('/admin/features/grid', 'Admin\FeatureController@grid');
+Route::get('/admin/features/all/{action}/{identifier}/losses', 'Admin\FeatureController@allLosses')->where('action', 'install|enable|disable|uninstall');
+Route::post('/admin/features/all/{action}/{identifier}', 'Admin\FeatureController@all')->where('action', 'install|enable|disable|uninstall');
 Route::post('/admin/features/install/{id}', 'Admin\FeatureController@install');
 Route::post('/admin/features/uninstall/{id}', 'Admin\FeatureController@uninstall');
 Route::post('/admin/features/enable/{id}', 'Admin\FeatureController@enable');

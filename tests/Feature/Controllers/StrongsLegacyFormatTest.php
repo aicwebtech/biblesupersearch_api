@@ -45,9 +45,9 @@ class StrongsLegacyFormatTest extends TestCase
                 return $this->legacy;
             }
 
-            protected function _resolveStrongsDictionary(mixed $dictionary, mixed $language): Strongs|false|null
+            protected function _resolveStrongsDictionary(mixed $dictionary, mixed $language, ?\App\Models\Bible $Bible = NULL): Strongs|false|null
             {
-                return $this->modern ? parent::_resolveStrongsDictionary($dictionary, $language) : NULL;
+                return $this->modern ? parent::_resolveStrongsDictionary($dictionary, $language, $Bible) : NULL;
             }
         };
 

@@ -30,6 +30,7 @@ class FeatureController extends Controller
         Feature::syncFeatures();
 
         $bootstrap = $this->getAdminBootstrap();
+        $bootstrap->feature_all_actions = FeatureDefinitions::allActions();
         $bootstrap = $this->encodeBootstrap($bootstrap);
 
         return view('admin.features', ['bootstrap' => $bootstrap]);
@@ -209,6 +210,39 @@ class FeatureController extends Controller
             $resp->errors = $Feature->getErrors() ?: ['Failed to uninstall feature.'];
             return new Response($resp, 422);
         }
+
+        return new Response($resp, 200);
+    }
+
+    /**
+     * Runs an action over every language of a feature at once: install, enable, disable or uninstall all
+     * (see FeatureDefinitions::allActions())
+     *
+     * @param string $action install, enable, disable or uninstall
+     * @param string $identifier Feature identifier
+     */
+    public function all(Request $request, string $action, string $identifier): Response
+    {
+        $errors = Feature::runAll($identifier, $action, $request->boolean('enable', false));
+
+        $resp = new \stdClass();
+        $resp->success = !$errors;
+
+        if ($errors) {
+            $resp->errors = $errors;
+        }
+
+        return new Response($resp, $errors ? 422 : 200);
+    }
+
+    /**
+     * What an 'all' action would lose for good (Feature::allLosses()), asked before running it
+     */
+    public function allLosses(string $action, string $identifier): Response
+    {
+        $resp = new \stdClass();
+        $resp->success = TRUE;
+        $resp->losses = Feature::allLosses($identifier, $action);
 
         return new Response($resp, 200);
     }
